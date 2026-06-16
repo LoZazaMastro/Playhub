@@ -1,0 +1,629 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+
+namespace Playhub.Services;
+
+public sealed record LanguageInfo(string Key, string NativeName);
+
+public static class LocalizationService
+{
+    private static readonly string[] TranslationOrder =
+    {
+        "en", "es", "fr", "de", "pt", "uk", "zh", "ja", "ko", "hi", "ru"
+    };
+
+    private static readonly Dictionary<string, int> LanguageIndexes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["en"] = 0,
+        ["es"] = 1,
+        ["fr"] = 2,
+        ["de"] = 3,
+        ["pt"] = 4,
+        ["uk"] = 5,
+        ["zh"] = 6,
+        ["ja"] = 7,
+        ["ko"] = 8,
+        ["hi"] = 9,
+        ["ru"] = 10
+    };
+
+    public static readonly IReadOnlyList<LanguageInfo> Languages = new[]
+    {
+        new LanguageInfo("auto", "Automatico"),
+        new LanguageInfo("it", "Italiano"),
+        new LanguageInfo("en", "English"),
+        new LanguageInfo("es", "Español"),
+        new LanguageInfo("fr", "Français"),
+        new LanguageInfo("de", "Deutsch"),
+        new LanguageInfo("pt", "Português"),
+        new LanguageInfo("uk", "Українська"),
+        new LanguageInfo("zh", "中文"),
+        new LanguageInfo("ja", "日本語"),
+        new LanguageInfo("ko", "한국어"),
+        new LanguageInfo("hi", "हिन्दी"),
+        new LanguageInfo("ru", "Русский")
+    };
+
+    public static string ResolveLanguage(string? selectedLanguage)
+    {
+        var key = NormalizeLanguageKey(selectedLanguage);
+        if (key != "auto")
+        {
+            return key;
+        }
+
+        var culture = CultureInfo.CurrentUICulture.Name;
+        var twoLetter = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+        if (culture.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
+        {
+            return "zh";
+        }
+
+        return NormalizeLanguageKey(twoLetter) is var systemKey && systemKey != "auto"
+            ? systemKey
+            : "it";
+    }
+
+    public static string NormalizeLanguageKey(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "auto";
+        }
+
+        var key = value.Trim().ToLowerInvariant();
+        if (key.StartsWith("en")) return "en";
+        if (key.StartsWith("es")) return "es";
+        if (key.StartsWith("fr")) return "fr";
+        if (key.StartsWith("de")) return "de";
+        if (key.StartsWith("pt")) return "pt";
+        if (key.StartsWith("uk") || key.StartsWith("ua")) return "uk";
+        if (key.StartsWith("zh")) return "zh";
+        if (key.StartsWith("ja")) return "ja";
+        if (key.StartsWith("ko")) return "ko";
+        if (key.StartsWith("hi")) return "hi";
+        if (key.StartsWith("ru")) return "ru";
+        if (key.StartsWith("it")) return "it";
+        return key == "auto" ? "auto" : "it";
+    }
+
+    public static string LanguageDisplayName(string languageKey, string? selectedLanguage)
+    {
+        if (languageKey == "auto")
+        {
+            return Translate(selectedLanguage, "Automatico");
+        }
+
+        foreach (var language in Languages)
+        {
+            if (string.Equals(language.Key, languageKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return language.NativeName;
+            }
+        }
+
+        return languageKey;
+    }
+
+    public static string Translate(string? selectedLanguage, string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return text ?? "";
+        }
+
+        var language = ResolveLanguage(selectedLanguage);
+        if (language == "it")
+        {
+            return text;
+        }
+
+        return LanguageIndexes.TryGetValue(language, out var index)
+            && TryGetValues(text, out var values)
+            && index >= 0
+            && index < values.Length
+            && !string.IsNullOrWhiteSpace(values[index])
+                ? values[index]
+                : text;
+    }
+
+    private static bool TryGetValues(string text, out string[] values)
+    {
+        return Strings.TryGetValue(text, out values!) || ExtraStrings.TryGetValue(text, out values!);
+    }
+
+    private static readonly Dictionary<string, string[]> Strings = new(StringComparer.Ordinal)
+    {
+        ["Automatico"] = new[] { "Automatic", "Automático", "Automatique", "Automatisch", "Automático", "Автоматично", "自动", "自動", "자동", "अपने आप", "Автоматически" },
+        ["Lingua"] = new[] { "Language", "Idioma", "Langue", "Sprache", "Idioma", "Мова", "语言", "言語", "언어", "भाषा", "Язык" },
+        ["Usa la lingua di Windows o scegli quella che preferisci."] = new[] { "Use Windows language, or pick the one you like.", "Usa el idioma de Windows o elige el que prefieras.", "Utilise la langue de Windows, ou choisis celle que tu préfères.", "Nutze die Windows-Sprache oder wähle deine bevorzugte Sprache.", "Use o idioma do Windows ou escolha o que preferir.", "Використовуй мову Windows або вибери ту, яка тобі зручна.", "使用 Windows 语言，或选择你喜欢的语言。", "Windows の言語を使うか、好きな言語を選べます。", "Windows 언어를 쓰거나 원하는 언어를 고르세요.", "Windows की भाषा इस्तेमाल करें या अपनी पसंद की भाषा चुनें।", "Используй язык Windows или выбери удобный для себя." },
+        ["Benvenuto"] = new[] { "Welcome", "Bienvenida", "Bienvenue", "Willkommen", "Boas-vindas", "Вітаємо", "欢迎", "ようこそ", "환영합니다", "स्वागत है", "Добро пожаловать" },
+        ["Benvenuto in Playhub"] = new[] { "Welcome to Playhub", "Te damos la bienvenida a Playhub", "Bienvenue dans Playhub", "Willkommen bei Playhub", "Boas-vindas ao Playhub", "Вітаємо в Playhub", "欢迎使用 Playhub", "Playhub へようこそ", "Playhub에 오신 것을 환영합니다", "Playhub में आपका स्वागत है", "Добро пожаловать в Playhub" },
+        ["Un minuto per scoprire cosa puoi fare."] = new[] { "Take a minute to see what you can do.", "Un minuto para ver todo lo que puedes hacer.", "Une minute pour voir ce que tu peux faire.", "Eine Minute, um zu sehen, was möglich ist.", "Um minuto para ver o que você pode fazer.", "Хвилина, щоб побачити, що ти можеш робити.", "花一分钟看看你能做什么。", "できることを1分で見てみましょう。", "1분만에 할 수 있는 일을 둘러보세요.", "एक मिनट में देखें कि आप क्या कर सकते हैं।", "Минутка, чтобы понять, что можно делать." },
+        ["Scegli il tuo colore"] = new[] { "Pick your color", "Elige tu color", "Choisis ta couleur", "Wähle deine Farbe", "Escolha sua cor", "Вибери свій колір", "选择你的颜色", "色を選ぶ", "색상 선택", "अपना रंग चुनें", "Выбери свой цвет" },
+        ["Dai a Playhub il tuo tocco scegliendo il colore che preferisci."] = new[] { "Give Playhub your own touch with a color you love.", "Dale tu toque a Playhub con el color que más te guste.", "Donne ton style à Playhub avec ta couleur préférée.", "Gib Playhub mit deiner Lieblingsfarbe deine Note.", "Dê seu toque ao Playhub com a cor que você curte.", "Додай Playhub свій настрій улюбленим кольором.", "用喜欢的颜色为 Playhub 加点你的风格。", "好きな色で Playhub らしさを自分好みに。", "좋아하는 색으로 Playhub에 나만의 느낌을 더하세요.", "अपने पसंदीदा रंग से Playhub को अपना अंदाज़ दें।", "Добавь Playhub свой стиль любимым цветом." },
+        ["Plugin Store"] = new[] { "Plugin Store", "Tienda de plugins", "Store de plugins", "Plugin Store", "Loja de plugins", "Магазин плагінів", "插件商店", "プラグインストア", "플러그인 스토어", "प्लगइन स्टोर", "Магазин плагинов" },
+        ["Playhub Plugin Store"] = new[] { "Playhub Plugin Store", "Tienda de plugins de Playhub", "Store de plugins Playhub", "Playhub Plugin Store", "Loja de plugins do Playhub", "Магазин плагінів Playhub", "Playhub 插件商店", "Playhub プラグインストア", "Playhub 플러그인 스토어", "Playhub प्लगइन स्टोर", "Магазин плагинов Playhub" },
+        ["Gaming Mode"] = new[] { "Gaming Mode", "Modo Gaming", "Mode Gaming", "Gaming Mode", "Modo Gaming", "Ігровий режим", "游戏模式", "ゲーミングモード", "게이밍 모드", "गेमिंग मोड", "Игровой режим" },
+        ["Desktop"] = new[] { "Desktop", "Escritorio", "Bureau", "Desktop", "Desktop", "Робочий стіл", "桌面", "デスクトップ", "데스크톱", "Desktop", "Рабочий стол" },
+        ["Gaming"] = new[] { "Gaming", "Gaming", "Gaming", "Gaming", "Gaming", "Gaming", "游戏", "Gaming", "Gaming", "Gaming", "Gaming" },
+        ["Personalizzato"] = new[] { "Custom", "Personalizado", "Personnalisé", "Eigene Auswahl", "Personalizado", "Власний", "自定义", "カスタム", "사용자 지정", "कस्टम", "Свой вариант" },
+        ["Importa Giochi Xbox"] = new[] { "Import Xbox Games", "Importar juegos de Xbox", "Importer les jeux Xbox", "Xbox-Spiele importieren", "Importar jogos Xbox", "Імпорт ігор Xbox", "导入 Xbox 游戏", "Xbox ゲームを読み込む", "Xbox 게임 가져오기", "Xbox गेम आयात करें", "Импорт игр Xbox" },
+        ["Importa i giochi Xbox"] = new[] { "Import Xbox games", "Importa juegos de Xbox", "Importe tes jeux Xbox", "Importiere deine Xbox-Spiele", "Importe jogos Xbox", "Імпортуй ігри Xbox", "导入 Xbox 游戏", "Xbox ゲームを取り込む", "Xbox 게임 가져오기", "Xbox गेम आयात करें", "Импортируй игры Xbox" },
+        ["Impostazioni"] = new[] { "Settings", "Ajustes", "Réglages", "Einstellungen", "Ajustes", "Налаштування", "设置", "設定", "설정", "सेटिंग्स", "Настройки" },
+        ["Divertiti"] = new[] { "Have fun", "A disfrutar", "Amuse-toi", "Viel Spaß", "Divirta-se", "Гарної гри", "尽情玩吧", "楽しもう", "즐겨보세요", "मज़े करें", "Приятной игры" },
+        ["Ora tocca a te. Buon divertimento con Playhub!"] = new[] { "All yours now. Have fun with Playhub.", "Ahora te toca a ti. A disfrutar Playhub.", "À toi de jouer. Profite bien de Playhub.", "Jetzt bist du dran. Viel Spaß mit Playhub.", "Agora é com você. Divirta-se com o Playhub.", "Тепер твоя черга. Гарної гри з Playhub!", "现在交给你了。祝你在 Playhub 玩得开心！", "ここからはあなたの番。Playhub を楽しんでください。", "이제 당신 차례예요. Playhub와 함께 즐겨보세요.", "अब आपकी बारी है। Playhub के साथ मज़े करें।", "Теперь твой ход. Приятного Playhub!" },
+        ["Cominciamo"] = new[] { "Let's start", "Empezar", "On commence", "Los geht's", "Começar", "Почнімо", "开始吧", "はじめる", "시작하기", "शुरू करें", "Начнём" },
+        ["Pochi passi e i plugin sono pronti in Steam. Ogni passo diventa verde quando è completato."] = new[] { "A few steps and your plugins are ready in Steam. Each step turns green when it's done.", "Unos pasos y los plugins estarán listos en Steam. Cada paso se vuelve verde al completarse.", "Quelques étapes et les plugins sont prêts dans Steam. Chaque étape passe au vert une fois terminée.", "Ein paar Schritte und die Plugins sind in Steam bereit. Jeder Schritt wird grün, sobald er erledigt ist.", "Poucos passos e os plugins ficam prontos no Steam. Cada etapa fica verde quando termina.", "Кілька кроків — і плагіни готові в Steam. Виконаний крок стає зеленим.", "几个步骤后，插件就会在 Steam 中准备好。完成的步骤会变成绿色。", "いくつかの手順で Steam にプラグインを用意できます。完了した手順は緑になります。", "몇 단계만 거치면 Steam에서 플러그인이 준비됩니다. 완료된 단계는 초록색으로 바뀝니다.", "कुछ चरणों में प्लगइन Steam में तैयार हो जाएंगे। पूरा होने पर हर चरण हरा हो जाएगा।", "Пара шагов — и плагины готовы в Steam. Выполненный шаг становится зелёным." },
+        ["Steam installato"] = new[] { "Steam installed", "Steam instalado", "Steam installé", "Steam installiert", "Steam instalado", "Steam встановлено", "已安装 Steam", "Steam インストール済み", "Steam 설치됨", "Steam इंस्टॉल है", "Steam установлен" },
+        ["DeckyLoader funziona dentro Steam: serve che Steam sia installato sul PC."] = new[] { "DeckyLoader runs inside Steam, so Steam needs to be on this PC.", "DeckyLoader funciona dentro de Steam, así que Steam debe estar instalado en este PC.", "DeckyLoader fonctionne dans Steam : Steam doit donc être installé sur ce PC.", "DeckyLoader läuft in Steam, daher muss Steam auf diesem PC installiert sein.", "O DeckyLoader roda dentro do Steam, então o Steam precisa estar neste PC.", "DeckyLoader працює всередині Steam, тож Steam має бути встановлений на цьому ПК.", "DeckyLoader 在 Steam 中运行，因此这台电脑需要安装 Steam。", "DeckyLoader は Steam 内で動くため、この PC に Steam が必要です。", "DeckyLoader는 Steam 안에서 실행되므로 이 PC에 Steam이 필요합니다.", "DeckyLoader Steam के भीतर चलता है, इसलिए इस PC पर Steam होना चाहिए।", "DeckyLoader работает внутри Steam, поэтому Steam должен быть установлен на этом ПК." },
+        ["Modalità sviluppatore di Windows"] = new[] { "Windows Developer Mode", "Modo de desarrollador de Windows", "Mode développeur Windows", "Windows-Entwicklermodus", "Modo de desenvolvedor do Windows", "Режим розробника Windows", "Windows 开发者模式", "Windows 開発者モード", "Windows 개발자 모드", "Windows डेवलपर मोड", "Режим разработчика Windows" },
+        ["Si attiva una volta sola: permette a DeckyLoader di installare i plugin."] = new[] { "Turn it on once so DeckyLoader can install plugins.", "Actívalo una sola vez para que DeckyLoader pueda instalar plugins.", "Active-le une seule fois pour que DeckyLoader puisse installer les plugins.", "Einmal aktivieren, damit DeckyLoader Plugins installieren kann.", "Ative uma vez para o DeckyLoader instalar plugins.", "Увімкни один раз, щоб DeckyLoader міг встановлювати плагіни.", "只需开启一次，DeckyLoader 就能安装插件。", "一度だけオンにすると、DeckyLoader がプラグインをインストールできます。", "한 번만 켜면 DeckyLoader가 플러그인을 설치할 수 있습니다.", "इसे एक बार चालू करें ताकि DeckyLoader प्लगइन इंस्टॉल कर सके।", "Включи один раз, чтобы DeckyLoader мог устанавливать плагины." },
+        ["Installa DeckyLoader"] = new[] { "Install DeckyLoader", "Instalar DeckyLoader", "Installer DeckyLoader", "DeckyLoader installieren", "Instalar DeckyLoader", "Встановити DeckyLoader", "安装 DeckyLoader", "DeckyLoader をインストール", "DeckyLoader 설치", "DeckyLoader इंस्टॉल करें", "Установить DeckyLoader" },
+        ["Scarico e configuro l'ultima versione di DeckyLoader."] = new[] { "Downloads and sets up the latest DeckyLoader.", "Descarga y configura la última versión de DeckyLoader.", "Télécharge et configure la dernière version de DeckyLoader.", "Lädt die neueste Version von DeckyLoader und richtet sie ein.", "Baixa e configura a versão mais recente do DeckyLoader.", "Завантажує та налаштовує найновіший DeckyLoader.", "下载并配置最新版 DeckyLoader。", "最新の DeckyLoader をダウンロードして設定します。", "최신 DeckyLoader를 다운로드하고 설정합니다.", "DeckyLoader का नया संस्करण डाउनलोड और सेट अप करता है।", "Скачивает и настраивает последнюю версию DeckyLoader." },
+        ["Installa una versione precedente"] = new[] { "Install an older version", "Instalar una versión anterior", "Installer une version précédente", "Ältere Version installieren", "Instalar uma versão anterior", "Встановити попередню версію", "安装旧版本", "以前のバージョンをインストール", "이전 버전 설치", "पुराना संस्करण इंस्टॉल करें", "Установить предыдущую версию" },
+        ["Di solito non serve: l'installazione qui sopra usa già l'ultima versione. Scegli una data solo se ti occorre una versione precisa."] = new[] { "You usually won't need this: the install above already uses the latest version. Pick a date only if you need a specific build.", "Normalmente no hace falta: la instalación de arriba ya usa la última versión. Elige una fecha solo si necesitas una build concreta.", "En général, inutile : l'installation ci-dessus utilise déjà la dernière version. Choisis une date seulement si tu veux une build précise.", "Meist brauchst du das nicht: Die Installation oben nutzt bereits die neueste Version. Wähle ein Datum nur für eine bestimmte Build.", "Normalmente não precisa: a instalação acima já usa a versão mais recente. Escolha uma data só se precisar de uma build específica.", "Зазвичай це не потрібно: встановлення вище вже бере останню версію. Обирай дату лише для конкретної збірки.", "通常不需要：上方安装已经使用最新版本。只有需要特定构建时才选择日期。", "通常は不要です。上のインストールは最新バージョンを使います。特定のビルドが必要なときだけ日付を選んでください。", "대부분 필요 없습니다. 위 설치는 이미 최신 버전을 사용합니다. 특정 빌드가 필요할 때만 날짜를 고르세요.", "आमतौर पर इसकी ज़रूरत नहीं होती: ऊपर वाला इंस्टॉल नया संस्करण इस्तेमाल करता है। खास बिल्ड चाहिए तभी तारीख चुनें।", "Обычно это не нужно: установка выше уже берёт последнюю версию. Выбирай дату только для конкретной сборки." },
+        ["I plugin della suite Playhub: installali, aggiornali e gestiscili da qui."] = new[] { "Install, update and manage the Playhub plugins from here.", "Instala, actualiza y gestiona los plugins de Playhub desde aquí.", "Installe, mets à jour et gère les plugins Playhub ici.", "Installiere, aktualisiere und verwalte die Playhub-Plugins hier.", "Instale, atualize e gerencie os plugins do Playhub por aqui.", "Встановлюй, оновлюй і керуй плагінами Playhub тут.", "在这里安装、更新和管理 Playhub 插件。", "Playhub プラグインのインストール、更新、管理をここで行えます。", "여기서 Playhub 플러그인을 설치, 업데이트, 관리하세요.", "Playhub प्लगइन यहां से इंस्टॉल, अपडेट और मैनेज करें।", "Устанавливай, обновляй и управляй плагинами Playhub здесь." },
+        ["Usa il tuo PC come una console senza bisogno di mouse e tastiera."] = new[] { "Use your PC like a console, no mouse or keyboard needed.", "Usa tu PC como una consola, sin ratón ni teclado.", "Utilise ton PC comme une console, sans souris ni clavier.", "Nutze deinen PC wie eine Konsole, ganz ohne Maus und Tastatur.", "Use seu PC como um console, sem mouse nem teclado.", "Використовуй ПК як консоль — без миші й клавіатури.", "像主机一样使用电脑，无需鼠标和键盘。", "PC をコンソールのように。マウスもキーボードも不要です。", "마우스와 키보드 없이 PC를 콘솔처럼 사용하세요.", "माउस और कीबोर्ड के बिना अपने PC को कंसोल की तरह इस्तेमाल करें।", "Используй ПК как консоль, без мыши и клавиатуры." },
+        ["Installa Gaming Mode"] = new[] { "Install Gaming Mode", "Instalar Modo Gaming", "Installer le Mode Gaming", "Gaming Mode installieren", "Instalar Modo Gaming", "Встановити ігровий режим", "安装游戏模式", "ゲーミングモードをインストール", "게이밍 모드 설치", "गेमिंग मोड इंस्टॉल करें", "Установить игровой режим" },
+        ["Con Gaming Mode il PC parte già nella libreria giochi a schermo intero, comoda con il controller. Quando vuoi, torni al desktop normale. Installa il componente per usarla."] = new[] { "With Gaming Mode, your PC opens straight into a full-screen library made for the controller. When you need it, your normal desktop is one step away. Install the component to use it.", "Con Modo Gaming, el PC arranca directo en una biblioteca a pantalla completa pensada para mando. Y cuando quieras, vuelves al escritorio normal. Instala el componente para usarlo.", "Avec le Mode Gaming, le PC démarre directement dans une bibliothèque plein écran pensée pour la manette. Et tu reviens au bureau quand tu veux. Installe le composant pour l'utiliser.", "Mit Gaming Mode startet dein PC direkt in eine Vollbild-Bibliothek für den Controller. Zum normalen Desktop kommst du jederzeit zurück. Installiere die Komponente, um loszulegen.", "Com o Modo Gaming, o PC abre direto numa biblioteca em tela cheia feita para controle. Quando quiser, você volta ao desktop normal. Instale o componente para usar.", "З ігровим режимом ПК відкриває повноекранну бібліотеку для геймпада. Коли треба — повертаєшся на звичайний робочий стіл. Встанови компонент, щоб почати.", "使用游戏模式时，电脑会直接进入适合手柄操作的全屏游戏库。需要时也能回到普通桌面。安装组件即可使用。", "ゲーミングモードでは、PC がコントローラー向けの全画面ライブラリで起動します。必要なときは通常のデスクトップへ戻れます。使うにはコンポーネントをインストールしてください。", "게이밍 모드에서는 PC가 컨트롤러에 맞춘 전체 화면 라이브러리로 바로 시작됩니다. 필요하면 언제든 일반 데스크톱으로 돌아갈 수 있습니다. 사용하려면 구성 요소를 설치하세요.", "गेमिंग मोड में PC कंट्रोलर के लिए बने फुल-स्क्रीन गेम लाइब्रेरी में सीधे खुलता है। जब चाहें सामान्य डेस्कटॉप पर लौट सकते हैं। इस्तेमाल करने के लिए घटक इंस्टॉल करें।", "В игровом режиме ПК сразу открывает полноэкранную библиотеку для геймпада. Когда нужно, можно вернуться на обычный рабочий стол. Установи компонент, чтобы пользоваться." },
+        ["Modalità predefinita"] = new[] { "Default mode", "Modo predeterminado", "Mode par défaut", "Standardmodus", "Modo padrão", "Режим за замовчуванням", "默认模式", "既定のモード", "기본 모드", "डिफ़ॉल्ट मोड", "Режим по умолчанию" },
+        ["Scegli come si accende il PC. La scheda illuminata è quella attiva ad ogni avvio."] = new[] { "Choose how your PC starts. The lit card is the one used at every sign-in.", "Elige cómo arranca el PC. La tarjeta iluminada se usará en cada inicio.", "Choisis comment le PC démarre. La carte allumée est celle utilisée à chaque ouverture de session.", "Wähle, wie dein PC startet. Die leuchtende Karte wird bei jeder Anmeldung verwendet.", "Escolha como o PC inicia. O cartão iluminado é usado em cada entrada.", "Вибери, як стартує ПК. Підсвічена картка — активна під час кожного входу.", "选择电脑启动方式。亮起的卡片会在每次登录时使用。", "PC の起動方法を選びます。光っているカードが毎回使われます。", "PC 시작 방식을 고르세요. 불이 켜진 카드가 매번 사용됩니다.", "PC कैसे शुरू होगा चुनें। रोशन कार्ड हर लॉगिन पर इस्तेमाल होगा।", "Выбери, как запускается ПК. Подсвеченная карточка используется при каждом входе." },
+        ["Avvia ora in Desktop"] = new[] { "Start in Desktop now", "Iniciar ahora en Escritorio", "Démarrer en Bureau maintenant", "Jetzt im Desktop starten", "Iniciar agora em Desktop", "Запустити зараз у Desktop", "现在以桌面模式启动", "今すぐ Desktop で起動", "지금 Desktop으로 시작", "अभी Desktop में शुरू करें", "Запустить сейчас в Desktop" },
+        ["Avvia ora in Gaming"] = new[] { "Start in Gaming now", "Iniciar ahora en Gaming", "Démarrer en Gaming maintenant", "Jetzt im Gaming starten", "Iniciar agora em Gaming", "Запустити зараз у Gaming", "现在以游戏模式启动", "今すぐ Gaming で起動", "지금 Gaming으로 시작", "अभी Gaming में शुरू करें", "Запустить сейчас в Gaming" },
+        ["Companion per DeckyLoader"] = new[] { "DeckyLoader companion", "Complemento para DeckyLoader", "Compagnon DeckyLoader", "DeckyLoader-Begleiter", "Companion para DeckyLoader", "Помічник для DeckyLoader", "DeckyLoader 伴侣插件", "DeckyLoader コンパニオン", "DeckyLoader 컴패니언", "DeckyLoader साथी", "Компаньон DeckyLoader" },
+        ["Avvio"] = new[] { "Startup", "Inicio", "Démarrage", "Start", "Inicialização", "Запуск", "启动", "起動", "시작", "स्टार्टअप", "Запуск" },
+        ["Schermo e desktop"] = new[] { "Screen and desktop", "Pantalla y escritorio", "Écran et bureau", "Bildschirm und Desktop", "Tela e desktop", "Екран і робочий стіл", "屏幕与桌面", "画面とデスクトップ", "화면 및 데스크톱", "स्क्रीन और डेस्कटॉप", "Экран и рабочий стол" },
+        ["Controller e streaming"] = new[] { "Controller and streaming", "Mando y streaming", "Manette et streaming", "Controller und Streaming", "Controle e streaming", "Геймпад і стримінг", "手柄与串流", "コントローラーとストリーミング", "컨트롤러 및 스트리밍", "कंट्रोलर और स्ट्रीमिंग", "Геймпад и стриминг" },
+        ["Mouse, tastiera e finestre, come un PC normale."] = new[] { "Mouse, keyboard and windows, like a regular PC.", "Ratón, teclado y ventanas, como un PC normal.", "Souris, clavier et fenêtres, comme un PC classique.", "Maus, Tastatur und Fenster, wie ein normaler PC.", "Mouse, teclado e janelas, como um PC normal.", "Миша, клавіатура й вікна — як звичайний ПК.", "鼠标、键盘和窗口，像普通电脑一样。", "マウス、キーボード、ウィンドウ。いつもの PC と同じです。", "마우스, 키보드, 창. 일반 PC처럼요.", "माउस, कीबोर्ड और विंडो, सामान्य PC की तरह।", "Мышь, клавиатура и окна, как на обычном ПК." },
+        ["Il tuo PC in modalità gaming, da divano e controller."] = new[] { "Your PC in gaming mode, made for the sofa and controller.", "Tu PC en modo gaming, perfecto para sofá y mando.", "Ton PC en mode gaming, pensé pour le canapé et la manette.", "Dein PC im Gaming-Modus, gemacht für Sofa und Controller.", "Seu PC em modo gaming, perfeito para sofá e controle.", "Твій ПК в ігровому режимі — для дивана й геймпада.", "你的电脑进入游戏模式，适合沙发和手柄。", "ソファとコントローラー向けのゲーミング PC に。", "소파와 컨트롤러에 맞춘 게이밍 PC가 됩니다.", "आपका PC गेमिंग मोड में, सोफ़ा और कंट्रोलर के लिए।", "Твой ПК в игровом режиме, для дивана и геймпада." },
+        ["Schermata di avvio"] = new[] { "Startup screen", "Pantalla de inicio", "Écran de démarrage", "Startbildschirm", "Tela de início", "Екран запуску", "启动画面", "起動画面", "시작 화면", "स्टार्टअप स्क्रीन", "Экран запуска" },
+        ["Processi personalizzati"] = new[] { "Custom processes", "Procesos personalizados", "Processus personnalisés", "Eigene Prozesse", "Processos personalizados", "Власні процеси", "自定义进程", "カスタムプロセス", "사용자 지정 프로세스", "कस्टम प्रक्रियाएं", "Пользовательские процессы" },
+        ["Avvia DeckyLoader prima di Steam"] = new[] { "Start DeckyLoader before Steam", "Iniciar DeckyLoader antes de Steam", "Lancer DeckyLoader avant Steam", "DeckyLoader vor Steam starten", "Iniciar DeckyLoader antes do Steam", "Запускати DeckyLoader перед Steam", "先启动 DeckyLoader，再启动 Steam", "Steam より先に DeckyLoader を起動", "Steam보다 먼저 DeckyLoader 시작", "Steam से पहले DeckyLoader शुरू करें", "Запускать DeckyLoader перед Steam" },
+        ["Carica i plugin Decky prima di Steam, così sono pronti quando si apre la libreria."] = new[] { "Loads Decky plugins before Steam, so they're ready when the library opens.", "Carga los plugins de Decky antes de Steam para que estén listos al abrir la biblioteca.", "Charge les plugins Decky avant Steam pour qu'ils soient prêts à l'ouverture de la bibliothèque.", "Lädt Decky-Plugins vor Steam, damit sie beim Öffnen der Bibliothek bereit sind.", "Carrega os plugins Decky antes do Steam, para ficarem prontos ao abrir a biblioteca.", "Завантажує плагіни Decky перед Steam, щоб вони були готові після відкриття бібліотеки.", "在 Steam 之前加载 Decky 插件，打开库时即可使用。", "Steam より先に Decky プラグインを読み込み、ライブラリ表示時に使えるようにします。", "Steam 전에 Decky 플러그인을 불러와 라이브러리가 열릴 때 준비되게 합니다.", "Steam से पहले Decky प्लगइन लोड करता है, ताकि लाइब्रेरी खुलते ही तैयार हों।", "Загружает плагины Decky до Steam, чтобы они были готовы при открытии библиотеки." },
+        ["Avvia lo streaming"] = new[] { "Start streaming", "Iniciar streaming", "Lancer le streaming", "Streaming starten", "Iniciar streaming", "Запускати стримінг", "启动串流", "ストリーミングを開始", "스트리밍 시작", "स्ट्रीमिंग शुरू करें", "Запускать стриминг" },
+        ["Apre Sunshine, Apollo o Vibepollo per giocare in streaming da un altro dispositivo."] = new[] { "Opens Sunshine, Apollo or Vibepollo so you can stream from another device.", "Abre Sunshine, Apollo o Vibepollo para jugar en streaming desde otro dispositivo.", "Ouvre Sunshine, Apollo ou Vibepollo pour jouer en streaming depuis un autre appareil.", "Öffnet Sunshine, Apollo oder Vibepollo, damit du von einem anderen Gerät streamen kannst.", "Abre Sunshine, Apollo ou Vibepollo para jogar por streaming em outro dispositivo.", "Відкриває Sunshine, Apollo або Vibepollo для гри в стримінгу з іншого пристрою.", "打开 Sunshine、Apollo 或 Vibepollo，从另一台设备串流游戏。", "Sunshine、Apollo、Vibepollo を開き、別デバイスからストリーミングできます。", "다른 기기에서 스트리밍 플레이할 수 있도록 Sunshine, Apollo 또는 Vibepollo를 엽니다.", "दूसरे डिवाइस से स्ट्रीमिंग के लिए Sunshine, Apollo या Vibepollo खोलता है।", "Открывает Sunshine, Apollo или Vibepollo для стриминга с другого устройства." },
+        ["Nascondi il desktop in Gaming Mode"] = new[] { "Hide the desktop in Gaming Mode", "Ocultar el escritorio en Modo Gaming", "Masquer le bureau en Mode Gaming", "Desktop im Gaming Mode ausblenden", "Ocultar o desktop no Modo Gaming", "Ховати робочий стіл в ігровому режимі", "在游戏模式中隐藏桌面", "ゲーミングモードでデスクトップを隠す", "게이밍 모드에서 데스크톱 숨기기", "गेमिंग मोड में डेस्कटॉप छिपाएं", "Скрывать рабочий стол в игровом режиме" },
+        ["Finestre senza bordi"] = new[] { "Borderless windows", "Ventanas sin bordes", "Fenêtres sans bordures", "Randlose Fenster", "Janelas sem bordas", "Вікна без рамок", "无边框窗口", "ボーダーレスウィンドウ", "테두리 없는 창", "बॉर्डरलेस विंडो", "Окна без рамок" },
+        ["Nascondi il cursore"] = new[] { "Hide the cursor", "Ocultar el cursor", "Masquer le curseur", "Cursor ausblenden", "Ocultar o cursor", "Ховати курсор", "隐藏光标", "カーソルを隠す", "커서 숨기기", "कर्सर छिपाएं", "Скрывать курсор" },
+        ["Prepara i controller"] = new[] { "Prepare controllers", "Preparar mandos", "Préparer les manettes", "Controller vorbereiten", "Preparar controles", "Підготувати геймпади", "准备手柄", "コントローラーを準備", "컨트롤러 준비", "कंट्रोलर तैयार करें", "Подготовить геймпады" },
+        ["Prepara lo streaming locale"] = new[] { "Prepare local streaming", "Preparar streaming local", "Préparer le streaming local", "Lokales Streaming vorbereiten", "Preparar streaming local", "Підготувати локальний стримінг", "准备本地串流", "ローカルストリーミングを準備", "로컬 스트리밍 준비", "लोकल स्ट्रीमिंग तैयार करें", "Подготовить локальный стриминг" },
+        ["Consenti API remote"] = new[] { "Allow remote API", "Permitir API remota", "Autoriser l'API distante", "Remote-API erlauben", "Permitir API remota", "Дозволити віддалений API", "允许远程 API", "リモート API を許可", "원격 API 허용", "रिमोट API की अनुमति दें", "Разрешить удалённый API" },
+        ["Argomenti"] = new[] { "Arguments", "Argumentos", "Arguments", "Argumente", "Argumentos", "Аргументи", "参数", "引数", "인수", "आर्ग्युमेंट", "Аргументы" },
+        ["Argomenti (facoltativi)"] = new[] { "Arguments (optional)", "Argumentos (opcionales)", "Arguments (facultatifs)", "Argumente (optional)", "Argumentos (opcionais)", "Аргументи (необов'язково)", "参数（可选）", "引数（任意）", "인수(선택 사항)", "आर्ग्युमेंट (वैकल्पिक)", "Аргументы (необязательно)" },
+        ["Attivo"] = new[] { "On", "Activo", "Actif", "Aktiv", "Ativo", "Активно", "开启", "オン", "켜짐", "चालू", "Включено" },
+        ["Avvia minimizzato"] = new[] { "Start minimized", "Iniciar minimizado", "Démarrer réduit", "Minimiert starten", "Iniciar minimizado", "Запускати згорнутим", "最小化启动", "最小化して起動", "최소화로 시작", "मिनिमाइज़ होकर शुरू करें", "Запускать свёрнутым" },
+        ["Cartella di Steam"] = new[] { "Steam folder", "Carpeta de Steam", "Dossier Steam", "Steam-Ordner", "Pasta do Steam", "Папка Steam", "Steam 文件夹", "Steam フォルダー", "Steam 폴더", "Steam फ़ोल्डर", "Папка Steam" },
+        ["Argomenti di Steam"] = new[] { "Steam arguments", "Argumentos de Steam", "Arguments Steam", "Steam-Argumente", "Argumentos do Steam", "Аргументи Steam", "Steam 参数", "Steam 引数", "Steam 인수", "Steam आर्ग्युमेंट", "Аргументы Steam" },
+        ["Logo di avvio"] = new[] { "Startup logo", "Logo de inicio", "Logo de démarrage", "Startlogo", "Logo de início", "Логотип запуску", "启动徽标", "起動ロゴ", "시작 로고", "स्टार्टअप लोगो", "Логотип запуска" },
+        ["Logo personalizzato"] = new[] { "Custom logo", "Logo personalizado", "Logo personnalisé", "Eigenes Logo", "Logo personalizado", "Власний логотип", "自定义徽标", "カスタムロゴ", "사용자 지정 로고", "कस्टम लोगो", "Свой логотип" },
+        ["Percorso logo personalizzato"] = new[] { "Custom logo path", "Ruta del logo personalizado", "Chemin du logo personnalisé", "Pfad zum eigenen Logo", "Caminho do logo personalizado", "Шлях до власного логотипа", "自定义徽标路径", "カスタムロゴのパス", "사용자 지정 로고 경로", "कस्टम लोगो पाथ", "Путь к своему логотипу" },
+        ["Durata minima (ms)"] = new[] { "Minimum duration (ms)", "Duración mínima (ms)", "Durée minimale (ms)", "Mindestdauer (ms)", "Duração mínima (ms)", "Мінімальна тривалість (мс)", "最短时长（毫秒）", "最小表示時間 (ms)", "최소 시간(ms)", "न्यूनतम अवधि (ms)", "Минимальная длительность (мс)" },
+        ["Timeout massimo (ms)"] = new[] { "Maximum timeout (ms)", "Tiempo máximo (ms)", "Délai maximal (ms)", "Maximales Timeout (ms)", "Tempo máximo (ms)", "Максимальний тайм-аут (мс)", "最大超时（毫秒）", "最大タイムアウト (ms)", "최대 시간 제한(ms)", "अधिकतम टाइमआउट (ms)", "Максимальный тайм-аут (мс)" },
+        ["Porta agente"] = new[] { "Agent port", "Puerto del agente", "Port de l'agent", "Agent-Port", "Porta do agente", "Порт агента", "代理端口", "エージェントポート", "에이전트 포트", "एजेंट पोर्ट", "Порт агента" },
+        ["Importa i giochi"] = new[] { "Import games", "Importar juegos", "Importer les jeux", "Spiele importieren", "Importar jogos", "Імпортувати ігри", "导入游戏", "ゲームを読み込む", "게임 가져오기", "गेम आयात करें", "Импорт игр" },
+        ["Trova i giochi Xbox, Game Pass e Microsoft Store installati e li aggiunge a Steam, pronti da avviare."] = new[] { "Find installed Xbox, Game Pass and Microsoft Store games and add them to Steam, ready to launch.", "Encuentra juegos instalados de Xbox, Game Pass y Microsoft Store y los añade a Steam, listos para jugar.", "Trouve les jeux Xbox, Game Pass et Microsoft Store installés et les ajoute à Steam, prêts à lancer.", "Findet installierte Xbox-, Game Pass- und Microsoft Store-Spiele und fügt sie startbereit zu Steam hinzu.", "Encontra jogos Xbox, Game Pass e Microsoft Store instalados e adiciona ao Steam, prontos para abrir.", "Знаходить встановлені ігри Xbox, Game Pass і Microsoft Store та додає їх у Steam.", "查找已安装的 Xbox、Game Pass 和 Microsoft Store 游戏，并添加到 Steam，随时启动。", "インストール済みの Xbox、Game Pass、Microsoft Store ゲームを見つけて Steam に追加します。", "설치된 Xbox, Game Pass, Microsoft Store 게임을 찾아 Steam에 바로 실행할 수 있게 추가합니다.", "इंस्टॉल किए गए Xbox, Game Pass और Microsoft Store गेम ढूंढकर Steam में जोड़ता है।", "Находит установленные игры Xbox, Game Pass и Microsoft Store и добавляет их в Steam." },
+        ["Copertine automatiche"] = new[] { "Automatic artwork", "Carátulas automáticas", "Images automatiques", "Automatische Cover", "Capas automáticas", "Автоматичні обкладинки", "自动封面", "自動アートワーク", "자동 아트워크", "ऑटोमैटिक आर्टवर्क", "Автообложки" },
+        ["La chiave SteamGridDB serve solo a scaricare automaticamente copertine, sfondi e loghi quando importi i giochi."] = new[] { "The SteamGridDB key is only used to download covers, backgrounds and logos when you import games.", "La clave de SteamGridDB solo sirve para descargar carátulas, fondos y logos al importar juegos.", "La clé SteamGridDB sert uniquement à télécharger jaquettes, fonds et logos pendant l'import.", "Der SteamGridDB-Schlüssel lädt nur Cover, Hintergründe und Logos beim Importieren der Spiele.", "A chave SteamGridDB só baixa capas, fundos e logos ao importar jogos.", "Ключ SteamGridDB потрібен лише для завантаження обкладинок, фонів і логотипів під час імпорту.", "SteamGridDB 密钥只用于在导入游戏时下载封面、背景和徽标。", "SteamGridDB キーは、ゲーム読み込み時にカバー、背景、ロゴを取得するためだけに使います。", "SteamGridDB 키는 게임을 가져올 때 커버, 배경, 로고를 자동 다운로드하는 데만 사용됩니다.", "SteamGridDB कुंजी सिर्फ गेम आयात करते समय कवर, बैकग्राउंड और लोगो डाउनलोड करने के लिए है।", "Ключ SteamGridDB нужен только для загрузки обложек, фонов и логотипов при импорте." },
+        ["Aspetto"] = new[] { "Appearance", "Aspecto", "Apparence", "Darstellung", "Aparência", "Вигляд", "外观", "外観", "모양", "दिखावट", "Внешний вид" },
+        ["Aspetto, strumenti e informazioni di Playhub."] = new[] { "Appearance, tools and Playhub info.", "Aspecto, herramientas e información de Playhub.", "Apparence, outils et infos Playhub.", "Darstellung, Werkzeuge und Playhub-Infos.", "Aparência, ferramentas e informações do Playhub.", "Вигляд, інструменти та інформація про Playhub.", "外观、工具和 Playhub 信息。", "外観、ツール、Playhub 情報。", "모양, 도구, Playhub 정보.", "दिखावट, टूल और Playhub जानकारी।", "Внешний вид, инструменты и информация о Playhub." },
+        ["Personalizza lo sfondo e il colore di Playhub."] = new[] { "Make Playhub feel like yours.", "Haz que Playhub se sienta tuyo.", "Rends Playhub plus personnel.", "Mach Playhub zu deinem Playhub.", "Deixe o Playhub com a sua cara.", "Зроби Playhub своїм.", "让 Playhub 更像你的。", "Playhub を自分らしく。", "Playhub를 내 취향으로 꾸미세요.", "Playhub को अपना जैसा बनाएं।", "Сделай Playhub своим." },
+        ["Sfondo"] = new[] { "Background", "Fondo", "Arrière-plan", "Hintergrund", "Fundo", "Фон", "背景", "背景", "배경", "बैकग्राउंड", "Фон" },
+        ["Mica"] = new[] { "Mica", "Mica", "Mica", "Mica", "Mica", "Mica", "云母", "Mica", "Mica", "Mica", "Mica" },
+        ["Acrylic"] = new[] { "Acrylic", "Acrílico", "Acrylique", "Acryl", "Acrílico", "Акрил", "亚克力", "アクリル", "아크릴", "Acrylic", "Акрил" },
+        ["Sfondo pieno"] = new[] { "Solid background", "Fondo sólido", "Fond uni", "Einfarbiger Hintergrund", "Fundo sólido", "Суцільний фон", "纯色背景", "単色背景", "단색 배경", "ठोस बैकग्राउंड", "Сплошной фон" },
+        ["Colore accent"] = new[] { "Accent color", "Color de acento", "Couleur d'accent", "Akzentfarbe", "Cor de destaque", "Акцентний колір", "强调色", "アクセントカラー", "강조 색", "एक्सेंट रंग", "Акцентный цвет" },
+        ["Pagina di avvio"] = new[] { "Start page", "Página de inicio", "Page de démarrage", "Startseite", "Página inicial", "Початкова сторінка", "启动页面", "開始ページ", "시작 페이지", "शुरुआती पेज", "Стартовая страница" },
+        ["La pagina su cui si apre Playhub ogni volta che lo avvii."] = new[] { "The page Playhub opens every time.", "La página que Playhub abre cada vez.", "La page qui s'ouvre à chaque lancement.", "Die Seite, die Playhub beim Start öffnet.", "A página que o Playhub abre ao iniciar.", "Сторінка, яку Playhub відкриває під час запуску.", "Playhub 每次打开时显示的页面。", "Playhub 起動時に開くページです。", "Playhub가 시작할 때 여는 페이지입니다.", "Playhub हर बार जिस पेज पर खुलेगा।", "Страница, которую Playhub открывает при запуске." },
+        ["Aggiornamenti di Steam"] = new[] { "Steam updates", "Actualizaciones de Steam", "Mises à jour Steam", "Steam-Updates", "Atualizações do Steam", "Оновлення Steam", "Steam 更新", "Steam の更新", "Steam 업데이트", "Steam अपडेट", "Обновления Steam" },
+        ["Blocca gli aggiornamenti del client di Steam copiando steam.cfg nella sua cartella. Puoi rimuoverlo quando vuoi."] = new[] { "Block Steam client updates by adding steam.cfg to its folder. Remove it whenever you like.", "Bloquea las actualizaciones del cliente de Steam añadiendo steam.cfg a su carpeta. Puedes quitarlo cuando quieras.", "Bloque les mises à jour du client Steam en ajoutant steam.cfg à son dossier. Tu peux le retirer quand tu veux.", "Blockiere Steam-Client-Updates, indem steam.cfg in den Steam-Ordner gelegt wird. Du kannst es jederzeit entfernen.", "Bloqueie atualizações do cliente Steam colocando steam.cfg na pasta dele. Remova quando quiser.", "Блокуй оновлення клієнта Steam, додавши steam.cfg до його папки. Видалити можна будь-коли.", "将 steam.cfg 放入 Steam 文件夹即可阻止客户端更新，随时可移除。", "Steam フォルダーに steam.cfg を追加してクライアント更新を止められます。いつでも削除できます。", "Steam 폴더에 steam.cfg를 넣어 클라이언트 업데이트를 막습니다. 언제든 제거할 수 있습니다.", "Steam फ़ोल्डर में steam.cfg डालकर क्लाइंट अपडेट रोकें। जब चाहें हटा सकते हैं।", "Добавь steam.cfg в папку Steam, чтобы заблокировать обновления клиента. Убрать можно в любой момент." },
+        ["Tema Playhub per CSS Loader"] = new[] { "Playhub theme for CSS Loader", "Tema Playhub para CSS Loader", "Thème Playhub pour CSS Loader", "Playhub-Theme für CSS Loader", "Tema Playhub para CSS Loader", "Тема Playhub для CSS Loader", "CSS Loader 的 Playhub 主题", "CSS Loader 用 Playhub テーマ", "CSS Loader용 Playhub 테마", "CSS Loader के लिए Playhub थीम", "Тема Playhub для CSS Loader" },
+        ["Backup degli artwork di Steam"] = new[] { "Steam artwork backup", "Copia de seguridad de artworks de Steam", "Sauvegarde des images Steam", "Steam-Artwork sichern", "Backup das artes do Steam", "Резервна копія зображень Steam", "Steam 艺术图备份", "Steam アートワークのバックアップ", "Steam 아트워크 백업", "Steam आर्टवर्क बैकअप", "Резервная копия обложек Steam" },
+        ["Aggiorna Playhub"] = new[] { "Update Playhub", "Actualizar Playhub", "Mettre à jour Playhub", "Playhub aktualisieren", "Atualizar Playhub", "Оновити Playhub", "更新 Playhub", "Playhub をアップデート", "Playhub 업데이트", "Playhub अपडेट करें", "Обновить Playhub" },
+        ["Informazioni"] = new[] { "About", "Información", "À propos", "Info", "Informações", "Про програму", "关于", "情報", "정보", "जानकारी", "О программе" },
+        ["Installa"] = new[] { "Install", "Instalar", "Installer", "Installieren", "Instalar", "Встановити", "安装", "インストール", "설치", "इंस्टॉल", "Установить" },
+        ["Installa o aggiorna"] = new[] { "Install or update", "Instalar o actualizar", "Installer ou mettre à jour", "Installieren oder aktualisieren", "Instalar ou atualizar", "Встановити або оновити", "安装或更新", "インストールまたは更新", "설치 또는 업데이트", "इंस्टॉल या अपडेट", "Установить или обновить" },
+        ["Aggiorna"] = new[] { "Update", "Actualizar", "Mettre à jour", "Aktualisieren", "Atualizar", "Оновити", "更新", "更新", "업데이트", "अपडेट", "Обновить" },
+        ["Aggiornato"] = new[] { "Updated", "Actualizado", "Mis à jour", "Aktualisiert", "Atualizado", "Оновлено", "已更新", "更新済み", "업데이트됨", "अपडेट हो गया", "Обновлено" },
+        ["Disinstalla"] = new[] { "Uninstall", "Desinstalar", "Désinstaller", "Deinstallieren", "Desinstalar", "Видалити", "卸载", "アンインストール", "제거", "अनइंस्टॉल", "Удалить" },
+        ["Rimuovi"] = new[] { "Remove", "Quitar", "Retirer", "Entfernen", "Remover", "Видалити", "移除", "削除", "제거", "हटाएं", "Удалить" },
+        ["Rimosso"] = new[] { "Removed", "Eliminado", "Retiré", "Entfernt", "Removido", "Видалено", "已移除", "削除済み", "제거됨", "हटा दिया गया", "Удалено" },
+        ["Rimuovi blocco"] = new[] { "Remove block", "Quitar bloqueo", "Retirer le blocage", "Blockierung entfernen", "Remover bloqueio", "Зняти блокування", "移除阻止", "ブロックを解除", "차단 해제", "ब्लॉक हटाएं", "Снять блокировку" },
+        ["Blocca aggiornamenti"] = new[] { "Block updates", "Bloquear actualizaciones", "Bloquer les mises à jour", "Updates blockieren", "Bloquear atualizações", "Заблокувати оновлення", "阻止更新", "更新をブロック", "업데이트 차단", "अपडेट रोकें", "Заблокировать обновления" },
+        ["Crea backup"] = new[] { "Create backup", "Crear copia", "Créer une sauvegarde", "Backup erstellen", "Criar backup", "Створити копію", "创建备份", "バックアップを作成", "백업 만들기", "बैकअप बनाएं", "Создать копию" },
+        ["Ripristina backup"] = new[] { "Restore backup", "Restaurar copia", "Restaurer la sauvegarde", "Backup wiederherstellen", "Restaurar backup", "Відновити копію", "恢复备份", "バックアップを復元", "백업 복원", "बैकअप बहाल करें", "Восстановить копию" },
+        ["Controlla aggiornamenti"] = new[] { "Check for updates", "Buscar actualizaciones", "Rechercher les mises à jour", "Nach Updates suchen", "Verificar atualizações", "Перевірити оновлення", "检查更新", "アップデートを確認", "업데이트 확인", "अपडेट जांचें", "Проверить обновления" },
+        ["Trova giochi"] = new[] { "Find games", "Buscar juegos", "Trouver les jeux", "Spiele suchen", "Encontrar jogos", "Знайти ігри", "查找游戏", "ゲームを探す", "게임 찾기", "गेम ढूंढें", "Найти игры" },
+        ["Importa in Steam"] = new[] { "Import to Steam", "Importar en Steam", "Importer dans Steam", "In Steam importieren", "Importar para o Steam", "Імпортувати в Steam", "导入到 Steam", "Steam に読み込む", "Steam으로 가져오기", "Steam में आयात करें", "Импортировать в Steam" },
+        ["Riavvia Steam"] = new[] { "Restart Steam", "Reiniciar Steam", "Redémarrer Steam", "Steam neu starten", "Reiniciar Steam", "Перезапустити Steam", "重启 Steam", "Steam を再起動", "Steam 다시 시작", "Steam पुनः शुरू करें", "Перезапустить Steam" },
+        ["Applica modifiche"] = new[] { "Apply changes", "Aplicar cambios", "Appliquer les changements", "Änderungen anwenden", "Aplicar alterações", "Застосувати зміни", "应用更改", "変更を適用", "변경 사항 적용", "बदलाव लागू करें", "Применить изменения" },
+        ["Ricarica"] = new[] { "Reload", "Recargar", "Recharger", "Neu laden", "Recarregar", "Перезавантажити", "重新加载", "再読み込み", "다시 불러오기", "रीलोड", "Перезагрузить" },
+        ["Aggiungi processo"] = new[] { "Add process", "Añadir proceso", "Ajouter un processus", "Prozess hinzufügen", "Adicionar processo", "Додати процес", "添加进程", "プロセスを追加", "프로세스 추가", "प्रक्रिया जोड़ें", "Добавить процесс" },
+        ["Scegli file…"] = new[] { "Choose file…", "Elegir archivo…", "Choisir un fichier…", "Datei auswählen…", "Escolher arquivo…", "Вибрати файл…", "选择文件…", "ファイルを選択…", "파일 선택…", "फ़ाइल चुनें…", "Выбрать файл…" },
+        ["Dettagli"] = new[] { "Details", "Detalles", "Détails", "Details", "Detalhes", "Деталі", "详情", "詳細", "세부 정보", "विवरण", "Подробнее" },
+        ["Novità"] = new[] { "What's new", "Novedades", "Nouveautés", "Neuigkeiten", "Novidades", "Що нового", "新功能", "新着情報", "새로운 기능", "नया क्या है", "Что нового" },
+        ["Installato"] = new[] { "Installed", "Instalado", "Installé", "Installiert", "Instalado", "Встановлено", "已安装", "インストール済み", "설치됨", "इंस्टॉल है", "Установлено" },
+        ["Non installato"] = new[] { "Not installed", "No instalado", "Non installé", "Nicht installiert", "Não instalado", "Не встановлено", "未安装", "未インストール", "설치 안 됨", "इंस्टॉल नहीं है", "Не установлено" },
+        ["Aggiornamento disponibile"] = new[] { "Update available", "Actualización disponible", "Mise à jour disponible", "Update verfügbar", "Atualização disponível", "Доступне оновлення", "有可用更新", "アップデートあり", "업데이트 가능", "अपडेट उपलब्ध है", "Доступно обновление" },
+        ["Da fare"] = new[] { "To do", "Pendiente", "À faire", "Ausstehend", "A fazer", "Потрібно зробити", "待完成", "未完了", "할 일", "करना बाकी", "Нужно сделать" },
+        ["Da attivare"] = new[] { "Needs turning on", "Por activar", "À activer", "Muss aktiviert werden", "Precisa ativar", "Потрібно ввімкнути", "需要开启", "有効化が必要", "켜야 함", "चालू करना है", "Нужно включить" },
+        ["Attiva"] = new[] { "On", "Activo", "Activé", "Aktiv", "Ativo", "Увімкнено", "已开启", "オン", "켜짐", "चालू", "Включено" },
+        ["Non trovato"] = new[] { "Not found", "No encontrado", "Introuvable", "Nicht gefunden", "Não encontrado", "Не знайдено", "未找到", "見つかりません", "찾을 수 없음", "नहीं मिला", "Не найдено" },
+        ["Reinstalla"] = new[] { "Reinstall", "Reinstalar", "Réinstaller", "Neu installieren", "Reinstalar", "Перевстановити", "重新安装", "再インストール", "다시 설치", "फिर इंस्टॉल करें", "Переустановить" },
+        ["Sì"] = new[] { "Yes", "Sí", "Oui", "Ja", "Sim", "Так", "是", "はい", "예", "हाँ", "Да" },
+        ["No"] = new[] { "No", "No", "Non", "Nein", "Não", "Ні", "否", "いいえ", "아니요", "नहीं", "Нет" },
+        ["Video"] = new[] { "Video", "Vídeo", "Vidéo", "Video", "Vídeo", "Відео", "视频", "ビデオ", "동영상", "वीडियो", "Видео" },
+        ["Descrizione"] = new[] { "Description", "Descripción", "Description", "Beschreibung", "Descrição", "Опис", "描述", "説明", "설명", "विवरण", "Описание" },
+        ["Nessuna descrizione disponibile."] = new[] { "No description available.", "No hay descripción disponible.", "Aucune description disponible.", "Keine Beschreibung verfügbar.", "Nenhuma descrição disponível.", "Опис недоступний.", "暂无描述。", "説明はありません。", "사용 가능한 설명이 없습니다.", "कोई विवरण उपलब्ध नहीं है।", "Описание недоступно." },
+        ["Windows ha bloccato l'accesso a un file. Riprova."] = new[] { "Windows blocked access to a file. Try again.", "Windows bloqueó el acceso a un archivo. Inténtalo de nuevo.", "Windows a bloqué l'accès à un fichier. Réessaie.", "Windows hat den Zugriff auf eine Datei blockiert. Versuch es erneut.", "O Windows bloqueou o acesso a um arquivo. Tente de novo.", "Windows заблокувала доступ до файлу. Спробуй ще раз.", "Windows 阻止了对某个文件的访问。请重试。", "Windows がファイルへのアクセスをブロックしました。もう一度お試しください。", "Windows가 파일 접근을 차단했습니다. 다시 시도하세요.", "Windows ने किसी फ़ाइल की पहुंच रोक दी। फिर कोशिश करें।", "Windows заблокировала доступ к файлу. Попробуй ещё раз." },
+        ["Modifiche applicate."] = new[] { "Changes applied.", "Cambios aplicados.", "Modifications appliquées.", "Änderungen angewendet.", "Alterações aplicadas.", "Зміни застосовано.", "更改已应用。", "変更を適用しました。", "변경 사항이 적용되었습니다.", "बदलाव लागू हो गए।", "Изменения применены." },
+        ["Cerco i giochi Xbox..."] = new[] { "Looking for Xbox games...", "Buscando juegos de Xbox...", "Recherche des jeux Xbox...", "Suche nach Xbox-Spielen...", "Procurando jogos Xbox...", "Шукаю ігри Xbox...", "正在查找 Xbox 游戏…", "Xbox ゲームを探しています…", "Xbox 게임을 찾는 중...", "Xbox गेम खोज रहे हैं...", "Ищу игры Xbox..." },
+        ["Plugin Store non disponibile. Riprova tra poco."] = new[] { "Plugin Store isn't available right now. Try again in a moment.", "La tienda de plugins no está disponible. Vuelve a intentarlo en un momento.", "Le store de plugins n'est pas disponible. Réessaie dans un instant.", "Der Plugin Store ist gerade nicht verfügbar. Versuch es gleich erneut.", "A loja de plugins não está disponível agora. Tente de novo em instantes.", "Магазин плагінів зараз недоступний. Спробуй трохи пізніше.", "插件商店暂时不可用。请稍后重试。", "プラグインストアは現在利用できません。少し待って再試行してください。", "플러그인 스토어를 지금 사용할 수 없습니다. 잠시 후 다시 시도하세요.", "प्लगइन स्टोर अभी उपलब्ध नहीं है। थोड़ी देर में फिर कोशिश करें।", "Магазин плагинов сейчас недоступен. Попробуй чуть позже." },
+        ["Scegli prima una versione dall'elenco."] = new[] { "Choose a version from the list first.", "Elige primero una versión de la lista.", "Choisis d'abord une version dans la liste.", "Wähle zuerst eine Version aus der Liste.", "Escolha uma versão na lista primeiro.", "Спочатку вибери версію зі списку.", "请先从列表中选择一个版本。", "先にリストからバージョンを選んでください。", "먼저 목록에서 버전을 선택하세요.", "पहले सूची से संस्करण चुनें।", "Сначала выбери версию из списка." },
+        ["Steam riavviato."] = new[] { "Steam restarted.", "Steam reiniciado.", "Steam redémarré.", "Steam neu gestartet.", "Steam reiniciado.", "Steam перезапущено.", "Steam 已重启。", "Steam を再起動しました。", "Steam을 다시 시작했습니다.", "Steam पुनः शुरू हो गया।", "Steam перезапущен." },
+        ["Playhub è aggiornato."] = new[] { "Playhub is up to date.", "Playhub está al día.", "Playhub est à jour.", "Playhub ist aktuell.", "O Playhub está atualizado.", "Playhub оновлено.", "Playhub 已是最新版本。", "Playhub は最新です。", "Playhub가 최신 상태입니다.", "Playhub अपडेट है।", "Playhub обновлён." }
+    };
+
+    private static string[] V(
+        string en,
+        string es,
+        string fr,
+        string de,
+        string pt,
+        string uk,
+        string zh,
+        string ja,
+        string ko,
+        string hi,
+        string ru) => new[] { en, es, fr, de, pt, uk, zh, ja, ko, hi, ru };
+
+    private static readonly Dictionary<string, string[]> ExtraStrings = new(StringComparer.Ordinal)
+    {
+        ["Installa DeckyLoader e i plugin di Playhub per accedere a musica, trailer, meteo, achievement e molto altro mentre giochi."] = V(
+            "Install DeckyLoader and Playhub plugins to bring music, trailers, weather, achievements and more into your games.",
+            "Instala DeckyLoader y los plugins de Playhub para tener música, tráilers, tiempo, logros y mucho más mientras juegas.",
+            "Installe DeckyLoader et les plugins Playhub pour retrouver musique, bandes-annonces, météo, succès et plus encore pendant tes parties.",
+            "Installiere DeckyLoader und die Playhub-Plugins für Musik, Trailer, Wetter, Erfolge und mehr direkt beim Spielen.",
+            "Instale o DeckyLoader e os plugins do Playhub para levar música, trailers, clima, conquistas e muito mais para seus jogos.",
+            "Встанови DeckyLoader і плагіни Playhub, щоб мати музику, трейлери, погоду, досягнення й більше під час гри.",
+            "安装 DeckyLoader 和 Playhub 插件，把音乐、预告片、天气、成就等带进游戏。",
+            "DeckyLoader と Playhub プラグインを入れて、音楽、トレーラー、天気、実績などをゲーム中に楽しめます。",
+            "DeckyLoader와 Playhub 플러그인을 설치해 음악, 트레일러, 날씨, 업적 등을 게임 안으로 가져오세요.",
+            "DeckyLoader और Playhub प्लगइन इंस्टॉल करें, ताकि गेम के दौरान संगीत, ट्रेलर, मौसम, अचीवमेंट और बहुत कुछ मिले।",
+            "Установи DeckyLoader и плагины Playhub, чтобы музыка, трейлеры, погода, достижения и многое другое были прямо в игре."),
+        ["Avvia il tuo PC come se fosse una console, naviga con il controller e torna al desktop quando vuoi."] = V(
+            "Start your PC like a console, browse with the controller and return to the desktop whenever you like.",
+            "Arranca el PC como una consola, navega con el mando y vuelve al escritorio cuando quieras.",
+            "Démarre ton PC comme une console, navigue à la manette et reviens au bureau quand tu veux.",
+            "Starte deinen PC wie eine Konsole, steuere alles mit dem Controller und kehre jederzeit zum Desktop zurück.",
+            "Inicie o PC como um console, navegue com o controle e volte ao desktop quando quiser.",
+            "Запускай ПК як консоль, керуй геймпадом і повертайся на робочий стіл, коли захочеш.",
+            "像主机一样启动电脑，用手柄浏览，需要时随时回到桌面。",
+            "PC をコンソールのように起動し、コントローラーで操作して、いつでもデスクトップへ戻れます。",
+            "PC를 콘솔처럼 시작하고 컨트롤러로 탐색한 뒤 원할 때 데스크톱으로 돌아가세요.",
+            "PC को कंसोल की तरह शुरू करें, कंट्रोलर से चलाएं और जब चाहें डेस्कटॉप पर लौटें।",
+            "Запускай ПК как консоль, управляй геймпадом и возвращайся на рабочий стол когда угодно."),
+        ["Porta i giochi Xbox Game Pass, Xbox Store e le app Microsoft Store nella tua libreria, pronti da avviare."] = V(
+            "Bring Xbox Game Pass, Xbox Store and Microsoft Store apps into your library, ready to launch.",
+            "Lleva juegos de Xbox Game Pass, Xbox Store y apps de Microsoft Store a tu biblioteca, listos para abrir.",
+            "Ajoute Xbox Game Pass, Xbox Store et les apps Microsoft Store à ta bibliothèque, prêts à lancer.",
+            "Bringe Xbox Game Pass, Xbox Store und Microsoft Store-Apps startbereit in deine Bibliothek.",
+            "Leve jogos do Xbox Game Pass, Xbox Store e apps da Microsoft Store para sua biblioteca, prontos para abrir.",
+            "Додай Xbox Game Pass, Xbox Store і застосунки Microsoft Store до бібліотеки, готові до запуску.",
+            "把 Xbox Game Pass、Xbox Store 和 Microsoft Store 应用加入库中，随时启动。",
+            "Xbox Game Pass、Xbox Store、Microsoft Store アプリをライブラリに追加して、すぐ起動できます。",
+            "Xbox Game Pass, Xbox Store, Microsoft Store 앱을 라이브러리에 추가해 바로 실행하세요.",
+            "Xbox Game Pass, Xbox Store और Microsoft Store ऐप्स को अपनी लाइब्रेरी में जोड़ें, तुरंत चलाने के लिए तैयार।",
+            "Добавь Xbox Game Pass, Xbox Store и приложения Microsoft Store в библиотеку, готовые к запуску."),
+        ["Scarica Steam"] = V("Download Steam", "Descargar Steam", "Télécharger Steam", "Steam herunterladen", "Baixar Steam", "Завантажити Steam", "下载 Steam", "Steam をダウンロード", "Steam 다운로드", "Steam डाउनलोड करें", "Скачать Steam"),
+        ["Apri impostazioni"] = V("Open Settings", "Abrir ajustes", "Ouvrir les réglages", "Einstellungen öffnen", "Abrir ajustes", "Відкрити налаштування", "打开设置", "設定を開く", "설정 열기", "सेटिंग्स खोलें", "Открыть настройки"),
+        ["Aggiorna a questa versione"] = V("Update to this version", "Actualizar a esta versión", "Mettre à jour vers cette version", "Auf diese Version aktualisieren", "Atualizar para esta versão", "Оновити до цієї версії", "更新到此版本", "このバージョンに更新", "이 버전으로 업데이트", "इस संस्करण पर अपडेट करें", "Обновить до этой версии"),
+        ["Scegli una versione"] = V("Choose a version", "Elige una versión", "Choisir une version", "Version wählen", "Escolha uma versão", "Вибери версію", "选择版本", "バージョンを選択", "버전 선택", "संस्करण चुनें", "Выбери версию"),
+        ["Cosa parte quando entri in Gaming Mode."] = V(
+            "What starts when you enter Gaming Mode.",
+            "Qué se abre al entrar en Modo Gaming.",
+            "Ce qui démarre quand tu entres en Mode Gaming.",
+            "Was startet, wenn du in den Gaming Mode wechselst.",
+            "O que abre quando você entra no Modo Gaming.",
+            "Що запускається під час входу в ігровий режим.",
+            "进入游戏模式时会启动的内容。",
+            "ゲーミングモードに入ると起動するもの。",
+            "게이밍 모드에 들어갈 때 시작되는 항목입니다.",
+            "Gaming Mode में जाते समय क्या शुरू होगा।",
+            "Что запускается при входе в игровой режим."),
+        ["L'aspetto dell'esperienza a tutto schermo."] = V(
+            "How the full-screen experience looks and feels.",
+            "Cómo se ve y se siente la experiencia a pantalla completa.",
+            "L'apparence de l'expérience plein écran.",
+            "Wie sich das Vollbild-Erlebnis anfühlt.",
+            "Como a experiência em tela cheia aparece.",
+            "Як виглядає повноекранний режим.",
+            "全屏体验的外观与感觉。",
+            "全画面体験の見た目と感触。",
+            "전체 화면 경험의 모습과 느낌입니다.",
+            "फुल-स्क्रीन अनुभव कैसा दिखेगा।",
+            "Как выглядит полноэкранный режим."),
+        ["Input e gioco in streaming."] = V("Input and game streaming.", "Entrada y juego en streaming.", "Entrées et jeu en streaming.", "Eingabe und Game-Streaming.", "Entrada e jogo por streaming.", "Ввід і стримінг гри.", "输入与游戏串流。", "入力とゲームストリーミング。", "입력과 게임 스트리밍.", "इनपुट और गेम स्ट्रीमिंग।", "Ввод и стриминг игры."),
+        ["Rete locale, per chi vuole il controllo completo."] = V(
+            "Local network options for finer control.",
+            "Red local, para quien quiere controlarlo todo.",
+            "Réseau local, pour garder la main.",
+            "Lokales Netzwerk, wenn du mehr Kontrolle willst.",
+            "Rede local, para quem quer controle total.",
+            "Локальна мережа для повного контролю.",
+            "本地网络选项，适合想要完整控制的人。",
+            "細かく制御したい人向けのローカルネットワーク設定。",
+            "더 세밀하게 제어하는 로컬 네트워크 옵션입니다.",
+            "पूरा नियंत्रण चाहने वालों के लिए लोकल नेटवर्क विकल्प।",
+            "Локальная сеть для полного контроля."),
+        ["Avanzate"] = V("Advanced", "Avanzado", "Avancé", "Erweitert", "Avançado", "Додатково", "高级", "詳細", "고급", "उन्नत", "Дополнительно"),
+        ["Impostazioni avanzate"] = V("Advanced settings", "Ajustes avanzados", "Réglages avancés", "Erweiterte Einstellungen", "Ajustes avançados", "Додаткові налаштування", "高级设置", "詳細設定", "고급 설정", "उन्नत सेटिंग्स", "Дополнительные настройки"),
+        ["Aggiunge il plugin Gaming Mode dentro DeckyLoader: entri ed esci dalla modalità gioco dal menu rapido di Steam, comodamente con il controller. Si installa tra i tuoi plugin in homebrew."] = V(
+            "Adds Gaming Mode to DeckyLoader, so you can enter and leave it from Steam's quick menu with the controller. It installs alongside your homebrew plugins.",
+            "Añade Gaming Mode a DeckyLoader para entrar y salir desde el menú rápido de Steam con el mando. Se instala junto a tus plugins homebrew.",
+            "Ajoute Gaming Mode à DeckyLoader : tu l'actives ou le quittes depuis le menu rapide de Steam, à la manette. Il s'installe avec tes plugins homebrew.",
+            "Fügt Gaming Mode zu DeckyLoader hinzu, damit du ihn per Controller im Steam-Schnellmenü ein- und ausschalten kannst. Er landet bei deinen Homebrew-Plugins.",
+            "Adiciona o Gaming Mode ao DeckyLoader para entrar e sair pelo menu rápido do Steam com o controle. Ele fica junto dos seus plugins homebrew.",
+            "Додає Gaming Mode у DeckyLoader, щоб входити й виходити з нього через швидке меню Steam з геймпада. Встановлюється поруч із homebrew-плагінами.",
+            "把 Gaming Mode 添加到 DeckyLoader，可用手柄从 Steam 快速菜单进入或退出。它会安装到你的 homebrew 插件中。",
+            "Gaming Mode を DeckyLoader に追加し、Steam のクイックメニューからコントローラーで切り替えられます。homebrew プラグインにインストールされます。",
+            "Gaming Mode를 DeckyLoader에 추가해 Steam 빠른 메뉴에서 컨트롤러로 켜고 끌 수 있습니다. homebrew 플러그인에 설치됩니다.",
+            "Gaming Mode को DeckyLoader में जोड़ता है, ताकि Steam quick menu से कंट्रोलर के जरिए अंदर-बाहर जा सकें। यह homebrew प्लगइन के साथ इंस्टॉल होता है।",
+            "Добавляет Gaming Mode в DeckyLoader, чтобы включать и выключать его из быстрого меню Steam с геймпада. Устанавливается рядом с homebrew-плагинами."),
+        ["In Gaming Mode il desktop di Windows non viene avviato, per un'esperienza pulita da console. Al ritorno in Desktop Mode viene sempre ripristinato."] = V(
+            "In Gaming Mode, Windows desktop stays out of the way for a clean console-like feel. When you return to Desktop Mode, it always comes back.",
+            "En Modo Gaming, el escritorio de Windows no se abre para que todo se sienta más consola. Al volver a Desktop Mode, se restaura siempre.",
+            "En Mode Gaming, le bureau Windows reste en retrait pour une expérience façon console. Au retour en Desktop Mode, il revient toujours.",
+            "Im Gaming Mode bleibt der Windows-Desktop aus dem Weg, damit es sich wie eine Konsole anfühlt. Zurück im Desktop Mode wird er immer wiederhergestellt.",
+            "No Modo Gaming, o desktop do Windows fica fora do caminho para uma experiência limpa de console. Ao voltar ao Desktop Mode, ele sempre retorna.",
+            "В ігровому режимі робочий стіл Windows не запускається, щоб усе відчувалось як консоль. Після повернення в Desktop Mode він завжди відновлюється.",
+            "在游戏模式中，Windows 桌面会暂时让开，体验更像主机。回到 Desktop Mode 时会自动恢复。",
+            "ゲーミングモードでは Windows デスクトップを起動せず、コンソールのようにすっきり使えます。Desktop Mode に戻ると必ず復元されます。",
+            "게이밍 모드에서는 Windows 데스크톱을 띄우지 않아 콘솔처럼 깔끔합니다. Desktop Mode로 돌아오면 항상 복원됩니다.",
+            "Gaming Mode में Windows desktop शुरू नहीं होता, ताकि अनुभव कंसोल जैसा साफ रहे। Desktop Mode में लौटते ही यह हमेशा वापस आता है।",
+            "В игровом режиме рабочий стол Windows не запускается, чтобы всё ощущалось как консоль. При возврате в Desktop Mode он всегда восстанавливается."),
+        ["Tiene i giochi a schermo intero senza bordi, per la massima immersività."] = V(
+            "Keeps games borderless and full-screen for a cleaner, more immersive feel.",
+            "Mantiene los juegos a pantalla completa sin bordes, más limpio e inmersivo.",
+            "Garde les jeux en plein écran sans bordures, pour une immersion plus nette.",
+            "Hält Spiele randlos im Vollbild, sauberer und immersiver.",
+            "Mantém os jogos em tela cheia sem bordas, mais limpos e imersivos.",
+            "Тримає ігри в повноекранному режимі без рамок для кращого занурення.",
+            "让游戏保持无边框全屏，更沉浸、更干净。",
+            "ゲームをボーダーレス全画面に保ち、より没入感のある表示にします。",
+            "게임을 테두리 없는 전체 화면으로 유지해 더 몰입감 있게 만듭니다.",
+            "गेम को बॉर्डरलेस फुल-स्क्रीन रखता है, ज्यादा साफ और डूबा हुआ अनुभव देता है।",
+            "Держит игры в полноэкранном режиме без рамок, чище и атмосфернее."),
+        ["Fa sparire il puntatore del mouse quando giochi con il controller."] = V(
+            "Hides the mouse pointer when you're playing with a controller.",
+            "Oculta el puntero del ratón cuando juegas con mando.",
+            "Masque le pointeur de la souris quand tu joues à la manette.",
+            "Blendet den Mauszeiger aus, wenn du mit Controller spielst.",
+            "Esconde o ponteiro do mouse quando você joga com controle.",
+            "Ховає курсор миші, коли граєш з геймпада.",
+            "使用手柄游玩时隐藏鼠标指针。",
+            "コントローラーで遊ぶときにマウスポインターを隠します。",
+            "컨트롤러로 플레이할 때 마우스 포인터를 숨깁니다.",
+            "कंट्रोलर से खेलते समय mouse pointer छिपा देता है।",
+            "Скрывает указатель мыши, когда играешь с геймпада."),
+        ["Applica le impostazioni dei controller quando entri in Gaming Mode."] = V(
+            "Applies controller settings when Gaming Mode starts.",
+            "Aplica los ajustes de mando al entrar en Modo Gaming.",
+            "Applique les réglages de manette au lancement du Mode Gaming.",
+            "Wendet Controller-Einstellungen an, wenn Gaming Mode startet.",
+            "Aplica as configurações do controle ao entrar no Modo Gaming.",
+            "Застосовує налаштування геймпада під час входу в ігровий режим.",
+            "进入游戏模式时应用手柄设置。",
+            "ゲーミングモード開始時にコントローラー設定を適用します。",
+            "게이밍 모드가 시작될 때 컨트롤러 설정을 적용합니다.",
+            "Gaming Mode शुरू होते समय कंट्रोलर सेटिंग्स लागू करता है।",
+            "Применяет настройки геймпада при входе в игровой режим."),
+        ["Configura il sistema per lo streaming dei giochi sulla rete di casa."] = V(
+            "Prepares the system for game streaming on your home network.",
+            "Prepara el sistema para jugar en streaming en tu red de casa.",
+            "Prépare le système pour le streaming de jeux sur ton réseau local.",
+            "Bereitet das System für Game-Streaming im Heimnetz vor.",
+            "Prepara o sistema para streaming de jogos na rede de casa.",
+            "Готує систему до стримінгу ігор у домашній мережі.",
+            "为家庭网络中的游戏串流做好系统准备。",
+            "自宅ネットワークでのゲームストリーミング向けにシステムを準備します。",
+            "홈 네트워크에서 게임 스트리밍을 할 수 있도록 시스템을 준비합니다.",
+            "घर के नेटवर्क पर गेम स्ट्रीमिंग के लिए सिस्टम तैयार करता है।",
+            "Готовит систему к стримингу игр в домашней сети."),
+        ["Permette ad altri dispositivi di comandare la modalità sulla rete locale."] = V(
+            "Lets other devices control the mode on your local network.",
+            "Permite que otros dispositivos controlen el modo en la red local.",
+            "Permet à d'autres appareils de contrôler le mode sur le réseau local.",
+            "Erlaubt anderen Geräten, den Modus im lokalen Netzwerk zu steuern.",
+            "Permite que outros dispositivos controlem o modo na rede local.",
+            "Дозволяє іншим пристроям керувати режимом у локальній мережі.",
+            "允许其他设备在本地网络中控制此模式。",
+            "ローカルネットワーク上の他のデバイスからモードを操作できます。",
+            "로컬 네트워크의 다른 기기가 모드를 제어할 수 있습니다.",
+            "लोकल नेटवर्क पर दूसरे डिवाइस को मोड नियंत्रित करने देता है।",
+            "Позволяет другим устройствам управлять режимом в локальной сети."),
+        ["Pausa prima di aprire Steam, per dare tempo a DeckyLoader di caricarsi."] = V(
+            "A short pause before Steam opens, giving DeckyLoader time to load.",
+            "Una pausa antes de abrir Steam, para dar tiempo a DeckyLoader.",
+            "Une courte pause avant Steam, le temps que DeckyLoader se charge.",
+            "Eine kurze Pause vor Steam, damit DeckyLoader laden kann.",
+            "Uma pausa antes de abrir o Steam, dando tempo para o DeckyLoader carregar.",
+            "Коротка пауза перед запуском Steam, щоб DeckyLoader встиг завантажитись.",
+            "打开 Steam 前稍等一下，让 DeckyLoader 有时间加载。",
+            "Steam を開く前に少し待ち、DeckyLoader の読み込み時間を確保します。",
+            "Steam을 열기 전에 잠시 기다려 DeckyLoader가 로드될 시간을 줍니다.",
+            "Steam खुलने से पहले थोड़ी देर रुकता है, ताकि DeckyLoader लोड हो सके।",
+            "Пауза перед запуском Steam, чтобы DeckyLoader успел загрузиться."),
+        ["Inattività prima di nascondere il cursore."] = V(
+            "How long to wait before hiding the cursor.",
+            "Tiempo de espera antes de ocultar el cursor.",
+            "Délai avant de masquer le curseur.",
+            "Wartezeit, bevor der Cursor ausgeblendet wird.",
+            "Tempo de espera antes de esconder o cursor.",
+            "Час очікування перед приховуванням курсора.",
+            "隐藏光标前等待的时间。",
+            "カーソルを隠すまでの待ち時間。",
+            "커서를 숨기기 전 대기 시간입니다.",
+            "कर्सर छिपाने से पहले इंतज़ार का समय।",
+            "Время ожидания перед скрытием курсора."),
+        ["Porta di rete locale con cui Playhub comunica con la Gaming Mode. Cambiala solo se è già occupata."] = V(
+            "Local network port Playhub uses to talk to Gaming Mode. Change it only if it's already taken.",
+            "Puerto local que Playhub usa para hablar con Gaming Mode. Cámbialo solo si ya está ocupado.",
+            "Port local utilisé par Playhub pour parler au Mode Gaming. Ne le change que s'il est déjà pris.",
+            "Lokaler Netzwerkport, über den Playhub mit Gaming Mode spricht. Nur ändern, wenn er belegt ist.",
+            "Porta local usada pelo Playhub para falar com o Gaming Mode. Mude só se já estiver ocupada.",
+            "Локальний порт, через який Playhub спілкується з Gaming Mode. Змінюй лише якщо він зайнятий.",
+            "Playhub 与游戏模式通信使用的本地端口。只有已被占用时才更改。",
+            "Playhub が Gaming Mode と通信するローカルポートです。使われている場合だけ変更してください。",
+            "Playhub가 Gaming Mode와 통신하는 로컬 네트워크 포트입니다. 이미 사용 중일 때만 바꾸세요.",
+            "Playhub Gaming Mode से बात करने के लिए यह लोकल पोर्ट इस्तेमाल करता है। पहले से व्यस्त हो तभी बदलें।",
+            "Локальный порт, через который Playhub общается с Gaming Mode. Меняй только если он занят."),
+        ["Cartella dello strumento di streaming"] = V("Streaming tool folder", "Carpeta de la herramienta de streaming", "Dossier de l'outil de streaming", "Ordner des Streaming-Tools", "Pasta da ferramenta de streaming", "Папка інструмента стримінгу", "串流工具文件夹", "ストリーミングツールのフォルダー", "스트리밍 도구 폴더", "स्ट्रीमिंग टूल फ़ोल्डर", "Папка инструмента стриминга"),
+        ["Cartella plugin DeckyLoader"] = V("DeckyLoader plugins folder", "Carpeta de plugins de DeckyLoader", "Dossier des plugins DeckyLoader", "DeckyLoader-Pluginordner", "Pasta de plugins do DeckyLoader", "Папка плагінів DeckyLoader", "DeckyLoader 插件文件夹", "DeckyLoader プラグインフォルダー", "DeckyLoader 플러그인 폴더", "DeckyLoader प्लगइन फ़ोल्डर", "Папка плагинов DeckyLoader"),
+        ["Strumento di streaming (Sunshine, Apollo o Vibepollo)"] = V("Streaming tool (Sunshine, Apollo or Vibepollo)", "Herramienta de streaming (Sunshine, Apollo o Vibepollo)", "Outil de streaming (Sunshine, Apollo ou Vibepollo)", "Streaming-Tool (Sunshine, Apollo oder Vibepollo)", "Ferramenta de streaming (Sunshine, Apollo ou Vibepollo)", "Інструмент стримінгу (Sunshine, Apollo або Vibepollo)", "串流工具（Sunshine、Apollo 或 Vibepollo）", "ストリーミングツール（Sunshine、Apollo、Vibepollo）", "스트리밍 도구(Sunshine, Apollo 또는 Vibepollo)", "स्ट्रीमिंग टूल (Sunshine, Apollo या Vibepollo)", "Инструмент стриминга (Sunshine, Apollo или Vibepollo)"),
+        ["Attesa prima di Steam (ms)"] = V("Wait before Steam (ms)", "Espera antes de Steam (ms)", "Attente avant Steam (ms)", "Wartezeit vor Steam (ms)", "Espera antes do Steam (ms)", "Очікування перед Steam (мс)", "Steam 前等待（毫秒）", "Steam 前の待機 (ms)", "Steam 전 대기(ms)", "Steam से पहले प्रतीक्षा (ms)", "Ожидание перед Steam (мс)"),
+        ["Nascondi il cursore dopo (ms)"] = V("Hide cursor after (ms)", "Ocultar cursor tras (ms)", "Masquer le curseur après (ms)", "Cursor ausblenden nach (ms)", "Esconder cursor após (ms)", "Ховати курсор після (мс)", "多久后隐藏光标（毫秒）", "カーソルを隠すまで (ms)", "커서 숨기기까지(ms)", "कर्सर छिपाने तक (ms)", "Скрывать курсор через (мс)"),
+        ["Il logo mostrato a tutto schermo mentre il PC entra in Gaming Mode."] = V(
+            "The full-screen logo shown while the PC enters Gaming Mode.",
+            "El logo a pantalla completa mientras el PC entra en Modo Gaming.",
+            "Le logo plein écran affiché pendant l'entrée en Mode Gaming.",
+            "Das Vollbild-Logo, während der PC in den Gaming Mode wechselt.",
+            "O logo em tela cheia enquanto o PC entra no Modo Gaming.",
+            "Повноекранний логотип під час входу ПК в ігровий режим.",
+            "电脑进入游戏模式时显示的全屏徽标。",
+            "PC がゲーミングモードへ入る間に表示される全画面ロゴです。",
+            "PC가 게이밍 모드로 들어가는 동안 표시되는 전체 화면 로고입니다.",
+            "PC के Gaming Mode में जाते समय दिखने वाला फुल-स्क्रीन लोगो।",
+            "Полноэкранный логотип при входе ПК в игровой режим."),
+        ["PNG, JPG, WebP o BMP"] = V("PNG, JPG, WebP or BMP", "PNG, JPG, WebP o BMP", "PNG, JPG, WebP ou BMP", "PNG, JPG, WebP oder BMP", "PNG, JPG, WebP ou BMP", "PNG, JPG, WebP або BMP", "PNG、JPG、WebP 或 BMP", "PNG、JPG、WebP、BMP", "PNG, JPG, WebP 또는 BMP", "PNG, JPG, WebP या BMP", "PNG, JPG, WebP или BMP"),
+        ["Tempo minimo per cui la schermata resta visibile, anche se il gioco è già pronto."] = V(
+            "Minimum time the screen stays visible, even if the game is ready.",
+            "Tiempo mínimo que la pantalla permanece visible, aunque el juego ya esté listo.",
+            "Durée minimale d'affichage, même si le jeu est déjà prêt.",
+            "Mindestzeit, die der Bildschirm sichtbar bleibt, auch wenn das Spiel bereit ist.",
+            "Tempo mínimo em que a tela fica visível, mesmo se o jogo já estiver pronto.",
+            "Мінімальний час показу екрана, навіть якщо гра вже готова.",
+            "即使游戏已准备好，画面仍保持显示的最短时间。",
+            "ゲームの準備ができていても画面を表示し続ける最短時間です。",
+            "게임이 이미 준비됐어도 화면을 표시할 최소 시간입니다.",
+            "गेम तैयार होने पर भी स्क्रीन दिखने की न्यूनतम अवधि।",
+            "Минимальное время показа экрана, даже если игра уже готова."),
+        ["Dopo questo tempo la schermata si chiude comunque, per sicurezza."] = V(
+            "After this time, the screen closes anyway, just to be safe.",
+            "Pasado este tiempo, la pantalla se cierra igualmente por seguridad.",
+            "Après ce délai, l'écran se ferme quoi qu'il arrive, par sécurité.",
+            "Nach dieser Zeit schließt sich der Bildschirm sicherheitshalber trotzdem.",
+            "Depois desse tempo, a tela fecha mesmo assim, por segurança.",
+            "Після цього часу екран усе одно закриється для безпеки.",
+            "超过此时间后，画面会自动关闭，以防万一。",
+            "この時間を過ぎると、安全のため画面は閉じます。",
+            "이 시간이 지나면 안전을 위해 화면이 자동으로 닫힙니다.",
+            "इस समय के बाद स्क्रीन सुरक्षा के लिए खुद बंद हो जाएगी।",
+            "После этого времени экран всё равно закроется для безопасности."),
+        ["App da avviare prima di Steam in Gaming Mode."] = V(
+            "Apps to start before Steam in Gaming Mode.",
+            "Apps que se abren antes de Steam en Modo Gaming.",
+            "Apps à lancer avant Steam en Mode Gaming.",
+            "Apps, die im Gaming Mode vor Steam starten.",
+            "Apps para abrir antes do Steam no Modo Gaming.",
+            "Застосунки, що запускаються перед Steam в ігровому режимі.",
+            "在游戏模式中先于 Steam 启动的应用。",
+            "ゲーミングモードで Steam より先に起動するアプリ。",
+            "게이밍 모드에서 Steam보다 먼저 시작할 앱입니다.",
+            "Gaming Mode में Steam से पहले शुरू होने वाले ऐप्स।",
+            "Приложения, запускаемые перед Steam в игровом режиме."),
+        ["Porta i giochi Microsoft Store, Game Pass e Xbox nella tua libreria di Steam."] = V(
+            "Bring Microsoft Store, Game Pass and Xbox games into your Steam library.",
+            "Lleva juegos de Microsoft Store, Game Pass y Xbox a tu biblioteca de Steam.",
+            "Ajoute les jeux Microsoft Store, Game Pass et Xbox à ta bibliothèque Steam.",
+            "Bringe Microsoft Store-, Game Pass- und Xbox-Spiele in deine Steam-Bibliothek.",
+            "Leve jogos Microsoft Store, Game Pass e Xbox para sua biblioteca Steam.",
+            "Додай ігри Microsoft Store, Game Pass і Xbox до бібліотеки Steam.",
+            "把 Microsoft Store、Game Pass 和 Xbox 游戏加入 Steam 库。",
+            "Microsoft Store、Game Pass、Xbox のゲームを Steam ライブラリに追加します。",
+            "Microsoft Store, Game Pass, Xbox 게임을 Steam 라이브러리에 추가하세요.",
+            "Microsoft Store, Game Pass और Xbox गेम को Steam लाइब्रेरी में जोड़ें।",
+            "Добавь игры Microsoft Store, Game Pass и Xbox в библиотеку Steam."),
+        ["Installa il profilo Playhub in CSS Loader senza sostituire le tue opzioni attuali: puoi provarlo in sicurezza, senza rischiare di azzerare le impostazioni che hai già. È consigliato per la migliore esperienza con i plugin di Playhub."] = V(
+            "Install the Playhub profile in CSS Loader without replacing your current choices. Try it safely, with no risk of wiping what you already set up. Recommended for the best Playhub plugin experience.",
+            "Instala el perfil de Playhub en CSS Loader sin sustituir tus opciones actuales. Puedes probarlo con calma, sin riesgo de borrar lo que ya tienes. Recomendado para disfrutar mejor los plugins de Playhub.",
+            "Installe le profil Playhub dans CSS Loader sans remplacer tes options actuelles. Tu peux l'essayer sereinement, sans effacer tes réglages. Recommandé pour la meilleure expérience avec les plugins Playhub.",
+            "Installiere das Playhub-Profil in CSS Loader, ohne deine aktuellen Optionen zu ersetzen. Du kannst es sicher testen, ohne vorhandene Einstellungen zu löschen. Empfohlen für das beste Playhub-Plugin-Erlebnis.",
+            "Instale o perfil Playhub no CSS Loader sem substituir suas opções atuais. Dá para testar com segurança, sem zerar o que você já configurou. Recomendado para a melhor experiência com os plugins Playhub.",
+            "Встанови профіль Playhub у CSS Loader без заміни поточних параметрів. Можна спробувати безпечно, не ризикуючи скинути вже налаштоване. Рекомендовано для найкращої роботи плагінів Playhub.",
+            "将 Playhub 配置安装到 CSS Loader，不会替换当前选项。可以放心试用，不会清空已有设置。推荐用于获得最佳 Playhub 插件体验。",
+            "CSS Loader に Playhub プロファイルをインストールします。現在の設定は置き換えません。既存設定を消す心配なく試せます。Playhub プラグインを最も気持ちよく使うためにおすすめです。",
+            "CSS Loader에 Playhub 프로필을 설치하되 현재 옵션은 바꾸지 않습니다. 기존 설정을 지울 걱정 없이 안전하게 써볼 수 있습니다. Playhub 플러그인을 가장 좋게 쓰려면 추천합니다.",
+            "CSS Loader में Playhub प्रोफ़ाइल इंस्टॉल करें, आपकी मौजूदा पसंद बदले बिना। इसे सुरक्षित रूप से आज़मा सकते हैं, पहले की सेटिंग मिटने का खतरा नहीं। Playhub प्लगइन के बेहतरीन अनुभव के लिए सुझाया गया।",
+            "Установи профиль Playhub в CSS Loader без замены текущих настроек. Можно спокойно попробовать, не рискуя сбросить то, что уже настроено. Рекомендуется для лучшего опыта с плагинами Playhub."),
+        ["Salva o ripristina le immagini della tua libreria Steam."] = V("Save or restore the images in your Steam library.", "Guarda o restaura las imágenes de tu biblioteca de Steam.", "Sauvegarde ou restaure les images de ta bibliothèque Steam.", "Sichere oder stelle die Bilder deiner Steam-Bibliothek wieder her.", "Salve ou restaure as imagens da sua biblioteca Steam.", "Збережи або віднови зображення своєї бібліотеки Steam.", "保存或恢复 Steam 库中的图片。", "Steam ライブラリの画像を保存または復元します。", "Steam 라이브러리 이미지를 저장하거나 복원합니다.", "अपनी Steam लाइब्रेरी की इमेज सहेजें या बहाल करें।", "Сохрани или восстанови изображения библиотеки Steam."),
+        ["Controlla se c'è una nuova versione pronta da installare."] = V("Check whether a new version is ready to install.", "Comprueba si hay una nueva versión lista para instalar.", "Vérifie si une nouvelle version est prête à installer.", "Prüfe, ob eine neue Version zur Installation bereitsteht.", "Veja se há uma nova versão pronta para instalar.", "Перевір, чи є нова версія для встановлення.", "检查是否有可安装的新版本。", "インストールできる新しいバージョンがあるか確認します。", "설치할 새 버전이 있는지 확인합니다.", "देखें कि इंस्टॉल करने के लिए नया संस्करण तैयार है या नहीं।", "Проверь, готова ли новая версия к установке."),
+        ["Componenti di terze parti (licenza MIT): UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima."] = V(
+            "Third-party components (MIT License): UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima.",
+            "Componentes de terceros (licencia MIT): UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima.",
+            "Composants tiers (licence MIT) : UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima.",
+            "Drittanbieter-Komponenten (MIT-Lizenz): UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima.",
+            "Componentes de terceiros (licença MIT): UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima.",
+            "Сторонні компоненти (ліцензія MIT): UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima.",
+            "第三方组件（MIT 许可证）：UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima。",
+            "サードパーティコンポーネント（MIT ライセンス）：UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima。",
+            "타사 구성 요소(MIT 라이선스): UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima.",
+            "थर्ड-पार्टी घटक (MIT License): UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima.",
+            "Сторонние компоненты (лицензия MIT): UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima."),
+        ["Testo delle licenze (MIT)"] = V("License text (MIT)", "Texto de licencias (MIT)", "Texte des licences (MIT)", "Lizenztext (MIT)", "Texto das licenças (MIT)", "Текст ліцензій (MIT)", "许可证文本（MIT）", "ライセンス本文（MIT）", "라이선스 전문(MIT)", "लाइसेंस पाठ (MIT)", "Текст лицензий (MIT)"),
+        ["Strumenti utili solo per diagnosi o sviluppo."] = V("Tools only useful for diagnostics or development.", "Herramientas útiles solo para diagnóstico o desarrollo.", "Outils utiles uniquement au diagnostic ou au développement.", "Werkzeuge nur für Diagnose oder Entwicklung.", "Ferramentas úteis apenas para diagnóstico ou desenvolvimento.", "Інструменти лише для діагностики або розробки.", "仅用于诊断或开发的工具。", "診断や開発向けのツールです。", "진단 또는 개발용 도구입니다.", "केवल निदान या विकास के लिए उपयोगी टूल।", "Инструменты только для диагностики или разработки."),
+        ["Avvia agente"] = V("Start agent", "Iniciar agente", "Lancer l'agent", "Agent starten", "Iniciar agente", "Запустити агент", "启动代理", "エージェントを起動", "에이전트 시작", "एजेंट शुरू करें", "Запустить агент"),
+        ["Controlla agente"] = V("Check agent", "Comprobar agente", "Vérifier l'agent", "Agent prüfen", "Verificar agente", "Перевірити агент", "检查代理", "エージェントを確認", "에이전트 확인", "एजेंट जांचें", "Проверить агент"),
+        ["Agente avviato."] = V("Agent started.", "Agente iniciado.", "Agent lancé.", "Agent gestartet.", "Agente iniciado.", "Агент запущено.", "代理已启动。", "エージェントを起動しました。", "에이전트를 시작했습니다.", "एजेंट शुरू हो गया।", "Агент запущен."),
+        ["Agente attivo."] = V("Agent is running.", "Agente activo.", "Agent actif.", "Agent aktiv.", "Agente ativo.", "Агент активний.", "代理正在运行。", "エージェントは動作中です。", "에이전트가 실행 중입니다.", "एजेंट चल रहा है।", "Агент активен."),
+        ["Agente non raggiungibile."] = V("Agent can't be reached.", "No se puede contactar con el agente.", "Agent inaccessible.", "Agent nicht erreichbar.", "Agente inacessível.", "Агент недоступний.", "无法连接代理。", "エージェントに接続できません。", "에이전트에 연결할 수 없습니다.", "एजेंट तक पहुंच नहीं हो सकी।", "Агент недоступен."),
+        ["Rimuovere il plugin Gaming Mode?"] = V("Remove the Gaming Mode plugin?", "¿Quitar el plugin Gaming Mode?", "Retirer le plugin Gaming Mode ?", "Gaming Mode-Plugin entfernen?", "Remover o plugin Gaming Mode?", "Видалити плагін Gaming Mode?", "移除 Gaming Mode 插件？", "Gaming Mode プラグインを削除しますか？", "Gaming Mode 플러그인을 제거할까요?", "Gaming Mode प्लगइन हटाएं?", "Удалить плагин Gaming Mode?"),
+        ["Il plugin verrà rimosso da DeckyLoader. Potrai reinstallarlo quando vuoi."] = V("The plugin will be removed from DeckyLoader. You can reinstall it anytime.", "El plugin se quitará de DeckyLoader. Podrás reinstalarlo cuando quieras.", "Le plugin sera retiré de DeckyLoader. Tu pourras le réinstaller quand tu veux.", "Das Plugin wird aus DeckyLoader entfernt. Du kannst es jederzeit neu installieren.", "O plugin será removido do DeckyLoader. Você pode reinstalar quando quiser.", "Плагін буде видалено з DeckyLoader. Його можна встановити знову будь-коли.", "该插件将从 DeckyLoader 中移除。你可以随时重新安装。", "プラグインは DeckyLoader から削除されます。いつでも再インストールできます。", "플러그인이 DeckyLoader에서 제거됩니다. 언제든 다시 설치할 수 있습니다.", "प्लगइन DeckyLoader से हट जाएगा। जब चाहें फिर इंस्टॉल कर सकते हैं।", "Плагин будет удалён из DeckyLoader. Его можно переустановить в любой момент."),
+        ["Disinstallare il plugin?"] = V("Uninstall this plugin?", "¿Desinstalar este plugin?", "Désinstaller ce plugin ?", "Dieses Plugin deinstallieren?", "Desinstalar este plugin?", "Видалити цей плагін?", "卸载此插件？", "このプラグインをアンインストールしますか？", "이 플러그인을 제거할까요?", "यह प्लगइन अनइंस्टॉल करें?", "Удалить этот плагин?"),
+        ["Ho trovato {0} giochi."] = V("Found {0} games.", "He encontrado {0} juegos.", "{0} jeux trouvés.", "{0} Spiele gefunden.", "Encontrei {0} jogos.", "Знайдено {0} ігор.", "找到 {0} 个游戏。", "{0} 件のゲームが見つかりました。", "{0}개의 게임을 찾았습니다.", "{0} गेम मिले।", "Найдено игр: {0}."),
+        ["Modalità sviluppatore attiva."] = V("Developer Mode is on.", "El modo de desarrollador está activo.", "Le mode développeur est activé.", "Entwicklermodus ist aktiv.", "Modo de desenvolvedor ativo.", "Режим розробника увімкнено.", "开发者模式已开启。", "開発者モードはオンです。", "개발자 모드가 켜져 있습니다.", "डेवलपर मोड चालू है।", "Режим разработчика включён."),
+        ["Modalità sviluppatore non attiva."] = V("Developer Mode is off.", "El modo de desarrollador no está activo.", "Le mode développeur est désactivé.", "Entwicklermodus ist aus.", "Modo de desenvolvedor inativo.", "Режим розробника вимкнено.", "开发者模式未开启。", "開発者モードはオフです。", "개발자 모드가 꺼져 있습니다.", "डेवलपर मोड बंद है।", "Режим разработчика выключен."),
+        ["Al prossimo accesso partirà in Desktop (predefinita invariata)."] = V("Next sign-in will start in Desktop. Your default stays the same.", "El próximo inicio será en Desktop. El valor predeterminado no cambia.", "La prochaine session démarrera en Desktop. Le réglage par défaut ne change pas.", "Die nächste Anmeldung startet in Desktop. Der Standard bleibt unverändert.", "O próximo acesso iniciará em Desktop. O padrão não muda.", "Наступний вхід запуститься в Desktop. Типовий режим не зміниться.", "下次登录将以 Desktop 启动。默认设置保持不变。", "次回サインイン時は Desktop で起動します。既定値は変わりません。", "다음 로그인은 Desktop으로 시작됩니다. 기본값은 그대로입니다.", "अगला साइन-इन Desktop में शुरू होगा। डिफ़ॉल्ट नहीं बदलेगा।", "Следующий вход запустится в Desktop. Значение по умолчанию не изменится."),
+        ["Al prossimo accesso partirà in Gaming Mode (predefinita invariata)."] = V("Next sign-in will start in Gaming Mode. Your default stays the same.", "El próximo inicio será en Gaming Mode. El valor predeterminado no cambia.", "La prochaine session démarrera en Gaming Mode. Le réglage par défaut ne change pas.", "Die nächste Anmeldung startet im Gaming Mode. Der Standard bleibt unverändert.", "O próximo acesso iniciará em Gaming Mode. O padrão não muda.", "Наступний вхід запуститься в Gaming Mode. Типовий режим не зміниться.", "下次登录将以 Gaming Mode 启动。默认设置保持不变。", "次回サインイン時は Gaming Mode で起動します。既定値は変わりません。", "다음 로그인은 Gaming Mode로 시작됩니다. 기본값은 그대로입니다.", "अगला साइन-इन Gaming Mode में शुरू होगा। डिफ़ॉल्ट नहीं बदलेगा।", "Следующий вход запустится в Gaming Mode. Значение по умолчанию не изменится."),
+        ["Questa versione è disponibile su GitHub."] = V("This version is available on GitHub.", "Esta versión está disponible en GitHub.", "Cette version est disponible sur GitHub.", "Diese Version ist auf GitHub verfügbar.", "Esta versão está disponível no GitHub.", "Ця версія доступна на GitHub.", "此版本可在 GitHub 获取。", "このバージョンは GitHub で入手できます。", "이 버전은 GitHub에서 받을 수 있습니다.", "यह संस्करण GitHub पर उपलब्ध है।", "Эта версия доступна на GitHub."),
+        ["Novità disponibili {0}"] = V("What's new in {0}", "Novedades de {0}", "Nouveautés de {0}", "Neu in {0}", "Novidades da {0}", "Що нового у {0}", "{0} 的新变化", "{0} の新機能", "{0}의 새로운 점", "{0} में नया क्या है", "Что нового в {0}"),
+        ["Novità {0}"] = V("What's new {0}", "Novedades {0}", "Nouveautés {0}", "Neuigkeiten {0}", "Novidades {0}", "Новини {0}", "{0} 更新内容", "{0} の変更点", "{0} 소식", "{0} की नई बातें", "Новое {0}"),
+        ["Disponibile dal {0}"] = V("Available since {0}", "Disponible desde {0}", "Disponible depuis le {0}", "Verfügbar seit {0}", "Disponível desde {0}", "Доступно з {0}", "{0} 起可用", "{0} から利用可能", "{0}부터 사용 가능", "{0} से उपलब्ध", "Доступно с {0}"),
+        ["Disponibile dal {plugin.ReleasePublishedAt}"] = V("Available since {plugin.ReleasePublishedAt}", "Disponible desde {plugin.ReleasePublishedAt}", "Disponible depuis le {plugin.ReleasePublishedAt}", "Verfügbar seit {plugin.ReleasePublishedAt}", "Disponível desde {plugin.ReleasePublishedAt}", "Доступно з {plugin.ReleasePublishedAt}", "{plugin.ReleasePublishedAt} 起可用", "{plugin.ReleasePublishedAt} から利用可能", "{plugin.ReleasePublishedAt}부터 사용 가능", "{plugin.ReleasePublishedAt} से उपलब्ध", "Доступно с {plugin.ReleasePublishedAt}"),
+        ["Playhub {GetAppVersion()} · WinUI 3 · Fluent 2 · Windows 11"] = V("Playhub {GetAppVersion()} · WinUI 3 · Fluent 2 · Windows 11", "Playhub {GetAppVersion()} · WinUI 3 · Fluent 2 · Windows 11", "Playhub {GetAppVersion()} · WinUI 3 · Fluent 2 · Windows 11", "Playhub {GetAppVersion()} · WinUI 3 · Fluent 2 · Windows 11", "Playhub {GetAppVersion()} · WinUI 3 · Fluent 2 · Windows 11", "Playhub {GetAppVersion()} · WinUI 3 · Fluent 2 · Windows 11", "Playhub {GetAppVersion()} · WinUI 3 · Fluent 2 · Windows 11", "Playhub {GetAppVersion()} · WinUI 3 · Fluent 2 · Windows 11", "Playhub {GetAppVersion()} · WinUI 3 · Fluent 2 · Windows 11", "Playhub {GetAppVersion()} · WinUI 3 · Fluent 2 · Windows 11", "Playhub {GetAppVersion()} · WinUI 3 · Fluent 2 · Windows 11"),
+        ["GitHub"] = V("GitHub", "GitHub", "GitHub", "GitHub", "GitHub", "GitHub", "GitHub", "GitHub", "GitHub", "GitHub", "GitHub"),
+        ["Percorso di PluginLoader_noconsole.exe"] = V("Path to PluginLoader_noconsole.exe", "Ruta de PluginLoader_noconsole.exe", "Chemin vers PluginLoader_noconsole.exe", "Pfad zu PluginLoader_noconsole.exe", "Caminho de PluginLoader_noconsole.exe", "Шлях до PluginLoader_noconsole.exe", "PluginLoader_noconsole.exe 路径", "PluginLoader_noconsole.exe のパス", "PluginLoader_noconsole.exe 경로", "PluginLoader_noconsole.exe का पथ", "Путь к PluginLoader_noconsole.exe"),
+        ["Non trovo la cartella di Steam."] = V("I can't find the Steam folder.", "No encuentro la carpeta de Steam.", "Je ne trouve pas le dossier Steam.", "Ich finde den Steam-Ordner nicht.", "Não encontrei a pasta do Steam.", "Не можу знайти папку Steam.", "找不到 Steam 文件夹。", "Steam フォルダーが見つかりません。", "Steam 폴더를 찾을 수 없습니다.", "Steam फ़ोल्डर नहीं मिल रहा है।", "Не удаётся найти папку Steam."),
+        ["Non trovo utenti Steam in userdata."] = V("I can't find Steam users in userdata.", "No encuentro usuarios de Steam en userdata.", "Je ne trouve aucun utilisateur Steam dans userdata.", "Ich finde keine Steam-Nutzer in userdata.", "Não encontrei usuários Steam em userdata.", "Не можу знайти користувачів Steam у userdata.", "在 userdata 中找不到 Steam 用户。", "userdata に Steam ユーザーが見つかりません。", "userdata에서 Steam 사용자를 찾을 수 없습니다.", "userdata में Steam उपयोगकर्ता नहीं मिल रहे हैं।", "Не удаётся найти пользователей Steam в userdata."),
+        ["Non trovo utenti Steam con cartella userdata."] = V("I can't find Steam users with a userdata folder.", "No encuentro usuarios de Steam con carpeta userdata.", "Je ne trouve aucun utilisateur Steam avec un dossier userdata.", "Ich finde keine Steam-Nutzer mit userdata-Ordner.", "Não encontrei usuários Steam com pasta userdata.", "Не можу знайти користувачів Steam із папкою userdata.", "找不到带有 userdata 文件夹的 Steam 用户。", "userdata フォルダーを持つ Steam ユーザーが見つかりません。", "userdata 폴더가 있는 Steam 사용자를 찾을 수 없습니다.", "userdata फ़ोल्डर वाले Steam उपयोगकर्ता नहीं मिल रहे हैं।", "Не удаётся найти пользователей Steam с папкой userdata."),
+        ["Non trovo il file steam.cfg sorgente."] = V("I can't find the source steam.cfg file.", "No encuentro el archivo steam.cfg de origen.", "Je ne trouve pas le fichier steam.cfg source.", "Ich finde die steam.cfg-Quelldatei nicht.", "Não encontrei o arquivo steam.cfg de origem.", "Не можу знайти вихідний файл steam.cfg.", "找不到源 steam.cfg 文件。", "元の steam.cfg ファイルが見つかりません。", "원본 steam.cfg 파일을 찾을 수 없습니다.", "स्रोत steam.cfg फ़ाइल नहीं मिल रही है।", "Не удаётся найти исходный файл steam.cfg."),
+        ["Aggiornamenti del client di Steam bloccati."] = V("Steam client updates are blocked.", "Las actualizaciones del cliente de Steam están bloqueadas.", "Les mises à jour du client Steam sont bloquées.", "Steam-Client-Updates sind blockiert.", "As atualizações do cliente Steam foram bloqueadas.", "Оновлення клієнта Steam заблоковано.", "Steam 客户端更新已阻止。", "Steam クライアントの更新をブロックしました。", "Steam 클라이언트 업데이트를 차단했습니다.", "Steam क्लाइंट अपडेट रोक दिए गए हैं।", "Обновления клиента Steam заблокированы."),
+        ["Aggiornamenti del client di Steam riattivati."] = V("Steam client updates are back on.", "Las actualizaciones del cliente de Steam vuelven a estar activas.", "Les mises à jour du client Steam sont réactivées.", "Steam-Client-Updates sind wieder aktiv.", "As atualizações do cliente Steam foram reativadas.", "Оновлення клієнта Steam знову ввімкнено.", "Steam 客户端更新已恢复。", "Steam クライアントの更新を再開しました。", "Steam 클라이언트 업데이트를 다시 켰습니다.", "Steam क्लाइंट अपडेट फिर से चालू हैं।", "Обновления клиента Steam снова включены."),
+        ["Gli aggiornamenti del client di Steam erano già attivi."] = V("Steam client updates were already on.", "Las actualizaciones del cliente de Steam ya estaban activas.", "Les mises à jour du client Steam étaient déjà actives.", "Steam-Client-Updates waren bereits aktiv.", "As atualizações do cliente Steam já estavam ativas.", "Оновлення клієнта Steam уже були ввімкнені.", "Steam 客户端更新本来就已启用。", "Steam クライアントの更新はすでに有効でした。", "Steam 클라이언트 업데이트는 이미 켜져 있었습니다.", "Steam क्लाइंट अपडेट पहले से चालू थे।", "Обновления клиента Steam уже были включены."),
+        ["Profilo Playhub installato in CSS Loader. Le tue altre opzioni restano invariate."] = V("Playhub profile installed in CSS Loader. Your other choices stay as they are.", "Perfil de Playhub instalado en CSS Loader. Tus demás opciones no cambian.", "Profil Playhub installé dans CSS Loader. Tes autres options restent inchangées.", "Playhub-Profil in CSS Loader installiert. Deine anderen Optionen bleiben unverändert.", "Perfil Playhub instalado no CSS Loader. Suas outras opções continuam iguais.", "Профіль Playhub встановлено в CSS Loader. Інші параметри не змінено.", "Playhub 配置已安装到 CSS Loader。其他选项保持不变。", "CSS Loader に Playhub プロファイルをインストールしました。他の設定はそのままです。", "CSS Loader에 Playhub 프로필을 설치했습니다. 다른 옵션은 그대로입니다.", "CSS Loader में Playhub प्रोफ़ाइल इंस्टॉल हो गई। आपकी बाकी पसंदें वैसी ही रहेंगी।", "Профиль Playhub установлен в CSS Loader. Остальные настройки не изменены."),
+        ["Profilo Playhub rimosso da CSS Loader."] = V("Playhub profile removed from CSS Loader.", "Perfil de Playhub eliminado de CSS Loader.", "Profil Playhub retiré de CSS Loader.", "Playhub-Profil aus CSS Loader entfernt.", "Perfil Playhub removido do CSS Loader.", "Профіль Playhub видалено з CSS Loader.", "已从 CSS Loader 移除 Playhub 配置。", "CSS Loader から Playhub プロファイルを削除しました。", "CSS Loader에서 Playhub 프로필을 제거했습니다.", "CSS Loader से Playhub प्रोफ़ाइल हटा दी गई।", "Профиль Playhub удалён из CSS Loader."),
+        ["Non risulta installato nessun profilo Playhub."] = V("No Playhub profile seems to be installed.", "No parece haber ningún perfil de Playhub instalado.", "Aucun profil Playhub ne semble installé.", "Es scheint kein Playhub-Profil installiert zu sein.", "Nenhum perfil Playhub parece estar instalado.", "Схоже, профіль Playhub не встановлено.", "似乎未安装 Playhub 配置。", "Playhub プロファイルはインストールされていないようです。", "설치된 Playhub 프로필이 없습니다.", "कोई Playhub प्रोफ़ाइल इंस्टॉल नहीं दिख रही है।", "Похоже, профиль Playhub не установлен."),
+        ["Backup degli artwork creato."] = V("Artwork backup created.", "Copia de seguridad de los artwork creada.", "Sauvegarde des illustrations créée.", "Artwork-Backup erstellt.", "Backup dos artworks criado.", "Резервну копію обкладинок створено.", "艺术图备份已创建。", "アートワークのバックアップを作成しました。", "아트워크 백업을 만들었습니다.", "आर्टवर्क बैकअप बन गया।", "Резервная копия изображений создана."),
+        ["Non ho trovato artwork Steam da salvare."] = V("I didn't find Steam artwork to save.", "No he encontrado artwork de Steam para guardar.", "Je n'ai trouvé aucune illustration Steam à sauvegarder.", "Ich habe keine Steam-Artworks zum Sichern gefunden.", "Não encontrei artworks do Steam para salvar.", "Не знайдено обкладинок Steam для збереження.", "没有找到可保存的 Steam 艺术图。", "保存できる Steam アートワークが見つかりませんでした。", "저장할 Steam 아트워크를 찾지 못했습니다.", "सहेजने के लिए Steam आर्टवर्क नहीं मिला।", "Не найдено изображений Steam для сохранения."),
+        ["Non ci sono backup artwork Playhub."] = V("There are no Playhub artwork backups yet.", "Aún no hay copias de seguridad de artwork de Playhub.", "Il n'y a pas encore de sauvegarde d'illustrations Playhub.", "Es gibt noch keine Playhub-Artwork-Backups.", "Ainda não há backups de artwork do Playhub.", "Резервних копій обкладинок Playhub ще немає.", "还没有 Playhub 艺术图备份。", "Playhub アートワークのバックアップはまだありません。", "아직 Playhub 아트워크 백업이 없습니다.", "अभी कोई Playhub आर्टवर्क बैकअप नहीं है।", "Резервных копий изображений Playhub пока нет."),
+        ["Artwork di Steam ripristinati."] = V("Steam artwork restored.", "Artwork de Steam restaurado.", "Illustrations Steam restaurées.", "Steam-Artworks wiederhergestellt.", "Artworks do Steam restaurados.", "Обкладинки Steam відновлено.", "Steam 艺术图已恢复。", "Steam アートワークを復元しました。", "Steam 아트워크를 복원했습니다.", "Steam आर्टवर्क बहाल हो गया।", "Изображения Steam восстановлены."),
+        ["Gaming Mode installato e agente avviato."] = V("Gaming Mode installed and agent started.", "Gaming Mode instalado y agente iniciado.", "Gaming Mode installé et agent lancé.", "Gaming Mode installiert und Agent gestartet.", "Gaming Mode instalado e agente iniciado.", "Gaming Mode встановлено, агент запущено.", "Gaming Mode 已安装，代理已启动。", "Gaming Mode をインストールし、エージェントを起動しました。", "Gaming Mode를 설치하고 에이전트를 시작했습니다.", "Gaming Mode इंस्टॉल हो गया और एजेंट शुरू हो गया।", "Gaming Mode установлен, агент запущен."),
+        ["Gaming Mode rimosso."] = V("Gaming Mode removed.", "Gaming Mode eliminado.", "Gaming Mode supprimé.", "Gaming Mode entfernt.", "Gaming Mode removido.", "Gaming Mode видалено.", "Gaming Mode 已移除。", "Gaming Mode を削除しました。", "Gaming Mode를 제거했습니다.", "Gaming Mode हट गया।", "Gaming Mode удалён."),
+        ["Non trovo install.ps1 nel pacchetto Gaming Mode locale."] = V("I can't find install.ps1 in the local Gaming Mode package.", "No encuentro install.ps1 en el paquete local de Gaming Mode.", "Je ne trouve pas install.ps1 dans le paquet Gaming Mode local.", "Ich finde install.ps1 im lokalen Gaming-Mode-Paket nicht.", "Não encontrei install.ps1 no pacote local do Gaming Mode.", "Не можу знайти install.ps1 у локальному пакеті Gaming Mode.", "在本地 Gaming Mode 包中找不到 install.ps1。", "ローカルの Gaming Mode パッケージに install.ps1 が見つかりません。", "로컬 Gaming Mode 패키지에서 install.ps1을 찾을 수 없습니다.", "स्थानीय Gaming Mode पैकेज में install.ps1 नहीं मिल रहा है।", "Не удаётся найти install.ps1 в локальном пакете Gaming Mode."),
+        ["Non trovo uninstall.ps1 nel pacchetto Gaming Mode locale."] = V("I can't find uninstall.ps1 in the local Gaming Mode package.", "No encuentro uninstall.ps1 en el paquete local de Gaming Mode.", "Je ne trouve pas uninstall.ps1 dans le paquet Gaming Mode local.", "Ich finde uninstall.ps1 im lokalen Gaming-Mode-Paket nicht.", "Não encontrei uninstall.ps1 no pacote local do Gaming Mode.", "Не можу знайти uninstall.ps1 у локальному пакеті Gaming Mode.", "在本地 Gaming Mode 包中找不到 uninstall.ps1。", "ローカルの Gaming Mode パッケージに uninstall.ps1 が見つかりません。", "로컬 Gaming Mode 패키지에서 uninstall.ps1을 찾을 수 없습니다.", "स्थानीय Gaming Mode पैकेज में uninstall.ps1 नहीं मिल रहा है।", "Не удаётся найти uninstall.ps1 в локальном пакете Gaming Mode."),
+        ["Non trovo i file del plugin Gaming Mode nel pacchetto."] = V("I can't find the Gaming Mode plugin files in the package.", "No encuentro los archivos del plugin Gaming Mode en el paquete.", "Je ne trouve pas les fichiers du plugin Gaming Mode dans le paquet.", "Ich finde die Dateien des Gaming-Mode-Plugins im Paket nicht.", "Não encontrei os arquivos do plugin Gaming Mode no pacote.", "Не можу знайти файли плагіна Gaming Mode у пакеті.", "在包中找不到 Gaming Mode 插件文件。", "パッケージ内に Gaming Mode プラグインのファイルが見つかりません。", "패키지에서 Gaming Mode 플러그인 파일을 찾을 수 없습니다.", "पैकेज में Gaming Mode प्लगइन फ़ाइलें नहीं मिल रही हैं।", "Не удаётся найти файлы плагина Gaming Mode в пакете."),
+        ["Plugin Gaming Mode installato in DeckyLoader. Riavvia Steam per vederlo nel menu rapido."] = V("Gaming Mode plugin installed in DeckyLoader. Restart Steam to see it in the quick menu.", "Plugin Gaming Mode instalado en DeckyLoader. Reinicia Steam para verlo en el menú rápido.", "Plugin Gaming Mode installé dans DeckyLoader. Redémarre Steam pour le voir dans le menu rapide.", "Gaming-Mode-Plugin in DeckyLoader installiert. Starte Steam neu, um es im Schnellmenü zu sehen.", "Plugin Gaming Mode instalado no DeckyLoader. Reinicie o Steam para vê-lo no menu rápido.", "Плагін Gaming Mode встановлено в DeckyLoader. Перезапусти Steam, щоб побачити його у швидкому меню.", "Gaming Mode 插件已安装到 DeckyLoader。重启 Steam 后可在快捷菜单中看到。", "Gaming Mode プラグインを DeckyLoader にインストールしました。クイックメニューに表示するには Steam を再起動してください。", "Gaming Mode 플러그인을 DeckyLoader에 설치했습니다. 빠른 메뉴에서 보려면 Steam을 다시 시작하세요.", "Gaming Mode प्लगइन DeckyLoader में इंस्टॉल हो गया। क्विक मेनू में देखने के लिए Steam फिर से शुरू करें।", "Плагин Gaming Mode установлен в DeckyLoader. Перезапусти Steam, чтобы увидеть его в быстром меню."),
+        ["Plugin Gaming Mode rimosso da DeckyLoader."] = V("Gaming Mode plugin removed from DeckyLoader.", "Plugin Gaming Mode eliminado de DeckyLoader.", "Plugin Gaming Mode retiré de DeckyLoader.", "Gaming-Mode-Plugin aus DeckyLoader entfernt.", "Plugin Gaming Mode removido do DeckyLoader.", "Плагін Gaming Mode видалено з DeckyLoader.", "Gaming Mode 插件已从 DeckyLoader 移除。", "Gaming Mode プラグインを DeckyLoader から削除しました。", "Gaming Mode 플러그인을 DeckyLoader에서 제거했습니다.", "Gaming Mode प्लगइन DeckyLoader से हट गया।", "Плагин Gaming Mode удалён из DeckyLoader."),
+        ["Seleziona almeno un gioco Xbox/UWP da importare."] = V("Select at least one Xbox/UWP game to import.", "Selecciona al menos un juego Xbox/UWP para importar.", "Sélectionne au moins un jeu Xbox/UWP à importer.", "Wähle mindestens ein Xbox/UWP-Spiel zum Importieren aus.", "Selecione pelo menos um jogo Xbox/UWP para importar.", "Вибери принаймні одну гру Xbox/UWP для імпорту.", "请选择至少一个要导入的 Xbox/UWP 游戏。", "インポートする Xbox/UWP ゲームを少なくとも 1 つ選んでください。", "가져올 Xbox/UWP 게임을 하나 이상 선택하세요.", "इम्पोर्ट करने के लिए कम से कम एक Xbox/UWP गेम चुनें।", "Выбери хотя бы одну игру Xbox/UWP для импорта."),
+        ["Non trovo UWPHook.exe. Copia UWPHook nella cartella dell'app o nella cartella Plugin."] = V("I can't find UWPHook.exe. Copy UWPHook into the app folder or the Plugin folder.", "No encuentro UWPHook.exe. Copia UWPHook en la carpeta de la app o en la carpeta Plugin.", "Je ne trouve pas UWPHook.exe. Copie UWPHook dans le dossier de l'app ou dans le dossier Plugin.", "Ich finde UWPHook.exe nicht. Kopiere UWPHook in den App-Ordner oder in den Plugin-Ordner.", "Não encontrei UWPHook.exe. Copie o UWPHook para a pasta do app ou para a pasta Plugin.", "Не можу знайти UWPHook.exe. Скопіюй UWPHook у папку застосунку або Plugin.", "找不到 UWPHook.exe。请把 UWPHook 复制到应用文件夹或 Plugin 文件夹。", "UWPHook.exe が見つかりません。UWPHook をアプリフォルダーまたは Plugin フォルダーにコピーしてください。", "UWPHook.exe를 찾을 수 없습니다. UWPHook을 앱 폴더나 Plugin 폴더에 복사하세요.", "UWPHook.exe नहीं मिल रहा है। UWPHook को ऐप फ़ोल्डर या Plugin फ़ोल्डर में कॉपी करें।", "Не удаётся найти UWPHook.exe. Скопируй UWPHook в папку приложения или папку Plugin."),
+        ["Ho importato {0} giochi in Steam. Ho creato anche un backup degli shortcut. Riavvia Steam per vederli."] = V("Imported {0} games into Steam. I also made a shortcut backup. Restart Steam to see them.", "He importado {0} juegos en Steam. También he creado un backup de los accesos directos. Reinicia Steam para verlos.", "{0} jeux importés dans Steam. J'ai aussi créé une sauvegarde des raccourcis. Redémarre Steam pour les voir.", "{0} Spiele in Steam importiert. Ich habe auch ein Backup der Shortcuts erstellt. Starte Steam neu, um sie zu sehen.", "{0} jogos importados para o Steam. Também criei um backup dos atalhos. Reinicie o Steam para vê-los.", "Імпортовано {0} ігор у Steam. Також створено резервну копію ярликів. Перезапусти Steam, щоб їх побачити.", "已将 {0} 个游戏导入 Steam，并创建了快捷方式备份。重启 Steam 后即可看到。", "{0} 件のゲームを Steam にインポートしました。ショートカットのバックアップも作成しました。表示するには Steam を再起動してください。", "{0}개의 게임을 Steam으로 가져왔습니다. 바로가기 백업도 만들었습니다. 보려면 Steam을 다시 시작하세요.", "{0} गेम Steam में इम्पोर्ट हो गए। शॉर्टकट का बैकअप भी बना दिया है। देखने के लिए Steam फिर से शुरू करें।", "Импортировано игр в Steam: {0}. Также создана резервная копия ярлыков. Перезапусти Steam, чтобы увидеть их."),
+        ["Windows ha impedito la scrittura del file shortcuts di Steam. Non dipende dal fatto che Steam sia aperto: è la protezione \"Accesso alle cartelle controllato\" di Sicurezza di Windows che blocca questa app (UWPHook funziona perché è già tra le app consentite). Per risolvere: Sicurezza di Windows → Protezione da virus e minacce → Gestisci protezione ransomware → Accesso alle cartelle controllato → Consenti app tramite Accesso alle cartelle controllato → Aggiungi Playhub.exe. Poi riprova."] = V("Windows blocked writing Steam shortcuts. It is not because Steam is open: Windows Security's Controlled folder access is blocking this app. UWPHook works because it is already allowed. To fix it: Windows Security > Virus & threat protection > Manage ransomware protection > Controlled folder access > Allow an app through Controlled folder access > Add Playhub.exe. Then try again.", "Windows ha bloqueado la escritura de los accesos directos de Steam. No es porque Steam esté abierto: la protección Acceso controlado a carpetas de Seguridad de Windows bloquea esta app. UWPHook funciona porque ya está permitido. Para solucionarlo: Seguridad de Windows > Protección contra virus y amenazas > Administrar protección contra ransomware > Acceso controlado a carpetas > Permitir una app > Añade Playhub.exe. Luego inténtalo de nuevo.", "Windows a bloqué l'écriture des raccourcis Steam. Ce n'est pas parce que Steam est ouvert : l'accès contrôlé aux dossiers de Sécurité Windows bloque cette app. UWPHook fonctionne car il est déjà autorisé. Pour corriger : Sécurité Windows > Protection contre les virus et menaces > Protection contre les rançongiciels > Accès contrôlé aux dossiers > Autoriser une app > Ajoute Playhub.exe. Puis réessaie.", "Windows hat das Schreiben der Steam-Shortcuts blockiert. Es liegt nicht daran, dass Steam geöffnet ist: Der überwachte Ordnerzugriff von Windows-Sicherheit blockiert diese App. UWPHook funktioniert, weil es bereits zugelassen ist. Lösung: Windows-Sicherheit > Viren- & Bedrohungsschutz > Ransomware-Schutz verwalten > Überwachter Ordnerzugriff > App zulassen > Playhub.exe hinzufügen. Dann erneut versuchen.", "O Windows bloqueou a gravação dos atalhos do Steam. Não é porque o Steam está aberto: o Acesso controlado a pastas da Segurança do Windows está bloqueando este app. O UWPHook funciona porque já está permitido. Para resolver: Segurança do Windows > Proteção contra vírus e ameaças > Gerenciar proteção contra ransomware > Acesso controlado a pastas > Permitir um app > Adicione Playhub.exe. Depois tente novamente.", "Windows заблокувала запис ярликів Steam. Це не через відкритий Steam: функція контрольованого доступу до папок у Безпеці Windows блокує цей застосунок. UWPHook працює, бо вже дозволений. Щоб виправити: Безпека Windows > Захист від вірусів і загроз > Керування захистом від програм-вимагачів > Контрольований доступ до папок > Дозволити застосунок > Додай Playhub.exe. Потім спробуй ще раз.", "Windows 阻止写入 Steam 快捷方式文件。原因不是 Steam 正在运行，而是 Windows 安全中心的“受控文件夹访问”拦截了此应用。UWPHook 能工作，是因为它已经被允许。解决方法：Windows 安全中心 > 病毒和威胁防护 > 管理勒索软件防护 > 受控文件夹访问 > 允许应用通过受控文件夹访问 > 添加 Playhub.exe。然后重试。", "Windows が Steam ショートカットの書き込みをブロックしました。Steam が開いているせいではありません。Windows セキュリティのコントロールされたフォルダー アクセスがこのアプリをブロックしています。UWPHook はすでに許可されているため動作します。解決するには: Windows セキュリティ > ウイルスと脅威の防止 > ランサムウェア防止の管理 > コントロールされたフォルダー アクセス > アプリを許可 > Playhub.exe を追加。その後もう一度試してください。", "Windows가 Steam 바로가기 파일 쓰기를 차단했습니다. Steam이 열려 있어서가 아닙니다. Windows 보안의 제어된 폴더 액세스가 이 앱을 차단하고 있습니다. UWPHook은 이미 허용되어 있어 작동합니다. 해결 방법: Windows 보안 > 바이러스 및 위협 방지 > 랜섬웨어 방지 관리 > 제어된 폴더 액세스 > 앱 허용 > Playhub.exe 추가. 그런 다음 다시 시도하세요.", "Windows ने Steam शॉर्टकट लिखने से रोक दिया। वजह Steam का खुला होना नहीं है: Windows Security का Controlled folder access इस ऐप को रोक रहा है। UWPHook चलता है क्योंकि वह पहले से अनुमति में है। ठीक करने के लिए: Windows Security > Virus & threat protection > Manage ransomware protection > Controlled folder access > Allow an app > Playhub.exe जोड़ें। फिर दोबारा कोशिश करें।", "Windows заблокировала запись ярлыков Steam. Дело не в том, что Steam открыт: контролируемый доступ к папкам в Безопасности Windows блокирует это приложение. UWPHook работает, потому что уже разрешён. Решение: Безопасность Windows > Защита от вирусов и угроз > Управление защитой от программ-вымогателей > Контролируемый доступ к папкам > Разрешить приложение > Добавь Playhub.exe. Затем попробуй снова."),
+        ["File bloccato: {0}"] = V("Blocked file: {0}", "Archivo bloqueado: {0}", "Fichier bloqué : {0}", "Blockierte Datei: {0}", "Arquivo bloqueado: {0}", "Заблокований файл: {0}", "被阻止的文件：{0}", "ブロックされたファイル: {0}", "차단된 파일: {0}", "रुकी हुई फ़ाइल: {0}", "Заблокированный файл: {0}"),
+        ["Rimozione non riuscita: "] = V("Removal failed: ", "No se ha podido eliminar: ", "Suppression impossible : ", "Entfernen fehlgeschlagen: ", "Falha ao remover: ", "Не вдалося видалити: ", "移除失败：", "削除できませんでした: ", "제거하지 못했습니다: ", "हटाया नहीं जा सका: ", "Не удалось удалить: "),
+        ["Installazione del plugin non riuscita: "] = V("Plugin installation failed: ", "No se ha podido instalar el plugin: ", "Installation du plugin impossible : ", "Plugin-Installation fehlgeschlagen: ", "Falha ao instalar o plugin: ", "Не вдалося встановити плагін: ", "插件安装失败：", "プラグインをインストールできませんでした: ", "플러그인을 설치하지 못했습니다: ", "प्लगइन इंस्टॉल नहीं हो सका: ", "Не удалось установить плагин: "),
+        ["Rimozione del plugin non riuscita: "] = V("Plugin removal failed: ", "No se ha podido quitar el plugin: ", "Suppression du plugin impossible : ", "Plugin konnte nicht entfernt werden: ", "Falha ao remover o plugin: ", "Не вдалося видалити плагін: ", "插件移除失败：", "プラグインを削除できませんでした: ", "플러그인을 제거하지 못했습니다: ", "प्लगइन हटाया नहीं जा सका: ", "Не удалось удалить плагин: "),
+        ["Non trovo i file installabili per {0}."] = V("I can't find installable files for {0}.", "No encuentro archivos instalables para {0}.", "Je ne trouve pas de fichiers installables pour {0}.", "Ich finde keine installierbaren Dateien für {0}.", "Não encontrei arquivos instaláveis para {0}.", "Не можу знайти інсталяційні файли для {0}.", "找不到 {0} 的可安装文件。", "{0} のインストール可能なファイルが見つかりません。", "{0}의 설치 파일을 찾을 수 없습니다.", "{0} के लिए इंस्टॉल करने योग्य फ़ाइलें नहीं मिल रही हैं।", "Не удаётся найти установочные файлы для {0}."),
+        ["SteamGridDB API key"] = V("SteamGridDB API key", "Clave API de SteamGridDB", "Clé API SteamGridDB", "SteamGridDB API-Schlüssel", "Chave de API SteamGridDB", "API-ключ SteamGridDB", "SteamGridDB API 密钥", "SteamGridDB API キー", "SteamGridDB API 키", "SteamGridDB API कुंजी", "API-ключ SteamGridDB")
+    };
+}

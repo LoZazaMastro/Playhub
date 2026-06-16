@@ -1,0 +1,33 @@
+# ===== Build output =====
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+
+# ===== Publish / installer output (si rigenerano, NON vanno nel repo) =====
+Source/Playhub/dist_publish/
+Source/PlayhubSetup/Output/
+Source/PlayhubSetup/Payload/payload.zip
+
+# ===== Log =====
+*_log.txt
+build_log.txt
+publish_log.txt
+build-installer-log.txt
+
+# ===== Cartelle locali di lavoro (NON sono codice sorgente) =====
+/Dist/
+/Archive/
+/Reference/
+/Work/
+/Previews/
+/Images/
+
+# ===== Cartelle di staging per il caricamento su GitHub (non vanno nel repo) =====
+/_github_staging/
+
+# ===== OS junk =====
+Thumbs.db
+desktop.ini
+.DS_Store

@@ -1,0 +1,165 @@
+<Window x:Class="PlayhubSetup.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Playhub Setup"
+        Width="780" Height="500"
+        WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="False"
+        Background="Transparent" WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI">
+
+  <Border x:Name="Root" CornerRadius="8" Background="#9E121316">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="46"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+
+      <!-- ===== Barra titolo (trascinabile) + chiudi ===== -->
+      <Grid x:Name="TitleBar" Grid.Row="0" Background="Transparent">
+        <TextBlock Text="Playhub Setup" Foreground="#8AFFFFFF" FontSize="12"
+                   VerticalAlignment="Center" Margin="18,0,0,0"/>
+        <Button x:Name="BtnClose" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets"
+                FontSize="11" Foreground="#C8FFFFFF" Width="46" Height="46"
+                HorizontalAlignment="Right" VerticalAlignment="Top" Background="Transparent"
+                BorderThickness="0" Cursor="Hand">
+          <Button.Template>
+            <ControlTemplate TargetType="Button">
+              <Border x:Name="cb" Background="{TemplateBinding Background}">
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="cb" Property="Background" Value="#E81123"/>
+                  <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Button.Template>
+        </Button>
+      </Grid>
+
+      <!-- ===== Corpo: logo a sinistra, contenuto a destra ===== -->
+      <Grid Grid.Row="1" Margin="0,0,0,0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="266"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Colonna logo -->
+        <Border Grid.Column="0" Background="#26000000">
+          <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24,0">
+            <Image Source="Assets/wordmark.png" Width="200"
+                   RenderOptions.BitmapScalingMode="HighQuality"/>
+            <Border Width="64" Height="4" CornerRadius="2" Background="#FFCB0F" Margin="0,24,0,0"/>
+            <TextBlock x:Name="VersionText" Text="versione 1.0.0" Foreground="#8AFFFFFF"
+                       FontSize="12" HorizontalAlignment="Center" Margin="0,16,0,0"/>
+          </StackPanel>
+        </Border>
+
+        <!-- Colonna contenuto: tre stati sovrapposti -->
+        <Grid Grid.Column="1" Margin="34,8,34,28">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+
+          <!-- Contenuto degli stati (sovrapposti) -->
+          <Grid Grid.Row="0">
+
+          <!-- STATO: LINGUA -->
+          <StackPanel x:Name="PanelLanguage" VerticalAlignment="Center">
+            <TextBlock x:Name="LangTitle" Text="Choose your language" Foreground="#F2F2F2"
+                       FontSize="25" FontWeight="SemiBold"/>
+            <TextBlock x:Name="LangSubtitle"
+                       Text="Select the language for Playhub and the installer."
+                       Foreground="#A8A8A8" FontSize="13.5" TextWrapping="Wrap" Margin="0,8,0,0"/>
+            <ListBox x:Name="LangList" Height="196" Margin="0,16,0,0"
+                     Style="{StaticResource LangListStyle}"/>
+          </StackPanel>
+
+          <!-- STATO: PRONTO -->
+          <StackPanel x:Name="PanelReady" VerticalAlignment="Center" Visibility="Collapsed">
+            <TextBlock x:Name="ReadyTitle" Text="Installa Playhub" Foreground="#F2F2F2"
+                       FontSize="25" FontWeight="SemiBold"/>
+            <TextBlock x:Name="ReadySubtitle"
+                       Text="Verrà installato per il tuo utente."
+                       Foreground="#A8A8A8" FontSize="13.5" TextWrapping="Wrap" Margin="0,8,0,0"/>
+
+            <!-- Solo in disinstallazione: cancella anche impostazioni e dati utente. -->
+            <CheckBox x:Name="ChkRemoveData" Style="{StaticResource DarkCheck}"
+                      Content="Also remove my settings and data" Margin="0,22,0,0"
+                      Visibility="Collapsed"/>
+
+            <!-- Percorso installazione -->
+            <Border x:Name="PathCard" Background="#1B1D1F" CornerRadius="8" Padding="14,10"
+                    Margin="0,22,0,0" BorderBrush="#2A2D30" BorderThickness="1">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock x:Name="FolderLabel" Text="CARTELLA" Foreground="#8AFFFFFF" FontSize="10.5"
+                             FontWeight="SemiBold"/>
+                  <TextBlock x:Name="PathText" Foreground="#E6E6E6" FontSize="13"
+                             TextTrimming="CharacterEllipsis" Margin="0,3,0,0"/>
+                </StackPanel>
+                <Button x:Name="BtnChangePath" Grid.Column="1" Content="Cambia"
+                        Style="{StaticResource GhostButton}" Height="34" MinWidth="92"
+                        Margin="12,0,0,0"/>
+              </Grid>
+            </Border>
+
+            <!-- Opzioni -->
+            <StackPanel x:Name="OptionsPanel" Margin="0,20,0,0">
+              <CheckBox x:Name="ChkDesktop" Style="{StaticResource DarkCheck}"
+                        Content="Crea un collegamento sul desktop" IsChecked="True"/>
+              <CheckBox x:Name="ChkStartMenu" Style="{StaticResource DarkCheck}"
+                        Content="Aggiungi al menu Start" IsChecked="True" Margin="0,12,0,0"/>
+              <CheckBox x:Name="ChkLaunchEnd" Style="{StaticResource DarkCheck}"
+                        Content="Avvia Playhub al termine dell'installazione" IsChecked="True" Margin="0,12,0,0"/>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- STATO: AVANZAMENTO -->
+          <StackPanel x:Name="PanelProgress" VerticalAlignment="Center" Visibility="Collapsed">
+            <TextBlock x:Name="ProgressTitle" Text="Installazione in corso…" Foreground="#F2F2F2"
+                       FontSize="25" FontWeight="SemiBold"/>
+            <TextBlock x:Name="StatusText" Text="Preparazione…" Foreground="#A8A8A8"
+                       FontSize="13.5" Margin="0,10,0,0"/>
+            <ProgressBar x:Name="Prog" Style="{StaticResource FluentProgress}"
+                         Minimum="0" Maximum="1" Value="0" Margin="0,22,0,0"/>
+          </StackPanel>
+
+          <!-- STATO: FINE -->
+          <StackPanel x:Name="PanelDone" VerticalAlignment="Center" Visibility="Collapsed">
+            <Border Width="56" Height="56" CornerRadius="28" Background="#FFCB0F"
+                    HorizontalAlignment="Left">
+              <Path Width="26" Height="26" Stretch="Uniform" Data="M3,11 L9,17 L21,4"
+                    Stroke="#1A1A1A" StrokeThickness="3" HorizontalAlignment="Center"
+                    VerticalAlignment="Center"/>
+            </Border>
+            <TextBlock x:Name="DoneTitle" Text="Installazione completata" Foreground="#F2F2F2"
+                       FontSize="25" FontWeight="SemiBold" Margin="0,18,0,0"/>
+            <TextBlock x:Name="DoneSub" Text="Playhub è pronto all'uso." Foreground="#A8A8A8"
+                       FontSize="13.5" TextWrapping="Wrap" Margin="0,8,0,0"/>
+          </StackPanel>
+
+          </Grid>
+
+          <!-- Barra azioni FISSA: stessa identica posizione in tutti gli stati -->
+          <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="BtnCancel" Content="Annulla" Style="{StaticResource GhostButton}"
+                    Visibility="Collapsed"/>
+            <Button x:Name="BtnLangNext" Content="Continue" Style="{StaticResource PrimaryButton}"/>
+            <Button x:Name="BtnPrimary" Content="Installa" Style="{StaticResource PrimaryButton}"
+                    Margin="12,0,0,0" Visibility="Collapsed"/>
+            <Button x:Name="BtnDone" Content="Fine" Style="{StaticResource PrimaryButton}"
+                    Visibility="Collapsed"/>
+          </StackPanel>
+
+        </Grid>
+      </Grid>
+    </Grid>
+  </Border>
+</Window>
