@@ -1,0 +1,12 @@
+# Normalizza i fine-riga (niente sorprese tra editor).
+* text=auto
+*.cs    text eol=crlf
+*.xaml  text eol=crlf
+*.csproj text eol=crlf
+
+# Tratta come binari (no normalizzazione).
+*.png binary
+*.jpg binary
+*.ico binary
+*.mp4 binary
+*.exe binary

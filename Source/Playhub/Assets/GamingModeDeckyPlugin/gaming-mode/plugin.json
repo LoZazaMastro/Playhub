@@ -1,0 +1,11 @@
+{
+  "name": "Gaming Mode",
+  "author": "sgarr",
+  "flags": [],
+  "api_version": 1,
+  "publish": {
+    "tags": ["windows", "steam", "sunshine", "gaming-mode"],
+    "description": "Switch a Windows 11 PC between Desktop Mode and a Steam-first Gaming Mode.",
+    "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
+  }
+}

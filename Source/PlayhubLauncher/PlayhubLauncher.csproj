@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>PlayhubLauncher</RootNamespace>
+    <AssemblyName>Playhub</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>..\Playhub\Assets\Brand\Playhub.ico</ApplicationIcon>
+  </PropertyGroup>
+</Project>
