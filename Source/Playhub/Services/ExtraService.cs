@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -84,25 +85,35 @@ public sealed class ExtraService
 
     public async Task<string> ApplyCssLoaderProfileAsync(string mediaFireUrl)
     {
-        var zip = File.Exists(Path.Combine(AppPaths.DownloadsRoot, "themes.zip"))
-            ? Path.Combine(AppPaths.DownloadsRoot, "themes.zip")
-            : await DownloadCssLoaderProfileAsync(mediaFireUrl);
+        // Usa lo zip dei temi INCLUSO nell'app (niente download da MediaFire).
+        // Lo zip è già strutturato per homebrew\themes: temi e Playhub.profile
+        // alla radice, senza cartelle contenitore.
+        var zip = BundledThemesZip;
+        if (!File.Exists(zip))
+        {
+            zip = File.Exists(Path.Combine(AppPaths.DownloadsRoot, "themes.zip"))
+                ? Path.Combine(AppPaths.DownloadsRoot, "themes.zip")
+                : await DownloadCssLoaderProfileAsync(mediaFireUrl);
+        }
 
         var themesDir = CssThemesDir;
         Directory.CreateDirectory(themesDir);
 
-        // Record which theme folders this profile adds, so "Rimuovi" can delete
-        // only those and never touch the user's other CSS Loader themes.
+        // Annota le cartelle di primo livello aggiunte (temi + Playhub.profile),
+        // così "Rimuovi" cancella solo quelle senza toccare gli altri tuoi temi.
         string[] added;
         using (var archive = ZipFile.OpenRead(zip))
         {
             added = archive.Entries
-                .Select(e => e.FullName.Replace('\\', '/').TrimStart('/').Split('/')[0])
+                .Select(e => e.FullName.Replace('\\', '/').TrimStart('/'))
+                .Where(p => p.Contains('/'))
+                .Select(p => p.Split('/')[0])
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
         }
 
+        // Lo zip è già nel formato corretto: estrai direttamente in homebrew\themes.
         ZipFile.ExtractToDirectory(zip, themesDir, overwriteFiles: true);
 
         try
@@ -116,6 +127,9 @@ public sealed class ExtraService
 
         return "Profilo Playhub installato in CSS Loader. Le tue altre opzioni restano invariate.";
     }
+
+    private static string BundledThemesZip =>
+        Path.Combine(AppContext.BaseDirectory, "Assets", "CssLoaderThemes", "themes.zip");
 
     public Task<string> RemoveCssLoaderProfileAsync()
     {

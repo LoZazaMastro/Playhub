@@ -12,6 +12,7 @@ public sealed class GamingModeService
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
 
@@ -160,18 +161,77 @@ public sealed class GamingModeService
         }
     }
 
+    // Switch IMMEDIATO di modalità tramite l'agente locale, esattamente come fa
+    // il plugin DeckyLoader (POST http://127.0.0.1:PORT/mode/<mode>/switch).
+    // È l'agente a salvare la modalità ed eseguire il sign-out + cambio shell.
+    public async Task<bool> SwitchModeAsync(string mode, int port = 47991)
+    {
+        var path = string.Equals(mode, "Gaming", StringComparison.OrdinalIgnoreCase)
+            ? "/mode/gaming/switch"
+            : "/mode/desktop/switch";
+        return await PostAgentAsync(path, port);
+    }
+
+    // Imposta la modalità predefinita tramite l'agente, come il plugin
+    // (POST http://127.0.0.1:PORT/default/<mode>).
+    public async Task<bool> SetDefaultModeViaAgentAsync(string mode, int port = 47991)
+    {
+        var path = string.Equals(mode, "Gaming", StringComparison.OrdinalIgnoreCase)
+            ? "/default/gaming"
+            : "/default/desktop";
+        return await PostAgentAsync(path, port);
+    }
+
+    private async Task<bool> PostAgentAsync(string path, int port)
+    {
+        try
+        {
+            using var response = await _http.PostAsync($"http://127.0.0.1:{port}{path}", null);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public async Task<GamingModeConfig> LoadConfigAsync()
     {
+        GamingModeConfig config;
         if (!File.Exists(ConfigFile))
         {
-            return CreateDefaultConfig();
+            config = CreateDefaultConfig();
+        }
+        else
+        {
+            var json = await File.ReadAllTextAsync(ConfigFile);
+            config = JsonSerializer.Deserialize<GamingModeConfig>(json, JsonOptions) ?? CreateDefaultConfig();
         }
 
-        var json = await File.ReadAllTextAsync(ConfigFile);
-        return JsonSerializer.Deserialize<GamingModeConfig>(json, JsonOptions) ?? CreateDefaultConfig();
+        // Config corrotta (es. salvata prima del caricamento dei controlli): un
+        // MaxVisibleMs a 0 è impossibile in una config valida → ripristina i default.
+        if (config.Gaming?.Splash is null || config.Gaming.Splash.MaxVisibleMs <= 0)
+        {
+            config = CreateDefaultConfig();
+            await WriteConfigAsync(config);
+            return config;
+        }
+
+        if (NormalizeConfig(config))
+        {
+            await WriteConfigAsync(config);
+        }
+
+        return config;
     }
 
     public async Task SaveConfigAsync(GamingModeConfig config)
+    {
+        NormalizeConfig(config);
+        await WriteConfigAsync(config);
+    }
+
+    private async Task WriteConfigAsync(GamingModeConfig config)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(ConfigFile)!);
         var json = JsonSerializer.Serialize(config, JsonOptions);
@@ -202,7 +262,7 @@ public sealed class GamingModeService
                 EnsureInputCompatibilityInGamingMode = true,
                 EnsureSunshineCompatibilityInGamingMode = true,
                 AutoHideMouseCursorInGamingMode = true,
-                AutoHideMouseCursorAfterMs = 2200,
+                AutoHideMouseCursorAfterMs = 500,
                 BorderlessFullscreenWindowsInGamingMode = true,
                 Splash = new SplashOptions
                 {
@@ -214,8 +274,40 @@ public sealed class GamingModeService
             Safety = new SafetyOptions
             {
                 ApiPort = 47991,
+                AllowRemoteApi = true, // API dell'agente abilitate di default (servono al programma)
                 RestartWithoutPrompt = true
             }
         };
+    }
+
+    private static bool NormalizeConfig(GamingModeConfig config)
+    {
+        var changed = false;
+
+        if (config.Gaming is null)
+        {
+            config.Gaming = new GamingOptions();
+            changed = true;
+        }
+
+        if (config.Safety is null)
+        {
+            config.Safety = new SafetyOptions();
+            changed = true;
+        }
+
+        if (config.Gaming.Splash is null)
+        {
+            config.Gaming.Splash = new SplashOptions();
+            changed = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(config.Gaming.SteamArguments))
+        {
+            config.Gaming.SteamArguments = "-gamepadui";
+            changed = true;
+        }
+
+        return changed;
     }
 }

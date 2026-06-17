@@ -48,6 +48,7 @@ public sealed partial class MainWindow : Window
     private PlayhubSettings _settings = new();
     private GamingModeConfig _gamingConfig = GamingModeService.CreateDefaultConfig();
     private bool _loadingSettings;
+    private bool _loadingGaming = true; // guardia: nessun auto-save finché la config non è caricata
     private PointerRoutedEventArgs? _lastWheelArgs;
     private AppWindow? _appWindow;
 
@@ -1064,9 +1065,10 @@ public sealed partial class MainWindow : Window
         desktopCol.Children.Add(_desktopModeTile);
         var desktopSwitch = Button("Avvia ora in Desktop", async () =>
         {
-            await _gamingMode.SetNextBootModeAsync("Desktop");
-            await RefreshGamingModeAsync();
-            SetStatus("Al prossimo accesso partirà in Desktop (predefinita invariata).", InfoBarSeverity.Success);
+            if (!await _gamingMode.SwitchModeAsync("Desktop", _gamingConfig.Safety.ApiPort))
+            {
+                SetStatus("Gaming Mode non risponde. Installa o avvia l'agente e riprova.", InfoBarSeverity.Warning);
+            }
         });
         desktopSwitch.HorizontalAlignment = HorizontalAlignment.Stretch;
         desktopCol.Children.Add(desktopSwitch);
@@ -1076,9 +1078,10 @@ public sealed partial class MainWindow : Window
         gamingCol.Children.Add(_gamingModeTile);
         var gamingSwitch = Button("Avvia ora in Gaming", async () =>
         {
-            await _gamingMode.SetNextBootModeAsync("Gaming");
-            await RefreshGamingModeAsync();
-            SetStatus("Al prossimo accesso partirà in Gaming Mode (predefinita invariata).", InfoBarSeverity.Success);
+            if (!await _gamingMode.SwitchModeAsync("Gaming", _gamingConfig.Safety.ApiPort))
+            {
+                SetStatus("Gaming Mode non risponde. Installa o avvia l'agente e riprova.", InfoBarSeverity.Warning);
+            }
         });
         gamingSwitch.HorizontalAlignment = HorizontalAlignment.Stretch;
         gamingCol.Children.Add(gamingSwitch);
@@ -1240,15 +1243,14 @@ public sealed partial class MainWindow : Window
                 StartMinimized = true
             });
             RenderStartupApps();
+            AutoSaveGaming();
         })));
         _startupAppsPanel = new StackPanel { Spacing = 10 };
         apps.Children.Add(_startupAppsPanel);
         panel.Children.Add(apps);
 
-        // ---------- Save bar (applies everything above) ----------
-        panel.Children.Add(ActionRow(
-            Button("Applica modifiche", async () => await SaveGamingConfigAsync(), primary: true),
-            Button("Ricarica", async () => await RefreshGamingModeAsync())));
+        // Auto-save: ogni modifica viene salvata all'istante (niente "Applica modifiche").
+        WireGamingAutoSave();
 
         UpdateModeTiles();
         UpdateLogoPreview();
@@ -1418,6 +1420,9 @@ public sealed partial class MainWindow : Window
     {
         SelectComboKey(_defaultModeCombo, mode);
         UpdateModeTiles();
+        // Come il plugin: comunica la predefinita all'agente; salva anche in
+        // config così resta coerente anche se l'agente non è in esecuzione.
+        await _gamingMode.SetDefaultModeViaAgentAsync(mode, _gamingConfig.Safety.ApiPort);
         await SaveGamingConfigAsync();
     }
 
@@ -2629,8 +2634,33 @@ SOFTWARE.";
         _gamingConfig.Gaming.Splash.MaxVisibleMs = (int)_splashMaxBox.Value;
         ReadTogglesIntoConfig();
         await _gamingMode.SaveConfigAsync(_gamingConfig);
-        SetStatus("Modifiche applicate.", InfoBarSeverity.Success);
     }
+
+    // Salvataggio istantaneo: chiamato a ogni modifica dei controlli Gaming Mode.
+    private void AutoSaveGaming()
+    {
+        if (_loadingGaming) return;
+        _ = SaveGamingConfigAsync();
+    }
+
+    // Aggancia il salvataggio automatico a tutti i controlli della Gaming Mode.
+    private void WireGamingAutoSave()
+    {
+        foreach (var toggle in _gamingToggles.Values)
+        {
+            toggle.Toggled += (_, _) => AutoSaveGaming();
+        }
+        foreach (var box in new[] { _steamPathBox, _steamArgsBox, _deckyPathBox, _sunshinePathBox, _splashLogoBox })
+        {
+            box.LostFocus += (_, _) => AutoSaveGaming();
+        }
+        foreach (var num in new[] { _delaySteamBox, _mouseDelayBox, _apiPortBox, _splashMinBox, _splashMaxBox })
+        {
+            num.ValueChanged += (_, _) => AutoSaveGaming();
+        }
+        _splashLogoCombo.SelectionChanged += (_, _) => AutoSaveGaming();
+    }
+
 
     private async Task ScanUwpGamesAsync()
     {
@@ -2696,6 +2726,7 @@ SOFTWARE.";
 
     private void PopulateGamingConfigControls()
     {
+        _loadingGaming = true;
         SelectComboKey(_defaultModeCombo, NormalizeModeKey(_gamingConfig.DefaultMode));
         _steamPathBox.Text = _gamingConfig.Gaming.SteamPath ?? "";
         _steamArgsBox.Text = _gamingConfig.Gaming.SteamArguments;
@@ -2710,6 +2741,7 @@ SOFTWARE.";
         WriteConfigIntoToggles();
         UpdateModeTiles();
         UpdateLogoPreview();
+        _loadingGaming = false;
     }
 
     private void RenderStartupApps()
@@ -2743,17 +2775,19 @@ SOFTWARE.";
             var args = TextBox("Argomenti (facoltativi)");
             args.Text = app.Arguments;
             args.TextChanged += (_, _) => app.Arguments = args.Text;
+            args.LostFocus += (_, _) => AutoSaveGaming();
             row.Children.Add(Labeled("Argomenti", args));
 
             var enabled = new ToggleSwitch { Header = "Attivo", IsOn = app.Enabled };
             var minimized = new ToggleSwitch { Header = "Avvia minimizzato", IsOn = app.StartMinimized };
-            enabled.Toggled += (_, _) => app.Enabled = enabled.IsOn;
-            minimized.Toggled += (_, _) => app.StartMinimized = minimized.IsOn;
+            enabled.Toggled += (_, _) => { app.Enabled = enabled.IsOn; AutoSaveGaming(); };
+            minimized.Toggled += (_, _) => { app.StartMinimized = minimized.IsOn; AutoSaveGaming(); };
 
             row.Children.Add(ActionRow(enabled, minimized, Button("Rimuovi", () =>
             {
                 _gamingConfig.Gaming.CustomStartupApps.Remove(app);
                 RenderStartupApps();
+                AutoSaveGaming();
             })));
             _startupAppsPanel.Children.Add(row);
         }

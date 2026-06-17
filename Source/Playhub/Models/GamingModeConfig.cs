@@ -27,7 +27,7 @@ public sealed class GamingOptions
     public bool EnsureInputCompatibilityInGamingMode { get; set; } = true;
     public bool EnsureSunshineCompatibilityInGamingMode { get; set; } = true;
     public bool AutoHideMouseCursorInGamingMode { get; set; } = true;
-    public int AutoHideMouseCursorAfterMs { get; set; } = 2200;
+    public int AutoHideMouseCursorAfterMs { get; set; } = 500;
     public bool BorderlessFullscreenWindowsInGamingMode { get; set; } = true;
     public bool ManageAudio { get; set; }
     public SplashOptions Splash { get; set; } = new();
@@ -57,6 +57,6 @@ public sealed class StartupAppConfig
 public sealed class SafetyOptions
 {
     public int ApiPort { get; set; } = 47991;
-    public bool AllowRemoteApi { get; set; }
+    public bool AllowRemoteApi { get; set; } = true;
     public bool RestartWithoutPrompt { get; set; } = true;
 }
