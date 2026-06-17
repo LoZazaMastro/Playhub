@@ -25,7 +25,7 @@ public sealed record InstallOptions(
 public static class Installer
 {
     public const string AppName = "Playhub";
-    public const string AppVersion = "1.0.0";
+    public const string AppVersion = "1.0.1";
     public const string Publisher = "Andrea Sgarro (ZazaMastro)";
     public const string AppExeName = "Playhub.exe";
     public const string UninstallerName = "unins-playhub.exe";
@@ -290,6 +290,10 @@ public static class Installer
             progress.Report((0.35, Loc.T("RemovingRegistration")));
             try { Registry.CurrentUser.DeleteSubKeyTree(UninstallKey, throwOnMissingSubKey: false); } catch { }
 
+            // Gaming Mode è integrato in Playhub: va SEMPRE rimosso (agente,
+            // avvio automatico, scorciatoie), come faceva il suo uninstaller.
+            RemoveGamingMode();
+
             if (removeData)
             {
                 progress.Report((0.45, Loc.T("RemovingData")));
@@ -340,20 +344,42 @@ public static class Installer
         }
     }
 
+    // Rimozione SEMPRE eseguita del companion Gaming Mode (è parte di Playhub),
+    // equivalente al suo uninstaller originale.
+    private static void RemoveGamingMode()
+    {
+        try
+        {
+            foreach (var p in Process.GetProcessesByName("GamingMode"))
+            {
+                try { p.Kill(); p.WaitForExit(2000); } catch { }
+            }
+        }
+        catch { }
+
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var startup = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+
+        DeleteDir(Path.Combine(localAppData, "GamingMode"));                 // agente installato
+        SafeDelete(Path.Combine(startup, "Gaming Mode Agent.lnk"));          // avvio automatico
+        SafeDelete(Path.Combine(desktop, "Gaming Mode.lnk"));               // scorciatoia desktop
+        DeleteDir(Path.Combine(appData, "Microsoft", "Windows", "Start Menu", "Programs", "Gaming Mode")); // menu Start
+    }
+
+    // Rimozione OPZIONALE dei dati/impostazioni (casella "Rimuovi anche i dati").
     private static void RemoveUserData()
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var startup = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
 
         // Dati di Playhub (settings.json, backup, downloads/cache).
         DeleteDir(Path.Combine(appData, "Playhub"));
         DeleteDir(Path.Combine(localAppData, "Playhub"));
 
-        // Dati del companion Gaming Mode + il suo avvio automatico.
+        // Impostazioni del Gaming Mode (l'agente è già rimosso a parte).
         DeleteDir(Path.Combine(appData, "GamingMode"));
-        DeleteDir(Path.Combine(localAppData, "GamingMode"));
-        SafeDelete(Path.Combine(startup, "Gaming Mode Agent.lnk"));
     }
 
     private static void DeleteDir(string dir)
