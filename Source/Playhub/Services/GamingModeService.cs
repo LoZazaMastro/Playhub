@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace Playhub.Services;
 
+public sealed record GamingModeOperationResult(bool Success, string Message);
+
 public sealed class GamingModeService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -26,30 +28,58 @@ public sealed class GamingModeService
     public string InstalledExe => Path.Combine(InstallDir, "GamingMode.exe");
     public bool IsInstalled => File.Exists(InstalledExe);
 
-    public async Task<string> InstallAsync()
+    public async Task<GamingModeOperationResult> InstallAsync(string deckyPluginsPath)
     {
         var script = Path.Combine(AppPaths.GamingModePackage, "install.ps1");
         if (!File.Exists(script))
         {
-            return "Non trovo install.ps1 nel pacchetto Gaming Mode locale.";
+            return new(false, "Non trovo install.ps1 nel pacchetto Gaming Mode locale.");
+        }
+
+        var companionPath = ResolveDeckyPluginPath(deckyPluginsPath);
+        var companionDirectoryExisted = Directory.Exists(companionPath);
+        var companionResult = InstallDeckyPlugin(deckyPluginsPath);
+        if (!companionResult.Success)
+        {
+            return new(false, companionResult.Message);
         }
 
         var args = $"-NoProfile -ExecutionPolicy Bypass -File \"{script}\" -SourceDir \"{AppPaths.GamingModePackage}\"";
         var result = await ProcessService.RunAsync("powershell.exe", args, AppPaths.GamingModePackage);
-        return result.Success ? "Gaming Mode installato e agente avviato." : result.Error + result.Output;
+        if (!result.Success)
+        {
+            // A first installation must never leave behind only half of the pair.
+            if (!companionDirectoryExisted)
+            {
+                RemoveDeckyPlugin(deckyPluginsPath);
+            }
+
+            return new(false, result.Error + result.Output);
+        }
+
+        return new(true, "Gaming Mode e Companion per DeckyLoader sono pronti. Riavvia Steam per vedere il plugin nel menu rapido.");
     }
 
-    public async Task<string> UninstallAsync()
+    public async Task<GamingModeOperationResult> UninstallAsync(string deckyPluginsPath)
     {
         var script = Path.Combine(AppPaths.GamingModePackage, "uninstall.ps1");
         if (!File.Exists(script))
         {
-            return "Non trovo uninstall.ps1 nel pacchetto Gaming Mode locale.";
+            return new(false, "Non trovo uninstall.ps1 nel pacchetto Gaming Mode locale.");
         }
 
         var args = $"-NoProfile -ExecutionPolicy Bypass -File \"{script}\"";
         var result = await ProcessService.RunAsync("powershell.exe", args, AppPaths.GamingModePackage);
-        return result.Success ? "Gaming Mode rimosso." : result.Error + result.Output;
+        if (!result.Success)
+        {
+            // Keep the Companion available as an exit route until Gaming Mode is gone.
+            return new(false, result.Error + result.Output);
+        }
+
+        var companionResult = RemoveDeckyPlugin(deckyPluginsPath);
+        return companionResult.Success
+            ? new(true, "Gaming Mode e Companion per DeckyLoader sono stati rimossi.")
+            : new(false, companionResult.Message);
     }
 
     private static string DeckyPluginSource =>
@@ -62,11 +92,16 @@ public sealed class GamingModeService
     /// <summary>Installs (or updates) the Gaming Mode Decky companion plugin into homebrew/plugins.</summary>
     public Task<string> InstallDeckyPluginAsync(string deckyPluginsPath)
     {
+        return Task.FromResult(InstallDeckyPlugin(deckyPluginsPath).Message);
+    }
+
+    private static GamingModeOperationResult InstallDeckyPlugin(string deckyPluginsPath)
+    {
         try
         {
             if (!Directory.Exists(DeckyPluginSource))
             {
-                return Task.FromResult("Non trovo i file del plugin Gaming Mode nel pacchetto.");
+                return new(false, "Non trovo i file del plugin Gaming Mode nel pacchetto.");
             }
 
             if (string.IsNullOrWhiteSpace(deckyPluginsPath))
@@ -77,15 +112,20 @@ public sealed class GamingModeService
             Directory.CreateDirectory(deckyPluginsPath);
             var dest = Path.Combine(deckyPluginsPath, "gaming-mode");
             CopyDirectory(DeckyPluginSource, dest);
-            return Task.FromResult("Plugin Gaming Mode installato in DeckyLoader. Riavvia Steam per vederlo nel menu rapido.");
+            return new(true, "Plugin Gaming Mode installato in DeckyLoader. Riavvia Steam per vederlo nel menu rapido.");
         }
         catch (Exception ex)
         {
-            return Task.FromResult("Installazione del plugin non riuscita: " + ex.Message);
+            return new(false, "Installazione del plugin non riuscita: " + ex.Message);
         }
     }
 
     public Task<string> RemoveDeckyPluginAsync(string deckyPluginsPath)
+    {
+        return Task.FromResult(RemoveDeckyPlugin(deckyPluginsPath).Message);
+    }
+
+    private static GamingModeOperationResult RemoveDeckyPlugin(string deckyPluginsPath)
     {
         try
         {
@@ -100,12 +140,20 @@ public sealed class GamingModeService
                 Directory.Delete(dest, recursive: true);
             }
 
-            return Task.FromResult("Plugin Gaming Mode rimosso da DeckyLoader.");
+            return new(true, "Plugin Gaming Mode rimosso da DeckyLoader.");
         }
         catch (Exception ex)
         {
-            return Task.FromResult("Rimozione del plugin non riuscita: " + ex.Message);
+            return new(false, "Rimozione del plugin non riuscita: " + ex.Message);
         }
+    }
+
+    private static string ResolveDeckyPluginPath(string deckyPluginsPath)
+    {
+        var root = string.IsNullOrWhiteSpace(deckyPluginsPath)
+            ? AppPaths.DefaultDeckyPluginsPath
+            : deckyPluginsPath;
+        return Path.Combine(root, "gaming-mode");
     }
 
     private static void CopyDirectory(string source, string dest)
