@@ -12,6 +12,7 @@ public sealed class PlayhubSettings
     public string DeckyPluginsPath { get; set; } = "";
     public string PlayhubUpdateRepository { get; set; } = "LoZazaMastro/Playhub";
     public string SteamGridDbApiKey { get; set; } = "";
+    public string XboxGamesView { get; set; } = "cards";
     public string CssLoaderProfileUrl { get; set; } = "https://www.mediafire.com/file/qml1pw9wve47xir/themes.zip/file";
     public List<string> RecentArtworkBackups { get; set; } = new();
     public bool WelcomeCompleted { get; set; }
