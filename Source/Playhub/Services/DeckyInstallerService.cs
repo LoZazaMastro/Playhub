@@ -180,6 +180,29 @@ public sealed class DeckyInstallerService
         return Task.FromResult("DeckyLoader non risultava installato (puliti comunque scorciatoia e autostart).");
     }
 
+    public async Task<bool> RestartWithSteamAsync(SteamService steam)
+    {
+        if (!IsInstalled())
+        {
+            return false;
+        }
+
+        KillLoaders();
+        await steam.RestartSteamAsync();
+
+        for (var attempt = 0; attempt < 30; attempt++)
+        {
+            if (Process.GetProcessesByName("steam").Length > 0)
+            {
+                await Task.Delay(1200);
+                return SetupAutostartAndLaunch();
+            }
+            await Task.Delay(500);
+        }
+
+        return false;
+    }
+
     private async Task<byte[]?> TryDownloadAsync(string url)
     {
         try

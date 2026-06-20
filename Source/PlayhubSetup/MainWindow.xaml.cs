@@ -22,13 +22,22 @@ public partial class MainWindow : Window
 
         PathText.Text = _installDir;
 
-        // Lista lingue (default: inglese, per tutti).
-        foreach (var (code, native) in Loc.Languages)
+        // Mantiene la lingua esplicitamente scelta nell'app durante update e
+        // disinstallazione. Per una prima installazione il fallback è English.
+        var savedLanguage = Installer.ReadAppLanguage();
+        var selectedLanguageIndex = 0;
+        for (var i = 0; i < Loc.Languages.Length; i++)
+        {
+            var (code, native) = Loc.Languages[i];
             LangList.Items.Add(new ListBoxItem { Content = native, Tag = code });
-        LangList.SelectedIndex = 0; // English
+            if (string.Equals(code, savedLanguage, StringComparison.OrdinalIgnoreCase))
+                selectedLanguageIndex = i;
+        }
+        LangList.SelectedIndex = selectedLanguageIndex;
 
         if (_mode == SetupMode.Uninstall)
         {
+            Loc.Lang = savedLanguage;
             _installDir = Installer.ReadInstallDir();
             // Niente schermata lingua in disinstallazione.
             PanelLanguage.Visibility = Visibility.Collapsed;
@@ -39,6 +48,7 @@ public partial class MainWindow : Window
             BtnCancel.Visibility = Visibility.Visible;
             BtnPrimary.Visibility = Visibility.Visible;
             ChkRemoveData.Visibility = Visibility.Visible;
+            ChkRemoveUWPHook.Visibility = Visibility.Visible;
         }
 
         TitleBar.MouseLeftButtonDown += (_, e) =>
@@ -84,6 +94,7 @@ public partial class MainWindow : Window
         ChkStartMenu.Content = Loc.T("OptStartMenu");
         ChkLaunchEnd.Content = Loc.T("OptLaunchEnd");
         ChkRemoveData.Content = Loc.T("OptRemoveData");
+        ChkRemoveUWPHook.Content = Loc.T("OptRemoveUWPHook");
         BtnCancel.Content = Loc.T("Cancel");
         StatusText.Text = Loc.T("Preparing");
 
@@ -152,14 +163,17 @@ public partial class MainWindow : Window
             }
             else
             {
-                await Installer.UninstallAsync(progress, ChkRemoveData.IsChecked == true);
+                await Installer.UninstallAsync(
+                    progress,
+                    ChkRemoveData.IsChecked == true,
+                    ChkRemoveUWPHook.IsChecked == true);
             }
 
             ShowDone();
         }
         catch (Exception ex)
         {
-            ShowError(ex.Message);
+            ShowError(Installer.FriendlyError(ex));
         }
         finally
         {

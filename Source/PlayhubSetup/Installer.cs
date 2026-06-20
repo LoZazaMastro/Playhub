@@ -25,7 +25,7 @@ public sealed record InstallOptions(
 public static class Installer
 {
     public const string AppName = "Playhub";
-    public const string AppVersion = "1.1.0";
+    public const string AppVersion = "1.1.1";
     public const string Publisher = "Andrea Sgarro (ZazaMastro)";
     public const string AppExeName = "Playhub.exe";
     public const string UninstallerName = "unins-playhub.exe";
@@ -52,9 +52,13 @@ public static class Installer
         await Task.Run(() =>
         {
             progress.Report((0.02, Loc.T("Preparing")));
+            StopRunningPlayhub();
             Directory.CreateDirectory(options.InstallDir);
 
             ExtractPayload(options.InstallDir, progress);
+
+            progress.Report((0.89, Loc.T("InstallingUWPHook")));
+            InstallUWPHookSilently(options.InstallDir);
 
             var exePath = Path.Combine(options.InstallDir, AppExeName);
             var iconPath = exePath;
@@ -106,8 +110,7 @@ public static class Installer
             return;
         }
 
-        throw new FileNotFoundException(
-            "Nessun payload trovato. Esegui build-installer.bat per creare payload.zip.");
+        throw new FileNotFoundException(Loc.T("PackageError"));
     }
 
     private static bool TryExtractAppendedPayload(string exePath, string installDir,
@@ -215,6 +218,28 @@ public static class Installer
         }
     }
 
+    public static string ReadAppLanguage()
+    {
+        try
+        {
+            var file = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Playhub", "settings.json");
+            if (!File.Exists(file)) return "en";
+
+            var obj = JsonNode.Parse(File.ReadAllText(file)) as JsonObject;
+            var language = obj?["Language"]?.GetValue<string>()?.Trim().ToLowerInvariant();
+            return Loc.Languages.Any(item =>
+                string.Equals(item.Code, language, StringComparison.OrdinalIgnoreCase))
+                    ? language!
+                    : "en";
+        }
+        catch
+        {
+            return "en";
+        }
+    }
+
     private static void CopySelfAsUninstaller(string installDir)
     {
         try
@@ -276,7 +301,10 @@ public static class Installer
         Registry.CurrentUser.OpenSubKey(UninstallKey)?.GetValue("InstallLocation") as string
             ?? DefaultInstallDir;
 
-    public static async Task UninstallAsync(IProgress<(double Percent, string Status)> progress, bool removeData = false)
+    public static async Task UninstallAsync(
+        IProgress<(double Percent, string Status)> progress,
+        bool removeData = false,
+        bool removeUWPHook = false)
     {
         await Task.Run(() =>
         {
@@ -293,6 +321,12 @@ public static class Installer
             // Gaming Mode è integrato in Playhub: va SEMPRE rimosso (agente,
             // avvio automatico, scorciatoie), come faceva il suo uninstaller.
             RemoveGamingMode();
+
+            if (removeUWPHook)
+            {
+                progress.Report((0.42, Loc.T("RemovingUWPHook")));
+                RemoveUWPHook();
+            }
 
             if (removeData)
             {
@@ -366,6 +400,106 @@ public static class Installer
         SafeDelete(Path.Combine(startup, "Gaming Mode Agent.lnk"));          // avvio automatico
         SafeDelete(Path.Combine(desktop, "Gaming Mode.lnk"));               // scorciatoia desktop
         DeleteDir(Path.Combine(appData, "Microsoft", "Windows", "Start Menu", "Programs", "Gaming Mode")); // menu Start
+    }
+
+    private static void StopRunningPlayhub()
+    {
+        var currentId = Environment.ProcessId;
+        foreach (var process in Process.GetProcessesByName("Playhub"))
+        {
+            try
+            {
+                if (process.Id == currentId) continue;
+                process.CloseMainWindow();
+                if (!process.WaitForExit(3000))
+                {
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit(3000);
+                }
+            }
+            catch
+            {
+                throw new IOException(Loc.T("FilesInUse"));
+            }
+        }
+    }
+
+    private static void InstallUWPHookSilently(string installDir)
+    {
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var installedExe = Path.Combine(appData, "Briano", "UWPHook", "UWPHook.exe");
+        if (File.Exists(installedExe)) return;
+
+        var setup = Path.Combine(installDir, "UWPHook", "UWPHook-Setup.exe");
+        if (!File.Exists(setup)) return;
+
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = setup,
+                Arguments = "/S",
+                WorkingDirectory = Path.GetDirectoryName(setup)!,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            });
+            process?.WaitForExit(120000);
+
+            // L'installazione è un componente interno di Playhub: non deve
+            // aggiungere un'icona UWPHook separata sul desktop dell'utente.
+            SafeDelete(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                "UWPHook.lnk"));
+        }
+        catch
+        {
+            // Il launcher completo è comunque incluso in Playhub e rimane il fallback.
+        }
+    }
+
+    private static void RemoveUWPHook()
+    {
+        try
+        {
+            foreach (var process in Process.GetProcessesByName("UWPHook"))
+            {
+                try { process.Kill(entireProcessTree: true); process.WaitForExit(2000); } catch { }
+            }
+        }
+        catch { }
+
+        var uninstaller = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "Briano", "UWPHook", "uninstall.exe");
+        if (!File.Exists(uninstaller)) return;
+
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = uninstaller,
+                Arguments = "/S",
+                WorkingDirectory = Path.GetDirectoryName(uninstaller)!,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            });
+            process?.WaitForExit(120000);
+        }
+        catch { }
+    }
+
+    public static string FriendlyError(Exception ex)
+    {
+        return ex switch
+        {
+            UnauthorizedAccessException => Loc.T("AccessDenied"),
+            FileNotFoundException => Loc.T("PackageError"),
+            IOException => Loc.T("FilesInUse"),
+            InvalidDataException => Loc.T("PackageError"),
+            _ => Loc.T("UnexpectedError")
+        };
     }
 
     // Rimozione OPZIONALE dei dati/impostazioni (casella "Rimuovi anche i dati").

@@ -14,7 +14,7 @@
 ; ============================================================================
 
 #define MyAppName        "Playhub"
-#define MyAppVersion     "1.0.0"
+#define MyAppVersion     "1.1.0"
 #define MyAppPublisher   "Andrea Sgarro (ZazaMastro)"
 #define MyAppURL         "https://github.com/LoZazaMastro/Playhub"
 #define MyAppExeName     "Playhub.exe"
@@ -64,7 +64,8 @@ SolidCompression=yes
 ; Estetica wizard.
 WizardStyle=modern
 WizardSizePercent=110
-ShowLanguageDialog=no
+ShowLanguageDialog=yes
+UsePreviousLanguage=no
 DisableWelcomePage=no
 WizardImageFile=wizard-banner.bmp
 WizardSmallImageFile=wizard-small.bmp
@@ -74,10 +75,26 @@ WizardImageStretch=yes
 Name: "it"; MessagesFile: "compiler:Languages\Italian.isl"
 Name: "en"; MessagesFile: "compiler:Default.isl"
 
+[CustomMessages]
+it.StartMenuShortcut=Crea una scorciatoia nel menu Start
+en.StartMenuShortcut=Create a Start menu shortcut
+it.StartupShortcut=Avvia Playhub all'avvio di Windows
+en.StartupShortcut=Start Playhub when Windows starts
+it.StartupOptions=Opzioni di avvio
+en.StartupOptions=Startup options
+it.UninstallProgram=Disinstalla %1
+en.UninstallProgram=Uninstall %1
+it.UninstallOptionsTitle=Opzioni di disinstallazione
+en.UninstallOptionsTitle=Uninstall options
+it.UninstallOptionsText=Scegli quali componenti rimuovere insieme a Playhub.
+en.UninstallOptionsText=Choose which components to remove with Playhub.
+it.RemoveUWPHook=Disinstalla anche UWPHook
+en.RemoveUWPHook=Also uninstall UWPHook
+
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}";             GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
-Name: "startmenu";   Description: "Crea una scorciatoia nel menu Start"; GroupDescription: "{cm:AdditionalIcons}"
-Name: "startupboot"; Description: "Avvia Playhub all'avvio di Windows";  GroupDescription: "Opzioni di avvio"; Flags: unchecked
+Name: "startmenu";   Description: "{cm:StartMenuShortcut}"; GroupDescription: "{cm:AdditionalIcons}"
+Name: "startupboot"; Description: "{cm:StartupShortcut}";  GroupDescription: "{cm:StartupOptions}"; Flags: unchecked
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
@@ -85,13 +102,16 @@ Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdi
 [Icons]
 ; Menu Start (creato salvo l'utente deselezioni il task).
 Name: "{group}\{#MyAppName}";              Filename: "{app}\{#MyAppExeName}"; Tasks: startmenu
-Name: "{group}\Disinstalla {#MyAppName}";  Filename: "{uninstallexe}";        Tasks: startmenu
+Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"; Tasks: startmenu
 ; Desktop (opzionale).
 Name: "{autodesktop}\{#MyAppName}";        Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 ; Avvio con Windows (opzionale).
 Name: "{userstartup}\{#MyAppName}";        Filename: "{app}\{#MyAppExeName}"; Tasks: startupboot
 
 [Run]
+; UWPHook viene installato senza finestre o richieste all'utente. Se è già
+; presente, non viene reinstallato; il launcher integrato resta il fallback.
+Filename: "{app}\UWPHook\UWPHook-Setup.exe"; Parameters: "/S"; Flags: runhidden waituntilterminated; Check: UWPHookNeedsInstall
 ; Avvio automatico a fine installazione (casella spuntata di default).
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 
@@ -109,10 +129,87 @@ const
   PBM_SETBARCOLOR = $0409;
   PBM_SETBKCOLOR  = $2001;
 
-function SendMessage(hWnd: HWND; Msg: UINT; wParam: WPARAM; lParam: LPARAM): LRESULT;
+var
+  RemoveUWPHookWithPlayhub: Boolean;
+
+function SendMessage(hWnd: Integer; Msg: LongWord; wParam: Longint; lParam: Longint): Longint;
   external 'SendMessageW@user32.dll stdcall';
 function SetWindowTheme(hWnd: HWND; pszSubAppName: WideString; pszSubIdList: WideString): HRESULT;
   external 'SetWindowTheme@uxtheme.dll stdcall';
+
+function UWPHookNeedsInstall: Boolean;
+begin
+  Result := not FileExists(ExpandConstant('{userappdata}\Briano\UWPHook\UWPHook.exe'));
+end;
+
+function InitializeUninstall: Boolean;
+var
+  OptionsForm: TSetupForm;
+  DescriptionLabel: TNewStaticText;
+  RemoveUWPHookCheck: TNewCheckBox;
+  OkButton: TNewButton;
+  CancelButton: TNewButton;
+begin
+  OptionsForm := CreateCustomForm(ScaleX(460), ScaleY(150), True, False);
+  try
+    OptionsForm.Caption := ExpandConstant('{cm:UninstallOptionsTitle}');
+    OptionsForm.ClientWidth := ScaleX(460);
+    OptionsForm.ClientHeight := ScaleY(150);
+    OptionsForm.Position := poScreenCenter;
+
+    DescriptionLabel := TNewStaticText.Create(OptionsForm);
+    DescriptionLabel.Parent := OptionsForm;
+    DescriptionLabel.Caption := ExpandConstant('{cm:UninstallOptionsText}');
+    DescriptionLabel.Left := ScaleX(20);
+    DescriptionLabel.Top := ScaleY(20);
+    DescriptionLabel.Width := OptionsForm.ClientWidth - ScaleX(40);
+    DescriptionLabel.AutoSize := False;
+
+    RemoveUWPHookCheck := TNewCheckBox.Create(OptionsForm);
+    RemoveUWPHookCheck.Parent := OptionsForm;
+    RemoveUWPHookCheck.Caption := ExpandConstant('{cm:RemoveUWPHook}');
+    RemoveUWPHookCheck.Left := ScaleX(20);
+    RemoveUWPHookCheck.Top := ScaleY(58);
+    RemoveUWPHookCheck.Width := OptionsForm.ClientWidth - ScaleX(40);
+    RemoveUWPHookCheck.Checked := False;
+
+    OkButton := TNewButton.Create(OptionsForm);
+    OkButton.Parent := OptionsForm;
+    OkButton.Caption := SetupMessage(msgButtonOK);
+    OkButton.ModalResult := mrOk;
+    OkButton.Default := True;
+    OkButton.Left := OptionsForm.ClientWidth - ScaleX(190);
+    OkButton.Top := ScaleY(104);
+    OkButton.Width := ScaleX(80);
+
+    CancelButton := TNewButton.Create(OptionsForm);
+    CancelButton.Parent := OptionsForm;
+    CancelButton.Caption := SetupMessage(msgButtonCancel);
+    CancelButton.ModalResult := mrCancel;
+    CancelButton.Cancel := True;
+    CancelButton.Left := OptionsForm.ClientWidth - ScaleX(100);
+    CancelButton.Top := ScaleY(104);
+    CancelButton.Width := ScaleX(80);
+
+    Result := OptionsForm.ShowModal = mrOk;
+    RemoveUWPHookWithPlayhub := Result and RemoveUWPHookCheck.Checked;
+  finally
+    OptionsForm.Free;
+  end;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  ResultCode: Integer;
+  UWPHookUninstaller: String;
+begin
+  if (CurUninstallStep = usPostUninstall) and RemoveUWPHookWithPlayhub then
+  begin
+    UWPHookUninstaller := ExpandConstant('{userappdata}\Briano\UWPHook\uninstall.exe');
+    if FileExists(UWPHookUninstaller) then
+      Exec(UWPHookUninstaller, '/S', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  end;
+end;
 
 procedure StyleProgressBar;
 begin

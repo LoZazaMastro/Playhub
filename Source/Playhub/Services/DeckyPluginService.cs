@@ -1,16 +1,20 @@
 using Playhub.Models;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Playhub.Services;
 
 public sealed class DeckyPluginService
 {
+    private const string InstalledReleaseMarker = ".playhub-release.json";
     private static readonly HttpClient Http = CreateHttpClient();
 
     public async Task InstallOrUpdateAsync(DeckyPluginInfo plugin, string deckyPluginsPath)
@@ -59,23 +63,134 @@ public sealed class DeckyPluginService
 
         if (Directory.Exists(destination))
         {
-            Directory.Delete(destination, recursive: true);
+            StopPluginProcesses(destination);
+            DeleteDirectoryWithRetry(destination);
         }
 
         CopyDirectory(source, destination);
+        WriteInstalledReleaseMarker(destination, plugin.RepositoryName, plugin.Version);
         plugin.IsInstalled = true;
         plugin.InstalledFolder = destination;
+        plugin.InstalledVersion = plugin.Version;
+        plugin.HasUpdate = false;
     }
 
     public Task UninstallAsync(DeckyPluginInfo plugin)
     {
         if (!string.IsNullOrWhiteSpace(plugin.InstalledFolder) && Directory.Exists(plugin.InstalledFolder))
         {
-            Directory.Delete(plugin.InstalledFolder, recursive: true);
+            StopPluginProcesses(plugin.InstalledFolder);
+            DeleteDirectoryWithRetry(plugin.InstalledFolder);
         }
 
         plugin.IsInstalled = false;
         return Task.CompletedTask;
+    }
+
+    private static void WriteInstalledReleaseMarker(string destination, string repositoryName, string version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return;
+        }
+
+        try
+        {
+            var marker = new
+            {
+                repository = repositoryName,
+                version,
+                installedAt = DateTimeOffset.UtcNow
+            };
+            File.WriteAllText(
+                Path.Combine(destination, InstalledReleaseMarker),
+                JsonSerializer.Serialize(marker, new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch
+        {
+            // Il plugin è comunque installato; il manifest resta il fallback.
+        }
+    }
+
+    private static void StopPluginProcesses(string pluginFolder)
+    {
+        try
+        {
+            var script = @"
+$target = [Environment]::GetEnvironmentVariable('PLAYHUB_PLUGIN_REMOVE_PATH')
+if ([string]::IsNullOrWhiteSpace($target)) { exit 0 }
+$allProcesses = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue)
+$pluginProcesses = @($allProcesses | Where-Object {
+    $_.ProcessId -ne $PID -and
+    $_.CommandLine -and
+    $_.CommandLine.IndexOf($target, [StringComparison]::OrdinalIgnoreCase) -ge 0
+  })
+
+# Launch Curtain keeps a PowerShell helper alive under a dedicated Decky
+# multiprocessing worker. Killing only the helper lets that worker recreate it,
+# so stop that specific worker too (never the root PluginLoader process).
+$parentIds = @($pluginProcesses | Select-Object -ExpandProperty ParentProcessId -Unique)
+$pluginWorkers = @($allProcesses | Where-Object {
+    $parentIds -contains $_.ProcessId -and
+    $_.Name -like 'PluginLoader*' -and
+    $_.CommandLine -match 'multiprocessing-fork'
+  })
+
+$pluginWorkers | ForEach-Object {
+  Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+}
+$pluginProcesses | ForEach-Object {
+  Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+}
+";
+            var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {encoded}",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            startInfo.Environment["PLAYHUB_PLUGIN_REMOVE_PATH"] = Path.GetFullPath(pluginFolder);
+            using var process = Process.Start(startInfo);
+            if (process is not null)
+            {
+                process.WaitForExit(8000);
+            }
+        }
+        catch
+        {
+        }
+
+        Thread.Sleep(350);
+    }
+
+    private static void DeleteDirectoryWithRetry(string path)
+    {
+        Exception? lastError = null;
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            try
+            {
+                if (Directory.Exists(path))
+                {
+                    Directory.Delete(path, recursive: true);
+                }
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                lastError = ex;
+                Thread.Sleep(350);
+            }
+        }
+
+        if (lastError is not null)
+        {
+            throw lastError;
+        }
     }
 
     private static string ExtractPluginZip(string zip)

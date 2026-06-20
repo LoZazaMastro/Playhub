@@ -4,16 +4,19 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Playhub.Services;
 
 public sealed class PluginCatalogService
 {
     private const string Owner = "LoZazaMastro";
+    private const string InstalledReleaseMarker = ".playhub-release.json";
     private static readonly HttpClient Http = CreateHttpClient();
 
     private static readonly IReadOnlyList<PluginDefinition> Definitions = new[]
@@ -70,7 +73,7 @@ public sealed class PluginCatalogService
 ## Achievement
 • Mostra gli achievement dei giochi non-Steam dentro Big Picture.
 • Supporta RetroAchievements per ROM ed emulatori.
-• Supporta gli achievement Xbox / Game Pass / Microsoft Store tramite OpenXBL (serve importare i giochi tramite la tab Importa Giochi Xbox di Playhub).
+• Supporta gli achievement Xbox / Game Pass / Microsoft Store tramite OpenXBL (serve importare i giochi tramite la tab Importa Giochi di Playhub).
 • Permette di scegliere la fonte per ogni gioco: Auto, RetroAchievements, Xbox o Disattivata.
 • Offre cache flessibili — oraria, giornaliera, settimanale, a sessione o manuale — per limitare le chiamate API.
 
@@ -193,7 +196,14 @@ public sealed class PluginCatalogService
             var readme = readmeTask.Result;
             var localFolder = FindLocalFolder(pluginRoot, definition.LocalFolder);
             var installed = FindInstalledFolder(deckyPluginsPath, definition, definition.DisplayName);
-            var installedVersion = installed is null ? "" : ReadInstalledVersion(installed);
+            var installedVersion = installed is null ? "" : ReadInstalledVersion(installed, definition.RepositoryName);
+            var hasUpdate = HasVersionUpdate(installedVersion, release.Version);
+            var changelog = SelectChangelog(
+                definition.RepositoryName,
+                installed is not null,
+                installedVersion,
+                hasUpdate,
+                release);
 
             plugins.Add(new DeckyPluginInfo
             {
@@ -202,7 +212,7 @@ public sealed class PluginCatalogService
                 Author = Owner,
                 Version = release.Version ?? "",
                 InstalledVersion = installedVersion,
-                HasUpdate = HasVersionUpdate(installedVersion, release.Version),
+                HasUpdate = hasUpdate,
                 ShortDescription = definition.ShortDescription,
                 LongDescription = definition.LongDescription,
                 Readme = string.IsNullOrWhiteSpace(readme.Text) ? definition.LongDescription : readme.Text,
@@ -216,7 +226,9 @@ public sealed class PluginCatalogService
                 RepositoryName = definition.RepositoryName,
                 ReleaseZipUrl = release.ZipUrl,
                 ReleasePageUrl = release.PageUrl,
-                ReleaseNotes = release.Notes ?? "",
+                ReleaseNotes = changelog.Notes ?? "",
+                ReleaseNotesVersion = changelog.Version ?? "",
+                ReleaseNotesPublishedAt = changelog.PublishedAt ?? "",
                 ReleasePublishedAt = release.PublishedAt ?? "",
                 UpdatedAt = repo?.UpdatedAt ?? "",
                 IsInstalled = installed is not null,
@@ -292,18 +304,233 @@ public sealed class PluginCatalogService
                 .OrderByDescending(a => (a.GetProperty("name").GetString() ?? "").Contains("installer", StringComparison.OrdinalIgnoreCase))
                 .FirstOrDefault();
 
-            return new ReleaseInfo(
+            var release = new ReleaseInfo(
                 asset.ValueKind == JsonValueKind.Undefined ? null : asset.GetProperty("browser_download_url").GetString(),
                 root.TryGetProperty("html_url", out var h) ? h.GetString() : null,
                 root.TryGetProperty("tag_name", out var t) ? t.GetString() : null,
                 root.TryGetProperty("body", out var b) ? CleanMarkdown(b.GetString() ?? "") : null,
                 root.TryGetProperty("published_at", out var p) ? FormatDate(p.GetString()) : null);
+            release = PreserveCachedNotes(repoName, release);
+            SaveReleaseCache(repoName, release);
+            return release;
+        }
+        catch
+        {
+            var atomRelease = await TryGetLatestReleaseFromAtomAsync(repoName);
+            if (!string.IsNullOrWhiteSpace(atomRelease.Version) || !string.IsNullOrWhiteSpace(atomRelease.Notes))
+            {
+                atomRelease = PreserveCachedReleaseData(repoName, atomRelease);
+                SaveReleaseCache(repoName, atomRelease);
+                return atomRelease;
+            }
+            return LoadReleaseCache(repoName);
+        }
+    }
+
+    private static ReleaseInfo SelectChangelog(
+        string repoName,
+        bool isInstalled,
+        string installedVersion,
+        bool hasUpdate,
+        ReleaseInfo latestRelease)
+    {
+        if (!isInstalled || string.IsNullOrWhiteSpace(installedVersion))
+        {
+            return latestRelease;
+        }
+
+        if (!hasUpdate)
+        {
+            if (!string.IsNullOrWhiteSpace(latestRelease.Notes))
+            {
+                SaveInstalledReleaseCache(repoName, installedVersion, latestRelease);
+                return latestRelease;
+            }
+            return LoadInstalledReleaseCache(repoName, installedVersion);
+        }
+
+        // Keep showing the changelog of the installed version while a newer
+        // release is available. It switches only after that release is installed.
+        return LoadInstalledReleaseCache(repoName, installedVersion);
+    }
+
+    private static async Task<ReleaseInfo> TryGetLatestReleaseFromAtomAsync(string repoName)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
+            var xml = await Http.GetStringAsync($"https://github.com/{Owner}/{repoName}/releases.atom", cts.Token);
+            var document = XDocument.Parse(xml);
+            XNamespace atom = "http://www.w3.org/2005/Atom";
+            var entry = document.Root?.Elements(atom + "entry").FirstOrDefault();
+            if (entry is null)
+            {
+                return new ReleaseInfo(null, null, null, null, null);
+            }
+
+            var pageUrl = entry.Elements(atom + "link")
+                .FirstOrDefault(link => string.Equals((string?)link.Attribute("rel"), "alternate", StringComparison.OrdinalIgnoreCase))
+                ?.Attribute("href")?.Value;
+            var version = string.IsNullOrWhiteSpace(pageUrl)
+                ? null
+                : Uri.UnescapeDataString(pageUrl[(pageUrl.LastIndexOf('/') + 1)..]);
+            var html = entry.Element(atom + "content")?.Value ?? "";
+            var notes = CleanReleaseHtml(html);
+            var published = FormatDate(entry.Element(atom + "updated")?.Value);
+            return new ReleaseInfo(null, pageUrl, version, notes, published);
         }
         catch
         {
             return new ReleaseInfo(null, null, null, null, null);
         }
     }
+
+    private static string CleanReleaseHtml(string html)
+    {
+        if (string.IsNullOrWhiteSpace(html) || string.Equals(html.Trim(), "No content.", StringComparison.OrdinalIgnoreCase))
+        {
+            return "";
+        }
+
+        var text = Regex.Replace(html, @"(?i)<li[^>]*>", "• ");
+        text = Regex.Replace(text, @"(?i)</(li|p|h[1-6]|ul|ol)>", "\n");
+        text = Regex.Replace(text, "<[^>]+>", "");
+        text = WebUtility.HtmlDecode(text);
+        text = Regex.Replace(text, @"[ \t]+\n", "\n");
+        text = Regex.Replace(text, @"\n{3,}", "\n\n");
+        return text.Trim();
+    }
+
+    private static ReleaseInfo PreserveCachedReleaseData(string repoName, ReleaseInfo release)
+    {
+        var cached = LoadReleaseCache(repoName);
+        if (!string.Equals(NormalizeVersion(cached.Version), NormalizeVersion(release.Version), StringComparison.OrdinalIgnoreCase))
+        {
+            return release;
+        }
+
+        return release with
+        {
+            ZipUrl = string.IsNullOrWhiteSpace(release.ZipUrl) ? cached.ZipUrl : release.ZipUrl,
+            Notes = string.IsNullOrWhiteSpace(release.Notes) ? cached.Notes : release.Notes
+        };
+    }
+
+    private static ReleaseInfo PreserveCachedNotes(string repoName, ReleaseInfo release)
+    {
+        if (!string.IsNullOrWhiteSpace(release.Notes))
+        {
+            return release;
+        }
+
+        var cached = LoadReleaseCache(repoName);
+        if (string.Equals(
+                NormalizeVersion(cached.Version),
+                NormalizeVersion(release.Version),
+                StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(cached.Notes))
+        {
+            return release with { Notes = cached.Notes };
+        }
+
+        return release;
+    }
+
+    private static void SaveReleaseCache(string repoName, ReleaseInfo release)
+    {
+        if (string.IsNullOrWhiteSpace(release.Version) &&
+            string.IsNullOrWhiteSpace(release.Notes) &&
+            string.IsNullOrWhiteSpace(release.PageUrl))
+        {
+            return;
+        }
+
+        try
+        {
+            var directory = Path.Combine(AppPaths.LocalDataRoot, "cache", "plugin-releases");
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(
+                Path.Combine(directory, SanitizeCacheName(repoName) + ".json"),
+                JsonSerializer.Serialize(release, new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch
+        {
+        }
+    }
+
+    private static void SaveInstalledReleaseCache(string repoName, string installedVersion, ReleaseInfo release)
+    {
+        if (string.IsNullOrWhiteSpace(release.Notes))
+        {
+            return;
+        }
+
+        try
+        {
+            var directory = Path.Combine(AppPaths.LocalDataRoot, "cache", "plugin-releases", "installed");
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(
+                Path.Combine(directory, InstalledReleaseCacheName(repoName, installedVersion)),
+                JsonSerializer.Serialize(release, new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch
+        {
+        }
+    }
+
+    private static ReleaseInfo LoadInstalledReleaseCache(string repoName, string installedVersion)
+    {
+        try
+        {
+            var path = Path.Combine(
+                AppPaths.LocalDataRoot,
+                "cache",
+                "plugin-releases",
+                "installed",
+                InstalledReleaseCacheName(repoName, installedVersion));
+            if (File.Exists(path))
+            {
+                return JsonSerializer.Deserialize<ReleaseInfo>(File.ReadAllText(path))
+                    ?? new ReleaseInfo(null, null, null, null, null);
+            }
+        }
+        catch
+        {
+        }
+
+        return new ReleaseInfo(null, null, null, null, null);
+    }
+
+    private static string InstalledReleaseCacheName(string repoName, string installedVersion) =>
+        SanitizeCacheName(repoName) + "-" + SanitizeCacheName(installedVersion) + ".json";
+
+    private static ReleaseInfo LoadReleaseCache(string repoName)
+    {
+        try
+        {
+            var path = Path.Combine(
+                AppPaths.LocalDataRoot,
+                "cache",
+                "plugin-releases",
+                SanitizeCacheName(repoName) + ".json");
+            if (File.Exists(path))
+            {
+                return JsonSerializer.Deserialize<ReleaseInfo>(File.ReadAllText(path))
+                    ?? new ReleaseInfo(null, null, null, null, null);
+            }
+        }
+        catch
+        {
+        }
+
+        return new ReleaseInfo(null, null, null, null, null);
+    }
+
+    private static string SanitizeCacheName(string value) =>
+        Regex.Replace(value, "[^a-zA-Z0-9._-]+", "-");
+
+    private static string NormalizeVersion(string? value) =>
+        Regex.Match(value ?? "", @"\d+(?:\.\d+)*").Value;
 
     private static async Task<ReadmeInfo> SafeGetReadmeAsync(string repoName)
     {
@@ -465,30 +692,77 @@ public sealed class PluginCatalogService
         return pluginJson is null ? folder : Path.GetDirectoryName(pluginJson)!;
     }
 
-    private static string ReadInstalledVersion(string folder)
+    private static string ReadInstalledVersion(string folder, string repositoryName)
     {
-        var pluginJson = Path.Combine(folder, "plugin.json");
-        if (!File.Exists(pluginJson))
+        var markerPath = Path.Combine(folder, InstalledReleaseMarker);
+        if (File.Exists(markerPath))
         {
-            return "";
-        }
-
-        try
-        {
-            using var doc = JsonDocument.Parse(File.ReadAllText(pluginJson));
-            foreach (var key in new[] { "version", "version_number", "tag" })
+            try
             {
-                if (doc.RootElement.TryGetProperty(key, out var value))
+                using var marker = JsonDocument.Parse(File.ReadAllText(markerPath));
+                if (marker.RootElement.TryGetProperty("version", out var markedVersion) &&
+                    markedVersion.ValueKind == JsonValueKind.String &&
+                    !string.IsNullOrWhiteSpace(markedVersion.GetString()))
                 {
-                    return value.GetString() ?? "";
+                    return markedVersion.GetString()!;
                 }
             }
+            catch
+            {
+            }
         }
-        catch
+
+        foreach (var manifestPath in new[]
         {
+            Path.Combine(folder, "plugin.json"),
+            Path.Combine(folder, "package.json")
+        })
+        {
+            if (!File.Exists(manifestPath))
+            {
+                continue;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
+                foreach (var key in new[] { "version", "version_number", "tag" })
+                {
+                    if (doc.RootElement.TryGetProperty(key, out var value) &&
+                        value.ValueKind == JsonValueKind.String &&
+                        !string.IsNullOrWhiteSpace(value.GetString()))
+                    {
+                        return NormalizeManifestVersion(repositoryName, value.GetString()!);
+                    }
+                }
+            }
+            catch
+            {
+            }
         }
 
         return "";
+    }
+
+    private static string NormalizeManifestVersion(string repositoryName, string version)
+    {
+        // These projects kept an internal package version that differs from
+        // the public GitHub release version. Without Playhub's marker, reading
+        // package.json therefore produced a permanent false update notice.
+        var normalized = NormalizeVersion(version);
+        if (string.Equals(repositoryName, "Now-Playing", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(normalized, "0.3.0", StringComparison.OrdinalIgnoreCase))
+        {
+            return "1.3.0";
+        }
+
+        if (string.Equals(repositoryName, "Weather", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(normalized, "1.0.0", StringComparison.OrdinalIgnoreCase))
+        {
+            return "1.1.0";
+        }
+
+        return version;
     }
 
     private static bool HasVersionUpdate(string installedVersion, string? latestVersion)
@@ -1954,7 +2228,7 @@ public sealed class PluginCatalogService
     {
         if (string.IsNullOrWhiteSpace(repositoryName) ||
             string.IsNullOrWhiteSpace(languageKey) ||
-            languageKey == "it" || languageKey == "auto")
+            languageKey == "it")
         {
             return null;
         }

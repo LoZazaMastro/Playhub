@@ -20,6 +20,7 @@ public sealed class SettingsService
         AppPaths.EnsureRoots();
         if (!File.Exists(AppPaths.SettingsFile))
         {
+            Current.Language = LocalizationService.DetectSystemLanguage();
             Current.PluginRoot = AppPaths.LocalPluginRoot;
             Current.DeckyPluginsPath = AppPaths.DefaultDeckyPluginsPath;
             await SaveAsync();
@@ -28,6 +29,16 @@ public sealed class SettingsService
 
         var json = await File.ReadAllTextAsync(AppPaths.SettingsFile);
         Current = JsonSerializer.Deserialize<PlayhubSettings>(json, JsonOptions) ?? new PlayhubSettings();
+        Current.SteamGridDbGameOverrides ??= new();
+        Current.SteamGridDbTitleOverrides ??= new();
+        Current.SteamGridDbArtworkDisabled ??= new();
+        Current.ExecutableGameFolders ??= new();
+        Current.ExecutableGameFiles ??= new();
+        if (!string.IsNullOrWhiteSpace(Current.ExecutableGamesFolder) &&
+            !Current.ExecutableGameFolders.Contains(Current.ExecutableGamesFolder, StringComparer.OrdinalIgnoreCase))
+        {
+            Current.ExecutableGameFolders.Add(Current.ExecutableGamesFolder);
+        }
         if (string.IsNullOrWhiteSpace(Current.PluginRoot) || !Directory.Exists(Current.PluginRoot))
         {
             Current.PluginRoot = AppPaths.LocalPluginRoot;
@@ -47,7 +58,14 @@ public sealed class SettingsService
             Current.Backdrop = NormalizeBackdrop(Current.Backdrop);
         }
 
+        var storedLanguage = Current.Language;
         Current.Language = LocalizationService.NormalizeLanguageKey(Current.Language);
+        if (!string.Equals(storedLanguage, Current.Language, StringComparison.OrdinalIgnoreCase))
+        {
+            // Migra definitivamente i vecchi valori "auto" verso la lingua
+            // esplicita rilevata, così l'opzione rimossa non resta nel file.
+            await SaveAsync();
+        }
 
         return Current;
     }

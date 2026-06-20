@@ -24,6 +24,8 @@ public sealed class DeckyPluginInfo
     public string? ReleaseZipUrl { get; set; }
     public string? ReleasePageUrl { get; set; }
     public string ReleaseNotes { get; set; } = "";
+    public string ReleaseNotesVersion { get; set; } = "";
+    public string ReleaseNotesPublishedAt { get; set; } = "";
     public string ReleasePublishedAt { get; set; } = "";
     public string UpdatedAt { get; set; } = "";
     public bool IsInstalled { get; set; }

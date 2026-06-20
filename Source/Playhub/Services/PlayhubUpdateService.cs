@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Playhub.Services;
 
@@ -54,7 +55,7 @@ public sealed class PlayhubUpdateService
             var tag = root.TryGetProperty("tag_name", out var t) ? t.GetString() : null;
             if (string.IsNullOrWhiteSpace(tag))
             {
-                return null;
+                return await CheckFromAtomAsync(repository, currentVersion);
             }
 
             var url = root.TryGetProperty("html_url", out var h) ? h.GetString() : null;
@@ -65,6 +66,45 @@ public sealed class PlayhubUpdateService
             var isNewer = latest is not null && current is not null && latest > current;
 
             return new UpdateInfo(isNewer, NormalizeTag(tag), currentVersion, url, notes);
+        }
+        catch
+        {
+            // GitHub's anonymous API is heavily rate-limited. The public
+            // release feed contains the same latest tag and is not tied to
+            // that quota, so update checks keep working without a token.
+            return await CheckFromAtomAsync(repository, currentVersion);
+        }
+    }
+
+    private static async Task<UpdateInfo?> CheckFromAtomAsync(string repository, string currentVersion)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+            var xml = await Http.GetStringAsync(
+                $"https://github.com/{repository.Trim('/')}/releases.atom", cts.Token);
+            var document = XDocument.Parse(xml);
+            XNamespace atom = "http://www.w3.org/2005/Atom";
+            var entry = document.Root?.Elements(atom + "entry").FirstOrDefault();
+            if (entry is null)
+            {
+                return null;
+            }
+
+            var releaseUrl = entry.Elements(atom + "link")
+                .FirstOrDefault(link => string.Equals(
+                    (string?)link.Attribute("rel"), "alternate", StringComparison.OrdinalIgnoreCase))
+                ?.Attribute("href")?.Value;
+            if (string.IsNullOrWhiteSpace(releaseUrl))
+            {
+                return null;
+            }
+
+            var tag = Uri.UnescapeDataString(releaseUrl[(releaseUrl.LastIndexOf('/') + 1)..]);
+            var latest = ParseVersion(tag);
+            var current = ParseVersion(currentVersion);
+            var isNewer = latest is not null && current is not null && latest > current;
+            return new UpdateInfo(isNewer, NormalizeTag(tag), currentVersion, releaseUrl, null);
         }
         catch
         {
