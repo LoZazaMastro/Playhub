@@ -11,6 +11,11 @@ public partial class App : Application
 
     public App()
     {
+        // Playhub is a dark application. Set the application theme before
+        // loading XAML resources or constructing any page; otherwise Windows
+        // light mode can materialize light card brushes that remain in place
+        // even after the window itself is switched to dark mode.
+        RequestedTheme = ApplicationTheme.Dark;
         InitializeComponent();
         UnhandledException += (_, args) =>
         {
