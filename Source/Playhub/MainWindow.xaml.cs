@@ -101,6 +101,7 @@ public sealed partial class MainWindow : Window
     private int _executableCardColumnCount = 3;
     private StackPanel _startupAppsPanel = new();
     private Border _deckyQuickAccessCard = new();
+    private Border _deckyBigPictureCard = new();
 
     // Gaming Mode: visual mode selector + logo preview.
     private Border _desktopModeTile = new();
@@ -1058,6 +1059,11 @@ public sealed partial class MainWindow : Window
                 Button("Rimuovi", async () => { SetStatus(await _deckyInstaller.RemoveAsync(), InfoBarSeverity.Warning); await RefreshDeckyStateAsync(); })),
             out _installTile, out _installGlyph, out _installStatus));
 
+        var bigPicture = BuildBigPictureTutorialCard();
+        _deckyBigPictureCard = bigPicture.Root;
+        _deckyBigPictureCard.Visibility = Visibility.Collapsed;
+        panel.Children.Add(bigPicture);
+
         var quickAccess = BuildQuickAccessTutorialCard(
             "decky",
             "Esplora Decky",
@@ -1145,7 +1151,9 @@ public sealed partial class MainWindow : Window
         var installed = _deckyInstaller.IsInstalled();
         SetStepState(_devTile, _devGlyph, _devStatus, devOn, "", devOn ? "Attiva" : "Da attivare");
         SetStepState(_installTile, _installGlyph, _installStatus, installed, "", installed ? "Installato" : "Non installato");
-        _deckyQuickAccessCard.Visibility = installed ? Visibility.Visible : Visibility.Collapsed;
+        var ready = steamInstalled && devOn && installed;
+        _deckyBigPictureCard.Visibility = ready ? Visibility.Visible : Visibility.Collapsed;
+        _deckyQuickAccessCard.Visibility = ready ? Visibility.Visible : Visibility.Collapsed;
         UpdateTutorialPlayback(_currentPageTag);
         var installLabel = installed ? "Reinstalla" : "Installa";
         _localizationKeys.AddOrUpdate(_installButton, installLabel);
@@ -1562,37 +1570,7 @@ public sealed partial class MainWindow : Window
 
         if (!string.IsNullOrWhiteSpace(warning))
         {
-            var noticeContent = new Grid { ColumnSpacing = 10 };
-            noticeContent.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            noticeContent.ColumnDefinitions.Add(new ColumnDefinition());
-            var noticeIcon = new FontIcon
-            {
-                Glyph = ((char)0xE7BA).ToString(),
-                FontSize = 16,
-                Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 203, 15)),
-                VerticalAlignment = VerticalAlignment.Top
-            };
-            var noticeText = new TextBlock
-            {
-                Text = warning,
-                TextWrapping = TextWrapping.Wrap,
-                FontSize = 12.5,
-                LineHeight = 19,
-                Opacity = 0.9
-            };
-            Grid.SetColumn(noticeIcon, 0);
-            Grid.SetColumn(noticeText, 1);
-            noticeContent.Children.Add(noticeIcon);
-            noticeContent.Children.Add(noticeText);
-            text.Children.Add(new Border
-            {
-                CornerRadius = new CornerRadius(8),
-                Padding = new Thickness(12),
-                Background = new SolidColorBrush(Color.FromArgb(24, 255, 203, 15)),
-                BorderBrush = new SolidColorBrush(Color.FromArgb(72, 255, 203, 15)),
-                BorderThickness = new Thickness(1),
-                Child = noticeContent
-            });
+            text.Children.Add(BuildYellowWarning(warning));
         }
 
         var grid = new Grid { ColumnSpacing = 20, HorizontalAlignment = HorizontalAlignment.Stretch };
@@ -1603,6 +1581,93 @@ public sealed partial class MainWindow : Window
         Grid.SetColumn(text, 1);
         grid.Children.Add(video);
         grid.Children.Add(text);
+        card.Children.Add(grid);
+        return card;
+    }
+
+    private static Border BuildYellowWarning(string warning)
+    {
+        var noticeContent = new Grid { ColumnSpacing = 10 };
+        noticeContent.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        noticeContent.ColumnDefinitions.Add(new ColumnDefinition());
+        var noticeIcon = new FontIcon
+        {
+            Glyph = ((char)0xE7BA).ToString(),
+            FontSize = 16,
+            Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 203, 15)),
+            VerticalAlignment = VerticalAlignment.Top
+        };
+        var noticeText = new TextBlock
+        {
+            Text = warning,
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = 12.5,
+            LineHeight = 19,
+            Opacity = 0.9
+        };
+        Grid.SetColumn(noticeIcon, 0);
+        Grid.SetColumn(noticeText, 1);
+        noticeContent.Children.Add(noticeIcon);
+        noticeContent.Children.Add(noticeText);
+        return new Border
+        {
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(12),
+            Background = new SolidColorBrush(Color.FromArgb(24, 255, 203, 15)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(72, 255, 203, 15)),
+            BorderThickness = new Thickness(1),
+            Child = noticeContent
+        };
+    }
+
+    private FluentCard BuildBigPictureTutorialCard()
+    {
+        var card = Card();
+        var grid = new Grid
+        {
+            ColumnSpacing = 24,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+
+        var text = new StackPanel
+        {
+            Spacing = 12,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        text.Children.Add(IconHeader(
+            ((char)0xE7F4).ToString(),
+            "Iniziamo!",
+            "Apri Steam e clicca su Modalità Big Picture."));
+        text.Children.Add(ActionRow(Button("Apri Steam", async () =>
+            await Windows.System.Launcher.LaunchUriAsync(new Uri("steam://open/main")), primary: true)));
+
+        var imagePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Tutorials", "Big Picture Mode tutorial.png");
+        var imageStage = new Border
+        {
+            CornerRadius = new CornerRadius(8),
+            Background = new SolidColorBrush(Color.FromArgb(255, 14, 14, 16)),
+            BorderBrush = ResourceBrush("CardStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255)),
+            BorderThickness = new Thickness(1),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        if (File.Exists(imagePath))
+        {
+            imageStage.Child = new Image
+            {
+                Source = new BitmapImage(new Uri(imagePath)),
+                Stretch = Stretch.Uniform,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+        }
+
+        Grid.SetColumn(text, 0);
+        Grid.SetColumn(imageStage, 1);
+        grid.Children.Add(text);
+        grid.Children.Add(imageStage);
         card.Children.Add(grid);
         return card;
     }
@@ -1929,6 +1994,8 @@ public sealed partial class MainWindow : Window
         var cssText = new StackPanel { Spacing = 12, VerticalAlignment = VerticalAlignment.Center };
         cssText.Children.Add(IconHeader(((char)0xE790).ToString(), "Tema Playhub per CSS Loader",
             "Installa il profilo Playhub in CSS Loader senza sostituire le tue opzioni attuali: puoi provarlo in sicurezza, senza rischiare di azzerare le impostazioni che hai già. È consigliato per la migliore esperienza con i plugin di Playhub."));
+        cssText.Children.Add(BuildYellowWarning(
+            "Per poter installare il tema è prima necessario installare il plugin CSS Loader dal Decky Store."));
         cssText.Children.Add(ActionRow(
             Button("Installa", async () => SetStatus(await _extra.ApplyCssLoaderProfileAsync(_settings.CssLoaderProfileUrl), InfoBarSeverity.Success)),
             Button("Rimuovi", async () => SetStatus(await _extra.RemoveCssLoaderProfileAsync(), InfoBarSeverity.Warning))));
