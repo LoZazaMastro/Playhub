@@ -11,6 +11,7 @@ using Playhub.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -33,6 +34,7 @@ public sealed partial class MainWindow : Window
     private readonly DeckyPluginService _pluginService = new();
     private readonly GamingModeService _gamingMode = new();
     private readonly UwpXboxService _uwpXbox = new();
+    private readonly ExecutableGameService _executableGameService = new();
     private readonly ExtraService _extra = new();
     private readonly SteamService _steam = new();
     private readonly PlayhubUpdateService _updateService = new();
@@ -40,6 +42,7 @@ public sealed partial class MainWindow : Window
     private readonly ObservableCollection<DeckyPluginInfo> _plugins = new();
     private readonly ObservableCollection<DeckyBuildRun> _deckyBuilds = new();
     private readonly ObservableCollection<UwpGameEntry> _uwpGames = new();
+    private readonly ObservableCollection<UwpGameEntry> _executableGames = new();
     private readonly Dictionary<string, ToggleSwitch> _gamingToggles = new();
     private readonly List<Button> _primaryButtons = new();
     // Weak keys so rebuilt UI elements (e.g. plugin cards) can be garbage-collected.
@@ -91,10 +94,11 @@ public sealed partial class MainWindow : Window
     private string _currentPageTag = "welcome";
     private bool _mediaPlaybackReady;
     private StackPanel _uwpGamesPanel = new();
-    private Button _uwpListViewButton = new();
-    private Button _uwpCardsViewButton = new();
-    private string _uwpViewMode = "cards";
+    private StackPanel _executableGamesPanel = new();
+    private StackPanel _executableSourcesPanel = new();
+    private bool _executableScanInProgress;
     private int _uwpCardColumnCount = 3;
+    private int _executableCardColumnCount = 3;
     private StackPanel _startupAppsPanel = new();
     private Border _deckyQuickAccessCard = new();
 
@@ -111,7 +115,6 @@ public sealed partial class MainWindow : Window
     private StackPanel _accentColorPanel = new();
     private TextBox _deckyPluginsBox = new();
     private TextBox _xboxSteamGridDbKeyBox = new();
-    private ComboBox _xboxGamesViewCombo = new();
 
     private ComboBox _defaultModeCombo = new();
     private TextBox _steamPathBox = new();
@@ -172,7 +175,7 @@ public sealed partial class MainWindow : Window
         new("decky", "DeckyLoader"),
         new("plugins", "Playhub Plugin Store"),
         new("gaming", "Gaming Mode"),
-        new("xbox", "Importa Giochi Xbox"),
+        new("xbox", "Importa Giochi"),
         new("styler", "Big Picture Styler"),
         new("settings", "Impostazioni")
     };
@@ -181,12 +184,6 @@ public sealed partial class MainWindow : Window
     {
         new("Desktop", "Desktop"),
         new("Gaming", "Gaming")
-    };
-
-    private static readonly ComboOption[] XboxGamesViewOptions =
-    {
-        new("cards", "Card"),
-        new("list", "Elenco")
     };
 
     private static readonly ComboOption[] SplashLogoOptions =
@@ -349,7 +346,7 @@ public sealed partial class MainWindow : Window
         navigation.MenuItems.Add(NavItem("DeckyLoader", "decky", Symbol.Download));
         navigation.MenuItems.Add(NavItem("Playhub Plugin Store", "plugins", Symbol.Shop));
         navigation.MenuItems.Add(NavItem("Gaming Mode", "gaming", Symbol.Play));
-        navigation.MenuItems.Add(NavItem("Importa Giochi Xbox", "xbox", ((char)0xE7FC).ToString()));
+        navigation.MenuItems.Add(NavItem("Importa Giochi", "xbox", ((char)0xE7FC).ToString()));
         navigation.MenuItems.Add(NavItem("Big Picture Styler", "styler", ((char)0xE771).ToString()));
         navigation.MenuItems.Add(NavItem("Impostazioni", "settings", Symbol.Setting));
         navigation.SelectionChanged += (_, args) =>
@@ -631,6 +628,14 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        if (string.Equals(tag, "xbox", StringComparison.Ordinal) &&
+            !_executableScanInProgress &&
+            _executableGames.Count == 0 &&
+            (_settings.ExecutableGameFolders.Count > 0 || _settings.ExecutableGameFiles.Count > 0))
+        {
+            _ = ScanExecutableGamesAsync();
+        }
+
         UpdateWelcomePlayback(welcome);
         UpdateTutorialPlayback(tag);
     }
@@ -769,7 +774,7 @@ public sealed partial class MainWindow : Window
             (((char)0xE790).ToString(), "Scegli il tuo colore", "Dai a Playhub il tuo tocco scegliendo il colore che preferisci.", true),
             (((char)0xE719).ToString(), "Plugin Store", "Installa DeckyLoader e i plugin di Playhub per accedere a musica, trailer, meteo, achievement e molto altro mentre giochi.", false),
             (((char)0xE945).ToString(), "Gaming Mode", "Avvia il tuo PC come se fosse una console, naviga con il controller e torna al desktop quando vuoi.", false),
-            (((char)0xE896).ToString(), "Importa i giochi Xbox", "Porta i giochi Xbox Game Pass, Xbox Store e le app Microsoft Store nella tua libreria, pronti da avviare.", false),
+            (((char)0xE896).ToString(), "Importa i tuoi giochi", "Porta i giochi Xbox Game Pass, Xbox Store, Microsoft Store e gli EXE del tuo PC nella tua libreria, completi di artwork e titolo corretti, pronti da avviare.", false),
             (((char)0xE7FC).ToString(), "Divertiti", "Ora tocca a te. Buon divertimento con Playhub!", false)
         };
         var index = 0;
@@ -1173,6 +1178,7 @@ public sealed partial class MainWindow : Window
     private UIElement BuildPluginsPage()
     {
         var panel = Page("plugins", "Playhub Plugin Store", "I plugin della suite Playhub: installali, aggiornali e gestiscili da qui.");
+        panel.Children.Add(BuildPluginRestartCard());
         _pluginCards = new StackPanel { Spacing = 14, HorizontalAlignment = HorizontalAlignment.Stretch };
         panel.Children.Add(_pluginCards);
         panel.Children.Add(BuildQuickAccessTutorialCard(
@@ -1796,67 +1802,21 @@ public sealed partial class MainWindow : Window
 
     private UIElement BuildXboxPage()
     {
-        var panel = Page("xbox", "Importa Giochi Xbox", "Porta i giochi Microsoft Store, Game Pass e Xbox nella tua libreria di Steam.");
+        var panel = Page("xbox", "Importa Giochi", "Porta i tuoi giochi nella libreria di Steam e completa automaticamente gli artwork.");
 
         var import = Card();
-        import.Children.Add(IconHeader(((char)0xE721).ToString(), "Importa i giochi",
+        import.Children.Add(IconHeader(((char)0xE721).ToString(), "Importa giochi Xbox e Microsoft Store",
             "Trova i giochi Xbox, Game Pass e Microsoft Store installati e li aggiunge a Steam, pronti da avviare."));
         import.Children.Add(ActionRow(
-            Button("Trova giochi", async () => await ScanUwpGamesAsync()),
+            Button("Scansiona", async () => await ScanUwpGamesAsync()),
             Button("Importa in Steam", async () => await ExportUwpGamesAsync(), primary: true),
+            Button("Ricollega giochi", async () => await RelinkUwpGamesAsync()),
             Button("Riavvia Steam", async () => { await _steam.RestartSteamAsync(); SetStatus("Steam riavviato.", InfoBarSeverity.Success); })));
-
-        var viewRow = new Grid { ColumnSpacing = 14, Margin = new Thickness(0, 4, 0, 2) };
-        viewRow.ColumnDefinitions.Add(new ColumnDefinition());
-        viewRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        viewRow.Children.Add(new TextBlock
-        {
-            Text = "Visualizzazione",
-            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            VerticalAlignment = VerticalAlignment.Center
-        });
-        _uwpListViewButton = new Button
-        {
-            Content = new Viewbox
-            {
-                Width = 18,
-                Height = 18,
-                Child = new SymbolIcon(Symbol.List)
-            },
-            Width = 44,
-            Height = 32,
-            MinWidth = 0,
-            MinHeight = 0,
-            Padding = new Thickness(0),
-            CornerRadius = new CornerRadius(8)
-        };
-        _uwpCardsViewButton = new Button
-        {
-            Content = new Viewbox
-            {
-                Width = 18,
-                Height = 18,
-                Child = new SymbolIcon(Symbol.ViewAll)
-            },
-            Width = 44,
-            Height = 32,
-            MinWidth = 0,
-            MinHeight = 0,
-            Padding = new Thickness(0),
-            CornerRadius = new CornerRadius(8)
-        };
-        _uwpListViewButton.Click += (_, _) => SetUwpViewMode("list");
-        _uwpCardsViewButton.Click += (_, _) => SetUwpViewMode("cards");
-        UpdateUwpViewTooltips();
-        var viewButtons = ActionRow(_uwpListViewButton, _uwpCardsViewButton);
-        Grid.SetColumn(viewButtons, 1);
-        viewRow.Children.Add(viewButtons);
-        import.Children.Add(viewRow);
 
         _uwpGamesPanel = new StackPanel { Spacing = 8, HorizontalAlignment = HorizontalAlignment.Stretch };
         _uwpGamesPanel.SizeChanged += (_, args) =>
         {
-            if (_uwpViewMode != "cards" || _uwpGames.Count == 0)
+            if (_uwpGames.Count == 0)
             {
                 return;
             }
@@ -1869,8 +1829,39 @@ public sealed partial class MainWindow : Window
             }
         };
         import.Children.Add(_uwpGamesPanel);
-        UpdateUwpViewButtons();
         panel.Children.Add(import);
+
+        var executableImport = Card();
+        executableImport.Children.Add(IconHeader(((char)0xE8B7).ToString(), "Importa giochi da cartelle e file",
+            "Scegli le tue cartelle preferite o aggiungi singoli file e scansiona gli EXE presenti nelle cartelle e nelle sottocartelle. Playhub riconoscerà automaticamente i giochi e li preparerà per la tua libreria."));
+        executableImport.Children.Add(ActionRow(
+            Button("Aggiungi cartella", async () => await ChooseExecutableFolderAsync()),
+            Button("Aggiungi file", async () => await ChooseExecutableFileAsync()),
+            Button("Scansiona", async () => await ScanExecutableGamesAsync()),
+            Button("Importa in Steam", async () => await ExportExecutableGamesAsync(), primary: true),
+            Button("Riavvia Steam", async () => { await _steam.RestartSteamAsync(); SetStatus("Steam riavviato.", InfoBarSeverity.Success); })));
+        executableImport.Children.Add(Body("Non trovi il gioco che cerchi? Aggiungilo direttamente con il pulsante \"Aggiungi file\"."));
+
+        _executableSourcesPanel = new StackPanel { Spacing = 6 };
+        executableImport.Children.Add(_executableSourcesPanel);
+
+        _executableGamesPanel = new StackPanel { Spacing = 8, HorizontalAlignment = HorizontalAlignment.Stretch };
+        _executableGamesPanel.SizeChanged += (_, args) =>
+        {
+            if (_executableGames.Count == 0)
+            {
+                return;
+            }
+
+            var columns = GetUwpCardColumnCount(args.NewSize.Width);
+            if (columns != _executableCardColumnCount)
+            {
+                _executableCardColumnCount = columns;
+                DispatcherQueue.TryEnqueue(RenderExecutableGames);
+            }
+        };
+        executableImport.Children.Add(_executableGamesPanel);
+        panel.Children.Add(executableImport);
 
         var artwork = Card();
         artwork.Children.Add(IconHeader(((char)0xE91B).ToString(), "Artwork dei giochi",
@@ -1904,6 +1895,30 @@ public sealed partial class MainWindow : Window
             await Windows.System.Launcher.LaunchUriAsync(new Uri("https://www.steamgriddb.com/register")))));
         panel.Children.Add(artwork);
         return panel;
+    }
+
+    private UIElement BuildPluginRestartCard()
+    {
+        var accent = ParseColor(_settings.AccentColor);
+        var card = Card();
+        card.Root.Background = new SolidColorBrush(WithAlpha(accent, 38));
+        card.Root.BorderBrush = new SolidColorBrush(WithAlpha(accent, 145));
+        card.Children.Add(new TextBlock
+        {
+            Text = "Hai installato tutto?",
+            FontSize = 18,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+        });
+        card.Children.Add(ActionRow(Button("Riavvia DeckyLoader e Steam", async () =>
+        {
+            var success = await _deckyInstaller.RestartWithSteamAsync(_steam);
+            SetStatus(
+                success
+                    ? "DeckyLoader e Steam sono stati riavviati."
+                    : "Non riesco a riavviare DeckyLoader e Steam. Riprova.",
+                success ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+        }, primary: true)));
+        return card;
     }
 
     private UIElement BuildBigPictureStylerPage()
@@ -1978,9 +1993,18 @@ public sealed partial class MainWindow : Window
         _languageCombo.SelectionChanged += async (_, _) =>
         {
             if (_loadingSettings) return;
-            _settings.Language = GetComboKey(_languageCombo) ?? "auto";
-            ApplyLanguage();
+            var selectedLanguage = GetComboKey(_languageCombo) ?? "en";
+            if (string.Equals(
+                    LocalizationService.NormalizeLanguageKey(_settings.Language),
+                    LocalizationService.NormalizeLanguageKey(selectedLanguage),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            _settings.Language = selectedLanguage;
             await SaveSettingsSilentlyAsync();
+            RestartPlayhub();
         };
 
         _backdropCombo = ChoiceCombo(BackdropOptions);
@@ -2003,7 +2027,22 @@ public sealed partial class MainWindow : Window
         };
 
         _accentColorPanel = BuildAccentPicker();
-        appearance.Children.Add(TwoColumn(Labeled("Lingua", _languageCombo), Labeled("Sfondo", _backdropCombo)));
+        var languageRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        languageRow.Children.Add(_languageCombo);
+        languageRow.Children.Add(new TextBlock
+        {
+            Text = "Questo riavvierà Playhub",
+            Opacity = 0.68,
+            FontSize = 13,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap
+        });
+        appearance.Children.Add(TwoColumn(Labeled("Lingua", languageRow), Labeled("Sfondo", _backdropCombo)));
         appearance.Children.Add(Labeled("Colore accent", _accentColorPanel));
         panel.Children.Add(appearance);
 
@@ -2020,21 +2059,6 @@ public sealed partial class MainWindow : Window
         };
         startup.Children.Add(Labeled("Pagina di avvio", _startupPageCombo));
         panel.Children.Add(startup);
-
-        // ---------- Importazione giochi Xbox ----------
-        var xboxImport = Card();
-        xboxImport.Children.Add(IconHeader(((char)0xE7FC).ToString(), "Modalità di visualizzazione di Importa giochi Xbox",
-            "Scegli come mostrare i risultati dopo la scansione dei giochi."));
-        _xboxGamesViewCombo = ChoiceCombo(XboxGamesViewOptions);
-        _xboxGamesViewCombo.SelectionChanged += async (_, _) =>
-        {
-            if (_loadingSettings) return;
-            _settings.XboxGamesView = NormalizeXboxGamesViewKey(GetComboKey(_xboxGamesViewCombo));
-            SetUwpViewMode(_settings.XboxGamesView);
-            await SaveSettingsSilentlyAsync();
-        };
-        xboxImport.Children.Add(Labeled("Visualizzazione predefinita", _xboxGamesViewCombo));
-        panel.Children.Add(xboxImport);
 
         // ---------- Aggiornamenti Playhub ----------
         var updates = Card();
@@ -2416,7 +2440,7 @@ SOFTWARE.";
 
         var headerRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, VerticalAlignment = VerticalAlignment.Center };
         headerRow.Children.Add(new TextBlock { Text = "Novità", FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = new SolidColorBrush(accent), VerticalAlignment = VerticalAlignment.Center });
-        if (!string.IsNullOrWhiteSpace(plugin.Version))
+        if (!string.IsNullOrWhiteSpace(plugin.ReleaseNotesVersion))
         {
             headerRow.Children.Add(new Border
             {
@@ -2424,21 +2448,17 @@ SOFTWARE.";
                 CornerRadius = new CornerRadius(10),
                 Padding = new Thickness(8, 2, 8, 2),
                 VerticalAlignment = VerticalAlignment.Center,
-                Child = new TextBlock { Text = plugin.Version, FontSize = 12, Foreground = new SolidColorBrush(accent) }
+                Child = new TextBlock { Text = plugin.ReleaseNotesVersion, FontSize = 12, Foreground = new SolidColorBrush(accent) }
             });
         }
-        if (!string.IsNullOrWhiteSpace(plugin.ReleasePublishedAt))
+        if (!string.IsNullOrWhiteSpace(plugin.ReleaseNotesPublishedAt))
         {
-            headerRow.Children.Add(new TextBlock { Text = plugin.ReleasePublishedAt, FontSize = 12, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center });
+            headerRow.Children.Add(new TextBlock { Text = plugin.ReleaseNotesPublishedAt, FontSize = 12, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center });
         }
         content.Children.Add(headerRow);
-        content.Children.Add(new TextBlock
-        {
-            Text = plugin.ReleaseNotes,
-            TextWrapping = TextWrapping.Wrap,
-            LineHeight = 21,
-            Opacity = 0.92
-        });
+        var releaseDescription = BuildDescription(plugin.ReleaseNotes);
+        releaseDescription.Tag = "noloc";
+        content.Children.Add(releaseDescription);
 
         return new Border
         {
@@ -2730,9 +2750,7 @@ SOFTWARE.";
     private FrameworkElement PluginStatusPill(DeckyPluginInfo plugin)
     {
         var text = T(plugin.HasUpdate ? "Aggiornamento disponibile" : plugin.IsInstalled ? "Installato" : "Non installato");
-        var version = plugin.IsInstalled && !string.IsNullOrWhiteSpace(plugin.InstalledVersion)
-            ? plugin.InstalledVersion
-            : plugin.Version;
+        var version = plugin.IsInstalled ? plugin.InstalledVersion : plugin.Version;
         if (!string.IsNullOrWhiteSpace(version))
         {
             text += " - " + version;
@@ -3103,6 +3121,7 @@ SOFTWARE.";
         SetStatus("Cerco i giochi Xbox...", InfoBarSeverity.Informational);
         var scannedGames = await _uwpXbox.ScanAsync();
         _uwpXbox.RefreshLibraryState(scannedGames);
+        ApplySteamGridDbPreferences(scannedGames);
         foreach (var game in scannedGames)
         {
             _uwpGames.Add(game);
@@ -3131,98 +3150,373 @@ SOFTWARE.";
             : InfoBarSeverity.Warning);
     }
 
+    private async Task RelinkUwpGamesAsync()
+    {
+        var confirmed = await ConfirmAsync(
+            "Ricollegare tutti i giochi Xbox?",
+            "Questa operazione potrebbe far riapparire i giochi fuori da eventuali collezioni create o reimpostare alcuni parametri dei plugin legati al gioco, come Launch Curtain, Playhub Metadata e ThemeDeck. Questi parametri dovranno essere configurati nuovamente.");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        SetStatus("Cerco i giochi Xbox...", InfoBarSeverity.Informational);
+        var scannedGames = await _uwpXbox.ScanAsync();
+        _uwpXbox.RefreshLibraryState(scannedGames);
+        ApplySteamGridDbPreferences(scannedGames);
+
+        var linkedGames = scannedGames.Where(game => game.InSteamLibrary).ToList();
+        if (linkedGames.Count == 0)
+        {
+            SetStatus("Non ci sono giochi Xbox da ricollegare.", InfoBarSeverity.Warning);
+            return;
+        }
+
+        foreach (var game in linkedGames)
+        {
+            game.Selected = true;
+        }
+
+        SetStatus("Sto aggiornando i collegamenti e applicando gli artwork mancanti…", InfoBarSeverity.Informational);
+        await Task.Yield();
+        var result = await _uwpXbox.ExportSelectedToSteamAsync(linkedGames, _settings.SteamGridDbApiKey);
+        _uwpXbox.RefreshLibraryState(scannedGames);
+        foreach (var game in linkedGames)
+        {
+            game.Selected = false;
+        }
+
+        _uwpGames.Clear();
+        foreach (var game in scannedGames)
+        {
+            _uwpGames.Add(game);
+        }
+
+        RenderUwpGames();
+        _ = LoadUwpCoversAsync(_uwpGames.ToList());
+
+        if (result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase))
+        {
+            SetStatus(
+                string.Format(T("Ho ricollegato {0} giochi Xbox. Riavvia Steam per applicare le modifiche."), linkedGames.Count),
+                InfoBarSeverity.Success);
+            return;
+        }
+
+        SetStatus(result, InfoBarSeverity.Warning);
+    }
+
+    private async Task ChooseExecutableFolderAsync()
+    {
+        var picker = new Windows.Storage.Pickers.FolderPicker
+        {
+            SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.ComputerFolder
+        };
+        picker.FileTypeFilter.Add("*");
+        InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(this));
+        var folder = await picker.PickSingleFolderAsync();
+        if (folder is null)
+        {
+            return;
+        }
+
+        if (!_settings.ExecutableGameFolders.Contains(folder.Path, StringComparer.OrdinalIgnoreCase))
+        {
+            _settings.ExecutableGameFolders.Add(folder.Path);
+        }
+        _settings.ExecutableGamesFolder = "";
+        RenderExecutableSources();
+        await SaveSettingsSilentlyAsync();
+        await ScanExecutableGamesAsync();
+    }
+
+    private async Task ScanExecutableGamesAsync()
+    {
+        if (_executableScanInProgress)
+        {
+            return;
+        }
+
+        var folders = _settings.ExecutableGameFolders
+            .Where(Directory.Exists)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var files = _settings.ExecutableGameFiles
+            .Where(File.Exists)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (folders.Count == 0 && files.Count == 0)
+        {
+            SetStatus("Aggiungi prima una cartella o un file da scansionare.", InfoBarSeverity.Warning);
+            return;
+        }
+
+        _executableScanInProgress = true;
+        try
+        {
+            _executableGames.Clear();
+            SetStatus("Cerco i giochi nelle cartelle, nelle sottocartelle e nei file aggiunti...", InfoBarSeverity.Informational);
+            var folderResults = await Task.WhenAll(folders.Select(_executableGameService.ScanAsync));
+            var fileResults = await Task.WhenAll(files.Select(_executableGameService.CreateEntryAsync));
+            var scannedGames = folderResults
+                .SelectMany(result => result)
+                .Concat(fileResults.Where(game => game is not null).Cast<UwpGameEntry>())
+                .GroupBy(game => game.LocalExecutablePath, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .OrderBy(game => game.Name, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+
+            _uwpXbox.RefreshLibraryState(scannedGames);
+            ApplySteamGridDbPreferences(scannedGames);
+            foreach (var game in scannedGames)
+            {
+                _executableGames.Add(game);
+            }
+
+            RenderExecutableGames();
+            var inLibrary = _executableGames.Count(game => game.InSteamLibrary);
+            SetStatus(string.Format(T("Ho trovato {0} giochi. {1} sono già in libreria."), _executableGames.Count, inLibrary), InfoBarSeverity.Success);
+            _ = LoadGameCoversAsync(_executableGames.ToList(), _executableGames, RenderExecutableGames);
+        }
+        finally
+        {
+            _executableScanInProgress = false;
+        }
+    }
+
+    private async Task ChooseExecutableFileAsync()
+    {
+        var picker = new Windows.Storage.Pickers.FileOpenPicker
+        {
+            SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.ComputerFolder
+        };
+        picker.FileTypeFilter.Add(".exe");
+        InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(this));
+        var file = await picker.PickSingleFileAsync();
+        if (file is null)
+        {
+            return;
+        }
+
+        var game = await _executableGameService.CreateEntryAsync(file.Path);
+        if (game is null)
+        {
+            SetStatus("Non riesco a leggere il file selezionato.", InfoBarSeverity.Warning);
+            return;
+        }
+
+        if (!_settings.ExecutableGameFiles.Contains(file.Path, StringComparer.OrdinalIgnoreCase))
+        {
+            _settings.ExecutableGameFiles.Add(file.Path);
+        }
+        RenderExecutableSources();
+        await SaveSettingsSilentlyAsync();
+        await ScanExecutableGamesAsync();
+    }
+
+    private async Task ExportExecutableGamesAsync()
+    {
+        var result = await _uwpXbox.ExportSelectedToSteamAsync(_executableGames, _settings.SteamGridDbApiKey);
+        _uwpXbox.RefreshLibraryState(_executableGames);
+        if (result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (var game in _executableGames.Where(game => game.InSteamLibrary))
+            {
+                game.Selected = false;
+            }
+        }
+        RenderExecutableGames();
+        SetStatus(result, result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase)
+            ? InfoBarSeverity.Success
+            : InfoBarSeverity.Warning);
+    }
+
+    private void RenderExecutableSources()
+    {
+        _executableSourcesPanel.Children.Clear();
+        foreach (var folder in _settings.ExecutableGameFolders.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            _executableSourcesPanel.Children.Add(BuildExecutableSourceRow(folder, isFolder: true));
+        }
+        foreach (var file in _settings.ExecutableGameFiles.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            _executableSourcesPanel.Children.Add(BuildExecutableSourceRow(file, isFolder: false));
+        }
+        _executableSourcesPanel.Visibility = _executableSourcesPanel.Children.Count > 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private UIElement BuildExecutableSourceRow(string path, bool isFolder)
+    {
+        var remove = new Button
+        {
+            Content = new FontIcon { Glyph = ((char)0xE711).ToString(), FontSize = 12 },
+            Style = StyleResource("PlayhubSecondaryButtonStyle"),
+            Width = 28,
+            Height = 28,
+            MinWidth = 0,
+            MinHeight = 0,
+            Padding = new Thickness(0),
+            CornerRadius = new CornerRadius(6)
+        };
+        ToolTipService.SetToolTip(remove, T("Rimuovi"));
+        remove.Click += async (_, _) => await RemoveExecutableSourceAsync(path, isFolder);
+
+        var row = new Grid { ColumnSpacing = 8 };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition());
+        row.Children.Add(remove);
+        var icon = new FontIcon
+        {
+            Glyph = ((char)(isFolder ? 0xE8B7 : 0xE8A5)).ToString(),
+            FontSize = 15,
+            Opacity = 0.72,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        Grid.SetColumn(icon, 1);
+        row.Children.Add(icon);
+        var label = new TextBlock
+        {
+            Text = path,
+            Opacity = (isFolder ? Directory.Exists(path) : File.Exists(path)) ? 0.72 : 0.42,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        Grid.SetColumn(label, 2);
+        row.Children.Add(label);
+        return new Border
+        {
+            Padding = new Thickness(6),
+            CornerRadius = new CornerRadius(7),
+            Background = ResourceBrush("SubtleFillColorSecondaryBrush", Color.FromArgb(28, 255, 255, 255)),
+            Child = row
+        };
+    }
+
+    private async Task RemoveExecutableSourceAsync(string path, bool isFolder)
+    {
+        var sources = isFolder ? _settings.ExecutableGameFolders : _settings.ExecutableGameFiles;
+        sources.RemoveAll(value => string.Equals(value, path, StringComparison.OrdinalIgnoreCase));
+        RenderExecutableSources();
+        await SaveSettingsSilentlyAsync();
+        if (_settings.ExecutableGameFolders.Count == 0 && _settings.ExecutableGameFiles.Count == 0)
+        {
+            _executableGames.Clear();
+            RenderExecutableGames();
+            return;
+        }
+        await ScanExecutableGamesAsync();
+    }
+
+    private void ApplySteamGridDbPreferences(IEnumerable<UwpGameEntry> games)
+    {
+        foreach (var game in games)
+        {
+            var key = game.Aumid;
+            game.SteamGridDbArtworkDisabled = _settings.SteamGridDbArtworkDisabled
+                .Any(value => string.Equals(value, key, StringComparison.OrdinalIgnoreCase));
+            if (game.SteamGridDbArtworkDisabled)
+            {
+                game.SteamGridDbGameId = 0;
+                ClearSteamGridDbArtwork(game);
+                continue;
+            }
+
+            foreach (var item in _settings.SteamGridDbGameOverrides)
+            {
+                if (string.Equals(item.Key, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    game.SteamGridDbGameId = item.Value;
+                    break;
+                }
+            }
+            foreach (var item in _settings.SteamGridDbTitleOverrides)
+            {
+                if (string.Equals(item.Key, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    game.Name = item.Value;
+                    break;
+                }
+            }
+        }
+    }
+
+    private static void ClearSteamGridDbArtwork(UwpGameEntry game)
+    {
+        game.SteamGridDbCoverPath = "";
+        game.SteamGridDbBannerPath = "";
+        game.SteamGridDbHeroPath = "";
+        game.SteamGridDbLogoPath = "";
+        game.SteamGridDbIconPath = "";
+    }
+
+    private static void RemoveSteamGridDbPreferenceKey<T>(Dictionary<string, T> dictionary, string key)
+    {
+        foreach (var existingKey in dictionary.Keys
+                     .Where(value => string.Equals(value, key, StringComparison.OrdinalIgnoreCase))
+                     .ToList())
+        {
+            dictionary.Remove(existingKey);
+        }
+    }
+
     private void RenderUwpGames()
     {
-        _uwpGamesPanel.Children.Clear();
-        if (_uwpViewMode == "cards")
+        RenderGameCollection(_uwpGames, _uwpGamesPanel);
+    }
+
+    private void RenderExecutableGames()
+    {
+        RenderGameCollection(_executableGames, _executableGamesPanel);
+    }
+
+    private void RenderGameCollection(IReadOnlyList<UwpGameEntry> games, StackPanel panel)
+    {
+        panel.Children.Clear();
+        RenderGameCards(games, panel);
+
+        LocalizeElement(panel);
+    }
+
+    private void RenderGameCards(IReadOnlyList<UwpGameEntry> games, StackPanel panel)
+    {
+        var columns = GetUwpCardColumnCount(panel.ActualWidth);
+        if (ReferenceEquals(panel, _uwpGamesPanel))
         {
-            RenderUwpGameCards();
+            _uwpCardColumnCount = columns;
         }
         else
         {
-            RenderUwpGameList();
+            _executableCardColumnCount = columns;
         }
-
-        LocalizeElement(_uwpGamesPanel);
-    }
-
-    private void RenderUwpGameList()
-    {
-        foreach (var game in _uwpGames)
-        {
-            var row = new Grid
-            {
-                ColumnSpacing = 10,
-                Padding = new Thickness(12),
-                CornerRadius = new CornerRadius(10),
-                Background = ResourceBrush("SubtleFillColorSecondaryBrush", Color.FromArgb(28, 255, 255, 255)),
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(36) });
-            row.ColumnDefinitions.Add(new ColumnDefinition());
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(126) });
-
-            var check = new CheckBox
-            {
-                IsChecked = game.Selected,
-                Width = 32,
-                MinWidth = 0,
-                Padding = new Thickness(0),
-                HorizontalAlignment = HorizontalAlignment.Left,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            check.Checked += (_, _) => game.Selected = true;
-            check.Unchecked += (_, _) => game.Selected = false;
-            row.Children.Add(check);
-
-            var text = new StackPanel { Spacing = 5 };
-            text.Children.Add(CreateUwpNameEditor(game));
-            text.Children.Add(new TextBlock { Text = game.Aumid, Opacity = 0.64, TextWrapping = TextWrapping.Wrap });
-            Grid.SetColumn(text, 1);
-            row.Children.Add(text);
-
-            if (game.InSteamLibrary)
-            {
-                var badge = BuildInLibraryBadge();
-                badge.VerticalAlignment = VerticalAlignment.Center;
-                badge.HorizontalAlignment = HorizontalAlignment.Right;
-                Grid.SetColumn(badge, 2);
-                row.Children.Add(badge);
-            }
-
-            _uwpGamesPanel.Children.Add(row);
-        }
-    }
-
-    private void RenderUwpGameCards()
-    {
-        _uwpCardColumnCount = GetUwpCardColumnCount(_uwpGamesPanel.ActualWidth);
         var grid = new Grid
         {
             ColumnSpacing = 14,
             RowSpacing = 14,
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
-        for (var column = 0; column < _uwpCardColumnCount; column++)
+        for (var column = 0; column < columns; column++)
         {
             grid.ColumnDefinitions.Add(new ColumnDefinition());
         }
 
-        for (var index = 0; index < _uwpGames.Count; index++)
+        for (var index = 0; index < games.Count; index++)
         {
-            var rowIndex = index / _uwpCardColumnCount;
+            var rowIndex = index / columns;
             while (grid.RowDefinitions.Count <= rowIndex)
             {
                 grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             }
 
-            var card = BuildUwpGameCard(_uwpGames[index]);
-            Grid.SetColumn(card, index % _uwpCardColumnCount);
+            var card = BuildUwpGameCard(games[index]);
+            Grid.SetColumn(card, index % columns);
             Grid.SetRow(card, rowIndex);
             grid.Children.Add(card);
         }
 
-        _uwpGamesPanel.Children.Add(grid);
+        panel.Children.Add(grid);
     }
 
     private Border BuildUwpGameCard(UwpGameEntry game)
@@ -3233,7 +3527,7 @@ SOFTWARE.";
             Background = new SolidColorBrush(Color.FromArgb(255, 48, 48, 52))
         };
 
-        if (File.Exists(game.SteamGridDbCoverPath))
+        if (!game.SteamGridDbArtworkDisabled && File.Exists(game.SteamGridDbCoverPath))
         {
             coverStage.Children.Add(new Image
             {
@@ -3306,18 +3600,31 @@ SOFTWARE.";
             }
         };
         content.Children.Add(coverFrame);
-        content.Children.Add(new TextBlock
+        var pathText = new TextBlock
         {
             Text = game.Aumid,
             FontSize = 12,
             Opacity = 0.64,
             MaxLines = 1,
             TextTrimming = TextTrimming.CharacterEllipsis
-        });
+        };
+        ToolTipService.SetToolTip(pathText, game.Aumid);
+        content.Children.Add(pathText);
         content.Children.Add(CreateUwpNameEditor(game));
-        var artworkButton = Button("Cambia Artwork", async () => await ShowUwpArtworkDialogAsync(game));
+        var actions = new Grid { ColumnSpacing = 8 };
+        actions.ColumnDefinitions.Add(new ColumnDefinition());
+        actions.ColumnDefinitions.Add(new ColumnDefinition());
+        var artworkButton = Button("Artwork", async () => await ShowUwpArtworkDialogAsync(game));
         artworkButton.HorizontalAlignment = HorizontalAlignment.Stretch;
-        content.Children.Add(artworkButton);
+        artworkButton.MinWidth = 0;
+        artworkButton.IsEnabled = !game.SteamGridDbArtworkDisabled;
+        actions.Children.Add(artworkButton);
+        var refetchButton = Button("Refetch", async () => await ShowSteamGridDbRefetchDialogAsync(game));
+        refetchButton.HorizontalAlignment = HorizontalAlignment.Stretch;
+        refetchButton.MinWidth = 0;
+        Grid.SetColumn(refetchButton, 1);
+        actions.Children.Add(refetchButton);
+        content.Children.Add(actions);
 
         return new Border
         {
@@ -3359,6 +3666,226 @@ SOFTWARE.";
                 Foreground = new SolidColorBrush(green)
             }
         };
+    }
+
+    private async Task ShowSteamGridDbRefetchDialogAsync(UwpGameEntry game)
+    {
+        if (string.IsNullOrWhiteSpace(_settings.SteamGridDbApiKey))
+        {
+            SetStatus("Inserisci prima la chiave API SteamGridDB nella sezione Artwork dei giochi.", InfoBarSeverity.Warning);
+            return;
+        }
+
+        var searchBox = new TextBox
+        {
+            Text = game.Name,
+            PlaceholderText = T("Cerca titolo"),
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        var searchButton = Button("Cerca", () => { });
+        var removeButton = Button("Rimuovi risultato", () => { });
+        searchButton.MinWidth = 0;
+        removeButton.MinWidth = 0;
+        var removeRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right
+        };
+        removeRow.Children.Add(removeButton);
+        var searchRow = new Grid { ColumnSpacing = 8 };
+        searchRow.ColumnDefinitions.Add(new ColumnDefinition());
+        searchRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        searchRow.Children.Add(searchBox);
+        Grid.SetColumn(searchButton, 1);
+        searchRow.Children.Add(searchButton);
+
+        var header = new Grid { ColumnSpacing = 12, Margin = new Thickness(12, 4, 12, 0) };
+        header.ColumnDefinitions.Add(new ColumnDefinition());
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
+        header.Children.Add(new TextBlock { Text = T("Titolo"), FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+        var yearHeader = new TextBlock
+        {
+            Text = T("Anno"),
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        Grid.SetColumn(yearHeader, 1);
+        header.Children.Add(yearHeader);
+
+        var results = new ListView
+        {
+            SelectionMode = ListViewSelectionMode.Single,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch
+        };
+        ScrollViewer.SetVerticalScrollBarVisibility(results, ScrollBarVisibility.Hidden);
+        ScrollViewer.SetHorizontalScrollBarVisibility(results, ScrollBarVisibility.Disabled);
+        var loading = new ProgressRing
+        {
+            Width = 40,
+            Height = 40,
+            IsActive = false,
+            Visibility = Visibility.Collapsed,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var empty = new TextBlock
+        {
+            Text = T("Nessun risultato trovato."),
+            Opacity = 0.68,
+            Visibility = Visibility.Collapsed,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var resultStage = new Grid { MinHeight = 300 };
+        resultStage.Children.Add(results);
+        resultStage.Children.Add(empty);
+        resultStage.Children.Add(loading);
+
+        var content = new Grid { RowSpacing = 10, Width = 640, Height = 480 };
+        content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        content.RowDefinitions.Add(new RowDefinition());
+        content.Children.Add(removeRow);
+        Grid.SetRow(searchRow, 1);
+        content.Children.Add(searchRow);
+        Grid.SetRow(header, 2);
+        content.Children.Add(header);
+        Grid.SetRow(resultStage, 3);
+        content.Children.Add(resultStage);
+
+        var dialog = new ContentDialog
+        {
+            Title = string.Format(T("Refetch - {0}"), game.Name),
+            Content = content,
+            PrimaryButtonText = T("Usa risultato"),
+            CloseButtonText = T("Chiudi"),
+            IsPrimaryButtonEnabled = false,
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = Content.XamlRoot
+        };
+        dialog.Resources["ContentDialogMinWidth"] = 720d;
+        dialog.Resources["ContentDialogMaxWidth"] = 720d;
+
+        var removeRequested = false;
+        var loadVersion = 0;
+        async Task LoadResultsAsync()
+        {
+            var version = ++loadVersion;
+            results.Items.Clear();
+            dialog.IsPrimaryButtonEnabled = false;
+            empty.Visibility = Visibility.Collapsed;
+            loading.Visibility = Visibility.Visible;
+            loading.IsActive = true;
+            IReadOnlyList<SteamGridGameOption> options;
+            try
+            {
+                options = await _uwpXbox.SearchSteamGridDbGamesAsync(searchBox.Text, _settings.SteamGridDbApiKey);
+            }
+            catch
+            {
+                options = Array.Empty<SteamGridGameOption>();
+            }
+
+            if (version != loadVersion)
+            {
+                return;
+            }
+
+            loading.IsActive = false;
+            loading.Visibility = Visibility.Collapsed;
+            empty.Visibility = options.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            foreach (var option in options)
+            {
+                var row = new Grid { ColumnSpacing = 12, Padding = new Thickness(4, 8, 4, 8) };
+                row.ColumnDefinitions.Add(new ColumnDefinition());
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
+                row.Children.Add(new TextBlock
+                {
+                    Text = option.Name,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+                var year = new TextBlock
+                {
+                    Text = option.ReleaseYear?.ToString() ?? "—",
+                    Opacity = option.ReleaseYear.HasValue ? 1 : 0.5,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                Grid.SetColumn(year, 1);
+                row.Children.Add(year);
+                results.Items.Add(new ListViewItem
+                {
+                    Content = row,
+                    Tag = option,
+                    HorizontalContentAlignment = HorizontalAlignment.Stretch
+                });
+            }
+        }
+
+        results.SelectionChanged += (_, _) =>
+            dialog.IsPrimaryButtonEnabled = (results.SelectedItem as ListViewItem)?.Tag is SteamGridGameOption;
+        searchButton.Click += async (_, _) => await LoadResultsAsync();
+        searchBox.KeyDown += async (_, args) =>
+        {
+            if (args.Key == Windows.System.VirtualKey.Enter)
+            {
+                await LoadResultsAsync();
+            }
+        };
+        removeButton.Click += (_, _) =>
+        {
+            removeRequested = true;
+            dialog.Hide();
+        };
+        dialog.Opened += async (_, _) => await LoadResultsAsync();
+
+        var result = await dialog.ShowAsync();
+        if (removeRequested)
+        {
+            RemoveSteamGridDbPreferenceKey(_settings.SteamGridDbGameOverrides, game.Aumid);
+            RemoveSteamGridDbPreferenceKey(_settings.SteamGridDbTitleOverrides, game.Aumid);
+            _settings.SteamGridDbArtworkDisabled.RemoveAll(value =>
+                string.Equals(value, game.Aumid, StringComparison.OrdinalIgnoreCase));
+            _settings.SteamGridDbArtworkDisabled.Add(game.Aumid);
+            game.SteamGridDbArtworkDisabled = true;
+            game.SteamGridDbGameId = 0;
+            ClearSteamGridDbArtwork(game);
+            await SaveSettingsSilentlyAsync();
+            await _uwpXbox.PopulateApplicationIconsAsync(new[] { game });
+            RenderUwpGames();
+            RenderExecutableGames();
+            SetStatus("Il risultato SteamGridDB è stato rimosso. Il gioco verrà mostrato senza artwork.", InfoBarSeverity.Success);
+            return;
+        }
+
+        if (result != ContentDialogResult.Primary ||
+            (results.SelectedItem as ListViewItem)?.Tag is not SteamGridGameOption selected)
+        {
+            return;
+        }
+
+        RemoveSteamGridDbPreferenceKey(_settings.SteamGridDbGameOverrides, game.Aumid);
+        RemoveSteamGridDbPreferenceKey(_settings.SteamGridDbTitleOverrides, game.Aumid);
+        _settings.SteamGridDbGameOverrides[game.Aumid] = selected.Id;
+        _settings.SteamGridDbTitleOverrides[game.Aumid] = selected.Name;
+        _settings.SteamGridDbArtworkDisabled.RemoveAll(value =>
+            string.Equals(value, game.Aumid, StringComparison.OrdinalIgnoreCase));
+        game.Name = selected.Name;
+        game.SteamGridDbGameId = selected.Id;
+        game.SteamGridDbArtworkDisabled = false;
+        ClearSteamGridDbArtwork(game);
+        await SaveSettingsSilentlyAsync();
+        var coverLoaded = await _uwpXbox.RefreshSteamGridDbCoverAsync(game, _settings.SteamGridDbApiKey);
+        RenderUwpGames();
+        RenderExecutableGames();
+        SetStatus(
+            coverLoaded
+                ? string.Format(T("Risultato aggiornato: {0}."), selected.Name)
+                : string.Format(T("Risultato aggiornato: {0}. Nessuna cover disponibile."), selected.Name),
+            coverLoaded ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
     }
 
     private async Task ShowUwpArtworkDialogAsync(UwpGameEntry game)
@@ -3426,7 +3953,7 @@ SOFTWARE.";
 
         var dialog = new ContentDialog
         {
-            Title = string.Format(T("Cambia artwork - {0}"), game.Name),
+            Title = string.Format(T("Artwork - {0}"), game.Name),
             Content = content,
             PrimaryButtonText = T("Applica"),
             CloseButtonText = T("Chiudi"),
@@ -3557,6 +4084,7 @@ SOFTWARE.";
             }
         }
         RenderUwpGames();
+        RenderExecutableGames();
         SetStatus(
             appliedImmediately
                 ? "Artwork aggiornati. Riavvia Steam per vederli ovunque."
@@ -3579,55 +4107,24 @@ SOFTWARE.";
 
     private async Task LoadUwpCoversAsync(IReadOnlyList<UwpGameEntry> scannedGames)
     {
-        if (string.IsNullOrWhiteSpace(_settings.SteamGridDbApiKey))
-        {
-            return;
-        }
-
-        await _uwpXbox.PopulateSteamGridDbCoversAsync(scannedGames, _settings.SteamGridDbApiKey);
-        if (scannedGames.All(game => _uwpGames.Contains(game)))
-        {
-            RenderUwpGames();
-        }
+        await LoadGameCoversAsync(scannedGames, _uwpGames, RenderUwpGames);
     }
 
-    private void SetUwpViewMode(string? mode)
+    private async Task LoadGameCoversAsync(
+        IReadOnlyList<UwpGameEntry> scannedGames,
+        IEnumerable<UwpGameEntry> currentGames,
+        Action render)
     {
-        _uwpViewMode = NormalizeXboxGamesViewKey(mode);
-        UpdateUwpViewButtons();
-        if (_uwpGames.Count > 0)
+        await _uwpXbox.PopulateApplicationIconsAsync(scannedGames);
+        if (!string.IsNullOrWhiteSpace(_settings.SteamGridDbApiKey))
         {
-            RenderUwpGames();
+            await _uwpXbox.PopulateSteamGridDbCoversAsync(scannedGames, _settings.SteamGridDbApiKey);
         }
-    }
-
-    private void UpdateUwpViewButtons()
-    {
-        ApplyUwpViewButtonState(_uwpListViewButton, _uwpViewMode == "list");
-        ApplyUwpViewButtonState(_uwpCardsViewButton, _uwpViewMode == "cards");
-    }
-
-    private void ApplyUwpViewButtonState(Button button, bool selected)
-    {
-        button.Resources.Clear();
-        button.ClearValue(Control.BackgroundProperty);
-        button.ClearValue(Control.ForegroundProperty);
-        button.ClearValue(Control.BorderBrushProperty);
-        button.ClearValue(Control.BorderThicknessProperty);
-        if (selected)
+        var current = currentGames.ToHashSet();
+        if (scannedGames.All(current.Contains))
         {
-            ApplyAccentToButton(button);
+            render();
         }
-    }
-
-    private void UpdateUwpViewTooltips()
-    {
-        var listLabel = T("Elenco");
-        var cardsLabel = T("Card");
-        ToolTipService.SetToolTip(_uwpListViewButton, listLabel);
-        ToolTipService.SetToolTip(_uwpCardsViewButton, cardsLabel);
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_uwpListViewButton, listLabel);
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_uwpCardsViewButton, cardsLabel);
     }
 
     private static int GetUwpCardColumnCount(double availableWidth)
@@ -3646,8 +4143,7 @@ SOFTWARE.";
         SelectComboKey(_languageCombo, _settings.Language);
         SelectComboKey(_backdropCombo, NormalizeBackdropKey(_settings.Backdrop));
         SelectComboKey(_startupPageCombo, NormalizeStartupPageKey(_settings.StartupPage));
-        SelectComboKey(_xboxGamesViewCombo, NormalizeXboxGamesViewKey(_settings.XboxGamesView));
-        SetUwpViewMode(_settings.XboxGamesView);
+        RenderExecutableSources();
         _deckyPluginsBox.Text = _settings.DeckyPluginsPath;
         _xboxSteamGridDbKeyBox.Text = _settings.SteamGridDbApiKey;
         RefreshAccentPicker();
@@ -4081,7 +4577,7 @@ SOFTWARE.";
 
     private void RefreshLanguageCombo(ComboBox combo, string? selectedKey = null)
     {
-        var wanted = LocalizationService.NormalizeLanguageKey(selectedKey ?? GetComboKey(combo) ?? "auto");
+        var wanted = LocalizationService.NormalizeLanguageKey(selectedKey ?? GetComboKey(combo) ?? "en");
         combo.Items.Clear();
         foreach (var language in LocalizationService.Languages)
         {
@@ -4272,16 +4768,57 @@ SOFTWARE.";
             if (info is { IsNewer: true })
             {
                 ShowUpdateNotification(info);
+                return;
             }
         }
         catch
         {
             // L'avvio non deve mai fallire per il controllo aggiornamenti.
         }
+
+        ShowPluginUpdatesNotification();
+    }
+
+    private void ShowPluginUpdatesNotification()
+    {
+        var updates = _plugins
+            .Where(plugin => plugin.IsInstalled && plugin.HasUpdate)
+            .OrderBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+        if (updates.Count == 0)
+        {
+            return;
+        }
+
+        _status.Title = T(updates.Count == 1
+            ? "Aggiornamento plugin disponibile"
+            : "Aggiornamenti plugin disponibili");
+        _status.Message = string.Join(" · ", updates.Select(plugin =>
+            string.IsNullOrWhiteSpace(plugin.Version) ? plugin.Name : $"{plugin.Name} {plugin.Version}"));
+        _status.Severity = InfoBarSeverity.Success;
+
+        var openStore = new Button
+        {
+            Content = T("Apri Plugin Store"),
+            Style = StyleResource("PlayhubPrimaryButtonStyle")
+        };
+        openStore.Click += (_, _) =>
+        {
+            var storeItem = _navigation.MenuItems.OfType<NavigationViewItem>()
+                .FirstOrDefault(item => string.Equals(item.Tag as string, "plugins", StringComparison.Ordinal));
+            if (storeItem is not null)
+            {
+                _navigation.SelectedItem = storeItem;
+            }
+            _status.IsOpen = false;
+        };
+        _status.ActionButton = openStore;
+        _status.IsOpen = true;
     }
 
     private void ShowUpdateNotification(PlayhubUpdateService.UpdateInfo info)
     {
+        WindowsToastService.ShowPlayhubUpdate(info.LatestVersion);
         _localizationKeys.AddOrUpdate(_status, "È disponibile una nuova versione di Playhub.");
         _status.Title = string.Format(T("Playhub {0} disponibile"), info.LatestVersion);
         _status.Message = T("È disponibile una nuova versione di Playhub.");
@@ -4352,6 +4889,31 @@ SOFTWARE.";
 
     private string T(string text) => LocalizationService.Translate(_settings.Language, text);
 
+    private void RestartPlayhub()
+    {
+        try
+        {
+            var executable = Environment.ProcessPath;
+            if (string.IsNullOrWhiteSpace(executable) || !File.Exists(executable))
+            {
+                SetStatus("Non riesco a riavviare Playhub. Chiudilo e riaprilo manualmente.", InfoBarSeverity.Warning);
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = executable,
+                WorkingDirectory = AppContext.BaseDirectory,
+                UseShellExecute = true
+            });
+            Close();
+        }
+        catch
+        {
+            SetStatus("Non riesco a riavviare Playhub. Chiudilo e riaprilo manualmente.", InfoBarSeverity.Warning);
+        }
+    }
+
     private string TranslateMessage(string message)
     {
         if (message.StartsWith("Ho importato ", StringComparison.Ordinal) &&
@@ -4401,10 +4963,8 @@ SOFTWARE.";
         RefreshLanguageCombo(_languageCombo, _settings.Language);
         RefreshChoiceCombo(_backdropCombo, NormalizeBackdropKey(_settings.Backdrop));
         RefreshChoiceCombo(_startupPageCombo, NormalizeStartupPageKey(_settings.StartupPage));
-        RefreshChoiceCombo(_xboxGamesViewCombo, NormalizeXboxGamesViewKey(_settings.XboxGamesView));
         RefreshChoiceCombo(_defaultModeCombo, NormalizeModeKey(_gamingConfig.DefaultMode));
         RefreshChoiceCombo(_splashLogoCombo, GetComboKey(_splashLogoCombo) ?? "playhub");
-        UpdateUwpViewTooltips();
         _loadingSettings = false;
 
         if (Content is DependencyObject root)
@@ -4519,12 +5079,10 @@ SOFTWARE.";
     {
         if (_localizationKeys.TryGetValue(element, out var key))
         {
-            var translated = T(key);
-            if (string.Equals(currentText, key, StringComparison.Ordinal) ||
-                string.Equals(currentText, translated, StringComparison.Ordinal))
-            {
-                return key;
-            }
+            // Keep the original Italian key across every language change.
+            // Replacing it with the currently translated text made the second
+            // change irreversible (for example Italian -> English -> Italian).
+            return key;
         }
 
         _localizationKeys.AddOrUpdate(element, currentText);
@@ -4581,14 +5139,6 @@ SOFTWARE.";
     private static string NormalizeModeKey(string? value)
     {
         return string.Equals(value, "Gaming", StringComparison.OrdinalIgnoreCase) ? "Gaming" : "Desktop";
-    }
-
-    private static string NormalizeXboxGamesViewKey(string? value)
-    {
-        return string.Equals(value, "list", StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(value, "elenco", StringComparison.OrdinalIgnoreCase)
-            ? "list"
-            : "cards";
     }
 
     private static void SelectCombo(ComboBox combo, string value)
@@ -4681,7 +5231,6 @@ SOFTWARE.";
 
         ApplyChrome(accent);
         RefreshAccentPicker();
-        UpdateUwpViewButtons();
         // Re-tint the Gaming Mode mode tiles (border/background/icons) with the new accent.
         UpdateModeTiles();
     }

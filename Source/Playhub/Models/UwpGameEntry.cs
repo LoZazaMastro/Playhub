@@ -8,6 +8,10 @@ public sealed class UwpGameEntry
     public string Executable { get; set; } = "";
     public string Logo { get; set; } = "";
     public string PackageFamilyName { get; set; } = "";
+    public bool IsLocalExecutable { get; set; }
+    public string LocalExecutablePath { get; set; } = "";
+    public string Publisher { get; set; } = "";
+    public long FileSize { get; set; }
     public bool InSteamLibrary { get; set; }
     public string SteamGridDbCoverPath { get; set; } = "";
     public string SteamGridDbBannerPath { get; set; } = "";
@@ -15,4 +19,5 @@ public sealed class UwpGameEntry
     public string SteamGridDbLogoPath { get; set; } = "";
     public string SteamGridDbIconPath { get; set; } = "";
     public int SteamGridDbGameId { get; set; }
+    public bool SteamGridDbArtworkDisabled { get; set; }
 }

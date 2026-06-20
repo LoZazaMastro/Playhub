@@ -89,6 +89,9 @@
             <CheckBox x:Name="ChkRemoveData" Style="{StaticResource DarkCheck}"
                       Content="Also remove my settings and data" Margin="0,22,0,0"
                       Visibility="Collapsed"/>
+            <CheckBox x:Name="ChkRemoveUWPHook" Style="{StaticResource DarkCheck}"
+                      Content="Also uninstall UWPHook" Margin="0,12,0,0"
+                      Visibility="Collapsed"/>
 
             <!-- Percorso installazione -->
             <Border x:Name="PathCard" Background="#1B1D1F" CornerRadius="8" Padding="14,10"

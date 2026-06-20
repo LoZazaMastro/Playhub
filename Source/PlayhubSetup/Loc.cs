@@ -102,7 +102,7 @@ public static class Loc
         { "Playhub is ready to use.", "Playhub è pronto all'uso.", "Playhub está listo para usar.", "Playhub est prêt à l'emploi.", "Playhub ist einsatzbereit.", "O Playhub está pronto para uso.", "Playhub готовий до використання.", "Playhub 已可使用。", "Playhub を使う準備ができました。", "Playhub를 사용할 준비가 되었습니다.", "Playhub उपयोग के लिए तैयार है।", "Playhub готов к использованию." },
 
         ["Launching"] = new[]
-        { "Launching Playhub…", "Avvio di Playhub…", "Iniciando Playhub…", "Lancement de Playhub…", "Playhub wird gestartet…", "Iniciando o Playhub…", "Запуск Playhub…", "正在启动 Playhub…", "Playhub を起動中…", "Playhub 실행 중…", "Playhub शुरू हो रहा है…", "Запуск Playhub…" },
+        { "Done!", "Fatto!", "¡Hecho!", "Terminé !", "Fertig!", "Concluído!", "Готово!", "完成！", "完了！", "완료!", "पूरा हुआ!", "Готово!" },
 
         ["Finish"] = new[]
         { "Finish", "Fine", "Finalizar", "Terminer", "Fertig", "Concluir", "Готово", "完成", "完了", "마침", "समाप्त", "Готово" },
@@ -142,6 +142,27 @@ public static class Loc
 
         ["OptRemoveData"] = new[]
         { "Also remove my settings and data", "Rimuovi anche le mie impostazioni e i dati", "Eliminar también mis ajustes y datos", "Supprimer aussi mes réglages et données", "Auch meine Einstellungen und Daten entfernen", "Remover também minhas configurações e dados", "Також видалити мої налаштування та дані", "同时删除我的设置和数据", "設定とデータも削除する", "내 설정과 데이터도 제거", "मेरी सेटिंग्स और डेटा भी हटाएं", "Также удалить мои настройки и данные" },
+
+        ["OptRemoveUWPHook"] = new[]
+        { "Also uninstall UWPHook", "Disinstalla anche UWPHook", "Desinstalar también UWPHook", "Désinstaller aussi UWPHook", "UWPHook ebenfalls deinstallieren", "Desinstalar também o UWPHook", "Також видалити UWPHook", "同时卸载 UWPHook", "UWPHook もアンインストールする", "UWPHook도 제거", "UWPHook को भी अनइंस्टॉल करें", "Также удалить UWPHook" },
+
+        ["InstallingUWPHook"] = new[]
+        { "Installing UWPHook…", "Installazione di UWPHook…", "Instalando UWPHook…", "Installation de UWPHook…", "UWPHook wird installiert…", "Instalando o UWPHook…", "Встановлення UWPHook…", "正在安装 UWPHook…", "UWPHook をインストール中…", "UWPHook 설치 중…", "UWPHook इंस्टॉल हो रहा है…", "Установка UWPHook…" },
+
+        ["RemovingUWPHook"] = new[]
+        { "Uninstalling UWPHook…", "Disinstallazione di UWPHook…", "Desinstalando UWPHook…", "Désinstallation de UWPHook…", "UWPHook wird deinstalliert…", "Desinstalando o UWPHook…", "Видалення UWPHook…", "正在卸载 UWPHook…", "UWPHook をアンインストール中…", "UWPHook 제거 중…", "UWPHook अनइंस्टॉल हो रहा है…", "Удаление UWPHook…" },
+
+        ["FilesInUse"] = new[]
+        { "Playhub is still running or some installation files are in use. Close Playhub and try again.", "Playhub è ancora in esecuzione o alcuni file di installazione sono in uso. Chiudi Playhub e riprova.", "Playhub sigue abierto o algunos archivos de instalación están en uso. Cierra Playhub e inténtalo de nuevo.", "Playhub est encore ouvert ou des fichiers d'installation sont utilisés. Fermez Playhub et réessayez.", "Playhub läuft noch oder Installationsdateien werden verwendet. Schließe Playhub und versuche es erneut.", "O Playhub ainda está aberto ou alguns arquivos de instalação estão em uso. Feche o Playhub e tente novamente.", "Playhub ще працює або деякі файли встановлення використовуються. Закрий Playhub і спробуй ще раз.", "Playhub 仍在运行，或某些安装文件正在使用。请关闭 Playhub 后重试。", "Playhub がまだ実行中か、インストールファイルが使用中です。Playhub を閉じて再試行してください。", "Playhub가 아직 실행 중이거나 설치 파일이 사용 중입니다. Playhub를 닫고 다시 시도하세요.", "Playhub अभी चल रहा है या कुछ इंस्टॉलेशन फ़ाइलें इस्तेमाल हो रही हैं। Playhub बंद करके फिर कोशिश करें।", "Playhub всё ещё запущен или файлы установки используются. Закрой Playhub и попробуй снова." },
+
+        ["AccessDenied"] = new[]
+        { "Windows denied access to the installation files. Try again or choose another folder.", "Windows ha negato l'accesso ai file di installazione. Riprova o scegli un'altra cartella.", "Windows ha denegado el acceso a los archivos de instalación. Inténtalo de nuevo o elige otra carpeta.", "Windows a refusé l'accès aux fichiers d'installation. Réessayez ou choisissez un autre dossier.", "Windows hat den Zugriff auf die Installationsdateien verweigert. Versuche es erneut oder wähle einen anderen Ordner.", "O Windows negou acesso aos arquivos de instalação. Tente novamente ou escolha outra pasta.", "Windows заборонила доступ до файлів встановлення. Спробуй ще раз або вибери іншу папку.", "Windows 拒绝访问安装文件。请重试或选择其他文件夹。", "Windows がインストールファイルへのアクセスを拒否しました。再試行するか別のフォルダーを選んでください。", "Windows가 설치 파일에 대한 액세스를 거부했습니다. 다시 시도하거나 다른 폴더를 선택하세요.", "Windows ने इंस्टॉलेशन फ़ाइलों तक पहुंच रोक दी। फिर कोशिश करें या कोई दूसरा फ़ोल्डर चुनें।", "Windows запретила доступ к файлам установки. Попробуй снова или выбери другую папку." },
+
+        ["PackageError"] = new[]
+        { "The Playhub installation package is missing or damaged. Download it again and retry.", "Il pacchetto di installazione di Playhub manca o è danneggiato. Scaricalo di nuovo e riprova.", "El paquete de instalación de Playhub no está o está dañado. Descárgalo de nuevo e inténtalo otra vez.", "Le paquet d'installation de Playhub est absent ou endommagé. Téléchargez-le à nouveau et réessayez.", "Das Playhub-Installationspaket fehlt oder ist beschädigt. Lade es erneut herunter und versuche es noch einmal.", "O pacote de instalação do Playhub está ausente ou danificado. Baixe-o novamente e tente de novo.", "Пакет встановлення Playhub відсутній або пошкоджений. Завантаж його знову та повтори спробу.", "Playhub 安装包缺失或已损坏。请重新下载后重试。", "Playhub のインストールパッケージが見つからないか破損しています。再ダウンロードして再試行してください。", "Playhub 설치 패키지가 없거나 손상되었습니다. 다시 다운로드한 뒤 시도하세요.", "Playhub इंस्टॉलेशन पैकेज गायब या खराब है। इसे फिर डाउनलोड करके कोशिश करें।", "Установочный пакет Playhub отсутствует или повреждён. Скачай его снова и повтори попытку." },
+
+        ["UnexpectedError"] = new[]
+        { "The operation could not be completed. Restart Windows and try again.", "Non è stato possibile completare l'operazione. Riavvia Windows e riprova.", "No se pudo completar la operación. Reinicia Windows e inténtalo de nuevo.", "L'opération n'a pas pu être terminée. Redémarrez Windows et réessayez.", "Der Vorgang konnte nicht abgeschlossen werden. Starte Windows neu und versuche es erneut.", "Não foi possível concluir a operação. Reinicie o Windows e tente novamente.", "Не вдалося завершити операцію. Перезапусти Windows і спробуй ще раз.", "无法完成操作。请重启 Windows 后重试。", "操作を完了できませんでした。Windows を再起動して再試行してください。", "작업을 완료할 수 없습니다. Windows를 다시 시작한 뒤 시도하세요.", "कार्रवाई पूरी नहीं हो सकी। Windows रीस्टार्ट करके फिर कोशिश करें।", "Не удалось завершить операцию. Перезапусти Windows и попробуй снова." },
 
         ["RemovingData"] = new[]
         { "Removing settings & data…", "Rimozione impostazioni e dati…", "Eliminando ajustes y datos…", "Suppression des réglages et données…", "Einstellungen und Daten werden entfernt…", "Removendo configurações e dados…", "Видалення налаштувань і даних…", "正在删除设置和数据…", "設定とデータを削除中…", "설정 및 데이터 제거 중…", "सेटिंग्स और डेटा हट रहे हैं…", "Удаление настроек и данных…" },
