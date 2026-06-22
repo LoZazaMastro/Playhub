@@ -164,4 +164,6 @@ Made by **Andrea Sgarro** · *ZazaMastro*
 
 © 2026 Andrea Sgarro — released under the [MIT License](LICENSE).
 
+This project is built with the support of AI (Claude and Codex).
+
 </div>
