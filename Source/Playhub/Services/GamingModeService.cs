@@ -1,6 +1,7 @@
 using Playhub.Models;
 using System;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -356,6 +357,69 @@ public sealed class GamingModeService
             changed = true;
         }
 
+        changed |= EnsureSafetyWatcher(config);
+
         return changed;
+    }
+
+    private const string SafetyWatcherName = "Playhub Desktop Safety";
+
+    // Registra (e tiene aggiornato) il watcher di sicurezza tra i processi
+    // personalizzati: l'agente lo lancia in Gaming Mode e riporta al Desktop
+    // quando Steam si chiude, così l'utente non resta bloccato.
+    private static bool EnsureSafetyWatcher(GamingModeConfig config)
+    {
+        string scriptPath;
+        try
+        {
+            scriptPath = Path.Combine(AppContext.BaseDirectory, "Assets", "GamingMode", "desktop-safety.ps1");
+        }
+        catch
+        {
+            return false;
+        }
+
+        // L'agente risolve "path" come file su disco e NON cerca nel PATH di
+        // sistema: va quindi indicato il percorso COMPLETO di powershell.exe,
+        // altrimenti il processo viene saltato ("path was not found: powershell.exe").
+        string powershellPath;
+        try
+        {
+            powershellPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.System),
+                "WindowsPowerShell", "v1.0", "powershell.exe");
+        }
+        catch
+        {
+            powershellPath = @"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe";
+        }
+
+        var args = $"-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{scriptPath}\"";
+        var existing = config.Gaming.CustomStartupApps
+            .FirstOrDefault(a => string.Equals(a.Name, SafetyWatcherName, StringComparison.OrdinalIgnoreCase));
+
+        if (existing is null)
+        {
+            config.Gaming.CustomStartupApps.Insert(0, new StartupAppConfig
+            {
+                Name = SafetyWatcherName,
+                Path = powershellPath,
+                Arguments = args,
+                ProcessName = "playhub-gm-safety",
+                Enabled = true,
+                StartMinimized = true
+            });
+            return true;
+        }
+
+        if (existing.Arguments != args || existing.Path != powershellPath || !existing.Enabled)
+        {
+            existing.Path = powershellPath;
+            existing.Arguments = args;
+            existing.Enabled = true;
+            return true;
+        }
+
+        return false;
     }
 }

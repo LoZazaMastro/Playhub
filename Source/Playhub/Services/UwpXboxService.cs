@@ -211,7 +211,14 @@ public sealed class UwpXboxService
                 return;
             }
 
-            var cacheKey = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(game.Aumid)))
+            // Identità UNICA per la cache: se l'AUMID è vuoto (giochi locali non
+            // impostati correttamente) ripiega su exe/nome, così due giochi non
+            // finiscono mai a condividere la stessa cover.
+            var coverIdentity = !string.IsNullOrWhiteSpace(game.Aumid) ? game.Aumid
+                : !string.IsNullOrWhiteSpace(game.LocalExecutablePath) ? game.LocalExecutablePath
+                : !string.IsNullOrWhiteSpace(game.Executable) ? game.Executable
+                : game.Name;
+            var cacheKey = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(coverIdentity)))
                 .Substring(0, 24)
                 .ToLowerInvariant();
             var cached = FindExistingImage(cacheDirectory, cacheKey);
