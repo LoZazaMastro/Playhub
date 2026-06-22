@@ -36,13 +36,13 @@ into Steam. Native, dark by design, in **12 languages**.
 <tr>
 <td width="50%" valign="top">
 
-<img src="docs/images/decky.png" width="100%" alt="DeckyLoader" />
+<img src="https://github.com/user-attachments/assets/e8bba1ca-71b4-45c7-a51f-16ab263212a5" width="100%" alt="DeckyLoader" />
 
 ### 🧩 DeckyLoader, made easy
 
 Installing DeckyLoader on Windows usually means scripts and guesswork. Playhub
 does it from one page: **check the status**, **enable Windows Developer Mode**,
-then **install the latest build** — or pick a specific version, **update** or
+then **install the latest build**, or pick a specific version, **update** or
 **remove** it. No PowerShell, no commands to copy.
 
 <br/>
@@ -56,7 +56,7 @@ then **install the latest build** — or pick a specific version, **update** or
 
 Install Playhub's **DeckyLoader plugins** with a single click. Normally each one
 means turning on Developer Mode inside DeckyLoader and side-loading a `.zip` by
-hand — Playhub installs, updates and links every plugin for you, from the app.
+hand, Playhub installs, updates and links every plugin for you, from the app.
 
 <br/>
 
@@ -65,12 +65,12 @@ hand — Playhub installs, updates and links every plugin for you, from the app.
 <tr>
 <td width="50%" valign="top">
 
-<img src="docs/images/gaming-mode.png" width="100%" alt="Gaming Mode" />
+<img src="https://github.com/user-attachments/assets/bfe3d655-22bf-465a-8274-b4ae38290e75" width="100%" alt="Gaming Mode" />
 
 ### 🕹️ Gaming Mode
 
 Decide what your PC does when it turns on: go **straight into Steam Big Picture**
-like a console, controller in hand and desktop out of sight — or stay on the
+like a console, controller in hand and desktop out of sight, or stay on the
 desktop. A background agent makes the handoff seamless; switch back any time.
 
 <br/>
@@ -78,12 +78,12 @@ desktop. A background agent makes the handoff seamless; switch back any time.
 </td>
 <td width="50%" valign="top">
 
-<img src="docs/images/import-xbox.png" width="100%" alt="Import Xbox & Game Pass" />
+<img src="https://github.com/user-attachments/assets/9ed0cdb7-6f67-4cff-915c-20bdd38a3d1a" width="100%" alt="Import Xbox & Game Pass" />
 
-### 🟢 Import Xbox PC Games
+### 🛍️ Import games from major stores
 
-Bring your **UWP** titles — **Game Pass**, **Xbox app**, **Microsoft Store**
-and **Windows Store** games — into Steam as shortcuts with the right artwork. They
+
+Bring your **Game Pass**, **Xbox app**, **Microsoft Store**, **Epic Games Store**, and **GOG Galaxy** games into Steam as shortcuts with the right artwork. They
 launch from Steam and Big Picture like any other game.
 
 <br/>
@@ -102,7 +102,7 @@ everything in one Settings page, and use Playhub in **12 languages**. The app
 checks GitHub for new versions and tells you in-app when an update is ready.
 
 <div align="center">
-  <img src="docs/images/settings.png" width="840" alt="Settings" />
+  <img src="https://github.com/user-attachments/assets/261cce48-d497-4895-9615-bb3f2b05d70e" width="840" alt="Settings" />
 </div>
 
 <br/>
