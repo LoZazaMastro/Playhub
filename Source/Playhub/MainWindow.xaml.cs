@@ -836,8 +836,13 @@ public sealed partial class MainWindow : Window
             HorizontalAlignment = HorizontalAlignment.Center,
             Foreground = ResourceBrush("AccentFillColorDefaultBrush", ParseColor(_settings.AccentColor))
         };
+        // Tag "noloc": questi due TextBlock sono CONDIVISI tra le slide e il loro
+        // testo cambia ad ogni slide. Il localizzatore globale (che memorizza una
+        // chiave per elemento) li bloccherebbe sul testo della prima slide, quindi
+        // li escludiamo e traduciamo a mano in Render() con T(s.Title)/T(s.Body).
         var title = new TextBlock
         {
+            Tag = "noloc",
             FontSize = 34,
             FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
             TextAlignment = TextAlignment.Center,
@@ -847,6 +852,7 @@ public sealed partial class MainWindow : Window
         };
         var body = new TextBlock
         {
+            Tag = "noloc",
             FontSize = 16,
             Opacity = 0.82,
             TextAlignment = TextAlignment.Center,
@@ -953,8 +959,9 @@ public sealed partial class MainWindow : Window
                 icon.Glyph = s.Glyph;
             }
 
-            title.Text = s.Title;
-            body.Text = s.Body;
+            // Traduzione per-slide diretta (vedi nota "noloc" sui TextBlock).
+            title.Text = T(s.Title);
+            body.Text = T(s.Body);
             welcomeAccent.Visibility = s.ShowColor ? Visibility.Visible : Visibility.Collapsed;
             startButton.Visibility = isFinish ? Visibility.Visible : Visibility.Collapsed;
 
@@ -967,10 +974,6 @@ public sealed partial class MainWindow : Window
 
             left.Visibility = index > 0 ? Visibility.Visible : Visibility.Collapsed;
             right.Visibility = isFinish ? Visibility.Collapsed : Visibility.Visible;
-
-            // Slide text is set in Italian above; re-translate it for the current language.
-            LocalizeElement(title);
-            LocalizeElement(body);
         }
 
         void GoTo(int target)
