@@ -17,7 +17,7 @@ into Steam. Native, dark by design, in **12 languages**.
 
 <br/><br/>
 
-<img src="docs/images/hero.png" width="880" alt="Playhub" />
+<img width="2048" height="774" alt="Playhub-Mascotte-GitHub-dark" src="https://github.com/user-attachments/assets/a497b06a-f6bc-48c7-9671-f0142175c971" />
 
 </div>
 
