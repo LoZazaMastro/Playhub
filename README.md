@@ -42,7 +42,7 @@ into Steam. Native, dark by design, in **12 languages**.
 
 Installing DeckyLoader on Windows usually means scripts and guesswork. Playhub
 does it from one page: **check the status**, **enable Windows Developer Mode**,
-then **install the latest build** — or pick a specific version, **update** or
+then **install the latest build**, or pick a specific version, **update** or
 **remove** it. No PowerShell, no commands to copy.
 
 <br/>
@@ -56,7 +56,7 @@ then **install the latest build** — or pick a specific version, **update** or
 
 Install Playhub's **DeckyLoader plugins** with a single click. Normally each one
 means turning on Developer Mode inside DeckyLoader and side-loading a `.zip` by
-hand — Playhub installs, updates and links every plugin for you, from the app.
+hand, Playhub installs, updates and links every plugin for you, from the app.
 
 <br/>
 
@@ -70,7 +70,7 @@ hand — Playhub installs, updates and links every plugin for you, from the app.
 ### 🕹️ Gaming Mode
 
 Decide what your PC does when it turns on: go **straight into Steam Big Picture**
-like a console, controller in hand and desktop out of sight — or stay on the
+like a console, controller in hand and desktop out of sight, or stay on the
 desktop. A background agent makes the handoff seamless; switch back any time.
 
 <br/>
@@ -80,10 +80,9 @@ desktop. A background agent makes the handoff seamless; switch back any time.
 
 <img src="docs/images/import-xbox.png" width="100%" alt="Import Xbox & Game Pass" />
 
-### 🟢 Import Xbox PC Games
+### 🛍️ Import Games from main stores
 
-Bring your **UWP** titles — **Game Pass**, **Xbox app**, **Microsoft Store**
-and **Windows Store** games — into Steam as shortcuts with the right artwork. They
+Bring your **Game Pass**, **Xbox app**, **Microsoft Store**, **Epic Games Store**, and **GOG Galaxy** games into Steam as shortcuts with the right artwork. They
 launch from Steam and Big Picture like any other game.
 
 <br/>
