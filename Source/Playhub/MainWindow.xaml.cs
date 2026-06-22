@@ -35,6 +35,8 @@ public sealed partial class MainWindow : Window
     private readonly GamingModeService _gamingMode = new();
     private readonly UwpXboxService _uwpXbox = new();
     private readonly ExecutableGameService _executableGameService = new();
+    private readonly EpicGamesService _epicService = new();
+    private readonly GogService _gogService = new();
     private readonly ExtraService _extra = new();
     private readonly SteamService _steam = new();
     private readonly PlayhubUpdateService _updateService = new();
@@ -43,6 +45,8 @@ public sealed partial class MainWindow : Window
     private readonly ObservableCollection<DeckyBuildRun> _deckyBuilds = new();
     private readonly ObservableCollection<UwpGameEntry> _uwpGames = new();
     private readonly ObservableCollection<UwpGameEntry> _executableGames = new();
+    private readonly ObservableCollection<UwpGameEntry> _epicGames = new();
+    private readonly ObservableCollection<UwpGameEntry> _gogGames = new();
     private readonly Dictionary<string, ToggleSwitch> _gamingToggles = new();
     private readonly List<Button> _primaryButtons = new();
     // Weak keys so rebuilt UI elements (e.g. plugin cards) can be garbage-collected.
@@ -96,9 +100,17 @@ public sealed partial class MainWindow : Window
     private StackPanel _uwpGamesPanel = new();
     private StackPanel _executableGamesPanel = new();
     private StackPanel _executableSourcesPanel = new();
+    private StackPanel _epicGamesPanel = new();
+    private StackPanel _gogGamesPanel = new();
     private bool _executableScanInProgress;
     private int _uwpCardColumnCount = 3;
     private int _executableCardColumnCount = 3;
+    private int _epicCardColumnCount = 3;
+    private int _gogCardColumnCount = 3;
+    private Button _uwpChevron = new();
+    private Button _executableChevron = new();
+    private Button _epicChevron = new();
+    private Button _gogChevron = new();
     private StackPanel _startupAppsPanel = new();
     private Border _deckyQuickAccessCard = new();
     private Border _deckyBigPictureCard = new();
@@ -1064,6 +1076,8 @@ public sealed partial class MainWindow : Window
         _deckyBigPictureCard.Visibility = Visibility.Collapsed;
         panel.Children.Add(bigPicture);
 
+        panel.Children.Add(BuildGameBarWarningCard());
+
         var quickAccess = BuildQuickAccessTutorialCard(
             "decky",
             "Esplora Decky",
@@ -1121,8 +1135,9 @@ public sealed partial class MainWindow : Window
             Foreground = ResourceBrush("TextFillColorSecondaryBrush", Color.FromArgb(190, 255, 255, 255))
         };
 
+        // La targhetta di stato ("Da fare"/"Installato"/"Attiva"…) è stata rimossa:
+        // lo stato è già evidente dal colore della tile e dal segno di spunta.
         var right = new StackPanel { Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-        right.Children.Add(statusText);
         right.Children.Add(action);
 
         var grid = new Grid { ColumnSpacing = 16, HorizontalAlignment = HorizontalAlignment.Stretch };
@@ -1228,6 +1243,7 @@ public sealed partial class MainWindow : Window
             "Apri il plugin Gaming Mode",
             "Gaming Mode vive nel Quick Access Menu di Decky, sempre a portata di controller.",
             "",
+            warning: "Per qualche motivo non riesci ad accedere al plugin Gaming Mode? Nessun problema: mentre sei in Gaming Mode ti basta chiudere Steam e il PC torna da solo in Desktop Mode. In alternativa, tieni premuto Shift mentre accedi a Windows per avviarlo direttamente sul desktop. Da lì riapri Playhub quando vuoi.",
             videoFile: "Gaming-Mode-Plugin.mp4"));
 
         // ---------- 2. Default mode: two big tiles + one-time switch ----------
@@ -1550,6 +1566,84 @@ public sealed partial class MainWindow : Window
         return header;
     }
 
+    // Intestazione con una freccia in alto a destra per comprimere/espandere il
+    // pannello dei giochi della card (utile dopo la scansione).
+    private Button AddCollapsibleHeader(FluentCard card, FrameworkElement header, Func<StackPanel?> panel)
+    {
+        var chevron = new FontIcon { Glyph = ((char)0xE70E).ToString(), FontSize = 13, VerticalAlignment = VerticalAlignment.Center };
+        var toggle = new Button
+        {
+            Content = chevron,
+            Style = StyleResource("PlayhubSecondaryButtonStyle"),
+            MinWidth = 0,
+            Width = 40,
+            Height = 34,
+            Padding = new Thickness(0),
+            VerticalAlignment = VerticalAlignment.Top,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Visibility = Visibility.Collapsed // compare solo dopo la scansione
+        };
+        toggle.Click += (_, _) =>
+        {
+            var p = panel();
+            if (p is null)
+            {
+                return;
+            }
+
+            if (p.Visibility == Visibility.Visible)
+            {
+                p.Visibility = Visibility.Collapsed;
+                chevron.Glyph = ((char)0xE70D).ToString();
+            }
+            else
+            {
+                p.Visibility = Visibility.Visible;
+                chevron.Glyph = ((char)0xE70E).ToString();
+            }
+        };
+
+        var grid = new Grid { HorizontalAlignment = HorizontalAlignment.Stretch };
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Grid.SetColumn(header, 0);
+        Grid.SetColumn(toggle, 1);
+        grid.Children.Add(header);
+        grid.Children.Add(toggle);
+        card.Children.Add(grid);
+        return toggle;
+    }
+
+    // Come IconHeader, ma con un logo PNG (Assets\ServiceLogos\<file>) al posto della glifo.
+    private StackPanel ImageHeader(string logoFile, string title, string subtitle)
+    {
+        var header = new StackPanel { Spacing = 8 };
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, VerticalAlignment = VerticalAlignment.Center };
+        var logo = new Image
+        {
+            Height = 22,
+            Stretch = Stretch.Uniform,
+            VerticalAlignment = VerticalAlignment.Center,
+            RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5)
+        };
+        try
+        {
+            logo.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(
+                new Uri(System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "ServiceLogos", logoFile)));
+        }
+        catch
+        {
+        }
+        row.Children.Add(logo);
+        row.Children.Add(new TextBlock { Text = title, Style = StyleResource("PlayhubSectionTitleStyle"), VerticalAlignment = VerticalAlignment.Center });
+        header.Children.Add(row);
+        if (!string.IsNullOrWhiteSpace(subtitle))
+        {
+            header.Children.Add(Body(subtitle));
+        }
+        return header;
+    }
+
     private FluentCard BuildQuickAccessTutorialCard(
         string pageTag,
         string title,
@@ -1617,6 +1711,58 @@ public sealed partial class MainWindow : Window
             BorderBrush = new SolidColorBrush(Color.FromArgb(72, 255, 203, 15)),
             BorderThickness = new Thickness(1),
             Child = noticeContent
+        };
+    }
+
+    private Border BuildGameBarWarningCard()
+    {
+        var content = new StackPanel { Spacing = 14 };
+
+        var headerGrid = new Grid { ColumnSpacing = 12 };
+        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        headerGrid.ColumnDefinitions.Add(new ColumnDefinition());
+        var icon = new FontIcon
+        {
+            Glyph = ((char)0xE7BA).ToString(),
+            FontSize = 18,
+            Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 203, 15)),
+            VerticalAlignment = VerticalAlignment.Top
+        };
+        var textStack = new StackPanel { Spacing = 4 };
+        textStack.Children.Add(new TextBlock
+        {
+            Text = "Disattiva l'apertura della Game Bar da controller",
+            FontSize = 15,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            TextWrapping = TextWrapping.Wrap
+        });
+        textStack.Children.Add(new TextBlock
+        {
+            Text = "Per evitare conflitti e avere un'esperienza migliore in Modalità Gaming, disattiva l'opzione "
+                + ((char)0x201C).ToString() + "Consenti al controller di aprire Game Bar" + ((char)0x201D).ToString()
+                + " nelle impostazioni di Windows.",
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = 12.5,
+            LineHeight = 19,
+            Opacity = 0.9
+        });
+        Grid.SetColumn(icon, 0);
+        Grid.SetColumn(textStack, 1);
+        headerGrid.Children.Add(icon);
+        headerGrid.Children.Add(textStack);
+        content.Children.Add(headerGrid);
+
+        content.Children.Add(ActionRow(Button("Fallo subito", async () =>
+            await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:gaming-gamebar")), primary: true)));
+
+        return new Border
+        {
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(16),
+            Background = new SolidColorBrush(Color.FromArgb(24, 255, 203, 15)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(72, 255, 203, 15)),
+            BorderThickness = new Thickness(1),
+            Child = content
         };
     }
 
@@ -1870,8 +2016,8 @@ public sealed partial class MainWindow : Window
         var panel = Page("xbox", "Importa Giochi", "Porta i tuoi giochi nella libreria di Steam e completa automaticamente gli artwork.");
 
         var import = Card();
-        import.Children.Add(IconHeader(((char)0xE721).ToString(), "Importa giochi Xbox e Microsoft Store",
-            "Trova i giochi Xbox, Game Pass e Microsoft Store installati e li aggiunge a Steam, pronti da avviare."));
+        _uwpChevron = AddCollapsibleHeader(import, ImageHeader("Xbox.png", "Importa giochi Xbox e Microsoft Store",
+            "Trova i giochi Xbox, Game Pass e Microsoft Store installati e li aggiunge a Steam, pronti da avviare."), () => _uwpGamesPanel);
         import.Children.Add(ActionRow(
             Button("Scansiona", async () => await ScanUwpGamesAsync()),
             Button("Importa in Steam", async () => await ExportUwpGamesAsync(), primary: true),
@@ -1896,9 +2042,61 @@ public sealed partial class MainWindow : Window
         import.Children.Add(_uwpGamesPanel);
         panel.Children.Add(import);
 
+        // ---------- Epic Games Store ----------
+        var epicImport = Card();
+        _epicChevron = AddCollapsibleHeader(epicImport, ImageHeader("Epic.png", "Importa giochi da Epic Games Store",
+            "Trova i giochi installati con l'Epic Games Launcher e li aggiunge a Steam."), () => _epicGamesPanel);
+        epicImport.Children.Add(ActionRow(
+            Button("Scansiona", async () => await ScanEpicGamesAsync()),
+            Button("Importa in Steam", async () => await ExportEpicGamesAsync(), primary: true),
+            Button("Riavvia Steam", async () => { await _steam.RestartSteamAsync(); SetStatus("Steam riavviato.", InfoBarSeverity.Success); })));
+        _epicGamesPanel = new StackPanel { Spacing = 8, HorizontalAlignment = HorizontalAlignment.Stretch };
+        _epicGamesPanel.SizeChanged += (_, args) =>
+        {
+            if (_epicGames.Count == 0)
+            {
+                return;
+            }
+
+            var columns = GetUwpCardColumnCount(args.NewSize.Width);
+            if (columns != _epicCardColumnCount)
+            {
+                _epicCardColumnCount = columns;
+                DispatcherQueue.TryEnqueue(RenderEpicGames);
+            }
+        };
+        epicImport.Children.Add(_epicGamesPanel);
+        panel.Children.Add(epicImport);
+
+        // ---------- GOG ----------
+        var gogImport = Card();
+        _gogChevron = AddCollapsibleHeader(gogImport, ImageHeader("Gog.png", "Importa giochi da GOG",
+            "Trova i giochi GOG installati (Galaxy o installer offline) e li aggiunge a Steam."), () => _gogGamesPanel);
+        gogImport.Children.Add(ActionRow(
+            Button("Scansiona", async () => await ScanGogGamesAsync()),
+            Button("Importa in Steam", async () => await ExportGogGamesAsync(), primary: true),
+            Button("Riavvia Steam", async () => { await _steam.RestartSteamAsync(); SetStatus("Steam riavviato.", InfoBarSeverity.Success); })));
+        _gogGamesPanel = new StackPanel { Spacing = 8, HorizontalAlignment = HorizontalAlignment.Stretch };
+        _gogGamesPanel.SizeChanged += (_, args) =>
+        {
+            if (_gogGames.Count == 0)
+            {
+                return;
+            }
+
+            var columns = GetUwpCardColumnCount(args.NewSize.Width);
+            if (columns != _gogCardColumnCount)
+            {
+                _gogCardColumnCount = columns;
+                DispatcherQueue.TryEnqueue(RenderGogGames);
+            }
+        };
+        gogImport.Children.Add(_gogGamesPanel);
+        panel.Children.Add(gogImport);
+
         var executableImport = Card();
-        executableImport.Children.Add(IconHeader(((char)0xE8B7).ToString(), "Importa giochi da cartelle e file",
-            "Scegli le tue cartelle preferite o aggiungi singoli file e scansiona gli EXE presenti nelle cartelle e nelle sottocartelle. Playhub riconoscerà automaticamente i giochi e li preparerà per la tua libreria."));
+        _executableChevron = AddCollapsibleHeader(executableImport, IconHeader(((char)0xE8B7).ToString(), "Importa giochi da cartelle e file",
+            "Scegli le tue cartelle preferite o aggiungi singoli file e scansiona gli EXE presenti nelle cartelle e nelle sottocartelle. Playhub riconoscerà automaticamente i giochi e li preparerà per la tua libreria."), () => _executableGamesPanel);
         executableImport.Children.Add(ActionRow(
             Button("Aggiungi cartella", async () => await ChooseExecutableFolderAsync()),
             Button("Aggiungi file", async () => await ChooseExecutableFileAsync()),
@@ -3539,12 +3737,99 @@ SOFTWARE.";
         RenderGameCollection(_executableGames, _executableGamesPanel);
     }
 
+    private void RenderEpicGames() => RenderGameCollection(_epicGames, _epicGamesPanel);
+
+    private void RenderGogGames() => RenderGameCollection(_gogGames, _gogGamesPanel);
+
+    private async Task ScanEpicGamesAsync()
+    {
+        _epicGames.Clear();
+        SetStatus("Cerco i giochi dell'Epic Games Store...", InfoBarSeverity.Informational);
+        var scanned = (await _epicService.ScanAsync()).ToList();
+        _uwpXbox.RefreshLibraryState(scanned);
+        ApplySteamGridDbPreferences(scanned);
+        foreach (var game in scanned)
+        {
+            _epicGames.Add(game);
+        }
+
+        RenderEpicGames();
+        var inLibrary = _epicGames.Count(game => game.InSteamLibrary);
+        SetStatus(string.Format(T("Ho trovato {0} giochi. {1} sono già in libreria."), _epicGames.Count, inLibrary), InfoBarSeverity.Success);
+        _ = LoadGameCoversAsync(_epicGames.ToList(), _epicGames, RenderEpicGames);
+    }
+
+    private async Task ExportEpicGamesAsync()
+    {
+        var result = await _uwpXbox.ExportSelectedToSteamAsync(_epicGames, _settings.SteamGridDbApiKey);
+        _uwpXbox.RefreshLibraryState(_epicGames);
+        if (result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (var game in _epicGames.Where(game => game.InSteamLibrary))
+            {
+                game.Selected = false;
+            }
+        }
+
+        RenderEpicGames();
+        SetStatus(result, result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase)
+            ? InfoBarSeverity.Success
+            : InfoBarSeverity.Warning);
+    }
+
+    private async Task ScanGogGamesAsync()
+    {
+        _gogGames.Clear();
+        SetStatus("Cerco i giochi di GOG...", InfoBarSeverity.Informational);
+        var scanned = (await _gogService.ScanAsync()).ToList();
+        _uwpXbox.RefreshLibraryState(scanned);
+        ApplySteamGridDbPreferences(scanned);
+        foreach (var game in scanned)
+        {
+            _gogGames.Add(game);
+        }
+
+        RenderGogGames();
+        var inLibrary = _gogGames.Count(game => game.InSteamLibrary);
+        SetStatus(string.Format(T("Ho trovato {0} giochi. {1} sono già in libreria."), _gogGames.Count, inLibrary), InfoBarSeverity.Success);
+        _ = LoadGameCoversAsync(_gogGames.ToList(), _gogGames, RenderGogGames);
+    }
+
+    private async Task ExportGogGamesAsync()
+    {
+        var result = await _uwpXbox.ExportSelectedToSteamAsync(_gogGames, _settings.SteamGridDbApiKey);
+        _uwpXbox.RefreshLibraryState(_gogGames);
+        if (result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (var game in _gogGames.Where(game => game.InSteamLibrary))
+            {
+                game.Selected = false;
+            }
+        }
+
+        RenderGogGames();
+        SetStatus(result, result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase)
+            ? InfoBarSeverity.Success
+            : InfoBarSeverity.Warning);
+    }
+
     private void RenderGameCollection(IReadOnlyList<UwpGameEntry> games, StackPanel panel)
     {
         panel.Children.Clear();
         RenderGameCards(games, panel);
 
         LocalizeElement(panel);
+
+        // La freccia comprimi/espandi compare solo quando ci sono giochi scansionati.
+        var chevron = ReferenceEquals(panel, _uwpGamesPanel) ? _uwpChevron
+            : ReferenceEquals(panel, _executableGamesPanel) ? _executableChevron
+            : ReferenceEquals(panel, _epicGamesPanel) ? _epicChevron
+            : ReferenceEquals(panel, _gogGamesPanel) ? _gogChevron
+            : null;
+        if (chevron is not null)
+        {
+            chevron.Visibility = games.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
     }
 
     private void RenderGameCards(IReadOnlyList<UwpGameEntry> games, StackPanel panel)
@@ -3749,8 +4034,8 @@ SOFTWARE.";
             PlaceholderText = T("Cerca titolo"),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
-        var searchButton = Button("Cerca", () => { });
-        var removeButton = Button("Rimuovi risultato", () => { });
+        var searchButton = Button(T("Cerca"), () => { });
+        var removeButton = Button(T("Rimuovi risultato"), () => { });
         searchButton.MinWidth = 0;
         removeButton.MinWidth = 0;
         var removeRow = new StackPanel
@@ -4242,6 +4527,13 @@ SOFTWARE.";
         _startupAppsPanel.Children.Clear();
         foreach (var app in _gamingConfig.Gaming.CustomStartupApps.ToList())
         {
+            // Il watcher di sicurezza è gestito da Playhub: non mostrarlo né
+            // renderlo modificabile/rimovibile dall'utente.
+            if (string.Equals(app.Name, "Playhub Desktop Safety", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             var row = new StackPanel
             {
                 Spacing = 10,

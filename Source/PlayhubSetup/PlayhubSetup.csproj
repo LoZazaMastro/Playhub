@@ -10,7 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <ApplicationIcon>Assets\Playhub.ico</ApplicationIcon>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <Company>Andrea Sgarro (ZazaMastro)</Company>
     <Product>Playhub Setup</Product>
     <!-- Single-file self-contained: vedi build-installer.bat -->
