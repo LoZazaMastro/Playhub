@@ -5306,6 +5306,26 @@ SOFTWARE.";
             return string.Format(T("Non trovo i file installabili per {0}."), pluginName);
         }
 
+        // Messaggio di installazione DeckyLoader composto a runtime: "DeckyLoader
+        // installato ({label}): {nota, nota}. Chiudi e riapri Steam...". Va tradotto
+        // a pezzi (template + etichetta + singole note).
+        const string deckyInstalledPrefix = "DeckyLoader installato (";
+        const string deckyInstalledTail = ". Chiudi e riapri Steam per attivare DeckyLoader.";
+        if (message.StartsWith(deckyInstalledPrefix, StringComparison.Ordinal) &&
+            message.EndsWith(deckyInstalledTail, StringComparison.Ordinal))
+        {
+            var labelEnd = message.IndexOf("): ", StringComparison.Ordinal);
+            if (labelEnd > 0)
+            {
+                var label = message[deckyInstalledPrefix.Length..labelEnd];
+                var notesPart = message[(labelEnd + 3)..^deckyInstalledTail.Length];
+                var notes = notesPart.Split(", ", StringSplitOptions.None).Select(n => T(n));
+                return string.Format(
+                    T("DeckyLoader installato ({0}): {1}. Chiudi e riapri Steam per attivare DeckyLoader."),
+                    T(label), string.Join(", ", notes));
+            }
+        }
+
         return TranslatePrefix(message, "Rimozione non riuscita: ") ??
                TranslatePrefix(message, "Installazione del plugin non riuscita: ") ??
                TranslatePrefix(message, "Rimozione del plugin non riuscita: ") ??
