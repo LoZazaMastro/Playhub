@@ -1,5 +1,8 @@
 using System;
 using System.IO;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace Playhub.Services;
 
@@ -48,6 +51,89 @@ public static class AppPaths
             if (Directory.Exists(path))
             {
                 return path;
+            }
+        }
+
+        return null;
+    }
+
+    // Scrittura atomica e resistente ai blackout: il contenuto viene scritto su un
+    // file temporaneo (con flush forzato su disco), poi sostituisce il file di
+    // destinazione conservando una copia ".bak" dell'ultima versione valida. In
+    // questo modo un'interruzione di corrente a metà scrittura non può lasciare il
+    // file principale troncato o vuoto (causa dei reset di tutte le opzioni).
+    public static async Task WriteAtomicAsync(string path, string contents)
+    {
+        var dir = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+
+        var tmp = path + ".tmp";
+        var bak = path + ".bak";
+
+        var bytes = new UTF8Encoding(false).GetBytes(contents);
+        await using (var fs = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            await fs.WriteAsync(bytes);
+            await fs.FlushAsync();
+            try { fs.Flush(true); } catch { } // fsync: forza i buffer del SO su disco.
+        }
+
+        try
+        {
+            if (File.Exists(path))
+            {
+                // Atomico su NTFS; crea/aggiorna il backup dell'ultima versione valida.
+                File.Replace(tmp, path, bak, ignoreMetadataErrors: true);
+            }
+            else
+            {
+                File.Move(tmp, path);
+            }
+        }
+        catch
+        {
+            // Ripiego: sostituzione diretta (meno atomica, ma non perde il salvataggio).
+            try
+            {
+                File.Copy(tmp, path, overwrite: true);
+                File.Delete(tmp);
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    // Lettura tollerante ai guasti: prova il file principale e, se manca o è
+    // illeggibile/corrotto (JSON non valido), ricade sul backup ".bak".
+    public static T? ReadJsonWithBackup<T>(string path, JsonSerializerOptions options) where T : class
+    {
+        foreach (var candidate in new[] { path, path + ".bak" })
+        {
+            try
+            {
+                if (!File.Exists(candidate))
+                {
+                    continue;
+                }
+
+                var text = File.ReadAllText(candidate);
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    continue;
+                }
+
+                var value = JsonSerializer.Deserialize<T>(text, options);
+                if (value is not null)
+                {
+                    return value;
+                }
+            }
+            catch
+            {
             }
         }
 

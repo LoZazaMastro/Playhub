@@ -29,7 +29,9 @@ public sealed record SteamGridGameOption(int Id, string Name, int? ReleaseYear, 
 /// </summary>
 public sealed class UwpXboxService
 {
-    private readonly HttpClient _http = new();
+    // Timeout esplicito: il default di HttpClient è 100s, troppo per il download
+    // di una copertina/icona; 30s evita attese lunghe se SteamGridDB non risponde.
+    private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
 
     public UwpXboxService()
     {

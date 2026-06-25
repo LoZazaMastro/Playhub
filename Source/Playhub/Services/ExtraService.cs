@@ -12,7 +12,9 @@ namespace Playhub.Services;
 public sealed class ExtraService
 {
     private readonly SteamService _steam = new();
-    private readonly HttpClient _http = new();
+    // Timeout esplicito (il default è 100s): copre il download di fallback dello
+    // zip dei temi senza restare appeso indefinitamente se il server non risponde.
+    private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(60) };
 
     public string? GetSteamFolder() => _steam.GetSteamFolder();
 

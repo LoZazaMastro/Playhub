@@ -77,6 +77,21 @@
                      Style="{StaticResource LangListStyle}"/>
           </StackPanel>
 
+          <!-- STATO: TERMINI DI UTILIZZO -->
+          <StackPanel x:Name="PanelAgreement" VerticalAlignment="Center" Visibility="Collapsed">
+            <TextBlock x:Name="AgreeTitle" Text="Terms of Use" Foreground="#F2F2F2"
+                       FontSize="25" FontWeight="SemiBold"/>
+            <TextBlock x:Name="AgreeSubtitle" Text="Read and accept to continue the installation."
+                       Foreground="#A8A8A8" FontSize="13.5" TextWrapping="Wrap" Margin="0,8,0,0"/>
+            <Border Background="#1B1D1F" CornerRadius="8" BorderBrush="#2A2D30" BorderThickness="1"
+                    Margin="0,16,0,0">
+              <ScrollViewer Height="206" VerticalScrollBarVisibility="Auto" Padding="14,12">
+                <TextBlock x:Name="AgreeBody" Foreground="#D0D0D0" FontSize="12.5"
+                           TextWrapping="Wrap" LineHeight="19"/>
+              </ScrollViewer>
+            </Border>
+          </StackPanel>
+
           <!-- STATO: PRONTO -->
           <StackPanel x:Name="PanelReady" VerticalAlignment="Center" Visibility="Collapsed">
             <TextBlock x:Name="ReadyTitle" Text="Installa Playhub" Foreground="#F2F2F2"
@@ -156,6 +171,10 @@
                     Visibility="Collapsed"/>
             <Button x:Name="BtnLangNext" Content="Continue" Style="{StaticResource PrimaryButton}"/>
             <Button x:Name="BtnPrimary" Content="Installa" Style="{StaticResource PrimaryButton}"
+                    Margin="12,0,0,0" Visibility="Collapsed"/>
+            <Button x:Name="BtnDecline" Content="I decline" Style="{StaticResource GhostButton}"
+                    Visibility="Collapsed"/>
+            <Button x:Name="BtnAccept" Content="I accept" Style="{StaticResource PrimaryButton}"
                     Margin="12,0,0,0" Visibility="Collapsed"/>
             <Button x:Name="BtnDone" Content="Fine" Style="{StaticResource PrimaryButton}"
                     Visibility="Collapsed"/>

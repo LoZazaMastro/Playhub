@@ -57,6 +57,7 @@ public sealed class StartupAppConfig
 public sealed class SafetyOptions
 {
     public int ApiPort { get; set; } = 47991;
-    public bool AllowRemoteApi { get; set; } = true;
+    // Loopback basta a Playhub: niente accesso remoto (LAN) di default, per sicurezza.
+    public bool AllowRemoteApi { get; set; } = false;
     public bool RestartWithoutPrompt { get; set; } = true;
 }
