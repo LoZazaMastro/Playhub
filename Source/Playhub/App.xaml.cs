@@ -23,12 +23,26 @@ public partial class App : Application
             {
                 var path = System.IO.Path.Combine(
                     AppContext.BaseDirectory, "playhub_crash.txt");
+                // Evita che il log cresca all'infinito: oltre ~512 KB ricomincia da capo.
+                try
+                {
+                    if (System.IO.File.Exists(path) && new System.IO.FileInfo(path).Length > 512 * 1024)
+                    {
+                        System.IO.File.Delete(path);
+                    }
+                }
+                catch
+                {
+                }
+
                 System.IO.File.AppendAllText(path, DateTime.Now + "\n" + args.Exception + "\n\n");
             }
             catch
             {
             }
 
+            // Intenzionale: l'app non deve crashare per un'eccezione non gestita;
+            // l'errore è registrato sopra per la diagnosi.
             args.Handled = true;
         };
     }

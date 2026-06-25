@@ -64,6 +64,8 @@ public partial class MainWindow : Window
         BtnPrimary.Click += (_, _) => Start();
         BtnDone.Click += (_, _) => Finish();
         BtnLangNext.Click += (_, _) => ContinueFromLanguage();
+        BtnAccept.Click += (_, _) => AcceptAgreement();
+        BtnDecline.Click += (_, _) => Close();
 
         ApplyLanguage();
     }
@@ -73,9 +75,21 @@ public partial class MainWindow : Window
         if (LangList.SelectedItem is ListBoxItem { Tag: string code })
             Loc.Lang = code;
         ApplyLanguage();
+        // Dopo la lingua si passa ai termini di utilizzo (accetta/rifiuta).
         PanelLanguage.Visibility = Visibility.Collapsed;
-        PanelReady.Visibility = Visibility.Visible;
+        PanelAgreement.Visibility = Visibility.Visible;
         BtnLangNext.Visibility = Visibility.Collapsed;
+        BtnDecline.Visibility = Visibility.Visible;
+        BtnAccept.Visibility = Visibility.Visible;
+    }
+
+    private void AcceptAgreement()
+    {
+        // Accettati i termini, si prosegue con la schermata di installazione.
+        PanelAgreement.Visibility = Visibility.Collapsed;
+        PanelReady.Visibility = Visibility.Visible;
+        BtnDecline.Visibility = Visibility.Collapsed;
+        BtnAccept.Visibility = Visibility.Collapsed;
         BtnCancel.Visibility = Visibility.Visible;
         BtnPrimary.Visibility = Visibility.Visible;
     }
@@ -83,6 +97,12 @@ public partial class MainWindow : Window
     private void ApplyLanguage()
     {
         VersionText.Text = Loc.T("Version") + " " + Installer.AppVersion;
+
+        AgreeTitle.Text = Loc.T("AgreeTitle");
+        AgreeSubtitle.Text = Loc.T("AgreeSubtitle");
+        AgreeBody.Text = Loc.T("AgreeBody");
+        BtnAccept.Content = Loc.T("Accept");
+        BtnDecline.Content = Loc.T("Decline");
 
         LangTitle.Text = Loc.T("LangTitle");
         LangSubtitle.Text = Loc.T("LangSubtitle");

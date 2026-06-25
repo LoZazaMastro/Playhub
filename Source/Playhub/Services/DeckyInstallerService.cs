@@ -366,31 +366,6 @@ public sealed class DeckyInstallerService
         return Directory.Exists(fallback) ? fallback : null;
     }
 
-    private static bool RunPowerShell(string command)
-    {
-        try
-        {
-            using var process = Process.Start(new ProcessStartInfo
-            {
-                FileName = "powershell.exe",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            });
-            process?.WaitForExit(15000);
-            return process?.ExitCode == 0;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    // Single-quote a string for PowerShell, escaping embedded single quotes.
-    private static string PsQuote(string value) => "'" + value.Replace("'", "''") + "'";
-
     private static HttpClient CreateHttpClient()
     {
         var client = new HttpClient();

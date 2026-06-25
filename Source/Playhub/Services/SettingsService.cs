@@ -18,17 +18,24 @@ public sealed class SettingsService
     public async Task<PlayhubSettings> LoadAsync()
     {
         AppPaths.EnsureRoots();
-        if (!File.Exists(AppPaths.SettingsFile))
+
+        // Carica il file principale e, se mancante o corrotto (es. blackout a metà
+        // scrittura), ricade sul backup dell'ultima versione valida.
+        var loaded = AppPaths.ReadJsonWithBackup<PlayhubSettings>(AppPaths.SettingsFile, JsonOptions);
+        if (loaded is null)
         {
-            Current.Language = LocalizationService.DetectSystemLanguage();
-            Current.PluginRoot = AppPaths.LocalPluginRoot;
-            Current.DeckyPluginsPath = AppPaths.DefaultDeckyPluginsPath;
+            // Primo avvio reale (nessun file e nessun backup): crea le impostazioni di default.
+            Current = new PlayhubSettings
+            {
+                Language = LocalizationService.DetectSystemLanguage(),
+                PluginRoot = AppPaths.LocalPluginRoot,
+                DeckyPluginsPath = AppPaths.DefaultDeckyPluginsPath
+            };
             await SaveAsync();
             return Current;
         }
 
-        var json = await File.ReadAllTextAsync(AppPaths.SettingsFile);
-        Current = JsonSerializer.Deserialize<PlayhubSettings>(json, JsonOptions) ?? new PlayhubSettings();
+        Current = loaded;
         Current.SteamGridDbGameOverrides ??= new();
         Current.SteamGridDbTitleOverrides ??= new();
         Current.SteamGridDbArtworkDisabled ??= new();
@@ -76,7 +83,7 @@ public sealed class SettingsService
         Current.Backdrop = NormalizeBackdrop(Current.Backdrop);
         Current.Language = LocalizationService.NormalizeLanguageKey(Current.Language);
         var json = JsonSerializer.Serialize(Current, JsonOptions);
-        await File.WriteAllTextAsync(AppPaths.SettingsFile, json);
+        await AppPaths.WriteAtomicAsync(AppPaths.SettingsFile, json);
     }
 
     private static string NormalizeBackdrop(string? value)

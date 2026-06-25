@@ -93,6 +93,10 @@ public sealed partial class MainWindow : Window
     private NavigationView _navigation = new();
     private Windows.Media.Playback.MediaPlayer? _welcomePlayer;
     private int _welcomeSlideIndex;
+    // Ri-traduce la slide di benvenuto attualmente mostrata. La prima slide è
+    // costruita prima del caricamento della lingua, quindi va aggiornata dopo
+    // il load (vedi ApplyLanguage), altrimenti resterebbe nella lingua di default.
+    private Action? _refreshWelcomeSlide;
     private Windows.Media.Playback.MediaPlayer? _lightboxPlayer;
     private readonly List<TutorialVideoSession> _tutorialVideos = new();
     private string _currentPageTag = "welcome";
@@ -975,6 +979,16 @@ public sealed partial class MainWindow : Window
             left.Visibility = index > 0 ? Visibility.Visible : Visibility.Collapsed;
             right.Visibility = isFinish ? Visibility.Collapsed : Visibility.Visible;
         }
+
+        // La slide 0 è costruita nel costruttore, prima che le impostazioni (e
+        // quindi la lingua) siano caricate da disco: ApplyLanguage() chiama questo
+        // callback dopo il load per ri-tradurre la slide attualmente visibile.
+        _refreshWelcomeSlide = () =>
+        {
+            var s = slides[index];
+            title.Text = T(s.Title);
+            body.Text = T(s.Body);
+        };
 
         void GoTo(int target)
         {
@@ -4212,6 +4226,8 @@ SOFTWARE.";
             await _uwpXbox.PopulateApplicationIconsAsync(new[] { game });
             RenderUwpGames();
             RenderExecutableGames();
+            RenderEpicGames();
+            RenderGogGames();
             SetStatus("Il risultato SteamGridDB è stato rimosso. Il gioco verrà mostrato senza artwork.", InfoBarSeverity.Success);
             return;
         }
@@ -4236,6 +4252,8 @@ SOFTWARE.";
         var coverLoaded = await _uwpXbox.RefreshSteamGridDbCoverAsync(game, _settings.SteamGridDbApiKey);
         RenderUwpGames();
         RenderExecutableGames();
+        RenderEpicGames();
+        RenderGogGames();
         SetStatus(
             coverLoaded
                 ? string.Format(T("Risultato aggiornato: {0}."), selected.Name)
@@ -4440,6 +4458,8 @@ SOFTWARE.";
         }
         RenderUwpGames();
         RenderExecutableGames();
+        RenderEpicGames();
+        RenderGogGames();
         SetStatus(
             appliedImmediately
                 ? "Artwork aggiornati. Riavvia Steam per vederli ovunque."
@@ -5373,6 +5393,10 @@ SOFTWARE.";
         {
             RenderPluginCards();
         }
+
+        // Aggiorna la slide di benvenuto: la prima è costruita prima del load della
+        // lingua, quindi senza questo resterebbe nella lingua di default.
+        _refreshWelcomeSlide?.Invoke();
     }
 
     private void LocalizeElement(DependencyObject element)

@@ -246,32 +246,35 @@ public sealed class GamingModeService
 
     public async Task<GamingModeConfig> LoadConfigAsync()
     {
-        GamingModeConfig config;
-        if (!File.Exists(ConfigFile))
+        var config = TryReadConfig(ConfigFile);
+
+        // Config principale mancante, illeggibile o logicamente corrotta (es.
+        // troncata da un blackout, o salvata a zero prima del caricamento dei
+        // controlli): prova a recuperare il backup dell'ultima versione valida.
+        if (!IsConfigValid(config))
         {
-            config = CreateDefaultConfig();
-        }
-        else
-        {
-            var json = await File.ReadAllTextAsync(ConfigFile);
-            config = JsonSerializer.Deserialize<GamingModeConfig>(json, JsonOptions) ?? CreateDefaultConfig();
+            var backup = TryReadConfig(ConfigFile + ".bak");
+            if (IsConfigValid(backup))
+            {
+                config = backup;
+                await WriteConfigAsync(config!); // ripristina il file principale dal backup
+            }
         }
 
-        // Config corrotta (es. salvata prima del caricamento dei controlli): un
-        // MaxVisibleMs a 0 è impossibile in una config valida → ripristina i default.
-        if (config.Gaming?.Splash is null || config.Gaming.Splash.MaxVisibleMs <= 0)
+        // Se nemmeno il backup è valido, riparti dai default.
+        if (!IsConfigValid(config))
         {
             config = CreateDefaultConfig();
             await WriteConfigAsync(config);
             return config;
         }
 
-        if (NormalizeConfig(config))
+        if (NormalizeConfig(config!))
         {
-            await WriteConfigAsync(config);
+            await WriteConfigAsync(config!);
         }
 
-        return config;
+        return config!;
     }
 
     public async Task SaveConfigAsync(GamingModeConfig config)
@@ -282,10 +285,39 @@ public sealed class GamingModeService
 
     private async Task WriteConfigAsync(GamingModeConfig config)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(ConfigFile)!);
         var json = JsonSerializer.Serialize(config, JsonOptions);
-        await File.WriteAllTextAsync(ConfigFile, json);
+        // Scrittura atomica con backup: un blackout a metà salvataggio non può più
+        // azzerare la config (causa del reset di tutte le opzioni di Gaming Mode).
+        await AppPaths.WriteAtomicAsync(ConfigFile, json);
     }
+
+    private GamingModeConfig? TryReadConfig(string path)
+    {
+        try
+        {
+            if (!File.Exists(path))
+            {
+                return null;
+            }
+
+            var json = File.ReadAllText(path);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return null;
+            }
+
+            return JsonSerializer.Deserialize<GamingModeConfig>(json, JsonOptions);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    // Una config valida ha sempre la sezione Splash con un MaxVisibleMs > 0:
+    // valori a 0/null indicano un file troncato o salvato prima del caricamento.
+    private static bool IsConfigValid(GamingModeConfig? config) =>
+        config?.Gaming?.Splash is not null && config.Gaming.Splash.MaxVisibleMs > 0;
 
     public async Task SetNextBootModeAsync(string mode)
     {
@@ -323,7 +355,10 @@ public sealed class GamingModeService
             Safety = new SafetyOptions
             {
                 ApiPort = 47991,
-                AllowRemoteApi = true, // API dell'agente abilitate di default (servono al programma)
+                // Playhub parla con l'agente solo in loopback (127.0.0.1): l'accesso
+                // remoto (LAN) non serve, quindi è off di default per sicurezza.
+                // Resta comunque attivabile dal toggle "Consenti API remote".
+                AllowRemoteApi = false,
                 RestartWithoutPrompt = true
             }
         };
