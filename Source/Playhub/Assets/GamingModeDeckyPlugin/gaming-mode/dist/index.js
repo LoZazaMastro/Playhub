@@ -223,12 +223,86 @@ function Content() {
     }, []);
     return (SP_JSX.jsxs(DFL.PanelSection, { title: local.mode, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { disabled: busy, layout: "below", onClick: () => run("/mode/gaming/switch", local.gamingMode), children: local.switchGaming }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { disabled: busy, layout: "below", onClick: () => run("/mode/desktop/switch", local.desktopMode), children: local.switchDesktop }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: local.defaultStartup, disabled: busy, rgOptions: defaultOptions, selectedOption: status?.defaultMode ?? "Desktop", onChange: setDefault }) })] }));
 }
+// ---------------------------------------------------------------------------
+// Focus rescue: su Windows il "foreground lock" impedisce a Steam di portare
+// la finestra Big Picture sopra un gioco quando si preme il tasto Steam/QAM
+// (suono sì, finestra no). Qui, dentro la CEF di Steam, intercettiamo
+// l'attivazione dell'overlay e:
+//   1. proviamo la via interna: SteamClient.Window.BringToFront(AndForceOS);
+//   2. avvisiamo l'helper Win32 di Playhub (focus-rescue.ps1, porta 47992)
+//      che toglie il TOPMOST al gioco e forza Big Picture in primo piano.
+// A overlay chiuso l'helper ripristina TOPMOST e focus del gioco.
+// Se l'overlay è correttamente agganciato in-game (utenti senza il problema)
+// non facciamo nulla: zero regressioni. Il borderless resta intatto.
+const FOCUS_HELPER_BASE = "http://127.0.0.1:47992";
+const EWindowBringToFront_AndForceOS = 1;
+function notifyFocusHelper(path) {
+    try {
+        fetch(`${FOCUS_HELPER_BASE}${path}`, { method: "POST" }).catch(() => { });
+    }
+    catch {
+        // L'helper può mancare (config disabilitata): il BringToFront resta.
+    }
+}
+async function overlayHookedInGame(appId) {
+    try {
+        const infos = await SteamClient.Overlay.GetOverlayBrowserInfo();
+        return Array.isArray(infos) &&
+            infos.some((info) => info && info.appID === appId && (info.unPID ?? 0) > 0);
+    }
+    catch {
+        return false;
+    }
+}
+function installFocusRescue() {
+    let overlayWasActive = false;
+    let registration;
+    try {
+        registration = SteamClient.Overlay.RegisterForOverlayActivated(async (_overlayPid, appId, active) => {
+            try {
+                if (active) {
+                    overlayWasActive = true;
+                    // Se l'overlay Steam è già agganciato in-game, il menu
+                    // appare dentro il gioco: non interferire.
+                    if (await overlayHookedInGame(appId)) {
+                        return;
+                    }
+                    try {
+                        SteamClient.Window.BringToFront(EWindowBringToFront_AndForceOS);
+                    }
+                    catch { }
+                    notifyFocusHelper("/focus/steam");
+                    // Retry: se il primo tentativo è arrivato mentre Windows
+                    // stava ancora negando il cambio di primo piano.
+                    window.setTimeout(() => notifyFocusHelper("/focus/steam"), 450);
+                }
+                else if (overlayWasActive) {
+                    overlayWasActive = false;
+                    notifyFocusHelper("/focus/game");
+                }
+            }
+            catch { }
+        });
+    }
+    catch { }
+    return () => {
+        try {
+            registration?.unregister?.();
+        }
+        catch { }
+    };
+}
+
 var index = definePlugin(() => {
+    const uninstallFocusRescue = installFocusRescue();
     return {
         name: "Gaming Mode",
         titleView: SP_JSX.jsx("div", { className: DFL.staticClasses.Title, children: "Gaming Mode" }),
         content: SP_JSX.jsx(Content, {}),
         icon: SP_JSX.jsx(FaGamepad, {}),
+        onDismount() {
+            uninstallFocusRescue();
+        },
     };
 });
 

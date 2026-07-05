@@ -78,7 +78,12 @@ namespace VDFParser.Machines {
                         }
 
                         if(!string.IsNullOrEmpty(tmpFieldName)) {
-                            results.Add(tmpFieldName, tmpBuffer.ToArray());
+                            // Indicizzatore invece di Add: alcuni shortcuts.vdf hanno
+                            // campi duplicati (es. due "appname"), che con Add
+                            // lanciavano "An item with the same key has already been
+                            // added". Sovrascrivere l'ultimo valore evita il crash e
+                            // rende il parsing tollerante ai file malformati.
+                            results[tmpFieldName] = tmpBuffer.ToArray();
                         }
 
                         tmpFieldName = null;

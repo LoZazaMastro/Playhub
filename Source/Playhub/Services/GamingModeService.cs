@@ -393,6 +393,8 @@ public sealed class GamingModeService
         }
 
         changed |= EnsureSafetyWatcher(config);
+        changed |= EnsureFocusRescueWatcher(config);
+        changed |= EnsureGameBarWatcher(config);
 
         return changed;
     }
@@ -441,6 +443,141 @@ public sealed class GamingModeService
                 Path = powershellPath,
                 Arguments = args,
                 ProcessName = "playhub-gm-safety",
+                Enabled = true,
+                StartMinimized = true
+            });
+            return true;
+        }
+
+        if (existing.Arguments != args || existing.Path != powershellPath || !existing.Enabled)
+        {
+            existing.Path = powershellPath;
+            existing.Arguments = args;
+            existing.Enabled = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    private const string FocusRescueName = "Playhub Focus Rescue";
+
+    // Registra (e tiene aggiornato) l'helper "focus rescue" tra i processi
+    // personalizzati: l'agente lo lancia in Gaming Mode. Quando il plugin Decky
+    // segnala l'apertura del menu Steam/QAM sopra un gioco, l'helper porta la
+    // finestra Big Picture in primo piano (il foreground lock di Windows lo
+    // impedirebbe) SENZA toccare il borderless fullscreen dell'agente.
+    // A differenza del watcher di sicurezza NON forza Enabled=true: chi vuole
+    // può disattivarlo dal config e la scelta viene rispettata.
+    private static bool EnsureFocusRescueWatcher(GamingModeConfig config)
+    {
+        string scriptPath;
+        try
+        {
+            scriptPath = Path.Combine(AppContext.BaseDirectory, "Assets", "GamingMode", "focus-rescue.ps1");
+        }
+        catch
+        {
+            return false;
+        }
+
+        // Percorso COMPLETO di powershell.exe: l'agente non cerca nel PATH.
+        string powershellPath;
+        try
+        {
+            powershellPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.System),
+                "WindowsPowerShell", "v1.0", "powershell.exe");
+        }
+        catch
+        {
+            powershellPath = @"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe";
+        }
+
+        var args = $"-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{scriptPath}\"";
+        var existing = config.Gaming.CustomStartupApps
+            .FirstOrDefault(a => string.Equals(a.Name, FocusRescueName, StringComparison.OrdinalIgnoreCase));
+
+        if (existing is null)
+        {
+            config.Gaming.CustomStartupApps.Add(new StartupAppConfig
+            {
+                Name = FocusRescueName,
+                Path = powershellPath,
+                Arguments = args,
+                ProcessName = "playhub-gm-focus",
+                Enabled = true,
+                StartMinimized = true
+            });
+            return true;
+        }
+
+        if (existing.Arguments != args || existing.Path != powershellPath)
+        {
+            existing.Path = powershellPath;
+            existing.Arguments = args;
+            return true;
+        }
+
+        return false;
+    }
+
+    private const string GameBarWatcherName = "Playhub Xbox Game Bar";
+
+    // Registra (o rimuove) il watcher della Xbox Game Bar tra i processi
+    // personalizzati, in base al toggle EnableXboxGameBar. Quando attivo, l'agente
+    // lo lancia in Gaming Mode: accende "Apri Game Bar dal controller" solo mentre
+    // gira un gioco Xbox/MS Store (UWPHook.exe vivo) e la rispegne alla chiusura.
+    private static bool EnsureGameBarWatcher(GamingModeConfig config)
+    {
+        var existing = config.Gaming.CustomStartupApps
+            .FirstOrDefault(a => string.Equals(a.Name, GameBarWatcherName, StringComparison.OrdinalIgnoreCase));
+
+        // Toggle OFF: rimuovi la voce se presente, così l'utente che non la vuole
+        // non se la ritrova registrata.
+        if (!config.Gaming.EnableXboxGameBar)
+        {
+            if (existing is not null)
+            {
+                config.Gaming.CustomStartupApps.Remove(existing);
+                return true;
+            }
+            return false;
+        }
+
+        string scriptPath;
+        try
+        {
+            scriptPath = Path.Combine(AppContext.BaseDirectory, "Assets", "GamingMode", "xbox-gamebar.ps1");
+        }
+        catch
+        {
+            return false;
+        }
+
+        // Percorso COMPLETO di powershell.exe: l'agente non cerca nel PATH.
+        string powershellPath;
+        try
+        {
+            powershellPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.System),
+                "WindowsPowerShell", "v1.0", "powershell.exe");
+        }
+        catch
+        {
+            powershellPath = @"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe";
+        }
+
+        var args = $"-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{scriptPath}\"";
+
+        if (existing is null)
+        {
+            config.Gaming.CustomStartupApps.Add(new StartupAppConfig
+            {
+                Name = GameBarWatcherName,
+                Path = powershellPath,
+                Arguments = args,
+                ProcessName = "playhub-gm-gamebar",
                 Enabled = true,
                 StartMinimized = true
             });
