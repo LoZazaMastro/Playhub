@@ -29,6 +29,10 @@ public sealed class GamingOptions
     public bool AutoHideMouseCursorInGamingMode { get; set; } = true;
     public int AutoHideMouseCursorAfterMs { get; set; } = 500;
     public bool BorderlessFullscreenWindowsInGamingMode { get; set; } = true;
+    // Attiva automaticamente "Apri Game Bar dal controller" SOLO mentre gira un
+    // gioco Xbox/MS Store (avviato via UWPHook), poi la rispegne. Serve perché il
+    // QAM di Steam non si disegna sopra le app UWP: lì si usa la Xbox Game Bar.
+    public bool EnableXboxGameBar { get; set; } = true;
     public bool ManageAudio { get; set; }
     public SplashOptions Splash { get; set; } = new();
     public List<StartupAppConfig> CustomStartupApps { get; set; } = new();

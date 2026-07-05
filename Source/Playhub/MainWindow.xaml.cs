@@ -77,6 +77,10 @@ public sealed partial class MainWindow : Window
     private FontIcon _steamGlyph = new();
     private TextBlock _steamStatus = new();
     private Button _steamButton = new();
+    private Border _gameBarTile = new();
+    private FontIcon _gameBarGlyph = new();
+    private TextBlock _gameBarStatus = new();
+    private Button _gameBarButton = new();
     private StackPanel _pluginCards = new();
     private Grid _loadingOverlay = new();
 
@@ -229,6 +233,9 @@ public sealed partial class MainWindow : Window
         // indicator and item brushes resolve our instances (and update live).
         ApplyAccentResources(ParseColor(_settings.AccentColor));
         BuildShell();
+        // Al ritorno sull'app (es. dopo aver cambiato l'impostazione in Windows),
+        // aggiorna lo stato della card Game Bar.
+        Activated += (_, _) => { try { RefreshGameBarStep(); } catch { } };
         _ = LoadAsync();
     }
 
@@ -267,6 +274,7 @@ public sealed partial class MainWindow : Window
             await LoadDeckyBuildsSilentlyAsync();
             await RefreshPluginsAsync();
             await RefreshGamingModeAsync();
+            ResetXboxGameBarIfStuck();
             await RefreshDeckyStateAsync();
             ApplyLanguage();
 
@@ -1183,6 +1191,7 @@ public sealed partial class MainWindow : Window
         var installed = _deckyInstaller.IsInstalled();
         SetStepState(_devTile, _devGlyph, _devStatus, devOn, "", devOn ? "Attiva" : "Da attivare");
         SetStepState(_installTile, _installGlyph, _installStatus, installed, "", installed ? "Installato" : "Non installato");
+        RefreshGameBarStep();
         var ready = steamInstalled && devOn && installed;
         _deckyBigPictureCard.Visibility = ready ? Visibility.Visible : Visibility.Collapsed;
         _deckyQuickAccessCard.Visibility = ready ? Visibility.Visible : Visibility.Collapsed;
@@ -1376,6 +1385,8 @@ public sealed partial class MainWindow : Window
             "Applica le impostazioni dei controller quando entri in Gaming Mode.", "inputCompatibility");
         AddExplainedToggle(inputCard, "Prepara lo streaming locale",
             "Configura il sistema per lo streaming dei giochi sulla rete di casa.", "sunshineCompatibility");
+        AddExplainedToggle(inputCard, "Xbox Game Bar automatica",
+            "Il menu rapido di Steam non compare sui giochi Xbox e Microsoft Store. Per quei giochi Playhub attiva la Xbox Game Bar dal controller mentre giochi, e la disattiva quando esci.", "xboxGameBar");
         inputCard.Children.Add(Labeled("Strumento di streaming (Sunshine, Apollo o Vibepollo)", BrowseRow(_sunshinePathBox, folder: true)));
 
         // ---------- 6. Avanzate ----------
@@ -1731,56 +1742,47 @@ public sealed partial class MainWindow : Window
         };
     }
 
-    private Border BuildGameBarWarningCard()
+    private UIElement BuildGameBarWarningCard()
     {
-        var content = new StackPanel { Spacing = 14 };
+        // Stessa struttura degli step DeckyLoader: quando l'apertura della Game Bar
+        // dal controller è disattivata (lo stato che vogliamo), la card diventa
+        // "completata" con la spunta verde. RefreshGameBarStep() aggiorna lo stato.
+        _gameBarButton = Button("Apri impostazioni", async () =>
+            await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:gaming-gamebar")), primary: false);
 
-        var headerGrid = new Grid { ColumnSpacing = 12 };
-        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        headerGrid.ColumnDefinitions.Add(new ColumnDefinition());
-        var icon = new FontIcon
-        {
-            Glyph = ((char)0xE7BA).ToString(),
-            FontSize = 18,
-            Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 203, 15)),
-            VerticalAlignment = VerticalAlignment.Top
-        };
-        var textStack = new StackPanel { Spacing = 4 };
-        textStack.Children.Add(new TextBlock
-        {
-            Text = "Disattiva l'apertura della Game Bar da controller",
-            FontSize = 15,
-            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            TextWrapping = TextWrapping.Wrap
-        });
-        textStack.Children.Add(new TextBlock
-        {
-            Text = "Per evitare conflitti e avere un'esperienza migliore in Modalità Gaming, disattiva l'opzione "
-                + ((char)0x201C).ToString() + "Consenti al controller di aprire Game Bar" + ((char)0x201D).ToString()
-                + " nelle impostazioni di Windows.",
-            TextWrapping = TextWrapping.Wrap,
-            FontSize = 12.5,
-            LineHeight = 19,
-            Opacity = 0.9
-        });
-        Grid.SetColumn(icon, 0);
-        Grid.SetColumn(textStack, 1);
-        headerGrid.Children.Add(icon);
-        headerGrid.Children.Add(textStack);
-        content.Children.Add(headerGrid);
+        var card = BuildDeckyStep(
+            ((char)0xE7FC).ToString(),
+            "Apertura della Game Bar dal controller disattivata",
+            "Il tasto del controller non deve aprire la Game Bar: in Big Picture crea problemi di navigazione. Ci pensa Playhub ad attivarla solo per i giochi Xbox.",
+            ActionRow(_gameBarButton),
+            out _gameBarTile, out _gameBarGlyph, out _gameBarStatus);
 
-        content.Children.Add(ActionRow(Button("Fallo subito", async () =>
-            await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:gaming-gamebar")), primary: true)));
+        RefreshGameBarStep();
+        return card;
+    }
 
-        return new Border
+    // Legge l'impostazione Windows "apri Game Bar dal controller".
+    private static bool IsGameBarControllerEnabled()
+    {
+        try
         {
-            CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(16),
-            Background = new SolidColorBrush(Color.FromArgb(24, 255, 203, 15)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(72, 255, 203, 15)),
-            BorderThickness = new Thickness(1),
-            Child = content
-        };
+            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\GameBar");
+            return key?.GetValue("UseNexusForGameBarEnabled") is int value && value != 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    // Aggiorna la card Game Bar: "completata" (spunta verde) quando l'apertura dal
+    // controller è disattivata; altrimenti mostra il pulsante per aprirne le impostazioni.
+    private void RefreshGameBarStep()
+    {
+        var disabled = !IsGameBarControllerEnabled();
+        SetStepState(_gameBarTile, _gameBarGlyph, _gameBarStatus, disabled, ((char)0xE7FC).ToString(),
+            disabled ? "Disattivata" : "Attiva");
+        _gameBarButton.Visibility = disabled ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private FluentCard BuildBigPictureTutorialCard()
@@ -3354,6 +3356,36 @@ SOFTWARE.";
         RenderStartupApps();
     }
 
+    // Sicurezza: se un gioco Xbox aveva acceso "apri Game Bar dal controller" e
+    // qualcosa è andato storto lasciandola accesa, la rispegniamo all'avvio di
+    // Playhub quando nessun gioco Xbox (UWPHook) è in esecuzione. Solo se la
+    // feature è attiva: se l'utente l'ha disattivata NON tocchiamo la sua scelta.
+    private void ResetXboxGameBarIfStuck()
+    {
+        try
+        {
+            if (_gamingConfig?.Gaming is null || !_gamingConfig.Gaming.EnableXboxGameBar)
+            {
+                return;
+            }
+
+            if (Process.GetProcessesByName("UWPHook").Length > 0)
+            {
+                return; // un gioco Xbox è in corso: non toccare l'impostazione.
+            }
+
+            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
+                @"Software\Microsoft\GameBar", writable: true);
+            if (key?.GetValue("UseNexusForGameBarEnabled") is int value && value != 0)
+            {
+                key.SetValue("UseNexusForGameBarEnabled", 0, Microsoft.Win32.RegistryValueKind.DWord);
+            }
+        }
+        catch
+        {
+        }
+    }
+
     private async Task SaveGamingConfigAsync()
     {
         _gamingConfig.DefaultMode = GetComboKey(_defaultModeCombo) ?? "Desktop";
@@ -4550,9 +4582,10 @@ SOFTWARE.";
         _startupAppsPanel.Children.Clear();
         foreach (var app in _gamingConfig.Gaming.CustomStartupApps.ToList())
         {
-            // Il watcher di sicurezza è gestito da Playhub: non mostrarlo né
-            // renderlo modificabile/rimovibile dall'utente.
-            if (string.Equals(app.Name, "Playhub Desktop Safety", StringComparison.OrdinalIgnoreCase))
+            // I watcher di Playhub (sicurezza e focus rescue) sono gestiti da
+            // Playhub: non mostrarli né renderli modificabili/rimovibili.
+            if (string.Equals(app.Name, "Playhub Desktop Safety", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(app.Name, "Playhub Focus Rescue", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
@@ -4683,6 +4716,7 @@ SOFTWARE.";
         SetToggle("sunshineCompatibility", _gamingConfig.Gaming.EnsureSunshineCompatibilityInGamingMode);
         SetToggle("hideMouse", _gamingConfig.Gaming.AutoHideMouseCursorInGamingMode);
         SetToggle("borderless", _gamingConfig.Gaming.BorderlessFullscreenWindowsInGamingMode);
+        SetToggle("xboxGameBar", _gamingConfig.Gaming.EnableXboxGameBar);
         SetToggle("manageAudio", _gamingConfig.Gaming.ManageAudio);
         SetToggle("remoteApi", _gamingConfig.Safety.AllowRemoteApi);
         SetToggle("restartWithoutPrompt", _gamingConfig.Safety.RestartWithoutPrompt);
@@ -4700,6 +4734,7 @@ SOFTWARE.";
         _gamingConfig.Gaming.EnsureSunshineCompatibilityInGamingMode = GetToggle("sunshineCompatibility");
         _gamingConfig.Gaming.AutoHideMouseCursorInGamingMode = GetToggle("hideMouse");
         _gamingConfig.Gaming.BorderlessFullscreenWindowsInGamingMode = GetToggle("borderless");
+        _gamingConfig.Gaming.EnableXboxGameBar = GetToggle("xboxGameBar");
         _gamingConfig.Gaming.ManageAudio = GetToggle("manageAudio");
         _gamingConfig.Safety.AllowRemoteApi = GetToggle("remoteApi");
         // No confirmation dialog when switching modes — always on.
