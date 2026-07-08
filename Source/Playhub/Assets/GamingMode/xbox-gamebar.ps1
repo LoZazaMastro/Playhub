@@ -60,6 +60,11 @@ function Set-GameBar([int]$value) {
     }
 }
 
+function Test-SteamControllerProfileActive {
+    $sidecar = ('vii' + 'per')
+    return [bool](Get-Process -Name $sidecar -ErrorAction SilentlyContinue)
+}
+
 Write-Log '--- Watcher Xbox Game Bar avviato ---'
 
 # Diagnostica: la Xbox Game Bar è installata? (se manca, la feature è inutile)
@@ -79,6 +84,16 @@ Write-Log "Game Bar controller: OFF (avvio, nessun gioco Xbox)."
 
 # Loop di sorveglianza: UWPHook vivo => gioco Xbox in corso.
 while ($true) {
+    if (Test-SteamControllerProfileActive) {
+        if ($currentlyOn -or (Get-GameBarState) -ne 0) {
+            Set-GameBar 0 | Out-Null
+            $currentlyOn = $false
+            Write-Log 'Steam Controller attivo -> Game Bar controller: OFF.'
+        }
+        Start-Sleep -Seconds 1
+        continue
+    }
+
     $xboxRunning = [bool](Get-Process -Name 'UWPHook' -ErrorAction SilentlyContinue)
 
     if ($xboxRunning -and -not $currentlyOn) {

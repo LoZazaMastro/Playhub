@@ -91,6 +91,10 @@ public sealed class DeckyInstallerService
     /// <summary>Installs the latest main build.</summary>
     public Task<string> InstallLatestAsync() => InstallFromUrlAsync(LatestZipUrl, "ultima versione");
 
+    // Variante per utenti esperti: registra e avvia PluginLoader.exe (con finestra
+    // console/log sempre visibile) invece di PluginLoader_noconsole.exe.
+    public Task<string> InstallLatestConsoleAsync() => InstallFromUrlAsync(LatestZipUrl, "versione con console", console: true);
+
     /// <summary>Installs a specific build run, falling back to the latest if that run isn't mirrored.</summary>
     public async Task<string> InstallBuildAsync(DeckyBuildRun build)
     {
@@ -105,7 +109,7 @@ public sealed class DeckyInstallerService
         return await InstallFromBytesAsync(bytes, $"build {build.Id}");
     }
 
-    private async Task<string> InstallFromUrlAsync(string url, string label)
+    private async Task<string> InstallFromUrlAsync(string url, string label, bool console = false)
     {
         var bytes = await TryDownloadAsync(url);
         if (bytes is null)
@@ -113,10 +117,10 @@ public sealed class DeckyInstallerService
             return "Non riesco a scaricare DeckyLoader (rete non disponibile o artifact assente). Riprova più tardi.";
         }
 
-        return await InstallFromBytesAsync(bytes, label);
+        return await InstallFromBytesAsync(bytes, label, console);
     }
 
-    private async Task<string> InstallFromBytesAsync(byte[] zipBytes, string label)
+    private async Task<string> InstallFromBytesAsync(byte[] zipBytes, string label, bool console = false)
     {
         if (zipBytes.Length < 500_000)
         {
@@ -137,7 +141,7 @@ public sealed class DeckyInstallerService
 
         var notes = new List<string>();
         notes.Add(EnableSteamCefDebugging() ? "debug CEF attivato" : "debug CEF non riuscito");
-        notes.Add(SetupAutostartAndLaunch() ? "autostart impostato e loader avviato" : "autostart non riuscito");
+        notes.Add(SetupAutostartAndLaunch(console) ? "autostart impostato e loader avviato" : "autostart non riuscito");
         RemoveLegacyDesktopShortcut();
 
         return $"DeckyLoader installato ({label}): {string.Join(", ", notes)}. " +
@@ -256,14 +260,19 @@ public sealed class DeckyInstallerService
         }
     }
 
-    private bool SetupAutostartAndLaunch()
+    private bool SetupAutostartAndLaunch(bool console = false)
     {
         try
         {
-            var loader = Path.Combine(ServicesDir, "PluginLoader_noconsole.exe");
+            var loader = Path.Combine(ServicesDir, console ? "PluginLoader.exe" : "PluginLoader_noconsole.exe");
             if (!File.Exists(loader))
             {
-                return false;
+                // Se la variante richiesta non è nel pacchetto, ripiega sull'altra.
+                loader = Path.Combine(ServicesDir, console ? "PluginLoader_noconsole.exe" : "PluginLoader.exe");
+                if (!File.Exists(loader))
+                {
+                    return false;
+                }
             }
 
             // Remove every existing PluginLoader autostart entry / running instance first,

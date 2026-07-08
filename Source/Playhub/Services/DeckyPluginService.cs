@@ -143,21 +143,32 @@ $pluginProcesses | ForEach-Object {
   Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
 }
 ";
-            var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-            var startInfo = new ProcessStartInfo
+            // Scriviamo lo script su un file .ps1 temporaneo ed eseguiamo con -File
+            // invece di -EncodedCommand (base64): il PowerShell codificato in base64
+            // è un forte innesco per gli euristici antivirus (falsi positivi).
+            var scriptPath = Path.Combine(Path.GetTempPath(), $"playhub-plugin-stop-{Guid.NewGuid():N}.ps1");
+            File.WriteAllText(scriptPath, script, new UTF8Encoding(true));
+            try
             {
-                FileName = "powershell.exe",
-                Arguments = $"-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {encoded}",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-            startInfo.Environment["PLAYHUB_PLUGIN_REMOVE_PATH"] = Path.GetFullPath(pluginFolder);
-            using var process = Process.Start(startInfo);
-            if (process is not null)
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments = $"-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{scriptPath}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                startInfo.Environment["PLAYHUB_PLUGIN_REMOVE_PATH"] = Path.GetFullPath(pluginFolder);
+                using var process = Process.Start(startInfo);
+                if (process is not null)
+                {
+                    process.WaitForExit(8000);
+                }
+            }
+            finally
             {
-                process.WaitForExit(8000);
+                try { File.Delete(scriptPath); } catch { }
             }
         }
         catch

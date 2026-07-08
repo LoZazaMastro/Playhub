@@ -22,4 +22,8 @@ public sealed class PlayhubSettings
     public List<string> RecentArtworkBackups { get; set; } = new();
     public bool WelcomeCompleted { get; set; }
     public string StartupPage { get; set; } = "decky";
+    // Xbox Game Bar automatica: l'agente non conosce
+    // EnableXboxGameBar e al riavvio lo riporta al default (true), perdendo la scelta
+    // dell'utente. La verità durevole vive qui.
+    public bool XboxGameBarEnabled { get; set; } = true;
 }

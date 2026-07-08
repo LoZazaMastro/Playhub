@@ -1,10 +1,9 @@
 PLAYHUB — THIRD-PARTY NOTICES
 =============================
 
-Playhub includes and/or is derived from the following third-party open-source
-components. Each is distributed under the MIT License, reproduced below. Playhub
-is permitted to use, modify, and redistribute these works (including in
-commercial and closed-source form) provided these notices are retained.
+Playhub includes and/or distributes the following third-party open-source
+components. Licenses differ by component and must be retained with the shipped
+files.
 
 -------------------------------------------------------------------------------
 1) UWPHook  —  https://github.com/BrianLima/UWPHook
@@ -88,6 +87,37 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 -------------------------------------------------------------------------------
+4) Steam Controller Access  -  bundled Decky plugin by LoZazaMastro
+   Used by: Steam Controller support for Xbox/Game Pass shortcuts imported
+   through UWPHook.
+
+   Steam Controller Access bundles the local controller engine files and the
+   Windows USB/IP driver installer used by the bridge. The plugin is installed
+   by Playhub into the user's DeckyLoader plugins directory.
+
+   Bundled components:
+   - SISR by Alia5: https://github.com/Alia5/SISR
+     License: GPL-3.0. See Plugins/Steam Controller Access/Steam Controller
+     Access/vendor/SISR/LICENSE-SISR-GPL-3.0.txt.
+   - VIIPER by Alia5 and Peter Repukat: https://github.com/Alia5/VIIPER
+     License: GPL-3.0. See Plugins/Steam Controller Access/Steam Controller
+     Access/vendor/SISR/LICENSE-VIIPER-GPL-3.0.txt.
+   - USBIP-Win2 by vadimgrn: https://github.com/vadimgrn/usbip-win2
+     License: BSD 2-Clause. See Plugins/Steam Controller Access/Steam
+     Controller Access/vendor/USBIP-Win2/LICENSE-BSD-2-Clause.txt.
+
+-------------------------------------------------------------------------------
 Note: the bundled UWPHook.exe also embeds its own open-source dependencies
 (e.g. MaterialDesignThemes, Crc32.NET, Microsoft.PowerShell.SDK, Serilog), whose
 licenses (MIT / Apache-2.0) are documented in the UWPHook repository.
+
+-------------------------------------------------------------------------------
+TRADEMARKS
+
+Steam, the Steam Controller and related logos and images are trademarks of
+Valve Corporation.
+
+All trademarks, logos and product images referenced or displayed in Playhub are
+the property of their respective owners and are used solely for identification
+(nominative) purposes. Playhub is an independent project and is not affiliated
+with, sponsored by, or endorsed by Valve or any other trademark holder.

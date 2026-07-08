@@ -95,8 +95,20 @@ public sealed class UwpXboxService
         $apps | Sort-Object Name -Unique | ConvertTo-Json -Depth 4 -Compress
         """;
 
-        var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-        var result = await ProcessService.RunAsync("powershell.exe", $"-NoProfile -ExecutionPolicy Bypass -EncodedCommand {encoded}");
+        // Eseguiamo lo script da un file .ps1 temporaneo con -File invece di
+        // -EncodedCommand (base64): il PowerShell in base64 è un forte innesco per
+        // gli euristici antivirus (falsi positivi). Il file viene poi eliminato.
+        var scriptPath = Path.Combine(Path.GetTempPath(), $"playhub-uwp-scan-{Guid.NewGuid():N}.ps1");
+        await File.WriteAllTextAsync(scriptPath, script, new UTF8Encoding(true));
+        ProcessResult result;
+        try
+        {
+            result = await ProcessService.RunAsync("powershell.exe", $"-NoProfile -ExecutionPolicy Bypass -File \"{scriptPath}\"");
+        }
+        finally
+        {
+            try { File.Delete(scriptPath); } catch { }
+        }
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             throw new InvalidOperationException(result.Error + result.Output);

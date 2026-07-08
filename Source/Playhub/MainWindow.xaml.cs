@@ -101,6 +101,7 @@ public sealed partial class MainWindow : Window
     // costruita prima del caricamento della lingua, quindi va aggiornata dopo
     // il load (vedi ApplyLanguage), altrimenti resterebbe nella lingua di default.
     private Action? _refreshWelcomeSlide;
+    private MediaPlayerElement? _welcomeBackgroundElement;
     private Windows.Media.Playback.MediaPlayer? _lightboxPlayer;
     private readonly List<TutorialVideoSession> _tutorialVideos = new();
     private string _currentPageTag = "welcome";
@@ -149,7 +150,6 @@ public sealed partial class MainWindow : Window
     private NumberBox _splashMinBox = new();
     private NumberBox _splashMaxBox = new();
     private NumberBox _apiPortBox = new();
-
     private sealed record ComboOption(string Key, string LabelKey);
 
     private sealed class TutorialVideoSession
@@ -243,6 +243,7 @@ public sealed partial class MainWindow : Window
     {
         try
         {
+            Diag.Step("LoadAsync begin");
             _settings = await _settingsService.LoadAsync();
             // Default the DeckyLoader plugins folder so the setting is invisible to users.
             if (string.IsNullOrWhiteSpace(_settings.DeckyPluginsPath))
@@ -271,11 +272,17 @@ public sealed partial class MainWindow : Window
             ApplyBackdrop();
             PopulateSettingsControls();
             ApplyLanguage();
+            Diag.Step("LoadAsync: LoadDeckyBuildsSilently");
             await LoadDeckyBuildsSilentlyAsync();
+            Diag.Step("LoadAsync: RefreshPlugins");
             await RefreshPluginsAsync();
+            Diag.Step("LoadAsync: RefreshGamingMode");
             await RefreshGamingModeAsync();
+            Diag.Step("LoadAsync: ResetXboxGameBarIfStuck");
             ResetXboxGameBarIfStuck();
+            Diag.Step("LoadAsync: RefreshDeckyState");
             await RefreshDeckyStateAsync();
+            Diag.Step("LoadAsync: steps done");
             ApplyLanguage();
 
             // Controllo aggiornamenti non bloccante: se c'è una versione nuova
@@ -296,15 +303,12 @@ public sealed partial class MainWindow : Window
         }
         finally
         {
-            // BuildShell initially selects Welcome before the saved startup page is known.
-            // Start media only now, once that navigation has settled, so startup never
-            // opens a Welcome video and a tutorial video back-to-back under the spinner.
-            _mediaPlaybackReady = true;
             ShowPage(_currentPageTag);
 
             // The loading overlay must ALWAYS hide, even if a step above failed,
             // otherwise the app is stuck on the spinner forever.
             FadeOutThenHide(_loadingOverlay);
+            _ = EnableMediaPlaybackAfterColdStartAsync();
         }
 
         // Re-check DeckyLoader state whenever the window regains focus
@@ -313,6 +317,30 @@ public sealed partial class MainWindow : Window
         {
             try { await RefreshDeckyStateAsync(); } catch { }
         };
+    }
+
+    private async Task EnableMediaPlaybackAfterColdStartAsync()
+    {
+        try
+        {
+            // Nessun ritardo: i video partono subito. Il crash all'avvio era la
+            // scrittura di config.json (già risolta), non il media.
+            await Task.CompletedTask;
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                try
+                {
+                    _mediaPlaybackReady = true;
+                    ShowPage(_currentPageTag);
+                }
+                catch
+                {
+                }
+            });
+        }
+        catch
+        {
+        }
     }
 
     private void SetWindowShape()
@@ -371,7 +399,7 @@ public sealed partial class MainWindow : Window
         navigation.MenuItems.Add(NavItem("DeckyLoader", "decky", Symbol.Download));
         navigation.MenuItems.Add(NavItem("Playhub Plugin Store", "plugins", Symbol.Shop));
         navigation.MenuItems.Add(NavItem("Gaming Mode", "gaming", Symbol.Play));
-        navigation.MenuItems.Add(NavItem("Importa Giochi", "xbox", ((char)0xE7FC).ToString()));
+        navigation.MenuItems.Add(NavItem("Importa Giochi", "xbox", VectorIcon(LayerDiagonalAddPath)));
         navigation.MenuItems.Add(NavItem("Big Picture Styler", "styler", ((char)0xE771).ToString()));
         navigation.MenuItems.Add(NavItem("Impostazioni", "settings", Symbol.Setting));
         navigation.SelectionChanged += (_, args) =>
@@ -391,12 +419,24 @@ public sealed partial class MainWindow : Window
         };
 
         _pageHost = new Grid { HorizontalAlignment = HorizontalAlignment.Stretch };
+        Diag.Step("BuildShell: Decky");
         _pageHost.Children.Add(BuildDeckyPage());
+        Diag.Step("BuildShell: Plugins");
         _pageHost.Children.Add(BuildPluginsPage());
+        Diag.Step("BuildShell: Gaming");
         _pageHost.Children.Add(BuildGamingPage());
+        Diag.Step("BuildShell: Xbox");
         _pageHost.Children.Add(BuildXboxPage());
+        Diag.Step("BuildShell: BigPictureStyler");
         _pageHost.Children.Add(BuildBigPictureStylerPage());
+        Diag.Step("BuildShell: Settings");
         _pageHost.Children.Add(BuildSettingsPage());
+        Diag.Step("BuildShell: pages done");
+
+        // Auto-save di tutti i controlli Gaming Mode: agganciato DOPO che tutte le
+        // pagine (inclusa Steam Controller) hanno registrato i loro toggle, così
+        // anche quelli nuovi vengono salvati come gli altri.
+        WireGamingAutoSave();
 
         _contentScroller = new ScrollViewer
         {
@@ -593,6 +633,16 @@ public sealed partial class MainWindow : Window
     private static NavigationViewItem NavItem(string label, string tag, string glyph)
         => MakeNavItem(label, tag, new FontIcon { Glyph = glyph });
 
+    private static NavigationViewItem NavItem(string label, string tag, IconElement icon)
+        => MakeNavItem(label, tag, icon);
+
+    private const string LayerDiagonalAddPath =
+        "M12.5 4.25194C12.5 3.73196 11.9837 3.36976 11.4948 3.54669L4.65454 6.02188C3.96161 6.27262 3.5 6.93056 3.5 7.66746V13.7491C3.5 14.2691 4.01625 14.6313 4.5052 14.4544L5 14.2753V15.8705C3.5378 16.388 2 15.3035 2 13.7491V7.66746C2 6.29894 2.85728 5.07704 4.14414 4.61138L10.9844 2.1362C12.4512 1.60541 14 2.69202 14 4.25194V4.42895L12.5 4.97174V4.25194ZM16.5 7.25194C16.5 6.73196 15.9837 6.36976 15.4948 6.54669L8.32467 9.14124C7.82972 9.32034 7.5 9.7903 7.5 10.3167V16.7491C7.5 17.2691 8.01625 17.6313 8.5052 17.4544L9 17.2753V18.8705C7.5378 19.388 6 18.3035 6 16.7491V10.3167C6 9.15868 6.72539 8.12477 7.81427 7.73075L14.9844 5.1362C16.4512 4.60541 18 5.69202 18 7.25194V7.42895L16.5 7.97174V7.25194ZM19.4948 9.54667C19.9837 9.36975 20.5 9.73195 20.5 10.2519V11.3135C21.0335 11.4858 21.5368 11.7253 22 12.0218V10.2519C22 8.692 20.4512 7.60539 18.9844 8.13618L11.4844 10.8501C10.5935 11.1725 10 12.0184 10 12.9658V19.7491C10 21.309 11.5488 22.3956 13.0156 21.8649L13.5231 21.6812C13.1928 21.2884 12.9081 20.856 12.6773 20.3921L12.5052 20.4544C12.0163 20.6313 11.5 20.2691 11.5 19.7491V12.9658C11.5 12.65 11.6978 12.368 11.9948 12.2606L19.4948 9.54667ZM24 17.5C24 14.4624 21.5376 12 18.5 12C15.4624 12 13 14.4624 13 17.5C13 20.5376 15.4624 23 18.5 23C21.5376 23 24 20.5376 24 17.5ZM19.0006 18L19.0011 20.5035C19.0011 20.7797 18.7773 21.0035 18.5011 21.0035C18.225 21.0035 18.0011 20.7797 18.0011 20.5035L18.0006 18H15.4956C15.2197 18 14.9961 17.7762 14.9961 17.5C14.9961 17.2239 15.2197 17 15.4956 17H18.0005L18 14.4993C18 14.2231 18.2239 13.9993 18.5 13.9993C18.7761 13.9993 19 14.2231 19 14.4993L19.0005 17H21.4966C21.7725 17 21.9961 17.2239 21.9961 17.5C21.9961 17.7762 21.7725 18 21.4966 18H19.0006Z";
+
+    private static IconElement VectorIcon(string pathData)
+        => (IconElement)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+            "<PathIcon xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" Data=\"" + pathData + "\"/>");
+
     private static NavigationViewItem MakeNavItem(string label, string tag, IconElement icon)
     {
         icon.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5);
@@ -667,6 +717,19 @@ public sealed partial class MainWindow : Window
 
     private void UpdateWelcomePlayback(bool visible)
     {
+        if (visible && _welcomePlayer is null && _welcomeBackgroundElement is not null)
+        {
+            var player = new Windows.Media.Playback.MediaPlayer
+            {
+                IsMuted = true,
+                IsLoopingEnabled = true,
+                AutoPlay = false
+            };
+            try { player.CommandManager.IsEnabled = false; } catch { }
+            _welcomeBackgroundElement.SetMediaPlayer(player);
+            _welcomePlayer = player;
+        }
+
         if (_welcomePlayer is null)
         {
             return;
@@ -805,16 +868,9 @@ public sealed partial class MainWindow : Window
         var index = 0;
 
         // ----- per-slide looping video background (full-bleed, 70% opacity) -----
-        var bgPlayer = new Windows.Media.Playback.MediaPlayer
-        {
-            IsMuted = true,
-            IsLoopingEnabled = true,
-            AutoPlay = false
-        };
-        _welcomePlayer = bgPlayer;
-        // It's just a background, not playable media: keep it out of Windows' System
-        // Media Transport Controls (no progress bar / media controls in the OS).
-        try { bgPlayer.CommandManager.IsEnabled = false; } catch { }
+        // The player is created lazily after the first cold-start load completes.
+        // On a fresh install or right after a reboot, initializing media too early
+        // can make WinUI unstable before the main window is fully shown.
         var background = new MediaPlayerElement
         {
             Stretch = Stretch.UniformToFill,
@@ -824,12 +880,12 @@ public sealed partial class MainWindow : Window
             HorizontalAlignment = HorizontalAlignment.Stretch,
             VerticalAlignment = VerticalAlignment.Stretch
         };
-        background.SetMediaPlayer(bgPlayer);
+        _welcomeBackgroundElement = background;
 
         void SetSlideVideo()
         {
             _welcomeSlideIndex = index;
-            try { bgPlayer.Source = null; } catch { }
+            try { if (_welcomePlayer is not null) _welcomePlayer.Source = null; } catch { }
             UpdateWelcomePlayback(_currentPageTag == "welcome");
         }
 
@@ -1121,6 +1177,13 @@ public sealed partial class MainWindow : Window
         update.Children.Add(ActionRow(Button("Installa questa versione", async () => { await InstallSelectedDeckyBuildAsync(); await RefreshDeckyStateAsync(); })));
         panel.Children.Add(update);
 
+        // Variante avanzata: DeckyLoader con console visibile (log in tempo reale).
+        var consoleCard = Card();
+        consoleCard.Children.Add(IconHeader(((char)0xE756).ToString(), "Versione con console (per esperti)",
+            "Playhub consiglia l'installazione normale qui sopra. Questa versione tiene sempre aperta la finestra della console con il registro in tempo reale: utile solo se sei esperto e vuoi tenere d'occhio cosa succede."));
+        consoleCard.Children.Add(ActionRow(Button("Installa la versione con console", async () => { SetStatus(await _deckyInstaller.InstallLatestConsoleAsync(), InfoBarSeverity.Success); await RefreshDeckyStateAsync(); })));
+        panel.Children.Add(consoleCard);
+
         return panel;
     }
 
@@ -1204,6 +1267,7 @@ public sealed partial class MainWindow : Window
 
     private void SetStepState(Border tile, FontIcon glyph, TextBlock status, bool done, string pendingGlyph, string label)
     {
+        _localizationKeys.AddOrUpdate(status, label);
         var accent = ParseColor(_settings.AccentColor);
         var green = Color.FromArgb(255, 56, 176, 96);
         if (done)
@@ -1386,7 +1450,7 @@ public sealed partial class MainWindow : Window
         AddExplainedToggle(inputCard, "Prepara lo streaming locale",
             "Configura il sistema per lo streaming dei giochi sulla rete di casa.", "sunshineCompatibility");
         AddExplainedToggle(inputCard, "Xbox Game Bar automatica",
-            "Il menu rapido di Steam non compare sui giochi Xbox e Microsoft Store. Per quei giochi Playhub attiva la Xbox Game Bar dal controller mentre giochi, e la disattiva quando esci.", "xboxGameBar");
+            "Attiva la Xbox Game Bar dal controller nei giochi Xbox e Microsoft Store, poi la rispegne quando esci.", "xboxGameBar");
         inputCard.Children.Add(Labeled("Strumento di streaming (Sunshine, Apollo o Vibepollo)", BrowseRow(_sunshinePathBox, folder: true)));
 
         // ---------- 6. Avanzate ----------
@@ -1491,9 +1555,6 @@ public sealed partial class MainWindow : Window
         _startupAppsPanel = new StackPanel { Spacing = 10 };
         apps.Children.Add(_startupAppsPanel);
         panel.Children.Add(apps);
-
-        // Auto-save: ogni modifica viene salvata all'istante (niente "Applica modifiche").
-        WireGamingAutoSave();
 
         UpdateModeTiles();
         UpdateLogoPreview();
@@ -2030,6 +2091,7 @@ public sealed partial class MainWindow : Window
         };
     }
 
+
     private UIElement BuildXboxPage()
     {
         var panel = Page("xbox", "Importa Giochi", "Porta i tuoi giochi nella libreria di Steam e completa automaticamente gli artwork.");
@@ -2354,15 +2416,16 @@ public sealed partial class MainWindow : Window
         // ---------- Informazioni ----------
         var about = Card();
         about.Children.Add(IconHeader(((char)0xE946).ToString(), "Informazioni",
-            $"Playhub {GetAppVersion()} · © 2026 Andrea Sgarro (ZazaMastro)"));
+            $"Playhub {GetAppVersion()} · © 2026 Andrea Sgarro (LoZazaMastro)"));
         about.Children.Add(Body("Componenti di terze parti (licenza MIT): UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima."));
+        about.Children.Add(Body("Steam e lo Steam Controller sono marchi di Valve Corporation, usati solo a scopo identificativo. Playhub non è affiliata né approvata da Valve."));
         about.Children.Add(ActionRow(
             Button("UWPHook", async () => await Windows.System.Launcher.LaunchUriAsync(new Uri("https://github.com/BrianLima/UWPHook"))),
             Button("VDFParser", async () => await Windows.System.Launcher.LaunchUriAsync(new Uri("https://github.com/BrianLima/VDFParser"))),
             Button("SharpSteam", async () => await Windows.System.Launcher.LaunchUriAsync(new Uri("https://github.com/BrianLima/SharpSteam")))));
         about.Children.Add(new Expander
         {
-            Header = "Testo delle licenze (MIT)",
+            Header = "Note sui componenti",
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Content = new ScrollViewer
@@ -2383,7 +2446,7 @@ public sealed partial class MainWindow : Window
     }
 
     private const string ThirdPartyLicensesText =
-@"Playhub includes the following open-source components, each under the MIT License.
+@"Playhub includes the following open-source components under the MIT License.
 
 UWPHook    - Copyright (c) 2016 Brian Lima - https://github.com/BrianLima/UWPHook
 VDFParser  - Copyright (c) 2016 Victor Gama - https://github.com/BrianLima/VDFParser
@@ -2407,7 +2470,19 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.";
+SOFTWARE.
+
+Trademarks
+
+LG and the LG logo are trademarks of LG Electronics Inc.
+Sony and the Sony logo are trademarks of Sony Group Corporation.
+Steam, the Steam Controller and related logos and images are trademarks of
+Valve Corporation.
+
+All trademarks, logos and product images are the property of their respective
+owners and are used here for identification (nominative) purposes only. Playhub
+is an independent project and is not affiliated with, sponsored by, or endorsed
+by LG Electronics, Sony, or Valve.";
 
 
     private async Task CheckDeveloperModeAsync()
@@ -3352,6 +3427,18 @@ SOFTWARE.";
     private async Task RefreshGamingModeAsync()
     {
         _gamingConfig = await _gamingMode.LoadConfigAsync();
+        var changed = false;
+        // Xbox Game Bar: verità durevole nelle impostazioni di Playhub (l'agente
+        // scarta EnableXboxGameBar dal config.json e lo riporta al default true).
+        if (_gamingConfig.Gaming.EnableXboxGameBar != _settings.XboxGameBarEnabled)
+        {
+            _gamingConfig.Gaming.EnableXboxGameBar = _settings.XboxGameBarEnabled;
+            changed = true;
+        }
+        if (changed)
+        {
+            await _gamingMode.SaveConfigAsync(_gamingConfig);
+        }
         PopulateGamingConfigControls();
         RenderStartupApps();
     }
@@ -3400,7 +3487,18 @@ SOFTWARE.";
         _gamingConfig.Gaming.Splash.MinVisibleMs = (int)_splashMinBox.Value;
         _gamingConfig.Gaming.Splash.MaxVisibleMs = (int)_splashMaxBox.Value;
         ReadTogglesIntoConfig();
-        await _gamingMode.SaveConfigAsync(_gamingConfig);
+        try
+        {
+            await _gamingMode.SaveConfigAsync(_gamingConfig);
+            // Salva anche le impostazioni proprie di Playhub (Xbox Game Bar ecc.).
+            await _settingsService.SaveAsync();
+        }
+        catch (Exception ex)
+        {
+            // Un salvataggio fallito (es. file momentaneamente bloccato) NON deve mai
+            // diventare un'eccezione non osservata che chiude l'app.
+            Diag.Crash("SaveGamingConfigAsync", ex);
+        }
     }
 
     // Salvataggio istantaneo: chiamato a ogni modifica dei controlli Gaming Mode.
@@ -4582,10 +4680,9 @@ SOFTWARE.";
         _startupAppsPanel.Children.Clear();
         foreach (var app in _gamingConfig.Gaming.CustomStartupApps.ToList())
         {
-            // I watcher di Playhub (sicurezza e focus rescue) sono gestiti da
-            // Playhub: non mostrarli né renderli modificabili/rimovibili.
-            if (string.Equals(app.Name, "Playhub Desktop Safety", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(app.Name, "Playhub Focus Rescue", StringComparison.OrdinalIgnoreCase))
+            // Componenti interni di Playhub: l'agente li avvia tecnicamente come
+            // startup app, ma non sono processi custom dell'utente.
+            if (IsPlayhubManagedStartupApp(app.Name))
             {
                 continue;
             }
@@ -4620,7 +4717,9 @@ SOFTWARE.";
             row.Children.Add(Labeled("Argomenti", args));
 
             var enabled = new ToggleSwitch { Header = "Attivo", IsOn = app.Enabled };
+            ApplyToggleStateText(enabled);
             var minimized = new ToggleSwitch { Header = "Avvia minimizzato", IsOn = app.StartMinimized };
+            ApplyToggleStateText(minimized);
             enabled.Toggled += (_, _) => { app.Enabled = enabled.IsOn; AutoSaveGaming(); };
             minimized.Toggled += (_, _) => { app.StartMinimized = minimized.IsOn; AutoSaveGaming(); };
 
@@ -4634,6 +4733,13 @@ SOFTWARE.";
         }
 
         LocalizeElement(_startupAppsPanel);
+    }
+
+    private static bool IsPlayhubManagedStartupApp(string? name)
+    {
+        return string.Equals(name, "Playhub Desktop Safety", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(name, "Playhub Focus Rescue", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(name, "Playhub Xbox Game Bar", StringComparison.OrdinalIgnoreCase);
     }
 
     private string? ResolveSplashLogo()
@@ -4657,6 +4763,7 @@ SOFTWARE.";
     private void AddToggle(FluentCard panel, string label, string key)
     {
         var toggle = new ToggleSwitch { Header = label };
+        ApplyToggleStateText(toggle);
         _gamingToggles[key] = toggle;
         panel.Children.Add(toggle);
     }
@@ -4665,6 +4772,7 @@ SOFTWARE.";
     private void AddExplainedToggle(FluentCard card, string title, string description, string key)
     {
         var toggle = new ToggleSwitch { VerticalAlignment = VerticalAlignment.Center, MinWidth = 0 };
+        ApplyToggleStateText(toggle);
         _gamingToggles[key] = toggle;
 
         var texts = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
@@ -4693,6 +4801,12 @@ SOFTWARE.";
         card.Children.Add(grid);
     }
 
+    private void ApplyToggleStateText(ToggleSwitch toggle)
+    {
+        toggle.OnContent = T("Attivato");
+        toggle.OffContent = T("Disattivato");
+    }
+
     // Lays out cards in equal-width columns, side by side.
     private static Grid CardsRow(params FluentCard[] cards)
     {
@@ -4716,7 +4830,8 @@ SOFTWARE.";
         SetToggle("sunshineCompatibility", _gamingConfig.Gaming.EnsureSunshineCompatibilityInGamingMode);
         SetToggle("hideMouse", _gamingConfig.Gaming.AutoHideMouseCursorInGamingMode);
         SetToggle("borderless", _gamingConfig.Gaming.BorderlessFullscreenWindowsInGamingMode);
-        SetToggle("xboxGameBar", _gamingConfig.Gaming.EnableXboxGameBar);
+        _gamingConfig.Gaming.EnableXboxGameBar = _settings.XboxGameBarEnabled;
+        SetToggle("xboxGameBar", _settings.XboxGameBarEnabled);
         SetToggle("manageAudio", _gamingConfig.Gaming.ManageAudio);
         SetToggle("remoteApi", _gamingConfig.Safety.AllowRemoteApi);
         SetToggle("restartWithoutPrompt", _gamingConfig.Safety.RestartWithoutPrompt);
@@ -4735,6 +4850,7 @@ SOFTWARE.";
         _gamingConfig.Gaming.AutoHideMouseCursorInGamingMode = GetToggle("hideMouse");
         _gamingConfig.Gaming.BorderlessFullscreenWindowsInGamingMode = GetToggle("borderless");
         _gamingConfig.Gaming.EnableXboxGameBar = GetToggle("xboxGameBar");
+        _settings.XboxGameBarEnabled = GetToggle("xboxGameBar");
         _gamingConfig.Gaming.ManageAudio = GetToggle("manageAudio");
         _gamingConfig.Safety.AllowRemoteApi = GetToggle("remoteApi");
         // No confirmation dialog when switching modes — always on.
@@ -5384,6 +5500,7 @@ SOFTWARE.";
         return TranslatePrefix(message, "Rimozione non riuscita: ") ??
                TranslatePrefix(message, "Installazione del plugin non riuscita: ") ??
                TranslatePrefix(message, "Rimozione del plugin non riuscita: ") ??
+               TranslatePrefix(message, "Windows ha impedito la scrittura del file shortcuts di Steam. Consenti Playhub in Accesso alle cartelle controllato e riprova. ") ??
                T(message);
     }
 
@@ -5464,17 +5581,21 @@ SOFTWARE.";
             case NavigationViewItem { Content: string itemText } item:
                 item.Content = T(GetLocalizationKey(item, itemText));
                 break;
-            case Expander { Header: string header } expander:
-                expander.Header = T(GetLocalizationKey(expander, header));
+            case Expander { Header: string expanderHeader } expander:
+                expander.Header = T(GetLocalizationKey(expander, expanderHeader));
                 break;
-            case ToggleSwitch { Header: string header } toggle:
-                toggle.Header = T(GetLocalizationKey(toggle, header));
+            case ToggleSwitch toggle:
+                if (toggle.Header is string toggleHeader)
+                {
+                    toggle.Header = T(GetLocalizationKey(toggle, toggleHeader));
+                }
+                ApplyToggleStateText(toggle);
                 break;
             case TextBox textBox:
                 textBox.PlaceholderText = T(GetLocalizationKey(textBox, textBox.PlaceholderText));
                 break;
-            case NumberBox numberBox when numberBox.Header is string header:
-                numberBox.Header = T(GetLocalizationKey(numberBox, header));
+            case NumberBox numberBox when numberBox.Header is string numberHeader:
+                numberBox.Header = T(GetLocalizationKey(numberBox, numberHeader));
                 break;
             case InfoBar infoBar:
                 infoBar.Message = _localizationKeys.TryGetValue(infoBar, out var infoKey)

@@ -15,36 +15,27 @@ public partial class App : Application
         // loading XAML resources or constructing any page; otherwise Windows
         // light mode can materialize light card brushes that remain in place
         // even after the window itself is switched to dark mode.
+        Diag.Step("App ctor begin");
+        // Handler globali: catturano le eccezioni gestite da QUALUNQUE thread (non
+        // solo il thread UI) e i Task non osservati. I crash NATIVI non sono
+        // intercettabili da .NET: per quelli servono i breadcrumb di Diag.Step.
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            Diag.Crash("AppDomain.UnhandledException (terminating=" + e.IsTerminating + ")", e.ExceptionObject);
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            Diag.Crash("TaskScheduler.UnobservedTaskException", e.Exception);
+            e.SetObserved();
+        };
+
         RequestedTheme = ApplicationTheme.Dark;
         InitializeComponent();
         UnhandledException += (_, args) =>
         {
-            try
-            {
-                var path = System.IO.Path.Combine(
-                    AppContext.BaseDirectory, "playhub_crash.txt");
-                // Evita che il log cresca all'infinito: oltre ~512 KB ricomincia da capo.
-                try
-                {
-                    if (System.IO.File.Exists(path) && new System.IO.FileInfo(path).Length > 512 * 1024)
-                    {
-                        System.IO.File.Delete(path);
-                    }
-                }
-                catch
-                {
-                }
-
-                System.IO.File.AppendAllText(path, DateTime.Now + "\n" + args.Exception + "\n\n");
-            }
-            catch
-            {
-            }
-
-            // Intenzionale: l'app non deve crashare per un'eccezione non gestita;
-            // l'errore è registrato sopra per la diagnosi.
+            Diag.Crash("Application.UnhandledException", args.Exception);
+            // Intenzionale: l'app non deve crashare per un'eccezione UI non gestita.
             args.Handled = true;
         };
+        Diag.Step("App ctor end");
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)

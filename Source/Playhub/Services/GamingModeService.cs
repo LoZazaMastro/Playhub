@@ -524,17 +524,15 @@ public sealed class GamingModeService
 
     private const string GameBarWatcherName = "Playhub Xbox Game Bar";
 
-    // Registra (o rimuove) il watcher della Xbox Game Bar tra i processi
-    // personalizzati, in base al toggle EnableXboxGameBar. Quando attivo, l'agente
-    // lo lancia in Gaming Mode: accende "Apri Game Bar dal controller" solo mentre
-    // gira un gioco Xbox/MS Store (UWPHook.exe vivo) e la rispegne alla chiusura.
+    // Registra (o rimuove) il watcher della Xbox Game Bar. Se il supporto Steam
+    // Controller è attivo, la Game Bar resta fuori: il controller non espone un vero tasto Nexus
+    // e Windows/Steam possono mostrare errori o interferire con l'avvio dei giochi.
     private static bool EnsureGameBarWatcher(GamingModeConfig config)
     {
         var existing = config.Gaming.CustomStartupApps
             .FirstOrDefault(a => string.Equals(a.Name, GameBarWatcherName, StringComparison.OrdinalIgnoreCase));
 
-        // Toggle OFF: rimuovi la voce se presente, così l'utente che non la vuole
-        // non se la ritrova registrata.
+        // Toggle OFF: rimuovi la voce se presente.
         if (!config.Gaming.EnableXboxGameBar)
         {
             if (existing is not null)

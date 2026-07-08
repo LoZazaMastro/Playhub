@@ -62,6 +62,11 @@ public static class AppPaths
     // destinazione conservando una copia ".bak" dell'ultima versione valida. In
     // questo modo un'interruzione di corrente a metà scrittura non può lasciare il
     // file principale troncato o vuoto (causa dei reset di tutte le opzioni).
+    // Serializza le scritture atomiche NEL processo: due save di Playhub in
+    // contemporanea (es. auto-save di un toggle + re-idratazione all'avvio) non
+    // devono correre sullo stesso file.
+    private static readonly System.Threading.SemaphoreSlim WriteGate = new(1, 1);
+
     public static async Task WriteAtomicAsync(string path, string contents)
     {
         var dir = Path.GetDirectoryName(path);
@@ -70,40 +75,66 @@ public static class AppPaths
             Directory.CreateDirectory(dir);
         }
 
-        var tmp = path + ".tmp";
         var bak = path + ".bak";
-
         var bytes = new UTF8Encoding(false).GetBytes(contents);
-        await using (var fs = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None))
-        {
-            await fs.WriteAsync(bytes);
-            await fs.FlushAsync();
-            try { fs.Flush(true); } catch { } // fsync: forza i buffer del SO su disco.
-        }
 
+        await WriteGate.WaitAsync().ConfigureAwait(false);
         try
         {
-            if (File.Exists(path))
+            const int attempts = 6;
+            for (var attempt = 1; ; attempt++)
             {
-                // Atomico su NTFS; crea/aggiorna il backup dell'ultima versione valida.
-                File.Replace(tmp, path, bak, ignoreMetadataErrors: true);
-            }
-            else
-            {
-                File.Move(tmp, path);
+                // Nome temporaneo UNICO per ogni scrittura: evita la collisione su un
+                // "config.json.tmp" fisso con l'agente compilato o con un altro save
+                // (era la causa dell'IOException "used by another process" e del crash).
+                var tmp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+                try
+                {
+                    await using (var fs = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None))
+                    {
+                        await fs.WriteAsync(bytes);
+                        await fs.FlushAsync();
+                        try { fs.Flush(true); } catch { } // fsync: forza i buffer del SO su disco.
+                    }
+
+                    try
+                    {
+                        if (File.Exists(path))
+                        {
+                            // Atomico su NTFS; aggiorna il backup dell'ultima versione valida.
+                            File.Replace(tmp, path, bak, ignoreMetadataErrors: true);
+                        }
+                        else
+                        {
+                            File.Move(tmp, path);
+                        }
+                    }
+                    catch
+                    {
+                        // Ripiego: sostituzione diretta (meno atomica, ma non perde il salvataggio).
+                        File.Copy(tmp, path, overwrite: true);
+                        try { File.Delete(tmp); } catch { }
+                    }
+
+                    return; // scrittura riuscita
+                }
+                catch (Exception ex) when ((ex is IOException || ex is UnauthorizedAccessException) && attempt < attempts)
+                {
+                    // File temporaneamente bloccato (agente o altro processo): pulisci e
+                    // riprova con backoff crescente invece di propagare l'eccezione.
+                    try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+                    await Task.Delay(120 * attempt).ConfigureAwait(false);
+                }
+                catch
+                {
+                    try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+                    throw;
+                }
             }
         }
-        catch
+        finally
         {
-            // Ripiego: sostituzione diretta (meno atomica, ma non perde il salvataggio).
-            try
-            {
-                File.Copy(tmp, path, overwrite: true);
-                File.Delete(tmp);
-            }
-            catch
-            {
-            }
+            WriteGate.Release();
         }
     }
 
