@@ -25,7 +25,7 @@ public sealed record InstallOptions(
 public static class Installer
 {
     public const string AppName = "Playhub";
-    public const string AppVersion = "1.1.5";
+    public const string AppVersion = "1.6.0";
     public const string Publisher = "Andrea Sgarro (LoZazaMastro)";
     public const string AppExeName = "Playhub.exe";
     public const string UninstallerName = "unins-playhub.exe";
