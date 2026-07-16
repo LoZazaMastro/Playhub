@@ -14,7 +14,7 @@
 ; ============================================================================
 
 #define MyAppName        "Playhub"
-#define MyAppVersion     "1.1.0"
+#define MyAppVersion     "1.6.0"
 #define MyAppPublisher   "Andrea Sgarro (ZazaMastro)"
 #define MyAppURL         "https://github.com/LoZazaMastro/Playhub"
 #define MyAppExeName     "Playhub.exe"

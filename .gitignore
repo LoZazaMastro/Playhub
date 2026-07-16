@@ -9,6 +9,8 @@
 Source/Playhub/dist_publish/
 Source/PlayhubSetup/Output/
 Source/PlayhubSetup/Payload/payload.zip
+Source/GamingModeAgent/publish/
+Playhub-Setup*.exe
 
 # ===== Log =====
 *_log.txt
