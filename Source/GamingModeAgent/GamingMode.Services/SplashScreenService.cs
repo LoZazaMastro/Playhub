@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -42,7 +43,7 @@ public sealed class SplashScreenService : IDisposable
 		_logger = logger;
 	}
 
-	public void Show(GamingSplashSettings settings)
+	public void Show(GamingSplashSettings settings, int failSafeCloseMs = 150000)
 	{
 		if (!settings.Enabled)
 		{
@@ -59,6 +60,7 @@ public sealed class SplashScreenService : IDisposable
 		}
 		ManualResetEventSlim ready = new ManualResetEventSlim(initialState: false);
 		string logoPath = ResolveLogoPath(settings.LogoPath);
+		int failSafeMs = Math.Clamp(failSafeCloseMs, 5000, 300000);
 		Thread thread2 = new Thread((ThreadStart)delegate
 		{
 			try
@@ -71,6 +73,24 @@ public sealed class SplashScreenService : IDisposable
 					_window = window;
 				}
 				window.Show();
+				DispatcherTimer failSafeTimer = new DispatcherTimer
+				{
+					Interval = TimeSpan.FromMilliseconds(failSafeMs)
+				};
+				failSafeTimer.Tick += delegate
+				{
+					failSafeTimer.Stop();
+					try
+					{
+						_logger.Info("Gaming splash screen fail-safe closed the window.");
+						window.Close();
+					}
+					catch
+					{
+					}
+					currentDispatcher.InvokeShutdown();
+				};
+				failSafeTimer.Start();
 				ready.Set();
 				Dispatcher.Run();
 			}
@@ -125,7 +145,7 @@ public sealed class SplashScreenService : IDisposable
 		}
 		try
 		{
-			await (await dispatcher.InvokeAsync(delegate
+			Task hideTask = (await dispatcher.InvokeAsync(delegate
 			{
 				TaskCompletionSource completion = new TaskCompletionSource();
 				if (!fade || window == null)
@@ -152,6 +172,7 @@ public sealed class SplashScreenService : IDisposable
 				window.BeginAnimation(UIElement.OpacityProperty, doubleAnimation);
 				return completion.Task;
 			}).Task);
+			await Task.WhenAny(hideTask, Task.Delay(Math.Clamp(fadeMs, 100, 3000) + 5000));
 			if (thread != null && thread.IsAlive)
 			{
 				thread.Join(TimeSpan.FromSeconds(1.0));
@@ -200,11 +221,12 @@ public sealed class SplashScreenService : IDisposable
 				VerticalAlignment = VerticalAlignment.Center
 			});
 		}
-		return new Window
+		Window window = new Window
 		{
 			WindowStyle = WindowStyle.None,
 			ResizeMode = ResizeMode.NoResize,
 			ShowInTaskbar = false,
+			ShowActivated = false,
 			Topmost = true,
 			Background = Brushes.Black,
 			Content = grid,
@@ -214,7 +236,29 @@ public sealed class SplashScreenService : IDisposable
 			Height = SystemParameters.VirtualScreenHeight,
 			WindowStartupLocation = WindowStartupLocation.Manual
 		};
+		window.SourceInitialized += delegate
+		{
+			try
+			{
+				nint handle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+				if (handle != 0)
+				{
+					nint exStyle = GetWindowLongPtr(handle, -20);
+					SetWindowLongPtr(handle, -20, new IntPtr(exStyle.ToInt64() | 0x8000000L | 0x20L | 0x80L));
+				}
+			}
+			catch
+			{
+			}
+		};
+		return window;
 	}
+
+	[DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+	private static extern nint GetWindowLongPtr(nint hWnd, int nIndex);
+
+	[DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+	private static extern nint SetWindowLongPtr(nint hWnd, int nIndex, nint dwNewLong);
 
 	private static ImageSource? LoadImage(string? path)
 	{

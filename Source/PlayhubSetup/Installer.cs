@@ -25,7 +25,7 @@ public sealed record InstallOptions(
 public static class Installer
 {
     public const string AppName = "Playhub";
-    public const string AppVersion = "1.1.6";
+    public const string AppVersion = "1.1.8";
     public const string Publisher = "Andrea Sgarro (LoZazaMastro)";
     public const string AppExeName = "Playhub.exe";
     public const string UninstallerName = "unins-playhub.exe";
@@ -57,8 +57,11 @@ public static class Installer
 
             ExtractPayload(options.InstallDir, progress);
 
-            progress.Report((0.89, Loc.T("InstallingUWPHook")));
+            progress.Report((0.87, Loc.T("InstallingUWPHook")));
             InstallUWPHookSilently(options.InstallDir);
+
+            progress.Report((0.89, Loc.T("InstallingGamingMode")));
+            InstallOrUpdateGamingModeSilently(options.InstallDir);
 
             var exePath = Path.Combine(options.InstallDir, AppExeName);
             var iconPath = exePath;
@@ -455,6 +458,59 @@ public static class Installer
         catch
         {
             // Il launcher completo è comunque incluso in Playhub e rimane il fallback.
+        }
+    }
+
+    // Gaming Mode è parte integrante di Playhub: quando Playhub viene installato
+    // o aggiornato, il companion Gaming Mode bundlato viene installato/aggiornato
+    // automaticamente (l'install.ps1 del pacchetto gestisce stop agente, copia,
+    // avvio automatico e riavvio dell'agente in modo idempotente).
+    private static void InstallOrUpdateGamingModeSilently(string installDir)
+    {
+        try
+        {
+            var packageDir = Path.Combine(installDir, "Plugins", "Gaming Mode", "gaming-mode-win-x64");
+            var packageExe = Path.Combine(packageDir, "GamingMode.exe");
+            var script = Path.Combine(packageDir, "install.ps1");
+            if (!File.Exists(packageExe) || !File.Exists(script)) return;
+
+            // Se l'agente installato è già identico a quello nel pacchetto, salta.
+            var installedExe = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "GamingMode", "GamingMode.exe");
+            if (File.Exists(installedExe))
+            {
+                try
+                {
+                    var installedInfo = FileVersionInfo.GetVersionInfo(installedExe);
+                    var packageInfo = FileVersionInfo.GetVersionInfo(packageExe);
+                    if (!string.IsNullOrWhiteSpace(installedInfo.FileVersion) &&
+                        string.Equals(installedInfo.FileVersion, packageInfo.FileVersion, StringComparison.OrdinalIgnoreCase) &&
+                        new FileInfo(installedExe).Length == new FileInfo(packageExe).Length)
+                    {
+                        return;
+                    }
+                }
+                catch
+                {
+                    // In dubbio, reinstalla.
+                }
+            }
+
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{script}\" -SourceDir \"{packageDir}\"",
+                WorkingDirectory = packageDir,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            });
+            process?.WaitForExit(180000);
+        }
+        catch
+        {
+            // L'installazione di Playhub non deve fallire per il companion Gaming Mode.
         }
     }
 

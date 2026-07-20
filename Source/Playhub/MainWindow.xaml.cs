@@ -123,6 +123,13 @@ public sealed partial class MainWindow : Window
     private StackPanel _startupAppsPanel = new();
     private Border _deckyQuickAccessCard = new();
     private Border _deckyBigPictureCard = new();
+    private Button _repairButton = new();
+    private ProgressBar _repairBar = new();
+    private TextBlock _repairStatusText = new();
+    private bool _repairRunning;
+    private Button _diagnosticsButton = new();
+    private TextBlock _diagnosticsStatusText = new();
+    private bool _diagnosticsRunning;
 
     // Gaming Mode: visual mode selector + logo preview.
     private Border _desktopModeTile = new();
@@ -2413,6 +2420,52 @@ public sealed partial class MainWindow : Window
         updates.Children.Add(ActionRow(Button("Controlla aggiornamenti", async () => await CheckPlayhubUpdatesAsync(), primary: true)));
         panel.Children.Add(updates);
 
+        // ---------- Risoluzione problemi ----------
+        var repair = Card();
+        repair.Children.Add(IconHeader(((char)0xE90F).ToString(), "Risoluzione problemi",
+            "Controlla i componenti installati da Playhub (Gaming Mode e il suo plugin per Decky, agente, UWPHook, configurazione) e ripara automaticamente ciò che non va. Gli altri plugin Decky non vengono toccati."));
+        _repairButton = Button("Ripara tutto", RunRepairAsync, primary: true);
+        _repairBar = new ProgressBar
+        {
+            Minimum = 0,
+            Maximum = 1,
+            Value = 0,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Visibility = Visibility.Collapsed
+        };
+        _repairStatusText = new TextBlock
+        {
+            Style = StyleResource("PlayhubBodyTextStyle"),
+            Opacity = 0.85,
+            TextWrapping = TextWrapping.Wrap,
+            Visibility = Visibility.Collapsed,
+            // Testo di stato impostato a runtime, già tradotto con T():
+            // non deve essere ritradotto dal LocalizeElement.
+            Tag = "noloc"
+        };
+        repair.Children.Add(ActionRow(_repairButton));
+        repair.Children.Add(_repairBar);
+        repair.Children.Add(_repairStatusText);
+        panel.Children.Add(repair);
+
+        // ---------- Serve aiuto? (report diagnostico) ----------
+        var diagnostics = Card();
+        diagnostics.Children.Add(IconHeader(((char)0xE9D9).ToString(), "Serve aiuto?",
+            "Se qualcosa non funziona come ti aspetti, crea un report diagnostico. Raccoglie le informazioni utili a capire il problema e lo salva sul desktop, pronto da allegare alla tua segnalazione."));
+        _diagnosticsButton = Button("Crea report diagnostico", RunDiagnosticsAsync, primary: true);
+        _diagnosticsStatusText = new TextBlock
+        {
+            Style = StyleResource("PlayhubBodyTextStyle"),
+            Opacity = 0.85,
+            TextWrapping = TextWrapping.Wrap,
+            Visibility = Visibility.Collapsed,
+            // Testo di stato impostato a runtime, già tradotto con T().
+            Tag = "noloc"
+        };
+        diagnostics.Children.Add(ActionRow(_diagnosticsButton));
+        diagnostics.Children.Add(_diagnosticsStatusText);
+        panel.Children.Add(diagnostics);
+
         // ---------- Informazioni ----------
         var about = Card();
         about.Children.Add(IconHeader(((char)0xE946).ToString(), "Informazioni",
@@ -2443,6 +2496,91 @@ public sealed partial class MainWindow : Window
         });
         panel.Children.Add(about);
         return panel;
+    }
+
+    // "Ripara tutto": esegue la RepairService mostrando barra di avanzamento
+    // WinUI e testo di stato ("Controllo…", "Sistemo…", "Verifico…").
+    private async Task RunRepairAsync()
+    {
+        if (_repairRunning) return;
+        _repairRunning = true;
+        _repairButton.IsEnabled = false;
+        _repairBar.Value = 0;
+        _repairBar.Visibility = Visibility.Visible;
+        _repairStatusText.Visibility = Visibility.Visible;
+        _repairStatusText.Text = T("Preparazione del controllo…");
+        try
+        {
+            // La RepairService riporta le chiavi italiane: la traduzione nella
+            // lingua attiva avviene qui con T(), come per il resto della UI.
+            var progress = new Progress<(double Percent, string Status)>(update =>
+            {
+                _repairBar.Value = update.Percent;
+                _repairStatusText.Text = T(update.Status);
+            });
+
+            var repairService = new RepairService(_gamingMode);
+            var report = await repairService.RunAsync(_settings.DeckyPluginsPath, progress);
+
+            var summary = report.IssuesFound == 0
+                ? T("Tutto a posto: nessun problema trovato.")
+                : string.Format(T("Problemi trovati: {0}. Problemi risolti: {1}."), report.IssuesFound, report.IssuesFixed);
+            if (report.Notes.Count > 0)
+            {
+                summary += "\n• " + string.Join("\n• ", report.Notes.Select(T));
+            }
+            _repairStatusText.Text = summary;
+        }
+        catch (Exception ex)
+        {
+            _repairStatusText.Text = T("Errore durante la riparazione: ") + ex.Message;
+        }
+        finally
+        {
+            _repairRunning = false;
+            _repairButton.IsEnabled = true;
+            _repairBar.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    // "Crea report diagnostico": genera il report completo sul desktop e lo
+    // evidenzia in Esplora file, così l'utente lo trova subito.
+    private async Task RunDiagnosticsAsync()
+    {
+        if (_diagnosticsRunning) return;
+        _diagnosticsRunning = true;
+        _diagnosticsButton.IsEnabled = false;
+        _diagnosticsStatusText.Visibility = Visibility.Visible;
+        _diagnosticsStatusText.Text = T("Creazione del report in corso…");
+        try
+        {
+            var diagnostics = new DiagnosticsService(_gamingMode);
+            var reportPath = await diagnostics.CreateReportAsync(AppPaths.SettingsFile);
+            _diagnosticsStatusText.Text = string.Format(
+                T("Report salvato sul desktop: {0}"), Path.GetFileName(reportPath));
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = "/select,\"" + reportPath + "\"",
+                    UseShellExecute = true
+                });
+            }
+            catch
+            {
+                // Se Esplora file non si apre, il report è comunque sul desktop.
+            }
+        }
+        catch (Exception ex)
+        {
+            _diagnosticsStatusText.Text = T("Impossibile creare il report: ") + ex.Message;
+        }
+        finally
+        {
+            _diagnosticsRunning = false;
+            _diagnosticsButton.IsEnabled = true;
+        }
     }
 
     private const string ThirdPartyLicensesText =

@@ -1,15 +1,27 @@
 # Watcher di sicurezza Playhub.
 # Lanciato dall'agente SOLO in Gaming Mode (come "processo personalizzato").
-# Quando Steam si chiude, RIAVVIA il PC facendolo ripartire in Desktop Mode:
-# avvio pulito, senza il "sign-out morbido" che riapre i processi bloccati.
+# Quando l'utente CHIUDE Steam, riavvia il PC facendolo ripartire in Desktop
+# Mode: avvio pulito, senza il "sign-out morbido" che riapre i processi bloccati.
 #
-# Nota: l'agente ha un proprio watchdog che alla chiusura di Steam riporta al
-# desktop con un sign-out. Per vincere la "corsa" e ottenere un vero riavvio
-# prepariamo PRIMA nextBootMode=Desktop (mentre Steam è ancora aperto) così alla
-# chiusura non resta che riavviare all'istante. Se per qualunque motivo il
-# sign-out dell'agente arriva prima, al rientro si parte comunque in Desktop.
+# IMPORTANTE: nextBootMode=Desktop viene scritto SOLO nel momento in cui Steam
+# si chiude E il sistema NON sta gia' spegnendosi/riavviandosi. Scriverlo in
+# anticipo (come nelle vecchie versioni) faceva si' che un riavvio/arresto dal
+# menu di Steam Big Picture riportasse sempre in Desktop Mode, ignorando la
+# modalita' predefinita scelta dall'utente.
 
 $ErrorActionPreference = 'SilentlyContinue'
+
+Add-Type -Namespace PlayhubNative -Name Sys -MemberDefinition '[DllImport("user32.dll")] public static extern int GetSystemMetrics(int nIndex);'
+
+# SM_SHUTTINGDOWN (0x2000): la sessione sta terminando (arresto/riavvio in corso).
+function Test-SystemShuttingDown {
+    try {
+        return ([PlayhubNative.Sys]::GetSystemMetrics(0x2000) -ne 0)
+    }
+    catch {
+        return $false
+    }
+}
 
 $configPath = Join-Path $env:APPDATA 'GamingMode\config.json'
 $logPath = Join-Path $env:APPDATA 'GamingMode\playhub-safety.log'
@@ -64,11 +76,7 @@ if (-not $started) {
 }
 Write-Log 'Steam rilevato.'
 
-# 2) Prepara SUBITO il prossimo avvio in Desktop (una sola volta), senza cambiare
-#    la modalita'' predefinita. Cosi'' alla chiusura di Steam resta solo il riavvio.
-$prepared = Set-NextBootDesktop
-
-# 3) Attendi che il processo principale di Steam termini. Wait-Process reagisce
+# 2) Attendi che il processo principale di Steam termini. Wait-Process reagisce
 #    nell'istante esatto in cui Steam si chiude (piu'' rapido di un polling).
 try {
     Get-Process steam -ErrorAction Stop | Wait-Process -ErrorAction SilentlyContinue
@@ -79,11 +87,56 @@ catch {
 }
 Write-Log 'Steam chiuso.'
 
-if (-not $prepared) {
-    $prepared = Set-NextBootDesktop
+# 3) Se il sistema si sta gia' spegnendo o riavviando (es. riavvio/arresto dal
+#    menu di Steam Big Picture), NON toccare nulla: al prossimo avvio deve
+#    valere la modalita' predefinita scelta dall'utente.
+$shuttingDown = Test-SystemShuttingDown
+if (-not $shuttingDown) {
+    # Piccola attesa: Steam potrebbe chiudersi un attimo PRIMA che il comando di
+    # arresto/riavvio del sistema venga emesso. Ricontrolla per qualche secondo.
+    for ($i = 0; $i -lt 12; $i++) {
+        Start-Sleep -Milliseconds 400
+        if (Test-SystemShuttingDown) {
+            $shuttingDown = $true
+            break
+        }
+    }
+}
+if ($shuttingDown) {
+    Write-Log 'Arresto/riavvio di sistema in corso: nessuna modifica, vale la modalita'' predefinita.'
+    Write-Log '--- Watcher terminato ---'
+    return
 }
 
-# 4) Riavvia all'istante. Al rientro l'agente parte in Desktop Mode.
+# Steam potrebbe essere stato riavviato (es. aggiornamento o riavvio da Decky):
+# se e' di nuovo attivo, non fare nulla e resta in ascolto sulla nuova istanza.
+if (Get-Process steam -ErrorAction SilentlyContinue) {
+    Write-Log 'Steam e'' ripartito: nessun ritorno al desktop.'
+    try {
+        Get-Process steam -ErrorAction Stop | Wait-Process -ErrorAction SilentlyContinue
+    }
+    catch {
+        while (Get-Process steam -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 400 }
+    }
+    $shuttingDown = Test-SystemShuttingDown
+    if (-not $shuttingDown) {
+        for ($i = 0; $i -lt 12; $i++) {
+            Start-Sleep -Milliseconds 400
+            if (Test-SystemShuttingDown) {
+                $shuttingDown = $true
+                break
+            }
+        }
+    }
+    if ($shuttingDown) {
+        Write-Log 'Arresto/riavvio di sistema in corso: nessuna modifica.'
+        Write-Log '--- Watcher terminato ---'
+        return
+    }
+}
+
+# 4) Solo ora prepara il prossimo avvio in Desktop e riavvia.
+$prepared = Set-NextBootDesktop
 if ($prepared) {
     Write-Log 'Riavvio del PC (shutdown /r /f /t 0).'
     Start-Process 'shutdown.exe' -ArgumentList '/r', '/f', '/t', '0'

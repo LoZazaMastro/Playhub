@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using GamingMode.Models;
@@ -63,14 +64,17 @@ public sealed class ModeManager
 		_logger.Info($"Future sign-in shell set to {modeKind}.");
 	}
 
-	public Task<ApiResult> ApplyModeAsync(ModeKind mode, string action, bool interactive = true, bool restoreStartupApps = true)
+	public Task<ApiResult> ApplyModeAsync(ModeKind mode, string action, bool interactive = true, bool restoreStartupApps = true, bool updateShell = true)
 	{
 		ModeConfig config = _store.LoadConfig();
 		ModeState modeState = _store.LoadState();
 		List<string> messages = new List<string>();
 		try
 		{
-			_shellTools.SetShellForMode(mode);
+			if (updateShell)
+			{
+				_shellTools.SetShellForMode(mode);
+			}
 			if (mode == ModeKind.Gaming)
 			{
 				ApplyGamingMode(config, messages);
@@ -187,7 +191,7 @@ public sealed class ModeManager
 		modeStatus.LastError = modeState.LastError;
 		modeStatus.Steam = _processTools.GetState("steam");
 		modeStatus.Decky = _processTools.GetState("PluginLoader", "PluginLoader_noconsole");
-		modeStatus.Sunshine = _processTools.GetState("sunshine");
+		modeStatus.Sunshine = _processTools.GetState("sunshine", "apollo", "vibepollo");
 		modeStatus.Explorer = _processTools.GetState("explorer");
 		modeStatus.MouseCursorAutoHide = _cursorAutoHide.Running;
 		modeStatus.MouseCursorHidden = _cursorAutoHide.CursorHidden;
@@ -200,9 +204,15 @@ public sealed class ModeManager
 	public async Task RunSafetyWatchdogAsync(CancellationToken cancellationToken)
 	{
 		int deckyCleanupTicks = 0;
+		int steamDownTicks = 0;
 		while (!cancellationToken.IsCancellationRequested)
 		{
 			await Task.Delay(TimeSpan.FromSeconds(5.0), cancellationToken);
+			if (IsSystemShuttingDown())
+			{
+				steamDownTicks = 0;
+				continue;
+			}
 			deckyCleanupTicks++;
 			if (deckyCleanupTicks >= 3)
 			{
@@ -216,11 +226,32 @@ public sealed class ModeManager
 				ProcessState state2 = _processTools.GetState("explorer");
 				if (!state.Running && !state2.Running)
 				{
-					await ApplyModeAsync(ModeKind.Desktop, "Safety watchdog restored Desktop Mode", interactive: false, restoreStartupApps: false);
+					steamDownTicks++;
+					if (steamDownTicks >= 2 && !IsSystemShuttingDown())
+					{
+						steamDownTicks = 0;
+						await ApplyModeAsync(ModeKind.Desktop, "Safety watchdog restored Desktop Mode", interactive: false, restoreStartupApps: false, updateShell: false);
+					}
 				}
+				else
+				{
+					steamDownTicks = 0;
+				}
+			}
+			else
+			{
+				steamDownTicks = 0;
 			}
 		}
 	}
+
+	private static bool IsSystemShuttingDown()
+	{
+		return GetSystemMetrics(8192) != 0;
+	}
+
+	[DllImport("user32.dll")]
+	private static extern int GetSystemMetrics(int nIndex);
 
 	private void ApplyGamingMode(ModeConfig config, ICollection<string> messages)
 	{
@@ -265,8 +296,8 @@ public sealed class ModeManager
 		}
 		if (config.Gaming.SunshineRequired)
 		{
-			bool flag2 = _processTools.EnsureProcess(config.Gaming.SunshinePath, _processTools.GetSunshineFallbackPaths(), "", "sunshine");
-			messages.Add(flag2 ? "Sunshine is running." : "Sunshine was not found. Configure SunshinePath in config.json if needed.");
+			bool flag2 = _processTools.EnsureProcess(config.Gaming.SunshinePath, _processTools.GetSunshineFallbackPaths(), "", "sunshine", "apollo", "vibepollo");
+			messages.Add(flag2 ? "Sunshine/Apollo is running." : "Sunshine/Apollo was not found. Configure SunshinePath in config.json if needed.");
 		}
 		if (config.Gaming.DeckyRequired)
 		{
