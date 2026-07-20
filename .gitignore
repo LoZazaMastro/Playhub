@@ -10,6 +10,8 @@ Source/Playhub/dist_publish/
 Source/PlayhubSetup/Output/
 Source/PlayhubSetup/Payload/payload.zip
 Source/GamingModeAgent/publish/
+Source/GamingModeAgent/publish_tmp/
+Source/Playhub/Plugins/Gaming Mode/gaming-mode-win-x64/GamingMode.exe
 Playhub-Setup*.exe
 
 # ===== Log =====

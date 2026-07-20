@@ -26,6 +26,15 @@ public static class AgentHost
 				logger.Info("Agent is already running.");
 				return;
 			}
+			try
+			{
+				using System.Diagnostics.Process currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+				currentProcess.PriorityClass = System.Diagnostics.ProcessPriorityClass.BelowNormal;
+				logger.Info("Agent process priority lowered to BelowNormal.");
+			}
+			catch
+			{
+			}
 			JsonStore store = new JsonStore(paths, logger);
 			ProcessTools processTools = new ProcessTools(logger);
 			ShellTools shellTools = new ShellTools(logger);
@@ -44,11 +53,11 @@ public static class AgentHost
 				{
 					bool showSplash = flag && (modeConfig.NextBootMode ?? modeConfig.DefaultMode) == ModeKind.Gaming && !SafeModeGuard.ShouldForceDesktop(paths);
 					int minSplashVisibleMs = Math.Clamp(modeConfig.Gaming.Splash.MinVisibleMs, 0, 120000);
-					int maxSplashVisibleMs = Math.Clamp(modeConfig.Gaming.Splash.MaxVisibleMs, 60000, 300000);
+					int maxSplashVisibleMs = Math.Clamp(modeConfig.Gaming.Splash.MaxVisibleMs, 5000, 120000);
 					bool waitForSteamFullscreen = false;
 					if (showSplash)
 					{
-						splashScreen.Show(modeConfig.Gaming.Splash);
+						splashScreen.Show(modeConfig.Gaming.Splash, maxSplashVisibleMs + 15000);
 					}
 					try
 					{
@@ -64,11 +73,26 @@ public static class AgentHost
 					{
 						if (showSplash)
 						{
-							if (waitForSteamFullscreen && manager.GetStatus().Steam.Running)
+							bool steamRunning = waitForSteamFullscreen && manager.GetStatus().Steam.Running;
+							if (steamRunning)
 							{
-								await SteamFullscreenDetector.WaitForFullscreenAsync(TimeSpan.FromMilliseconds(maxSplashVisibleMs), logger);
+								int firstWaitMs = Math.Min(15000, maxSplashVisibleMs);
+								bool detected = await SteamFullscreenDetector.WaitForFullscreenAsync(TimeSpan.FromMilliseconds(firstWaitMs), logger, suppressDesktopWindows: true);
+								if (!detected)
+								{
+									processTools.OpenUri("steam://open/bigpicture");
+									int remainingMs = maxSplashVisibleMs - firstWaitMs;
+									if (remainingMs > 0)
+									{
+										await SteamFullscreenDetector.WaitForFullscreenAsync(TimeSpan.FromMilliseconds(remainingMs), logger, suppressDesktopWindows: true);
+									}
+								}
 							}
 							await splashScreen.HideAsync(minSplashVisibleMs, fade: true);
+							if (steamRunning)
+							{
+								SteamFullscreenDetector.TryFocusSteamWindow(logger);
+							}
 						}
 					}
 				}

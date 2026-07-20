@@ -149,6 +149,9 @@ public static class Loc
         ["InstallingUWPHook"] = new[]
         { "Installing UWPHook…", "Installazione di UWPHook…", "Instalando UWPHook…", "Installation de UWPHook…", "UWPHook wird installiert…", "Instalando o UWPHook…", "Встановлення UWPHook…", "正在安装 UWPHook…", "UWPHook をインストール中…", "UWPHook 설치 중…", "UWPHook इंस्टॉल हो रहा है…", "Установка UWPHook…" },
 
+        ["InstallingGamingMode"] = new[]
+        { "Installing Gaming Mode…", "Installazione di Gaming Mode…", "Instalando Gaming Mode…", "Installation de Gaming Mode…", "Gaming Mode wird installiert…", "Instalando o Gaming Mode…", "Встановлення Gaming Mode…", "正在安装 Gaming Mode…", "Gaming Mode をインストール中…", "Gaming Mode 설치 중…", "Gaming Mode इंस्टॉल हो रहा है…", "Установка Gaming Mode…" },
+
         ["RemovingUWPHook"] = new[]
         { "Uninstalling UWPHook…", "Disinstallazione di UWPHook…", "Desinstalando UWPHook…", "Désinstallation de UWPHook…", "UWPHook wird deinstalliert…", "Desinstalando o UWPHook…", "Видалення UWPHook…", "正在卸载 UWPHook…", "UWPHook をアンインストール中…", "UWPHook 제거 중…", "UWPHook अनइंस्टॉल हो रहा है…", "Удаление UWPHook…" },
 

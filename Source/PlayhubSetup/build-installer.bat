@@ -13,6 +13,11 @@ echo ===== PLAYHUB INSTALLER BUILD %DATE% %TIME% ===== > "%LOG%" 2>&1
 echo Log completo in: %~dp0%LOG%
 echo.
 
+echo [0/5] Compilo l'agente Gaming Mode e aggiorno il pacchetto bundlato...
+echo. >> "%LOG%" & echo ===== [0/5] GAMING MODE AGENT ===== >> "%LOG%"
+call "..\GamingModeAgent\build-agent.bat" >> "%LOG%" 2>&1
+if errorlevel 1 goto :fail
+
 echo [1/5] Pubblico l'app (self-contained x64)... puo' richiedere qualche minuto.
 echo. >> "%LOG%" & echo ===== [1/5] PUBLISH APP ===== >> "%LOG%"
 dotnet publish "%APP_PROJ%" -c Release -r win-x64 --self-contained true -p:Platform=x64 -p:WindowsAppSDKSelfContained=true -o "%APP_OUT%" >> "%LOG%" 2>&1

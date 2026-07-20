@@ -214,13 +214,31 @@ public sealed class ProcessTools
 	{
 		if (!GetState("steam").Running)
 		{
-			return EnsureProcess(configuredPath, fallbackPaths, arguments, "steam");
+			return EnsureProcess(configuredPath, fallbackPaths, BuildBigPictureArguments(arguments), "steam");
 		}
 		if (OpenUri("steam://open/bigpicture"))
 		{
 			return true;
 		}
-		return EnsureProcess(configuredPath, fallbackPaths, arguments, "steam");
+		return EnsureProcess(configuredPath, fallbackPaths, BuildBigPictureArguments(arguments), "steam");
+	}
+
+	// Steam DEVE partire direttamente in Big Picture, senza mostrare la finestra
+	// desktop: "-silent" evita che la finestra principale compaia all'avvio e
+	// "-bigpicture" apre subito la UI gamepad. Vengono aggiunti solo se mancanti,
+	// preservando gli argomenti configurati dall'utente.
+	private static string BuildBigPictureArguments(string arguments)
+	{
+		string text = arguments ?? "";
+		if (!text.Contains("-silent", StringComparison.OrdinalIgnoreCase))
+		{
+			text = (text + " -silent").Trim();
+		}
+		if (!text.Contains("-bigpicture", StringComparison.OrdinalIgnoreCase))
+		{
+			text = (text + " -bigpicture").Trim();
+		}
+		return text;
 	}
 
 	public bool StartExplorer()
@@ -770,14 +788,18 @@ public sealed class ProcessTools
 	{
 		string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
 		string folderPath2 = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-		return new string[6]
+		return new string[10]
 		{
 			Path.Combine(folderPath, "Sunshine", "sunshine.exe"),
 			Path.Combine(folderPath, "LizardByte", "Sunshine", "sunshine.exe"),
 			Path.Combine(folderPath, "Apollo", "sunshine.exe"),
+			Path.Combine(folderPath, "Apollo", "apollo.exe"),
 			Path.Combine(folderPath, "Vibepollo", "sunshine.exe"),
+			Path.Combine(folderPath, "Vibepollo", "vibepollo.exe"),
 			Path.Combine(folderPath2, "Programs", "Apollo", "sunshine.exe"),
-			Path.Combine(folderPath2, "Programs", "Vibepollo", "sunshine.exe")
+			Path.Combine(folderPath2, "Programs", "Apollo", "apollo.exe"),
+			Path.Combine(folderPath2, "Programs", "Vibepollo", "sunshine.exe"),
+			Path.Combine(folderPath2, "Programs", "Vibepollo", "vibepollo.exe")
 		};
 	}
 

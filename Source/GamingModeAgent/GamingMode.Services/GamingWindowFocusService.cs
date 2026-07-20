@@ -51,9 +51,13 @@ public sealed class GamingWindowFocusService : IDisposable
 
 	private static readonly HashSet<string> IgnoredProcesses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 	{
-		"GamingMode", "GamingModeSetup", "explorer", "steam", "steamwebhelper", "sunshine", "PluginLoader", "PluginLoader_noconsole", "powershell", "pwsh",
-		"cmd", "conhost", "WindowsTerminal", "yt-dlp", "ffmpeg", "ffprobe", "curl", "wget"
+		"GamingMode", "GamingModeSetup", "explorer", "steam", "steamwebhelper", "sunshine", "apollo", "vibepollo", "PluginLoader", "PluginLoader_noconsole",
+		"powershell", "pwsh", "cmd", "conhost", "WindowsTerminal", "yt-dlp", "ffmpeg", "ffprobe", "curl", "wget"
 	};
+
+	private static readonly ConcurrentDictionary<uint, (string Name, long Timestamp)> ProcessNameCache = new ConcurrentDictionary<uint, (string, long)>();
+
+	private const long ProcessNameCacheTtlMs = 5000L;
 
 	private static readonly string[] IgnoredTitleFragments = new string[1] { "Launch Curtain" };
 
@@ -160,6 +164,7 @@ public sealed class GamingWindowFocusService : IDisposable
 			_cancellation = null;
 			_worker = null;
 			_appliedWindows.Clear();
+			ProcessNameCache.Clear();
 			_launchCurtainPriorityActive = false;
 		}
 		if (cancellation == null)
@@ -192,7 +197,7 @@ public sealed class GamingWindowFocusService : IDisposable
 		{
 			try
 			{
-				await Task.Delay(ApplyToCandidateWindows() ? 50 : 350, cancellationToken);
+				await Task.Delay(ApplyToCandidateWindows() ? 50 : 500, cancellationToken);
 			}
 			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
 			{
@@ -371,16 +376,33 @@ public sealed class GamingWindowFocusService : IDisposable
 		{
 			return false;
 		}
+		long now = Environment.TickCount64;
+		if (ProcessNameCache.TryGetValue(processId, out var cached) && now - cached.Timestamp < ProcessNameCacheTtlMs)
+		{
+			processName = cached.Name;
+			return true;
+		}
 		try
 		{
 			using Process process = Process.GetProcessById((int)processId);
 			processName = process.ProcessName;
-			return true;
 		}
 		catch
 		{
 			return false;
 		}
+		if (ProcessNameCache.Count > 512)
+		{
+			foreach (KeyValuePair<uint, (string Name, long Timestamp)> entry in ProcessNameCache)
+			{
+				if (now - entry.Value.Timestamp >= ProcessNameCacheTtlMs)
+				{
+					ProcessNameCache.TryRemove(entry.Key, out _);
+				}
+			}
+		}
+		ProcessNameCache[processId] = (processName, now);
+		return true;
 	}
 
 	private static IReadOnlyList<nint> EnumerateWindows()
