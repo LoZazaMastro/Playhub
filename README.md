@@ -1,38 +1,21 @@
 <div align="center">
 
-<img src="docs/images/logo.png" width="260" alt="Playhub" />
-
-<h3>Your Windows gaming PC, with the soul of a console.</h3>
-
-<p>
-  <b>Playhub 1.1.8</b> turns a Windows PC into a living-room Steam console:
-  DeckyLoader, Playhub plugins, Gaming Mode, Big Picture styling and clean
-  Steam shortcuts for Xbox, Game Pass, Epic, GOG and standalone PC games.
-</p>
-
-<p>Native Windows app. Dark by design. Controller-first. 12 languages.</p>
+<img src="docs/images/readme-logo-card.png" width="100%" alt="Playhub - Your Windows gaming PC, with the soul of a console" />
 
 <a href="https://github.com/LoZazaMastro/Playhub/releases/latest">
-  <img src="https://img.shields.io/badge/Download%20Playhub-141416?style=for-the-badge" height="44" alt="Download Playhub" />
+  <img src="https://img.shields.io/badge/Download%20Playhub-FFD21A?style=for-the-badge&logo=github&logoColor=141416&labelColor=141416&color=FFD21A" height="54" alt="Download Playhub" />
+</a>
+&nbsp;&nbsp;
+
+<a href="https://ko-fi.com/LoZazaMastro">
+  <img src="https://img.shields.io/badge/Support%20Playhub-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white" height="54" alt="Support Playhub on Ko-fi" />
 </a>
 
 <br/>
-
-<a href="https://ko-fi.com/LoZazaMastro">
-  <img src="https://cdn.simpleicons.org/kofi/FF5E5B" height="22" alt="Ko-fi" />
-</a>
-
-<br/><br/>
 
 <img src="docs/images/mascotte-couch.png" width="100%" alt="Playhub mascots on a couch" />
 
 </div>
-
-<br/>
-
-## What Playhub Does
-
-<img src="docs/images/readme-card-welcome.png" width="100%" alt="Welcome card" />
 
 <br/>
 
@@ -60,6 +43,58 @@
 
 <br/>
 
+<img src="docs/images/readme-plugin-family.png" width="100%" alt="Playhub Plugin Family" />
+
+<br/>
+
+<a href="https://github.com/LoZazaMastro/Playhub-Metadata">
+  <img src="docs/images/readme-plugin-metadata.png" width="100%" alt="Playhub Metadata card" />
+</a>
+
+<br/>
+
+<a href="https://github.com/LoZazaMastro/ThemeDeck-Windows">
+  <img src="docs/images/readme-plugin-themedeck.png" width="100%" alt="ThemeDeck card" />
+</a>
+
+<br/>
+
+<a href="https://github.com/LoZazaMastro/Launch-Curtain">
+  <img src="docs/images/readme-plugin-launch-curtain.png" width="100%" alt="Launch Curtain card" />
+</a>
+
+<br/>
+
+<a href="https://github.com/LoZazaMastro/TrailerHero">
+  <img src="docs/images/readme-plugin-trailerhero.png" width="100%" alt="TrailerHero card" />
+</a>
+
+<br/>
+
+<a href="https://github.com/LoZazaMastro/Now-Playing">
+  <img src="docs/images/readme-plugin-now-playing.png" width="100%" alt="Now Playing card" />
+</a>
+
+<br/>
+
+<a href="https://github.com/LoZazaMastro/Quick-Settings">
+  <img src="docs/images/readme-plugin-quick-settings.png" width="100%" alt="Quick Settings card" />
+</a>
+
+<br/>
+
+<a href="https://github.com/LoZazaMastro/Weather">
+  <img src="docs/images/readme-plugin-weather.png" width="100%" alt="Weather card" />
+</a>
+
+<br/>
+
+<a href="https://github.com/LoZazaMastro/Playhub-Surround">
+  <img src="docs/images/readme-plugin-surround.png" width="100%" alt="Playhub Surround card" />
+</a>
+
+<br/>
+
 ## Built For The Living Room
 
 - Big Picture first: install the Playhub CSS Loader theme and keep your Steam artwork backed up.
@@ -68,47 +103,6 @@
 - Repair tools: one button checks Gaming Mode, its Decky companion plugin, UWPHook, the agent and configuration.
 - Diagnostics: Playhub can create a report on the desktop when something needs investigating.
 - Updates: Playhub checks GitHub for new app and plugin versions and notifies you in-app.
-
-<br/>
-
-## Playhub Plugin Family
-
-<div align="center">
-  <img src="docs/images/mascotte-group.png" width="100%" alt="Playhub plugin mascots" />
-</div>
-
-<br/>
-
-<img src="docs/images/readme-plugin-metadata.png" width="100%" alt="Playhub Metadata card" />
-
-<br/>
-
-<img src="docs/images/readme-plugin-themedeck.png" width="100%" alt="ThemeDeck card" />
-
-<br/>
-
-<img src="docs/images/readme-plugin-launch-curtain.png" width="100%" alt="Launch Curtain card" />
-
-<br/>
-
-<img src="docs/images/readme-plugin-trailerhero.png" width="100%" alt="TrailerHero card" />
-
-<br/>
-
-<img src="docs/images/readme-plugin-now-playing.png" width="100%" alt="Now Playing card" />
-
-<br/>
-
-<img src="docs/images/readme-plugin-quick-settings.png" width="100%" alt="Quick Settings card" />
-
-<br/>
-
-### Also In The Store
-
-- Weather: current weather, daily forecasts and hourly forecasts in the Quick Access Menu.
-- Playhub Surround: speaker layout tests for stereo, 5.1 and 7.1 living-room setups.
-- Gaming Mode companion: a Decky quick menu entry to switch between Gaming Mode and Desktop Mode.
-- Steam Controller Access: support tooling for Steam Controller workflows around Xbox and Game Pass shortcuts.
 
 <br/>
 
@@ -123,18 +117,9 @@ Playhub installs for your Windows user. Windows 11 x64 is recommended. Windows
 
 <br/>
 
-## Built With
+## Open Source
 
-- .NET 8
-- WinUI 3
-- Windows App SDK
-- Fluent 2
-- A custom WPF installer
-
-Open-source components include UWPHook, VDFParser and SharpSteam. Steam
-Controller Access third-party notices document SISR by Alia5, VIIPER by Alia5
-and Peter Repukat, and USBIP-Win2 by vadimgrn.
-
+Playhub uses open-source components including UWPHook, VDFParser and SharpSteam.
 Full license details are in
 [Source/Playhub/THIRD-PARTY-NOTICES.txt](Source/Playhub/THIRD-PARTY-NOTICES.txt).
 
@@ -148,8 +133,8 @@ Made by <b>Andrea Sgarro</b> - <b>LoZazaMastro</b>
 
 <br/><br/>
 
-Steam, Steam Controller and the other product names shown here are trademarks of
-their respective owners. Playhub is independent and is not affiliated with,
-sponsored by, or endorsed by Valve or any other trademark holder.
+Steam and the other product names shown here are trademarks of their respective
+owners. Playhub is independent and is not affiliated with, sponsored by, or
+endorsed by Valve or any other trademark holder.
 
 </div>
