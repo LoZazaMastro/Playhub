@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/images/readme-logo-card.png" width="70%" alt="Playhub" />
+<img src="docs/images/readme-logo-card.png" width="260" alt="Playhub" />
 
 <h3>Your Windows gaming PC, with the soul of a console.</h3>
 
@@ -11,6 +11,8 @@
 
 <p>Native. Dark. Controller-first. Multilingual.</p>
 
+<br/>
+
 <a href="https://github.com/LoZazaMastro/Playhub/releases/latest">
   <img src="docs/images/readme-button-download.png" width="252" alt="Download Playhub" />
 </a>
@@ -20,7 +22,7 @@
   <img src="docs/images/readme-button-support.png" width="252" alt="Support Playhub on Ko-fi" />
 </a>
 
-<br/>
+<br/><br/>
 
 <img src="docs/images/mascotte-couch.png" width="100%" alt="Playhub mascots on a couch" />
 
@@ -95,7 +97,7 @@
 ### Other Plugins
 
 - [Weather](https://github.com/LoZazaMastro/Weather): current weather, daily forecasts and hourly forecasts in the Quick Access Menu.
-- [Playhub Surround](https://github.com/LoZazaMastro/Playhub-Surround): speaker layout tests for stereo, 5.1 and 7.1 living-room setups.
+- [Playhub Surround](https://github.com/LoZazaMastro/Playhub-Surround): a small tool for checking your speaker layout in stereo, 5.1 and 7.1, with a living-room-style map and synthesized test sounds inspired by classic video games.
 
 <br/><br/>
 
