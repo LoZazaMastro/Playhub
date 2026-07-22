@@ -13,14 +13,10 @@
 
 <br/>
 
-<a href="https://github.com/LoZazaMastro/Playhub/releases/latest">
-  <img src="docs/images/readme-button-download.png" width="252" alt="Download Playhub" />
-</a>
+<a href="https://github.com/LoZazaMastro/Playhub/releases/latest"><img src="docs/images/readme-button-download.png" width="252" alt="Download Playhub" /></a>
 &nbsp;&nbsp;&nbsp;&nbsp;
 
-<a href="https://ko-fi.com/LoZazaMastro">
-  <img src="docs/images/readme-button-support.png" width="252" alt="Support Playhub on Ko-fi" />
-</a>
+<a href="https://ko-fi.com/LoZazaMastro"><img src="docs/images/readme-button-support.png" width="252" alt="Support Playhub on Ko-fi" /></a>
 
 <br/><br/>
 
