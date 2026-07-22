@@ -1,14 +1,24 @@
 <div align="center">
 
-<img src="docs/images/readme-logo-card.png" width="100%" alt="Playhub - Your Windows gaming PC, with the soul of a console" />
+<img src="docs/images/readme-logo-card.png" width="100%" alt="Playhub" />
+
+<h3>Your Windows gaming PC, with the soul of a console.</h3>
+
+<p>
+  <b>Playhub</b> makes Windows feel at home on the couch:
+  Steam startup, Decky plugins, game imports and Big Picture polish.
+</p>
+
+<p>Native. Dark. Controller first. Multilingual.</p>
 
 <a href="https://github.com/LoZazaMastro/Playhub/releases/latest">
-  <img src="https://img.shields.io/badge/Download%20Playhub-FFD21A?style=for-the-badge&logo=github&logoColor=141416&labelColor=141416&color=FFD21A" height="54" alt="Download Playhub" />
+  <img src="docs/images/readme-button-download.png" width="360" alt="Download Playhub" />
 </a>
-&nbsp;&nbsp;
+
+<br/>
 
 <a href="https://ko-fi.com/LoZazaMastro">
-  <img src="https://img.shields.io/badge/Support%20Playhub-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white" height="54" alt="Support Playhub on Ko-fi" />
+  <img src="docs/images/readme-button-support.png" width="360" alt="Support Playhub on Ko-fi" />
 </a>
 
 <br/>
