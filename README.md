@@ -1,24 +1,23 @@
 <div align="center">
 
-<img src="docs/images/readme-logo-card.png" width="100%" alt="Playhub" />
+<img src="docs/images/readme-logo-card.png" width="70%" alt="Playhub" />
 
 <h3>Your Windows gaming PC, with the soul of a console.</h3>
 
 <p>
   <b>Playhub</b> makes Windows feel at home on the couch:
-  Steam startup, Decky plugins, game imports and Big Picture polish.
+  Steam-first startup, Decky plugins, game imports and Big Picture polish.
 </p>
 
-<p>Native. Dark. Controller first. Multilingual.</p>
+<p>Native. Dark. Controller-first. Multilingual.</p>
 
 <a href="https://github.com/LoZazaMastro/Playhub/releases/latest">
-  <img src="docs/images/readme-button-download.png" width="360" alt="Download Playhub" />
+  <img src="docs/images/readme-button-download.png" width="252" alt="Download Playhub" />
 </a>
-
-<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;
 
 <a href="https://ko-fi.com/LoZazaMastro">
-  <img src="docs/images/readme-button-support.png" width="360" alt="Support Playhub on Ko-fi" />
+  <img src="docs/images/readme-button-support.png" width="252" alt="Support Playhub on Ko-fi" />
 </a>
 
 <br/>
@@ -61,49 +60,44 @@
   <img src="docs/images/readme-plugin-metadata.png" width="100%" alt="Playhub Metadata card" />
 </a>
 
-<br/>
+<br/><br/>
 
 <a href="https://github.com/LoZazaMastro/ThemeDeck-Windows">
   <img src="docs/images/readme-plugin-themedeck.png" width="100%" alt="ThemeDeck card" />
 </a>
 
-<br/>
+<br/><br/>
 
 <a href="https://github.com/LoZazaMastro/Launch-Curtain">
   <img src="docs/images/readme-plugin-launch-curtain.png" width="100%" alt="Launch Curtain card" />
 </a>
 
-<br/>
+<br/><br/>
 
 <a href="https://github.com/LoZazaMastro/TrailerHero">
   <img src="docs/images/readme-plugin-trailerhero.png" width="100%" alt="TrailerHero card" />
 </a>
 
-<br/>
+<br/><br/>
 
 <a href="https://github.com/LoZazaMastro/Now-Playing">
   <img src="docs/images/readme-plugin-now-playing.png" width="100%" alt="Now Playing card" />
 </a>
 
-<br/>
+<br/><br/>
 
 <a href="https://github.com/LoZazaMastro/Quick-Settings">
   <img src="docs/images/readme-plugin-quick-settings.png" width="100%" alt="Quick Settings card" />
 </a>
 
-<br/>
+<br/><br/>
 
-<a href="https://github.com/LoZazaMastro/Weather">
-  <img src="docs/images/readme-plugin-weather.png" width="100%" alt="Weather card" />
-</a>
+### Other Plugins
 
-<br/>
+- [Weather](https://github.com/LoZazaMastro/Weather): current weather, daily forecasts and hourly forecasts in the Quick Access Menu.
+- [Playhub Surround](https://github.com/LoZazaMastro/Playhub-Surround): speaker layout tests for stereo, 5.1 and 7.1 living-room setups.
 
-<a href="https://github.com/LoZazaMastro/Playhub-Surround">
-  <img src="docs/images/readme-plugin-surround.png" width="100%" alt="Playhub Surround card" />
-</a>
-
-<br/>
+<br/><br/>
 
 ## Built For The Living Room
 
