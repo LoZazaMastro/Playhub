@@ -128,7 +128,7 @@ Full license details are in
 
 Made by <b>Andrea Sgarro</b> - <b>LoZazaMastro</b>
 
-(c) 2026 Andrea Sgarro - released under the <a href="LICENSE">MIT License</a>.
+©2026 Andrea Sgarro - released under the <a href="LICENSE">MIT License</a>.
 
 <br/><br/>
 
