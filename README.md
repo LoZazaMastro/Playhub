@@ -24,67 +24,44 @@
 <br/>
 
 <img src="docs/images/readme-card-decky.png" width="100%" alt="DeckyLoader setup card" />
-
 <br/>
-
 <img src="docs/images/readme-card-store.png" width="100%" alt="Playhub Plugin Store card" />
-
 <br/>
-
 <img src="docs/images/readme-card-gaming.png" width="100%" alt="Gaming Mode card" />
-
 <br/>
-
 <img src="docs/images/readme-card-import.png" width="100%" alt="Import games into Steam card" />
-
 <br/>
-
 <img src="docs/images/readme-card-styler.png" width="100%" alt="Big Picture styling and repair tools card" />
-
 <br/>
-
 <img src="docs/images/readme-card-settings.png" width="100%" alt="Settings card" />
 
 <br/>
 
 <img src="docs/images/readme-plugin-family.png" width="100%" alt="Playhub Plugin Family" />
-
 <br/>
-
 <a href="https://github.com/LoZazaMastro/Playhub-Metadata">
   <img src="docs/images/readme-plugin-metadata.png" width="100%" alt="Playhub Metadata card" />
 </a>
-
 <br/><br/>
-
 <a href="https://github.com/LoZazaMastro/ThemeDeck-Windows">
   <img src="docs/images/readme-plugin-themedeck.png" width="100%" alt="ThemeDeck card" />
 </a>
-
 <br/><br/>
-
 <a href="https://github.com/LoZazaMastro/Launch-Curtain">
   <img src="docs/images/readme-plugin-launch-curtain.png" width="100%" alt="Launch Curtain card" />
 </a>
-
 <br/><br/>
-
 <a href="https://github.com/LoZazaMastro/TrailerHero">
   <img src="docs/images/readme-plugin-trailerhero.png" width="100%" alt="TrailerHero card" />
 </a>
-
 <br/><br/>
-
 <a href="https://github.com/LoZazaMastro/Now-Playing">
   <img src="docs/images/readme-plugin-now-playing.png" width="100%" alt="Now Playing card" />
 </a>
-
 <br/><br/>
-
 <a href="https://github.com/LoZazaMastro/Quick-Settings">
   <img src="docs/images/readme-plugin-quick-settings.png" width="100%" alt="Quick Settings card" />
 </a>
-
 <br/><br/>
 
 ### Other Plugins
