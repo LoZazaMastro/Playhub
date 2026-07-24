@@ -223,18 +223,18 @@ public sealed class ProcessTools
 		return EnsureProcess(configuredPath, fallbackPaths, BuildBigPictureArguments(arguments), "steam");
 	}
 
-	// Steam DEVE partire direttamente in Big Picture, senza mostrare la finestra
-	// desktop: "-silent" evita che la finestra principale compaia all'avvio e
-	// "-bigpicture" apre subito la UI gamepad. Vengono aggiunti solo se mancanti,
-	// preservando gli argomenti configurati dall'utente.
+	// Steam deve partire direttamente in Big Picture. Ci limitiamo a garantire
+	// l'ingresso in Big Picture (-bigpicture) se l'utente non usa gia' -gamepadui
+	// o -bigpicture. NON aggiungiamo MAI "-silent": quel flag fa partire Steam
+	// senza portare la finestra in primo piano, quindi la Big Picture resta senza
+	// focus di input (controller e tastiera morti finche' non si clicca col
+	// mouse). Era la causa della regressione.
 	private static string BuildBigPictureArguments(string arguments)
 	{
-		string text = arguments ?? "";
-		if (!text.Contains("-silent", StringComparison.OrdinalIgnoreCase))
-		{
-			text = (text + " -silent").Trim();
-		}
-		if (!text.Contains("-bigpicture", StringComparison.OrdinalIgnoreCase))
+		string text = (arguments ?? "").Trim();
+		bool entersBigPicture = text.Contains("-gamepadui", StringComparison.OrdinalIgnoreCase)
+			|| text.Contains("-bigpicture", StringComparison.OrdinalIgnoreCase);
+		if (!entersBigPicture)
 		{
 			text = (text + " -bigpicture").Trim();
 		}
