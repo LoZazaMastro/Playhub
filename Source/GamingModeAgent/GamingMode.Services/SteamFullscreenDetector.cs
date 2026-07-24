@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GamingMode.Services;
@@ -10,6 +11,26 @@ namespace GamingMode.Services;
 public static class SteamFullscreenDetector
 {
 	private delegate bool EnumWindowsProc(nint hWnd, nint lParam);
+
+	private const uint SpiGetForegroundLockTimeout = 0x2000;
+
+	private const uint SpiSetForegroundLockTimeout = 0x2001;
+
+	private const uint SpifSendChange = 0x0002;
+
+	private const byte VkMenu = 0x12;
+
+	private const uint KeyeventfKeyup = 0x0002;
+
+	private static readonly nint HwndTopMostLocal = -1;
+
+	private static readonly nint HwndNoTopMostLocal = -2;
+
+	private const uint SwpNoSizeLocal = 0x0001;
+
+	private const uint SwpNoMoveLocal = 0x0002;
+
+	private const uint SwpNoActivateLocal = 0x0010;
 
 	private struct Rect
 	{
@@ -103,6 +124,19 @@ public static class SteamFullscreenDetector
 				{
 					return true;
 				}
+				// Non minimizzare MAI una finestra a schermo intero: durante il
+				// caricamento la Big Picture puo' avere un titolo provvisorio (es.
+				// "Playhub") non ancora contenente "Big Picture". Minimizzarla
+				// romperebbe l'avvio. Tocchiamo solo le finestre desktop piccole.
+				if (GetWindowRect(window, out var lpRect))
+				{
+					nint hMonitor = MonitorFromWindow(window, 2u);
+					MonitorInfo lpmi = MonitorInfo.Create();
+					if (GetMonitorInfo(hMonitor, ref lpmi) && CoversMonitor(lpRect, lpmi.rcMonitor, relaxed: true))
+					{
+						return true;
+					}
+				}
 				ShowWindow(window, 6);
 				logger.Info("Steam desktop window \"" + title + "\" was minimized while waiting for Big Picture.");
 				return true;
@@ -117,61 +151,173 @@ public static class SteamFullscreenDetector
 	{
 		try
 		{
-			nint best = 0;
-			long bestArea = 0L;
-			EnumWindows(delegate(nint window, nint _)
+			// La Big Picture puo' impiegare qualche istante a creare la sua
+			// finestra con input attivo: riproviamo per un breve periodo finche'
+			// il foreground reale non e' Steam (non basta lo Z-order: senza focus
+			// di input il controller e la tastiera non rispondono).
+			// Senza "-silent" la Big Picture prende il focus da sola: nella
+			// maggior parte dei casi al primo giro e' gia' in primo piano e non
+			// facciamo nulla. Come rete di sicurezza, se non lo fosse, proviamo a
+			// portarla in foreground SENZA input sintetici (niente click: non deve
+			// saltare il video introduttivo della Big Picture).
+			for (int attempt = 0; attempt < 12; attempt++)
 			{
-				if (window == 0 || !IsWindowVisible(window))
+				if (IsForegroundSteam())
 				{
-					return true;
+					return;
 				}
-				GetWindowThreadProcessId(window, out var processId);
-				if (processId == 0)
+				nint best = FindBestSteamWindow();
+				if (best != 0)
 				{
-					return true;
-				}
-				try
-				{
-					using Process process = Process.GetProcessById((int)processId);
-					if (!SteamProcesses.Contains(process.ProcessName))
+					if (IsIconic(best))
 					{
-						return true;
+						ShowWindow(best, 9);
+					}
+					ForceForegroundWindow(best);
+					if (IsForegroundSteam())
+					{
+						logger.Info("Steam window received input focus after the splash screen.");
+						return;
 					}
 				}
-				catch
-				{
-					return true;
-				}
-				if (!GetWindowRect(window, out var lpRect))
-				{
-					return true;
-				}
-				long num = (long)Math.Max(0, lpRect.Right - lpRect.Left) * (long)Math.Max(0, lpRect.Bottom - lpRect.Top);
-				if (IsBigPictureTitle(window))
-				{
-					num += 1000000000L;
-				}
-				if (num > bestArea)
-				{
-					bestArea = num;
-					best = window;
-				}
-				return true;
-			}, 0);
-			if (best != 0)
-			{
-				if (IsIconic(best))
-				{
-					ShowWindow(best, 9);
-				}
-				SetForegroundWindow(best);
-				SetWindowPos(best, 0, 0, 0, 0, 0, 83u);
-				logger.Info("Steam window was brought to the foreground after the splash screen.");
+				Thread.Sleep(150);
 			}
+			logger.Info("Steam window was not confirmed as foreground; no synthetic input was sent.");
 		}
 		catch (Exception exception)
 		{
 			logger.Error("Could not bring the Steam window to the foreground.", exception);
+		}
+	}
+
+	private static nint FindBestSteamWindow()
+	{
+		nint best = 0;
+		long bestArea = 0L;
+		EnumWindows(delegate(nint window, nint _)
+		{
+			if (window == 0 || !IsWindowVisible(window))
+			{
+				return true;
+			}
+			GetWindowThreadProcessId(window, out var processId);
+			if (processId == 0)
+			{
+				return true;
+			}
+			try
+			{
+				using Process process = Process.GetProcessById((int)processId);
+				if (!SteamProcesses.Contains(process.ProcessName))
+				{
+					return true;
+				}
+			}
+			catch
+			{
+				return true;
+			}
+			if (!GetWindowRect(window, out var lpRect))
+			{
+				return true;
+			}
+			long num = (long)Math.Max(0, lpRect.Right - lpRect.Left) * (long)Math.Max(0, lpRect.Bottom - lpRect.Top);
+			if (IsBigPictureTitle(window))
+			{
+				num += 1000000000L;
+			}
+			if (num > bestArea)
+			{
+				bestArea = num;
+				best = window;
+			}
+			return true;
+		}, 0);
+		return best;
+	}
+
+	private static bool IsForegroundSteam()
+	{
+		nint foreground = GetForegroundWindow();
+		if (foreground == 0)
+		{
+			return false;
+		}
+		GetWindowThreadProcessId(foreground, out var processId);
+		if (processId == 0)
+		{
+			return false;
+		}
+		try
+		{
+			using Process process = Process.GetProcessById((int)processId);
+			return SteamProcesses.Contains(process.ProcessName);
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	// Porta una finestra in primo piano AGGIRANDO il foreground lock di Windows.
+	// SetForegroundWindow da solo, quando l'agente e' la shell e non c'e' input
+	// recente, viene rifiutato: la finestra sale nello Z-order ma NON riceve il
+	// focus di input (controller/tastiera morti finche' non si clicca col mouse).
+	// Combiniamo i trucchi noti: azzeramento del timeout di foreground-lock, tap
+	// virtuale di ALT per sbloccare la coda, AllowSetForegroundWindow e
+	// AttachThreadInput sul thread attualmente in foreground.
+	private static void ForceForegroundWindow(nint window)
+	{
+		try
+		{
+			uint targetThread = GetWindowThreadProcessId(window, out _);
+			nint foreground = GetForegroundWindow();
+			uint foregroundThread = (foreground != 0) ? GetWindowThreadProcessId(foreground, out _) : 0u;
+			uint currentThread = GetCurrentThreadId();
+
+			// 1) Disattiva temporaneamente il timeout di foreground lock.
+			nint previousTimeout = 0;
+			bool timeoutRead = SystemParametersInfo(SpiGetForegroundLockTimeout, 0, ref previousTimeout, 0);
+			SystemParametersInfoSet(SpiSetForegroundLockTimeout, 0, 0, SpifSendChange);
+
+			// 2) Tap virtuale di ALT: sblocca la restrizione di foreground.
+			keybd_event(VkMenu, 0, 0, 0);
+			keybd_event(VkMenu, 0, KeyeventfKeyup, 0);
+
+			AllowSetForegroundWindow(unchecked((uint)-1)); // ASFW_ANY
+
+			// 3) Attacca l'input del thread in foreground per ottenere il diritto.
+			bool attachedForeground = foregroundThread != 0 && foregroundThread != currentThread && AttachThreadInput(currentThread, foregroundThread, true);
+			bool attachedTarget = targetThread != 0 && targetThread != currentThread && AttachThreadInput(currentThread, targetThread, true);
+
+			ShowWindow(window, 9); // SW_RESTORE
+			BringWindowToTop(window);
+			SetForegroundWindow(window);
+			SetActiveWindow(window);
+			SetFocus(window);
+
+			// Porta in cima (senza restare topmost) e poi rilascia il topmost.
+			SetWindowPos(window, HwndTopMostLocal, 0, 0, 0, 0, SwpNoMoveLocal | SwpNoSizeLocal | SwpNoActivateLocal);
+			SetWindowPos(window, HwndNoTopMostLocal, 0, 0, 0, 0, SwpNoMoveLocal | SwpNoSizeLocal | SwpNoActivateLocal);
+
+			if (attachedTarget)
+			{
+				AttachThreadInput(currentThread, targetThread, false);
+			}
+			if (attachedForeground)
+			{
+				AttachThreadInput(currentThread, foregroundThread, false);
+			}
+
+			// 4) Ripristina il timeout originale.
+			if (timeoutRead)
+			{
+				SystemParametersInfoSet(SpiSetForegroundLockTimeout, 0, previousTimeout, SpifSendChange);
+			}
+		}
+		catch
+		{
+			SetForegroundWindow(window);
 		}
 	}
 
@@ -311,4 +457,34 @@ public static class SteamFullscreenDetector
 
 	[DllImport("user32.dll", CharSet = CharSet.Auto)]
 	private static extern bool GetMonitorInfo(nint hMonitor, ref MonitorInfo lpmi);
+
+	[DllImport("user32.dll")]
+	private static extern nint GetForegroundWindow();
+
+	[DllImport("user32.dll")]
+	private static extern bool BringWindowToTop(nint hWnd);
+
+	[DllImport("user32.dll")]
+	private static extern nint SetActiveWindow(nint hWnd);
+
+	[DllImport("user32.dll")]
+	private static extern nint SetFocus(nint hWnd);
+
+	[DllImport("user32.dll")]
+	private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
+	[DllImport("kernel32.dll")]
+	private static extern uint GetCurrentThreadId();
+
+	[DllImport("user32.dll")]
+	private static extern bool AllowSetForegroundWindow(uint dwProcessId);
+
+	[DllImport("user32.dll")]
+	private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, nint dwExtraInfo);
+
+	[DllImport("user32.dll", SetLastError = true)]
+	private static extern bool SystemParametersInfo(uint uiAction, uint uiParam, ref nint pvParam, uint fWinIni);
+
+	[DllImport("user32.dll", SetLastError = true, EntryPoint = "SystemParametersInfoW")]
+	private static extern bool SystemParametersInfoSet(uint uiAction, uint uiParam, nint pvParam, uint fWinIni);
 }
