@@ -5,8 +5,7 @@
 <h3>Your Windows gaming PC, with the soul of a console.</h3>
 
 <p>
-  <b>Playhub</b> makes Windows feel at home on the couch:
-  Steam-first startup, Decky plugins, game imports and Big Picture polish.
+  <b>Playhub</b> makes Windows feel at home on the couch: Gaming Mode, Decky plugins, game imports from various stores, Big Picture themes and quality of life improvements.
 </p>
 
 <p align="center"><a href="https://github.com/LoZazaMastro/Playhub/releases/latest"><img src="docs/images/readme-button-download.png" height="36" alt="Download Playhub" /></a>&nbsp;<a href="https://ko-fi.com/LoZazaMastro"><img src="docs/images/readme-button-support.png" height="36" alt="Support Playhub on Ko-fi" /></a></p>
