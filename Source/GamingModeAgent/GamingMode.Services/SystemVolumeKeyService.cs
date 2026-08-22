@@ -1,11 +1,25 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace GamingMode.Services;
 
+// Stato del volume di sistema in un dato istante.
+public sealed record SystemVolumeSnapshot(bool Available, int Level, bool Muted);
+
 public sealed class SystemVolumeKeyService : IDisposable
 {
+	// L'INDICATORE DEL VOLUME A SCHERMO.
+	//
+	// In Gaming Mode Explorer non e' in esecuzione, e l'indicatore del volume di
+	// Windows lo disegna Explorer: senza di lui, alzando il volume non si
+	// vedrebbe nulla. Questo evento e' cio' che lo fa comparire.
+	//
+	// Scatta sia quando il volume lo cambiamo noi (tasti multimediali
+	// intercettati qui) sia quando lo cambia chiunque altro: manopola sulle
+	// cuffie, mixer di un gioco, Quick Settings. Per il secondo caso serve un
+	// sorvegliante, perche' nessuno ci avvisa.
+	public event Action<SystemVolumeSnapshot>? VolumeChanged;
 	private delegate nint HookProc(int nCode, nint wParam, nint lParam);
 
 	private readonly struct KeyboardHookStruct
@@ -170,6 +184,30 @@ public sealed class SystemVolumeKeyService : IDisposable
 
 		private static readonly Guid MMDeviceEnumeratorClsid = new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E");
 
+		// Stato attuale: livello da 0 a 100 e silenziamento.
+		public static SystemVolumeSnapshot GetSnapshot()
+		{
+			int level = 0;
+			bool muted = false;
+			bool available = false;
+			try
+			{
+				WithEndpoint(delegate(IAudioEndpointVolume endpoint)
+				{
+					Marshal.ThrowExceptionForHR(endpoint.GetMasterVolumeLevelScalar(out float scalar));
+					Marshal.ThrowExceptionForHR(endpoint.GetMute(out bool isMuted));
+					level = (int)Math.Round(Math.Clamp(scalar, 0f, 1f) * 100f);
+					muted = isMuted;
+					available = true;
+				});
+			}
+			catch
+			{
+				available = false;
+			}
+			return new SystemVolumeSnapshot(available, level, muted);
+		}
+
 		public static void StepUp()
 		{
 			WithEndpoint(delegate(IAudioEndpointVolume endpoint)
@@ -291,6 +329,7 @@ public sealed class SystemVolumeKeyService : IDisposable
 				Name = "Gaming Mode Volume Keys"
 			};
 			_thread.Start();
+			StartVolumeWatcher();
 		}
 		if (_ready.Wait(TimeSpan.FromSeconds(2.0)) && Running)
 		{
@@ -300,6 +339,7 @@ public sealed class SystemVolumeKeyService : IDisposable
 
 	public void Stop()
 	{
+		StopVolumeWatcher();
 		Thread thread;
 		uint threadId;
 		lock (_sync)
@@ -325,6 +365,87 @@ public sealed class SystemVolumeKeyService : IDisposable
 			{
 				_thread = null;
 				_threadId = 0u;
+			}
+		}
+	}
+
+	private void PublishVolumeChanged()
+	{
+		SystemVolumeSnapshot snapshot = SystemVolume.GetSnapshot();
+		RememberPublished(snapshot);
+		VolumeChanged?.Invoke(snapshot);
+	}
+
+	// SORVEGLIANZA DEL VOLUME DI SISTEMA.
+	//
+	// I tasti multimediali li intercettiamo, ma il volume si cambia anche in
+	// mille altri modi: manopola sulle cuffie, mixer di un gioco, Quick
+	// Settings, tasti di una tastiera che non passano dal nostro gancio. In
+	// quei casi nessuno ci avvisa e l'indicatore non comparirebbe.
+	//
+	// Il volume si legge quattro volte al secondo: e' una proprieta' COM, costa
+	// pochissimo, e risolvendo l'endpoint a ogni giro segue da sola il cambio
+	// di dispositivo predefinito.
+	private Thread? _watcherThread;
+	private CancellationTokenSource? _watcherCancellation;
+	private int _lastPublishedLevel = -1;
+	private bool _lastPublishedMuted;
+
+	private void RememberPublished(SystemVolumeSnapshot snapshot)
+	{
+		_lastPublishedLevel = snapshot.Level;
+		_lastPublishedMuted = snapshot.Muted;
+	}
+
+	private void StartVolumeWatcher()
+	{
+		if (_watcherThread is { IsAlive: true }) return;
+		_watcherCancellation = new CancellationTokenSource();
+		CancellationToken token = _watcherCancellation.Token;
+		_watcherThread = new Thread(() => WatchVolume(token))
+		{
+			IsBackground = true,
+			Name = "Playhub volume watcher",
+			Priority = ThreadPriority.BelowNormal
+		};
+		_watcherThread.Start();
+	}
+
+	private void StopVolumeWatcher()
+	{
+		try { _watcherCancellation?.Cancel(); } catch { }
+		_watcherCancellation = null;
+		_watcherThread = null;
+	}
+
+	private void WatchVolume(CancellationToken token)
+	{
+		// Il primo giro fissa solo il punto di partenza: entrare in Gaming Mode
+		// non deve far comparire l'indicatore dal nulla.
+		try
+		{
+			SystemVolumeSnapshot first = SystemVolume.GetSnapshot();
+			if (first.Available) RememberPublished(first);
+		}
+		catch
+		{
+		}
+
+		while (!token.IsCancellationRequested)
+		{
+			try
+			{
+				Thread.Sleep(250);
+				if (token.IsCancellationRequested) return;
+				SystemVolumeSnapshot snapshot = SystemVolume.GetSnapshot();
+				if (!snapshot.Available) continue;
+				if (snapshot.Level == _lastPublishedLevel && snapshot.Muted == _lastPublishedMuted) continue;
+				RememberPublished(snapshot);
+				VolumeChanged?.Invoke(snapshot);
+			}
+			catch
+			{
+				Thread.Sleep(1500);
 			}
 		}
 	}
@@ -395,12 +516,15 @@ public sealed class SystemVolumeKeyService : IDisposable
 			{
 			case 175:
 				SystemVolume.StepUp();
+				PublishVolumeChanged();
 				return true;
 			case 174:
 				SystemVolume.StepDown();
+				PublishVolumeChanged();
 				return true;
 			case 173:
 				SystemVolume.ToggleMute();
+				PublishVolumeChanged();
 				return true;
 			default:
 				return false;

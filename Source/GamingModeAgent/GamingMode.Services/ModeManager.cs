@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -62,6 +62,36 @@ public sealed class ModeManager
 		ModeKind modeKind = ((!requestedNextBootMode.HasValue) ? mode : config.DefaultMode);
 		_shellTools.SetShellForMode(modeKind);
 		_logger.Info($"Future sign-in shell set to {modeKind}.");
+	}
+
+	// RIACCENSIONE DEI SERVIZI QUANDO L'AGENTE RIPARTE.
+	//
+	// Dopo ogni "installa o aggiorna" l'agente viene riavviato con il solo
+	// argomento "agent", quindi non passa da ApplyBootModeAsync. Senza questo,
+	// il servizio delle finestre senza bordi, i tasti del volume e la scomparsa
+	// del puntatore restavano spenti anche con il PC gia' in Gaming Mode: il
+	// borderless smetteva di funzionare e per riaverlo bisognava riapplicare la
+	// modalita' a mano.
+	//
+	// Qui si riaccendono SOLO i servizi: non si tocca Explorer, non si avvia
+	// Steam, non si sposta nulla.
+	public void ResumeGamingServices()
+	{
+		try
+		{
+			ModeConfig config = _store.LoadConfig();
+			_logger.Info($"Resuming Gaming Mode services after agent restart; borderless={config.Gaming.BorderlessFullscreenWindowsInGamingMode}.");
+			_volumeKeys.Start();
+			_windowFocus.Start(config.Gaming.BorderlessFullscreenWindowsInGamingMode);
+			if (config.Gaming.AutoHideMouseCursorInGamingMode)
+			{
+				_cursorAutoHide.Start(config.Gaming.AutoHideMouseCursorAfterMs);
+			}
+		}
+		catch (Exception exception)
+		{
+			_logger.Error("Gaming Mode services could not be resumed after the agent restart.", exception);
+		}
 	}
 
 	public Task<ApiResult> ApplyModeAsync(ModeKind mode, string action, bool interactive = true, bool restoreStartupApps = true, bool updateShell = true)
@@ -174,7 +204,19 @@ public sealed class ModeManager
 		_processTools.EnsureDeckyPluginHelperCompatibilityServices();
 		_processTools.RestartProcessesWithEnvironment(modeConfig.Gaming.DeckyPath ?? "", _processTools.GetDeckyFallbackPaths().FirstOrDefault() ?? "", "", true, _processTools.BuildDeckyPluginHelperEnvironment(), "PluginLoader", "PluginLoader_noconsole");
 		_processTools.CleanupDeckyOrphanedForks();
-		return await ApplyModeAsync(ModeKind.Gaming, "Restarted Decky Loader");
+		// NON si riapplica la modalita'. Prima qui c'era
+		// ApplyModeAsync(Gaming): riavviare Decky faceva ripartire l'INTERA
+		// procedura di ingresso in Gaming Mode, shell e Steam compresi. E' un
+		// rischio sproporzionato per un'operazione che deve solo far ripartire
+		// un processo. A ricaricare l'interfaccia pensa il plugin, che vive
+		// dentro Steam e puo' chiedergli di rigenerare il proprio contesto.
+		await Task.CompletedTask;
+		return new ApiResult
+		{
+			Ok = true,
+			Message = "Decky Loader restarted. The Steam interface will reload.",
+			Status = GetStatus()
+		};
 	}
 
 	public ModeStatus GetStatus(IReadOnlyCollection<string>? messages = null)

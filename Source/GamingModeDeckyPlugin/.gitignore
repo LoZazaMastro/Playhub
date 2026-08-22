@@ -1,0 +1,4 @@
+node_modules/
+package-lock.json
+build-plugin-log.txt
+dist/index.js.map

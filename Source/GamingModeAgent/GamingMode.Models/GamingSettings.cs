@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace GamingMode.Models;
 
@@ -39,6 +39,26 @@ public sealed class GamingSettings
 	public bool BorderlessFullscreenWindowsInGamingMode { get; set; } = true;
 
 	public List<GamingStartupApp> CustomStartupApps { get; set; } = new List<GamingStartupApp>();
+
+	// ---------- PLAYHUB DASHBOARD ----------
+	//
+	// La Dashboard e' una schermata del plugin di Steam. Qui restano solo le
+	// cose che il plugin non puo' sapere da solo.
+
+	// Le sue scorciatoie (le "preferite" nella schermata Home).
+	public List<GamingOverlayShortcut> DashboardShortcuts { get; set; } = new List<GamingOverlayShortcut>();
+
+	// Interruttore principale condiviso fra Playhub, agente e plugin Decky.
+	// Rimane attivo per compatibilita' con le installazioni precedenti.
+	public bool DashboardEnabled { get; set; } = true;
+
+	// Scorciatoia da tastiera per aprirla. Serve perche' mentre un gioco e' in
+	// primo piano l'interfaccia di Steam non riceve nulla. Chi la vuole aprire
+	// col pad lega questa stessa combinazione a un accordo DENTRO Steam: cosi'
+	// e' Steam a premere i tasti e nessuno tocca il controller.
+	public bool DashboardKeyboardShortcutEnabled { get; set; } = true;
+
+	public string DashboardHotkey { get; set; } = "Ctrl+Alt+P";
 
 	public GamingSplashSettings Splash { get; set; } = new GamingSplashSettings();
 

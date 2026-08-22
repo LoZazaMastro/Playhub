@@ -96,6 +96,25 @@ public sealed class PluginCatalogService
 • Interruttore HDR con conferma a 10 secondi.
 • Stato HDR letto direttamente da Windows (DisplayConfig / Advanced Color) invece di affidarsi a uno stato salvato dal plugin."),
         new PluginDefinition(
+            "Playhub-Notifications",
+            "Playhub Notifications",
+            "Playhub Notifications",
+            "playhub-notifications",
+            ((char)0xEA8F).ToString(),
+            "Notifiche più belle, chiare e personali.",
+            @"Playhub Notifications sostituisce i popup visibili e i suoni delle notifiche di Steam con temi animati pensati per Big Picture, mantenendo intatta la cronologia nativa delle notifiche.
+
+## Cosa fa
+• Offre sette temi dedicati: Xbox Console, PlayStation, GOG Galaxy, Epic Games Launcher, Nintendo, Android e Playhub.
+• Personalizza achievement, messaggi, inviti, download, screenshot, controller, avvisi, notifiche di sistema e community.
+• Usa l'artwork reale degli achievement fornito da Steam quando disponibile.
+• Permette di scegliere posizione, durata e volume delle notifiche, con un intervallo da 0% a 200%.
+• Include anteprime per provare ogni tipo di notifica direttamente dal menu rapido.
+
+## Note
+• Sostituisce soltanto il popup visibile e il relativo suono: la cronologia originale di Steam resta disponibile.
+• L'overlay non prende il focus e non intercetta controller, tastiera o mouse mentre giochi."),
+        new PluginDefinition(
             "ThemeDeck-Windows",
             "ThemeDeck",
             "ThemeDeck",
@@ -141,6 +160,21 @@ public sealed class PluginCatalogService
 • È nato su e per Windows, anche se dovrebbe funzionare su Linux.
 • Legge e adatta gli elementi dell'interfaccia di Big Picture, che Steam aggiorna spesso: alcuni selettori potrebbero richiedere aggiornamenti nel tempo."),
         new PluginDefinition(
+            "News",
+            "News",
+            "News",
+            "news",
+            ((char)0xE12A).ToString(),
+            "Le notizie che contano, raccolte in un solo posto.",
+            @"News porta le tue fonti preferite nel menu rapido e in una comoda edicola a schermo intero, pensata per essere letta anche con il controller.
+
+## Cosa fa
+• Raccoglie feed RSS e Atom senza richiedere una API key.
+• Organizza fonti e articoli per categorie.
+• Offre titoli nel menu rapido e una vista completa in Big Picture.
+• Include un lettore pulito, ricerca e navigazione in quattro direzioni.
+• Mantiene le fonti configurate e aggiorna i contenuti senza interrompere la navigazione."),
+        new PluginDefinition(
             "Weather",
             "Weather",
             "Weather",
@@ -177,7 +211,24 @@ public sealed class PluginCatalogService
 
 ## Note
 • Funziona su Windows; Linux non è testato.
-• La riproduzione multicanale dipende da Steam/Chromium e dal dispositivo di uscita scelto: se il sistema espone solo due canali, i test posteriori, centrale e LFE possono essere mixati verso il basso.")
+• La riproduzione multicanale dipende da Steam/Chromium e dal dispositivo di uscita scelto: se il sistema espone solo due canali, i test posteriori, centrale e LFE possono essere mixati verso il basso."),
+        new PluginDefinition(
+            "Proton-VPN",
+            "Proton VPN",
+            "Proton VPN",
+            "proton-vpn",
+            ((char)0xE774).ToString(),
+            "La tua VPN, senza lasciare la Gaming Mode.",
+            @"Proton VPN porta i controlli essenziali del client Windows nel menu rapido, così puoi proteggere o cambiare la connessione senza tornare al desktop.
+
+## Cosa fa
+• Mostra lo stato reale della connessione VPN.
+• Connette e disconnette Proton VPN dal menu rapido.
+• Consente di scegliere una posizione disponibile.
+• Mantiene la navigazione semplice e adatta al controller.
+
+## Nota
+• Richiede l'app ufficiale Proton VPN per Windows già installata e configurata.")
     };
 
     public async Task<IReadOnlyList<DeckyPluginInfo>> LoadAsync(string pluginRoot, string deckyPluginsPath)
@@ -245,7 +296,10 @@ public sealed class PluginCatalogService
             "Now-Playing",
             "Playhub-Surround",
             "Quick-Settings",
-            "Weather"
+            "Playhub-Notifications",
+            "News",
+            "Weather",
+            "Proton-VPN"
         };
 
         return plugins
@@ -1505,6 +1559,53 @@ public sealed class PluginCatalogService
 • Переключатель HDR с подтверждением на 10 секунд.
 • Состояние HDR читается напрямую из Windows (DisplayConfig / Advanced Color), а не из сохранённого состояния плагина.")
             },
+            ["Playhub-Notifications"] = new Dictionary<string, PluginText>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["en"] = new PluginText(
+                    "Notifications that feel clearer, calmer and more personal.",
+                    @"Playhub Notifications replaces Steam's visible popups and notification sounds with animated themes designed for Big Picture, while preserving Steam's native notification history.
+
+## What it does
+• Includes Xbox Console, PlayStation, GOG Galaxy, Epic Games Launcher, Nintendo, Android and Playhub themes.
+• Customizes achievements, messages, invites, downloads, screenshots, controller, warning, system and community notifications.
+• Uses real Steam achievement artwork when available.
+• Lets you choose position, duration and volume from 0% to 200%.
+• Includes previews for every notification type.
+
+## Notes
+• Only the visible popup and its sound are replaced; Steam's original history remains available.
+• The overlay does not take focus or intercept controller, keyboard or mouse input."),
+                ["es"] = new PluginText(
+                    "Notificaciones más claras, cuidadas y personales.",
+                    @"Playhub Notifications sustituye los avisos visibles y sus sonidos por temas animados para Big Picture, sin alterar el historial nativo de Steam. Incluye siete temas, artwork real de logros, categorías configurables, posición, duración, volumen de 0% a 200% y vistas previas. El overlay no toma el foco ni intercepta tus controles."),
+                ["fr"] = new PluginText(
+                    "Des notifications plus claires, soignées et personnelles.",
+                    @"Playhub Notifications remplace les fenêtres visibles et leurs sons par des thèmes animés conçus pour Big Picture, sans modifier l'historique natif de Steam. Il propose sept thèmes, les images réelles des succès, des catégories configurables, la position, la durée, un volume de 0 % à 200 % et des aperçus. L'overlay ne prend pas le focus et n'intercepte pas les commandes."),
+                ["de"] = new PluginText(
+                    "Benachrichtigungen, klarer, ruhiger und persönlicher.",
+                    @"Playhub Notifications ersetzt sichtbare Steam-Pop-ups und ihre Töne durch animierte Big-Picture-Themes, ohne den nativen Verlauf zu verändern. Enthalten sind sieben Themes, echte Achievement-Bilder, konfigurierbare Kategorien, Position, Dauer, 0 bis 200 % Lautstärke und Vorschauen. Das Overlay übernimmt weder Fokus noch Eingabe."),
+                ["pt"] = new PluginText(
+                    "Notificações mais claras, cuidadas e pessoais.",
+                    @"Playhub Notifications substitui os pop-ups visíveis e seus sons por temas animados para o Big Picture, preservando o histórico nativo da Steam. Inclui sete temas, imagens reais de conquistas, categorias configuráveis, posição, duração, volume de 0% a 200% e prévias. O overlay não toma o foco nem intercepta controles."),
+                ["uk"] = new PluginText(
+                    "Зрозуміліші, охайніші та особистіші сповіщення.",
+                    @"Playhub Notifications замінює видимі сповіщення Steam та їхні звуки анімованими темами для Big Picture, зберігаючи рідну історію. Доступні сім тем, справжні зображення досягнень, категорії, позиція, тривалість, гучність 0–200% і попередній перегляд. Оверлей не забирає фокус і не перехоплює керування."),
+                ["zh"] = new PluginText(
+                    "更清晰、更精致、更个性化的通知。",
+                    @"Playhub Notifications 使用专为 Big Picture 设计的动画主题替换 Steam 的可见弹窗和提示音，同时保留原生通知历史。它包含七种主题、真实成就图片、可配置类别、位置、时长、0% 至 200% 音量和预览。叠加层不会抢占焦点或拦截输入。"),
+                ["ja"] = new PluginText(
+                    "より見やすく、穏やかで、自分らしい通知。",
+                    @"Playhub Notifications は Steam の表示ポップアップと通知音を Big Picture 向けのアニメーションテーマに置き換え、標準の通知履歴はそのまま残します。7 種類のテーマ、実際の実績画像、カテゴリ設定、位置、表示時間、0～200% の音量、プレビューに対応します。オーバーレイはフォーカスや入力を奪いません。"),
+                ["ko"] = new PluginText(
+                    "더 선명하고 차분하며 나다운 알림.",
+                    @"Playhub Notifications는 Steam의 표시 팝업과 알림음을 Big Picture용 애니메이션 테마로 바꾸면서 기본 알림 기록은 유지합니다. 7가지 테마, 실제 도전 과제 이미지, 알림 유형 설정, 위치, 시간, 0~200% 볼륨과 미리보기를 제공합니다. 오버레이는 포커스나 입력을 가로채지 않습니다."),
+                ["hi"] = new PluginText(
+                    "ज़्यादा साफ़, सहज और निजी notifications.",
+                    @"Playhub Notifications Steam के दिखाई देने वाले popup और sound को Big Picture के animated themes से बदलता है, जबकि native history सुरक्षित रहती है। इसमें सात themes, असली achievement artwork, categories, position, duration, 0–200% volume और previews हैं। Overlay focus या input नहीं लेता।"),
+                ["ru"] = new PluginText(
+                    "Более ясные, аккуратные и персональные уведомления.",
+                    @"Playhub Notifications заменяет видимые всплывающие уведомления Steam и их звуки анимированными темами для Big Picture, сохраняя штатную историю. Доступны семь тем, настоящие изображения достижений, категории, положение, длительность, громкость 0–200% и предпросмотр. Оверлей не забирает фокус и не перехватывает управление.")
+            },
             ["ThemeDeck-Windows"] = new Dictionary<string, PluginText>(StringComparer.OrdinalIgnoreCase)
             {
                 ["en"] = new PluginText(
@@ -1895,6 +1996,34 @@ public sealed class PluginCatalogService
 ## Примечания
 • Он создан на Windows и для Windows, хотя должен работать и на Linux.
 • Он читает и адаптирует элементы интерфейса Big Picture, которые Steam часто обновляет: некоторые селекторы могут со временем потребовать обновлений.")
+            },
+            ["News"] = new Dictionary<string, PluginText>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["en"] = new PluginText("The news that matters, gathered in one place.", "News brings RSS and Atom sources to the quick menu and a controller-friendly fullscreen newsstand. Browse categories, search articles and read in a clean layout without an API key."),
+                ["es"] = new PluginText("Las noticias que importan, reunidas en un solo lugar.", "News lleva fuentes RSS y Atom al menú rápido y a un quiosco a pantalla completa pensado para el mando. Explora categorías, busca artículos y lee con un diseño limpio, sin API key."),
+                ["fr"] = new PluginText("L'actualité qui compte, réunie au même endroit.", "News rassemble les sources RSS et Atom dans le menu rapide et un kiosque plein écran adapté à la manette. Parcours les catégories, recherche des articles et lis sans clé API."),
+                ["de"] = new PluginText("Wichtige Nachrichten, an einem Ort gesammelt.", "News bringt RSS- und Atom-Quellen ins Schnellmenü und in einen controllerfreundlichen Vollbild-Kiosk. Durchsuche Kategorien und Artikel in einer klaren Ansicht, ganz ohne API-Schlüssel."),
+                ["pt"] = new PluginText("As notícias importantes, reunidas em um só lugar.", "News leva fontes RSS e Atom ao menu rápido e a uma banca em tela cheia feita para controle. Navegue por categorias, pesquise artigos e leia com um layout limpo, sem chave de API."),
+                ["uk"] = new PluginText("Важливі новини в одному місці.", "News додає RSS та Atom джерела у швидке меню й повноекранну читальню для контролера. Переглядайте категорії, шукайте статті та читайте без API-ключа."),
+                ["zh"] = new PluginText("重要新闻，汇聚一处。", "News 将 RSS 和 Atom 来源带入快捷菜单和适合手柄操作的全屏报刊亭。无需 API 密钥，即可浏览分类、搜索文章并清爽阅读。"),
+                ["ja"] = new PluginText("大切なニュースを、ひとつの場所に。", "News は RSS と Atom の情報源をクイックメニューとコントローラー対応の全画面ニューススタンドにまとめます。API キーなしでカテゴリ閲覧、記事検索、快適な読書ができます。"),
+                ["ko"] = new PluginText("중요한 뉴스를 한곳에.", "News는 RSS와 Atom 소스를 빠른 메뉴와 컨트롤러용 전체 화면 뉴스 가판대에 모아 줍니다. API 키 없이 카테고리 탐색, 기사 검색, 편안한 읽기가 가능합니다."),
+                ["hi"] = new PluginText("ज़रूरी खबरें, एक ही जगह।", "News RSS और Atom sources को quick menu और controller-friendly fullscreen newsstand में लाता है। बिना API key के categories देखें, articles खोजें और साफ़ layout में पढ़ें।"),
+                ["ru"] = new PluginText("Важные новости в одном месте.", "News добавляет RSS- и Atom-источники в быстрое меню и полноэкранный киоск для контроллера. Просматривайте категории, ищите статьи и читайте без API-ключа.")
+            },
+            ["Proton-VPN"] = new Dictionary<string, PluginText>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["en"] = new PluginText("Your VPN, without leaving Gaming Mode.", "Proton VPN puts the essential controls of the Windows client in the quick menu. Check the real connection state, connect, disconnect and choose a location. The official Proton VPN app for Windows must already be installed and configured."),
+                ["es"] = new PluginText("Tu VPN, sin salir del Gaming Mode.", "Proton VPN lleva los controles esenciales del cliente de Windows al menú rápido. Comprueba el estado real, conecta, desconecta y elige una ubicación. La app oficial de Proton VPN para Windows debe estar instalada y configurada."),
+                ["fr"] = new PluginText("Ton VPN, sans quitter le Gaming Mode.", "Proton VPN place les commandes essentielles du client Windows dans le menu rapide. Vérifie l'état réel, connecte, déconnecte et choisis un emplacement. L'application officielle Proton VPN pour Windows doit déjà être installée et configurée."),
+                ["de"] = new PluginText("Dein VPN, ohne den Gaming Mode zu verlassen.", "Proton VPN bringt die wichtigsten Funktionen des Windows-Clients ins Schnellmenü. Prüfe den echten Status, verbinde, trenne und wähle einen Standort. Die offizielle Proton-VPN-App für Windows muss installiert und eingerichtet sein."),
+                ["pt"] = new PluginText("Sua VPN, sem sair do Gaming Mode.", "Proton VPN leva os controles essenciais do cliente Windows ao menu rápido. Veja o estado real, conecte, desconecte e escolha uma localização. O app oficial Proton VPN para Windows deve estar instalado e configurado."),
+                ["uk"] = new PluginText("Ваша VPN без виходу з Gaming Mode.", "Proton VPN додає основні елементи керування Windows-клієнтом у швидке меню. Перевіряйте стан, підключайтеся, відключайтеся й обирайте розташування. Офіційний застосунок Proton VPN для Windows має бути встановлений і налаштований."),
+                ["zh"] = new PluginText("无需离开 Gaming Mode，即可管理 VPN。", "Proton VPN 将 Windows 客户端的核心控制带入快捷菜单。查看真实连接状态、连接、断开并选择位置。需要预先安装并配置官方 Proton VPN Windows 应用。"),
+                ["ja"] = new PluginText("Gaming Mode を離れずに VPN を管理。", "Proton VPN は Windows クライアントの基本操作をクイックメニューに追加します。接続状態の確認、接続、切断、ロケーション選択が可能です。公式の Windows 版 Proton VPN を事前にインストールして設定してください。"),
+                ["ko"] = new PluginText("Gaming Mode를 떠나지 않고 VPN을 관리하세요.", "Proton VPN은 Windows 클라이언트의 핵심 제어를 빠른 메뉴에 제공합니다. 실제 연결 상태 확인, 연결, 해제, 위치 선택이 가능합니다. 공식 Windows용 Proton VPN 앱이 설치되고 설정되어 있어야 합니다."),
+                ["hi"] = new PluginText("Gaming Mode छोड़े बिना अपनी VPN संभालें।", "Proton VPN Windows client के ज़रूरी controls को quick menu में लाता है। वास्तविक connection state देखें, connect या disconnect करें और location चुनें। Windows के लिए official Proton VPN app पहले से installed और configured होना चाहिए।"),
+                ["ru"] = new PluginText("Управляйте VPN, не выходя из Gaming Mode.", "Proton VPN переносит основные функции Windows-клиента в быстрое меню. Проверяйте реальное состояние, подключайтесь, отключайтесь и выбирайте локацию. Официальное приложение Proton VPN для Windows должно быть установлено и настроено.")
             },
             ["Weather"] = new Dictionary<string, PluginText>(StringComparer.OrdinalIgnoreCase)
             {

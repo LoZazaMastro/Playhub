@@ -275,6 +275,39 @@ public sealed partial class MainWindow : Window
                 await _settingsService.SaveAsync();
             }
 
+            // Il plugin Decky si aggiorna da solo, senza chiedere niente:
+            // dopo l'installazione di Playhub e dopo ogni aggiornamento. Non
+            // deve dipendere dal fatto che l'utente prema "Installa o
+            // aggiorna". Se Decky non c'e', non fa nulla.
+            // L'agente si aggiorna da solo, prima di ogni altra cosa: se resta
+            // indietro, tutto quello che dipende da lui si comporta come la
+            // versione precedente senza dirlo a nessuno.
+            Diag.Step("LoadAsync: SyncAgent");
+            try
+            {
+                if (await _gamingMode.SyncAgentAsync())
+                {
+                    Diag.Step("LoadAsync: agente Gaming Mode aggiornato");
+                }
+            }
+            catch (Exception ex)
+            {
+                Diag.Step("LoadAsync: aggiornamento dell'agente non riuscito: " + ex.Message);
+            }
+
+            Diag.Step("LoadAsync: SyncDeckyPlugin");
+            try
+            {
+                if (await _gamingMode.SyncDeckyPluginAsync(_settings.DeckyPluginsPath))
+                {
+                    Diag.Step("LoadAsync: plugin Decky aggiornato");
+                }
+            }
+            catch (Exception ex)
+            {
+                Diag.Step("LoadAsync: sync plugin Decky non riuscita: " + ex.Message);
+            }
+
             ApplyTheme();
             ApplyBackdrop();
             PopulateSettingsControls();
@@ -409,6 +442,7 @@ public sealed partial class MainWindow : Window
         navigation.MenuItems.Add(NavItem("Importa Giochi", "xbox", VectorIcon(LayerDiagonalAddPath)));
         navigation.MenuItems.Add(NavItem("Big Picture Styler", "styler", ((char)0xE771).ToString()));
         navigation.MenuItems.Add(NavItem("Impostazioni", "settings", Symbol.Setting));
+        navigation.MenuItems.Add(NavItem("Supporto", "support", VectorIcon(KoFiIconPath)));
         navigation.SelectionChanged += (_, args) =>
         {
             if (args.SelectedItem is NavigationViewItem item && item.Tag is string tag)
@@ -438,6 +472,8 @@ public sealed partial class MainWindow : Window
         _pageHost.Children.Add(BuildBigPictureStylerPage());
         Diag.Step("BuildShell: Settings");
         _pageHost.Children.Add(BuildSettingsPage());
+        Diag.Step("BuildShell: Support");
+        _pageHost.Children.Add(BuildSupportPage());
         Diag.Step("BuildShell: pages done");
 
         // Auto-save di tutti i controlli Gaming Mode: agganciato DOPO che tutte le
@@ -645,6 +681,9 @@ public sealed partial class MainWindow : Window
 
     private const string LayerDiagonalAddPath =
         "M12.5 4.25194C12.5 3.73196 11.9837 3.36976 11.4948 3.54669L4.65454 6.02188C3.96161 6.27262 3.5 6.93056 3.5 7.66746V13.7491C3.5 14.2691 4.01625 14.6313 4.5052 14.4544L5 14.2753V15.8705C3.5378 16.388 2 15.3035 2 13.7491V7.66746C2 6.29894 2.85728 5.07704 4.14414 4.61138L10.9844 2.1362C12.4512 1.60541 14 2.69202 14 4.25194V4.42895L12.5 4.97174V4.25194ZM16.5 7.25194C16.5 6.73196 15.9837 6.36976 15.4948 6.54669L8.32467 9.14124C7.82972 9.32034 7.5 9.7903 7.5 10.3167V16.7491C7.5 17.2691 8.01625 17.6313 8.5052 17.4544L9 17.2753V18.8705C7.5378 19.388 6 18.3035 6 16.7491V10.3167C6 9.15868 6.72539 8.12477 7.81427 7.73075L14.9844 5.1362C16.4512 4.60541 18 5.69202 18 7.25194V7.42895L16.5 7.97174V7.25194ZM19.4948 9.54667C19.9837 9.36975 20.5 9.73195 20.5 10.2519V11.3135C21.0335 11.4858 21.5368 11.7253 22 12.0218V10.2519C22 8.692 20.4512 7.60539 18.9844 8.13618L11.4844 10.8501C10.5935 11.1725 10 12.0184 10 12.9658V19.7491C10 21.309 11.5488 22.3956 13.0156 21.8649L13.5231 21.6812C13.1928 21.2884 12.9081 20.856 12.6773 20.3921L12.5052 20.4544C12.0163 20.6313 11.5 20.2691 11.5 19.7491V12.9658C11.5 12.65 11.6978 12.368 11.9948 12.2606L19.4948 9.54667ZM24 17.5C24 14.4624 21.5376 12 18.5 12C15.4624 12 13 14.4624 13 17.5C13 20.5376 15.4624 23 18.5 23C21.5376 23 24 20.5376 24 17.5ZM19.0006 18L19.0011 20.5035C19.0011 20.7797 18.7773 21.0035 18.5011 21.0035C18.225 21.0035 18.0011 20.7797 18.0011 20.5035L18.0006 18H15.4956C15.2197 18 14.9961 17.7762 14.9961 17.5C14.9961 17.2239 15.2197 17 15.4956 17H18.0005L18 14.4993C18 14.2231 18.2239 13.9993 18.5 13.9993C18.7761 13.9993 19 14.2231 19 14.4993L19.0005 17H21.4966C21.7725 17 21.9961 17.2239 21.9961 17.5C21.9961 17.7762 21.7725 18 21.4966 18H19.0006Z";
+
+    private const string KoFiIconPath =
+        "M4 5H17V7H19C21.2091 7 23 8.79086 23 11C23 13.2091 21.2091 15 19 15H17.6C16.5 18.4 13.3 21 9.5 21C4.8 21 1 17.2 1 12.5V5H4ZM17 9V13H19C20.1046 13 21 12.1046 21 11C21 9.89543 20.1046 9 19 9H17ZM9 8.4C8.1 7.5 6.6 7.5 5.7 8.4C4.8 9.3 4.8 10.8 5.7 11.7L9 15L12.3 11.7C13.2 10.8 13.2 9.3 12.3 8.4C11.4 7.5 9.9 7.5 9 8.4Z";
 
     private static IconElement VectorIcon(string pathData)
         => (IconElement)Microsoft.UI.Xaml.Markup.XamlReader.Load(
@@ -1342,6 +1381,29 @@ public sealed partial class MainWindow : Window
             "",
             warning: "Per qualche motivo non riesci ad accedere al plugin Gaming Mode? Nessun problema: mentre sei in Gaming Mode ti basta chiudere Steam e il PC torna da solo in Desktop Mode. In alternativa, tieni premuto Shift mentre accedi a Windows per avviarlo direttamente sul desktop. Da lì riapri Playhub quando vuoi.",
             videoFile: "Gaming-Mode-Plugin.mp4"));
+
+        var dashboardCard = Card();
+        dashboardCard.Children.Add(IconHeader(((char)0xE80F).ToString(), "Playhub Dashboard",
+            "Passa fra giochi e app, controlla il PC e raggiungi gli strumenti essenziali senza lasciare il controller."));
+        AddExplainedToggle(dashboardCard, "Attiva Playhub Dashboard",
+            "Aprila con una doppia pressione del tasto Home del controller oppure con Ctrl + Alt + P.", "dashboardEnabled");
+        var tryDashboard = Button("Prova Playhub Dashboard", async () =>
+        {
+            await SaveGamingConfigAsync();
+            var opened = await _gamingMode.OpenDashboardAsync(_gamingConfig.Safety.ApiPort);
+            SetStatus(opened
+                ? "Richiesta inviata. La Dashboard si apre in Gaming Mode."
+                : "La Dashboard non è disponibile. Attivala e verifica che Gaming Mode e il plugin Decky siano in esecuzione.",
+                opened ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+        }, primary: true);
+        tryDashboard.HorizontalAlignment = HorizontalAlignment.Stretch;
+        if (_gamingToggles.TryGetValue("dashboardEnabled", out var dashboardToggle))
+        {
+            tryDashboard.IsEnabled = dashboardToggle.IsOn;
+            dashboardToggle.Toggled += (_, _) => tryDashboard.IsEnabled = dashboardToggle.IsOn;
+        }
+        dashboardCard.Children.Add(tryDashboard);
+        panel.Children.Add(dashboardCard);
 
         // ---------- 2. Default mode: two big tiles + one-time switch ----------
         var modeCard = Card();
@@ -2331,6 +2393,34 @@ public sealed partial class MainWindow : Window
             Button("Ripristina backup", async () => SetStatus(await _extra.RestoreLatestSteamArtworkAsync(), InfoBarSeverity.Warning))));
         panel.Children.Add(artworkBackup);
 
+        return panel;
+    }
+
+    private UIElement BuildSupportPage()
+    {
+        var panel = Page("support", "Supporto",
+            "Playhub cresce grazie alla community e al tempo dedicato al progetto.");
+
+        panel.Children.Add(new Image
+        {
+            Source = new BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "Support", "Donation.png"))),
+            MaxWidth = 760,
+            Height = 330,
+            Stretch = Stretch.Uniform,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 4, 0, 0)
+        });
+
+        var support = Card();
+        support.Root.MaxWidth = 820;
+        support.Root.HorizontalAlignment = HorizontalAlignment.Center;
+        support.Children.Add(IconHeader(((char)0xEB51).ToString(), "Grazie per essere parte di Playhub",
+            "Playhub è gratuito e open source. Lo sviluppo, i test e la manutenzione sono sostenuti da una sola persona."));
+        support.Children.Add(Body(
+            "Se Playhub ti è utile e vuoi aiutare il progetto a continuare a crescere, una donazione è sempre apprezzata. Nessun contenuto è bloccato: è semplicemente un modo gentile per sostenere il lavoro che c'è dietro."));
+        support.Children.Add(ActionRow(Button("Fai una donazione", async () =>
+            await Windows.System.Launcher.LaunchUriAsync(new Uri("https://ko-fi.com/lozazamastro")), primary: true)));
+        panel.Children.Add(support);
         return panel;
     }
 
@@ -4970,6 +5060,7 @@ by LG Electronics, Sony, or Valve.";
         SetToggle("borderless", _gamingConfig.Gaming.BorderlessFullscreenWindowsInGamingMode);
         _gamingConfig.Gaming.EnableXboxGameBar = _settings.XboxGameBarEnabled;
         SetToggle("xboxGameBar", _settings.XboxGameBarEnabled);
+        SetToggle("dashboardEnabled", _gamingConfig.Gaming.DashboardEnabled);
         SetToggle("manageAudio", _gamingConfig.Gaming.ManageAudio);
         SetToggle("remoteApi", _gamingConfig.Safety.AllowRemoteApi);
         SetToggle("restartWithoutPrompt", _gamingConfig.Safety.RestartWithoutPrompt);
@@ -4989,6 +5080,7 @@ by LG Electronics, Sony, or Valve.";
         _gamingConfig.Gaming.BorderlessFullscreenWindowsInGamingMode = GetToggle("borderless");
         _gamingConfig.Gaming.EnableXboxGameBar = GetToggle("xboxGameBar");
         _settings.XboxGameBarEnabled = GetToggle("xboxGameBar");
+        _gamingConfig.Gaming.DashboardEnabled = GetToggle("dashboardEnabled");
         _gamingConfig.Gaming.ManageAudio = GetToggle("manageAudio");
         _gamingConfig.Safety.AllowRemoteApi = GetToggle("remoteApi");
         // No confirmation dialog when switching modes — always on.

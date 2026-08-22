@@ -90,6 +90,168 @@ public sealed class GamingModeService
         !string.IsNullOrWhiteSpace(deckyPluginsPath) &&
         File.Exists(Path.Combine(deckyPluginsPath, "gaming-mode", "plugin.json"));
 
+    /// <summary>
+    /// Dice se l'agente installato e' diverso da quello che Playhub porta nel
+    /// pacchetto.
+    /// </summary>
+    /// <remarks>
+    /// Serve perché senza questo controllo l'agente restava indietro in
+    /// silenzio: si installava una versione nuova di Playhub, ma l'agente in
+    /// esecuzione era ancora quello di prima. Le correzioni sembravano non
+    /// avere effetto, e non c'era modo di accorgersene se non leggendo la data
+    /// dell'eseguibile.
+    /// </remarks>
+    public bool NeedsAgentUpdate()
+    {
+        try
+        {
+            var bundled = Path.Combine(AppPaths.GamingModePackage, "GamingMode.exe");
+            if (!File.Exists(bundled)) return false;   // pacchetto assente: non si tocca niente
+            if (!File.Exists(InstalledExe)) return true;
+
+            var source = new FileInfo(bundled);
+            var installed = new FileInfo(InstalledExe);
+            return installed.Length != source.Length ||
+                   installed.LastWriteTimeUtc < source.LastWriteTimeUtc;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Allinea l'agente a quello del pacchetto, in silenzio. Restituisce true
+    /// solo se ha davvero aggiornato qualcosa.
+    /// </summary>
+    /// <remarks>
+    /// Lo script di installazione ferma l'agente, sostituisce i file e lo
+    /// riavvia da solo: qui basta chiamarlo. Va fatto a ogni avvio dell'app,
+    /// come per il plugin di Decky.
+    /// </remarks>
+    public async Task<bool> SyncAgentAsync()
+    {
+        try
+        {
+            if (!NeedsAgentUpdate()) return false;
+
+            var script = Path.Combine(AppPaths.GamingModePackage, "install.ps1");
+            if (!File.Exists(script)) return false;
+
+            var args = $"-NoProfile -ExecutionPolicy Bypass -File \"{script}\" -SourceDir \"{AppPaths.GamingModePackage}\"";
+            var result = await ProcessService.RunAsync("powershell.exe", args, AppPaths.GamingModePackage);
+            if (!result.Success) return false;
+
+            // Lo script riavvia l'agente, ma se per qualsiasi motivo non
+            // rispondesse lo si riaccende qui: restare senza agente
+            // significherebbe Gaming Mode muta.
+            for (var i = 0; i < 12; i++)
+            {
+                if (await IsAgentHealthyAsync()) return true;
+                await Task.Delay(250);
+            }
+            StartAgent();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Dice se il plugin installato in DeckyLoader e' diverso da quello che
+    /// Playhub porta nel pacchetto (mancante, incompleto o piu' vecchio).
+    /// </summary>
+    /// <remarks>
+    /// Una sola definizione di "da aggiornare", usata sia dal controllo
+    /// all'avvio sia da "Ripara tutto": se le due logiche divergono, una delle
+    /// due finisce per non aggiornare mai niente.
+    /// </remarks>
+    public static bool NeedsDeckyPluginUpdate(string deckyPluginsPath)
+    {
+        try
+        {
+            var root = string.IsNullOrWhiteSpace(deckyPluginsPath)
+                ? AppPaths.DefaultDeckyPluginsPath
+                : deckyPluginsPath;
+
+            // Decky non e' in uso: non c'e' niente da aggiornare.
+            if (!Directory.Exists(root))
+            {
+                return false;
+            }
+
+            // Pacchetto assente (build incompleta): meglio non toccare niente.
+            if (!Directory.Exists(DeckyPluginSource))
+            {
+                return false;
+            }
+
+            var dest = Path.Combine(root, "gaming-mode");
+            if (!Directory.Exists(dest))
+            {
+                return true;
+            }
+
+            foreach (var file in Directory.GetFiles(DeckyPluginSource, "*", SearchOption.AllDirectories))
+            {
+                var rel = Path.GetRelativePath(DeckyPluginSource, file);
+                var installed = Path.Combine(dest, rel);
+                if (!File.Exists(installed))
+                {
+                    return true;
+                }
+
+                var source = new FileInfo(file);
+                var current = new FileInfo(installed);
+                // La lunghezza da sola non basta: una modifica al bundle puo'
+                // lasciarla identica. La data di scrittura sopravvive a
+                // File.Copy, quindi il confronto regge fra una versione e
+                // l'altra di Playhub.
+                if (current.Length != source.Length ||
+                    current.LastWriteTimeUtc < source.LastWriteTimeUtc)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Allinea il plugin di DeckyLoader a quello del pacchetto, in silenzio.
+    /// Restituisce true solo se ha davvero copiato qualcosa.
+    /// </summary>
+    /// <remarks>
+    /// Va chiamata a ogni avvio dell'app. E' cosi' che il plugin arriva
+    /// all'utente senza che debba premere niente: dopo l'installazione di
+    /// Playhub, e dopo ogni aggiornamento. Prima esisteva solo il pulsante
+    /// "Installa o aggiorna", quindi chi non lo premeva restava con la
+    /// versione vecchia del plugin per sempre.
+    /// </remarks>
+    public Task<bool> SyncDeckyPluginAsync(string deckyPluginsPath) => Task.Run(() =>
+    {
+        try
+        {
+            if (!NeedsDeckyPluginUpdate(deckyPluginsPath))
+            {
+                return false;
+            }
+
+            return InstallDeckyPlugin(deckyPluginsPath).Success;
+        }
+        catch
+        {
+            return false;
+        }
+    });
+
     /// <summary>Installs (or updates) the Gaming Mode Decky companion plugin into homebrew/plugins.</summary>
     public Task<string> InstallDeckyPluginAsync(string deckyPluginsPath)
     {
@@ -231,6 +393,21 @@ public sealed class GamingModeService
         return await PostAgentAsync(path, port);
     }
 
+    public async Task<bool> OpenDashboardAsync(int port = 47991)
+    {
+        try
+        {
+            using var response = await _http.PostAsync($"http://127.0.0.1:{port}/dash/open", null);
+            if (!response.IsSuccessStatusCode) return false;
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            return document.RootElement.TryGetProperty("ok", out var ok) && ok.GetBoolean();
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private async Task<bool> PostAgentAsync(string path, int port)
     {
         try
@@ -280,6 +457,38 @@ public sealed class GamingModeService
     public async Task SaveConfigAsync(GamingModeConfig config)
     {
         NormalizeConfig(config);
+
+        // SI RILEGGE IL FILE UN ISTANTE PRIMA DI RISCRIVERLO.
+        //
+        // Questo file lo scrivono in due: Playhub e l'agente Gaming Mode. La
+        // scrittura e' atomica da entrambe le parti, ma "atomica" garantisce
+        // solo che non resti un file a meta': l'ultimo che scrive sostituisce
+        // comunque tutto. Se l'interfaccia aveva letto la configurazione dieci
+        // minuti prima, salvando riportava indietro il file a com'era allora.
+        //
+        // Cosi' si vedevano sparire le cose cambiate nel frattempo dal plugin:
+        // la combinazione da tastiera tornava a quella predefinita e le app
+        // preferite della Dashboard svanivano.
+        //
+        // Qui si recuperano dal disco i campi che questo modello non conosce,
+        // appena prima di scrivere: cio' che l'app gestisce lo decide l'app,
+        // tutto il resto resta quello che c'e' adesso sul disco.
+        try
+        {
+            var current = TryReadConfig(ConfigFile);
+            if (current is not null)
+            {
+                config.Extra = current.Extra;
+                if (config.Gaming is not null) config.Gaming.Extra = current.Gaming?.Extra;
+                if (config.Safety is not null) config.Safety.Extra = current.Safety?.Extra;
+            }
+        }
+        catch
+        {
+            // Se il file non e' leggibile si salva comunque: meglio la
+            // configurazione dell'app che nessuna configurazione.
+        }
+
         await WriteConfigAsync(config);
     }
 

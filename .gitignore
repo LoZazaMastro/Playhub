@@ -2,6 +2,7 @@
 [Bb]in/
 [Oo]bj/
 .vs/
+node_modules/
 *.user
 *.suo
 
@@ -11,6 +12,7 @@ Source/PlayhubSetup/Output/
 Source/PlayhubSetup/Payload/payload.zip
 Source/GamingModeAgent/publish/
 Source/GamingModeAgent/publish_tmp/
+Source/GamingModeDeckyPlugin/dist/
 Source/Playhub/Plugins/Gaming Mode/gaming-mode-win-x64/GamingMode.exe
 Playhub-Setup*.exe
 
@@ -19,6 +21,7 @@ Playhub-Setup*.exe
 build_log.txt
 publish_log.txt
 build-installer-log.txt
+build-all-log.txt
 
 # ===== Cartelle locali di lavoro (NON sono codice sorgente) =====
 /Dist/
@@ -27,6 +30,7 @@ build-installer-log.txt
 /Work/
 /Previews/
 /Images/
+/tools/
 
 # ===== Cartelle di staging per il caricamento su GitHub (non vanno nel repo) =====
 /_github_staging/
