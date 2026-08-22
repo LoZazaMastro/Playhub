@@ -211,8 +211,7 @@ namespace PlayhubFocusRescue
             return "rescued";
         }
 
-        // POST /focus/game
-        public static string RestoreGame()
+        private static void ReleaseSteamLayer()
         {
             if (_bpmTopmosted != IntPtr.Zero)
             {
@@ -232,6 +231,12 @@ namespace PlayhubFocusRescue
                 }
             }
             Demoted.Clear();
+        }
+
+        // POST /focus/game
+        public static string RestoreGame()
+        {
+            ReleaseSteamLayer();
 
             // Se il primo piano e' rimasto a Steam, restituiscilo al gioco.
             if (_savedGame != IntPtr.Zero && IsWindow(_savedGame) && IsWindowVisible(_savedGame))
@@ -246,6 +251,19 @@ namespace PlayhubFocusRescue
             }
             _savedGame = IntPtr.Zero;
             return "restored";
+        }
+
+        // POST /focus/release
+        //
+        // L'utente ha scelto esplicitamente un'altra finestra dal task
+        // switcher. Si rimuove il TOPMOST temporaneo di Steam e si ripristinano
+        // gli stili originali, ma non si riattiva la vecchia finestra: sara' il
+        // task switcher ad attivare direttamente quella scelta.
+        public static string ReleaseForSelection()
+        {
+            ReleaseSteamLayer();
+            _savedGame = IntPtr.Zero;
+            return "released";
         }
     }
 }
@@ -347,6 +365,11 @@ while ($true) {
         elseif ($method -eq 'POST' -and $path -eq '/focus/game') {
             $result = [PlayhubFocusRescue.Native]::RestoreGame()
             Write-Log "focus/game -> $result"
+            Send-Response $stream 200 "{`"result`":`"$result`"}"
+        }
+        elseif ($method -eq 'POST' -and $path -eq '/focus/release') {
+            $result = [PlayhubFocusRescue.Native]::ReleaseForSelection()
+            Write-Log "focus/release -> $result"
             Send-Response $stream 200 "{`"result`":`"$result`"}"
         }
         else {

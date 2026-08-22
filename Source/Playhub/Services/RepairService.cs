@@ -1,4 +1,4 @@
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -212,49 +212,11 @@ public sealed class RepairService
         }
     }
 
-    // Il companion Decky viene controllato solo se l'utente ha la cartella dei
-    // plugin Decky: file mancanti o di dimensione diversa = da ripristinare.
-    private static bool IsDeckyCompanionBroken(string deckyPluginsPath)
-    {
-        try
-        {
-            var root = string.IsNullOrWhiteSpace(deckyPluginsPath)
-                ? AppPaths.DefaultDeckyPluginsPath
-                : deckyPluginsPath;
-            if (!Directory.Exists(root))
-            {
-                return false; // Decky non è in uso: niente da controllare
-            }
-
-            var source = Path.Combine(AppContext.BaseDirectory, "Assets", "GamingModeDeckyPlugin", "gaming-mode");
-            if (!Directory.Exists(source))
-            {
-                return false; // pacchetto assente nel bundle
-            }
-
-            var dest = Path.Combine(root, "gaming-mode");
-            if (!Directory.Exists(dest))
-            {
-                return true;
-            }
-
-            foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
-            {
-                var rel = Path.GetRelativePath(source, file);
-                var installed = Path.Combine(dest, rel);
-                if (!File.Exists(installed) ||
-                    new FileInfo(installed).Length != new FileInfo(file).Length)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    // Un'unica definizione di "plugin da aggiornare", condivisa con il
+    // controllo che gira a ogni avvio dell'app: due copie della stessa logica
+    // finiscono sempre per divergere.
+    private static bool IsDeckyCompanionBroken(string deckyPluginsPath) =>
+        GamingModeService.NeedsDeckyPluginUpdate(deckyPluginsPath);
 
     // La shell di Windows (HKCU Winlogon\Shell) deve rispecchiare la modalità
     // predefinita: Gaming = agente come shell, Desktop = nessun valore (Explorer).

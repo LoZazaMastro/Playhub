@@ -46,6 +46,26 @@ internal static class Program
 		AppPaths appPaths = AppPaths.Create();
 		Directory.CreateDirectory(appPaths.ConfigDirectory);
 		FileLogger logger = new FileLogger(appPaths.LogPath);
+
+		// QUALE ESEGUIBILE STA GIRANDO.
+		//
+		// Serve piu' di quanto sembri. E' gia' successo di passare mezz'ora a
+		// leggere log per capire perche' una correzione non aveva effetto: la
+		// correzione c'era, ma l'agente in esecuzione era quello di prima,
+		// perche' l'aggiornamento non lo aveva sostituito. Con questa riga in
+		// cima al log il dubbio non si pone: si guarda la data e si sa.
+		try
+		{
+			string exePath = Environment.ProcessPath ?? "";
+			string built = File.Exists(exePath)
+				? File.GetLastWriteTime(exePath).ToString("yyyy-MM-dd HH:mm:ss")
+				: "sconosciuta";
+			logger.Info($"Gaming Mode agent avviato. Eseguibile: {exePath} (compilato il {built}).");
+		}
+		catch
+		{
+		}
+
 		if (args.Length != 0)
 		{
 			string text = args[0].ToLowerInvariant();

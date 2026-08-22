@@ -12,6 +12,12 @@ if errorlevel 1 (
     echo ===== BUILD FALLITA: agente Gaming Mode ^(vedi ..\GamingModeAgent\build_agent_log.txt^) ===== >> build_log.txt 2>&1
     exit /b 1
 )
+echo --- build Decky plugin (Gaming Mode) --- >> build_log.txt 2>&1
+call "..\GamingModeDeckyPlugin\build-plugin.bat" >> build_log.txt 2>&1
+if errorlevel 1 (
+    echo ===== BUILD FALLITA: plugin Decky ^(vedi ..\GamingModeDeckyPlugin\build-plugin-log.txt^) ===== >> build_log.txt 2>&1
+    exit /b 1
+)
 echo --- stop previous local Debug instance --- >> build_log.txt 2>&1
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$root=[IO.Path]::GetFullPath('%CD%\bin\x64\Debug\'); Get-Process Playhub -ErrorAction SilentlyContinue ^| Where-Object { $_.Path -and [IO.Path]::GetFullPath($_.Path).StartsWith($root,[StringComparison]::OrdinalIgnoreCase) } ^| Stop-Process -Force" >> build_log.txt 2>&1
 echo --- dotnet clean (Debug x64) --- >> build_log.txt 2>&1
