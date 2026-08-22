@@ -290,6 +290,78 @@ function SiSteam (props) {
 const { useCallback, useEffect: useEffect$1, useLayoutEffect, useMemo: useMemo$1, useRef, useState: useState$1 } = _global_SP_REACT;
 const { Focusable, GamepadButton, Navigation: Navigation$1, TextField } = _global_DFL;
 const DASHBOARD_ROUTE = "/playhub-dashboard";
+const STEAM_LOCALE_ALIASES$1 = {
+    english: "en", en: "en",
+    italian: "it", it: "it",
+    spanish: "es", latam: "es", es: "es",
+    french: "fr", fr: "fr",
+    german: "de", de: "de",
+    brazilian: "pt", portuguese: "pt", pt: "pt",
+    ukrainian: "uk", uk: "uk",
+    schinese: "zh", tchinese: "zh", zh: "zh",
+    japanese: "ja", ja: "ja",
+    koreana: "ko", korean: "ko", ko: "ko",
+    hindi: "hi", hi: "hi",
+    russian: "ru", ru: "ru",
+};
+const STEAM_LOCALE_TAGS = {
+    en: "en-US", it: "it-IT", es: "es-ES", fr: "fr-FR", de: "de-DE", pt: "pt-BR",
+    uk: "uk-UA", zh: "zh-CN", ja: "ja-JP", ko: "ko-KR", hi: "hi-IN", ru: "ru-RU",
+};
+function normalizeSteamLocale$1(value) {
+    const candidate = String(value ?? "").trim().toLowerCase().replace(/_/g, "-");
+    if (!candidate)
+        return null;
+    return STEAM_LOCALE_ALIASES$1[candidate] ?? STEAM_LOCALE_ALIASES$1[candidate.split("-")[0]] ?? null;
+}
+function detectSteamLocale$1() {
+    const win = window;
+    const candidates = [];
+    [win.LocalizationManager, win.g_LocalizationManager, win.SteamLocalizationManager]
+        .filter(Boolean)
+        .forEach((manager) => {
+        candidates.push(manager?.m_strLanguage, manager?.m_language, manager?.m_strCurrentLanguage, manager?.language);
+        ["GetLanguage", "GetCurrentLanguage"].forEach((method) => {
+            try {
+                const value = manager?.[method]?.();
+                if (typeof value === "string")
+                    candidates.push(value);
+            }
+            catch { }
+        });
+    });
+    candidates.push(win.g_strLanguage, win.g_rgAppContextData?.language, document.documentElement.lang);
+    candidates.push(...Array.from(navigator.languages ?? []), navigator.language);
+    for (const candidate of candidates) {
+        const locale = normalizeSteamLocale$1(candidate);
+        if (locale)
+            return locale;
+    }
+    return "en";
+}
+async function readSteamLocale$1() {
+    try {
+        const value = await window.SteamClient?.Settings?.GetCurrentLanguage?.();
+        const locale = normalizeSteamLocale$1(value);
+        if (locale)
+            return locale;
+    }
+    catch { }
+    return detectSteamLocale$1();
+}
+let steamSettingsRoot = null;
+function steamUses24HourClock(localeTag) {
+    try {
+        if (!steamSettingsRoot) {
+            steamSettingsRoot = _global_DFL.findModuleExport?.((value) => typeof value?.SettingsStore?.FriendsSettings?.b24HourClock === "boolean") ?? null;
+        }
+        const preference = steamSettingsRoot?.SettingsStore?.FriendsSettings?.b24HourClock;
+        if (typeof preference === "boolean")
+            return preference;
+    }
+    catch { }
+    return new Intl.DateTimeFormat(localeTag, { hour: "numeric" }).resolvedOptions().hour12 === false;
+}
 const DASHBOARD_ACTIVE_CLASS = "phDashboardActive";
 const DASHBOARD_CHROME_STYLE_ID = "ph-dashboard-chrome-style";
 const DASHBOARD_CHROME_SELECTORS = [
@@ -685,7 +757,7 @@ const STYLE = `
   .ph-main { height: calc(100% - 108px); padding: 10px 54px 82px; overflow: hidden; }
   .ph-system-focus-bridge { position: absolute; z-index: -1; top: 106px; left: 34%; right: 34%; height: 3px; opacity: .001; overflow: hidden; }
   .ph-page { height: 100%; animation: phPageIn 260ms cubic-bezier(.2,.8,.2,1); }
-  .ph-page-scroll { height: 100%; overflow-y: auto; overflow-x: hidden; padding: 8px 7px 32px; scrollbar-width: none; }
+  .ph-page-scroll { height: 100%; overflow-y: auto; overflow-x: hidden; padding: 12px 7px 112px; scroll-padding-block: 12px 112px; scrollbar-width: none; }
   .ph-page-scroll::-webkit-scrollbar, .ph-window-rail::-webkit-scrollbar { display: none; }
   .ph-section-title { display: flex; align-items: center; gap: 13px; margin: 4px 0 15px 8px; font-size: 27px; font-weight: 720; }
   .ph-section-title svg { width: 26px; height: 26px; opacity: .9; }
@@ -711,13 +783,13 @@ const STYLE = `
   .ph-empty svg { width: 60px; height: 60px; opacity: .7; margin-bottom: 15px; }
   .ph-empty-title { font-size: 30px; font-weight: 720; margin-bottom: 8px; }
   .ph-muted { color: rgba(255,255,255,.62); line-height: 1.42; }
-  .ph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(154px, 1fr)); gap: 18px; padding: 5px 8px 30px; }
+  .ph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(154px, 1fr)); gap: 18px; padding: 9px 8px 42px; }
   .ph-app-tile { height: 176px; padding: 20px 14px 14px; border-radius: 25px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px; color: #fff; background: rgba(12,15,21,.45); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 12px 26px rgba(0,0,0,.14); transition: transform 170ms ease, background 170ms ease, box-shadow 170ms ease; }
   .ph-app-tile.ph-focus, .ph-app-tile:focus { transform: translate3d(0,-5px,0) scale(1.035); background: rgba(245,248,255,.93); color: #12151a; box-shadow: 0 0 0 4px rgba(255,255,255,.9), 0 24px 42px rgba(0,0,0,.26); }
   .ph-app-tile img { width: 72px; height: 72px; object-fit: contain; background: transparent; }
   .ph-app-tile svg { width: 52px; height: 52px; }
   .ph-app-name { width: 100%; min-height: 25px; padding: 1px 2px 3px; text-align: center; font-size: 17px; line-height: 1.24; font-weight: 620; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ph-toolbar { display: flex; align-items: center; justify-content: space-between; margin: 4px 8px 18px; }
+  .ph-toolbar { display: flex; align-items: center; justify-content: space-between; margin: 0 8px 18px; padding: 7px 5px 5px; }
   .ph-back { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 680; }
   .ph-tiles { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; padding: 6px 8px 28px; align-items: stretch; }
   .ph-tile { min-height: 148px; padding: 24px; border-radius: 27px; color: #fff; background: rgba(13,16,22,.44); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 14px 30px rgba(0,0,0,.14); transition: transform 170ms ease, background 170ms ease, box-shadow 170ms ease, color 170ms ease; overflow: hidden; }
@@ -947,9 +1019,10 @@ function useClock() {
     }, []);
     return now;
 }
-function Header({ tab, setTab, environment, logo }) {
-    const copy = COPY[environment?.language ?? "en"] ?? COPY.en;
+function Header({ tab, setTab, copy, locale, logo }) {
     const now = useClock();
+    const localeTag = STEAM_LOCALE_TAGS[locale] ?? STEAM_LOCALE_TAGS.en;
+    const use24HourClock = steamUses24HourClock(localeTag);
     const tabs = useMemo$1(() => {
         return [
             { id: "switcher", label: copy.switcher, icon: FiMonitor },
@@ -970,7 +1043,7 @@ function Header({ tab, setTab, environment, logo }) {
                             stopDirectionalEvent(event);
                             focusSystemMetric(0);
                         }, onOKActionDescription: item.label, children: [SP_JSX.jsx(Icon, {}), SP_JSX.jsx("span", { children: item.label })] }, item.id));
-                }) }), SP_JSX.jsxs("div", { className: "ph-clock", children: [SP_JSX.jsx("span", { className: "ph-clock-date", children: now.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) }), SP_JSX.jsx("span", { className: "ph-clock-time", children: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) })] })] }));
+                }) }), SP_JSX.jsxs("div", { className: "ph-clock", children: [SP_JSX.jsx("span", { className: "ph-clock-date", children: now.toLocaleDateString(localeTag, { weekday: "short", day: "numeric", month: "short" }) }), SP_JSX.jsx("span", { className: "ph-clock-time", children: now.toLocaleTimeString(localeTag, { hour: "2-digit", minute: "2-digit", hour12: !use24HourClock }) })] })] }));
 }
 function updateWindowEdgeVisibility(container) {
     const bounds = container.getBoundingClientRect();
@@ -1404,8 +1477,15 @@ function DashboardSurface() {
     const lastCancelAt = useRef(0);
     const modalReturnFocus = useRef(null);
     const explicitExit = useRef(false);
-    const copy = COPY[environment?.language ?? navigator.language.split("-")[0]] ?? COPY.en;
-    const extra = EXTRA_COPY[environment?.language ?? navigator.language.split("-")[0]] ?? EXTRA_COPY.en;
+    const [steamLocale, setSteamLocale] = useState$1(detectSteamLocale$1);
+    const copy = COPY[steamLocale] ?? COPY.en;
+    const extra = EXTRA_COPY[steamLocale] ?? EXTRA_COPY.en;
+    useEffect$1(() => {
+        let alive = true;
+        void readSteamLocale$1().then((locale) => { if (alive)
+            setSteamLocale(locale); });
+        return () => { alive = false; };
+    }, []);
     useEffect$1(() => {
         let alive = true;
         void readEnvironment().then(async (value) => {
@@ -1665,7 +1745,7 @@ function DashboardSurface() {
             const button = Number(event?.detail?.button);
             if (button === 5 || button === 6)
                 stopEvent(event, true);
-        }, onCancel: cancelDashboard, onCancelButton: cancelDashboard, onCancelActionDescription: copy.close, children: [SP_JSX.jsx("style", { children: STYLE }), SP_JSX.jsx(Header, { tab: tab, setTab: changeTab, environment: environment, logo: logo }), tab === "system" ? SP_JSX.jsx(FocusItem, { className: "ph-system-focus-bridge", onPress: () => { }, onFocus: () => window.requestAnimationFrame(() => focusSystemMetric(0)) }) : null, SP_JSX.jsxs("main", { className: "ph-main", children: [tab === "switcher" ? SP_JSX.jsx(TaskSwitcher, { copy: copy, onReady: focusInitialSwitcher, onSelectWindow: selectWindow }) : null, tab === "apps" ? SP_JSX.jsx(AppsTab, { copy: copy, extra: extra, onOptions: (shortcut, refresh) => { rememberModalFocus(); setAppOptions({ shortcut, refresh }); }, onLaunch: launchShortcut, library: appsLibrary, setLibrary: setAppsLibrary }) : null, tab === "system" ? SP_JSX.jsx(SystemTab, { copy: copy, extra: extra, onConfirm: ask }) : null] }, tab), confirm ? (SP_JSX.jsx(ConfirmSheet, { title: confirm.title, name: confirm.name, copy: copy, onCancel: dismissConfirm, onConfirm: () => { const action = confirm.action; dismissConfirm(); action(); window.setTimeout(ensureDashboardFocus, 520); } })) : null, appOptions ? (SP_JSX.jsx(AppOptionsSheet, { shortcut: appOptions.shortcut, copy: copy, extra: extra, onCancel: dismissAppOptions, onRemove: () => {
+        }, onCancel: cancelDashboard, onCancelButton: cancelDashboard, onCancelActionDescription: copy.close, children: [SP_JSX.jsx("style", { children: STYLE }), SP_JSX.jsx(Header, { tab: tab, setTab: changeTab, copy: copy, locale: steamLocale, logo: logo }), tab === "system" ? SP_JSX.jsx(FocusItem, { className: "ph-system-focus-bridge", onPress: () => { }, onFocus: () => window.requestAnimationFrame(() => focusSystemMetric(0)) }) : null, SP_JSX.jsxs("main", { className: "ph-main", children: [tab === "switcher" ? SP_JSX.jsx(TaskSwitcher, { copy: copy, onReady: focusInitialSwitcher, onSelectWindow: selectWindow }) : null, tab === "apps" ? SP_JSX.jsx(AppsTab, { copy: copy, extra: extra, onOptions: (shortcut, refresh) => { rememberModalFocus(); setAppOptions({ shortcut, refresh }); }, onLaunch: launchShortcut, library: appsLibrary, setLibrary: setAppsLibrary }) : null, tab === "system" ? SP_JSX.jsx(SystemTab, { copy: copy, extra: extra, onConfirm: ask }) : null] }, tab), confirm ? (SP_JSX.jsx(ConfirmSheet, { title: confirm.title, name: confirm.name, copy: copy, onCancel: dismissConfirm, onConfirm: () => { const action = confirm.action; dismissConfirm(); action(); window.setTimeout(ensureDashboardFocus, 520); } })) : null, appOptions ? (SP_JSX.jsx(AppOptionsSheet, { shortcut: appOptions.shortcut, copy: copy, extra: extra, onCancel: dismissAppOptions, onRemove: () => {
                     const current = appOptions;
                     setAppOptions(null);
                     ask(copy.confirmRemove, current.shortcut.name, () => void removeShortcut(current.shortcut.id).then(current.refresh));
@@ -1752,7 +1832,7 @@ const strings = {
         agentReturned: "Agent returned",
         dashboard: "Playhub Dashboard",
         openDashboard: "Open Dashboard",
-        dashboardShortcut: "Open it anywhere with CTRL + ALT + P",
+        dashboardShortcut: "Open it with CTRL + ALT + P",
         dashboardSteamInput: "In Steam Input, assign this shortcut to Guide + any button for instant controller access.",
         dashboardWindowSwitch: "You can also map ALT + TAB in Steam Input to switch windows immediately.",
     },
@@ -1767,7 +1847,7 @@ const strings = {
         agentReturned: "Agent ha risposto",
         dashboard: "Playhub Dashboard",
         openDashboard: "Apri Dashboard",
-        dashboardShortcut: "Aprila ovunque con CTRL + ALT + P",
+        dashboardShortcut: "Aprila con CTRL + ALT + P",
         dashboardSteamInput: "In Steam Input, assegna questa scorciatoia a Guida + un pulsante per aprirla subito dal controller.",
         dashboardWindowSwitch: "Puoi anche associare tramite Steam Input la combinazione ALT + TAB per cambiare immediatamente finestra.",
     },
@@ -1782,7 +1862,7 @@ const strings = {
         agentReturned: "El agente devolvió",
         dashboard: "Playhub Dashboard",
         openDashboard: "Abrir Dashboard",
-        dashboardShortcut: "Ábrelo desde cualquier lugar con CTRL + ALT + P",
+        dashboardShortcut: "Ábrelo con CTRL + ALT + P",
         dashboardSteamInput: "En Steam Input, asigna este atajo a Guía + un botón para abrirlo al instante con el mando.",
         dashboardWindowSwitch: "También puedes asignar ALT + TAB en Steam Input para cambiar de ventana al instante.",
     },
@@ -1797,7 +1877,7 @@ const strings = {
         agentReturned: "Agent a renvoyé",
         dashboard: "Playhub Dashboard",
         openDashboard: "Ouvrir le Dashboard",
-        dashboardShortcut: "Ouvrez-le partout avec CTRL + ALT + P",
+        dashboardShortcut: "Ouvrez-le avec CTRL + ALT + P",
         dashboardSteamInput: "Dans Steam Input, associez ce raccourci à Guide + un bouton pour l'ouvrir instantanément avec la manette.",
         dashboardWindowSwitch: "Vous pouvez aussi associer ALT + TAB dans Steam Input pour changer immédiatement de fenêtre.",
     },
@@ -1812,7 +1892,7 @@ const strings = {
         agentReturned: "Agent meldete",
         dashboard: "Playhub Dashboard",
         openDashboard: "Dashboard öffnen",
-        dashboardShortcut: "Überall mit CTRL + ALT + P öffnen",
+        dashboardShortcut: "Mit CTRL + ALT + P öffnen",
         dashboardSteamInput: "Weise diese Tastenkombination in Steam Input Guide + einer Taste zu, um das Dashboard direkt per Controller zu öffnen.",
         dashboardWindowSwitch: "Du kannst in Steam Input auch ALT + TAB zuweisen, um sofort zwischen Fenstern zu wechseln.",
     },
@@ -1827,14 +1907,113 @@ const strings = {
         agentReturned: "Agente devolveu",
         dashboard: "Playhub Dashboard",
         openDashboard: "Abrir Dashboard",
-        dashboardShortcut: "Abra em qualquer lugar com CTRL + ALT + P",
+        dashboardShortcut: "Abra com CTRL + ALT + P",
         dashboardSteamInput: "No Steam Input, atribua este atalho a Guia + um botão para abrir imediatamente pelo comando.",
         dashboardWindowSwitch: "Também pode atribuir ALT + TAB no Steam Input para mudar imediatamente de janela.",
     },
+    uk: {
+        mode: "Режим", switchGaming: "Перейти в ігровий режим", switchDesktop: "Перейти в режим робочого столу",
+        defaultStartup: "Типовий запуск", desktopMode: "Режим робочого столу", gamingMode: "Ігровий режим",
+        notConnected: "Агент не підключено", agentReturned: "Агент повернув",
+        dashboard: "Панель Playhub", openDashboard: "Відкрити панель",
+        dashboardShortcut: "Відкрийте за допомогою CTRL + ALT + P",
+        dashboardSteamInput: "У Steam Input призначте це сполучення на Guide + будь-яку кнопку для миттєвого доступу з контролера.",
+        dashboardWindowSwitch: "Також можна призначити ALT + TAB у Steam Input для миттєвого перемикання вікон.",
+    },
+    zh: {
+        mode: "模式", switchGaming: "切换到游戏模式", switchDesktop: "切换到桌面模式",
+        defaultStartup: "默认启动模式", desktopMode: "桌面模式", gamingMode: "游戏模式",
+        notConnected: "代理未连接", agentReturned: "代理返回",
+        dashboard: "Playhub 控制面板", openDashboard: "打开控制面板",
+        dashboardShortcut: "按 CTRL + ALT + P 打开",
+        dashboardSteamInput: "在 Steam Input 中，将此快捷键绑定到 Guide + 任意按钮，即可通过控制器快速打开。",
+        dashboardWindowSwitch: "也可以在 Steam Input 中绑定 ALT + TAB，以便立即切换窗口。",
+    },
+    ja: {
+        mode: "モード", switchGaming: "ゲーミングモードに切り替え", switchDesktop: "デスクトップモードに切り替え",
+        defaultStartup: "既定の起動", desktopMode: "デスクトップモード", gamingMode: "ゲーミングモード",
+        notConnected: "エージェントに接続されていません", agentReturned: "エージェントの応答",
+        dashboard: "Playhub ダッシュボード", openDashboard: "ダッシュボードを開く",
+        dashboardShortcut: "CTRL + ALT + P で開きます",
+        dashboardSteamInput: "Steam Input でこのショートカットを Guide + 任意のボタンに割り当てると、コントローラーからすぐに開けます。",
+        dashboardWindowSwitch: "Steam Input に ALT + TAB を割り当てて、ウィンドウをすぐに切り替えることもできます。",
+    },
+    ko: {
+        mode: "모드", switchGaming: "게이밍 모드로 전환", switchDesktop: "데스크톱 모드로 전환",
+        defaultStartup: "기본 시작", desktopMode: "데스크톱 모드", gamingMode: "게이밍 모드",
+        notConnected: "에이전트가 연결되지 않음", agentReturned: "에이전트 응답",
+        dashboard: "Playhub 대시보드", openDashboard: "대시보드 열기",
+        dashboardShortcut: "CTRL + ALT + P로 열기",
+        dashboardSteamInput: "Steam Input에서 이 단축키를 Guide + 원하는 버튼에 지정하면 컨트롤러로 즉시 열 수 있습니다.",
+        dashboardWindowSwitch: "Steam Input에 ALT + TAB을 지정하여 창을 즉시 전환할 수도 있습니다.",
+    },
+    hi: {
+        mode: "मोड", switchGaming: "गेमिंग मोड पर जाएं", switchDesktop: "डेस्कटॉप मोड पर जाएं",
+        defaultStartup: "डिफ़ॉल्ट स्टार्टअप", desktopMode: "डेस्कटॉप मोड", gamingMode: "गेमिंग मोड",
+        notConnected: "एजेंट कनेक्ट नहीं है", agentReturned: "एजेंट ने लौटाया",
+        dashboard: "Playhub डैशबोर्ड", openDashboard: "डैशबोर्ड खोलें",
+        dashboardShortcut: "CTRL + ALT + P से खोलें",
+        dashboardSteamInput: "कंट्रोलर से तुरंत खोलने के लिए Steam Input में इस शॉर्टकट को Guide + किसी बटन से जोड़ें।",
+        dashboardWindowSwitch: "विंडो तुरंत बदलने के लिए Steam Input में ALT + TAB भी जोड़ सकते हैं।",
+    },
+    ru: {
+        mode: "Режим", switchGaming: "Перейти в игровой режим", switchDesktop: "Перейти в режим рабочего стола",
+        defaultStartup: "Запуск по умолчанию", desktopMode: "Режим рабочего стола", gamingMode: "Игровой режим",
+        notConnected: "Агент не подключен", agentReturned: "Агент вернул",
+        dashboard: "Панель Playhub", openDashboard: "Открыть панель",
+        dashboardShortcut: "Откройте с помощью CTRL + ALT + P",
+        dashboardSteamInput: "В Steam Input назначьте это сочетание на Guide + любую кнопку для мгновенного доступа с контроллера.",
+        dashboardWindowSwitch: "Также можно назначить ALT + TAB в Steam Input для мгновенного переключения окон.",
+    },
 };
+const STEAM_LOCALE_ALIASES = {
+    english: "en", en: "en", italian: "it", it: "it", spanish: "es", latam: "es", es: "es",
+    french: "fr", fr: "fr", german: "de", de: "de", brazilian: "pt", portuguese: "pt", pt: "pt",
+    ukrainian: "uk", uk: "uk", schinese: "zh", tchinese: "zh", zh: "zh", japanese: "ja", ja: "ja",
+    koreana: "ko", korean: "ko", ko: "ko", hindi: "hi", hi: "hi", russian: "ru", ru: "ru",
+};
+function normalizeSteamLocale(value) {
+    const candidate = String(value ?? "").trim().toLowerCase().replace(/_/g, "-");
+    if (!candidate)
+        return null;
+    return STEAM_LOCALE_ALIASES[candidate] ?? STEAM_LOCALE_ALIASES[candidate.split("-")[0]] ?? null;
+}
+function detectSteamLocale() {
+    const win = window;
+    const candidates = [];
+    [win.LocalizationManager, win.g_LocalizationManager, win.SteamLocalizationManager].filter(Boolean).forEach((manager) => {
+        candidates.push(manager?.m_strLanguage, manager?.m_language, manager?.m_strCurrentLanguage, manager?.language);
+        ["GetLanguage", "GetCurrentLanguage"].forEach((method) => {
+            try {
+                const value = manager?.[method]?.();
+                if (typeof value === "string")
+                    candidates.push(value);
+            }
+            catch { }
+        });
+    });
+    candidates.push(win.g_strLanguage, win.g_rgAppContextData?.language, document.documentElement.lang);
+    candidates.push(...Array.from(navigator.languages ?? []), navigator.language);
+    for (const candidate of candidates) {
+        const locale = normalizeSteamLocale(candidate);
+        if (locale)
+            return locale;
+    }
+    return "en";
+}
+async function readSteamLocale() {
+    try {
+        const value = await window.SteamClient?.Settings?.GetCurrentLanguage?.();
+        const locale = normalizeSteamLocale(value);
+        if (locale)
+            return locale;
+    }
+    catch { }
+    return detectSteamLocale();
+}
+let currentLocale = detectSteamLocale();
 function t() {
-    const language = navigator.language.split("-")[0];
-    return strings[language] ?? strings.en;
+    return strings[currentLocale] ?? strings.en;
 }
 async function getStatus() {
     const response = await fetch(`${API_BASE}/status`);
@@ -1945,7 +2124,8 @@ function startOpenRequestWatcher() {
 // Pannello del Quick Access Menu
 // ---------------------------------------------------------------------------
 function Content() {
-    const local = t();
+    const [locale, setLocale] = useState(currentLocale);
+    const local = strings[locale] ?? strings.en;
     const [status, setStatus] = useState();
     const [busy, setBusy] = useState(false);
     const [dashboardEnabled, setDashboardEnabled] = useState(true);
@@ -1991,10 +2171,16 @@ function Content() {
         await run(option.data === "Gaming" ? "/default/gaming" : "/default/desktop", local.defaultStartup);
     };
     useEffect(() => {
+        let alive = true;
+        void readSteamLocale().then((value) => {
+            currentLocale = value;
+            if (alive)
+                setLocale(value);
+        });
         refresh();
         void readEnvironment().then((environment) => setDashboardEnabled(environment?.enabled !== false));
         const timer = window.setInterval(refresh, 5000);
-        return () => window.clearInterval(timer);
+        return () => { alive = false; window.clearInterval(timer); };
     }, []);
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(PanelSection, { title: local.mode, children: [SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ButtonItem, { disabled: busy, layout: "below", onClick: () => run("/mode/gaming/switch", local.gamingMode), children: local.switchGaming }) }), SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ButtonItem, { disabled: busy, layout: "below", onClick: () => run("/mode/desktop/switch", local.desktopMode), children: local.switchDesktop }) }), SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(DropdownItem, { label: local.defaultStartup, disabled: busy, rgOptions: defaultOptions, selectedOption: status?.defaultMode ?? "Desktop", onChange: setDefault }) })] }), SP_JSX.jsxs(PanelSection, { title: local.dashboard, children: [SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ButtonItem, { disabled: !dashboardEnabled, layout: "below", onClick: () => openDashboard(), children: local.openDashboard }) }), SP_JSX.jsxs(PanelSectionRow, { children: [SP_JSX.jsx("style", { children: `
             @keyframes phShortcutPulse { 0%,100% { opacity:.62; transform:scale(.96); } 50% { opacity:1; transform:scale(1); } }
@@ -2006,13 +2192,13 @@ function Content() {
             .ph-dashboard-plus { font-size:13px; opacity:.58; }
             .ph-dashboard-flow { width:22px; height:15px; flex:0 0 auto; animation:phShortcutTravel 1.6s ease-in-out infinite; }
             .ph-dashboard-flow path { fill:rgba(255,255,255,.82); }
-            .ph-dashboard-pad { width:48px; height:34px; flex:0 0 auto; animation:phShortcutPulse 1.6s ease-in-out infinite; }
+            .ph-dashboard-pad { width:48px; height:29px; flex:0 0 auto; animation:phShortcutPulse 1.6s ease-in-out infinite; }
             .ph-dashboard-pad .pad-shell, .ph-dashboard-pad .pad-detail { fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
             .ph-dashboard-pad .pad-guide { fill:#fff; stroke:#fff; stroke-width:1; filter:drop-shadow(0 0 3px rgba(255,255,255,.7)); }
             .ph-dashboard-pad .pad-button { fill:#fff; opacity:.92; }
             .ph-dashboard-shortcut-title { margin-top:3px; text-align:center; font-size:14px; line-height:1.3; font-weight:650; }
             .ph-dashboard-shortcut-copy { width:calc(100% - 42px); margin:6px auto 0; max-width:278px; text-align:center; color:rgba(255,255,255,.58); font-size:12px; line-height:1.4; }
-          ` }), SP_JSX.jsxs("div", { className: "ph-dashboard-shortcut", children: [SP_JSX.jsxs("div", { className: "ph-dashboard-shortcut-figure", "aria-hidden": "true", children: [SP_JSX.jsxs("div", { className: "ph-dashboard-keys", children: [SP_JSX.jsx("span", { className: "ph-dashboard-key", children: "CTRL" }), SP_JSX.jsx("span", { className: "ph-dashboard-plus", children: "+" }), SP_JSX.jsx("span", { className: "ph-dashboard-key", children: "ALT" }), SP_JSX.jsx("span", { className: "ph-dashboard-plus", children: "+" }), SP_JSX.jsx("span", { className: "ph-dashboard-key", children: "P" })] }), SP_JSX.jsx("svg", { className: "ph-dashboard-flow", viewBox: "0 0 28 18", focusable: "false", children: SP_JSX.jsx("path", { d: "M1 7.25h18.4l-4.2-4.2L17.25 1 25 8.75l-7.75 7.75-2.05-2.05 4.2-4.2H1z" }) }), SP_JSX.jsxs("svg", { className: "ph-dashboard-pad", viewBox: "0 0 64 44", focusable: "false", children: [SP_JSX.jsx("path", { className: "pad-shell", d: "M18.4 12.2h27.2c4.8 0 8.4 3.1 9.7 7.6l4.1 13.7c.9 3-1.4 6.1-4.6 6.1-1.5 0-2.9-.7-3.8-1.9l-6.2-8H19.2l-6.2 8a4.8 4.8 0 0 1-8.4-4.2l4.1-13.7c1.3-4.5 4.9-7.6 9.7-7.6Z" }), SP_JSX.jsx("path", { className: "pad-detail", d: "M19.3 20.2v9.1M14.8 24.75h9M25.3 15.8h3.2M35.5 15.8h3.2" }), SP_JSX.jsx("circle", { className: "pad-guide", cx: "32", cy: "20.2", r: "2.35" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "46.3", cy: "21.2", r: "1.65" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "50.4", cy: "25.2", r: "1.65" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "46.3", cy: "29.2", r: "1.65" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "42.2", cy: "25.2", r: "1.65" }), SP_JSX.jsx("circle", { className: "pad-detail", cx: "25.1", cy: "33.2", r: "3.1" }), SP_JSX.jsx("circle", { className: "pad-detail", cx: "38.9", cy: "33.2", r: "3.1" })] })] }), SP_JSX.jsx("div", { className: "ph-dashboard-shortcut-title", children: local.dashboardShortcut }), SP_JSX.jsx("div", { className: "ph-dashboard-shortcut-copy", children: local.dashboardSteamInput }), SP_JSX.jsx("div", { className: "ph-dashboard-shortcut-copy", children: local.dashboardWindowSwitch })] })] })] })] }));
+          ` }), SP_JSX.jsxs("div", { className: "ph-dashboard-shortcut", children: [SP_JSX.jsxs("div", { className: "ph-dashboard-shortcut-figure", "aria-hidden": "true", children: [SP_JSX.jsxs("div", { className: "ph-dashboard-keys", children: [SP_JSX.jsx("span", { className: "ph-dashboard-key", children: "CTRL" }), SP_JSX.jsx("span", { className: "ph-dashboard-plus", children: "+" }), SP_JSX.jsx("span", { className: "ph-dashboard-key", children: "ALT" }), SP_JSX.jsx("span", { className: "ph-dashboard-plus", children: "+" }), SP_JSX.jsx("span", { className: "ph-dashboard-key", children: "P" })] }), SP_JSX.jsx("svg", { className: "ph-dashboard-flow", viewBox: "0 0 28 18", focusable: "false", children: SP_JSX.jsx("path", { d: "M1 7.25h18.4l-4.2-4.2L17.25 1 25 8.75l-7.75 7.75-2.05-2.05 4.2-4.2H1z" }) }), SP_JSX.jsxs("svg", { className: "ph-dashboard-pad", viewBox: "0 0 64 38", focusable: "false", children: [SP_JSX.jsx("path", { className: "pad-shell", d: "M12 7.5h40c3.5 0 5.8 2.1 6.5 5.4l2.1 10.7c.8 4.1-1.8 7-5.8 7H9.2c-4 0-6.6-2.9-5.8-7l2.1-10.7c.7-3.3 3-5.4 6.5-5.4Z" }), SP_JSX.jsx("path", { className: "pad-detail", d: "M17 14v10M12 19h10" }), SP_JSX.jsx("circle", { className: "pad-guide", cx: "32", cy: "19", r: "3" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "47", cy: "14.7", r: "1.7" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "51.3", cy: "19", r: "1.7" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "47", cy: "23.3", r: "1.7" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "42.7", cy: "19", r: "1.7" })] })] }), SP_JSX.jsx("div", { className: "ph-dashboard-shortcut-title", children: local.dashboardShortcut }), SP_JSX.jsx("div", { className: "ph-dashboard-shortcut-copy", children: local.dashboardSteamInput }), SP_JSX.jsx("div", { className: "ph-dashboard-shortcut-copy", children: local.dashboardWindowSwitch })] })] })] })] }));
 }
 // ---------------------------------------------------------------------------
 // Focus rescue

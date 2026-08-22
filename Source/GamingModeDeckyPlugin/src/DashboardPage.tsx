@@ -49,6 +49,79 @@ const { Focusable, GamepadButton, Navigation, TextField } = DFL as any;
 
 export const DASHBOARD_ROUTE = "/playhub-dashboard";
 
+const STEAM_LOCALE_ALIASES: Record<string, string> = {
+  english: "en", en: "en",
+  italian: "it", it: "it",
+  spanish: "es", latam: "es", es: "es",
+  french: "fr", fr: "fr",
+  german: "de", de: "de",
+  brazilian: "pt", portuguese: "pt", pt: "pt",
+  ukrainian: "uk", uk: "uk",
+  schinese: "zh", tchinese: "zh", zh: "zh",
+  japanese: "ja", ja: "ja",
+  koreana: "ko", korean: "ko", ko: "ko",
+  hindi: "hi", hi: "hi",
+  russian: "ru", ru: "ru",
+};
+
+const STEAM_LOCALE_TAGS: Record<string, string> = {
+  en: "en-US", it: "it-IT", es: "es-ES", fr: "fr-FR", de: "de-DE", pt: "pt-BR",
+  uk: "uk-UA", zh: "zh-CN", ja: "ja-JP", ko: "ko-KR", hi: "hi-IN", ru: "ru-RU",
+};
+
+function normalizeSteamLocale(value: unknown): string | null {
+  const candidate = String(value ?? "").trim().toLowerCase().replace(/_/g, "-");
+  if (!candidate) return null;
+  return STEAM_LOCALE_ALIASES[candidate] ?? STEAM_LOCALE_ALIASES[candidate.split("-")[0]] ?? null;
+}
+
+function detectSteamLocale(): string {
+  const win = window as any;
+  const candidates: unknown[] = [];
+  [win.LocalizationManager, win.g_LocalizationManager, win.SteamLocalizationManager]
+    .filter(Boolean)
+    .forEach((manager: any) => {
+      candidates.push(manager?.m_strLanguage, manager?.m_language, manager?.m_strCurrentLanguage, manager?.language);
+      ["GetLanguage", "GetCurrentLanguage"].forEach((method) => {
+        try {
+          const value = manager?.[method]?.();
+          if (typeof value === "string") candidates.push(value);
+        } catch {}
+      });
+    });
+  candidates.push(win.g_strLanguage, win.g_rgAppContextData?.language, document.documentElement.lang);
+  candidates.push(...Array.from(navigator.languages ?? []), navigator.language);
+  for (const candidate of candidates) {
+    const locale = normalizeSteamLocale(candidate);
+    if (locale) return locale;
+  }
+  return "en";
+}
+
+async function readSteamLocale(): Promise<string> {
+  try {
+    const value = await (window as any).SteamClient?.Settings?.GetCurrentLanguage?.();
+    const locale = normalizeSteamLocale(value);
+    if (locale) return locale;
+  } catch {}
+  return detectSteamLocale();
+}
+
+let steamSettingsRoot: any = null;
+
+function steamUses24HourClock(localeTag: string): boolean {
+  try {
+    if (!steamSettingsRoot) {
+      steamSettingsRoot = (DFL as any).findModuleExport?.((value: any) =>
+        typeof value?.SettingsStore?.FriendsSettings?.b24HourClock === "boolean"
+      ) ?? null;
+    }
+    const preference = steamSettingsRoot?.SettingsStore?.FriendsSettings?.b24HourClock;
+    if (typeof preference === "boolean") return preference;
+  } catch {}
+  return new Intl.DateTimeFormat(localeTag, { hour: "numeric" }).resolvedOptions().hour12 === false;
+}
+
 const DASHBOARD_ACTIVE_CLASS = "phDashboardActive";
 const DASHBOARD_CHROME_STYLE_ID = "ph-dashboard-chrome-style";
 const DASHBOARD_CHROME_SELECTORS = [
@@ -462,7 +535,7 @@ const STYLE = `
   .ph-main { height: calc(100% - 108px); padding: 10px 54px 82px; overflow: hidden; }
   .ph-system-focus-bridge { position: absolute; z-index: -1; top: 106px; left: 34%; right: 34%; height: 3px; opacity: .001; overflow: hidden; }
   .ph-page { height: 100%; animation: phPageIn 260ms cubic-bezier(.2,.8,.2,1); }
-  .ph-page-scroll { height: 100%; overflow-y: auto; overflow-x: hidden; padding: 8px 7px 32px; scrollbar-width: none; }
+  .ph-page-scroll { height: 100%; overflow-y: auto; overflow-x: hidden; padding: 12px 7px 112px; scroll-padding-block: 12px 112px; scrollbar-width: none; }
   .ph-page-scroll::-webkit-scrollbar, .ph-window-rail::-webkit-scrollbar { display: none; }
   .ph-section-title { display: flex; align-items: center; gap: 13px; margin: 4px 0 15px 8px; font-size: 27px; font-weight: 720; }
   .ph-section-title svg { width: 26px; height: 26px; opacity: .9; }
@@ -488,13 +561,13 @@ const STYLE = `
   .ph-empty svg { width: 60px; height: 60px; opacity: .7; margin-bottom: 15px; }
   .ph-empty-title { font-size: 30px; font-weight: 720; margin-bottom: 8px; }
   .ph-muted { color: rgba(255,255,255,.62); line-height: 1.42; }
-  .ph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(154px, 1fr)); gap: 18px; padding: 5px 8px 30px; }
+  .ph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(154px, 1fr)); gap: 18px; padding: 9px 8px 42px; }
   .ph-app-tile { height: 176px; padding: 20px 14px 14px; border-radius: 25px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px; color: #fff; background: rgba(12,15,21,.45); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 12px 26px rgba(0,0,0,.14); transition: transform 170ms ease, background 170ms ease, box-shadow 170ms ease; }
   .ph-app-tile.ph-focus, .ph-app-tile:focus { transform: translate3d(0,-5px,0) scale(1.035); background: rgba(245,248,255,.93); color: #12151a; box-shadow: 0 0 0 4px rgba(255,255,255,.9), 0 24px 42px rgba(0,0,0,.26); }
   .ph-app-tile img { width: 72px; height: 72px; object-fit: contain; background: transparent; }
   .ph-app-tile svg { width: 52px; height: 52px; }
   .ph-app-name { width: 100%; min-height: 25px; padding: 1px 2px 3px; text-align: center; font-size: 17px; line-height: 1.24; font-weight: 620; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ph-toolbar { display: flex; align-items: center; justify-content: space-between; margin: 4px 8px 18px; }
+  .ph-toolbar { display: flex; align-items: center; justify-content: space-between; margin: 0 8px 18px; padding: 7px 5px 5px; }
   .ph-back { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 680; }
   .ph-tiles { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; padding: 6px 8px 28px; align-items: stretch; }
   .ph-tile { min-height: 148px; padding: 24px; border-radius: 27px; color: #fff; background: rgba(13,16,22,.44); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 14px 30px rgba(0,0,0,.14); transition: transform 170ms ease, background 170ms ease, box-shadow 170ms ease, color 170ms ease; overflow: hidden; }
@@ -734,9 +807,10 @@ function useClock() {
   return now;
 }
 
-function Header({ tab, setTab, environment, logo }: { tab: TabId; setTab: (tab: TabId) => void; environment: DashboardEnvironment | null; logo: string }) {
-  const copy = COPY[environment?.language ?? "en"] ?? COPY.en;
+function Header({ tab, setTab, copy, locale, logo }: { tab: TabId; setTab: (tab: TabId) => void; copy: Copy; locale: string; logo: string }) {
   const now = useClock();
+  const localeTag = STEAM_LOCALE_TAGS[locale] ?? STEAM_LOCALE_TAGS.en;
+  const use24HourClock = steamUses24HourClock(localeTag);
   const tabs = useMemo(() => {
     return [
       { id: "switcher", label: copy.switcher, icon: FiMonitor },
@@ -775,8 +849,8 @@ function Header({ tab, setTab, environment, logo }: { tab: TabId; setTab: (tab: 
         })}
       </Focusable>
       <div className="ph-clock">
-        <span className="ph-clock-date">{now.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}</span>
-        <span className="ph-clock-time">{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+        <span className="ph-clock-date">{now.toLocaleDateString(localeTag, { weekday: "short", day: "numeric", month: "short" })}</span>
+        <span className="ph-clock-time">{now.toLocaleTimeString(localeTag, { hour: "2-digit", minute: "2-digit", hour12: !use24HourClock })}</span>
       </div>
     </header>
   );
@@ -1415,8 +1489,15 @@ function DashboardSurface() {
   const lastCancelAt = useRef(0);
   const modalReturnFocus = useRef<HTMLElement | null>(null);
   const explicitExit = useRef(false);
-  const copy = COPY[environment?.language ?? navigator.language.split("-")[0]] ?? COPY.en;
-  const extra = EXTRA_COPY[environment?.language ?? navigator.language.split("-")[0]] ?? EXTRA_COPY.en;
+  const [steamLocale, setSteamLocale] = useState(detectSteamLocale);
+  const copy = COPY[steamLocale] ?? COPY.en;
+  const extra = EXTRA_COPY[steamLocale] ?? EXTRA_COPY.en;
+
+  useEffect(() => {
+    let alive = true;
+    void readSteamLocale().then((locale) => { if (alive) setSteamLocale(locale); });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -1669,7 +1750,7 @@ function DashboardSurface() {
       onCancelActionDescription={copy.close}
     >
       <style>{STYLE}</style>
-      <Header tab={tab} setTab={changeTab} environment={environment} logo={logo} />
+      <Header tab={tab} setTab={changeTab} copy={copy} locale={steamLocale} logo={logo} />
       {tab === "system" ? <FocusItem className="ph-system-focus-bridge" onPress={() => {}} onFocus={() => window.requestAnimationFrame(() => focusSystemMetric(0))} /> : null}
       <main className="ph-main" key={tab}>
         {tab === "switcher" ? <TaskSwitcher copy={copy} onReady={focusInitialSwitcher} onSelectWindow={selectWindow} /> : null}
