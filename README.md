@@ -2,52 +2,52 @@
 
 <img src="docs/images/readme-logo-card.png" width="260" alt="Playhub" />
 
-### Il tuo PC da gioco, con l'anima di una console.
+### Your gaming PC, with the soul of a console.
 
-**Playhub** porta Windows in salotto: Gaming Mode, plugin Decky, giochi riuniti in Steam e un'interfaccia pensata per il controller.
+**Playhub** brings Windows into the living room: Gaming Mode, Decky plugins, consolidated games inside Steam, and an interface built for controllers.
 
-<p><a href="https://github.com/LoZazaMastro/Playhub/releases/latest"><img src="docs/images/readme-button-download.png" height="36" alt="Scarica Playhub" /></a>&nbsp;<a href="https://ko-fi.com/LoZazaMastro"><img src="docs/images/readme-button-support.png" height="36" alt="Sostieni Playhub su Ko-fi" /></a></p>
+<p><a href="https://github.com/LoZazaMastro/Playhub/releases/latest"><img src="docs/images/readme-button-download.png" height="36" alt="Download Playhub" /></a>&nbsp;<a href="https://ko-fi.com/LoZazaMastro"><img src="docs/images/readme-button-support.png" height="36" alt="Support Playhub on Ko-fi" /></a></p>
 
-<p><a href="https://github.com/LoZazaMastro/Playhub/releases"><img src="https://img.shields.io/github/downloads/LoZazaMastro/Playhub/total?style=for-the-badge&label=Download&labelColor=000000&color=ffcf12" alt="Download totali di Playhub" /></a>&nbsp;&nbsp;<a href="https://github.com/LoZazaMastro/Playhub/stargazers"><img src="https://img.shields.io/github/stars/LoZazaMastro/Playhub?style=for-the-badge&label=Stelle&labelColor=000000&color=ffffff" alt="Stelle su GitHub" /></a></p>
+<p><a href="https://github.com/LoZazaMastro/Playhub/releases"><img src="https://img.shields.io/github/downloads/LoZazaMastro/Playhub/total?style=for-the-badge&label=Download&labelColor=000000&color=ffcf12" alt="Playhub Total Downloads" /></a>&nbsp;&nbsp;<a href="https://github.com/LoZazaMastro/Playhub/stargazers"><img src="https://img.shields.io/github/stars/LoZazaMastro/Playhub?style=for-the-badge&label=Stelle&labelColor=000000&color=ffffff" alt="GitHub Stars" /></a></p>
 
 <br />
 
-<img src="docs/images/mascotte-couch.png" width="100%" alt="Le mascotte di Playhub sul divano" />
+<img src="docs/images/mascotte-couch.png" width="100%" alt="Playhub mascots on the couch" />
 
 </div>
 
-## Tutto ciò che serve, prima di premere Gioca
+## Everything you need, before pressing Play
 
-Playhub riunisce in un'unica app tutto ciò che serve per giocare dal divano: Gaming Mode, Decky, libreria e personalizzazione di Big Picture.
+Playhub brings together everything required for couch gaming into a single application: Gaming Mode, Decky, libraries, and Big Picture customization.
 
-Al primo avvio, le mascotte di Playhub ti accompagnano nella configurazione.
+Upon first launch, the Playhub mascots guide you through the setup process.
 
-<img src="docs/images/readme-card-decky.png" width="100%" alt="Installazione e configurazione di Decky Loader" />
+<img src="docs/images/readme-card-decky.png" width="100%" alt="Decky Loader installation and configuration" />
 <br />
 <img src="docs/images/readme-card-store.png" width="100%" alt="Playhub Plugin Store" />
 <br />
 <img src="docs/images/readme-card-gaming.png" width="100%" alt="Gaming Mode" />
 <br />
-<img src="docs/images/readme-card-import.png" width="100%" alt="Importazione dei giochi in Steam" />
+<img src="docs/images/readme-card-import.png" width="100%" alt="Importing games into Steam" />
 <br />
-<img src="docs/images/readme-card-styler.png" width="100%" alt="Temi e strumenti per Steam Big Picture" />
+<img src="docs/images/readme-card-styler.png" width="100%" alt="Themes and tools for Steam Big Picture" />
 <br />
-<img src="docs/images/readme-card-settings.png" width="100%" alt="Impostazioni di Playhub" />
+<img src="docs/images/readme-card-settings.png" width="100%" alt="Playhub Settings" />
 
-## Costruito per il salotto
+## Built for the living room
 
-- **Avvio diretto in Big Picture:** Gaming Mode gestisce i passaggi fra gioco, dashboard e desktop.
-- **Decky, tutto in un posto:** installazione, aggiornamento e riparazione dei plugin Playhub da una sola interfaccia.
-- **Libreria unificata:** riunisci in Steam giochi Xbox e Microsoft Store, Epic, GOG e applicazioni.
-- **Stile coordinato:** temi e profilo CSS Loader di Playhub pronti per l'uso insieme alle risorse richieste.
-- **Game Bar quando serve:** il collegamento del controller viene disattivato in Big Picture e riattivato soltanto per i giochi Xbox o Microsoft Store che ne hanno bisogno.
-- **Riparazione guidata:** un solo controllo trova e ripristina ciò che non funziona.
-- **Assistenza più semplice:** quando serve, Playhub prepara un report pronto da condividere.
-- **Aggiornamenti integrati:** applicazione e plugin vengono controllati, scaricati e installati direttamente dall'interfaccia.
+- **Direct boot into Big Picture:** Gaming Mode handles the transitions between games, the dashboard, and the desktop.
+- **Decky, all in one place:** install, update, and repair Playhub plugins from a single user interface.
+- **Unified library:** consolidate Xbox, Microsoft Store, Epic Games Store, and GOG titles alongside desktop applications straight into Steam.
+- **Coordinated style:** built-in Playhub themes and CSS Loader profiles ready to use out of the box with all necessary assets.
+- **Game Bar when needed:** the controller shortcut hook is disabled in Big Picture and reactivated only for Xbox or Microsoft Store games that require it.
+- **Guided repair tool:** a single checklist utility finds and fixes background issues automatically.
+- **Simpler troubleshooting assistance:** whenever you encounter a bug, Playhub prepares a readable diagnostic report ready to share.
+- **Integrated updates:** the application and its plugins are tracked, downloaded, and installed directly from the interface.
 
-## La famiglia Playhub
+## The Playhub family
 
-<img src="docs/images/readme-plugin-family.png" width="100%" alt="La famiglia di plugin Playhub" />
+<img src="docs/images/readme-plugin-family.png" width="100%" alt="The Playhub plugin family" />
 <br />
 <a href="https://github.com/LoZazaMastro/Playhub-Metadata"><img src="docs/images/readme-plugin-metadata.png" width="100%" alt="Playhub Metadata" /></a>
 <br /><br />
@@ -61,38 +61,38 @@ Al primo avvio, le mascotte di Playhub ti accompagnano nella configurazione.
 <br /><br />
 <a href="https://github.com/LoZazaMastro/Quick-Settings"><img src="docs/images/readme-plugin-quick-settings.png" width="100%" alt="Quick Settings" /></a>
 
-Altri plugin disponibili:
+Other available plugins:
 
-- [Playhub Artworks](https://github.com/LoZazaMastro/Playhub-Artworks) — cover, banner, sfondi, loghi e icone gestiti dal controller;
-- [Playhub Notifications](https://github.com/LoZazaMastro/Playhub-Notifications) — notifiche e overlay del volume coordinati con il tema scelto;
-- [News](https://github.com/LoZazaMastro/News) — titoli nel QAM e un'Edicola a tutto schermo;
-- [Weather](https://github.com/LoZazaMastro/Weather) — meteo attuale e previsioni anche nella barra superiore di Steam;
-- [Playhub Surround](https://github.com/LoZazaMastro/Playhub-Surround) — controllo guidato di impianti stereo, 5.1 e 7.1;
-- [Proton VPN](https://github.com/LoZazaMastro/Proton-VPN) — controllo del client Proton VPN per Windows dal QAM.
+- [Playhub Artworks](https://github.com/LoZazaMastro/Playhub-Artworks) — covers, banners, backgrounds, logos, and icons managed via your controller;
+- [Playhub Notifications](https://github.com/LoZazaMastro/Playhub-Notifications) — notifications and volume overlays coordinated with your chosen theme;
+- [News](https://github.com/LoZazaMastro/News) — headlines inside the QAM and a full-screen Newsstand;
+- [Weather](https://github.com/LoZazaMastro/Weather) — current weather conditions and forecasts integrated into Steam's top bar;
+- [Playhub Surround](https://github.com/LoZazaMastro/Playhub-Surround) — guided configuration tool for stereo, 5.1, and 7.1 audio systems;
+- [Proton VPN](https://github.com/LoZazaMastro/Proton-VPN) — control the official Proton VPN client for Windows from the QAM.
 
-## Download e installazione
+## Download and installation
 
-1. apri l'[ultima release](https://github.com/LoZazaMastro/Playhub/releases/latest);
-2. scarica `Playhub Setup.exe`;
-3. avvia l'installer, scegli la lingua e seleziona **Installa**;
-4. al primo avvio lascia che Playhub verifichi Steam, Decky e Gaming Mode.
+1. open the [latest release](https://github.com/LoZazaMastro/Playhub/releases/latest);
+2. download `Playhub Setup.exe`;
+3. launch the installer, choose your language, and select **Install**;
+4. on first startup, let Playhub verify your Steam, Decky, and Gaming Mode installations.
 
-Playhub viene installato per l'utente Windows corrente. Windows 11 x64 è consigliato; Windows 10 può usare l'app con un tema scuro pieno al posto degli effetti acrilici.
+Playhub is installed for the current Windows user. Windows 11 x64 is recommended; Windows 10 can still utilize the app with a full dark theme in place of acrylic transparency effects.
 
 ## Open source
 
-Playhub usa componenti open source fra cui UWPHook, VDFParser e SharpSteam. Licenze e attribuzioni complete sono raccolte in [Source/Playhub/THIRD-PARTY-NOTICES.txt](Source/Playhub/THIRD-PARTY-NOTICES.txt).
+Playhub utilizes open-source components including UWPHook, VDFParser, and SharpSteam. Full licenses and attributions are collected in [Source/Playhub/THIRD-PARTY-NOTICES.txt](Source/Playhub/THIRD-PARTY-NOTICES.txt).
 
-Playhub è distribuito con licenza [MIT](LICENSE).
+Playhub is distributed under the [MIT](LICENSE) license.
 
 <div align="center">
 
-Creato da **Andrea Sgarro — [LoZazaMastro](https://github.com/LoZazaMastro)**.
+Created by **Andrea Sgarro — [LoZazaMastro](https://github.com/LoZazaMastro)**.
 
 © 2026 Andrea Sgarro
 
 <br />
 
-Steam e gli altri nomi di prodotto citati appartengono ai rispettivi proprietari. Playhub è un progetto indipendente e non è affiliato, sponsorizzato o approvato da Valve o dagli altri titolari dei marchi.
+Steam and other mentioned product names belong to their respective owners. Playhub is an independent project and is not affiliated with, sponsored by, or endorsed by Valve or any other trademark holders.
 
 </div>
