@@ -14,7 +14,7 @@ needed for gaming, streaming, audio, display, and input.
 
 - a GUI installer and a Companion app.
 - Steam Big Picture startup with Decky Loader launched first to avoid loading issues.
-- Sunshine, Apollo, and Vibepollo startup and service preparation for streaming.
+- Sunshine, VibePollo and VibeShine startup and service preparation for streaming.
 - Optional custom background apps for tools such as MSI Afterburner, AutoActions,
   HDR utilities, fan tools, overlays, or controller helpers.
 - Desktop-like Decky plugin helper environment for bundled tools such as
@@ -38,7 +38,7 @@ needed for gaming, streaming, audio, display, and input.
 
 - Windows 11.
 - Steam.
-- Sunshine, Apollo, or Vibepollo, if Moonlight streaming is used.
+- Sunshine, VibePollo or VibeShine, if Moonlight streaming is used.
 - Decky Loader for Windows, if the Decky plugin is used.
 - PowerShell 5 or newer.
 
@@ -74,11 +74,11 @@ Windows will start the selected shell, that's it.
 
 Gaming Mode startup order:
 
-1. Sunshine/Apollo/Vibepollo compatibility services.
+1. Sunshine/VibePollo/VibeShine compatibility services.
 2. Input compatibility services.
 3. Decky plugin helper compatibility.
 4. Custom background apps.
-5. Sunshine/Apollo/Vibepollo.
+5. Sunshine/VibePollo/VibeShine.
 6. Decky Loader from `%USERPROFILE%\homebrew\services\PluginLoader_noconsole.exe`.
 7. Steam Big Picture.
 

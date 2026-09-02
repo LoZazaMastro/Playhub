@@ -9,19 +9,12 @@ $playhubData = Join-Path $env:APPDATA "Playhub"
 New-Item -ItemType Directory -Force -Path $playhubData | Out-Null
 
 $logFile = Join-Path $playhubData "steam-controller-wake.log"
-$mirrorLog = $null
-if (Test-Path "F:\Playhub") {
-    $mirrorLog = "F:\Playhub\steam-controller-wake.log"
-}
 
 function Write-PlayhubLog {
     param([string]$Message)
 
     $line = "{0} {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $Message
     Add-Content -LiteralPath $logFile -Value $line -Encoding UTF8
-    if ($mirrorLog) {
-        Add-Content -LiteralPath $mirrorLog -Value $line -Encoding UTF8
-    }
 }
 
 function Enable-SteamControllerWake {

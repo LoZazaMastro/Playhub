@@ -21,6 +21,17 @@ public sealed class DeckyPluginInfo
     public string? CoverImage { get; set; }
     public string RepositoryUrl { get; set; } = "";
     public string RepositoryName { get; set; } = "";
+    public string RepositorySlug { get; set; } = "";
+    public string ReleaseAssetName { get; set; } = "";
+    public string? CatalogReleaseZipUrl { get; set; }
+    public List<string> InstallAliases { get; set; } = new();
+    public string Category { get; set; } = "Playhub";
+    public string Keywords { get; set; } = "";
+    public bool IsPlayhubPlugin { get; set; } = true;
+    public string CatalogStatus { get; set; } = "playhub";
+    public string CatalogSource { get; set; } = "playhub";
+    public int CatalogPluginId { get; set; }
+    public string Compatibility { get; set; } = "";
     public string? ReleaseZipUrl { get; set; }
     public string? ReleasePageUrl { get; set; }
     public string ReleaseNotes { get; set; } = "";

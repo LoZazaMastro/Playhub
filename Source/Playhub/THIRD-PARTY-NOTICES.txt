@@ -1,4 +1,4 @@
-PLAYHUB — THIRD-PARTY NOTICES
+﻿PLAYHUB - THIRD-PARTY NOTICES
 =============================
 
 Playhub includes and/or distributes the following third-party open-source
@@ -6,7 +6,7 @@ components. Licenses differ by component and must be retained with the shipped
 files.
 
 -------------------------------------------------------------------------------
-1) UWPHook  —  https://github.com/BrianLima/UWPHook
+1) UWPHook  -  https://github.com/BrianLima/UWPHook
    Used by: Services/UwpHookSteamManager.cs (C# port of UWPHook's SteamManager),
    the UWP/Xbox import logic, and the bundled UWPHook.exe shipped with Playhub.
 
@@ -33,7 +33,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 -------------------------------------------------------------------------------
-2) VDFParser  —  https://github.com/BrianLima/VDFParser
+2) VDFParser  -  https://github.com/BrianLima/VDFParser
    Used by: Vendor/VDFParser/* (vendored source used to read and write Steam's
    shortcuts.vdf file).
 
@@ -60,7 +60,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 -------------------------------------------------------------------------------
-3) SharpSteam  —  https://github.com/BrianLima/SharpSteam
+3) SharpSteam  -  https://github.com/BrianLima/SharpSteam
    Steam shortcut helper library in the UWPHook family; included for completeness
    as the Steam-shortcut handling derives from this lineage.
 
@@ -107,6 +107,11 @@ SOFTWARE.
      Controller Access/vendor/USBIP-Win2/LICENSE-BSD-2-Clause.txt.
 
 -------------------------------------------------------------------------------
+5) Playhub Collections  -  bundled CSS Loader theme by LoZazaMastro
+   Clean implementation informed by layout concepts from Compact Collections
+   by kinix and Custom Collection Layout by Charmics & Beebles. No source files
+   from those themes are redistributed in Playhub Collections.
+
 Note: the bundled UWPHook.exe also embeds its own open-source dependencies
 (e.g. MaterialDesignThemes, Crc32.NET, Microsoft.PowerShell.SDK, Serilog), whose
 licenses (MIT / Apache-2.0) are documented in the UWPHook repository.

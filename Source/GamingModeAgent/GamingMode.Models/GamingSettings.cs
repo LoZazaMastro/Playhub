@@ -60,6 +60,10 @@ public sealed class GamingSettings
 
 	public string DashboardHotkey { get; set; } = "Ctrl+Alt+P";
 
+	public bool NavigationHapticsEnabled { get; set; }
+
+	public int NavigationHapticsIntensity { get; set; } = 55;
+
 	public GamingSplashSettings Splash { get; set; } = new GamingSplashSettings();
 
 	public bool ManageAudio { get; set; }

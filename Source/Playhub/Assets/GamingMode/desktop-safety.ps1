@@ -1,13 +1,8 @@
 # Watcher di sicurezza Playhub.
 # Lanciato dall'agente SOLO in Gaming Mode (come "processo personalizzato").
-# Quando l'utente CHIUDE Steam, riavvia il PC facendolo ripartire in Desktop
-# Mode: avvio pulito, senza il "sign-out morbido" che riapre i processi bloccati.
-#
-# IMPORTANTE: nextBootMode=Desktop viene scritto SOLO nel momento in cui Steam
-# si chiude E il sistema NON sta gia' spegnendosi/riavviandosi. Scriverlo in
-# anticipo (come nelle vecchie versioni) faceva si' che un riavvio/arresto dal
-# menu di Steam Big Picture riportasse sempre in Desktop Mode, ignorando la
-# modalita' predefinita scelta dall'utente.
+# Quando Steam resta chiuso, riporta la sessione corrente in Desktop Mode senza
+# riavviare Windows. Le uscite per aggiornamento o manutenzione non devono
+# diventare riavvii forzati del PC.
 
 $ErrorActionPreference = 'SilentlyContinue'
 
@@ -23,7 +18,6 @@ function Test-SystemShuttingDown {
     }
 }
 
-$configPath = Join-Path $env:APPDATA 'GamingMode\config.json'
 $logPath = Join-Path $env:APPDATA 'GamingMode\playhub-safety.log'
 
 function Write-Log([string]$message) {
@@ -34,32 +28,23 @@ function Write-Log([string]$message) {
     }
 }
 
-function Set-NextBootDesktop {
+$watcherMutex = $null
+$ownsWatcherMutex = $false
+try {
+    $watcherMutex = New-Object System.Threading.Mutex($false, 'Global\PlayhubGamingModeDesktopSafety')
     try {
-        if (-not (Test-Path -LiteralPath $configPath)) {
-            Write-Log "config.json non trovato: $configPath"
-            return $false
-        }
-
-        $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
-        if ($config.PSObject.Properties.Name -contains 'nextBootMode') {
-            $config.nextBootMode = 'Desktop'
-        }
-        else {
-            $config | Add-Member -NotePropertyName 'nextBootMode' -NotePropertyValue 'Desktop' -Force
-        }
-        $json = $config | ConvertTo-Json -Depth 40
-        [System.IO.File]::WriteAllText($configPath, $json, (New-Object System.Text.UTF8Encoding($false)))
-        Write-Log 'nextBootMode impostato su Desktop.'
-        return $true
+        $ownsWatcherMutex = $watcherMutex.WaitOne(0, $false)
     }
-    catch {
-        Write-Log "Errore nella scrittura della config: $_"
-        return $false
+    catch [System.Threading.AbandonedMutexException] {
+        $ownsWatcherMutex = $true
     }
-}
 
-Write-Log '--- Watcher avviato ---'
+    if (-not $ownsWatcherMutex) {
+        Write-Log 'Un watcher e'' gia'' attivo: questa istanza termina.'
+        return
+    }
+
+    Write-Log '--- Watcher avviato ---'
 
 # 1) Attendi che Steam parta (fino a ~5 minuti).
 $started = $false
@@ -76,80 +61,61 @@ if (-not $started) {
 }
 Write-Log 'Steam rilevato.'
 
-# 2) Attendi che il processo principale di Steam termini. Wait-Process reagisce
-#    nell'istante esatto in cui Steam si chiude (piu'' rapido di un polling).
-try {
-    Get-Process steam -ErrorAction Stop | Wait-Process -ErrorAction SilentlyContinue
-}
-catch {
-    # In caso di problemi con Wait-Process, ripiego su un polling veloce.
-    while (Get-Process steam -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 400 }
-}
-Write-Log 'Steam chiuso.'
-
-# 3) Se il sistema si sta gia' spegnendo o riavviando (es. riavvio/arresto dal
-#    menu di Steam Big Picture), NON toccare nulla: al prossimo avvio deve
-#    valere la modalita' predefinita scelta dall'utente.
-$shuttingDown = Test-SystemShuttingDown
-if (-not $shuttingDown) {
-    # Piccola attesa: Steam potrebbe chiudersi un attimo PRIMA che il comando di
-    # arresto/riavvio del sistema venga emesso. Ricontrolla per qualche secondo.
-    for ($i = 0; $i -lt 12; $i++) {
-        Start-Sleep -Milliseconds 400
-        if (Test-SystemShuttingDown) {
-            $shuttingDown = $true
-            break
-        }
-    }
-}
-if ($shuttingDown) {
-    Write-Log 'Arresto/riavvio di sistema in corso: nessuna modifica, vale la modalita'' predefinita.'
-    Write-Log '--- Watcher terminato ---'
-    return
-}
-
-# Steam potrebbe essere stato riavviato (es. aggiornamento o riavvio da Decky):
-# se e' di nuovo attivo, non fare nulla e resta in ascolto sulla nuova istanza.
-if (Get-Process steam -ErrorAction SilentlyContinue) {
-    Write-Log 'Steam e'' ripartito: nessun ritorno al desktop.'
+# 2) Steam puo' sostituire il proprio processo durante l'avvio di Big Picture,
+#    gli aggiornamenti o un riavvio Decky. Riaggancia sempre la nuova istanza e
+#    considera una vera uscita soltanto un'assenza continua di 15 secondi.
+while ($true) {
     try {
         Get-Process steam -ErrorAction Stop | Wait-Process -ErrorAction SilentlyContinue
     }
     catch {
         while (Get-Process steam -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 400 }
     }
-    $shuttingDown = Test-SystemShuttingDown
-    if (-not $shuttingDown) {
-        for ($i = 0; $i -lt 12; $i++) {
-            Start-Sleep -Milliseconds 400
-            if (Test-SystemShuttingDown) {
-                $shuttingDown = $true
-                break
-            }
+    Write-Log 'Steam chiuso; avvio finestra di stabilizzazione.'
+
+    $steamRestarted = $false
+    for ($i = 0; $i -lt 30; $i++) {
+        Start-Sleep -Milliseconds 500
+        if (Test-SystemShuttingDown) {
+            Write-Log 'Arresto/riavvio di sistema in corso: nessuna modifica, vale la modalita'' predefinita.'
+            Write-Log '--- Watcher terminato ---'
+            return
+        }
+        if (Get-Process steam -ErrorAction SilentlyContinue) {
+            $steamRestarted = $true
+            break
         }
     }
-    if ($shuttingDown) {
-        Write-Log 'Arresto/riavvio di sistema in corso: nessuna modifica.'
-        Write-Log '--- Watcher terminato ---'
-        return
+
+    if ($steamRestarted) {
+        Write-Log 'Steam e'' ripartito: watcher riagganciato alla nuova istanza.'
+        continue
     }
+    break
 }
 
-# 4) Solo ora prepara il prossimo avvio in Desktop e riavvia.
-$prepared = Set-NextBootDesktop
-if ($prepared) {
-    Write-Log 'Riavvio del PC (shutdown /r /f /t 0).'
-    Start-Process 'shutdown.exe' -ArgumentList '/r', '/f', '/t', '0'
+# 4) Ripristina il Desktop nella sessione corrente. L'endpoint applica il modo
+#    senza sign-out e senza riavvio, lasciando invariata la modalita' predefinita.
+try {
+    $response = Invoke-WebRequest -Uri 'http://127.0.0.1:47991/mode/desktop' -Method POST -UseBasicParsing -TimeoutSec 10
+    if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 300) {
+        Write-Log 'Desktop Mode ripristinata senza riavviare Windows.'
+    }
+    else {
+        Write-Log "Ripristino Desktop non riuscito: HTTP $($response.StatusCode)."
+    }
 }
-else {
-    # Ripiego: torna comunque al desktop via agente per non restare bloccati.
-    Write-Log 'Config non scrivibile: ripiego sul ritorno al desktop via agente.'
-    try {
-        Invoke-WebRequest -Uri 'http://127.0.0.1:47991/mode/desktop/switch' -Method POST -UseBasicParsing -TimeoutSec 6 | Out-Null
-    }
-    catch {
-        Write-Log "Errore nel ripiego via agente: $_"
-    }
+catch {
+    Write-Log "Errore nel ripristino Desktop via agente: $_"
 }
 
-Write-Log '--- Watcher terminato ---'
+    Write-Log '--- Watcher terminato ---'
+}
+finally {
+    if ($ownsWatcherMutex -and $null -ne $watcherMutex) {
+        try { $watcherMutex.ReleaseMutex() } catch {}
+    }
+    if ($null -ne $watcherMutex) {
+        try { $watcherMutex.Dispose() } catch {}
+    }
+}

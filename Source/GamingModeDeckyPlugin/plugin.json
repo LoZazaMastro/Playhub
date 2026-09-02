@@ -1,6 +1,7 @@
 {
   "name": "Gaming Mode",
-  "author": "sgarr",
+  "version": "1.4.0",
+  "author": "LoZazaMastro",
   "flags": [],
   "api_version": 1,
   "publish": {

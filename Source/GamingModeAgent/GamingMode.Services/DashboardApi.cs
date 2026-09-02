@@ -422,7 +422,9 @@ public static class DashboardApi
 	public sealed record DashboardSettings(
 		bool KeyboardShortcutEnabled,
 		string Hotkey,
-		string DefaultMode);
+		string DefaultMode,
+		bool NavigationHapticsEnabled,
+		int NavigationHapticsIntensity);
 
 	public static DashboardSettings ReadSettings(JsonStore store)
 	{
@@ -430,16 +432,25 @@ public static class DashboardApi
 		return new DashboardSettings(
 			config.Gaming.DashboardKeyboardShortcutEnabled,
 			config.Gaming.DashboardHotkey,
-			config.DefaultMode.ToString());
+			config.DefaultMode.ToString(),
+			config.Gaming.NavigationHapticsEnabled,
+			Math.Clamp(config.Gaming.NavigationHapticsIntensity, 5, 100));
 	}
 
 	// I campi assenti non vengono toccati: il plugin manda solo quello che
 	// l'utente ha cambiato.
-	public static DashboardSettings WriteSettings(JsonStore store, bool? keyboardEnabled, string? hotkey)
+	public static DashboardSettings WriteSettings(
+		JsonStore store,
+		bool? keyboardEnabled,
+		string? hotkey,
+		bool? navigationHapticsEnabled = null,
+		int? navigationHapticsIntensity = null)
 	{
 		ModeConfig config = store.LoadConfig();
 		if (keyboardEnabled.HasValue) config.Gaming.DashboardKeyboardShortcutEnabled = keyboardEnabled.Value;
 		if (!string.IsNullOrWhiteSpace(hotkey)) config.Gaming.DashboardHotkey = hotkey.Trim();
+		if (navigationHapticsEnabled.HasValue) config.Gaming.NavigationHapticsEnabled = navigationHapticsEnabled.Value;
+		if (navigationHapticsIntensity.HasValue) config.Gaming.NavigationHapticsIntensity = Math.Clamp(navigationHapticsIntensity.Value, 5, 100);
 		store.SaveConfig(config);
 		return ReadSettings(store);
 	}

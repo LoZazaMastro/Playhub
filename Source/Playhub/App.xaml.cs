@@ -1,13 +1,18 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Windowing;
 using Playhub.Services;
 using System;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace Playhub;
 
 public partial class App : Application
 {
     private Window? _window;
+    private readonly SingleInstanceService _singleInstance = new();
+    private bool _launchStarted;
 
     public App()
     {
@@ -40,15 +45,60 @@ public partial class App : Application
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
+        if (_launchStarted)
+        {
+            ActivateMainWindow();
+            return;
+        }
+        _launchStarted = true;
         if (await TryHandleCommandLineLaunch(args.Arguments))
         {
             Environment.Exit(0);
             return;
         }
 
+        var dispatcher = DispatcherQueue.GetForCurrentThread();
+#if PLAYHUB_UI_REVIEW
+        const string instanceKey = "Playhub.UiReview";
+#else
+        const string instanceKey = "Playhub.MainWindow";
+#endif
+        try
+        {
+            if (!await _singleInstance.RegisterAsync(instanceKey, (_, _) =>
+                dispatcher.TryEnqueue(ActivateMainWindow)))
+            {
+                Exit();
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Diag.Crash("Single-instance activation", ex);
+            Exit();
+            return;
+        }
+
         _window = new MainWindow();
+        _window.Closed += (_, _) => _singleInstance.Dispose();
         _window.Activate();
+#if PLAYHUB_UI_REVIEW
+        await ((MainWindow)_window).RunUiReviewAsync();
+#endif
     }
+
+    private void ActivateMainWindow()
+    {
+        if (_window == null) return;
+        if (_window.AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
+            presenter.Restore();
+        _window.Activate();
+        SetForegroundWindow(WinRT.Interop.WindowNative.GetWindowHandle(_window));
+    }
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetForegroundWindow(IntPtr window);
 
     private static async Task<bool> TryHandleCommandLineLaunch(string? arguments)
     {

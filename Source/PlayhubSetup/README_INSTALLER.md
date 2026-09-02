@@ -1,4 +1,4 @@
-# Playhub Setup — bootstrapper custom
+﻿# Playhub Setup: bootstrapper custom
 
 Installer nativo (WPF .NET 8) con la stessa estetica dell'app: finestra **scura
 acrilica**, accent **giallo #FFCB0F**, logo Playhub a sinistra, **progress bar
@@ -8,15 +8,17 @@ Fluent gialla**, opzioni di scorciatoia e avvio finale. Si registra in
 ## Come si costruisce
 
 ```
-Source\PlayhubSetup\build-installer.bat
+Source\PlayhubSetup\build-all.bat
 ```
 
 Lo script:
-1. pubblica l'app (`Playhub.csproj`, self-contained x64) in `..\Playhub\dist_publish`;
-2. ne crea un `Payload\payload.zip`;
-3. compila l'installer **single-file** con il payload incorporato.
 
-Risultato: **`Output\Playhub-Setup.exe`** — un unico file da distribuire.
+1. ricompila l'agente Gaming Mode e il plugin Decky incluso negli Assets;
+2. pubblica l'app (`Playhub.csproj`, self-contained x64) in `..\Playhub\dist_publish`;
+3. ne crea un `Payload\payload.zip`;
+4. compila l'installer **single-file** con il payload incorporato.
+
+Risultato: **`Output\Playhub Setup.exe`**.
 
 ## Cosa fa l'installer
 
@@ -47,4 +49,4 @@ viene eliminata subito dopo l'uscita del processo.
   step `signtool` quando avrai un certificato.
 - **Modalità sviluppo**: se compili l'installer senza aver creato `payload.zip`,
   l'eseguibile cerca `payload.zip` oppure una cartella `dist_publish` accanto a
-  sé — comodo per iterare solo sulla UI.
+  sé, comodo per iterare solo sulla UI.

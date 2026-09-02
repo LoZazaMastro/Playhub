@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -192,9 +193,47 @@ public sealed class ModeManager
 
 	public async Task<ApiResult> RestartSteamAsync()
 	{
-		ModeConfig modeConfig = _store.LoadConfig();
-		_processTools.RestartProcesses(modeConfig.Gaming.SteamPath ?? "", _processTools.GetSteamFallbackPaths().FirstOrDefault() ?? "", modeConfig.Gaming.SteamArguments, false, "steam");
-		return await ApplyModeAsync(ModeKind.Gaming, "Restarted Steam");
+		try
+		{
+			ModeConfig modeConfig = _store.LoadConfig();
+			string configuredPath = modeConfig.Gaming.SteamPath ?? "";
+			string[] fallbackPaths = _processTools.GetSteamFallbackPaths();
+			_processTools.RestartProcesses(configuredPath, fallbackPaths.FirstOrDefault() ?? "", modeConfig.Gaming.SteamArguments, false, "steam");
+			for (int launchAttempt = 0; launchAttempt < 2; launchAttempt++)
+			{
+				int stableTicks = 0;
+				for (int attempt = 0; attempt < 30; attempt++)
+				{
+					if (Process.GetProcessesByName("steam").Length > 0)
+					{
+						stableTicks++;
+						if (stableTicks >= 6)
+						{
+							_logger.Info("Steam restarted and remained stable without reapplying Gaming Mode.");
+							return ApiResult.Success("Steam restarted.", GetStatus());
+						}
+					}
+					else
+					{
+						stableTicks = 0;
+					}
+					await Task.Delay(500);
+				}
+
+				if (launchAttempt == 0)
+				{
+					_logger.Info("Steam bootstrap did not remain alive; performing one clean retry.");
+					_processTools.EnsureProcess(configuredPath, fallbackPaths, modeConfig.Gaming.SteamArguments, "steam");
+				}
+			}
+			_logger.Error("Steam did not remain alive within the restart timeout.");
+			return ApiResult.Failure("Steam did not restart successfully within 30 seconds.", GetStatus());
+		}
+		catch (Exception ex)
+		{
+			_logger.Error("Failed to restart Steam.", ex);
+			return ApiResult.Failure("Could not restart Steam: " + ex.Message, GetStatus());
+		}
 	}
 
 	public async Task<ApiResult> RestartDeckyAsync()
@@ -233,7 +272,7 @@ public sealed class ModeManager
 		modeStatus.LastError = modeState.LastError;
 		modeStatus.Steam = _processTools.GetState("steam");
 		modeStatus.Decky = _processTools.GetState("PluginLoader", "PluginLoader_noconsole");
-		modeStatus.Sunshine = _processTools.GetState("sunshine", "apollo", "vibepollo");
+		modeStatus.Sunshine = _processTools.GetState("sunshine", "apollo", "vibepollo", "vibeshine");
 		modeStatus.Explorer = _processTools.GetState("explorer");
 		modeStatus.MouseCursorAutoHide = _cursorAutoHide.Running;
 		modeStatus.MouseCursorHidden = _cursorAutoHide.CursorHidden;
@@ -338,8 +377,8 @@ public sealed class ModeManager
 		}
 		if (config.Gaming.SunshineRequired)
 		{
-			bool flag2 = _processTools.EnsureProcess(config.Gaming.SunshinePath, _processTools.GetSunshineFallbackPaths(), "", "sunshine", "apollo", "vibepollo");
-			messages.Add(flag2 ? "Sunshine/Apollo is running." : "Sunshine/Apollo was not found. Configure SunshinePath in config.json if needed.");
+			bool flag2 = _processTools.EnsureProcess(config.Gaming.SunshinePath, _processTools.GetSunshineFallbackPaths(), "", "sunshine", "apollo", "vibepollo", "vibeshine");
+			messages.Add(flag2 ? "Remote-play host is running." : "No remote-play host was found. Configure SunshinePath in config.json if needed.");
 		}
 		if (config.Gaming.DeckyRequired)
 		{

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Playhub/Services/PluginCatalogService.cs" Link="PluginCatalogService.cs" />
+    <Compile Include="../Playhub/Services/RemotePluginCatalogService.cs" Link="RemotePluginCatalogService.cs" />
+    <Compile Include="../Playhub/Models/DeckyPluginInfo.cs" Link="DeckyPluginInfo.cs" />
+    <Compile Include="../Playhub/Models/RemotePluginCatalog.cs" Link="RemotePluginCatalog.cs" />
+    <Compile Include="PluginMediaTests.cs" />
+  </ItemGroup>
+</Project>

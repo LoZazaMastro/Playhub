@@ -115,13 +115,12 @@ public static class AgentHost
 				using SystemVolumeKeyService volumeKeys = new SystemVolumeKeyService(logger);
 				using OverlayQuickSettingsClient quickSettings = new OverlayQuickSettingsClient();
 				ModeManager manager = new ModeManager(paths, store, processTools, shellTools, cursorAutoHide, windowFocus, volumeKeys, logger);
+				using ControllerHapticsService controllerHaptics = new ControllerHapticsService(logger);
 				// La Playhub Dashboard e' una schermata del plugin di Steam. Qui
 				// resta solo cio' che il plugin non puo' fare da dentro Steam: la
-				// scorciatoia da tastiera per aprirla e l'indicatore del volume.
-				// NESSUN controller viene letto o toccato.
+				// scorciatoia da tastiera per aprirla.
 				using DashboardShortcutService dashboard = new DashboardShortcutService(
 					store,
-					volumeKeys,
 					() => windowFocus.IsLaunchCurtainOnScreen,
 					logger);
 				dashboard.Start();
@@ -249,16 +248,38 @@ public static class AgentHost
 				// ----------------------------------------------------------
 				// IL PLUGIN SCRIVE NEL LOG DELL'AGENTE.
 				//
-				// Meta' di questa storia vive dentro Steam, dove la console non
-				// la vede nessuno, e meta' qui. Finche' le due meta' scrivevano
-				// in posti diversi, ogni guasto si poteva solo supporre. Con
-				// questa rotta le righe finiscono tutte nello stesso file, in
-				// ordine di tempo: si legge cosa e' successo invece di dedurlo.
 				app.MapPost("/dash/log", (Func<HttpRequest, Task<IResult>>)(async request =>
 				{
 					var fields = await ReadFieldsAsync(request);
 					logger.Info("[PLUGIN] " + Field(fields, "message"));
 					return Results.Json(new { ok = true });
+				}));
+				app.MapPost("/dash/haptic", (Func<HttpRequest, Task<IResult>>)(async request =>
+				{
+					var fields = await ReadFieldsAsync(request);
+					int.TryParse(Field(fields, "vendorId"), out int vendorId);
+					int.TryParse(Field(fields, "productId"), out int productId);
+					long.TryParse(Field(fields, "requestId"), out long requestId);
+					if (bool.TryParse(Field(fields, "stop"), out bool stop) && stop)
+					{
+						return Results.Json(controllerHaptics.Stop(vendorId, productId, requestId));
+					}
+
+					int.TryParse(Field(fields, "controllerIndex"), out int controllerIndex);
+					int.TryParse(Field(fields, "side"), out int side);
+					double.TryParse(Field(fields, "magnitude"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double magnitude);
+					string pattern = Field(fields, "pattern");
+					if (!string.IsNullOrWhiteSpace(pattern))
+					{
+						ControllerHapticResult patterned = controllerHaptics.PlayPattern(
+							controllerIndex, vendorId, productId, side, magnitude, pattern, requestId);
+						return Results.Json(patterned);
+					}
+
+					int.TryParse(Field(fields, "durationMs"), out int durationMs);
+					ControllerHapticResult result = controllerHaptics.Pulse(
+						controllerIndex, vendorId, productId, side, magnitude, durationMs, requestId);
+					return Results.Json(result);
 				}));
 
 				// ----------------------------------------------------------
@@ -312,7 +333,12 @@ public static class AgentHost
 				{
 					bool open = dashboard.ConsumeOpenRequest();
 					if (open) logger.Info("Playhub Dashboard: il plugin ha raccolto la richiesta di apertura.");
-					return Results.Json(new { open });
+					return Results.Json(new
+					{
+						open,
+						focusRecovery = windowFocus.SteamFocusRecoveryVersion,
+						steamForeground = OverlayWindowTools.IsSteamForeground()
+					});
 				}));
 				app.MapPost("/dash/open", (Func<IResult>)delegate
 				{
@@ -467,15 +493,25 @@ public static class AgentHost
 					var fields = await ReadFieldsAsync(request);
 					string keyboard = Field(fields, "keyboardShortcutEnabled");
 					string hotkey = Field(fields, "hotkey");
-					logger.Info($"Playhub Dashboard settings: enabled='{keyboard}' hotkey='{hotkey}'.");
+					string haptics = Field(fields, "navigationHapticsEnabled");
+					string hapticsIntensity = Field(fields, "navigationHapticsIntensity");
+					if (!string.IsNullOrWhiteSpace(keyboard) || !string.IsNullOrWhiteSpace(hotkey))
+					{
+						logger.Info($"Playhub Dashboard shortcut settings: enabled='{keyboard}' hotkey='{hotkey}'.");
+					}
 					DashboardApi.DashboardSettings updated = DashboardApi.WriteSettings(
 						store,
 						bool.TryParse(keyboard, out bool keyboardValue) ? keyboardValue : null,
-						hotkey);
+						hotkey,
+						bool.TryParse(haptics, out bool hapticsValue) ? hapticsValue : null,
+						int.TryParse(hapticsIntensity, out int intensityValue) ? intensityValue : null);
 					// RegisterHotKey lega la combinazione al thread una volta
 					// sola: senza questa riga la nuova resta scritta nella
 					// configurazione e muta fino al riavvio dell'agente.
-					dashboard.ReloadHotkey();
+					if (!string.IsNullOrWhiteSpace(keyboard) || !string.IsNullOrWhiteSpace(hotkey))
+					{
+						dashboard.ReloadHotkey();
+					}
 					return Results.Json(updated);
 				}));
 
@@ -520,7 +556,7 @@ public static class AgentHost
 				app.Lifetime.ApplicationStopping.Register(windowFocus.Stop);
 				app.Lifetime.ApplicationStopping.Register(volumeKeys.Stop);
 				app.Lifetime.ApplicationStopping.Register(splashScreen.Dispose);
-				Task.Run(async delegate
+				_ = Task.Run(async delegate
 				{
 					try
 					{

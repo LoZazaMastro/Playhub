@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(PlayhubUpdatePreview)' == 'true'">
+    <DefineConstants>$(DefineConstants);PLAYHUB_UPDATE_PREVIEW</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Playhub\Services\PlayhubUpdateService.cs" Link="PlayhubUpdateService.cs" />
+    <Compile Include="..\Playhub\Services\PlayhubUpdatePolicy.cs" Link="PlayhubUpdatePolicy.cs" />
+    <Compile Include="..\PlayhubSetup\Installer.cs" Link="Installer.cs" />
+    <Compile Include="..\PlayhubSetup\SetupSession.cs" Link="SetupSession.cs" />
+  </ItemGroup>
+</Project>

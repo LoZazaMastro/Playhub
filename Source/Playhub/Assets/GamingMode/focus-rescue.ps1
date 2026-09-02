@@ -13,6 +13,7 @@
 #   POST /focus/steam -> l'overlay/menu Steam si sta aprendo sopra un gioco:
 #                        se Steam non e' gia' davanti, togli il TOPMOST al
 #                        gioco, porta Big Picture sopra e prova a dargli focus.
+#   POST /focus/capture -> ricorda la finestra da ripristinare senza spostarla.
 #   POST /focus/game  -> l'overlay si e' chiuso: ripristina il TOPMOST ai
 #                        giochi che lo avevano e restituisci il focus al gioco.
 #   GET  /health      -> diagnostica.
@@ -41,6 +42,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 namespace PlayhubFocusRescue
 {
@@ -168,6 +170,21 @@ namespace PlayhubFocusRescue
             }
         }
 
+        // POST /focus/capture
+        public static string CaptureSource()
+        {
+            var foreground = GetForegroundWindow();
+            if (foreground == IntPtr.Zero || !IsWindow(foreground) || !IsWindowVisible(foreground))
+                return "no-source";
+
+            uint processId;
+            GetWindowThreadProcessId(foreground, out processId);
+            if (IsSteamProcess(processId)) return "steam-foreground";
+
+            _savedGame = foreground;
+            return "captured";
+        }
+
         // POST /focus/steam
         public static string RescueSteam()
         {
@@ -238,19 +255,21 @@ namespace PlayhubFocusRescue
         {
             ReleaseSteamLayer();
 
-            // Se il primo piano e' rimasto a Steam, restituiscilo al gioco.
-            if (_savedGame != IntPtr.Zero && IsWindow(_savedGame) && IsWindowVisible(_savedGame))
+            var target = _savedGame;
+            _savedGame = IntPtr.Zero;
+            if (target == IntPtr.Zero || !IsWindow(target) || !IsWindowVisible(target))
+            {
+                return "no-source";
+            }
+
+            for (var attempt = 0; attempt < 4; attempt++)
             {
                 var fg = GetForegroundWindow();
-                uint fgPid;
-                GetWindowThreadProcessId(fg, out fgPid);
-                if (IsSteamProcess(fgPid))
-                {
-                    TryFocus(_savedGame, fg);
-                }
+                if (fg == target) return attempt == 0 ? "already-active" : "restored-active";
+                TryFocus(target, fg);
+                Thread.Sleep(45 + attempt * 25);
             }
-            _savedGame = IntPtr.Zero;
-            return "restored";
+            return GetForegroundWindow() == target ? "restored-active" : "focus-denied";
         }
 
         // POST /focus/release
@@ -360,6 +379,11 @@ while ($true) {
         elseif ($method -eq 'POST' -and $path -eq '/focus/steam') {
             $result = [PlayhubFocusRescue.Native]::RescueSteam()
             Write-Log "focus/steam -> $result"
+            Send-Response $stream 200 "{`"result`":`"$result`"}"
+        }
+        elseif ($method -eq 'POST' -and $path -eq '/focus/capture') {
+            $result = [PlayhubFocusRescue.Native]::CaptureSource()
+            Write-Log "focus/capture -> $result"
             Send-Response $stream 200 "{`"result`":`"$result`"}"
         }
         elseif ($method -eq 'POST' -and $path -eq '/focus/game') {

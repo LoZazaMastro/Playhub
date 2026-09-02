@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Net.Http;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Playhub.Services;
@@ -12,9 +10,6 @@ namespace Playhub.Services;
 public sealed class ExtraService
 {
     private readonly SteamService _steam = new();
-    // Timeout esplicito (il default è 100s): copre il download di fallback dello
-    // zip dei temi senza restare appeso indefinitamente se il server non risponde.
-    private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(60) };
 
     public string? GetSteamFolder() => _steam.GetSteamFolder();
 
@@ -29,7 +24,7 @@ public sealed class ExtraService
         var source = File.Exists(AppPaths.LocalSteamCfg) ? AppPaths.LocalSteamCfg : AppPaths.BundledSteamCfg;
         if (!File.Exists(source))
         {
-            return Task.FromResult("Non trovo il file steam.cfg sorgente.");
+            return Task.FromResult("Manca un file necessario. Reinstalla Playhub e riprova.");
         }
 
         Directory.CreateDirectory(AppPaths.BackupsRoot);
@@ -62,40 +57,17 @@ public sealed class ExtraService
         return Task.FromResult("Gli aggiornamenti del client di Steam erano già attivi.");
     }
 
-    public async Task<string> DownloadCssLoaderProfileAsync(string mediaFireUrl)
-    {
-        if (string.IsNullOrWhiteSpace(mediaFireUrl))
-        {
-            mediaFireUrl = "https://www.mediafire.com/file/qml1pw9wve47xir/themes.zip/file";
-        }
-
-        Directory.CreateDirectory(AppPaths.DownloadsRoot);
-        var target = Path.Combine(AppPaths.DownloadsRoot, "themes.zip");
-        var direct = await ResolveMediaFireDirectUrlAsync(mediaFireUrl);
-        using var response = await _http.GetAsync(direct);
-        response.EnsureSuccessStatusCode();
-        await using var input = await response.Content.ReadAsStreamAsync();
-        await using var output = File.Create(target);
-        await input.CopyToAsync(output);
-        return target;
-    }
-
     private static string CssThemesDir => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "homebrew", "themes");
 
     private static string CssThemeManifest => Path.Combine(AppPaths.AppDataRoot, "playhub-css-themes.txt");
 
-    public async Task<string> ApplyCssLoaderProfileAsync(string mediaFireUrl)
+    public Task<string> ApplyCssLoaderProfileAsync(string _)
     {
-        // Usa lo zip dei temi INCLUSO nell'app (niente download da MediaFire).
-        // Lo zip è già strutturato per homebrew\themes: temi e Playhub.profile
-        // alla radice, senza cartelle contenitore.
         var zip = BundledThemesZip;
         if (!File.Exists(zip))
         {
-            zip = File.Exists(Path.Combine(AppPaths.DownloadsRoot, "themes.zip"))
-                ? Path.Combine(AppPaths.DownloadsRoot, "themes.zip")
-                : await DownloadCssLoaderProfileAsync(mediaFireUrl);
+            return Task.FromResult("Manca un file necessario. Reinstalla Playhub e riprova.");
         }
 
         var themesDir = CssThemesDir;
@@ -127,7 +99,7 @@ public sealed class ExtraService
         {
         }
 
-        return "Profilo Playhub installato in CSS Loader. Le tue altre opzioni restano invariate.";
+        return Task.FromResult("Profilo Playhub installato. Le altre opzioni di CSS Loader non sono cambiate.");
     }
 
     private static string BundledThemesZip =>
@@ -139,7 +111,7 @@ public sealed class ExtraService
         {
             if (!File.Exists(CssThemeManifest))
             {
-                return Task.FromResult("Non risulta installato nessun profilo Playhub.");
+                return Task.FromResult("Il profilo Playhub non è installato.");
             }
 
             foreach (var name in File.ReadAllLines(CssThemeManifest))
@@ -161,7 +133,8 @@ public sealed class ExtraService
         }
         catch (Exception ex)
         {
-            return Task.FromResult("Rimozione non riuscita: " + ex.Message);
+            Diag.Crash("ExtraService.RemoveCssLoaderProfileAsync", ex);
+            return Task.FromResult("Non riesco a rimuovere il profilo Playhub. Riprova.");
         }
     }
 
@@ -170,7 +143,7 @@ public sealed class ExtraService
         var users = _steam.GetUserFolders();
         if (users.Count == 0)
         {
-            return Task.FromResult("Non trovo utenti Steam con cartella userdata.");
+            return Task.FromResult("Non trovo alcun profilo Steam su questo PC.");
         }
 
         var backupRoot = Path.Combine(AppPaths.BackupsRoot, "SteamArtwork", DateTime.Now.ToString("yyyyMMdd-HHmmss"));
@@ -196,13 +169,13 @@ public sealed class ExtraService
         var root = Path.Combine(AppPaths.BackupsRoot, "SteamArtwork");
         if (!Directory.Exists(root))
         {
-            return Task.FromResult("Non ci sono backup artwork Playhub.");
+            return Task.FromResult("Non ci sono backup degli artwork da ripristinare.");
         }
 
         var latest = Directory.GetDirectories(root).OrderByDescending(Path.GetFileName).FirstOrDefault();
         if (latest is null)
         {
-            return Task.FromResult("Non ci sono backup artwork Playhub.");
+            return Task.FromResult("Non ci sono backup degli artwork da ripristinare.");
         }
 
         var steam = _steam.GetSteamFolder();
@@ -224,13 +197,6 @@ public sealed class ExtraService
         }
 
         return Task.FromResult("Artwork di Steam ripristinati.");
-    }
-
-    private async Task<string> ResolveMediaFireDirectUrlAsync(string url)
-    {
-        var html = await _http.GetStringAsync(url);
-        var match = Regex.Match(html, "https?://download[^\"']+");
-        return match.Success ? match.Value.Replace("\\/", "/") : url;
     }
 
     private static void CopyDirectory(string source, string destination)

@@ -51,7 +51,7 @@ public sealed class GamingWindowFocusService : IDisposable
 
 	private static readonly HashSet<string> IgnoredProcesses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 	{
-		"GamingMode", "GamingModeSetup", "explorer", "steam", "steamwebhelper", "sunshine", "apollo", "vibepollo", "PluginLoader", "PluginLoader_noconsole",
+		"GamingMode", "GamingModeSetup", "explorer", "steam", "steamwebhelper", "sunshine", "apollo", "vibepollo", "vibeshine", "PluginLoader", "PluginLoader_noconsole",
 		"powershell", "pwsh", "cmd", "conhost", "WindowsTerminal", "yt-dlp", "ffmpeg", "ffprobe", "curl", "wget"
 	};
 
@@ -77,13 +77,15 @@ public sealed class GamingWindowFocusService : IDisposable
 
 	private int _steamFocusRecoveryGeneration;
 
-	private nint _lastForegroundAppliedWindow;
+	private nint _lastForegroundSteamGameWindow;
 
 	/// <summary>
 	/// True mentre a schermo c'e' una schermata di avvio di Launch Curtain.
 	/// Chi porta avanti finestre deve rispettarla e non intromettersi.
 	/// </summary>
 	public bool IsLaunchCurtainOnScreen => _launchCurtainPriorityActive;
+
+	public int SteamFocusRecoveryVersion => Volatile.Read(ref _steamFocusRecoveryGeneration);
 
 	private const int GwlStyle = -16;
 
@@ -176,7 +178,7 @@ public sealed class GamingWindowFocusService : IDisposable
 			_appliedWindows.Clear();
 			ProcessNameCache.Clear();
 			_launchCurtainPriorityActive = false;
-			_lastForegroundAppliedWindow = 0;
+			_lastForegroundSteamGameWindow = 0;
 		}
 		if (cancellation == null)
 		{
@@ -223,7 +225,6 @@ public sealed class GamingWindowFocusService : IDisposable
 
 	private bool ApplyToCandidateWindows()
 	{
-		bool hadAppliedWindows = !_appliedWindows.IsEmpty;
 		IReadOnlyList<nint> readOnlyList = EnumerateWindows();
 		HashSet<nint> seen = new HashSet<nint>();
 		List<LaunchCurtainWindow> list = new List<LaunchCurtainWindow>();
@@ -269,23 +270,25 @@ public sealed class GamingWindowFocusService : IDisposable
 			}
 		}
 		nint foregroundWindow = GetForegroundWindow();
-		if (foregroundWindow != 0 && _appliedWindows.ContainsKey(foregroundWindow))
+		if (foregroundWindow != 0 &&
+			_appliedWindows.TryGetValue(foregroundWindow, out AppliedWindowState foregroundState) &&
+			foregroundState.IsSteamGame)
 		{
-			_lastForegroundAppliedWindow = foregroundWindow;
+			_lastForegroundSteamGameWindow = foregroundWindow;
 		}
 		nint[] array = _appliedWindows.Keys.Where((nint window) => !seen.Contains(window)).ToArray();
-		bool removedForegroundWindow = _lastForegroundAppliedWindow != 0 && array.Contains(_lastForegroundAppliedWindow);
-		bool removedSteamGame = array.Any(window =>
-			_appliedWindows.TryGetValue(window, out AppliedWindowState state) && state.IsSteamGame);
+		bool removedForegroundSteamGame = _lastForegroundSteamGameWindow != 0 &&
+			array.Contains(_lastForegroundSteamGameWindow);
 		foreach (nint key in array)
 		{
 			_appliedWindows.TryRemove(key, out var _);
 		}
-		if (removedForegroundWindow)
+		bool anotherSteamGameWindowExists = _appliedWindows.Values.Any((AppliedWindowState state) => state.IsSteamGame);
+		if (removedForegroundSteamGame)
 		{
-			_lastForegroundAppliedWindow = 0;
+			_lastForegroundSteamGameWindow = 0;
 		}
-		if (hadAppliedWindows && array.Length > 0 && !flag && (removedSteamGame || removedForegroundWindow || _appliedWindows.IsEmpty))
+		if (!flag && removedForegroundSteamGame && !anotherSteamGameWindowExists)
 		{
 			QueueSteamFocusRecovery();
 		}
@@ -385,10 +388,7 @@ public sealed class GamingWindowFocusService : IDisposable
 			long num = ((IntPtr)GetWindowLongPtr(window, -16)).ToInt64() & -13565953;
 			long num2 = ((IntPtr)GetWindowLongPtr(window, -20)).ToInt64() & -131586;
 			Rect rcMonitor = lpmi.rcMonitor;
-			string executablePath = "";
-			try { executablePath = Process.GetProcessById((int)processId).MainModule?.FileName ?? ""; }
-			catch { }
-			bool isSteamGame = OverlaySteamArtworkResolver.IsSteamGameProcess((int)processId, executablePath);
+			bool isSteamGame = OverlaySteamArtworkResolver.IsSteamGameProcess((int)processId);
 			AppliedWindowState appliedWindowState = new AppliedWindowState(rcMonitor, num, num2, isSteamGame);
 			if (!_appliedWindows.TryGetValue(window, out var value) || !value.Equals(appliedWindowState))
 			{

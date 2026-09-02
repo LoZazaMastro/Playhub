@@ -15,7 +15,7 @@ export const API_BASE = "http://127.0.0.1:47991";
 // piano" a una finestra non e' cosa che si possa fare da qui dentro.
 export const FOCUS_HELPER_BASE = "http://127.0.0.1:47992";
 
-async function focusHelper(path: "steam" | "game" | "release"): Promise<boolean> {
+async function focusHelper(path: "capture" | "steam" | "game" | "release"): Promise<boolean> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 900);
   try {
@@ -32,6 +32,7 @@ async function focusHelper(path: "steam" | "game" | "release"): Promise<boolean>
 }
 
 export function requestDashboardSteamFocus() { return focusHelper("steam"); }
+export function captureDashboardSourceFocus() { return focusHelper("capture"); }
 export function restoreDashboardSourceFocus() { return focusHelper("game"); }
 export function releaseDashboardFocus() { return focusHelper("release"); }
 
@@ -124,6 +125,8 @@ export interface DashboardSettings {
   keyboardShortcutEnabled: boolean;
   hotkey: string;
   defaultMode: string;
+  navigationHapticsEnabled: boolean;
+  navigationHapticsIntensity: number;
 }
 
 export interface ProcessEntry {
@@ -424,7 +427,17 @@ export function iconSource(base64: string): string {
 // L'agente non apre niente: alza una bandierina quando viene premuta una
 // scorciatoia. Qui la si raccoglie. La risposta si consuma alla lettura, quindi
 // due schede in ascolto non aprono la pagina due volte.
-export async function consumeOpenRequest(): Promise<boolean> {
-  const result = await request<{ open: boolean }>("/dash/open-requested", undefined, 1500);
-  return result?.open === true;
+export interface DashboardSignal {
+  open: boolean;
+  focusRecovery: number;
+  steamForeground: boolean;
+}
+
+export async function consumeOpenRequest(): Promise<DashboardSignal> {
+  const result = await request<DashboardSignal>("/dash/open-requested", undefined, 1500);
+  return {
+    open: result?.open === true,
+    focusRecovery: Number(result?.focusRecovery) || 0,
+    steamForeground: result?.steamForeground === true,
+  };
 }

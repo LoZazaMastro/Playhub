@@ -53,7 +53,7 @@ public sealed class RepairService
             }
             else
             {
-                notes.Add("Gaming Mode non è stato riparato del tutto: riprova o reinstalla Playhub.");
+                notes.Add("Non sono riuscito a ripristinare Gaming Mode. Riprova o reinstalla Playhub.");
             }
         }
 
@@ -69,7 +69,7 @@ public sealed class RepairService
         catch
         {
             found++;
-            notes.Add("La configurazione di Gaming Mode non è leggibile né riparabile.");
+            notes.Add("La configurazione di Gaming Mode è danneggiata. Reinstalla Playhub.");
         }
 
         // ---------- 4) Plugin Gaming Mode per DeckyLoader ----------
@@ -92,11 +92,11 @@ public sealed class RepairService
         }
 
         // ---------- 5) Agente Gaming Mode ----------
-        progress.Report((0.72, "Verifico l'agente Gaming Mode…"));
+        progress.Report((0.72, "Controllo il servizio Gaming Mode…"));
         if (_gamingMode.IsInstalled && !await _gamingMode.IsAgentHealthyAsync())
         {
             found++;
-            progress.Report((0.78, "Riavvio l'agente Gaming Mode…"));
+            progress.Report((0.78, "Riavvio il servizio Gaming Mode…"));
             _gamingMode.StartAgent();
             var healthy = false;
             for (var i = 0; i < 20 && !healthy; i++)
@@ -107,11 +107,11 @@ public sealed class RepairService
             if (healthy)
             {
                 fixedCount++;
-                notes.Add("L'agente Gaming Mode è stato riavviato.");
+                notes.Add("Il servizio Gaming Mode è stato riavviato.");
             }
             else
             {
-                notes.Add("L'agente Gaming Mode non risponde: prova a riavviare il PC.");
+                notes.Add("Il servizio Gaming Mode non risponde. Prova a riavviare il PC.");
             }
         }
 
@@ -257,14 +257,14 @@ public sealed class RepairService
             if (string.Equals(defaultMode, "Desktop", StringComparison.OrdinalIgnoreCase) && isGamingShell)
             {
                 key.DeleteValue("Shell", throwOnMissingValue: false);
-                return "La shell di avvio puntava a Gaming Mode con predefinita Desktop: ripristinata.";
+                return "L'avvio in modalità Desktop è stato ripristinato.";
             }
 
             if (string.Equals(defaultMode, "Gaming", StringComparison.OrdinalIgnoreCase) &&
                 !isGamingShell && File.Exists(_gamingMode.InstalledExe))
             {
                 key.SetValue("Shell", $"\"{_gamingMode.InstalledExe}\" shell", RegistryValueKind.String);
-                return "La shell di avvio non puntava a Gaming Mode con predefinita Gaming: sistemata.";
+                return "L'avvio in modalità Gaming è stato ripristinato.";
             }
 
             return null;

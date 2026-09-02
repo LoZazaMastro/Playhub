@@ -11,7 +11,7 @@ rem ====================================================================
 set LOG=build-installer-log.txt
 set PAYLOAD=Payload\payload.zip
 set STUB_DIR=Output\stub
-set FINAL=Output\Playhub-Setup.exe
+set FINAL=Output\Playhub Setup.exe
 
 if not exist "%PAYLOAD%" (
   echo Manca %PAYLOAD%. Esegui prima build-installer.bat almeno una volta.
@@ -33,7 +33,7 @@ echo [2/3] Appendo il payload in coda all'exe...
 echo. >> "%LOG%" & echo ===== [2/3] APPEND ===== >> "%LOG%"
 powershell -NoProfile -Command "$len=(Get-Item '%PAYLOAD%').Length; $b=[System.BitConverter]::GetBytes([int64]$len); $m=[System.Text.Encoding]::ASCII.GetBytes('PLHB'); [System.IO.File]::WriteAllBytes('Output\footer.bin', $b + $m)" >> "%LOG%" 2>&1
 if errorlevel 1 goto :fail
-copy /b "%STUB_DIR%\Playhub-Setup.exe"+"%PAYLOAD%"+"Output\footer.bin" "%FINAL%" >> "%LOG%" 2>&1
+copy /b "%STUB_DIR%\Playhub Setup.exe"+"%PAYLOAD%"+"Output\footer.bin" "%FINAL%" >> "%LOG%" 2>&1
 if errorlevel 1 goto :fail
 
 echo [3/3] Pulizia...
@@ -57,7 +57,7 @@ echo.
 echo ************************************************************
 echo  BUILD FALLITA. Dettagli nel file:
 echo    %~dp0%LOG%
-echo  Dillo a Claude: legge il log da solo.
+echo  Consulta il log per i dettagli.
 echo ************************************************************
 echo.
 echo Premi un tasto per chiudere...

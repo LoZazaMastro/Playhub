@@ -17,10 +17,6 @@ $gameBarKey = 'HKCU:\Software\Microsoft\GameBar'
 $gameBarValue = 'UseNexusForGameBarEnabled'
 
 $logMain = Join-Path $env:APPDATA 'GamingMode\playhub-gamebar.log'
-# Copia del log su F:\Playhub se presente (macchina di sviluppo), così è leggibile
-# esternamente per il debug. Sugli altri PC resta solo il log in %APPDATA%.
-$logMirror = $null
-if (Test-Path -LiteralPath 'F:\Playhub') { $logMirror = 'F:\Playhub\playhub-gamebar.log' }
 
 # Cap del log: oltre ~200 KB si riparte da capo.
 try {
@@ -34,7 +30,6 @@ catch {
 function Write-Log([string]$message) {
     $line = "$((Get-Date).ToString('yyyy-MM-dd HH:mm:ss')) $message"
     try { Add-Content -LiteralPath $logMain -Value $line -Encoding UTF8 } catch {}
-    if ($logMirror) { try { Add-Content -LiteralPath $logMirror -Value $line -Encoding UTF8 } catch {} }
 }
 
 function Get-GameBarState {

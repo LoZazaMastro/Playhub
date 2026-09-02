@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Playhub/MainWindow.PluginInstallProgress.cs" Link="MainWindow.PluginInstallProgress.cs" />
+    <Compile Include="../Playhub/Services/DeckyPluginService.cs" Link="DeckyPluginService.cs" />
+    <Compile Include="../Playhub/Models/DeckyPluginInfo.cs" Link="DeckyPluginInfo.cs" />
+  </ItemGroup>
+</Project>

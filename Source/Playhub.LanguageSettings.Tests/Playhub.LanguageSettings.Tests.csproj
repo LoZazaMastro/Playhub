@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <WindowsPackageType>None</WindowsPackageType>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250205002" />
+    <Reference Include="Microsoft.CodeAnalysis" HintPath="$(MSBuildBinPath)\Roslyn\bincore\Microsoft.CodeAnalysis.dll" />
+    <Reference Include="Microsoft.CodeAnalysis.CSharp" HintPath="$(MSBuildBinPath)\Roslyn\bincore\Microsoft.CodeAnalysis.CSharp.dll" />
+    <Compile Include="..\Playhub\MainWindow.LanguageSettings.cs" Link="MainWindow.LanguageSettings.cs" />
+    <Compile Include="..\Playhub\Models\PlayhubSettings.cs" Link="PlayhubSettings.cs" />
+    <Compile Include="..\Playhub\Services\LocalizationService.cs" Link="LocalizationService.cs" />
+    <Compile Include="..\Playhub\Services\AppPaths.cs" Link="AppPaths.cs" />
+    <Compile Include="..\Playhub\Services\SingleInstanceService.cs" Link="SingleInstanceService.cs" />
+    <Content Include="..\Playhub\MainWindow*.cs" Link="Source\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\Playhub\Assets\Localization\*.json" Link="Assets\Localization\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\Playhub\Services\LocalizationService.cs" Link="Source\LocalizationService.cs" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

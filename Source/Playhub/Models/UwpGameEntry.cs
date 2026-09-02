@@ -1,4 +1,4 @@
-namespace Playhub.Models;
+﻿namespace Playhub.Models;
 
 public sealed class UwpGameEntry
 {
@@ -19,5 +19,12 @@ public sealed class UwpGameEntry
     public string SteamGridDbLogoPath { get; set; } = "";
     public string SteamGridDbIconPath { get; set; } = "";
     public int SteamGridDbGameId { get; set; }
+
+    /// <summary>
+    /// AppID Steam del gioco corrispondente, quando esiste anche su Steam.
+    /// Serve a proporre gli artwork ufficiali di Valve quando SteamGridDB non ha nulla.
+    /// -1 = cercato e non trovato, 0 = mai cercato.
+    /// </summary>
+    public int SteamAppId { get; set; }
     public bool SteamGridDbArtworkDisabled { get; set; }
 }
