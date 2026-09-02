@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace PlayhubSetup;
@@ -72,7 +72,7 @@ public static class Loc
         { "Add to the Start menu", "Aggiungi al menu Start", "Añadir al menú Inicio", "Ajouter au menu Démarrer", "Zum Startmenü hinzufügen", "Adicionar ao menu Iniciar", "Додати до меню Пуск", "添加到开始菜单", "スタート メニューに追加", "시작 메뉴에 추가", "स्टार्ट मेनू में जोड़ें", "Добавить в меню «Пуск»" },
 
         ["OptLaunchEnd"] = new[]
-        { "Launch Playhub when installation finishes", "Avvia Playhub al termine dell'installazione", "Iniciar Playhub al finalizar la instalación", "Lancer Playhub à la fin de l'installation", "Playhub nach Abschluss der Installation starten", "Iniciar o Playhub ao concluir a instalação", "Запустити Playhub після завершення встановлення", "安装完成后启动 Playhub", "インストール完了後に Playhub を起動", "설치 완료 후 Playhub 실행", "इंस्टॉलेशन पूरा होने पर Playhub चलाएं", "Запустить Playhub после завершения установки" },
+        { "Open Playhub now", "Apri Playhub ora", "Abrir Playhub ahora", "Ouvrir Playhub maintenant", "Playhub jetzt öffnen", "Abrir o Playhub agora", "Відкрити Playhub зараз", "立即打开 Playhub", "今すぐ Playhub を開く", "지금 Playhub 열기", "Playhub अभी खोलें", "Открыть Playhub сейчас" },
 
         ["Cancel"] = new[]
         { "Cancel", "Annulla", "Cancelar", "Annuler", "Abbrechen", "Cancelar", "Скасувати", "取消", "キャンセル", "취소", "रद्द करें", "Отмена" },

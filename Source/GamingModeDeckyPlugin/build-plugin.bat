@@ -59,6 +59,7 @@ rem ---------- copia negli Assets ----------
 rem  Solo index.js: la sourcemap pesa oltre un mega e a Decky non serve.
 if not exist "%ASSETS%\dist" mkdir "%ASSETS%\dist"
 copy /y "dist\index.js" "%ASSETS%\dist\index.js" >> "%LOG%" 2>&1
+del /q "%ASSETS%\dist\index.js.map" 2>nul
 copy /y "plugin.json"   "%ASSETS%\plugin.json"   >> "%LOG%" 2>&1
 copy /y "package.json"  "%ASSETS%\package.json"  >> "%LOG%" 2>&1
 

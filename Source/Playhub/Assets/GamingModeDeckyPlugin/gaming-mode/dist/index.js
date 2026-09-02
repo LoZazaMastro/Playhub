@@ -124,6 +124,7 @@ async function focusHelper(path) {
     }
 }
 function requestDashboardSteamFocus() { return focusHelper("steam"); }
+function captureDashboardSourceFocus() { return focusHelper("capture"); }
 function restoreDashboardSourceFocus() { return focusHelper("game"); }
 function releaseDashboardFocus() { return focusHelper("release"); }
 // UNA RIGA NEL LOG DELL'AGENTE.
@@ -236,6 +237,12 @@ function readUsage() {
 function readEnvironment() {
     return request("/dash/environment", undefined, 2200);
 }
+function readSettings() {
+    return request("/dash/settings");
+}
+function writeSettings(changes) {
+    return post$1("/dash/settings", changes);
+}
 function restartDecky() {
     return post$1("/restart/decky");
 }
@@ -258,13 +265,13 @@ async function loadImage(path) {
 function iconSource(base64) {
     return base64 ? `data:image/png;base64,${base64}` : "";
 }
-// ---------- apertura richiesta dall'esterno ----------
-// L'agente non apre niente: alza una bandierina quando viene premuta una
-// scorciatoia. Qui la si raccoglie. La risposta si consuma alla lettura, quindi
-// due schede in ascolto non aprono la pagina due volte.
 async function consumeOpenRequest() {
     const result = await request("/dash/open-requested", undefined, 1500);
-    return result?.open === true;
+    return {
+        open: result?.open === true,
+        focusRecovery: Number(result?.focusRecovery) || 0,
+        steamForeground: result?.steamForeground === true,
+    };
 }
 
 // THIS FILE IS AUTO GENERATED
@@ -462,7 +469,21 @@ async function prepareDashboardOverlay() {
             ? infos.find((info) => Number(info?.appID ?? 0) > 0 && Number(info?.unPID ?? 0) > 0 && `${info?.gameID ?? ""}`)
             : null;
         dashboardOverlayGameId = current ? `${current.gameID}` : "";
-        return Boolean(dashboardOverlayGameId);
+        if (!dashboardOverlayGameId)
+            return false;
+        await window.SteamClient?.Overlay?.SetOverlayState?.(dashboardOverlayGameId, 2);
+        const deadline = performance.now() + 1600;
+        while (performance.now() < deadline) {
+            if (overlayDocument()?.body)
+                return true;
+            await new Promise((resolve) => window.setTimeout(resolve, 40));
+        }
+        try {
+            await window.SteamClient?.Overlay?.SetOverlayState?.(dashboardOverlayGameId, 0);
+        }
+        catch { }
+        dashboardOverlayGameId = "";
+        return false;
     }
     catch {
         dashboardOverlayGameId = "";
@@ -534,6 +555,7 @@ function focusDashboard(selector) {
 function activateDashboardSteamContext() {
     const store = _global_DFL?.Router?.WindowStore;
     const candidates = [
+        ...(Array.isArray(store?.OverlayWindows) ? store.OverlayWindows : []),
         ...(Array.isArray(store?.SteamUIWindows) ? store.SteamUIWindows : []),
         store?.GamepadUIMainWindowInstance,
     ];
@@ -547,6 +569,18 @@ function activateDashboardSteamContext() {
             if (!browserWindow?.document?.querySelector?.(".ph-dashboard"))
                 continue;
             const context = steamWindow.m_FocusNavContext;
+            try {
+                browserWindow.SteamClient?.Window?.MarkLastFocused?.();
+            }
+            catch { }
+            try {
+                browserWindow.SteamClient?.Window?.SetKeyFocus?.(true);
+            }
+            catch { }
+            try {
+                browserWindow.focus?.();
+            }
+            catch { }
             if (!context?.BIsActive?.())
                 context?.OnActivate?.(browserWindow);
             steamWindow.FocusApplicationRoot?.();
@@ -843,6 +877,8 @@ const STYLE = `
   .ph-process-stat { text-align: right; opacity: .68; }
   .ph-restart-decky { min-height: 44px; padding: 0 16px; border-radius: 17px; display: inline-flex; align-items: center; gap: 9px; color: rgba(255,255,255,.86); background: rgba(255,255,255,.09); font-size: 15px; font-weight: 650; white-space: nowrap; }
   .ph-restart-decky svg { width: 19px; height: 19px; }
+  .ph-restart-decky.ph-busy { opacity: .82; }
+  .ph-restart-decky.ph-busy svg { animation: phSpin .72s linear infinite; }
   .ph-restart-decky.ph-focus, .ph-restart-decky:focus { color: #12151a; background: rgba(248,250,255,.95); box-shadow: 0 0 0 3px rgba(255,255,255,.68); }
   .ph-spinner { width: 32px; height: 32px; margin: 30px auto; border-radius: 50%; border: 3px solid rgba(255,255,255,.2); border-top-color: #fff; animation: phSpin .8s linear infinite; }
   .ph-confirm-backdrop { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(4,6,10,.58); animation: phPageIn 150ms ease; }
@@ -1095,17 +1131,36 @@ async function loadFallback(entry) {
 }
 let cachedSwitcherWindows = [];
 let cachedSwitcherArtwork = {};
+let switcherWindowsRequest = null;
+function sortSwitcherWindows(windows) {
+    return windows.slice().sort((left, right) => Number(right.primary) - Number(left.primary) || Number(right.foreground) - Number(left.foreground));
+}
+function preloadDashboardWindows(force = false) {
+    if (!force && cachedSwitcherWindows.length > 0)
+        return Promise.resolve(cachedSwitcherWindows);
+    if (switcherWindowsRequest)
+        return switcherWindowsRequest;
+    switcherWindowsRequest = listWindows()
+        .then((windows) => {
+        const latest = sortSwitcherWindows(windows);
+        cachedSwitcherWindows = latest;
+        return latest;
+    })
+        .finally(() => {
+        switcherWindowsRequest = null;
+    });
+    return switcherWindowsRequest;
+}
 function TaskSwitcher({ copy, onReady, onSelectWindow }) {
     const [windows, setWindows] = useState$1(cachedSwitcherWindows);
     const [artwork, setArtwork] = useState$1(cachedSwitcherArtwork);
     const rail = useRef(null);
     const readySent = useRef(false);
     const focusedPrimaryHandle = useRef("");
-    const orderedWindows = useMemo$1(() => windows.slice().sort((left, right) => Number(right.primary) - Number(left.primary) || Number(right.foreground) - Number(left.foreground)), [windows]);
+    const orderedWindows = useMemo$1(() => sortSwitcherWindows(windows), [windows]);
     const refresh = useCallback(async () => {
-        const latest = (await listWindows()).slice().sort((left, right) => Number(right.primary) - Number(left.primary) || Number(right.foreground) - Number(left.foreground));
+        const latest = await preloadDashboardWindows(true);
         setWindows((current) => {
-            cachedSwitcherWindows = latest;
             const unchanged = current.length === latest.length && current.every((entry, index) => {
                 const next = latest[index];
                 return next?.handle === entry.handle
@@ -1194,7 +1249,7 @@ function TaskSwitcher({ copy, onReady, onSelectWindow }) {
         });
     }, [windows.map((entry) => entry.handle).join("|")]);
     const closeEntry = useCallback(async (entry, index) => {
-        const ordered = windows.slice().sort((left, right) => Number(right.primary) - Number(left.primary) || Number(right.foreground) - Number(left.foreground));
+        const ordered = sortSwitcherWindows(windows);
         const fallbackHandle = ordered[index + 1]?.handle ?? ordered[index - 1]?.handle ?? "";
         await closeWindow(entry.handle);
         window.setTimeout(async () => {
@@ -1346,6 +1401,8 @@ function SystemTab({ copy, extra, onConfirm }) {
     const [processes, setProcesses] = useState$1([]);
     const [selectedProcess, setSelectedProcess] = useState$1(null);
     const [history, setHistory] = useState$1({});
+    const [deckyRestarting, setDeckyRestarting] = useState$1(false);
+    const deckyRestartingRef = useRef(false);
     const refreshing = useRef(false);
     const refresh = useCallback(async () => {
         if (refreshing.current)
@@ -1384,8 +1441,22 @@ function SystemTab({ copy, extra, onConfirm }) {
         }
     }, []);
     useEffect$1(() => { void refresh(); const timer = window.setInterval(() => void refresh(), 2500); return () => window.clearInterval(timer); }, [refresh]);
+    const requestDeckyRestart = useCallback(() => {
+        if (deckyRestartingRef.current)
+            return;
+        deckyRestartingRef.current = true;
+        setDeckyRestarting(true);
+        // Decky ricarica o chiude questa pagina durante il riavvio. Lo spinner
+        // resta quindi attivo per tutta la vita residua della pagina, anche se la
+        // richiesta HTTP termina prima del riavvio effettivo.
+        void restartDecky();
+    }, []);
     return (SP_JSX.jsxs("div", { className: "ph-page ph-page-scroll", children: [SP_JSX.jsxs("div", { className: "ph-system-stack", children: [SP_JSX.jsxs(FocusGrid, { className: "ph-metrics-rail", onWheel: (event) => { if (Math.abs(event.deltaY) > Math.abs(event.deltaX))
-                            event.currentTarget.scrollLeft += event.deltaY; }, children: [SP_JSX.jsx(HistoryMetric, { index: 0, title: copy.cpu, value: `${Math.round(usage?.cpuPercent ?? 0)}%`, detail: `${navigator.hardwareConcurrency || "--"} core`, series: history.cpu ?? [], fixedPeak: 100 }), SP_JSX.jsx(HistoryMetric, { index: 1, title: copy.gpu, value: usage?.gpuAvailable ? `${Math.round(usage.gpuPercent)}%` : "--", detail: usage?.gpuAvailable ? "GPU" : "--", series: history.gpu ?? [], fixedPeak: 100 }), SP_JSX.jsx(HistoryMetric, { index: 2, title: copy.memory, value: `${Math.round(usage?.memoryPercent ?? 0)}%`, detail: `${((usage?.memoryUsedMb ?? 0) / 1024).toFixed(1)} / ${((usage?.memoryTotalMb ?? 0) / 1024).toFixed(1)} GB`, series: history.memory ?? [], fixedPeak: 100 }), SP_JSX.jsx(HistoryMetric, { index: 3, title: extra.network, value: formatRate(usage?.networkBytesPerSecond ?? 0), detail: extra.network, series: history.network ?? [] }), (usage?.disks ?? []).map((disk, diskIndex) => SP_JSX.jsx(HistoryMetric, { index: 4 + diskIndex, title: `${extra.disk} ${disk.name}`, value: formatRate(disk.bytesPerSecond), detail: disk.kind ? disk.kind.toUpperCase() : extra.disk, series: history[`disk:${disk.name}`] ?? [] }, disk.name))] }), SP_JSX.jsx("div", { className: "ph-system-lower", children: SP_JSX.jsxs("div", { className: "ph-tile ph-process-panel", children: [SP_JSX.jsxs("div", { className: "ph-process-heading", children: [SP_JSX.jsx("div", { className: "ph-device-list-head", style: { padding: 0 }, children: copy.processes }), SP_JSX.jsxs(FocusItem, { className: "ph-restart-decky", onPress: () => onConfirm(copy.confirmAction, copy.restartDecky, () => void restartDecky()), onButtonDown: (event) => {
+                            event.currentTarget.scrollLeft += event.deltaY; }, children: [SP_JSX.jsx(HistoryMetric, { index: 0, title: copy.cpu, value: `${Math.round(usage?.cpuPercent ?? 0)}%`, detail: `${navigator.hardwareConcurrency || "--"} core`, series: history.cpu ?? [], fixedPeak: 100 }), SP_JSX.jsx(HistoryMetric, { index: 1, title: copy.gpu, value: usage?.gpuAvailable ? `${Math.round(usage.gpuPercent)}%` : "--", detail: usage?.gpuAvailable ? "GPU" : "--", series: history.gpu ?? [], fixedPeak: 100 }), SP_JSX.jsx(HistoryMetric, { index: 2, title: copy.memory, value: `${Math.round(usage?.memoryPercent ?? 0)}%`, detail: `${((usage?.memoryUsedMb ?? 0) / 1024).toFixed(1)} / ${((usage?.memoryTotalMb ?? 0) / 1024).toFixed(1)} GB`, series: history.memory ?? [], fixedPeak: 100 }), SP_JSX.jsx(HistoryMetric, { index: 3, title: extra.network, value: formatRate(usage?.networkBytesPerSecond ?? 0), detail: extra.network, series: history.network ?? [] }), (usage?.disks ?? []).map((disk, diskIndex) => SP_JSX.jsx(HistoryMetric, { index: 4 + diskIndex, title: `${extra.disk} ${disk.name}`, value: formatRate(disk.bytesPerSecond), detail: disk.kind ? disk.kind.toUpperCase() : extra.disk, series: history[`disk:${disk.name}`] ?? [] }, disk.name))] }), SP_JSX.jsx("div", { className: "ph-system-lower", children: SP_JSX.jsxs("div", { className: "ph-tile ph-process-panel", children: [SP_JSX.jsxs("div", { className: "ph-process-heading", children: [SP_JSX.jsx("div", { className: "ph-device-list-head", style: { padding: 0 }, children: copy.processes }), SP_JSX.jsxs(FocusItem, { className: `ph-restart-decky${deckyRestarting ? " ph-busy" : ""}`, "aria-busy": deckyRestarting ? "true" : "false", "aria-disabled": deckyRestarting ? "true" : "false", onPress: () => {
+                                                if (deckyRestartingRef.current)
+                                                    return;
+                                                onConfirm(copy.confirmAction, copy.restartDecky, requestDeckyRestart);
+                                            }, onButtonDown: (event) => {
                                                 const direction = gridDirectionFromGamepad(event?.detail?.button);
                                                 if (direction === "up") {
                                                     stopDirectionalEvent(event);
@@ -1790,12 +1861,19 @@ function DashboardPage() {
     useEffect$1(() => {
         if (!inOverlay || !portalTarget)
             return;
+        let leaving = false;
+        const returnToSource = () => {
+            if (leaving)
+                return;
+            leaving = true;
+            closeDashboardOverlay();
+            Navigation$1?.NavigateBack?.();
+            void restoreDashboardSourceFocus();
+        };
         const frame = window.requestAnimationFrame(() => {
             const mounted = Boolean(portalTarget.querySelector(".ph-dashboard"));
             if (!mounted || !dashboardOverlayGameId) {
-                closeDashboardOverlay();
-                Navigation$1?.NavigateBack?.();
-                void restoreDashboardSourceFocus();
+                returnToSource();
                 return;
             }
             try {
@@ -1803,7 +1881,15 @@ function DashboardPage() {
             }
             catch { }
         });
-        return () => window.cancelAnimationFrame(frame);
+        const monitor = window.setInterval(() => {
+            if (portalTarget.isConnected && dashboardOverlayGameId)
+                return;
+            returnToSource();
+        }, 250);
+        return () => {
+            window.cancelAnimationFrame(frame);
+            window.clearInterval(monitor);
+        };
     }, [inOverlay, portalTarget]);
     useEffect$1(() => () => {
         if (inOverlay)
@@ -1818,8 +1904,906 @@ function DashboardPage() {
     return portalTarget ? SP_REACTDOM.createPortal(SP_JSX.jsx(DashboardSurface, {}), portalTarget) : null;
 }
 
+const MODERN_HAPTIC_CONTROLLERS = new Set([10, 48]);
+const pending = new Set();
+let config = { enabled: false, intensity: 55 };
+let lastControllerIndex = 0;
+const soundRequests = new Map();
+const soundPlayerPatches = [];
+const uiAudioManagers = new Set();
+const patchedManagerPrototypes = new Set();
+const patchedPlaybackPrototypes = new Set();
+const patchedAudioSourcePrototypes = new Set();
+const soundBuffersByUrl = new Map();
+const soundBuffersByAction = new Map();
+const waveformTimers = new Set();
+let waveformGeneration = 0;
+let lastNativeRequestId = Math.floor(Date.now() * 1000);
+const gamepadTimestamps = new Map();
+function clampIntensity(value) {
+    return Math.max(5, Math.min(100, Math.round(value)));
+}
+function steamRoots() {
+    const roots = [window];
+    try {
+        const steam = _global_DFL?.findSP?.();
+        if (steam && !roots.includes(steam))
+            roots.push(steam);
+        if (steam?.window && !roots.includes(steam.window))
+            roots.push(steam.window);
+    }
+    catch { }
+    try {
+        const trees = _global_DFL?.getGamepadNavigationTrees?.() ?? [];
+        for (const tree of trees) {
+            const treeWindow = tree?.Root?.Element?.ownerDocument?.defaultView;
+            if (treeWindow && !roots.includes(treeWindow))
+                roots.push(treeWindow);
+        }
+    }
+    catch { }
+    for (const root of [...roots]) {
+        const popups = root?.g_PopupManager?.m_mapPopups;
+        if (!popups?.values)
+            continue;
+        for (const popup of Array.from(popups.values())) {
+            const popupWindow = popup?.m_popup ?? popup?.window;
+            if (popupWindow && !roots.includes(popupWindow))
+                roots.push(popupWindow);
+        }
+    }
+    return roots;
+}
+function steamIsForeground() {
+    for (const root of steamRoots()) {
+        const doc = root?.document;
+        if (doc?.visibilityState === "visible" && doc?.hasFocus?.())
+            return true;
+        if (root?.m_bFocused)
+            return true;
+    }
+    return false;
+}
+function focusedControl() {
+    try {
+        const controller = _global_DFL?.getFocusNavController?.();
+        const context = controller?.m_ActiveContext ?? controller?.m_LastActiveContext;
+        const tree = context?.m_LastActiveFocusNavTree ?? context?.m_LastActiveNavTree;
+        const element = tree?.m_lastFocusNode?.Element
+            ?? tree?.m_lastFocusNode?.m_element
+            ?? tree?.GetLastFocusedNode?.()?.Element
+            ?? tree?.GetLastFocusedNode?.()?.m_element;
+        if (element?.isConnected)
+            return element;
+    }
+    catch { }
+    for (const root of steamRoots()) {
+        const doc = root?.document;
+        if (!doc)
+            continue;
+        const gamepadFocus = doc.querySelector(".gpfocus, [data-gp-focus='true'], [data-gpfocus='true']");
+        if (gamepadFocus)
+            return gamepadFocus;
+        const active = doc.activeElement;
+        if (active && active !== doc.body && (doc.hasFocus?.() || active.matches?.(":focus")))
+            return active;
+    }
+    return null;
+}
+function controlKind(element) {
+    if (!element)
+        return null;
+    const selector = '[role="slider"], input[type="range"], [aria-haspopup], [role="combobox"]';
+    const control = (element.closest?.(selector) ?? element.querySelector?.(selector));
+    if (!control)
+        return null;
+    if (control.matches('[role="slider"], input[type="range"]'))
+        return "slider";
+    const popup = control.getAttribute("aria-haspopup");
+    return popup && popup !== "false" ? "dropdown" : control.getAttribute("role") === "combobox" ? "dropdown" : null;
+}
+function toggleAction(element) {
+    if (!element)
+        return null;
+    const selector = '[role="switch"], [role="checkbox"], [aria-checked]';
+    const toggle = (element.closest?.(selector) ?? element.querySelector?.(selector));
+    if (!toggle)
+        return null;
+    return toggle.getAttribute("aria-checked") === "true" ? "toggleOff" : "toggleOn";
+}
+function sliderValue(element) {
+    if (!element)
+        return null;
+    const selector = '[role="slider"], input[type="range"]';
+    const slider = (element.closest?.(selector) ?? element.querySelector?.(selector));
+    const value = Number(slider?.getAttribute("aria-valuenow") ?? slider?.value);
+    return Number.isFinite(value) ? value : null;
+}
+function controllerFor(index) {
+    const store = window.ControllerStore;
+    const controllers = Array.from(store?.GetControllers?.() ?? []);
+    return store?.GetController?.(index)
+        ?? controllers.find((controller) => Number(controller?.nControllerIndex) === index)
+        ?? controllers.find((controller) => Number(controller?.nXInputIndex) === index && index !== 0xffffffff)
+        ?? (controllers.length === 1 ? controllers[0] : undefined);
+}
+function usesModernHaptics(controller) {
+    const vendor = Number(controller?.unVendorID);
+    const product = Number(controller?.unProductID);
+    const dualSense = vendor === 0x054c && (product === 0x0ce6 || product === 0x0df2);
+    return !dualSense && MODERN_HAPTIC_CONTROLLERS.has(Number(controller?.eControllerType));
+}
+function activeController(preferredIndex) {
+    const controller = controllerFor(preferredIndex);
+    if (!controller)
+        return undefined;
+    const index = Number(controller?.nControllerIndex);
+    return Number.isFinite(index) ? controller : undefined;
+}
+function controllerFromActiveSlot(value) {
+    const slot = Number(value?.nActiveController ?? value);
+    if (!Number.isInteger(slot) || slot < 0)
+        return undefined;
+    const store = window.ControllerStore;
+    const controllers = Array.from(store?.GetControllers?.() ?? []);
+    const controller = controllers[slot] ?? store?.GetController?.(slot);
+    return Number.isFinite(Number(controller?.nControllerIndex)) ? controller : undefined;
+}
+function gamepadHardwareId(id) {
+    const match = id.match(/Vendor:\s*([0-9a-f]{4})\s+Product:\s*([0-9a-f]{4})/i);
+    if (!match)
+        return null;
+    return { vendor: Number.parseInt(match[1], 16), product: Number.parseInt(match[2], 16) };
+}
+function primeGamepadTimestamps() {
+    gamepadTimestamps.clear();
+    for (const gamepad of Array.from(navigator.getGamepads?.() ?? []).filter(Boolean)) {
+        gamepadTimestamps.set(gamepad.index, Number(gamepad.timestamp) || 0);
+    }
+}
+function later(callback, delay) {
+    const timer = window.setTimeout(() => {
+        pending.delete(timer);
+        callback();
+    }, delay);
+    pending.add(timer);
+    return timer;
+}
+function nextNativeRequestId() {
+    lastNativeRequestId = Math.max(lastNativeRequestId + 1, Math.floor(Date.now() * 1000));
+    return lastNativeRequestId;
+}
+function actionSide(action) {
+    if (action === "moveLeft" || action === "sliderDecrease" || action === "tabPrevious")
+        return 0;
+    if (action === "moveRight" || action === "sliderIncrease" || action === "tabNext")
+        return 1;
+    return 2;
+}
+function discardSoundRequest(request) {
+    window.clearTimeout(request.timer);
+    pending.delete(request.timer);
+    soundRequests.delete(request.id);
+}
+function actionPattern(action) {
+    const side = actionSide(action);
+    switch (action) {
+        case "moveLeft":
+        case "moveRight":
+        case "moveUp":
+        case "moveDown":
+            return [{ delay: 0, scale: 1.18, kind: 2, side, duration: 19 }];
+        case "tabPrevious":
+        case "tabNext":
+            return [
+                { delay: 0, scale: 1.2, kind: 2, side, duration: 22 },
+                { delay: 38, scale: 0.68, kind: 1, side, duration: 17 },
+            ];
+        case "sliderDecrease":
+        case "sliderIncrease":
+            return [
+                { delay: 0, scale: 0.95, kind: 1, side, duration: 16 },
+                { delay: 18, scale: 0.52, kind: 2, side, duration: 14 },
+            ];
+        case "toggleOn":
+            return [
+                { delay: 0, scale: 0.58, kind: 1, side: 0, duration: 18 },
+                { delay: 34, scale: 1.25, kind: 2, side: 1, duration: 26 },
+            ];
+        case "toggleOff":
+            return [
+                { delay: 0, scale: 0.58, kind: 1, side: 1, duration: 18 },
+                { delay: 34, scale: 1.08, kind: 2, side: 0, duration: 24 },
+            ];
+        case "confirm":
+            return [
+                { delay: 0, scale: 1.25, kind: 2, side: 2, duration: 25 },
+                { delay: 46, scale: 0.62, kind: 1, side: 2, duration: 18 },
+            ];
+        case "back":
+            return [
+                { delay: 0, scale: 1.08, kind: 2, side: 0, duration: 22 },
+                { delay: 32, scale: 0.48, kind: 1, side: 0, duration: 16 },
+            ];
+        case "dropdown":
+            return [
+                { delay: 0, scale: 0.68, kind: 1, side: 2, duration: 18 },
+                { delay: 28, scale: 1.12, kind: 2, side: 2, duration: 24 },
+            ];
+        case "options":
+        case "menu":
+            return [
+                { delay: 0, scale: 0.78, kind: 1, side: 2, duration: 18 },
+                { delay: 30, scale: 1.16, kind: 2, side: 2, duration: 23 },
+                { delay: 65, scale: 0.52, kind: 1, side: 2, duration: 16 },
+            ];
+        case "letter":
+            return [{ delay: 0, scale: 1.28, kind: 2, side: 2, duration: 27 }];
+    }
+}
+function playActionPattern(controllerIndex, action) {
+    waveformGeneration += 1;
+    const generation = waveformGeneration;
+    waveformTimers.forEach((timer) => {
+        window.clearTimeout(timer);
+        pending.delete(timer);
+    });
+    waveformTimers.clear();
+    const controller = activeController(controllerIndex);
+    if (!controller)
+        return;
+    const index = Number(controller.nControllerIndex);
+    const modern = usesModernHaptics(controller);
+    if (!modern) {
+        const vendor = Number(controller.unVendorID);
+        if (vendor === 0x045e) {
+            playLegacyPattern(index, action, generation);
+            return;
+        }
+        void nativePattern(index, action).then((handled) => {
+            if (!handled && generation === waveformGeneration && config.enabled && steamIsForeground()) {
+                playLegacyPattern(index, action, generation);
+            }
+        });
+        return;
+    }
+    for (const step of actionPattern(action)) {
+        const emit = () => {
+            if (generation !== waveformGeneration || !config.enabled || !steamIsForeground())
+                return;
+            const side = step.side ?? actionSide(action);
+            modernPulse(index, side, step.kind, step.scale);
+        };
+        if (step.delay === 0)
+            emit();
+        else {
+            let timer = 0;
+            timer = later(() => {
+                waveformTimers.delete(timer);
+                emit();
+            }, step.delay);
+            waveformTimers.add(timer);
+        }
+    }
+}
+function playLegacyPattern(index, action, generation) {
+    for (const step of actionPattern(action)) {
+        const emit = () => {
+            if (generation !== waveformGeneration || !config.enabled || !steamIsForeground())
+                return;
+            rumblePulse(index, step.side ?? actionSide(action), step.scale, step.duration ?? 20);
+        };
+        if (step.delay === 0)
+            emit();
+        else {
+            let timer = 0;
+            timer = later(() => {
+                waveformTimers.delete(timer);
+                emit();
+            }, step.delay);
+            waveformTimers.add(timer);
+        }
+    }
+}
+function modernPulse(index, side, kind, scale) {
+    const input = window.SteamClient?.Input;
+    const normalizedShape = Math.min(1, Math.max(0.03, scale));
+    const soundShape = 0.18 + normalizedShape * 0.82;
+    const requestedAmplitude = Math.max(0.04, (config.intensity / 12.5) * soundShape);
+    const gain = Math.max(-12, Math.min(16, Math.round(1 + 20 * Math.log10(requestedAmplitude))));
+    input?.TriggerSimpleHapticEvent?.(index, side, kind, 2, gain);
+}
+function browserRumble(index, side, scale, duration = 38) {
+    const pads = Array.from(navigator.getGamepads?.() ?? []);
+    const controller = controllerFor(index);
+    const vendor = Number(controller?.unVendorID);
+    const product = Number(controller?.unProductID);
+    const connectedPads = pads.filter(Boolean);
+    const hardwareMatches = connectedPads.filter((candidate) => {
+        const hardware = gamepadHardwareId(String(candidate.id ?? ""));
+        return hardware && hardware.vendor === vendor && hardware.product === product
+            && (candidate.vibrationActuator ?? candidate.hapticActuators?.[0]);
+    });
+    const pad = (hardwareMatches.length === 1 ? hardwareMatches[0] : undefined)
+        ?? (connectedPads.length === 1 ? connectedPads[0] : undefined);
+    const actuator = pad?.vibrationActuator ?? pad?.hapticActuators?.[0];
+    if (!actuator?.playEffect)
+        return false;
+    const strength = Math.pow(config.intensity / 100, 1.28);
+    const normalized = Math.min(1, Math.max(0.04, strength * (0.18 + Math.min(1, scale) * 0.82) * 2));
+    const both = side === 2;
+    void actuator.playEffect("dual-rumble", {
+        duration: Math.round(duration * (0.72 + config.intensity / 72)),
+        startDelay: 0,
+        strongMagnitude: both || side === 0 ? normalized : normalized * 0.1,
+        weakMagnitude: both || side === 1 ? normalized : normalized * 0.1,
+    }).catch(() => undefined);
+    return true;
+}
+async function nativePattern(index, action) {
+    const controller = controllerFor(index);
+    const vendorId = Number(controller?.unVendorID);
+    const productId = Number(controller?.unProductID);
+    if (!Number.isInteger(vendorId) || vendorId <= 0 || !Number.isInteger(productId) || productId <= 0)
+        return false;
+    const magnitude = Math.min(1, Math.max(0.05, Math.pow(config.intensity / 100, 1.35) * 0.95));
+    const controllerSignal = new AbortController();
+    const timer = window.setTimeout(() => controllerSignal.abort(), 240);
+    try {
+        const response = await fetch(`${API_BASE}/dash/haptic`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                controllerIndex: index,
+                vendorId,
+                productId,
+                side: actionSide(action),
+                magnitude,
+                pattern: action,
+                requestId: nextNativeRequestId(),
+            }),
+            signal: controllerSignal.signal,
+        });
+        if (!response.ok)
+            return false;
+        const result = await response.json();
+        return result.handled === true;
+    }
+    catch {
+        return false;
+    }
+    finally {
+        window.clearTimeout(timer);
+    }
+}
+function rumblePulse(index, side, scale, duration = 38) {
+    if (browserRumble(index, side, scale, duration))
+        return;
+    const input = window.SteamClient?.Input;
+    const requestedAmplitude = Math.max(0.03, (config.intensity / 12.5) * scale);
+    const gain = Math.max(-12, Math.min(16, Math.round(1 + 20 * Math.log10(requestedAmplitude))));
+    if (input?.ForceSimpleHapticEvent)
+        input.ForceSimpleHapticEvent(index, side, 2, 2, gain);
+    else if (input?.TriggerSimpleHapticEvent)
+        input.TriggerSimpleHapticEvent(index, side, 2, 2, gain);
+    else
+        input?.TriggerHapticPulse?.(index, side, Math.round(duration * 10), 0);
+}
+function stopBrowserRumble() {
+    for (const pad of Array.from(navigator.getGamepads?.() ?? []).filter(Boolean)) {
+        const actuator = pad.vibrationActuator ?? pad.hapticActuators?.[0];
+        try {
+            if (actuator?.reset)
+                void Promise.resolve(actuator.reset()).catch(() => undefined);
+            else if (actuator?.playEffect) {
+                void actuator.playEffect("dual-rumble", {
+                    duration: 1,
+                    startDelay: 0,
+                    strongMagnitude: 0,
+                    weakMagnitude: 0,
+                }).catch(() => undefined);
+            }
+        }
+        catch { }
+    }
+}
+function stopNativeHaptics() {
+    void fetch(`${API_BASE}/dash/haptic`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stop: true, requestId: nextNativeRequestId() }),
+        keepalive: true,
+    }).catch(() => undefined);
+}
+function stopActiveHaptics() {
+    waveformGeneration += 1;
+    waveformTimers.forEach((timer) => {
+        window.clearTimeout(timer);
+        pending.delete(timer);
+    });
+    waveformTimers.clear();
+    stopBrowserRumble();
+    stopNativeHaptics();
+}
+function playNavigationHaptic(action, controllerIndex) {
+    if (!config.enabled || !steamIsForeground())
+        return;
+    const controller = activeController(controllerIndex ?? lastControllerIndex);
+    if (!controller)
+        return;
+    const index = Number(controller.nControllerIndex);
+    lastControllerIndex = index;
+    playActionPattern(index, action);
+}
+function configureNavigationHaptics(next) {
+    config = {
+        enabled: next.enabled ?? config.enabled,
+        intensity: clampIntensity(next.intensity ?? config.intensity),
+    };
+    if (!config.enabled) {
+        soundRequests.forEach(discardSoundRequest);
+        stopActiveHaptics();
+    }
+}
+function actionForButton(button) {
+    const kind = controlKind(focusedControl());
+    if (button === 30)
+        return "tabPrevious";
+    if (button === 31)
+        return "tabNext";
+    if (button === 0)
+        return toggleAction(focusedControl()) ?? (kind === "dropdown" ? "dropdown" : "confirm");
+    if (button === 1)
+        return "back";
+    if (button === 2 || button === 3)
+        return "options";
+    if (button === 8 || button === 9 || button === 34 || button === 35 || button === 36)
+        return "menu";
+    if (button === 4 || button === 10 || button === 20)
+        return "moveUp";
+    if (button === 6 || button === 11 || button === 21)
+        return "moveDown";
+    if (button === 7 || button === 12 || button === 22)
+        return kind === "slider" ? null : "moveLeft";
+    if (button === 5 || button === 13 || button === 23)
+        return kind === "slider" ? null : "moveRight";
+    return null;
+}
+function installNavigationHaptics() {
+    let registration;
+    let activeControllerRegistration;
+    let lastElement = null;
+    let lastIdentity = "";
+    let lastBox = null;
+    let lastSliderValue = null;
+    let lastToggleState = null;
+    let lastButtonAt = 0;
+    let lastFocusAction = null;
+    let lastFocusActionAt = 0;
+    const identities = new WeakMap();
+    let nextIdentity = 1;
+    let lastLetter = "";
+    let lastLetterAt = 0;
+    const letterObservers = new Map();
+    const focusDocuments = new Map();
+    let focusFrame;
+    let focusContext;
+    let focusRegistration;
+    const playFocusAction = (action) => {
+        const now = performance.now();
+        if (now - lastButtonAt < 180)
+            return;
+        if (lastFocusAction === action && now - lastFocusActionAt < 140)
+            return;
+        lastFocusAction = action;
+        lastFocusActionAt = now;
+        playNavigationHaptic(action);
+    };
+    const playLetter = (value) => {
+        const now = performance.now();
+        if (value === lastLetter && now - lastLetterAt < 80)
+            return;
+        lastLetter = value;
+        lastLetterAt = now;
+        playNavigationHaptic("letter");
+    };
+    const inspectLetter = (node) => {
+        let candidate = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node);
+        for (let depth = 0; candidate && depth < 5; depth += 1) {
+            if (candidate.childElementCount > 1)
+                return;
+            const value = candidate.textContent?.trim() ?? "";
+            if (!/^[A-Z#]$/i.test(value))
+                return;
+            if (candidate.childElementCount === 0) {
+                const view = candidate.ownerDocument.defaultView;
+                const box = candidate.getBoundingClientRect();
+                const fontSize = Number.parseFloat(view?.getComputedStyle(candidate).fontSize ?? "0");
+                if (box.width > 0 && box.height > 0 && fontSize >= 24)
+                    playLetter(value.toUpperCase());
+                return;
+            }
+            candidate = candidate.firstElementChild;
+        }
+    };
+    const bindLetterObservers = () => {
+        for (const root of steamRoots()) {
+            const doc = root?.document;
+            if (!doc?.documentElement || letterObservers.has(doc))
+                continue;
+            const Observer = root.MutationObserver;
+            if (!Observer)
+                continue;
+            const observer = new Observer((mutations) => {
+                if (!config.enabled || !steamIsForeground())
+                    return;
+                for (const mutation of mutations) {
+                    inspectLetter(mutation.target);
+                    mutation.addedNodes.forEach(inspectLetter);
+                }
+            });
+            observer.observe(doc.documentElement, { childList: true, subtree: true, characterData: true });
+            letterObservers.set(doc, observer);
+        }
+    };
+    primeGamepadTimestamps();
+    bindLetterObservers();
+    const inspectFocus = () => {
+        if (!config.enabled || !steamIsForeground())
+            return;
+        const element = focusedControl();
+        if (!element)
+            return;
+        let identity = identities.get(element);
+        if (!identity) {
+            identity = nextIdentity++;
+            identities.set(element, identity);
+        }
+        const activeDescendant = element.getAttribute("aria-activedescendant") ?? "";
+        const label = element.getAttribute("aria-label") ?? element.getAttribute("title") ?? element.textContent?.trim() ?? "";
+        const selected = element.getAttribute("aria-selected") ?? "";
+        const checked = element.getAttribute("aria-checked");
+        const value = sliderValue(element);
+        const signature = `${identity}:${activeDescendant}:${selected}:${checked ?? ""}:${value ?? ""}:${label.slice(0, 80)}`;
+        if (signature === lastIdentity)
+            return;
+        const box = element.getBoundingClientRect();
+        const previous = lastBox;
+        const wasElement = lastElement;
+        const previousSliderValue = lastElement === element ? lastSliderValue : null;
+        const previousToggleState = lastElement === element ? lastToggleState : null;
+        lastElement = element;
+        lastIdentity = signature;
+        lastBox = box;
+        lastSliderValue = value;
+        lastToggleState = checked;
+        if (!wasElement)
+            return;
+        if (value !== null && previousSliderValue !== null && value !== previousSliderValue) {
+            playFocusAction(value > previousSliderValue ? "sliderIncrease" : "sliderDecrease");
+            return;
+        }
+        if (checked !== null && previousToggleState !== null && checked !== previousToggleState) {
+            playFocusAction(checked === "true" ? "toggleOn" : "toggleOff");
+            return;
+        }
+        if (/^[A-ZÀ-ÖØ-Þ0-9]$/i.test(label)) {
+            playLetter(label.toUpperCase());
+            return;
+        }
+        if (element.closest('[role="tab"]')) {
+            const next = previous ? box.left >= previous.left : true;
+            playFocusAction(next ? "tabNext" : "tabPrevious");
+            return;
+        }
+        if (wasElement === element)
+            return;
+        const dx = previous ? box.left + box.width / 2 - (previous.left + previous.width / 2) : 0;
+        const dy = previous ? box.top + box.height / 2 - (previous.top + previous.height / 2) : 0;
+        if (Math.abs(dx) >= Math.abs(dy))
+            playFocusAction(dx < 0 ? "moveLeft" : "moveRight");
+        else
+            playFocusAction(dy < 0 ? "moveUp" : "moveDown");
+    };
+    const scheduleFocusInspection = () => {
+        if (focusFrame !== undefined)
+            return;
+        focusFrame = window.requestAnimationFrame(() => {
+            focusFrame = undefined;
+            inspectFocus();
+        });
+    };
+    const bindFocusContext = () => {
+        const controller = _global_DFL?.getFocusNavController?.();
+        const context = controller?.m_ActiveContext ?? controller?.m_LastActiveContext;
+        if (!context || context === focusContext)
+            return;
+        try {
+            focusRegistration?.Unregister?.();
+        }
+        catch { }
+        focusContext = context;
+        focusRegistration = context.m_FocusChangedCallbacks?.Register?.(scheduleFocusInspection);
+        scheduleFocusInspection();
+    };
+    const bindFocusDocuments = () => {
+        for (const root of steamRoots()) {
+            const doc = root?.document;
+            const Observer = root?.MutationObserver;
+            if (!doc?.documentElement || !Observer || focusDocuments.has(doc))
+                continue;
+            const onValue = scheduleFocusInspection;
+            doc.addEventListener("focusin", onValue, true);
+            doc.addEventListener("input", onValue, true);
+            doc.addEventListener("change", onValue, true);
+            const observer = new Observer(scheduleFocusInspection);
+            observer.observe(doc.documentElement, {
+                attributes: true,
+                subtree: true,
+                attributeFilter: ["aria-valuenow", "aria-checked", "aria-selected", "aria-activedescendant"],
+            });
+            focusDocuments.set(doc, { observer, onValue });
+        }
+    };
+    bindFocusContext();
+    bindFocusDocuments();
+    const observerTimer = window.setInterval(() => {
+        bindLetterObservers();
+        bindFocusContext();
+        bindFocusDocuments();
+    }, 500);
+    try {
+        activeControllerRegistration = window.SteamClient?.Input?.RegisterForActiveControllerChanges?.((message) => {
+            const controller = controllerFromActiveSlot(message);
+            if (controller)
+                lastControllerIndex = Number(controller.nControllerIndex);
+        });
+        registration = window.SteamClient?.Input?.RegisterForControllerInputMessages?.((...args) => {
+            const message = args[0] && typeof args[0] === "object" ? args[0] : undefined;
+            const slotController = controllerFromActiveSlot(message);
+            const controllerIndex = Number(slotController?.nControllerIndex
+                ?? message?.nControllerIndex
+                ?? message?.unControllerIndex
+                ?? args[0]);
+            const button = Number(message?.eButton ?? message?.nButton ?? message?.button ?? args[1]);
+            const pressed = Boolean(message?.bPressed ?? message?.bDown ?? message?.pressed ?? args[2]);
+            if (!pressed)
+                return;
+            if (Number.isInteger(controllerIndex) && activeController(controllerIndex))
+                lastControllerIndex = controllerIndex;
+            const action = actionForButton(button);
+            if (action) {
+                lastButtonAt = performance.now();
+                playNavigationHaptic(action, controllerIndex);
+            }
+        });
+    }
+    catch { }
+    return () => {
+        stopActiveHaptics();
+        window.clearInterval(observerTimer);
+        if (focusFrame !== undefined)
+            window.cancelAnimationFrame(focusFrame);
+        focusFrame = undefined;
+        try {
+            focusRegistration?.Unregister?.();
+        }
+        catch { }
+        focusRegistration = undefined;
+        focusContext = undefined;
+        focusDocuments.forEach(({ observer, onValue }, doc) => {
+            observer.disconnect();
+            doc.removeEventListener("focusin", onValue, true);
+            doc.removeEventListener("input", onValue, true);
+            doc.removeEventListener("change", onValue, true);
+        });
+        focusDocuments.clear();
+        letterObservers.forEach((observer) => observer.disconnect());
+        letterObservers.clear();
+        try {
+            (registration?.Unregister ?? registration?.unregister)?.call(registration);
+        }
+        catch { }
+        try {
+            (activeControllerRegistration?.Unregister ?? activeControllerRegistration?.unregister)?.call(activeControllerRegistration);
+        }
+        catch { }
+        pending.forEach((timer) => window.clearTimeout(timer));
+        pending.clear();
+        waveformTimers.clear();
+        soundRequests.clear();
+        soundPlayerPatches.splice(0).forEach((patch) => {
+            try {
+                patch?.unpatch?.();
+            }
+            catch { }
+        });
+        uiAudioManagers.clear();
+        patchedManagerPrototypes.clear();
+        patchedPlaybackPrototypes.clear();
+        patchedAudioSourcePrototypes.clear();
+        soundBuffersByUrl.clear();
+        soundBuffersByAction.clear();
+        gamepadTimestamps.clear();
+    };
+}
+
+const PATCH_MARKER = "__playhubPowerMenuPatch";
+const RESTART_TOKENS = new Set(["#Quit_Restart", "#RestartDevice", "#Restart"]);
+function steamWindows() {
+    const roots = [window];
+    try {
+        const steam = _global_DFL?.findSP?.();
+        if (steam && !roots.includes(steam))
+            roots.push(steam);
+        const trees = _global_DFL?.getGamepadNavigationTrees?.() ?? [];
+        for (const tree of trees) {
+            const treeWindow = tree?.Root?.Element?.ownerDocument?.defaultView;
+            if (treeWindow && !roots.includes(treeWindow))
+                roots.push(treeWindow);
+        }
+    }
+    catch { }
+    return roots.filter((root) => root?.document);
+}
+function fiberOf(node) {
+    const key = Object.keys(node).find((name) => name.startsWith("__reactFiber$"));
+    return key ? node[key] : null;
+}
+function powerMenuInstance(row) {
+    let fiber = fiberOf(row);
+    for (let step = 0; fiber && step < 24; step += 1, fiber = fiber.return) {
+        const instance = fiber.stateNode;
+        if (typeof instance?.forceUpdate === "function"
+            && typeof instance.render === "function"
+            && containsRestart(instance.props?.children))
+            return instance;
+    }
+    return null;
+}
+function containsRestart(node) {
+    if (Array.isArray(node))
+        return node.some(containsRestart);
+    if (!node || typeof node !== "object")
+        return false;
+    return RESTART_TOKENS.has(node.props?.strDisplayNameLocToken)
+        || containsRestart(node.props?.children);
+}
+function addRestartActions(node, labels, restart) {
+    if (Array.isArray(node)) {
+        if (node.some((child) => child?.key === "playhub-restart-gaming"))
+            return node;
+        const output = [];
+        for (const child of node) {
+            output.push(addRestartActions(child, labels, restart));
+            if (!RESTART_TOKENS.has(child?.props?.strDisplayNameLocToken))
+                continue;
+            const MenuItem = _global_DFL.MenuItem;
+            const MenuSeparator = _global_DFL.MenuSeparator;
+            if (MenuSeparator)
+                output.push(_global_SP_REACT.createElement(MenuSeparator, { key: "playhub-restart-separator" }));
+            output.push(_global_SP_REACT.createElement(MenuItem, {
+                key: "playhub-restart-gaming",
+                tone: "destructive",
+                onSelected: () => restart("gaming"),
+                children: labels.gaming,
+            }), _global_SP_REACT.createElement(MenuItem, {
+                key: "playhub-restart-desktop",
+                tone: "destructive",
+                onSelected: () => restart("desktop"),
+                children: labels.desktop,
+            }));
+        }
+        return output;
+    }
+    if (!_global_SP_REACT.isValidElement(node))
+        return node;
+    const element = node;
+    if (!element.props?.children)
+        return node;
+    const children = element.props.children;
+    return _global_SP_REACT.cloneElement(element, undefined, addRestartActions(RESTART_TOKENS.has(children?.props?.strDisplayNameLocToken) ? [children] : children, labels, restart));
+}
+function installPowerMenuPatch(labels, restart) {
+    const observers = new Map();
+    const patches = new Set();
+    const refreshedInstances = new WeakSet();
+    const pendingRefreshes = new Set();
+    let disposed = false;
+    const refreshInstance = (instance, row) => {
+        if (refreshedInstances.has(instance))
+            return;
+        refreshedInstances.add(instance);
+        const view = row.ownerDocument.defaultView ?? window;
+        let frame;
+        const refresh = () => {
+            if (disposed)
+                return;
+            const mounted = row.isConnected || Array.from(row.ownerDocument.querySelectorAll("[role='menuitem']")).some((candidate) => powerMenuInstance(candidate) === instance);
+            if (mounted) {
+                try {
+                    instance.forceUpdate();
+                }
+                catch { }
+            }
+        };
+        const cancel = () => {
+            view.clearTimeout(timeout);
+            if (frame !== undefined)
+                view.cancelAnimationFrame(frame);
+        };
+        const timeout = view.setTimeout(() => {
+            refresh();
+            frame = view.requestAnimationFrame(() => {
+                refresh();
+                pendingRefreshes.delete(cancel);
+            });
+        }, 0);
+        pendingRefreshes.add(cancel);
+    };
+    const patchDocument = (doc) => {
+        for (const row of Array.from(doc.querySelectorAll("[role='menuitem']"))) {
+            const instance = powerMenuInstance(row);
+            if (!instance)
+                continue;
+            // Some Steam components bind render on the instance. Patching only their
+            // prototype cannot update the menu that is already mounted.
+            const target = Object.prototype.hasOwnProperty.call(instance, "render")
+                ? instance : Object.getPrototypeOf(instance);
+            if (!target)
+                continue;
+            if (!Object.prototype.hasOwnProperty.call(target, PATCH_MARKER)) {
+                const patch = _global_DFL.afterPatch(target, "render", function (_args, result) {
+                    return !disposed && containsRestart(this?.props?.children)
+                        ? addRestartActions(result, labels(), restart)
+                        : result;
+                });
+                Object.defineProperty(target, PATCH_MARKER, { value: patch, configurable: true });
+                patches.add(patch);
+            }
+            // A new instance can mount after prototype discovery but before the first
+            // refresh. It still needs its own refresh even when the prototype is patched.
+            refreshInstance(instance, row);
+        }
+    };
+    const bind = () => {
+        for (const win of steamWindows()) {
+            const doc = win.document;
+            if (!doc.documentElement)
+                continue;
+            patchDocument(doc);
+            if (observers.has(doc))
+                continue;
+            const Observer = win.MutationObserver;
+            if (!Observer)
+                continue;
+            const observer = new Observer(() => patchDocument(doc));
+            observer.observe(doc.documentElement, { childList: true, subtree: true });
+            observers.set(doc, observer);
+        }
+    };
+    bind();
+    const timer = window.setInterval(bind, 500);
+    return () => {
+        disposed = true;
+        window.clearInterval(timer);
+        pendingRefreshes.forEach((cancel) => cancel());
+        pendingRefreshes.clear();
+        observers.forEach((observer) => observer.disconnect());
+        observers.clear();
+        patches.forEach((patch) => {
+            try {
+                delete patch.object?.[PATCH_MARKER];
+                patch.unpatch?.();
+            }
+            catch { }
+        });
+        patches.clear();
+    };
+}
+
 const { useState, useEffect, useMemo } = _global_SP_REACT;
-const { PanelSection, PanelSectionRow, ButtonItem, DropdownItem, Navigation, staticClasses } = _global_DFL;
+const { PanelSection, PanelSectionRow, ButtonItem, DropdownItem, ToggleField, SliderField, Navigation, Router, staticClasses, ConfirmModal, showModal } = _global_DFL;
 const strings = {
     en: {
         mode: "Mode",
@@ -1835,6 +2819,11 @@ const strings = {
         dashboardShortcut: "Open it with CTRL + ALT + P",
         dashboardSteamInput: "In Steam Input, assign this shortcut to Guide + any button for instant controller access.",
         dashboardWindowSwitch: "You can also map ALT + TAB in Steam Input to switch windows immediately.",
+        haptics: "Controller feedback",
+        hapticsDescription: "Adds tactile feedback while navigating Steam.",
+        hapticsIntensity: "Feedback intensity",
+        restartGaming: "Restart in Gaming Mode", restartDesktop: "Restart in Desktop Mode",
+        restartConfirm: "The system will restart now. Continue?", restartNow: "Restart", cancel: "Cancel",
     },
     it: {
         mode: "Modalità",
@@ -1850,6 +2839,11 @@ const strings = {
         dashboardShortcut: "Aprila con CTRL + ALT + P",
         dashboardSteamInput: "In Steam Input, assegna questa scorciatoia a Guida + un pulsante per aprirla subito dal controller.",
         dashboardWindowSwitch: "Puoi anche associare tramite Steam Input la combinazione ALT + TAB per cambiare immediatamente finestra.",
+        haptics: "Feedback del controller",
+        hapticsDescription: "Aggiunge una risposta tattile mentre navighi in Steam.",
+        hapticsIntensity: "Intensità del feedback",
+        restartGaming: "Riavvia in Gaming Mode", restartDesktop: "Riavvia in Desktop Mode",
+        restartConfirm: "Il sistema verrà riavviato ora. Vuoi continuare?", restartNow: "Riavvia", cancel: "Annulla",
     },
     es: {
         mode: "Modo",
@@ -1865,6 +2859,9 @@ const strings = {
         dashboardShortcut: "Ábrelo con CTRL + ALT + P",
         dashboardSteamInput: "En Steam Input, asigna este atajo a Guía + un botón para abrirlo al instante con el mando.",
         dashboardWindowSwitch: "También puedes asignar ALT + TAB en Steam Input para cambiar de ventana al instante.",
+        haptics: "Respuesta del mando", hapticsDescription: "Añade respuesta táctil al navegar por Steam.", hapticsIntensity: "Intensidad",
+        restartGaming: "Reiniciar en modo Gaming", restartDesktop: "Reiniciar en modo Escritorio",
+        restartConfirm: "El sistema se reiniciará ahora. ¿Quieres continuar?", restartNow: "Reiniciar", cancel: "Cancelar",
     },
     fr: {
         mode: "Mode",
@@ -1880,6 +2877,9 @@ const strings = {
         dashboardShortcut: "Ouvrez-le avec CTRL + ALT + P",
         dashboardSteamInput: "Dans Steam Input, associez ce raccourci à Guide + un bouton pour l'ouvrir instantanément avec la manette.",
         dashboardWindowSwitch: "Vous pouvez aussi associer ALT + TAB dans Steam Input pour changer immédiatement de fenêtre.",
+        haptics: "Retour de la manette", hapticsDescription: "Ajoute un retour tactile lors de la navigation dans Steam.", hapticsIntensity: "Intensité",
+        restartGaming: "Redémarrer en mode Gaming", restartDesktop: "Redémarrer en mode Bureau",
+        restartConfirm: "Le système va redémarrer maintenant. Continuer ?", restartNow: "Redémarrer", cancel: "Annuler",
     },
     de: {
         mode: "Modus",
@@ -1895,6 +2895,9 @@ const strings = {
         dashboardShortcut: "Mit CTRL + ALT + P öffnen",
         dashboardSteamInput: "Weise diese Tastenkombination in Steam Input Guide + einer Taste zu, um das Dashboard direkt per Controller zu öffnen.",
         dashboardWindowSwitch: "Du kannst in Steam Input auch ALT + TAB zuweisen, um sofort zwischen Fenstern zu wechseln.",
+        haptics: "Controller-Feedback", hapticsDescription: "Fügt beim Navigieren in Steam taktiles Feedback hinzu.", hapticsIntensity: "Intensität",
+        restartGaming: "Im Gaming-Modus neu starten", restartDesktop: "Im Desktop-Modus neu starten",
+        restartConfirm: "Das System wird jetzt neu gestartet. Fortfahren?", restartNow: "Neu starten", cancel: "Abbrechen",
     },
     pt: {
         mode: "Modo",
@@ -1910,6 +2913,9 @@ const strings = {
         dashboardShortcut: "Abra com CTRL + ALT + P",
         dashboardSteamInput: "No Steam Input, atribua este atalho a Guia + um botão para abrir imediatamente pelo comando.",
         dashboardWindowSwitch: "Também pode atribuir ALT + TAB no Steam Input para mudar imediatamente de janela.",
+        haptics: "Resposta do controle", hapticsDescription: "Adiciona resposta tátil ao navegar pelo Steam.", hapticsIntensity: "Intensidade",
+        restartGaming: "Reiniciar no modo Gaming", restartDesktop: "Reiniciar no modo Desktop",
+        restartConfirm: "O sistema será reiniciado agora. Continuar?", restartNow: "Reiniciar", cancel: "Cancelar",
     },
     uk: {
         mode: "Режим", switchGaming: "Перейти в ігровий режим", switchDesktop: "Перейти в режим робочого столу",
@@ -1919,6 +2925,9 @@ const strings = {
         dashboardShortcut: "Відкрийте за допомогою CTRL + ALT + P",
         dashboardSteamInput: "У Steam Input призначте це сполучення на Guide + будь-яку кнопку для миттєвого доступу з контролера.",
         dashboardWindowSwitch: "Також можна призначити ALT + TAB у Steam Input для миттєвого перемикання вікон.",
+        haptics: "Відгук контролера", hapticsDescription: "Додає тактильний відгук під час навігації Steam.", hapticsIntensity: "Інтенсивність",
+        restartGaming: "Перезапустити в ігровому режимі", restartDesktop: "Перезапустити в режимі робочого столу",
+        restartConfirm: "Систему буде перезапущено зараз. Продовжити?", restartNow: "Перезапустити", cancel: "Скасувати",
     },
     zh: {
         mode: "模式", switchGaming: "切换到游戏模式", switchDesktop: "切换到桌面模式",
@@ -1928,6 +2937,9 @@ const strings = {
         dashboardShortcut: "按 CTRL + ALT + P 打开",
         dashboardSteamInput: "在 Steam Input 中，将此快捷键绑定到 Guide + 任意按钮，即可通过控制器快速打开。",
         dashboardWindowSwitch: "也可以在 Steam Input 中绑定 ALT + TAB，以便立即切换窗口。",
+        haptics: "手柄反馈", hapticsDescription: "在 Steam 中导航时提供触觉反馈。", hapticsIntensity: "反馈强度",
+        restartGaming: "重启到游戏模式", restartDesktop: "重启到桌面模式",
+        restartConfirm: "系统将立即重启。是否继续？", restartNow: "重启", cancel: "取消",
     },
     ja: {
         mode: "モード", switchGaming: "ゲーミングモードに切り替え", switchDesktop: "デスクトップモードに切り替え",
@@ -1937,6 +2949,9 @@ const strings = {
         dashboardShortcut: "CTRL + ALT + P で開きます",
         dashboardSteamInput: "Steam Input でこのショートカットを Guide + 任意のボタンに割り当てると、コントローラーからすぐに開けます。",
         dashboardWindowSwitch: "Steam Input に ALT + TAB を割り当てて、ウィンドウをすぐに切り替えることもできます。",
+        haptics: "コントローラーのフィードバック", hapticsDescription: "Steam の操作に触覚フィードバックを加えます。", hapticsIntensity: "フィードバックの強さ",
+        restartGaming: "ゲーミングモードで再起動", restartDesktop: "デスクトップモードで再起動",
+        restartConfirm: "システムを今すぐ再起動します。続行しますか？", restartNow: "再起動", cancel: "キャンセル",
     },
     ko: {
         mode: "모드", switchGaming: "게이밍 모드로 전환", switchDesktop: "데스크톱 모드로 전환",
@@ -1946,6 +2961,9 @@ const strings = {
         dashboardShortcut: "CTRL + ALT + P로 열기",
         dashboardSteamInput: "Steam Input에서 이 단축키를 Guide + 원하는 버튼에 지정하면 컨트롤러로 즉시 열 수 있습니다.",
         dashboardWindowSwitch: "Steam Input에 ALT + TAB을 지정하여 창을 즉시 전환할 수도 있습니다.",
+        haptics: "컨트롤러 피드백", hapticsDescription: "Steam을 탐색할 때 촉각 피드백을 추가합니다.", hapticsIntensity: "피드백 강도",
+        restartGaming: "게이밍 모드로 다시 시작", restartDesktop: "데스크톱 모드로 다시 시작",
+        restartConfirm: "시스템을 지금 다시 시작합니다. 계속하시겠습니까?", restartNow: "다시 시작", cancel: "취소",
     },
     hi: {
         mode: "मोड", switchGaming: "गेमिंग मोड पर जाएं", switchDesktop: "डेस्कटॉप मोड पर जाएं",
@@ -1955,6 +2973,9 @@ const strings = {
         dashboardShortcut: "CTRL + ALT + P से खोलें",
         dashboardSteamInput: "कंट्रोलर से तुरंत खोलने के लिए Steam Input में इस शॉर्टकट को Guide + किसी बटन से जोड़ें।",
         dashboardWindowSwitch: "विंडो तुरंत बदलने के लिए Steam Input में ALT + TAB भी जोड़ सकते हैं।",
+        haptics: "कंट्रोलर फ़ीडबैक", hapticsDescription: "Steam में नेविगेट करते समय स्पर्श प्रतिक्रिया जोड़ता है।", hapticsIntensity: "फ़ीडबैक की तीव्रता",
+        restartGaming: "गेमिंग मोड में रीस्टार्ट करें", restartDesktop: "डेस्कटॉप मोड में रीस्टार्ट करें",
+        restartConfirm: "सिस्टम अब रीस्टार्ट होगा। जारी रखें?", restartNow: "रीस्टार्ट", cancel: "रद्द करें",
     },
     ru: {
         mode: "Режим", switchGaming: "Перейти в игровой режим", switchDesktop: "Перейти в режим рабочего стола",
@@ -1964,6 +2985,9 @@ const strings = {
         dashboardShortcut: "Откройте с помощью CTRL + ALT + P",
         dashboardSteamInput: "В Steam Input назначьте это сочетание на Guide + любую кнопку для мгновенного доступа с контроллера.",
         dashboardWindowSwitch: "Также можно назначить ALT + TAB в Steam Input для мгновенного переключения окон.",
+        haptics: "Отклик контроллера", hapticsDescription: "Добавляет тактильный отклик при навигации в Steam.", hapticsIntensity: "Интенсивность",
+        restartGaming: "Перезапустить в игровом режиме", restartDesktop: "Перезапустить в режиме рабочего стола",
+        restartConfirm: "Система будет перезапущена сейчас. Продолжить?", restartNow: "Перезапустить", cancel: "Отмена",
     },
 };
 const STEAM_LOCALE_ALIASES = {
@@ -2015,6 +3039,10 @@ let currentLocale = detectSteamLocale();
 function t() {
     return strings[currentLocale] ?? strings.en;
 }
+function confirmRestart(mode, action) {
+    const local = t();
+    showModal(SP_JSX.jsx(ConfirmModal, { strTitle: mode === "gaming" ? local.restartGaming : local.restartDesktop, strDescription: local.restartConfirm, strOKButtonText: local.restartNow, strCancelButtonText: local.cancel, onOK: action }));
+}
 async function getStatus() {
     const response = await fetch(`${API_BASE}/status`);
     if (!response.ok) {
@@ -2062,10 +3090,13 @@ async function post(path) {
 // route, la richiesta termina senza sovrapporre superfici al gioco.
 async function openDashboard(reason = "richiesta") {
     logToAgent("apertura richiesta");
-    const environment = await readEnvironment();
+    const environmentRequest = readEnvironment();
+    const dashboardWindowsReady = preloadDashboardWindows();
+    const environment = await environmentRequest;
     if (!environment?.enabled)
         return;
-    const useSteamOverlay = await prepareDashboardOverlay();
+    void captureDashboardSourceFocus();
+    const [useSteamOverlay] = await Promise.all([prepareDashboardOverlay(), dashboardWindowsReady]);
     if (useSteamOverlay) {
         try {
             Navigation?.CloseSideMenus?.();
@@ -2074,6 +3105,7 @@ async function openDashboard(reason = "richiesta") {
         catch (error) {
             logToAgent(`navigazione overlay NON riuscita: ${error}`);
         }
+        [80, 180, 360, 700].forEach((delay) => window.setTimeout(focusDashboardSurface, delay));
         return;
     }
     await requestDashboardSteamFocus();
@@ -2096,16 +3128,98 @@ async function openDashboard(reason = "richiesta") {
         logToAgent(`navigazione NON riuscita: ${error}`);
     }
 }
-function startOpenRequestWatcher() {
+function restoreSteamNavigationFocus(reason) {
+    const store = _global_DFL?.Router?.WindowStore;
+    const main = store?.GamepadUIMainWindowInstance;
+    const browserWindow = main?.m_BrowserWindow ?? main?.BrowserWindow;
+    const context = main?.m_FocusNavContext;
+    if (!main || !browserWindow || !context)
+        return false;
+    if (browserWindow.document?.querySelector?.(".ph-dashboard")) {
+        return focusDashboardSurface();
+    }
+    const controller = _global_DFL?.getFocusNavController?.() ?? window.FocusNavController;
+    const hasRealFocus = () => {
+        const activeContext = controller?.GetActiveContext?.() ?? controller?.m_ActiveContext;
+        const active = activeContext === context || context.BIsActive?.() === true;
+        const documentFocused = browserWindow.document?.hasFocus?.() === true;
+        const navigationFocused = !!browserWindow.document?.querySelector?.(".gpfocus");
+        return active && documentFocused && navigationFocused;
+    };
+    try {
+        browserWindow.SteamClient?.Window?.BringToFront?.(1);
+    }
+    catch { }
+    try {
+        browserWindow.SteamClient?.Window?.MarkLastFocused?.();
+    }
+    catch { }
+    if (hasRealFocus())
+        return true;
+    try {
+        browserWindow.focus?.();
+    }
+    catch { }
+    try {
+        if (!context.BIsActive?.())
+            context.OnActivate?.(browserWindow);
+        main.FocusApplicationRoot?.();
+        browserWindow.SteamClient?.Window?.SetKeyFocus?.(true);
+    }
+    catch {
+        return false;
+    }
+    const focused = hasRealFocus();
+    if (focused)
+        logToAgent(`focus Steam ripristinato (${reason})`);
+    return focused;
+}
+function installSteamNavigationFocusRecovery() {
+    const timers = new Set();
+    const clearTimers = () => {
+        timers.forEach((timer) => window.clearTimeout(timer));
+        timers.clear();
+    };
+    const schedule = (reason) => {
+        clearTimers();
+        [0, 100, 280, 650].forEach((delay) => {
+            const timer = window.setTimeout(() => {
+                timers.delete(timer);
+                if (restoreSteamNavigationFocus(reason))
+                    clearTimers();
+            }, delay);
+            timers.add(timer);
+        });
+    };
+    return {
+        schedule,
+        uninstall: clearTimers,
+    };
+}
+function startOpenRequestWatcher(onFocusRecovery) {
     let alive = true;
     let inFlight = false;
+    let focusRecoveryVersion;
+    let focusRecoveryPending = false;
     const timer = window.setInterval(async () => {
         if (!alive || inFlight)
             return;
         inFlight = true;
         try {
-            if (await consumeOpenRequest()) {
+            const signal = await consumeOpenRequest();
+            if (signal.open) {
                 openDashboard();
+            }
+            if (focusRecoveryVersion === undefined) {
+                focusRecoveryVersion = signal.focusRecovery;
+            }
+            else if (signal.focusRecovery !== focusRecoveryVersion) {
+                focusRecoveryVersion = signal.focusRecovery;
+                focusRecoveryPending = true;
+            }
+            if (focusRecoveryPending && signal.steamForeground) {
+                focusRecoveryPending = false;
+                onFocusRecovery();
             }
         }
         catch (error) {
@@ -2129,10 +3243,12 @@ function Content() {
     const [status, setStatus] = useState();
     const [busy, setBusy] = useState(false);
     const [dashboardEnabled, setDashboardEnabled] = useState(true);
+    const [hapticsEnabled, setHapticsEnabled] = useState(false);
+    const [hapticsIntensity, setHapticsIntensity] = useState(55);
     const defaultOptions = useMemo(() => [
-        { data: "Desktop", label: local.desktopMode },
-        { data: "Gaming", label: local.gamingMode },
-    ], [local.desktopMode, local.gamingMode]);
+        { data: "Desktop", label: "Desktop" },
+        { data: "Gaming", label: "Gaming" },
+    ], []);
     const refresh = async () => {
         try {
             setStatus(await getStatus());
@@ -2179,10 +3295,19 @@ function Content() {
         });
         refresh();
         void readEnvironment().then((environment) => setDashboardEnabled(environment?.enabled !== false));
+        void readSettings().then((settings) => {
+            if (!settings)
+                return;
+            const enabled = settings.navigationHapticsEnabled === true;
+            const intensity = Math.max(5, Math.min(100, Number(settings.navigationHapticsIntensity) || 55));
+            setHapticsEnabled(enabled);
+            setHapticsIntensity(intensity);
+            configureNavigationHaptics({ enabled, intensity });
+        });
         const timer = window.setInterval(refresh, 5000);
         return () => { alive = false; window.clearInterval(timer); };
     }, []);
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(PanelSection, { title: local.mode, children: [SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ButtonItem, { disabled: busy, layout: "below", onClick: () => run("/mode/gaming/switch", local.gamingMode), children: local.switchGaming }) }), SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ButtonItem, { disabled: busy, layout: "below", onClick: () => run("/mode/desktop/switch", local.desktopMode), children: local.switchDesktop }) }), SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(DropdownItem, { label: local.defaultStartup, disabled: busy, rgOptions: defaultOptions, selectedOption: status?.defaultMode ?? "Desktop", onChange: setDefault }) })] }), SP_JSX.jsxs(PanelSection, { title: local.dashboard, children: [SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ButtonItem, { disabled: !dashboardEnabled, layout: "below", onClick: () => openDashboard(), children: local.openDashboard }) }), SP_JSX.jsxs(PanelSectionRow, { children: [SP_JSX.jsx("style", { children: `
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(PanelSection, { title: local.dashboard, children: [SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ButtonItem, { disabled: !dashboardEnabled, layout: "below", onClick: () => openDashboard(), children: local.openDashboard }) }), SP_JSX.jsxs(PanelSectionRow, { children: [SP_JSX.jsx("style", { children: `
             @keyframes phShortcutPulse { 0%,100% { opacity:.62; transform:scale(.96); } 50% { opacity:1; transform:scale(1); } }
             @keyframes phShortcutTravel { 0% { transform:translateX(-3px); opacity:.35; } 50%,100% { transform:translateX(3px); opacity:1; } }
             .ph-dashboard-shortcut { box-sizing:border-box; width:100%; padding:9px 16px 14px; color:rgba(255,255,255,.88); }
@@ -2198,7 +3323,16 @@ function Content() {
             .ph-dashboard-pad .pad-button { fill:#fff; opacity:.92; }
             .ph-dashboard-shortcut-title { margin-top:3px; text-align:center; font-size:14px; line-height:1.3; font-weight:650; }
             .ph-dashboard-shortcut-copy { width:calc(100% - 42px); margin:6px auto 0; max-width:278px; text-align:center; color:rgba(255,255,255,.58); font-size:12px; line-height:1.4; }
-          ` }), SP_JSX.jsxs("div", { className: "ph-dashboard-shortcut", children: [SP_JSX.jsxs("div", { className: "ph-dashboard-shortcut-figure", "aria-hidden": "true", children: [SP_JSX.jsxs("div", { className: "ph-dashboard-keys", children: [SP_JSX.jsx("span", { className: "ph-dashboard-key", children: "CTRL" }), SP_JSX.jsx("span", { className: "ph-dashboard-plus", children: "+" }), SP_JSX.jsx("span", { className: "ph-dashboard-key", children: "ALT" }), SP_JSX.jsx("span", { className: "ph-dashboard-plus", children: "+" }), SP_JSX.jsx("span", { className: "ph-dashboard-key", children: "P" })] }), SP_JSX.jsx("svg", { className: "ph-dashboard-flow", viewBox: "0 0 28 18", focusable: "false", children: SP_JSX.jsx("path", { d: "M1 7.25h18.4l-4.2-4.2L17.25 1 25 8.75l-7.75 7.75-2.05-2.05 4.2-4.2H1z" }) }), SP_JSX.jsxs("svg", { className: "ph-dashboard-pad", viewBox: "0 0 64 38", focusable: "false", children: [SP_JSX.jsx("path", { className: "pad-shell", d: "M12 7.5h40c3.5 0 5.8 2.1 6.5 5.4l2.1 10.7c.8 4.1-1.8 7-5.8 7H9.2c-4 0-6.6-2.9-5.8-7l2.1-10.7c.7-3.3 3-5.4 6.5-5.4Z" }), SP_JSX.jsx("path", { className: "pad-detail", d: "M17 14v10M12 19h10" }), SP_JSX.jsx("circle", { className: "pad-guide", cx: "32", cy: "19", r: "3" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "47", cy: "14.7", r: "1.7" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "51.3", cy: "19", r: "1.7" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "47", cy: "23.3", r: "1.7" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "42.7", cy: "19", r: "1.7" })] })] }), SP_JSX.jsx("div", { className: "ph-dashboard-shortcut-title", children: local.dashboardShortcut }), SP_JSX.jsx("div", { className: "ph-dashboard-shortcut-copy", children: local.dashboardSteamInput }), SP_JSX.jsx("div", { className: "ph-dashboard-shortcut-copy", children: local.dashboardWindowSwitch })] })] })] })] }));
+          ` }), SP_JSX.jsxs("div", { className: "ph-dashboard-shortcut", children: [SP_JSX.jsxs("div", { className: "ph-dashboard-shortcut-figure", "aria-hidden": "true", children: [SP_JSX.jsxs("div", { className: "ph-dashboard-keys", children: [SP_JSX.jsx("span", { className: "ph-dashboard-key", children: "CTRL" }), SP_JSX.jsx("span", { className: "ph-dashboard-plus", children: "+" }), SP_JSX.jsx("span", { className: "ph-dashboard-key", children: "ALT" }), SP_JSX.jsx("span", { className: "ph-dashboard-plus", children: "+" }), SP_JSX.jsx("span", { className: "ph-dashboard-key", children: "P" })] }), SP_JSX.jsx("svg", { className: "ph-dashboard-flow", viewBox: "0 0 28 18", focusable: "false", children: SP_JSX.jsx("path", { d: "M1 7.25h18.4l-4.2-4.2L17.25 1 25 8.75l-7.75 7.75-2.05-2.05 4.2-4.2H1z" }) }), SP_JSX.jsxs("svg", { className: "ph-dashboard-pad", viewBox: "0 0 64 38", focusable: "false", children: [SP_JSX.jsx("path", { className: "pad-shell", d: "M12 7.5h40c3.5 0 5.8 2.1 6.5 5.4l2.1 10.7c.8 4.1-1.8 7-5.8 7H9.2c-4 0-6.6-2.9-5.8-7l2.1-10.7c.7-3.3 3-5.4 6.5-5.4Z" }), SP_JSX.jsx("path", { className: "pad-detail", d: "M17 14v10M12 19h10" }), SP_JSX.jsx("circle", { className: "pad-guide", cx: "32", cy: "19", r: "3" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "47", cy: "14.7", r: "1.7" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "51.3", cy: "19", r: "1.7" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "47", cy: "23.3", r: "1.7" }), SP_JSX.jsx("circle", { className: "pad-button", cx: "42.7", cy: "19", r: "1.7" })] })] }), SP_JSX.jsx("div", { className: "ph-dashboard-shortcut-title", children: local.dashboardShortcut }), SP_JSX.jsx("div", { className: "ph-dashboard-shortcut-copy", children: local.dashboardSteamInput }), SP_JSX.jsx("div", { className: "ph-dashboard-shortcut-copy", children: local.dashboardWindowSwitch })] })] })] }), SP_JSX.jsxs(PanelSection, { title: local.mode, children: [SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ButtonItem, { disabled: busy, layout: "below", onClick: () => confirmRestart("gaming", () => { void run("/mode/gaming/switch", local.gamingMode); }), children: local.switchGaming }) }), SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ButtonItem, { disabled: busy, layout: "below", onClick: () => confirmRestart("desktop", () => { void run("/mode/desktop/switch", local.desktopMode); }), children: local.switchDesktop }) }), SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(DropdownItem, { label: local.defaultStartup, disabled: busy, rgOptions: defaultOptions, selectedOption: status?.defaultMode ?? "Desktop", onChange: setDefault }) })] }), SP_JSX.jsxs(PanelSection, { children: [SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ToggleField, { label: local.haptics, description: local.hapticsDescription, checked: hapticsEnabled, onChange: (enabled) => {
+                                setHapticsEnabled(enabled);
+                                configureNavigationHaptics({ enabled });
+                                void writeSettings({ navigationHapticsEnabled: enabled });
+                            } }) }), hapticsEnabled && (SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(SliderField, { label: local.hapticsIntensity, value: hapticsIntensity, min: 5, max: 100, step: 5, valueSuffix: "%", showValue: true, onChange: (intensity) => {
+                                const value = Math.max(5, Math.min(100, Math.round(intensity)));
+                                setHapticsIntensity(value);
+                                configureNavigationHaptics({ intensity: value });
+                                void writeSettings({ navigationHapticsIntensity: value });
+                            } }) }))] })] }));
 }
 // ---------------------------------------------------------------------------
 // Focus rescue
@@ -2226,15 +3360,26 @@ async function overlayHookedInGame(appId) {
 }
 function installFocusRescue() {
     let overlayWasActive = false;
+    let overlayActivationGeneration = 0;
+    let focusRetry;
     let registration;
     try {
         registration = window.SteamClient.Overlay.RegisterForOverlayActivated(async (_overlayPid, appId, active) => {
+            const activationGeneration = ++overlayActivationGeneration;
             try {
                 if (active) {
+                    // Steam can report the highlighted library app as appId even when
+                    // no game is running. MainRunningApp is the reliable boundary:
+                    // without it this is a normal Big Picture panel and forcing focus
+                    // would immediately dismiss the QAM or the sidebar.
+                    const runningAppId = Number.parseInt(String(Router?.MainRunningApp?.appid ?? "0"), 10);
+                    if (!Number.isFinite(runningAppId) || runningAppId <= 0)
+                        return;
                     overlayWasActive = true;
                     // Se l'overlay Steam e' gia' agganciato in-game, il menu appare
                     // dentro il gioco: non interferire.
-                    if (await overlayHookedInGame(appId)) {
+                    const hookedInGame = await overlayHookedInGame(runningAppId || appId);
+                    if (hookedInGame || !overlayWasActive || activationGeneration !== overlayActivationGeneration) {
                         return;
                     }
                     try {
@@ -2244,10 +3389,19 @@ function installFocusRescue() {
                     void requestDashboardSteamFocus();
                     // Retry: se il primo tentativo e' arrivato mentre Windows stava
                     // ancora negando il cambio di primo piano.
-                    window.setTimeout(() => { void requestDashboardSteamFocus(); }, 450);
+                    if (focusRetry !== undefined)
+                        window.clearTimeout(focusRetry);
+                    focusRetry = window.setTimeout(() => {
+                        focusRetry = undefined;
+                        if (overlayWasActive)
+                            void requestDashboardSteamFocus();
+                    }, 450);
                 }
                 else if (overlayWasActive) {
                     overlayWasActive = false;
+                    if (focusRetry !== undefined)
+                        window.clearTimeout(focusRetry);
+                    focusRetry = undefined;
                     void restoreDashboardSourceFocus();
                 }
             }
@@ -2256,6 +3410,11 @@ function installFocusRescue() {
     }
     catch { }
     return () => {
+        overlayActivationGeneration += 1;
+        overlayWasActive = false;
+        if (focusRetry !== undefined)
+            window.clearTimeout(focusRetry);
+        focusRetry = undefined;
         try {
             registration?.unregister?.();
         }
@@ -2264,8 +3423,21 @@ function installFocusRescue() {
 }
 // ---------------------------------------------------------------------------
 var index = definePlugin(() => {
+    // Riempie la cache prima della prima apertura: la dashboard monta subito la
+    // finestra primaria invece di mostrarla soltanto dopo il primo effect React.
+    void preloadDashboardWindows();
     const uninstallFocusRescue = installFocusRescue();
-    const stopOpenRequestWatcher = startOpenRequestWatcher();
+    const steamFocusRecovery = installSteamNavigationFocusRecovery();
+    const stopOpenRequestWatcher = startOpenRequestWatcher(() => steamFocusRecovery.schedule("chiusura gioco"));
+    const uninstallNavigationHaptics = installNavigationHaptics();
+    const uninstallPowerMenuPatch = installPowerMenuPatch(() => ({ gaming: t().restartGaming, desktop: t().restartDesktop }), (mode) => confirmRestart(mode, () => { void post(`/mode/${mode}/restart`); }));
+    void readSettings().then((settings) => {
+        if (settings)
+            configureNavigationHaptics({
+                enabled: settings.navigationHapticsEnabled === true,
+                intensity: settings.navigationHapticsIntensity,
+            });
+    });
     try {
         routerHook?.addRoute?.(DASHBOARD_ROUTE, () => SP_JSX.jsx(DashboardPage, {}), { exact: true });
     }
@@ -2280,7 +3452,10 @@ var index = definePlugin(() => {
         onDismount() {
             clearDashboardChrome();
             uninstallFocusRescue();
+            steamFocusRecovery.uninstall();
             stopOpenRequestWatcher();
+            uninstallNavigationHaptics();
+            uninstallPowerMenuPatch();
             try {
                 routerHook?.removeRoute?.(DASHBOARD_ROUTE);
             }

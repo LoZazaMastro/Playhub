@@ -1,15 +1,17 @@
-using Playhub.Models;
+﻿using Playhub.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using ExternalPluginDefinition = Playhub.Models.RemotePluginCatalogEntry;
 
 namespace Playhub.Services;
 
@@ -17,10 +19,83 @@ public sealed class PluginCatalogService
 {
     private const string Owner = "LoZazaMastro";
     private const string InstalledReleaseMarker = ".playhub-release.json";
+    private const string MissingInstalledVersion = "Manifest senza versione";
     private static readonly HttpClient Http = CreateHttpClient();
+    private static readonly ReadmeLoader SharedReadmes = new(new HttpClient(new HttpClientHandler
+    {
+        AllowAutoRedirect = false,
+        UseCookies = false,
+        AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+    }));
+    private readonly ReadmeLoader _readmes;
+
+    public PluginCatalogService() => _readmes = SharedReadmes;
+
+    internal PluginCatalogService(HttpClient detailsHttp, Func<DateTimeOffset>? clock = null,
+        TimeSpan? requestTimeout = null) => _readmes = new ReadmeLoader(detailsHttp, clock, requestTimeout);
+    private static readonly IReadOnlyDictionary<string, string> PlayhubKeywords =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Playhub-Artworks"] = "artwork cover banner hero logo icone SteamGridDB libreria",
+            ["Playhub-Metadata"] = "metadata achievement RetroAchievements Xbox immagini giochi non Steam",
+            ["ThemeDeck-Windows"] = "musica soundtrack YouTube yt-dlp audio personalizzazione",
+            ["Launch-Curtain"] = "avvio curtain fullscreen overlay logo soundbites",
+            ["TrailerHero"] = "trailer hero video Steam YouTube personalizzazione",
+            ["Now-Playing"] = "musica player Spotify YouTube Music sessione media surround",
+            ["Playhub-Surround"] = "surround stereo 5.1 7.1 altoparlanti audio",
+            ["Quick-Settings"] = "volume microfono HDR display impostazioni rapide Windows",
+            ["Playhub-Notifications"] = "notifiche toast achievement temi suoni overlay",
+            ["News"] = "news RSS Atom feed articoli informazioni",
+            ["Weather"] = "meteo previsioni temperatura Open-Meteo",
+            ["Proton-VPN"] = "VPN Proton rete connessione privacy Windows"
+        };
+    private static readonly IReadOnlyDictionary<string, string> PlayhubCatalogVersions =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Playhub-Artworks"] = "1.0.0",
+            ["Playhub-Metadata"] = "1.8.0",
+            ["ThemeDeck-Windows"] = "3.3.2",
+            ["Launch-Curtain"] = "2.5.1",
+            ["TrailerHero"] = "1.5.0",
+            ["Now-Playing"] = "2.5.0",
+            ["Playhub-Surround"] = "1.2.1",
+            ["Quick-Settings"] = "2.3.1",
+            ["Playhub-Notifications"] = "1.3.0",
+            ["News"] = "1.0.0",
+            ["Weather"] = "2.1.0",
+            ["Proton-VPN"] = "1.0.0"
+        };
+    private static readonly JsonSerializerOptions ExternalCatalogJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true
+    };
+    private static readonly HashSet<string> BlockedExternalRepositories = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly HashSet<string> BlockedExternalOwnerNames = new(StringComparer.OrdinalIgnoreCase);
 
     private static readonly IReadOnlyList<PluginDefinition> Definitions = new[]
     {
+        new PluginDefinition(
+            "Playhub-Artworks",
+            "Artwork",
+            "Playhub Artworks",
+            "playhub-artworks",
+            ((char)0xE91B).ToString(),
+            "Le copertine giuste per ogni gioco della tua libreria.",
+            @"Playhub Artworks porta la gestione degli artwork dentro Big Picture, pensata per il controller: cerchi, scegli e applichi copertine, banner, hero, loghi e icone senza mai tornare al desktop.
+
+## Cosa fa
+• Cerca gli artwork su SteamGridDB, IGDB, PlayStation Store, Nintendo eShop, Xbox, AlphaCoders, iiDB e IGN.
+• Ricorda filtri e ultima fonte usata separatamente per ogni tipo di artwork.
+• Crea Perfect Hero e Perfect Banner fondendo sfondo e logo, con posizione, scala, opacità e ombra regolabili.
+• Permette di escludere il logo dalla composizione quando vuoi solo lo sfondo.
+• Posiziona e ridimensiona il logo del gioco come fa Steam.
+• Mostra le copertine quadrate nella libreria e in tutte le file della Home, banner di Steam compreso.
+• Completa in background gli artwork mancanti di tutta la libreria.
+
+## Nota
+• Per le ricerche che usano SteamGridDB serve una chiave API personale: resta salvata solo sul tuo PC."),
         new PluginDefinition(
             "Launch-Curtain",
             "Launch Curtain",
@@ -75,7 +150,7 @@ public sealed class PluginCatalogService
 • Supporta RetroAchievements per ROM ed emulatori.
 • Supporta gli achievement Xbox / Game Pass / Microsoft Store tramite OpenXBL (serve importare i giochi tramite la tab Importa Giochi di Playhub).
 • Permette di scegliere la fonte per ogni gioco: Auto, RetroAchievements, Xbox o Disattivata.
-• Offre cache flessibili — oraria, giornaliera, settimanale, a sessione o manuale — per limitare le chiamate API.
+• Offre cache flessibili (oraria, giornaliera, settimanale, a sessione o manuale) per limitare le chiamate API.
 
 ## Nota
 • Gli achievement non diventano achievement Steam veri: vengono solo mostrati dentro Big Picture."),
@@ -109,6 +184,7 @@ public sealed class PluginCatalogService
 • Personalizza achievement, messaggi, inviti, download, screenshot, controller, avvisi, notifiche di sistema e community.
 • Usa l'artwork reale degli achievement fornito da Steam quando disponibile.
 • Permette di scegliere posizione, durata e volume delle notifiche, con un intervallo da 0% a 200%.
+• Mostra il volume di sistema con un overlay coordinato al tema scelto.
 • Include anteprime per provare ogni tipo di notifica direttamente dal menu rapido.
 
 ## Note
@@ -198,7 +274,7 @@ public sealed class PluginCatalogService
             "playhub-surround",
             ((char)0xE767).ToString(),
             "Metti alla prova i tuoi altoparlanti, canale per canale.",
-            @"Playhub Surround è un piccolo strumento per verificare la disposizione dei tuoi altoparlanti in stereo, 5.1 e 7.1. Mostra una mappa in stile salotto e riproduce suoni di test sintetizzati ispirati ai videogiochi classici — nessun campione protetto da copyright: ogni suono è generato dal vivo con la Web Audio API.
+            @"Playhub Surround è un piccolo strumento per verificare la disposizione dei tuoi altoparlanti in stereo, 5.1 e 7.1. Mostra una mappa in stile salotto e riproduce suoni di test sintetizzati ispirati ai videogiochi classici - nessun campione protetto da copyright: ogni suono è generato dal vivo con la Web Audio API.
 
 ## Cosa fa
 • Mostra una mappa degli altoparlanti in stile salotto.
@@ -231,64 +307,142 @@ public sealed class PluginCatalogService
 • Richiede l'app ufficiale Proton VPN per Windows già installata e configurata.")
     };
 
-    public async Task<IReadOnlyList<DeckyPluginInfo>> LoadAsync(string pluginRoot, string deckyPluginsPath)
+    private static readonly Lazy<RemotePluginCatalog> BundledStoreCatalog = new(ReadBundledStoreCatalog);
+
+    public static RemotePluginCatalog GetBundledCatalog() => BundledStoreCatalog.Value;
+
+    private static RemotePluginCatalog ReadBundledStoreCatalog()
     {
-        var repos = await SafeLoadGithubReposAsync();
-        var plugins = new List<DeckyPluginInfo>();
-
-        foreach (var definition in Definitions)
+        var builtIns = Definitions.Select(definition => new RemotePluginCatalogEntry
         {
-            var repo = repos.FirstOrDefault(r => string.Equals(r.Name, definition.RepositoryName, StringComparison.OrdinalIgnoreCase));
-            var releaseTask = SafeGetLatestReleaseAsync(definition.RepositoryName);
-            var readmeTask = SafeGetReadmeAsync(definition.RepositoryName);
-            await Task.WhenAll(releaseTask, readmeTask);
+            Name = definition.DisplayName,
+            InstallFolder = definition.Cover,
+            Author = Owner,
+            Repository = $"{Owner}/{definition.RepositoryName}",
+            RepositoryUrl = $"https://github.com/{Owner}/{definition.RepositoryName}",
+            Version = PlayhubCatalogVersions.GetValueOrDefault(definition.RepositoryName, ""),
+            Category = "Playhub",
+            ShortDescription = definition.ShortDescription,
+            LongDescription = definition.LongDescription,
+            IconGlyph = definition.IconGlyph,
+            CatalogStatus = "playhub",
+            CatalogSource = "playhub",
+            Keywords = PlayhubKeywords.GetValueOrDefault(definition.RepositoryName, "").Split(' ', StringSplitOptions.RemoveEmptyEntries),
+            Aliases = new[] { definition.DisplayName, definition.LocalFolder, definition.Cover, definition.RepositoryName }
+        });
+        var fallback = new RemotePluginCatalog { Plugins = builtIns.Concat(LoadExternalDefinitions()).ToArray() };
+        try
+        {
+            var path = Path.Combine(AppContext.BaseDirectory, "Assets", "PluginCatalog", "store-catalog.json");
+            using var file = File.OpenRead(path);
+            if (file.Length > RemotePluginCatalogService.MaxDocumentBytes) return fallback;
+            var bytes = new byte[(int)file.Length];
+            file.ReadExactly(bytes);
+            return RemotePluginCatalogService.Merge(fallback, RemotePluginCatalogService.Parse(bytes));
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or UnauthorizedAccessException)
+        {
+            return fallback;
+        }
+    }
 
-            var release = releaseTask.Result;
-            var readme = readmeTask.Result;
-            var localFolder = FindLocalFolder(pluginRoot, definition.LocalFolder);
-            var installed = FindInstalledFolder(deckyPluginsPath, definition, definition.DisplayName);
-            var installedVersion = installed is null ? "" : ReadInstalledVersion(installed, definition.RepositoryName);
-            var hasUpdate = HasVersionUpdate(installedVersion, release.Version);
-            var changelog = SelectChangelog(
-                definition.RepositoryName,
-                installed is not null,
-                installedVersion,
-                hasUpdate,
-                release);
+    public Task<IReadOnlyList<DeckyPluginInfo>> LoadAsync(string pluginRoot, string deckyPluginsPath,
+        RemotePluginCatalog? catalog = null)
+        => Task.Run(() => LoadCatalog(pluginRoot, deckyPluginsPath, catalog ?? GetBundledCatalog()));
+
+    private static IReadOnlyList<DeckyPluginInfo> LoadCatalog(string pluginRoot, string deckyPluginsPath,
+        RemotePluginCatalog catalog)
+    {
+        var plugins = new List<DeckyPluginInfo>();
+        var claimedInstalledFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var bundled = Definitions.ToDictionary(definition => $"{Owner}/{definition.RepositoryName}", StringComparer.OrdinalIgnoreCase);
+        var releases = new Dictionary<string, ReleaseInfo>(StringComparer.OrdinalIgnoreCase);
+        var repositories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var definition in catalog.Plugins.Where(entry => entry.Active))
+        {
+            if (!IsValidRepositorySlug(definition.Repository) ||
+                IsBlockedPluginIdentity(new[] { definition.Name, definition.InstallFolder, definition.Repository }
+                    .Concat(definition.Aliases).ToArray()) || !repositories.Add(definition.Repository))
+                continue;
+            var repositoryName = definition.Repository[(definition.Repository.IndexOf('/') + 1)..];
+            var isPlayhub = definition.CatalogSource == "playhub" && definition.CatalogStatus == "playhub" &&
+                definition.Repository.StartsWith(Owner + "/", StringComparison.OrdinalIgnoreCase);
+            bundled.TryGetValue(definition.Repository, out var bundledDefinition);
+            var localFolder = bundledDefinition is null ? null : FindLocalFolder(pluginRoot, bundledDefinition.LocalFolder);
+            var sourceFolder = localFolder is null ? "" : FindSourceFolder(localFolder);
+            var cachedRelease = new ReleaseInfo(null, null, null, null, null);
+#if !PLAYHUB_UI_REVIEW
+            if (isPlayhub) cachedRelease = LoadReleaseCache(repositoryName);
+#endif
+            releases[definition.Repository] = cachedRelease;
+            var catalogVersion = isPlayhub
+                ? SelectNewestVersion(definition.Version, PlayhubCatalogVersions.GetValueOrDefault(repositoryName, ""),
+                    string.IsNullOrWhiteSpace(sourceFolder) ? "" : ReadInstalledVersion(sourceFolder, repositoryName),
+                    cachedRelease.Version ?? "")
+                : definition.Version;
+            var aliases = definition.Aliases.Append(definition.Name).Append(definition.InstallFolder)
+                .Append(repositoryName).Append(definition.Repository).Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            var installFolder = SafeInstallFolderName(definition.InstallFolder, definition.Name);
+            var cover = !string.IsNullOrWhiteSpace(definition.CoverUrl) ? definition.CoverUrl
+                : bundledDefinition is null ? null : ResolveCover(bundledDefinition.Cover);
+            var manifestRelease = !string.IsNullOrWhiteSpace(definition.CatalogReleaseUrl) &&
+                (!isPlayhub || VersionsEquivalent(catalogVersion, definition.Version));
+            var published = manifestRelease ? FormatDate(definition.ReleasePublishedAt) : cachedRelease.PublishedAt ?? "";
 
             plugins.Add(new DeckyPluginInfo
             {
-                Name = definition.DisplayName,
-                FolderName = definition.Cover,
-                Author = Owner,
-                Version = release.Version ?? "",
-                InstalledVersion = installedVersion,
-                HasUpdate = hasUpdate,
+                Name = definition.Name,
+                FolderName = installFolder,
+                Author = definition.Author,
+                Version = catalogVersion,
                 ShortDescription = definition.ShortDescription,
                 LongDescription = definition.LongDescription,
-                Readme = string.IsNullOrWhiteSpace(readme.Text) ? definition.LongDescription : readme.Text,
-                IconGlyph = definition.IconGlyph,
-                Media = readme.Media,
-                SourceFolder = localFolder is not null ? FindSourceFolder(localFolder) : "",
+                Readme = definition.LongDescription,
+                IconGlyph = string.IsNullOrWhiteSpace(definition.IconGlyph)
+                    ? bundledDefinition?.IconGlyph ?? ((char)0xE8B7).ToString() : definition.IconGlyph,
+                SourceFolder = sourceFolder,
                 InstallerZip = localFolder is null ? null : FindInstallerZip(localFolder),
-                Image = ResolveCover(definition.Cover),
-                CoverImage = ResolveCover(definition.Cover),
-                RepositoryUrl = repo?.HtmlUrl ?? $"https://github.com/{Owner}/{definition.RepositoryName}",
-                RepositoryName = definition.RepositoryName,
-                ReleaseZipUrl = release.ZipUrl,
-                ReleasePageUrl = release.PageUrl,
-                ReleaseNotes = changelog.Notes ?? "",
-                ReleaseNotesVersion = changelog.Version ?? "",
-                ReleaseNotesPublishedAt = changelog.PublishedAt ?? "",
-                ReleasePublishedAt = release.PublishedAt ?? "",
-                UpdatedAt = repo?.UpdatedAt ?? "",
-                IsInstalled = installed is not null,
-                InstalledFolder = installed ?? Path.Combine(deckyPluginsPath, definition.Cover)
+                Image = cover,
+                CoverImage = cover,
+                RepositoryUrl = string.IsNullOrWhiteSpace(definition.RepositoryUrl)
+                    ? $"https://github.com/{definition.Repository}" : definition.RepositoryUrl,
+                RepositoryName = repositoryName,
+                RepositorySlug = definition.Repository,
+                ReleaseAssetName = manifestRelease ? definition.ReleaseAssetName : "",
+                CatalogReleaseZipUrl = manifestRelease ? definition.CatalogReleaseUrl : cachedRelease.ZipUrl,
+                InstallAliases = aliases,
+                Category = isPlayhub ? definition.Category : NormalizeExternalCategory(definition.Category),
+                Keywords = string.Join(' ', definition.Keywords),
+                IsPlayhubPlugin = isPlayhub,
+                CatalogStatus = isPlayhub ? "playhub" : NormalizeCatalogStatus(definition.CatalogStatus),
+                CatalogSource = isPlayhub ? "playhub" : NormalizeCatalogSource(definition.CatalogSource),
+                CatalogPluginId = definition.CatalogPluginId,
+                Compatibility = definition.Compatibility,
+                ReleasePageUrl = cachedRelease.PageUrl ?? definition.RepositoryUrl,
+                ReleasePublishedAt = published,
+                UpdatedAt = published,
+                InstalledFolder = Path.Combine(deckyPluginsPath, installFolder)
             });
         }
 
+        // One installed-folder pass hydrates both bundled and newly published definitions.
+        AppendUncataloguedInstalledPlugins(plugins, deckyPluginsPath, claimedInstalledFolders);
+#if !PLAYHUB_UI_REVIEW
+        foreach (var plugin in plugins.Where(plugin => plugin.IsPlayhubPlugin))
+        {
+            var changelog = SelectChangelog(plugin.RepositoryName, plugin.IsInstalled, plugin.InstalledVersion,
+                plugin.HasUpdate, releases[plugin.RepositorySlug]);
+            plugin.ReleaseNotes = changelog.Notes ?? "";
+            plugin.ReleaseNotesVersion = changelog.Version ?? "";
+            plugin.ReleaseNotesPublishedAt = changelog.PublishedAt ?? "";
+        }
+#endif
+
         var displayOrder = new[]
         {
+            "Playhub-Artworks",
             "Playhub-Metadata",
             "ThemeDeck-Windows",
             "Launch-Curtain",
@@ -302,13 +456,266 @@ public sealed class PluginCatalogService
             "Proton-VPN"
         };
 
-        return plugins
+        IReadOnlyList<DeckyPluginInfo> result = plugins
             .OrderBy(p =>
             {
+                if (!p.IsPlayhubPlugin)
+                {
+                    return int.MaxValue;
+                }
                 var index = Array.IndexOf(displayOrder, p.RepositoryName);
                 return index >= 0 ? index : int.MaxValue;
             })
+            .ThenBy(p => p.IsPlayhubPlugin ? "" : p.Category, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(p => p.IsPlayhubPlugin ? "" : p.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
+        return result;
+    }
+
+    public async Task EnsurePluginDetailsAsync(DeckyPluginInfo plugin)
+    {
+        if (plugin.IsPlayhubPlugin || !IsValidRepositorySlug(plugin.RepositorySlug))
+        {
+            return;
+        }
+
+        try
+        {
+            var readme = await _readmes.GetAsync(plugin.RepositorySlug);
+            if (!string.IsNullOrWhiteSpace(readme.Text))
+            {
+                plugin.Readme = readme.Text;
+                plugin.LongDescription = readme.Text;
+            }
+            // Replace stale media even when the README is empty; never erase useful descriptions.
+            // Copies keep UI failure handling from mutating the shared cache.
+            plugin.Media = readme.Media.Select(media => new PluginMediaInfo
+                { Url = media.Url, Kind = media.Kind, Alt = media.Alt }).ToList();
+        }
+        catch
+        {
+            plugin.Media = new List<PluginMediaInfo>();
+        }
+    }
+
+    internal async Task<string?> FindPluginPreviewAsync(DeckyPluginInfo plugin, ISet<string> rejected)
+    {
+        async Task<string?> FirstImageAsync(IEnumerable<string?> candidates)
+        {
+            foreach (var candidate in candidates.Where(value => !string.IsNullOrWhiteSpace(value))
+                         .Distinct(StringComparer.Ordinal).Take(8))
+            {
+                if (rejected.Contains(candidate!)) continue;
+                if (File.Exists(candidate)) return candidate;
+                if (IsRemoteUri(candidate!, out var uri) && !rejected.Contains(uri.AbsoluteUri) &&
+                    await _readmes.GetMediaKindAsync(uri.AbsoluteUri).ConfigureAwait(false) == "image")
+                    return uri.AbsoluteUri;
+            }
+            return null;
+        }
+
+        var image = await FirstImageAsync(new[] { plugin.CoverImage, plugin.Image }
+            .Concat(plugin.Media.Where(media => media.Kind == "image").Select(media => media.Url)))
+            .ConfigureAwait(false);
+        if (image is not null || plugin.IsPlayhubPlugin || !IsValidRepositorySlug(plugin.RepositorySlug))
+            return image;
+
+        // Only a missing/failed card asks for README media; reuse detail validation and single-flight caches.
+        var readme = await _readmes.GetAsync(plugin.RepositorySlug).ConfigureAwait(false);
+        image = await FirstImageAsync(readme.Media.Where(media => media.Kind == "image")
+            .Select(media => media.Url)).ConfigureAwait(false);
+        return image ?? await FirstImageAsync(new[]
+            { $"https://opengraph.githubassets.com/1/{plugin.RepositorySlug}" }).ConfigureAwait(false);
+    }
+
+    private static IReadOnlyList<ExternalPluginDefinition> LoadExternalDefinitions()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Assets", "PluginCatalog", "external-plugins.json");
+        if (!File.Exists(path))
+        {
+            return Array.Empty<ExternalPluginDefinition>();
+        }
+
+        try
+        {
+            var catalog = JsonSerializer.Deserialize<ExternalPluginCatalog>(
+                File.ReadAllText(path),
+                ExternalCatalogJsonOptions);
+            if (catalog?.Plugins is null)
+            {
+                return Array.Empty<ExternalPluginDefinition>();
+            }
+
+            var repositories = new HashSet<string>(
+                Definitions.Select(definition => NormalizeRepositorySlug($"{Owner}/{definition.RepositoryName}")),
+                StringComparer.OrdinalIgnoreCase);
+            var ownerNames = new HashSet<string>(
+                Definitions.Select(definition => $"{Normalize(Owner)}/{Normalize(definition.DisplayName)}"),
+                StringComparer.OrdinalIgnoreCase);
+            return catalog.Plugins
+                .OrderBy(plugin => string.Equals(plugin.CatalogSource, "decky-store", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .Where(plugin => plugin.Active &&
+                                 !IsBlockedExternalPlugin(plugin) &&
+                                 IsValidRepositorySlug(plugin.Repository) &&
+                                 !string.IsNullOrWhiteSpace(plugin.Name) &&
+                                 !string.IsNullOrWhiteSpace(plugin.Author) &&
+                                 !string.IsNullOrWhiteSpace(plugin.Category) &&
+                                 !string.IsNullOrWhiteSpace(plugin.ShortDescription) &&
+                                 !string.IsNullOrWhiteSpace(plugin.LongDescription) &&
+                                 !string.IsNullOrWhiteSpace(plugin.Compatibility) &&
+                                 IsValidCatalogStatus(plugin.CatalogStatus) &&
+                                 !string.IsNullOrWhiteSpace(plugin.Version) &&
+                                 !string.IsNullOrWhiteSpace(plugin.ReleaseAssetName) &&
+                                 !string.IsNullOrWhiteSpace(plugin.CatalogReleaseUrl) &&
+                                 repositories.Add(NormalizeRepositorySlug(plugin.Repository)) &&
+                                 ownerNames.Add(ExternalOwnerName(plugin)))
+                .ToList();
+        }
+        catch
+        {
+            return Array.Empty<ExternalPluginDefinition>();
+        }
+    }
+
+    private static bool IsBlockedExternalPlugin(ExternalPluginDefinition plugin)
+    {
+        if (IsBlockedPluginIdentity(
+                plugin.Name,
+                plugin.InstallFolder,
+                plugin.Repository,
+                plugin.RepositoryUrl))
+        {
+            return true;
+        }
+
+        var repository = NormalizeRepositorySlug(plugin.Repository);
+        if (BlockedExternalRepositories.Contains(repository))
+        {
+            return true;
+        }
+
+        var ownerName = ExternalOwnerName(plugin);
+        var authorName = $"{Normalize(plugin.Author)}/{Normalize(plugin.Name)}";
+        return BlockedExternalOwnerNames.Contains(ownerName) ||
+               BlockedExternalOwnerNames.Contains(authorName);
+    }
+
+    private static string NormalizeRepositorySlug(string value)
+    {
+        var parts = (value ?? "")
+            .Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return parts.Length == 2
+            ? $"{parts[0].ToLowerInvariant()}/{parts[1].ToLowerInvariant()}"
+            : "";
+    }
+
+    private static bool IsBlockedPluginIdentity(params string[] identities)
+    {
+        foreach (var identity in identities.Where(value => !string.IsNullOrWhiteSpace(value)))
+        {
+            var normalized = Normalize(identity);
+            if (normalized is "varta" or "vartaplugin" or "gamingmode" or "playhubgamingmode")
+            {
+                return true;
+            }
+
+            var repository = ExtractGithubRepositorySlug(identity);
+            if (!string.IsNullOrWhiteSpace(repository) &&
+                Normalize(repository[(repository.IndexOf('/') + 1)..]) is "varta" or "vartaplugin" or "gamingmode" or "playhubgamingmode")
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string ExternalOwnerName(ExternalPluginDefinition plugin)
+    {
+        var parts = (plugin.Repository ?? "")
+            .Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var owner = parts.Length == 2 ? parts[0] : plugin.Author;
+        return $"{Normalize(owner)}/{Normalize(plugin.Name)}";
+    }
+
+    private static bool IsValidRepositorySlug(string value)
+    {
+        var parts = (value ?? "").Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return parts.Length == 2 && parts.All(part => part.Length > 0 && part.All(character =>
+            char.IsLetterOrDigit(character) || character is '-' or '_' or '.'));
+    }
+
+    private static bool IsValidCatalogStatus(string value) =>
+        string.Equals(value, "decky", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(value, "github", StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizeCatalogStatus(string value) =>
+        string.Equals(value, "decky", StringComparison.OrdinalIgnoreCase) ? "decky" : "github";
+
+    private static string NormalizeCatalogSource(string value) =>
+        string.Equals(value, "decky-store", StringComparison.OrdinalIgnoreCase)
+            ? "decky-store"
+            : "outside-store";
+
+    private static string NormalizeExternalCategory(string value)
+    {
+        var normalized = (value ?? "").Trim();
+        if (normalized.Equals("Giochi e libreria", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("Libreria e giochi", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Libreria e giochi";
+        }
+
+        if (normalized.Equals("Media e personalizzazione", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("Personalizzazione e media", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Personalizzazione e media";
+        }
+
+        if (normalized.Equals("Sistema e connettività", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("Sistema e hardware", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("Controller e hardware", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("Rete e strumenti", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Sistema e hardware";
+        }
+
+        if (normalized.Equals("Social e community", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Social e community";
+        }
+
+        if (normalized.Equals("Strumenti e utilità", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("Strumenti e utilita", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Strumenti e utilità";
+        }
+
+        return normalized;
+    }
+
+    private static string SafeInstallFolderName(string requested, string fallback)
+    {
+        var value = string.IsNullOrWhiteSpace(requested) ? fallback : requested;
+        if (value.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || value.Contains('/') || value.Contains('\\'))
+        {
+            return MakeInstallFolderName(fallback);
+        }
+        return value.Trim();
+    }
+
+    private static string SelectNewestVersion(params string[] versions)
+    {
+        var newest = "";
+        foreach (var version in versions.Where(version => TryParseSemanticVersion(version, out _)))
+        {
+            if (string.IsNullOrWhiteSpace(newest) ||
+                CompareSemanticVersions(version, newest) > 0)
+            {
+                newest = version;
+            }
+        }
+        return newest;
     }
 
     private static string? ResolveCover(string slug)
@@ -584,109 +991,377 @@ public sealed class PluginCatalogService
         Regex.Replace(value, "[^a-zA-Z0-9._-]+", "-");
 
     private static string NormalizeVersion(string? value) =>
-        Regex.Match(value ?? "", @"\d+(?:\.\d+)*").Value;
+        TryParseSemanticVersion(value, out var version) ? version.Canonical : "";
 
-    private static async Task<ReadmeInfo> SafeGetReadmeAsync(string repoName)
+    private sealed record ReadmeDocument(string Markdown, Uri Url, Uri Root);
+
+    private sealed class ReadmeLoader
     {
-        foreach (var branch in new[] { "main", "master" })
+        private const int MaxReadmeBytes = 1024 * 1024;
+        private const int ProbeBytes = 4096;
+        private readonly HttpClient _http;
+        private readonly TimeSpan _timeout;
+        private readonly SemaphoreSlim _requests = new(4);
+        private readonly AsyncResultCache<ReadmeInfo> _readmes;
+        private readonly AsyncResultCache<string?> _media;
+
+        public ReadmeLoader(HttpClient http, Func<DateTimeOffset>? clock = null, TimeSpan? timeout = null)
         {
+            _http = http;
+            _timeout = timeout ?? TimeSpan.FromSeconds(8);
+            clock ??= () => DateTimeOffset.UtcNow;
+            _readmes = new(256, StringComparer.OrdinalIgnoreCase, clock);
+            _media = new(1024, StringComparer.Ordinal, clock);
+        }
+
+        public Task<ReadmeInfo> GetAsync(string slug) => _readmes.GetAsync(slug, () => LoadAsync(slug));
+
+        public Task<string?> GetMediaKindAsync(string url) => _media.GetAsync(url, () => ProbeAsync(url));
+
+        private async Task<ReadmeInfo> LoadAsync(string slug)
+        {
+            ReadmeDocument? document;
+            using (var timeout = new CancellationTokenSource(_timeout))
+                document = await FetchReadmeAsync(slug, timeout.Token).ConfigureAwait(false);
+            if (document is null)
+                return new ReadmeInfo("", "", new());
+
+            var text = CleanMarkdown(RemoveMediaMarkdown(document.Markdown));
+            var media = new List<PluginMediaInfo>();
             try
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
-                var url = $"https://raw.githubusercontent.com/{Owner}/{repoName}/{branch}/README.md";
-                var markdown = await Http.GetStringAsync(url, cts.Token);
-                var media = ExtractMedia(markdown, repoName, branch);
-                var text = CleanMarkdown(RemoveMediaMarkdown(markdown));
-                return new ReadmeInfo(text, MakeSummary(text), media);
+                var candidates = ExtractMedia(document).Take(12).ToArray();
+                using var timeout = new CancellationTokenSource(_timeout);
+                // Validate in small batches so broken early links do not consume the gallery limit.
+                for (var offset = 0; offset < candidates.Length && media.Count < 6; offset += 4)
+                {
+                    var batch = candidates.Skip(offset).Take(4).ToArray();
+                    var kinds = await Task.WhenAll(batch.Select(candidate =>
+                        _media.GetAsync(candidate.Url, () => ProbeAsync(candidate.Url))))
+                        .WaitAsync(timeout.Token).ConfigureAwait(false);
+                    for (var index = 0; index < batch.Length && media.Count < 6; index++)
+                        if (kinds[index] is { } kind)
+                            media.Add(new PluginMediaInfo { Url = batch[index].Url, Kind = kind, Alt = batch[index].Alt });
+                }
             }
             catch
             {
+                // Media is optional. A slow or malformed asset must not discard the README.
             }
+            return new ReadmeInfo(text, MakeSummary(text), media);
         }
 
-        return new ReadmeInfo("", "", new List<PluginMediaInfo>());
-    }
-
-    private static List<PluginMediaInfo> ExtractMedia(string markdown, string repoName, string branch)
-    {
-        var media = new List<PluginMediaInfo>();
-
-        // Markdown images: ![alt](url)
-        foreach (Match match in Regex.Matches(markdown, @"!\[(?<alt>[^\]]*)\]\((?<url>[^)\s]+)", RegexOptions.IgnoreCase))
+        private async Task<ReadmeDocument?> FetchReadmeAsync(string slug, CancellationToken token)
         {
-            AddMedia(media, match.Groups["url"].Value, match.Groups["alt"].Value, "image", repoName, branch);
-        }
-
-        // HTML <img ... src="url" ...>
-        foreach (Match match in Regex.Matches(markdown, @"<img\b[^>]*?\bsrc\s*=\s*[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase))
-        {
-            AddMedia(media, match.Groups["url"].Value, "", "image", repoName, branch);
-        }
-
-        // HTML <video>/<source ... src="url" ...>
-        foreach (Match match in Regex.Matches(markdown, @"<(?:video|source)\b[^>]*?\bsrc\s*=\s*[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase))
-        {
-            AddMedia(media, match.Groups["url"].Value, "", "video", repoName, branch);
-        }
-
-        // Bare media URLs that carry a known extension
-        foreach (Match match in Regex.Matches(markdown, @"https?://[^\s)>""']+\.(?:png|jpe?g|gif|webp|mp4|webm|mov)", RegexOptions.IgnoreCase))
-        {
-            var ext = Path.GetExtension(match.Value.Split('?')[0]).ToLowerInvariant();
-            var kind = ext is ".mp4" or ".webm" or ".mov" ? "video" : "image";
-            AddMedia(media, match.Value, "", kind, repoName, branch);
-        }
-
-        return media
-            .GroupBy(m => m.Url, StringComparer.OrdinalIgnoreCase)
-            .Select(g => g.First())
-            .Take(6)
-            .ToList();
-    }
-
-    private static void AddMedia(List<PluginMediaInfo> media, string rawUrl, string alt, string kind, string repoName, string branch)
-    {
-        var url = NormalizeMediaUrl(rawUrl.Trim(), repoName, branch);
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            return;
-        }
-
-        media.Add(new PluginMediaInfo { Url = url, Kind = kind, Alt = alt });
-    }
-
-    private static string NormalizeMediaUrl(string url, string repoName, string branch)
-    {
-        url = url.Trim('<', '>', '"', '\'');
-        if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-            url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-        {
-            // GitHub asset/CDN URLs (user-attachments, raw, camo) must stay exactly as they are.
-            if (url.Contains("user-attachments", StringComparison.OrdinalIgnoreCase) ||
-                url.Contains("githubusercontent.com", StringComparison.OrdinalIgnoreCase) ||
-                url.Contains("camo.", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                return url;
+                var data = await ReadResponseAsync(new Uri($"https://api.github.com/repos/{slug}/readme"),
+                    "application/vnd.github+json", MaxReadmeBytes, false, token).ConfigureAwait(false);
+                if (data is not null)
+                {
+                    using var json = JsonDocument.Parse(data.Value.Bytes);
+                    var root = json.RootElement;
+                    var path = root.GetProperty("path").GetString() ?? "";
+                    var download = root.GetProperty("download_url").GetString() ?? "";
+                    var escapedPath = string.Join("/", path.Split('/').Select(Uri.EscapeDataString));
+                    if (path.Length > 0 && IsRemoteUri(download, out var url) &&
+                        url.Host.Equals("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase) &&
+                        url.AbsolutePath.StartsWith($"/{slug}/", StringComparison.OrdinalIgnoreCase) &&
+                        url.AbsolutePath.EndsWith("/" + escapedPath, StringComparison.Ordinal))
+                    {
+                        var repositoryRoot = new Uri(url.GetLeftPart(UriPartial.Path)[..^escapedPath.Length]);
+                        if (root.TryGetProperty("encoding", out var encoding) && encoding.GetString() == "base64" &&
+                            root.TryGetProperty("content", out var content) && content.GetString() is { Length: > 0 } encoded)
+                            return new ReadmeDocument(Encoding.UTF8.GetString(Convert.FromBase64String(encoded)), url, repositoryRoot);
+                        var raw = await ReadResponseAsync(url, "text/plain", MaxReadmeBytes, false, token).ConfigureAwait(false);
+                        if (raw is not null && raw.Value.Mime != "text/html")
+                            return new ReadmeDocument(Encoding.UTF8.GetString(raw.Value.Bytes), url, repositoryRoot);
+                    }
+                }
             }
+            catch (Exception) when (!token.IsCancellationRequested)
+            {
+            }
+            catch (OperationCanceledException) { return null; }
 
-            // Convert normal github.com/blob links to raw.
-            return url.Replace("github.com/", "raw.githubusercontent.com/").Replace("/blob/", "/");
+            // Raw HEAD follows the default branch even when the API is rate-limited.
+            foreach (var path in new[] { "README.md", "Readme.md", "readme.md", ".github/README.md", "docs/README.md" })
+            {
+                try
+                {
+                    var root = new Uri($"https://raw.githubusercontent.com/{slug}/HEAD/");
+                    var url = new Uri(root, path);
+                    var data = await ReadResponseAsync(url, "text/plain", MaxReadmeBytes, false, token).ConfigureAwait(false);
+                    if (data is not null && data.Value.Mime != "text/html")
+                        return new ReadmeDocument(Encoding.UTF8.GetString(data.Value.Bytes), url, root);
+                }
+                catch (OperationCanceledException) { break; }
+                catch { }
+            }
+            return null;
         }
 
-        if (url.StartsWith("#", StringComparison.Ordinal))
+        private async Task<string?> ProbeAsync(string url)
         {
-            return "";
+            try
+            {
+                using var timeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(Math.Min(_timeout.TotalMilliseconds, 3000)));
+                var data = await ReadResponseAsync(new Uri(url), "image/*, video/*, application/octet-stream",
+                    ProbeBytes, true, timeout.Token).ConfigureAwait(false);
+                return data is null ? null : DetectMediaKind(data.Value.Bytes, data.Value.Mime);
+            }
+            catch { return null; }
         }
 
-        return $"https://raw.githubusercontent.com/{Owner}/{repoName}/{branch}/{url.TrimStart('/')}";
+        private async Task<(byte[] Bytes, string Mime)?> ReadResponseAsync(Uri url, string accept,
+            int limit, bool probe, CancellationToken token)
+        {
+            await _requests.WaitAsync(token).ConfigureAwait(false);
+            try
+            {
+                for (var redirects = 0; redirects <= 4; redirects++)
+                {
+                    using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Headers.UserAgent.ParseAdd("Playhub/1.0");
+                    request.Headers.Accept.ParseAdd(accept);
+                    if (probe) request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(0, limit - 1);
+                    using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
+                    if (response.StatusCode is HttpStatusCode.MovedPermanently or HttpStatusCode.Redirect or
+                        HttpStatusCode.SeeOther or HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect)
+                    {
+                        if (response.Headers.Location is not { } location ||
+                            !Uri.TryCreate(url, location, out var target) || !IsRemoteUri(target.AbsoluteUri, out url))
+                            return null;
+                        continue;
+                    }
+                    if (response.StatusCode != HttpStatusCode.OK && response.StatusCode != HttpStatusCode.PartialContent)
+                        return null;
+                    if (response.StatusCode == HttpStatusCode.PartialContent &&
+                        (!probe || response.Content.Headers.ContentRange?.From != 0))
+                        return null;
+                    var mime = response.Content.Headers.ContentType?.MediaType?.ToLowerInvariant() ?? "";
+                    if (probe && !IsMediaMime(mime)) return null;
+                    if (!probe && response.Content.Headers.ContentLength > limit) return null;
+                    using var stream = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
+                    using var bytes = new MemoryStream();
+                    var buffer = new byte[Math.Min(limit, 8192)];
+                    while (bytes.Length < limit)
+                    {
+                        var count = await stream.ReadAsync(buffer.AsMemory(0, Math.Min(buffer.Length, limit - (int)bytes.Length)), token).ConfigureAwait(false);
+                        if (count == 0) break;
+                        bytes.Write(buffer, 0, count);
+                    }
+                    if (!probe && bytes.Length == limit && await stream.ReadAsync(buffer.AsMemory(0, 1), token).ConfigureAwait(false) != 0)
+                        return null;
+                    return (bytes.ToArray(), mime);
+                }
+                return null;
+            }
+            finally { _requests.Release(); }
+        }
+    }
+
+    // Cache misses run off the caller's synchronization context, including extraction and JSON parsing.
+    private sealed class AsyncResultCache<T>
+    {
+        private sealed record Entry(DateTimeOffset Created, Lazy<Task<T>> Task);
+        private readonly Dictionary<string, Entry> _entries;
+        private readonly int _capacity;
+        private readonly Func<DateTimeOffset> _clock;
+
+        public AsyncResultCache(int capacity, IEqualityComparer<string> comparer, Func<DateTimeOffset> clock)
+        {
+            _capacity = capacity;
+            _clock = clock;
+            _entries = new Dictionary<string, Entry>(comparer);
+        }
+
+        public Task<T> GetAsync(string key, Func<Task<T>> factory)
+        {
+            Entry entry;
+            lock (_entries)
+            {
+                var now = _clock();
+                if (_entries.TryGetValue(key, out var cached) &&
+                    (now - cached.Created < TimeSpan.FromMinutes(5) || !cached.Task.IsValueCreated || !cached.Task.Value.IsCompleted))
+                    entry = cached;
+                else
+                {
+                    entry = new Entry(now, new Lazy<Task<T>>(() => System.Threading.Tasks.Task.Run(factory)));
+                    if (_entries.Count >= _capacity)
+                    {
+                        var oldest = _entries.OrderBy(pair => pair.Value.Created)
+                            .FirstOrDefault(pair => pair.Value.Task.IsValueCreated && pair.Value.Task.Value.IsCompleted);
+                        if (oldest.Key is not null) _entries.Remove(oldest.Key);
+                    }
+                    if (_entries.Count < _capacity || _entries.ContainsKey(key)) _entries[key] = entry;
+                }
+            }
+            return entry.Task.Value;
+        }
+    }
+
+    private static bool IsMediaMime(string mime) => mime.Length == 0 || mime == "application/octet-stream" ||
+        mime.StartsWith("image/", StringComparison.Ordinal) || mime.StartsWith("video/", StringComparison.Ordinal);
+
+    private static string? DetectMediaKind(byte[] bytes, string mime)
+    {
+        if (!IsMediaMime(mime)) return null;
+        var data = bytes.AsSpan();
+        string? kind = null;
+        if ((data.Length >= 24 && data.StartsWith(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }) && data.Slice(12, 4).SequenceEqual("IHDR"u8)) ||
+            (data.Length >= 4 && data[0] == 255 && data[1] == 216 && data[2] == 255 && data[3] != 0) ||
+            (data.Length >= 13 && (data.StartsWith("GIF87a"u8) || data.StartsWith("GIF89a"u8))) ||
+            (data.Length >= 16 && data.StartsWith("RIFF"u8) && data.Slice(8, 4).SequenceEqual("WEBP"u8)) ||
+            (data.Length >= 26 && data.StartsWith("BM"u8)))
+            kind = "image";
+        else if (data.Length >= 16 && data.Slice(4, 4).SequenceEqual("ftyp"u8))
+        {
+            var brand = Encoding.ASCII.GetString(bytes, 8, 4);
+            if (brand is "isom" or "iso2" or "mp41" or "mp42" or "avc1" or "M4V " or "qt  " or "dash") kind = "video";
+        }
+        else if (data.Length >= 16 && data.StartsWith(new byte[] { 0x1a, 0x45, 0xdf, 0xa3 }) && data.IndexOf("webm"u8) >= 0)
+            kind = "video";
+        else if (data.Length >= 16 && data.StartsWith("RIFF"u8) && data.Slice(8, 4).SequenceEqual("AVI "u8))
+            kind = "video";
+        if (kind is null || (mime.StartsWith("image/", StringComparison.Ordinal) && kind != "image") ||
+            (mime.StartsWith("video/", StringComparison.Ordinal) && kind != "video")) return null;
+        return kind;
+    }
+
+    private const string MarkdownMediaDestination = @"(?:<(?<url>[^>\r\n]+)>|(?<url>(?:\\.|[^\s()\\]|\([^()\r\n]*\))+))";
+
+    private static List<PluginMediaInfo> ExtractMedia(ReadmeDocument document)
+    {
+        var markdown = Regex.Replace(document.Markdown, @"<!--[\s\S]*?-->|(?m)^[ \t]*(`{3,}|~{3,})[^\r\n]*\r?\n[\s\S]*?^[ \t]*\1[^\r\n]*", "");
+        markdown = Regex.Replace(markdown, @"`[^`\r\n]+`", "");
+        var media = new List<PluginMediaInfo>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        void Add(string raw, string alt, bool explicitMedia)
+        {
+            var url = NormalizeMediaUrl(raw, document);
+            if (url.Length == 0 || (!explicitMedia && !IsMediaLink(url))) return;
+            var identity = url + " " + alt;
+            if (identity.Contains("ko-fi", StringComparison.OrdinalIgnoreCase) ||
+                identity.Contains("buymeacoffee", StringComparison.OrdinalIgnoreCase) ||
+                identity.Contains("githubbutton", StringComparison.OrdinalIgnoreCase) ||
+                url.Contains("shields.io", StringComparison.OrdinalIgnoreCase) || !seen.Add(url)) return;
+            media.Add(new PluginMediaInfo { Url = url, Alt = WebUtility.HtmlDecode(alt) });
+        }
+
+        var references = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (Match match in Regex.Matches(markdown, @"(?m)^[ \t]{0,3}\[(?<id>[^\]]+)\]:[ \t]*" + MarkdownMediaDestination))
+            references[NormalizeReferenceLabel(match.Groups["id"].Value)] = match.Groups["url"].Value;
+        markdown = Regex.Replace(markdown, @"(?m)^[ \t]{0,3}\[[^\]]+\]:[^\r\n]*", "");
+        foreach (Match match in Regex.Matches(markdown,
+            @"(?<image>!)?\[(?<alt>[^\[\]\r\n]*)\]\(\s*" + MarkdownMediaDestination + @"(?:\s+[""'][^\r\n]*?[""'])?\s*\)"))
+            Add(match.Groups["url"].Value, match.Groups["alt"].Value, match.Groups["image"].Success);
+        foreach (Match match in Regex.Matches(markdown, @"(?<image>!)?\[(?<alt>[^\[\]\r\n]*)\](?:\[(?<id>[^\]\r\n]*)\])?(?!\()"))
+        {
+            var label = match.Groups["id"].Value;
+            if (label.Length == 0) label = match.Groups["alt"].Value;
+            if (references.TryGetValue(NormalizeReferenceLabel(label), out var url))
+                Add(url, match.Groups["alt"].Value, match.Groups["image"].Success);
+        }
+        foreach (Match tag in Regex.Matches(markdown, @"<(?<tag>img|video|source|a)\b[^>]*>", RegexOptions.IgnoreCase))
+        {
+            var attrs = Regex.Matches(tag.Value, @"\b(?<name>src|href|alt)\s*=\s*(?:""(?<value>[^""]*)""|'(?<value>[^']*)'|(?<value>[^\s>]+))", RegexOptions.IgnoreCase)
+                .Cast<Match>().GroupBy(match => match.Groups["name"].Value, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First().Groups["value"].Value, StringComparer.OrdinalIgnoreCase);
+            var anchor = tag.Groups["tag"].Value.Equals("a", StringComparison.OrdinalIgnoreCase);
+            if (attrs.TryGetValue(anchor ? "href" : "src", out var src))
+                Add(src, attrs.TryGetValue("alt", out var alt) ? alt : "", !anchor);
+        }
+        // Do not rescan structured destinations: doing so truncates URLs containing spaces or parentheses.
+        var bare = Regex.Replace(markdown, @"<[^>]+>|!?\[[^\]\r\n]*\]\([^\r\n]*?\)(?!\))", "");
+        foreach (Match match in Regex.Matches(bare, @"https?://[^\s<>""']+", RegexOptions.IgnoreCase))
+            Add(match.Value.TrimEnd('.', ',', ';', ':', '!', ')', ']'), "", false);
+        foreach (Match match in Regex.Matches(markdown, @"<(?<url>https?://[^>\r\n]+)>", RegexOptions.IgnoreCase))
+            Add(match.Groups["url"].Value, "", false);
+        return media;
+    }
+
+    private static string NormalizeReferenceLabel(string label) => Regex.Replace(label.Trim(), @"\s+", " ");
+
+    private static bool IsMediaLink(string url)
+    {
+        var uri = new Uri(url);
+        return Regex.IsMatch(uri.AbsolutePath, @"\.(?:png|jpe?g|gif|webp|bmp|mp4|webm|mov|avi)$", RegexOptions.IgnoreCase) ||
+            (uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) &&
+                Regex.IsMatch(uri.AbsolutePath, @"^/(?:user-attachments/assets/[^/]+|[^/]+/[^/]+/assets/[^/]+/[^/]+)$", RegexOptions.IgnoreCase)) ||
+            uri.Host.Equals("user-images.githubusercontent.com", StringComparison.OrdinalIgnoreCase) ||
+            uri.Host.Equals("private-user-images.githubusercontent.com", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsRemoteUri(string value, out Uri uri)
+    {
+        if (Uri.TryCreate(value, UriKind.Absolute, out var parsed) &&
+            parsed.Scheme is "https" or "http" && !parsed.IsLoopback && parsed.UserInfo.Length == 0)
+        {
+            uri = parsed;
+            return true;
+        }
+        uri = null!;
+        return false;
+    }
+
+    private static string NormalizeMediaUrl(string value, ReadmeDocument document)
+    {
+        value = WebUtility.HtmlDecode(Regex.Replace(value.Trim().Trim('<', '>'), @"\\([\\ ()\[\]])", "$1"));
+        if (value.Length == 0 || value[0] is '#' or '?' || value.Contains('\\')) return "";
+        Uri? uri;
+        if (value.StartsWith("//", StringComparison.Ordinal)) value = "https:" + value;
+        // On Windows, Uri treats /assets/image.png as a local absolute file path.
+        if (!value.StartsWith('/') && Uri.TryCreate(value, UriKind.Absolute, out uri))
+        {
+            if (!IsRemoteUri(value, out uri)) return "";
+        }
+        else
+        {
+            var rootRelative = value.StartsWith('/');
+            if (!Uri.TryCreate(rootRelative ? document.Root : document.Url, rootRelative ? value.TrimStart('/') : value, out uri) ||
+                !document.Root.IsBaseOf(uri)) return "";
+        }
+        if (uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
+        {
+            var match = Regex.Match(uri.AbsolutePath, @"^/(?<repo>[^/]+/[^/]+)/(?:blob|raw)/(?<path>.+)$");
+            if (match.Success)
+                uri = new Uri($"https://raw.githubusercontent.com/{match.Groups["repo"].Value}/{match.Groups["path"].Value}{uri.Query}");
+            else if (!IsMediaLink(uri.AbsoluteUri) && !Regex.IsMatch(uri.AbsolutePath, @"^/[^/]+/[^/]+/(?:files/|releases/download/)"))
+                return "";
+        }
+        return new UriBuilder(uri) { Fragment = "" }.Uri.AbsoluteUri;
     }
 
     private static string RemoveMediaMarkdown(string markdown)
     {
-        var withoutImages = Regex.Replace(markdown, @"!\[[^\]]*\]\([^)]+\)", "", RegexOptions.IgnoreCase);
-        const string mediaUrlPattern = "https?://[^\\s)>\\\"']+\\.(?:png|jpe?g|gif|webp|mp4|webm|mov)";
-        return Regex.Replace(withoutImages, mediaUrlPattern, "", RegexOptions.IgnoreCase);
+        var withoutImages = Regex.Replace(markdown, @"!\[[^\]]*\]\(\s*" + MarkdownMediaDestination + @"(?:\s+[""'][^\r\n]*?[""'])?\s*\)", "");
+        var referenceLabels = Regex.Matches(markdown, @"(?m)^[ \t]{0,3}\[(?<id>[^\]]+)\]:")
+            .Cast<Match>().Select(match => NormalizeReferenceLabel(match.Groups["id"].Value))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        withoutImages = Regex.Replace(withoutImages, @"!\[(?<alt>[^\]\r\n]*)\](?:\[(?<id>[^\]\r\n]*)\])?(?!\()", match =>
+        {
+            var label = match.Groups["id"].Value;
+            if (label.Length == 0) label = match.Groups["alt"].Value;
+            return referenceLabels.Contains(NormalizeReferenceLabel(label)) ? "" : match.Value;
+        });
+        withoutImages = Regex.Replace(
+            withoutImages,
+            @"<(?:img|source)\b[^>]*?/?>",
+            "",
+            RegexOptions.IgnoreCase);
+        withoutImages = Regex.Replace(
+            withoutImages,
+            @"<video\b[^>]*>[\s\S]*?</video>",
+            "",
+            RegexOptions.IgnoreCase);
+        // Remove media-only lines, not URL prefixes or meaningful prose links.
+        return Regex.Replace(withoutImages, @"(?m)^[ \t]*<?(?<url>https?://[^\s<>]+)>?[ \t]*$", match =>
+            IsRemoteUri(match.Groups["url"].Value, out var uri) && IsMediaLink(uri.AbsoluteUri) ? "" : match.Value,
+            RegexOptions.IgnoreCase);
     }
+
+    internal static string PrepareDescriptionForDisplay(string text) => CleanMarkdown(RemoveMediaMarkdown(text));
 
     private static string CleanMarkdown(string markdown)
     {
@@ -695,14 +1370,49 @@ public sealed class PluginCatalogService
             return "";
         }
 
-        var text = markdown.Replace("\r\n", "\n");
+        var text = markdown.Replace("\r\n", "\n").Replace('\r', '\n');
+        text = Regex.Replace(text, @"<!--[\s\S]*?-->", "", RegexOptions.Multiline);
         text = Regex.Replace(text, @"```[\s\S]*?```", "", RegexOptions.Multiline);
-        text = Regex.Replace(text, @"`([^`]+)`", "$1");
-        text = Regex.Replace(text, @"^\s{0,3}#{1,6}\s*", "", RegexOptions.Multiline);
-        text = Regex.Replace(text, @"\[(?<text>[^\]]+)\]\([^)]+\)", "${text}");
-        text = Regex.Replace(text, @"^\s*[-*+]\s+", "- ", RegexOptions.Multiline);
-        text = Regex.Replace(text, @"^\s*\d+\.\s+", "- ", RegexOptions.Multiline);
-        text = Regex.Replace(text, @"[*_~]{1,3}", "");
+        text = Regex.Replace(
+            text,
+            @"<a\b[^>]*?\bhref\s*=\s*[""'](?<url>[^""']+)[""'][^>]*>(?<label>[\s\S]*?)</a>",
+            "[${label}](${url})",
+            RegexOptions.IgnoreCase);
+        // Image-only HTML links become empty Markdown links after media removal.
+        // They carry no useful text and otherwise leak fragments such as
+        // "](https://...)" into the rendered description.
+        text = Regex.Replace(text, @"\[\s*\]\([^)]+\)", "", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"<(?:strong|b)\b[^>]*>(?<value>[\s\S]*?)</(?:strong|b)>", "**${value}**", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"<(?:em|i)\b[^>]*>(?<value>[\s\S]*?)</(?:em|i)>", "*${value}*", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"<code\b[^>]*>(?<value>[\s\S]*?)</code>", "`${value}`", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"<h[1-6]\b[^>]*>(?<value>[\s\S]*?)</h[1-6]>", "\n## ${value}\n", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"<li\b[^>]*>(?<value>[\s\S]*?)</li>", "\n- ${value}\n", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"<blockquote\b[^>]*>(?<value>[\s\S]*?)</blockquote>",
+            match => "\n" + string.Join("\n", match.Groups["value"].Value.Trim().Split('\n').Select(line => "> " + line.Trim())) + "\n",
+            RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"<(?<url>https?://[^>]+)>", "${url}", RegexOptions.IgnoreCase);
+        text = Regex.Replace(
+            text,
+            @"<(?:br|/?p|/?div|/?section|/?details|/?summary|/?blockquote|/?ul|/?ol|/?table|/?tr)\b[^>]*>",
+            "\n",
+            RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"<[^>\n]+>", "", RegexOptions.IgnoreCase);
+        text = WebUtility.HtmlDecode(text);
+        text = Regex.Replace(
+            text,
+            @"^[ \t]{0,3}#{1,6}[ \t]*(?<heading>.+?)[ \t]*#*[ \t]*$",
+            "## ${heading}",
+            RegexOptions.Multiline);
+        text = Regex.Replace(
+            text,
+            @"^(?<quote>[ \t]*>[ \t]*)?\[!(?<kind>[A-Za-z]+)\][ \t]*$",
+            "${quote}${kind}:",
+            RegexOptions.Multiline);
+        text = Regex.Replace(text, @"^[ \t]*\[[^\]]+\]:[ \t]*\S+.*$", "", RegexOptions.Multiline);
+        text = Regex.Replace(text, @"^[ \t]*[-*+][ \t]+", "- ", RegexOptions.Multiline);
+        text = Regex.Replace(text, @"^[ \t]*[-*_]{3,}[ \t]*$", "", RegexOptions.Multiline);
+        text = Regex.Replace(text, @"^[ \t]*\|?(?:[ \t]*:?-+:?[ \t]*\|)+[ \t]*$", "", RegexOptions.Multiline);
+        text = Regex.Replace(text, @"[ \t]+\n", "\n");
         text = Regex.Replace(text, @"\n{3,}", "\n\n");
         return text.Trim();
     }
@@ -766,27 +1476,36 @@ public sealed class PluginCatalogService
             }
         }
 
-        foreach (var manifestPath in new[]
+        foreach (var manifestPath in FindManifestPaths(folder, "plugin.json", "package.json", "package-lock.json"))
         {
-            Path.Combine(folder, "plugin.json"),
-            Path.Combine(folder, "package.json")
-        })
-        {
-            if (!File.Exists(manifestPath))
-            {
-                continue;
-            }
-
             try
             {
                 using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
-                foreach (var key in new[] { "version", "version_number", "tag" })
+                foreach (var key in new[]
+                {
+                    "version", "version_number", "versionName", "version_name",
+                    "releaseVersion", "release_version", "tag"
+                })
                 {
                     if (doc.RootElement.TryGetProperty(key, out var value) &&
                         value.ValueKind == JsonValueKind.String &&
                         !string.IsNullOrWhiteSpace(value.GetString()))
                     {
                         return NormalizeManifestVersion(repositoryName, value.GetString()!);
+                    }
+                }
+
+                if (doc.RootElement.TryGetProperty("publish", out var publish) &&
+                    publish.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var key in new[] { "version", "version_number", "tag" })
+                    {
+                        if (publish.TryGetProperty(key, out var value) &&
+                            value.ValueKind == JsonValueKind.String &&
+                            !string.IsNullOrWhiteSpace(value.GetString()))
+                        {
+                            return NormalizeManifestVersion(repositoryName, value.GetString()!);
+                        }
                     }
                 }
             }
@@ -798,22 +1517,91 @@ public sealed class PluginCatalogService
         return "";
     }
 
+    private static string ReadInstalledVersionOrDiagnostic(string folder, string repositoryName)
+    {
+        var version = ReadInstalledVersion(folder, repositoryName);
+        return string.IsNullOrWhiteSpace(version) ? MissingInstalledVersion : version;
+    }
+
+    private static IReadOnlyList<string> FindManifestPaths(string folder, params string[] fileNames)
+    {
+        var candidates = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var fileName in fileNames)
+        {
+            var rootPath = Path.Combine(folder, fileName);
+            if (File.Exists(rootPath) && seen.Add(CanonicalPath(rootPath)))
+            {
+                candidates.Add(rootPath);
+            }
+        }
+
+        foreach (var fileName in fileNames)
+        {
+            try
+            {
+                foreach (var path in Directory.EnumerateFiles(folder, fileName, SearchOption.AllDirectories)
+                             .Where(path => !IsIgnoredManifestPath(folder, path))
+                             .OrderBy(path => Path.GetRelativePath(folder, path)
+                                 .Count(character => character is '/' or '\\'))
+                             .ThenBy(path => path, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (seen.Add(CanonicalPath(path)))
+                    {
+                        candidates.Add(path);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        return candidates;
+    }
+
+    private static bool IsIgnoredManifestPath(string folder, string path)
+    {
+        var relative = Path.GetRelativePath(folder, path);
+        var segments = relative.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+        return segments.Any(segment =>
+            string.Equals(segment, "node_modules", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(segment, ".git", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(segment, "__pycache__", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static string NormalizeManifestVersion(string repositoryName, string version)
     {
         // These projects kept an internal package version that differs from
         // the public GitHub release version. Without Playhub's marker, reading
         // package.json therefore produced a permanent false update notice.
-        var normalized = NormalizeVersion(version);
         if (string.Equals(repositoryName, "Now-Playing", StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(normalized, "0.3.0", StringComparison.OrdinalIgnoreCase))
+            VersionsEquivalent(version, "0.3.0"))
         {
             return "1.3.0";
         }
 
         if (string.Equals(repositoryName, "Weather", StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(normalized, "1.0.0", StringComparison.OrdinalIgnoreCase))
+            VersionsEquivalent(version, "1.0.0"))
         {
             return "1.1.0";
+        }
+
+        // Quick Settings 2.3.1 shipped with package.json still at 2.3.0.
+        // Keep this exact mapping so any later manifest or release version wins normally.
+        if (string.Equals(repositoryName, "Quick-Settings", StringComparison.OrdinalIgnoreCase) &&
+            VersionsEquivalent(version, "2.3.0"))
+        {
+            return "2.3.1";
+        }
+
+        // TabMaster 2.15.1 shipped with package.json still at 2.15.0.
+        // Keep this exact mapping so later manifest and release versions compare normally.
+        if (string.Equals(repositoryName, "TabMaster", StringComparison.OrdinalIgnoreCase) &&
+            VersionsEquivalent(version, "2.15.0"))
+        {
+            return "2.15.1";
         }
 
         return version;
@@ -821,92 +1609,709 @@ public sealed class PluginCatalogService
 
     private static bool HasVersionUpdate(string installedVersion, string? latestVersion)
     {
-        var installed = ExtractVersionNumbers(installedVersion);
-        var latest = ExtractVersionNumbers(latestVersion ?? "");
-        if (installed.Length == 0 || latest.Length == 0)
+        if (!TryParseSemanticVersion(installedVersion, out var installed) ||
+            !TryParseSemanticVersion(latestVersion, out var latest))
         {
             return false;
         }
 
-        // Only an update when the online version is strictly greater (not just different in format).
-        return CompareVersions(latest, installed) > 0;
+        return CompareSemanticVersions(latest, installed) > 0;
     }
 
-    private static int[] ExtractVersionNumbers(string version)
+    private static bool VersionsEquivalent(string? left, string? right) =>
+        TryParseSemanticVersion(left, out var leftVersion) &&
+        TryParseSemanticVersion(right, out var rightVersion) &&
+        CompareSemanticVersions(leftVersion, rightVersion) == 0;
+
+    private static int CompareSemanticVersions(string? left, string? right)
     {
-        var match = System.Text.RegularExpressions.Regex.Match(version ?? "", @"\d+(?:\.\d+)*");
-        if (!match.Success)
+        if (!TryParseSemanticVersion(left, out var leftVersion))
         {
-            return System.Array.Empty<int>();
+            return TryParseSemanticVersion(right, out _) ? -1 : 0;
         }
-
-        return match.Value.Split('.')
-            .Select(part => int.TryParse(part, out var n) ? n : 0)
-            .ToArray();
+        if (!TryParseSemanticVersion(right, out var rightVersion))
+        {
+            return 1;
+        }
+        return CompareSemanticVersions(leftVersion, rightVersion);
     }
 
-    private static int CompareVersions(int[] a, int[] b)
+    private static int CompareSemanticVersions(SemanticVersion left, SemanticVersion right)
     {
-        var length = System.Math.Max(a.Length, b.Length);
+        var length = Math.Max(left.Core.Count, right.Core.Count);
         for (var i = 0; i < length; i++)
         {
-            var x = i < a.Length ? a[i] : 0;
-            var y = i < b.Length ? b[i] : 0;
+            var x = i < left.Core.Count ? left.Core[i] : 0;
+            var y = i < right.Core.Count ? right.Core[i] : 0;
             if (x != y)
             {
                 return x.CompareTo(y);
             }
         }
 
+        if (left.Prerelease.Count == 0 || right.Prerelease.Count == 0)
+        {
+            return left.Prerelease.Count == right.Prerelease.Count
+                ? 0
+                : left.Prerelease.Count == 0 ? 1 : -1;
+        }
+
+        var prereleaseLength = Math.Max(left.Prerelease.Count, right.Prerelease.Count);
+        for (var i = 0; i < prereleaseLength; i++)
+        {
+            if (i >= left.Prerelease.Count)
+            {
+                return -1;
+            }
+            if (i >= right.Prerelease.Count)
+            {
+                return 1;
+            }
+
+            var leftPart = left.Prerelease[i];
+            var rightPart = right.Prerelease[i];
+            var leftNumeric = long.TryParse(leftPart, out var leftNumber);
+            var rightNumeric = long.TryParse(rightPart, out var rightNumber);
+            if (leftNumeric && rightNumeric && leftNumber != rightNumber)
+            {
+                return leftNumber.CompareTo(rightNumber);
+            }
+            if (leftNumeric != rightNumeric)
+            {
+                return leftNumeric ? -1 : 1;
+            }
+
+            var comparison = string.Compare(leftPart, rightPart, StringComparison.OrdinalIgnoreCase);
+            if (comparison != 0)
+            {
+                return comparison;
+            }
+        }
+
         return 0;
     }
 
-    private static string? FindInstalledFolder(string deckyPluginsPath, PluginDefinition definition, string pluginName)
+    private static bool TryParseSemanticVersion(string? value, out SemanticVersion version)
+    {
+        version = SemanticVersion.Empty;
+        var match = Regex.Match(
+            value ?? "",
+            @"(?<![0-9A-Za-z])[vV]?(?<core>\d+(?:\.\d+)*)(?:-(?<pre>[0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?",
+            RegexOptions.CultureInvariant);
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        var core = new List<long>();
+        foreach (var part in match.Groups["core"].Value.Split('.'))
+        {
+            if (!long.TryParse(part, out var number))
+            {
+                return false;
+            }
+            core.Add(number);
+        }
+        while (core.Count > 1 && core[^1] == 0)
+        {
+            core.RemoveAt(core.Count - 1);
+        }
+
+        var prerelease = match.Groups["pre"].Success
+            ? match.Groups["pre"].Value.Split('.', StringSplitOptions.RemoveEmptyEntries).ToList()
+            : new List<string>();
+        var canonical = string.Join('.', core) +
+                        (prerelease.Count == 0 ? "" : "-" + string.Join('.', prerelease).ToLowerInvariant());
+        version = new SemanticVersion(core, prerelease, canonical);
+        return true;
+    }
+
+    private static void AppendUncataloguedInstalledPlugins(
+        List<DeckyPluginInfo> plugins,
+        string deckyPluginsPath,
+        HashSet<string> claimedInstalledFolders)
+    {
+        if (string.IsNullOrWhiteSpace(deckyPluginsPath) || !Directory.Exists(deckyPluginsPath))
+        {
+            return;
+        }
+
+        foreach (var folder in Directory.GetDirectories(deckyPluginsPath)
+                     .OrderBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase))
+        {
+            var canonicalFolder = CanonicalPath(folder);
+            if (claimedInstalledFolders.Contains(canonicalFolder))
+            {
+                continue;
+            }
+
+            var metadata = ReadInstalledPluginMetadata(folder);
+            if (IsBlockedPluginIdentity(
+                    Path.GetFileName(folder),
+                    metadata.Name,
+                    metadata.RepositoryName,
+                    metadata.RepositorySlug,
+                    metadata.RepositoryUrl))
+            {
+                ClaimInstalledFolder(claimedInstalledFolders, folder);
+                continue;
+            }
+
+            var identities = metadata.Aliases
+                .Append(Path.GetFileName(folder))
+                .Append(metadata.Name)
+                .Append(metadata.RepositorySlug)
+                .Append(metadata.RepositoryName)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var normalizedIdentities = identities
+                .Select(Normalize)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var matchingPlugin = plugins.FirstOrDefault(plugin =>
+            {
+                // A declared repository is authoritative over folder/name aliases.
+                if (!string.IsNullOrWhiteSpace(metadata.RepositorySlug))
+                    return string.Equals(plugin.RepositorySlug, metadata.RepositorySlug, StringComparison.OrdinalIgnoreCase);
+
+                if (!string.IsNullOrWhiteSpace(plugin.InstalledFolder) &&
+                    string.Equals(CanonicalPath(plugin.InstalledFolder), canonicalFolder, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(metadata.RepositorySlug) &&
+                    string.Equals(plugin.RepositorySlug, metadata.RepositorySlug, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                return plugin.InstallAliases
+                    .Append(plugin.Name)
+                    .Append(plugin.FolderName)
+                    .Append(plugin.RepositoryName)
+                    .Append(plugin.RepositorySlug)
+                    .Where(value => !string.IsNullOrWhiteSpace(value))
+                    .Select(Normalize)
+                    .Any(normalizedIdentities.Contains);
+            });
+
+            if (matchingPlugin is not null)
+            {
+                matchingPlugin.IsInstalled = true;
+                matchingPlugin.InstalledFolder = folder;
+                matchingPlugin.InstalledVersion = metadata.Version;
+                matchingPlugin.HasUpdate = HasVersionUpdate(metadata.Version, matchingPlugin.Version);
+                matchingPlugin.InstallAliases = matchingPlugin.InstallAliases
+                    .Concat(identities)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                ClaimInstalledFolder(claimedInstalledFolders, folder);
+                continue;
+            }
+
+            var canResolveRelease = IsValidRepositorySlug(metadata.RepositorySlug);
+            plugins.Add(new DeckyPluginInfo
+            {
+                Name = metadata.Name,
+                FolderName = Path.GetFileName(folder),
+                Author = metadata.Author,
+                Version = metadata.Version,
+                InstalledVersion = metadata.Version,
+                HasUpdate = false,
+                ShortDescription = metadata.Description,
+                LongDescription = metadata.Description,
+                Readme = metadata.Description,
+                IconGlyph = ((char)0xE8B7).ToString(),
+                SourceFolder = "",
+                Image = metadata.Image,
+                CoverImage = metadata.Image,
+                RepositoryUrl = metadata.RepositoryUrl,
+                RepositoryName = metadata.RepositoryName,
+                RepositorySlug = metadata.RepositorySlug,
+                ReleaseAssetName = metadata.ReleaseAssetName,
+                CatalogReleaseZipUrl = metadata.ReleaseZipUrl,
+                InstallAliases = identities,
+                Category = InferInstalledCategory(metadata.Name, metadata.Description, metadata.Tags),
+                Keywords = string.Join(' ', metadata.Tags),
+                IsPlayhubPlugin = false,
+                CatalogStatus = "github",
+                CatalogSource = "installed",
+                Compatibility = "Plugin installato localmente e non ancora identificato dal catalogo Playhub.",
+                ReleasePageUrl = canResolveRelease
+                    ? $"https://github.com/{metadata.RepositorySlug}/releases"
+                    : metadata.RepositoryUrl,
+                IsInstalled = true,
+                InstalledFolder = folder
+            });
+            ClaimInstalledFolder(claimedInstalledFolders, folder);
+        }
+    }
+
+    private static InstalledPluginMetadata ReadInstalledPluginMetadata(string folder)
+    {
+        var folderName = Path.GetFileName(folder);
+        var name = folderName;
+        var author = "";
+        var version = "";
+        var description = "";
+        var image = "";
+        var repositoryValue = "";
+        var releaseAssetName = "";
+        var releaseZipUrl = "";
+        var aliases = new List<string>();
+        var tags = new List<string>();
+        var hasDeclaredPluginName = false;
+
+        var manifestPath = FindManifestPaths(folder, "plugin.json").FirstOrDefault() ?? "";
+
+        if (!string.IsNullOrWhiteSpace(manifestPath))
+        {
+            try
+            {
+                using var manifest = JsonDocument.Parse(File.ReadAllText(manifestPath));
+                var root = manifest.RootElement;
+                var declaredPluginName = FirstNonEmpty(
+                    ReadJsonString(root, "name"),
+                    ReadJsonString(root, "display_name"),
+                    ReadJsonString(root, "title"));
+                hasDeclaredPluginName = !string.IsNullOrWhiteSpace(declaredPluginName);
+                name = FirstNonEmpty(declaredPluginName, folderName);
+                author = ReadJsonString(root, "author");
+                version = FirstNonEmpty(
+                    ReadJsonString(root, "version"),
+                    ReadJsonString(root, "version_number"),
+                    ReadJsonString(root, "tag"));
+                repositoryValue = FirstNonEmpty(
+                    ReadJsonString(root, "repository"),
+                    ReadJsonString(root, "repository_url"),
+                    ReadJsonString(root, "homepage"));
+                image = FirstNonEmpty(
+                    ReadJsonString(root, "image"),
+                    ReadJsonString(root, "icon"),
+                    ReadJsonString(root, "cover"));
+                description = ReadJsonString(root, "description");
+                AddJsonStrings(root, "tags", tags);
+
+                if (root.TryGetProperty("publish", out var publish) && publish.ValueKind == JsonValueKind.Object)
+                {
+                    description = FirstNonEmpty(description, ReadJsonString(publish, "description"));
+                    image = FirstNonEmpty(image, ReadJsonString(publish, "image"));
+                    repositoryValue = FirstNonEmpty(
+                        repositoryValue,
+                        ReadJsonString(publish, "repository"),
+                        ReadJsonString(publish, "repository_url"));
+                    AddJsonStrings(publish, "tags", tags);
+                }
+
+                aliases.AddRange(new[]
+                {
+                    ReadJsonString(root, "name"),
+                    ReadJsonString(root, "display_name"),
+                    ReadJsonString(root, "title")
+                }.Where(value => !string.IsNullOrWhiteSpace(value)));
+                image = ResolveInstalledImage(folder, manifestPath, image);
+            }
+            catch
+            {
+            }
+        }
+
+        var packagePath = FindManifestPaths(folder, "package.json").FirstOrDefault() ?? "";
+        if (!string.IsNullOrWhiteSpace(packagePath))
+        {
+            try
+            {
+                using var package = JsonDocument.Parse(File.ReadAllText(packagePath));
+                var root = package.RootElement;
+                var packageName = ReadJsonString(root, "name");
+                if (!hasDeclaredPluginName)
+                {
+                    name = FirstNonEmpty(packageName, name);
+                }
+
+                author = FirstNonEmpty(author, ReadJsonString(root, "author"));
+                description = FirstNonEmpty(description, ReadJsonString(root, "description"));
+                var packageRepository = new[]
+                    {
+                        ReadJsonString(root, "repository"),
+                        ReadJsonString(root, "repository_url"),
+                        ReadJsonString(root, "homepage")
+                    }
+                    .FirstOrDefault(value =>
+                        !string.IsNullOrWhiteSpace(value) && !IsTemplateRepository(value)) ?? "";
+                if (!string.IsNullOrWhiteSpace(packageRepository))
+                {
+                    repositoryValue = FirstNonEmpty(repositoryValue, packageRepository);
+                }
+
+                AddJsonStrings(root, "keywords", tags);
+                aliases.AddRange(new[] { packageName, ReadJsonString(root, "displayName") }
+                    .Where(value => !string.IsNullOrWhiteSpace(value)));
+            }
+            catch
+            {
+            }
+        }
+
+        var markerPath = Path.Combine(folder, InstalledReleaseMarker);
+        if (File.Exists(markerPath))
+        {
+            try
+            {
+                using var marker = JsonDocument.Parse(File.ReadAllText(markerPath));
+                var root = marker.RootElement;
+                name = FirstNonEmpty(ReadJsonString(root, "name"), name);
+                author = FirstNonEmpty(ReadJsonString(root, "author"), author);
+                description = FirstNonEmpty(ReadJsonString(root, "description"), description);
+                repositoryValue = FirstNonEmpty(
+                    ReadJsonString(root, "repositorySlug"),
+                    ReadJsonString(root, "repositoryUrl"),
+                    ReadJsonString(root, "repository"),
+                    repositoryValue);
+                version = FirstNonEmpty(ReadJsonString(root, "version"), version);
+                releaseAssetName = FirstNonEmpty(
+                    ReadJsonString(root, "releaseAssetName"),
+                    ReadJsonString(root, "asset"));
+                releaseZipUrl = FirstNonEmpty(
+                    ReadJsonString(root, "releaseZipUrl"),
+                    ReadJsonString(root, "zipUrl"),
+                    ReadJsonString(root, "releaseUrl"));
+                var markerImage = FirstNonEmpty(ReadJsonString(root, "image"), ReadJsonString(root, "cover"));
+                if (!string.IsNullOrWhiteSpace(markerImage))
+                {
+                    image = ResolveInstalledImage(folder, markerPath, markerImage);
+                }
+                aliases.AddRange(new[]
+                {
+                    ReadJsonString(root, "name"),
+                    ReadJsonString(root, "repository"),
+                    ReadJsonString(root, "repositorySlug")
+                }.Where(value => !string.IsNullOrWhiteSpace(value)));
+            }
+            catch
+            {
+            }
+        }
+
+        var repositorySlug = ExtractGithubRepositorySlug(repositoryValue);
+        if (string.IsNullOrWhiteSpace(repositorySlug))
+        {
+            repositorySlug = ExtractGithubRepositorySlug(image);
+        }
+        var repositoryName = !string.IsNullOrWhiteSpace(repositorySlug)
+            ? repositorySlug[(repositorySlug.IndexOf('/') + 1)..]
+            : RepositoryNameFromValue(repositoryValue, folderName);
+        var repositoryUrl = ResolveRepositoryUrl(repositoryValue, repositorySlug);
+        version = ReadInstalledVersionOrDiagnostic(folder, repositoryName);
+        aliases.AddRange(new[] { folderName, name, repositoryValue, repositorySlug, repositoryName });
+
+        return new InstalledPluginMetadata(
+            name,
+            author,
+            version,
+            description,
+            string.IsNullOrWhiteSpace(image) ? null : image,
+            repositoryUrl,
+            repositoryName,
+            repositorySlug,
+            releaseAssetName,
+            Uri.TryCreate(releaseZipUrl, UriKind.Absolute, out _) ? releaseZipUrl : null,
+            aliases.Where(value => !string.IsNullOrWhiteSpace(value)).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
+            tags.Where(value => !string.IsNullOrWhiteSpace(value)).Distinct(StringComparer.OrdinalIgnoreCase).ToList());
+    }
+
+    private static string ReadJsonString(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var value))
+        {
+            return "";
+        }
+
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            return value.GetString()?.Trim() ?? "";
+        }
+
+        if (value.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var nestedName in new[] { "name", "url", "html_url" })
+            {
+                if (value.TryGetProperty(nestedName, out var nested) && nested.ValueKind == JsonValueKind.String)
+                {
+                    var text = nested.GetString()?.Trim() ?? "";
+                    if (!string.IsNullOrWhiteSpace(text))
+                    {
+                        return text;
+                    }
+                }
+            }
+        }
+
+        return "";
+    }
+
+    private static void AddJsonStrings(JsonElement root, string propertyName, List<string> target)
+    {
+        if (!root.TryGetProperty(propertyName, out var value))
+        {
+            return;
+        }
+
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            target.AddRange((value.GetString() ?? "").Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
+            return;
+        }
+
+        if (value.ValueKind == JsonValueKind.Array)
+        {
+            target.AddRange(value.EnumerateArray()
+                .Where(item => item.ValueKind == JsonValueKind.String)
+                .Select(item => item.GetString() ?? "")
+                .Where(item => !string.IsNullOrWhiteSpace(item)));
+        }
+    }
+
+    private static string ResolveInstalledImage(string folder, string manifestPath, string value)
+    {
+        if (string.IsNullOrWhiteSpace(value) ||
+            Uri.TryCreate(value, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
+        {
+            return value;
+        }
+
+        try
+        {
+            var manifestFolder = Path.GetDirectoryName(manifestPath) ?? folder;
+            var candidate = Path.GetFullPath(Path.Combine(manifestFolder, value));
+            var relative = Path.GetRelativePath(folder, candidate);
+            return !relative.StartsWith("..", StringComparison.Ordinal) && File.Exists(candidate) ? candidate : "";
+        }
+        catch
+        {
+            return "";
+        }
+    }
+
+    private static string ExtractGithubRepositorySlug(string value)
+    {
+        if (IsValidRepositorySlug(value))
+        {
+            return value.Trim();
+        }
+
+        var match = Regex.Match(value ?? "", @"github\.com[/:](?<owner>[A-Za-z0-9_.-]+)/(?<repo>[A-Za-z0-9_.-]+)", RegexOptions.IgnoreCase);
+        if (!match.Success)
+        {
+            match = Regex.Match(value ?? "", @"raw\.githubusercontent\.com/(?<owner>[A-Za-z0-9_.-]+)/(?<repo>[A-Za-z0-9_.-]+)/", RegexOptions.IgnoreCase);
+        }
+        if (!match.Success)
+        {
+            return "";
+        }
+
+        var repository = Regex.Replace(match.Groups["repo"].Value, @"\.git$", "", RegexOptions.IgnoreCase);
+        return $"{match.Groups["owner"].Value}/{repository}";
+    }
+
+    private static bool IsTemplateRepository(string value)
+    {
+        var repository = ExtractGithubRepositorySlug(value);
+        return string.Equals(
+            repository,
+            "SteamDeckHomebrew/decky-plugin-template",
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string ResolveRepositoryUrl(string declaredValue, string repositorySlug)
+    {
+        if (!string.IsNullOrWhiteSpace(repositorySlug))
+        {
+            return $"https://github.com/{repositorySlug}";
+        }
+
+        return Uri.TryCreate(declaredValue, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https"
+            ? declaredValue
+            : "";
+    }
+
+    private static string RepositoryNameFromValue(string value, string fallback)
+    {
+        if (Uri.TryCreate(value, UriKind.Absolute, out var uri))
+        {
+            var segment = uri.Segments.LastOrDefault()?.Trim('/', '\\');
+            if (!string.IsNullOrWhiteSpace(segment))
+            {
+                return segment.EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? segment[..^4] : segment;
+            }
+        }
+
+        var declaredName = (value ?? "").Trim().Trim('/', '\\');
+        if (!string.IsNullOrWhiteSpace(declaredName) &&
+            !declaredName.Contains('/') &&
+            !declaredName.Contains('\\'))
+        {
+            return declaredName.EndsWith(".git", StringComparison.OrdinalIgnoreCase)
+                ? declaredName[..^4]
+                : declaredName;
+        }
+        return fallback;
+    }
+
+    private static string InferInstalledCategory(string name, string description, IEnumerable<string> tags)
+    {
+        var text = string.Join(' ', tags.Append(name).Append(description)).ToLowerInvariant();
+        if (Regex.IsMatch(text, @"\bdiscord\b|\bteamspeak\b|\bvoice chat\b|\brich presence\b|\bplayer counts?\b"))
+        {
+            return "Social e community";
+        }
+        if (Regex.IsMatch(text, @"\bclipboard\b|\bpasswords?\b|\bfile (?:manager|server|transfer)\b|\bterminal\b|\bnotebook\b|\btimers?\b|\balarms?\b|\btranslate\b|\btranslator\b|\bweb browser\b|\bvoice-to-text\b|\bsyncthing\b|\bkde connect\b|\blocalsend\b|\bftp\b|\bsmb\b"))
+        {
+            return "Strumenti e utilità";
+        }
+        if (Regex.IsMatch(text, @"game|library|achievement|metadata|rom|emulat|backlog|launcher"))
+        {
+            return "Libreria e giochi";
+        }
+        if (Regex.IsMatch(text, @"audio|music|media|theme|style|visual|display|notification"))
+        {
+            return "Personalizzazione e media";
+        }
+        if (Regex.IsMatch(text, @"network|vpn|wifi|download|file|cloud|ssh|ftp|remote"))
+        {
+            return "Rete e strumenti";
+        }
+        return "Sistema e hardware";
+    }
+
+    private static string FirstNonEmpty(params string[] values) =>
+        values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim() ?? "";
+
+    private static string CanonicalPath(string path)
+    {
+        try
+        {
+            return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+        catch
+        {
+            return path;
+        }
+    }
+
+    private static void ClaimInstalledFolder(ISet<string> claimedInstalledFolders, string? folder)
+    {
+        if (!string.IsNullOrWhiteSpace(folder))
+        {
+            claimedInstalledFolders.Add(CanonicalPath(folder));
+        }
+    }
+
+    private static string? FindInstalledFolder(string deckyPluginsPath, params string[] identities)
+        => FindInstalledFolder(deckyPluginsPath, null, identities);
+
+    private static string? FindInstalledFolder(
+        string deckyPluginsPath,
+        ISet<string>? excludedFolders,
+        params string[] identities)
     {
         if (string.IsNullOrWhiteSpace(deckyPluginsPath) || !Directory.Exists(deckyPluginsPath))
         {
             return null;
         }
 
-        var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            Normalize(pluginName),
-            Normalize(definition.DisplayName),
-            Normalize(definition.LocalFolder),
-            Normalize(definition.RepositoryName),
-            Normalize(definition.Cover)
-        };
+        var candidates = identities
+            .Where(identity => !string.IsNullOrWhiteSpace(identity))
+            .Select(identity => Normalize(identity))
+            .Where(identity => !string.IsNullOrWhiteSpace(identity))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var repositoryCandidates = identities
+            .Select(ExtractGithubRepositorySlug)
+            .Where(identity => !string.IsNullOrWhiteSpace(identity))
+            .Select(NormalizeRepositorySlug)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         foreach (var folder in Directory.GetDirectories(deckyPluginsPath))
         {
+            if (excludedFolders?.Contains(CanonicalPath(folder)) == true)
+            {
+                continue;
+            }
+
+            var markerPath = Path.Combine(folder, InstalledReleaseMarker);
+            var markerHasRepository = false;
+            if (File.Exists(markerPath))
+            {
+                try
+                {
+                    using var marker = JsonDocument.Parse(File.ReadAllText(markerPath));
+                    var markerRepository = FirstNonEmpty(
+                        ReadJsonString(marker.RootElement, "repository"),
+                        ReadJsonString(marker.RootElement, "repositorySlug"),
+                        ReadJsonString(marker.RootElement, "repositoryUrl"));
+                    var markerRepositorySlug = NormalizeRepositorySlug(
+                        ExtractGithubRepositorySlug(markerRepository));
+                    markerHasRepository = !string.IsNullOrWhiteSpace(markerRepositorySlug);
+                    if (markerHasRepository && repositoryCandidates.Contains(markerRepositorySlug))
+                    {
+                        return folder;
+                    }
+
+                    if (markerHasRepository && repositoryCandidates.Count > 0)
+                    {
+                        continue;
+                    }
+
+                    var markerIdentities = new[]
+                    {
+                        ReadJsonString(marker.RootElement, "name")
+                    };
+                    if (markerIdentities.Any(identity => candidates.Contains(Normalize(identity))))
+                    {
+                        return folder;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
             if (candidates.Contains(Normalize(Path.GetFileName(folder))))
             {
                 return folder;
             }
 
-            var pluginJson = Path.Combine(folder, "plugin.json");
-            if (!File.Exists(pluginJson))
+            foreach (var manifestPath in new[]
             {
-                continue;
-            }
-
-            try
+                Path.Combine(folder, "plugin.json"),
+                Path.Combine(folder, "package.json")
+            })
             {
-                using var doc = JsonDocument.Parse(File.ReadAllText(pluginJson));
-                var names = new[]
+                if (!File.Exists(manifestPath))
                 {
-                    doc.RootElement.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "" : "",
-                    doc.RootElement.TryGetProperty("display_name", out var displayProp) ? displayProp.GetString() ?? "" : "",
-                    doc.RootElement.TryGetProperty("title", out var titleProp) ? titleProp.GetString() ?? "" : ""
-                };
-
-                if (names.Any(name => candidates.Contains(Normalize(name))))
-                {
-                    return folder;
+                    continue;
                 }
-            }
-            catch
-            {
+
+                try
+                {
+                    using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
+                    var names = new[]
+                    {
+                        doc.RootElement.TryGetProperty("name", out var nameProperty) ? nameProperty.GetString() ?? "" : "",
+                        doc.RootElement.TryGetProperty("display_name", out var displayProperty) ? displayProperty.GetString() ?? "" : "",
+                        doc.RootElement.TryGetProperty("title", out var titleProperty) ? titleProperty.GetString() ?? "" : ""
+                    };
+                    if (names.Any(name => candidates.Contains(Normalize(name))))
+                    {
+                        return folder;
+                    }
+                }
+                catch
+                {
+                }
             }
         }
 
@@ -933,7 +2338,7 @@ public sealed class PluginCatalogService
     }
 
     // ---------------------------------------------------------------------
-    // Descrizioni dei plugin PER LINGUA (da riempire da Codex).
+    // Descrizioni localizzate dei plugin.
     //
     //  Chiave esterna = RepositoryName del plugin (come in Definitions sopra:
     //                   "Launch-Curtain", "Now-Playing", "Playhub-Metadata", ...).
@@ -953,6 +2358,54 @@ public sealed class PluginCatalogService
     private static readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, PluginText>> DescriptionTranslations =
         new Dictionary<string, IReadOnlyDictionary<string, PluginText>>(StringComparer.OrdinalIgnoreCase)
         {
+            ["Playhub-Artworks"] = new Dictionary<string, PluginText>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["en"] = new PluginText(
+                    "The right artwork for every game in your library.",
+                    @"Playhub Artworks brings artwork management inside Big Picture, designed for a controller: search, choose and apply covers, banners, heroes, logos and icons without ever going back to the desktop.
+
+## What it does
+• Searches artwork on SteamGridDB, IGDB, the PlayStation Store, the Nintendo eShop, Xbox, AlphaCoders, iiDB and IGN.
+• Remembers filters and the last source used separately for each artwork type.
+• Builds Perfect Hero and Perfect Banner images by merging background and logo, with adjustable position, scale, opacity and shadow.
+• Lets you leave the logo out of the composition when you only want the background.
+• Positions and resizes a game's logo the way Steam does.
+• Shows square covers in the library and in every row of the Home, Steam's own banner included.
+• Fills in the missing artwork of the whole library in the background.
+
+## Note
+• Searches that use SteamGridDB need your own API key; it is stored only on your PC."),
+                ["es"] = new PluginText(
+                    "El arte adecuado para cada juego de tu biblioteca.",
+                    @"Playhub Artworks gestiona el arte dentro de Big Picture y con el mando: busca portadas, banners, heroes, logos e iconos en SteamGridDB, IGDB, PlayStation, Nintendo, Xbox, AlphaCoders, iiDB e IGN, crea Perfect Hero y Perfect Banner combinando fondo y logo, coloca el logo del juego y muestra portadas cuadradas en la biblioteca y en la Home. Para las búsquedas de SteamGridDB necesitas tu propia clave API, guardada solo en tu PC."),
+                ["fr"] = new PluginText(
+                    "Les bonnes jaquettes pour chaque jeu de ta bibliothèque.",
+                    @"Playhub Artworks gère les visuels directement dans Big Picture, à la manette : recherche de jaquettes, bannières, héros, logos et icônes sur SteamGridDB, IGDB, PlayStation, Nintendo, Xbox, AlphaCoders, iiDB et IGN, création de Perfect Hero et Perfect Banner en fusionnant fond et logo, positionnement du logo du jeu et jaquettes carrées dans la bibliothèque comme sur l'accueil. Les recherches SteamGridDB demandent ta propre clé API, conservée uniquement sur ton PC."),
+                ["de"] = new PluginText(
+                    "Das passende Artwork für jedes Spiel deiner Bibliothek.",
+                    @"Playhub Artworks verwaltet Artwork direkt in Big Picture und mit dem Controller: Cover, Banner, Heroes, Logos und Icons von SteamGridDB, IGDB, PlayStation, Nintendo, Xbox, AlphaCoders, iiDB und IGN, Perfect Hero und Perfect Banner aus Hintergrund und Logo, Logo-Positionierung wie in Steam sowie quadratische Cover in Bibliothek und Startseite. SteamGridDB-Suchen benötigen deinen eigenen API-Schlüssel, der nur auf deinem PC gespeichert wird."),
+                ["pt"] = new PluginText(
+                    "As artes certas para cada jogo da sua biblioteca.",
+                    @"Playhub Artworks cuida das artes dentro do Big Picture, feito para o controle: busca capas, banners, heroes, logos e ícones no SteamGridDB, IGDB, PlayStation, Nintendo, Xbox, AlphaCoders, iiDB e IGN, cria Perfect Hero e Perfect Banner unindo fundo e logo, posiciona o logo do jogo e mostra capas quadradas na biblioteca e na Home. As buscas do SteamGridDB pedem sua própria chave de API, guardada apenas no seu PC."),
+                ["uk"] = new PluginText(
+                    "Правильні обкладинки для кожної гри у твоїй бібліотеці.",
+                    @"Playhub Artworks керує обкладинками просто в Big Picture і з геймпада: пошук обкладинок, банерів, hero-зображень, логотипів та іконок у SteamGridDB, IGDB, PlayStation, Nintendo, Xbox, AlphaCoders, iiDB і IGN, створення Perfect Hero та Perfect Banner з фону й логотипа, розміщення логотипа гри та квадратні обкладинки в бібліотеці й на головній. Для пошуку через SteamGridDB потрібен твій власний API-ключ, який зберігається лише на твоєму ПК."),
+                ["zh"] = new PluginText(
+                    "为库中的每款游戏配上合适的封面。",
+                    @"Playhub Artworks 让你在大屏幕模式下用手柄管理美术资源：在 SteamGridDB、IGDB、PlayStation、任天堂、Xbox、AlphaCoders、iiDB 和 IGN 中搜索封面、横幅、Hero 图、Logo 和图标，将背景与 Logo 合成 Perfect Hero 和 Perfect Banner，按 Steam 的方式摆放游戏 Logo，并在库和主页显示方形封面。使用 SteamGridDB 搜索需要你自己的 API 密钥，密钥只保存在你的电脑上。"),
+                ["ja"] = new PluginText(
+                    "ライブラリのすべてのゲームに、ふさわしいアートワークを。",
+                    @"Playhub Artworks はビッグピクチャーの中でアートワークをコントローラーだけで管理できます。SteamGridDB、IGDB、PlayStation、Nintendo、Xbox、AlphaCoders、iiDB、IGN からカバー・バナー・ヒーロー・ロゴ・アイコンを検索し、背景とロゴを合成して Perfect Hero と Perfect Banner を作成、Steam と同じようにロゴを配置し、ライブラリとホームで正方形カバーを表示します。SteamGridDB の検索には自分の API キーが必要で、キーは PC の中だけに保存されます。"),
+                ["ko"] = new PluginText(
+                    "라이브러리의 모든 게임에 어울리는 아트워크.",
+                    @"Playhub Artworks는 빅 픽처 안에서 컨트롤러만으로 아트워크를 관리합니다. SteamGridDB, IGDB, PlayStation, Nintendo, Xbox, AlphaCoders, iiDB, IGN에서 커버·배너·히어로·로고·아이콘을 검색하고, 배경과 로고를 합쳐 Perfect Hero와 Perfect Banner를 만들며, Steam과 같은 방식으로 로고를 배치하고 라이브러리와 홈에 정사각형 커버를 표시합니다. SteamGridDB 검색에는 개인 API 키가 필요하며 키는 PC에만 저장됩니다."),
+                ["hi"] = new PluginText(
+                    "आपकी लाइब्रेरी के हर गेम के लिए सही आर्टवर्क।",
+                    @"Playhub Artworks बिग पिक्चर के भीतर ही आर्टवर्क संभालता है, कंट्रोलर के लिए बनाया गया: SteamGridDB, IGDB, PlayStation, Nintendo, Xbox, AlphaCoders, iiDB, IGN पर कवर, बैनर, हीरो, लोगो और आइकन खोजें, बैकग्राउंड और लोगो को मिलाकर Perfect Hero तथा Perfect Banner बनाएं, गेम का लोगो Steam की तरह सेट करें और लाइब्रेरी व होम में चौकोर कवर देखें। SteamGridDB खोज के लिए आपकी अपनी API की ज़रूरत होती है, जो केवल आपके पीसी पर सहेजी जाती है."),
+                ["ru"] = new PluginText(
+                    "Подходящие обложки для каждой игры в библиотеке.",
+                    @"Playhub Artworks управляет обложками прямо в Big Picture и с геймпада: поиск обложек, баннеров, hero-изображений, логотипов и иконок в SteamGridDB, IGDB, PlayStation, Nintendo, Xbox, AlphaCoders, iiDB и IGN, создание Perfect Hero и Perfect Banner из фона и логотипа, размещение логотипа игры как в Steam и квадратные обложки в библиотеке и на главной. Для поиска через SteamGridDB нужен ваш собственный API-ключ, он хранится только на вашем ПК.")
+            },
             ["Launch-Curtain"] = new Dictionary<string, PluginText>(StringComparer.OrdinalIgnoreCase)
             {
                 ["en"] = new PluginText(
@@ -1158,7 +2611,7 @@ public sealed class PluginCatalogService
 • Conversa com o Windows por meio de um helper dedicado para ler as sessões de mídia."),
                 ["uk"] = new PluginText(
                     "Улюблена музика завжди поруч.",
-                    @"Now Playing — це музичний супутник у консольному стилі: він переносить активну медіасесію Windows у швидке меню Steam, з обкладинкою, назвою та керуванням, доступними з геймпада.
+                    @"Now Playing - це музичний супутник у консольному стилі: він переносить активну медіасесію Windows у швидке меню Steam, з обкладинкою, назвою та керуванням, доступними з геймпада.
 
 ## Що він робить
 • Показує активну медіасесію Windows у швидкому меню.
@@ -1213,7 +2666,7 @@ public sealed class PluginCatalogService
 • मीडिया सेशन पढ़ने के लिए dedicated helper के जरिए Windows से बात करता है।"),
                 ["ru"] = new PluginText(
                     "Любимая музыка всегда рядом.",
-                    @"Now Playing — твой музыкальный спутник в консольном стиле: он переносит активную медиасессию Windows в быстрое меню Steam, с обложкой, названием и управлением, всегда доступными с геймпада.
+                    @"Now Playing - твой музыкальный спутник в консольном стиле: он переносит активную медиасессию Windows в быстрое меню Steam, с обложкой, названием и управлением, всегда доступными с геймпада.
 
 ## Что он делает
 • Показывает активную медиасессию Windows в быстром меню.
@@ -1240,7 +2693,7 @@ public sealed class PluginCatalogService
 • Supports RetroAchievements for ROMs and emulators.
 • Supports Xbox / Game Pass / Microsoft Store achievements through OpenXBL (games must be imported from Playhub's Import Xbox Games tab).
 • Lets you choose the source for each game: Auto, RetroAchievements, Xbox or Off.
-• Offers flexible caches — hourly, daily, weekly, per session or manual — to reduce API calls.
+• Offers flexible caches (hourly, daily, weekly, per session or manual) to reduce API calls.
 
 ## Note
 • Achievements do not become real Steam achievements: they are only shown inside Big Picture."),
@@ -1259,7 +2712,7 @@ public sealed class PluginCatalogService
 • Soporta RetroAchievements para ROMs y emuladores.
 • Soporta logros de Xbox / Game Pass / Microsoft Store mediante OpenXBL (hay que importar los juegos desde la pestaña Importa Juegos Xbox de Playhub).
 • Permite elegir la fuente para cada juego: Auto, RetroAchievements, Xbox o Desactivada.
-• Ofrece cachés flexibles — por hora, día, semana, sesión o manuales — para reducir llamadas a la API.
+• Ofrece cachés flexibles (por hora, día, semana, sesión o manuales) para reducir llamadas a la API.
 
 ## Nota
 • Los logros no se convierten en logros reales de Steam: solo se muestran dentro de Big Picture."),
@@ -1278,7 +2731,7 @@ public sealed class PluginCatalogService
 • Prend en charge RetroAchievements pour les ROMs et les émulateurs.
 • Prend en charge les succès Xbox / Game Pass / Microsoft Store via OpenXBL (les jeux doivent être importés depuis l'onglet Importer Jeux Xbox de Playhub).
 • Permet de choisir la source pour chaque jeu : Auto, RetroAchievements, Xbox ou Désactivée.
-• Propose des caches flexibles — horaire, quotidien, hebdomadaire, par session ou manuel — pour limiter les appels API.
+• Propose des caches flexibles (horaire, quotidien, hebdomadaire, par session ou manuel) pour limiter les appels API.
 
 ## Note
 • Les succès ne deviennent pas de vrais succès Steam : ils sont seulement affichés dans Big Picture."),
@@ -1297,7 +2750,7 @@ public sealed class PluginCatalogService
 • Unterstützt RetroAchievements für ROMs und Emulatoren.
 • Unterstützt Xbox / Game Pass / Microsoft Store-Erfolge über OpenXBL (Spiele müssen über Playhubs Tab Xbox-Spiele importieren importiert werden).
 • Lässt dich die Quelle pro Spiel wählen: Auto, RetroAchievements, Xbox oder Aus.
-• Bietet flexible Caches — stündlich, täglich, wöchentlich, pro Sitzung oder manuell — um API-Aufrufe zu reduzieren.
+• Bietet flexible Caches (stündlich, täglich, wöchentlich, pro Sitzung oder manuell) um API-Aufrufe zu reduzieren.
 
 ## Hinweis
 • Die Erfolge werden nicht zu echten Steam-Erfolgen: Sie werden nur in Big Picture angezeigt."),
@@ -1316,7 +2769,7 @@ public sealed class PluginCatalogService
 • Suporta RetroAchievements para ROMs e emuladores.
 • Suporta conquistas Xbox / Game Pass / Microsoft Store via OpenXBL (é preciso importar os jogos pela aba Importar Jogos Xbox do Playhub).
 • Permite escolher a fonte para cada jogo: Auto, RetroAchievements, Xbox ou Desativada.
-• Oferece caches flexíveis — por hora, dia, semana, sessão ou manual — para reduzir chamadas de API.
+• Oferece caches flexíveis (por hora, dia, semana, sessão ou manual) para reduzir chamadas de API.
 
 ## Nota
 • As conquistas não viram conquistas reais da Steam: elas são apenas exibidas dentro do Big Picture."),
@@ -1335,7 +2788,7 @@ public sealed class PluginCatalogService
 • Підтримує RetroAchievements для ROM і емуляторів.
 • Підтримує досягнення Xbox / Game Pass / Microsoft Store через OpenXBL (ігри треба імпортувати з вкладки Імпорт ігор Xbox у Playhub).
 • Дає вибрати джерело для кожної гри: Auto, RetroAchievements, Xbox або Вимкнено.
-• Пропонує гнучкий кеш — щогодини, щодня, щотижня, за сесію або вручну — щоб обмежити API-виклики.
+• Пропонує гнучкий кеш (щогодини, щодня, щотижня, за сесію або вручну) щоб обмежити API-виклики.
 
 ## Примітка
 • Досягнення не стають справжніми досягненнями Steam: вони лише показуються в Big Picture."),
@@ -1411,7 +2864,7 @@ public sealed class PluginCatalogService
 • ROMs और emulators के लिए RetroAchievements सपोर्ट करता है।
 • OpenXBL के जरिए Xbox / Game Pass / Microsoft Store achievements सपोर्ट करता है (गेम Playhub की Import Xbox Games tab से import होने चाहिए)।
 • हर गेम के लिए source चुनने देता है: Auto, RetroAchievements, Xbox या Off।
-• API calls कम करने के लिए flexible caches देता है — hourly, daily, weekly, per session या manual।
+• API calls कम करने के लिए flexible caches देता है - hourly, daily, weekly, per session या manual।
 
 ## Note
 • Achievements असली Steam achievements नहीं बनते: वे सिर्फ Big Picture के अंदर दिखते हैं।"),
@@ -1430,7 +2883,7 @@ public sealed class PluginCatalogService
 • Поддерживает RetroAchievements для ROM и эмуляторов.
 • Поддерживает достижения Xbox / Game Pass / Microsoft Store через OpenXBL (игры нужно импортировать через вкладку Импорт игр Xbox в Playhub).
 • Позволяет выбрать источник для каждой игры: Auto, RetroAchievements, Xbox или Выкл.
-• Даёт гибкие кэши — почасовой, ежедневный, еженедельный, за сессию или ручной — чтобы снизить число API-вызовов.
+• Даёт гибкие кэши (почасовой, ежедневный, еженедельный, за сессию или ручной) чтобы снизить число API-вызовов.
 
 ## Примечание
 • Достижения не становятся настоящими достижениями Steam: они только показываются внутри Big Picture.")
@@ -1570,6 +3023,7 @@ public sealed class PluginCatalogService
 • Customizes achievements, messages, invites, downloads, screenshots, controller, warning, system and community notifications.
 • Uses real Steam achievement artwork when available.
 • Lets you choose position, duration and volume from 0% to 200%.
+• Styles the system volume overlay to match the selected theme.
 • Includes previews for every notification type.
 
 ## Notes
@@ -1577,13 +3031,13 @@ public sealed class PluginCatalogService
 • The overlay does not take focus or intercept controller, keyboard or mouse input."),
                 ["es"] = new PluginText(
                     "Notificaciones más claras, cuidadas y personales.",
-                    @"Playhub Notifications sustituye los avisos visibles y sus sonidos por temas animados para Big Picture, sin alterar el historial nativo de Steam. Incluye siete temas, artwork real de logros, categorías configurables, posición, duración, volumen de 0% a 200% y vistas previas. El overlay no toma el foco ni intercepta tus controles."),
+                    @"Playhub Notifications sustituye los avisos visibles y sus sonidos por temas animados para Big Picture, sin alterar el historial nativo de Steam. Incluye siete temas, un indicador de volumen coordinado, artwork real de logros, categorías configurables, posición, duración, volumen de 0% a 200% y vistas previas. El overlay no toma el foco ni intercepta tus controles."),
                 ["fr"] = new PluginText(
                     "Des notifications plus claires, soignées et personnelles.",
-                    @"Playhub Notifications remplace les fenêtres visibles et leurs sons par des thèmes animés conçus pour Big Picture, sans modifier l'historique natif de Steam. Il propose sept thèmes, les images réelles des succès, des catégories configurables, la position, la durée, un volume de 0 % à 200 % et des aperçus. L'overlay ne prend pas le focus et n'intercepte pas les commandes."),
+                    @"Playhub Notifications remplace les fenêtres visibles et leurs sons par des thèmes animés conçus pour Big Picture, sans modifier l'historique natif de Steam. Il propose sept thèmes, un indicateur de volume assorti, les images réelles des succès, des catégories configurables, la position, la durée, un volume de 0 % à 200 % et des aperçus. L'overlay ne prend pas le focus et n'intercepte pas les commandes."),
                 ["de"] = new PluginText(
                     "Benachrichtigungen, klarer, ruhiger und persönlicher.",
-                    @"Playhub Notifications ersetzt sichtbare Steam-Pop-ups und ihre Töne durch animierte Big-Picture-Themes, ohne den nativen Verlauf zu verändern. Enthalten sind sieben Themes, echte Achievement-Bilder, konfigurierbare Kategorien, Position, Dauer, 0 bis 200 % Lautstärke und Vorschauen. Das Overlay übernimmt weder Fokus noch Eingabe."),
+                    @"Playhub Notifications ersetzt sichtbare Steam-Pop-ups und ihre Töne durch animierte Big-Picture-Themes, ohne den nativen Verlauf zu verändern. Enthalten sind sieben Themes, eine passende Lautstärkeanzeige, echte Achievement-Bilder, konfigurierbare Kategorien, Position, Dauer, 0 bis 200 % Lautstärke und Vorschauen. Das Overlay übernimmt weder Fokus noch Eingabe."),
                 ["pt"] = new PluginText(
                     "Notificações mais claras, cuidadas e pessoais.",
                     @"Playhub Notifications substitui os pop-ups visíveis e seus sons por temas animados para o Big Picture, preservando o histórico nativo da Steam. Inclui sete temas, imagens reais de conquistas, categorias configuráveis, posição, duração, volume de 0% a 200% e prévias. O overlay não toma o foco nem intercepta controles."),
@@ -2089,7 +3543,7 @@ public sealed class PluginCatalogService
 • Detecção automática de idioma (11 idiomas suportados)."),
                 ["uk"] = new PluginText(
                     "Погода, просто й непомітно, у швидкому меню.",
-                    @"Weather — компактний плагін, який додає поточну погоду, щоденний і погодинний прогноз у швидке меню. Він створений для Big Picture і навігації контролером, з щільним і безпечним макетом без обрізаного тексту та переповнення.
+                    @"Weather - компактний плагін, який додає поточну погоду, щоденний і погодинний прогноз у швидке меню. Він створений для Big Picture і навігації контролером, з щільним і безпечним макетом без обрізаного тексту та переповнення.
 
 ## Що він робить
 • Поточна погода, прогноз на 5 днів і наступні 24 години.
@@ -2149,7 +3603,7 @@ public sealed class PluginCatalogService
 • Automatic language detection (11 languages supported)."),
                 ["ru"] = new PluginText(
                     "Погода, просто и ненавязчиво, в быстром меню.",
-                    @"Weather — компактный плагин, который добавляет текущую погоду, дневной и почасовой прогноз в быстрое меню. Он создан для Big Picture и навигации с контроллера, с плотной и безопасной вёрсткой без обрезанного текста и переполнений.
+                    @"Weather - компактный плагин, который добавляет текущую погоду, дневной и почасовой прогноз в быстрое меню. Он создан для Big Picture и навигации с контроллера, с плотной и безопасной вёрсткой без обрезанного текста и переполнений.
 
 ## Что он делает
 • Текущая погода, прогноз на 5 дней и следующие 24 часа.
@@ -2164,7 +3618,7 @@ public sealed class PluginCatalogService
             {
                 ["en"] = new PluginText(
                     "Test your speakers, channel by channel.",
-                    @"Playhub Surround is a small tool for checking your speaker layout in stereo, 5.1 and 7.1. It shows a living-room-style map and plays synthesized test sounds inspired by classic video games — no copyrighted samples: every sound is generated live with the Web Audio API.
+                    @"Playhub Surround is a small tool for checking your speaker layout in stereo, 5.1 and 7.1. It shows a living-room-style map and plays synthesized test sounds inspired by classic video games - no copyrighted samples: every sound is generated live with the Web Audio API.
 
 ## What it does
 • Shows a living-room-style speaker map.
@@ -2180,7 +3634,7 @@ public sealed class PluginCatalogService
 • Multichannel playback depends on Steam/Chromium and the selected output device: if the system exposes only two channels, rear, centre and LFE tests may be downmixed."),
                 ["es"] = new PluginText(
                     "Pon a prueba tus altavoces, canal por canal.",
-                    @"Playhub Surround es una pequeña herramienta para comprobar la disposición de tus altavoces en estéreo, 5.1 y 7.1. Muestra un mapa con estilo de salón y reproduce sonidos de prueba sintetizados inspirados en videojuegos clásicos — sin muestras protegidas por copyright: cada sonido se genera en vivo con la Web Audio API.
+                    @"Playhub Surround es una pequeña herramienta para comprobar la disposición de tus altavoces en estéreo, 5.1 y 7.1. Muestra un mapa con estilo de salón y reproduce sonidos de prueba sintetizados inspirados en videojuegos clásicos - sin muestras protegidas por copyright: cada sonido se genera en vivo con la Web Audio API.
 
 ## Qué hace
 • Muestra un mapa de altavoces con estilo de salón.
@@ -2196,7 +3650,7 @@ public sealed class PluginCatalogService
 • La reproducción multicanal depende de Steam/Chromium y del dispositivo de salida elegido: si el sistema expone solo dos canales, las pruebas traseras, central y LFE pueden mezclarse hacia estéreo."),
                 ["fr"] = new PluginText(
                     "Teste tes haut-parleurs, canal par canal.",
-                    @"Playhub Surround est un petit outil pour vérifier la disposition de tes haut-parleurs en stéréo, 5.1 et 7.1. Il affiche une carte façon salon et joue des sons de test synthétisés inspirés des jeux vidéo classiques — aucun échantillon protégé : chaque son est généré en direct avec la Web Audio API.
+                    @"Playhub Surround est un petit outil pour vérifier la disposition de tes haut-parleurs en stéréo, 5.1 et 7.1. Il affiche une carte façon salon et joue des sons de test synthétisés inspirés des jeux vidéo classiques - aucun échantillon protégé : chaque son est généré en direct avec la Web Audio API.
 
 ## Ce qu'il fait
 • Affiche une carte des haut-parleurs façon salon.
@@ -2212,7 +3666,7 @@ public sealed class PluginCatalogService
 • La lecture multicanal dépend de Steam/Chromium et du périphérique de sortie choisi : si le système n'expose que deux canaux, les tests arrière, centre et LFE peuvent être mixés vers le bas."),
                 ["de"] = new PluginText(
                     "Teste deine Lautsprecher, Kanal für Kanal.",
-                    @"Playhub Surround ist ein kleines Werkzeug, um deine Lautsprecheranordnung in Stereo, 5.1 und 7.1 zu prüfen. Es zeigt eine Wohnzimmer-Karte und spielt synthetisierte Testklänge, inspiriert von klassischen Videospielen — keine urheberrechtlich geschützten Samples: Jeder Klang wird live mit der Web Audio API erzeugt.
+                    @"Playhub Surround ist ein kleines Werkzeug, um deine Lautsprecheranordnung in Stereo, 5.1 und 7.1 zu prüfen. Es zeigt eine Wohnzimmer-Karte und spielt synthetisierte Testklänge, inspiriert von klassischen Videospielen - keine urheberrechtlich geschützten Samples: Jeder Klang wird live mit der Web Audio API erzeugt.
 
 ## Was es macht
 • Zeigt eine Lautsprecherkarte im Wohnzimmerstil.
@@ -2228,7 +3682,7 @@ public sealed class PluginCatalogService
 • Mehrkanal-Wiedergabe hängt von Steam/Chromium und dem gewählten Ausgabegerät ab: Wenn das System nur zwei Kanäle bereitstellt, können hintere, Center- und LFE-Tests heruntergemischt werden."),
                 ["pt"] = new PluginText(
                     "Teste seus alto-falantes, canal por canal.",
-                    @"Playhub Surround é uma pequena ferramenta para verificar a disposição dos seus alto-falantes em estéreo, 5.1 e 7.1. Mostra um mapa em estilo sala de estar e reproduz sons de teste sintetizados inspirados em videogames clássicos — nenhum sample protegido por copyright: cada som é gerado ao vivo com a Web Audio API.
+                    @"Playhub Surround é uma pequena ferramenta para verificar a disposição dos seus alto-falantes em estéreo, 5.1 e 7.1. Mostra um mapa em estilo sala de estar e reproduz sons de teste sintetizados inspirados em videogames clássicos - nenhum sample protegido por copyright: cada som é gerado ao vivo com a Web Audio API.
 
 ## O que faz
 • Mostra um mapa de alto-falantes em estilo sala de estar.
@@ -2244,7 +3698,7 @@ public sealed class PluginCatalogService
 • A reprodução multicanal depende do Steam/Chromium e do dispositivo de saída escolhido: se o sistema expõe apenas dois canais, os testes traseiros, central e LFE podem ser mixados para estéreo."),
                 ["uk"] = new PluginText(
                     "Перевір колонки, канал за каналом.",
-                    @"Playhub Surround — невеликий інструмент для перевірки розташування колонок у stereo, 5.1 і 7.1. Він показує карту в стилі вітальні й відтворює синтезовані тестові звуки, натхненні класичними відеоіграми — без захищених семплів: кожен звук генерується наживо через Web Audio API.
+                    @"Playhub Surround - невеликий інструмент для перевірки розташування колонок у stereo, 5.1 і 7.1. Він показує карту в стилі вітальні й відтворює синтезовані тестові звуки, натхненні класичними відеоіграми - без захищених семплів: кожен звук генерується наживо через Web Audio API.
 
 ## Що він робить
 • Показує карту колонок у стилі вітальні.
@@ -2260,7 +3714,7 @@ public sealed class PluginCatalogService
 • Багатоканальне відтворення залежить від Steam/Chromium і вибраного пристрою виводу: якщо система показує лише два канали, тести задніх, центрального й LFE каналів можуть мікшуватися вниз."),
                 ["zh"] = new PluginText(
                     "逐个声道测试你的扬声器。",
-                    @"Playhub Surround 是一个小工具，用于检查 stereo、5.1 和 7.1 的扬声器布局。它显示客厅风格的地图，并播放受经典电子游戏启发的合成测试音 — 不使用受版权保护的采样：每个声音都通过 Web Audio API 实时生成。
+                    @"Playhub Surround 是一个小工具，用于检查 stereo、5.1 和 7.1 的扬声器布局。它显示客厅风格的地图，并播放受经典电子游戏启发的合成测试音 - 不使用受版权保护的采样：每个声音都通过 Web Audio API 实时生成。
 
 ## 功能
 • 显示客厅风格的扬声器地图。
@@ -2308,7 +3762,7 @@ public sealed class PluginCatalogService
 • 멀티채널 재생은 Steam/Chromium과 선택한 출력 장치에 따라 달라집니다. 시스템이 두 채널만 노출하면 후면, 센터, LFE 테스트가 다운믹스될 수 있습니다."),
                 ["hi"] = new PluginText(
                     "अपने speakers को channel by channel जांचें.",
-                    @"Playhub Surround stereo, 5.1 और 7.1 में आपके speaker layout को जांचने का छोटा tool है। यह living-room style map दिखाता है और classic video games से प्रेरित synthesized test sounds चलाता है — कोई copyrighted sample नहीं: हर sound Web Audio API से live generate होता है।
+                    @"Playhub Surround stereo, 5.1 और 7.1 में आपके speaker layout को जांचने का छोटा tool है। यह living-room style map दिखाता है और classic video games से प्रेरित synthesized test sounds चलाता है - कोई copyrighted sample नहीं: हर sound Web Audio API से live generate होता है।
 
 ## यह क्या करता है
 • Living-room style speaker map दिखाता है।
@@ -2324,7 +3778,7 @@ public sealed class PluginCatalogService
 • Multichannel playback Steam/Chromium और चुने गए output device पर निर्भर है: अगर system केवल दो channels expose करता है, तो rear, centre और LFE tests downmix हो सकते हैं।"),
                 ["ru"] = new PluginText(
                     "Проверь колонки, канал за каналом.",
-                    @"Playhub Surround — небольшой инструмент для проверки расположения колонок в stereo, 5.1 и 7.1. Он показывает карту в стиле гостиной и воспроизводит синтезированные тестовые звуки, вдохновлённые классическими видеоиграми — без защищённых авторским правом сэмплов: каждый звук генерируется вживую через Web Audio API.
+                    @"Playhub Surround - небольшой инструмент для проверки расположения колонок в stereo, 5.1 и 7.1. Он показывает карту в стиле гостиной и воспроизводит синтезированные тестовые звуки, вдохновлённые классическими видеоиграми - без защищённых авторским правом сэмплов: каждый звук генерируется вживую через Web Audio API.
 
 ## Что он делает
 • Показывает карту колонок в стиле гостиной.
@@ -2374,7 +3828,32 @@ public sealed class PluginCatalogService
 
     private sealed record ReleaseInfo(string? ZipUrl, string? PageUrl, string? Version, string? Notes, string? PublishedAt);
 
+    private sealed record SemanticVersion(IReadOnlyList<long> Core, IReadOnlyList<string> Prerelease, string Canonical)
+    {
+        public static readonly SemanticVersion Empty = new(Array.Empty<long>(), Array.Empty<string>(), "");
+    }
+
     private sealed record ReadmeInfo(string Text, string Summary, List<PluginMediaInfo> Media);
+
+    private sealed record InstalledPluginMetadata(
+        string Name,
+        string Author,
+        string Version,
+        string Description,
+        string? Image,
+        string RepositoryUrl,
+        string RepositoryName,
+        string RepositorySlug,
+        string ReleaseAssetName,
+        string? ReleaseZipUrl,
+        List<string> Aliases,
+        List<string> Tags);
+
+    private sealed class ExternalPluginCatalog
+    {
+        public int SchemaVersion { get; set; }
+        public List<ExternalPluginDefinition> Plugins { get; set; } = new();
+    }
 
     private sealed record PluginDefinition(
         string RepositoryName,

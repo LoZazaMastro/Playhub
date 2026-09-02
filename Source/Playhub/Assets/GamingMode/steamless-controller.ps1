@@ -6,7 +6,6 @@ $ErrorActionPreference = 'SilentlyContinue'
 
 $gameListPath = Join-Path $env:APPDATA 'Playhub\steamless-games.txt'
 $logPath = Join-Path $env:APPDATA 'Playhub\steamless-controller.log'
-$mirrorLogPath = 'F:\Playhub\steamless-controller.log'
 $mutexName = 'Local\PlayhubSteamlessControllerWatcher'
 
 function Write-PlayhubLog {
@@ -16,11 +15,6 @@ function Write-PlayhubLog {
         $dir = Split-Path -Parent $logPath
         if ($dir) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
         Add-Content -LiteralPath $logPath -Value $line -Encoding UTF8
-    } catch {}
-    try {
-        if (Test-Path -LiteralPath 'F:\Playhub') {
-            Add-Content -LiteralPath $mirrorLogPath -Value $line -Encoding UTF8
-        }
     } catch {}
 }
 

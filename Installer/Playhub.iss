@@ -8,14 +8,14 @@
 ;   1) Installa Inno Setup 6  ->  https://jrsoftware.org/isdl.php
 ;   2) Pubblica l'app:  Source\Playhub\publish.bat   (crea dist_publish\)
 ;   3) Apri questo file con Inno Setup e premi "Compile" (F9).
-;      L'installer finito esce in  Installer\Output\Playhub-Setup-x.y.z.exe
+;      L'installer finito esce in  Installer\Output\Playhub Setup.exe
 ;
 ;  Se cambi versione/percorsi modifica solo i #define qui sotto.
 ; ============================================================================
 
 #define MyAppName        "Playhub"
-#define MyAppVersion     "1.2.0"
-#define MyAppPublisher   "Andrea Sgarro (ZazaMastro)"
+#define MyAppVersion     "1.4.0"
+#define MyAppPublisher   "Andrea Sgarro (LoZazaMastro)"
 #define MyAppURL         "https://github.com/LoZazaMastro/Playhub"
 #define MyAppExeName     "Playhub.exe"
 
@@ -56,7 +56,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 
 ; Output.
 OutputDir=Output
-OutputBaseFilename=Playhub-Setup-{#MyAppVersion}
+OutputBaseFilename=Playhub Setup
 SetupIconFile={#AppIcon}
 Compression=lzma2/ultra64
 SolidCompression=yes
@@ -90,6 +90,12 @@ it.UninstallOptionsText=Scegli quali componenti rimuovere insieme a Playhub.
 en.UninstallOptionsText=Choose which components to remove with Playhub.
 it.RemoveUWPHook=Disinstalla anche UWPHook
 en.RemoveUWPHook=Also uninstall UWPHook
+it.FinishHeading=Tutto pronto!
+en.FinishHeading=All set!
+it.FinishText=Playhub è stato installato correttamente.
+en.FinishText=Playhub was installed successfully.
+it.OpenPlayhubNow=Apri Playhub ora
+en.OpenPlayhubNow=Open Playhub now
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}";             GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
@@ -113,7 +119,7 @@ Name: "{userstartup}\{#MyAppName}";        Filename: "{app}\{#MyAppExeName}"; Ta
 ; presente, non viene reinstallato; il launcher integrato resta il fallback.
 Filename: "{app}\UWPHook\UWPHook-Setup.exe"; Parameters: "/S"; Flags: runhidden waituntilterminated; Check: UWPHookNeedsInstall
 ; Avvio automatico a fine installazione (casella spuntata di default).
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:OpenPlayhubNow}"; Flags: nowait postinstall skipifsilent
 
 ; ============================================================================
 ;  TEMA SCURO + ACCENT GIALLO + PROGRESS BAR GIALLA  (sezione [Code])
@@ -315,6 +321,11 @@ begin
   if CurPageID = wpInstalling then
     StyleProgressBar;
 #endif
+  if CurPageID = wpFinished then
+  begin
+    WizardForm.FinishedHeadingLabel.Caption := CustomMessage('FinishHeading');
+    WizardForm.FinishedLabel.Caption := CustomMessage('FinishText');
+  end;
 end;
 
 // ============================================================================

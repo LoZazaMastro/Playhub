@@ -28,7 +28,7 @@ namespace GamingMode.Services;
 // di Steam e' in primo piano, e' Steam a far navigare la Dashboard, perche' la
 // Dashboard e' una sua schermata. Noi non entriamo mai nel mezzo.
 //
-// Restano quindi due cose sole:
+// Resta quindi una sola cosa:
 //
 //   1. UNA SCORCIATOIA DA TASTIERA, registrata con RegisterHotKey. Serve
 //      perche' mentre un gioco e' in primo piano l'interfaccia di Steam non
@@ -36,9 +36,6 @@ namespace GamingMode.Services;
 //      di niente. Chi vuole aprirla con il pad mentre gioca lega la stessa
 //      combinazione a un accordo DENTRO Steam: e' Steam a premere i tasti, e
 //      noi non tocchiamo il dispositivo.
-//
-//   2. L'INDICATORE DEL VOLUME, perche' in Gaming Mode Explorer non e' in
-//      esecuzione e quello di Windows non esiste.
 //
 // Quando la scorciatoia scatta, qui non si apre niente: si alza una bandierina
 // che il plugin raccoglie. Nessuna finestra, nessun cambio di primo piano,
@@ -54,7 +51,6 @@ public sealed class DashboardShortcutService : IDisposable
 	private const int WmQuit = 0x0012;
 
 	private readonly JsonStore _store;
-	private readonly SystemVolumeKeyService _volumeKeys;
 	private readonly Func<bool> _launchCurtainOnScreen;
 	private readonly Func<bool>? _dashboardVisible;
 	private readonly Action? _closeDashboard;
@@ -65,21 +61,18 @@ public sealed class DashboardShortcutService : IDisposable
 	private Thread? _uiThread;
 	private CancellationTokenSource? _cancellation;
 	private Dispatcher? _dispatcher;
-	private VolumeOsdWindow? _osd;
 	private uint _hotkeyThreadId;
+	private int _hotkeyReloadGeneration;
 	private bool _running;
 	private long _openRequestedAt;
 	private long _lastActivationAt;
 	private long _primaryWindowHandle;
-	private long _accentReadAt;
-	private System.Windows.Media.Color _accent = System.Windows.Media.Colors.White;
 
-	public DashboardShortcutService(JsonStore store, SystemVolumeKeyService volumeKeys,
+	public DashboardShortcutService(JsonStore store,
 		Func<bool> launchCurtainOnScreen, FileLogger logger,
 		Func<bool>? dashboardVisible = null, Action? closeDashboard = null)
 	{
 		_store = store;
-		_volumeKeys = volumeKeys;
 		_launchCurtainOnScreen = launchCurtainOnScreen;
 		_dashboardVisible = dashboardVisible;
 		_closeDashboard = closeDashboard;
@@ -94,9 +87,7 @@ public sealed class DashboardShortcutService : IDisposable
 			_running = true;
 			_cancellation = new CancellationTokenSource();
 
-			_volumeKeys.VolumeChanged += OnVolumeChanged;
-
-			_uiThread = new Thread(RunUi) { IsBackground = true, Name = "Playhub volume OSD" };
+			_uiThread = new Thread(RunUi) { IsBackground = true, Name = "Playhub Dashboard UI" };
 			_uiThread.SetApartmentState(ApartmentState.STA);
 			_uiThread.Start();
 
@@ -121,6 +112,7 @@ public sealed class DashboardShortcutService : IDisposable
 		lock (_sync)
 		{
 			if (!_running || _cancellation is null) return;
+			int generation = ++_hotkeyReloadGeneration;
 
 			// Il thread esce dal suo giro di messaggi e ne parte uno nuovo, che
 			// rilegge la configurazione da capo.
@@ -133,6 +125,7 @@ public sealed class DashboardShortcutService : IDisposable
 				// togliere la sua registrazione, altrimenti la nuova trova la
 				// combinazione occupata da noi stessi.
 				Thread.Sleep(150);
+				if (generation != Volatile.Read(ref _hotkeyReloadGeneration) || token.IsCancellationRequested) return;
 				RunHotkey(token);
 			})
 			{
@@ -151,7 +144,7 @@ public sealed class DashboardShortcutService : IDisposable
 		{
 			if (!_running) return;
 			_running = false;
-			_volumeKeys.VolumeChanged -= OnVolumeChanged;
+			_hotkeyReloadGeneration++;
 			cancellation = _cancellation;
 			_cancellation = null;
 		}
@@ -161,7 +154,6 @@ public sealed class DashboardShortcutService : IDisposable
 		{
 			_dispatcher?.Invoke(() =>
 			{
-				_osd?.CloseImmediately();
 				Dispatcher.CurrentDispatcher.BeginInvokeShutdown(DispatcherPriority.Send);
 			}, DispatcherPriority.Send);
 		}
@@ -169,7 +161,6 @@ public sealed class DashboardShortcutService : IDisposable
 		{
 		}
 		_dispatcher = null;
-		_osd = null;
 		_hotkeyThread = null;
 		_uiThread = null;
 		cancellation?.Dispose();
@@ -225,41 +216,18 @@ public sealed class DashboardShortcutService : IDisposable
 		return true;
 	}
 
-	// ---------------- indicatore del volume ----------------
-
 	private void RunUi()
 	{
 		try
 		{
 			Application application = new() { ShutdownMode = ShutdownMode.OnExplicitShutdown };
 			_dispatcher = Dispatcher.CurrentDispatcher;
-			_osd = new VolumeOsdWindow();
 			application.Run();
 		}
 		catch (Exception exception)
 		{
-			_logger.Error("L'indicatore del volume si e' interrotto.", exception);
+			_logger.Error("Il dispatcher della Dashboard si e' interrotto.", exception);
 		}
-	}
-
-	private void OnVolumeChanged(SystemVolumeSnapshot snapshot)
-	{
-		_dispatcher?.BeginInvoke(() =>
-		{
-			_osd?.ApplyAccent(ResolveAccent());
-			_osd?.ShowSnapshot(snapshot);
-		});
-	}
-
-	// Il colore si rilegge ogni tanto, non a ogni scatto: il volume si cambia a
-	// raffica e non ha senso leggere la configurazione ogni volta.
-	private System.Windows.Media.Color ResolveAccent()
-	{
-		long now = Environment.TickCount64;
-		if (_accentReadAt != 0 && now - _accentReadAt < 3000) return _accent;
-		_accentReadAt = now;
-		_accent = VolumeOsdWindow.ReadPlayhubAccent();
-		return _accent;
 	}
 
 	// ---------------- scegliere un programma dal disco ----------------

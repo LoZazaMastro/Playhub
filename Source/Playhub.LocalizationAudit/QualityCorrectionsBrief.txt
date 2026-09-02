@@ -1,0 +1,9 @@
+Continue the SAME existing LANG_KEY worker assignment. ONLY edit Source/Playhub/Assets/Localization/LANG_KEY.json in F:/Playhub/Plugin/Playhub. No other files, app builds, app launches/restarts, GitHub writes or additional workers.
+
+Coordinator reviewed 15 contextual runtime samples per language in Inventory/quality-samples.json. Please correct these targeted existing-translation issues for your assigned language and inspect related live hints/errors for the same issue:
+
+Korean: "Inattività prima di nascondere il cursore." currently resolves to "커서를 숨기기 전 대기 시간입니다." and loses the INACTIVITY condition. Add a natural targeted override that makes idle/inactive time explicit. Check nearby cursor labels and startup delay are semantically distinct.
+
+Hindi: the source "Windows ha impedito la scrittura del file shortcuts di Steam. Consenti Playhub in Accesso controllato alle cartelle e riprova. " (note trailing space; confirm exact inventory key) currently mixes raw English "Steam shortcuts file", "Controlled Folder Access" and "allow" into Hindi prose. Correct BOTH long/short live variants if needed, using natural Hindi UI language, retaining the technical filename only if it genuinely names that file, and use the established Windows security setting term (an English name in parentheses is acceptable only if genuinely useful). Avoid verbatim English grammatical fragments. Preserve all source conditions and key whitespace.
+
+Quality brief remains: read screen context, natural idiomatic native UI style, consistent local imperative/voice, brief but complete, no literal Italian idioms, no invented/dropped meaning or conditions, preserve product names, correct grammar/spelling/capitalization/punctuation, native typography/spacing, preserve every placeholder index/specifier/multiplicity and newline. Review your changes a second pass. Validate JSON/duplicates/coverage read-only, report precise changes and finish the CLI turn for tracked process closure.

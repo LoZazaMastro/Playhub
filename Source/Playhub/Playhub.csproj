@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
@@ -14,8 +14,20 @@
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
+    <DebugType>none</DebugType>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PlayhubUiReview)' == 'true'">
+    <DefineConstants>$(DefineConstants);PLAYHUB_UI_REVIEW</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(PlayhubUpdatePreview)' == 'true'">
+    <DefineConstants>$(DefineConstants);PLAYHUB_UPDATE_PREVIEW</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(PlayhubUiReview)' == 'true'">
+    <Compile Include="..\Playhub.UiTests\UiReview.cs" Link="UiReview.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250205002" />
@@ -24,6 +36,10 @@
   <ItemGroup>
     <Content Include="Assets\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\catalog\plugins.json" Link="Assets\PluginCatalog\store-catalog.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
     <Content Include="UWPHook\**\*.*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

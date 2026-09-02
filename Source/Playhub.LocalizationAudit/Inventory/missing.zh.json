@@ -1,0 +1,2772 @@
+[
+  {
+    "Key": "Aggiornamento Playhub",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 236,
+        "Member": "BuildPlayhubUpdateDialogContent",
+        "Context": "AutomationProperties.SetName(progress, T(\"Aggiornamento Playhub\"));",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      }
+    ]
+  },
+  {
+    "Key": "Aggiornamento in corso",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 536,
+        "Member": "RefreshPlayhubUpdateDialogState",
+        "Context": "status = !string.IsNullOrWhiteSpace(_playhubUpdateDialogStatusText) ? _playhubUpdateDialogStatusText\n            : busy ? T(\"Aggiornamento in corso\") : complete ? T(\"Completato\") : \"\"",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      }
+    ]
+  },
+  {
+    "Key": "Aggiungi app",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2221,
+        "Member": "BuildGamingPage",
+        "Context": "apps.Children.Add(ActionRow(Button(\"Aggiungi app\", async () =>\n        {\n            var exe = await PickFileAsync(new[] { \".exe\" });\n            if (string.IsNullOrWhiteSpace(exe))\n            {\n                return;\n            }\n\n            var appName = System.IO.Path.GetFileNameWithoutExtension(exe);\n            _gamingConfig.Gaming.CustomStartupApps.Add(new StartupAppConfig\n            {\n                Name = appName,\n                Path = exe,\n                ProcessName = appName,\n                Enabled = true,\n                StartMinimized = true\n            });\n            RenderStartupApps();\n            AutoSaveGaming();\n        })));",
+        "Category": "ui",
+        "Reason": "Control label"
+      }
+    ]
+  },
+  {
+    "Key": "Aggiungi giochi e app dal PC",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2917,
+        "Member": "BuildXboxPage",
+        "Context": "_executableChevron = AddCollapsibleHeader(executableImport, IconHeader(((char)0xE8B7).ToString(), \"Aggiungi giochi e app dal PC\",\n            \"Scegli una cartella o un file .exe. Playhub trova i giochi nelle sottocartelle e li prepara per Steam.\"), () => _executableGamesPanel)",
+        "Category": "ui",
+        "Reason": "Heading/body/command helper"
+      }
+    ]
+  },
+  {
+    "Key": "Aggiungi la chiave API di SteamGridDB per scaricare automaticamente copertine, sfondi e loghi.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2950,
+        "Member": "BuildXboxPage",
+        "Context": "artwork.Children.Add(IconHeader(((char)0xE91B).ToString(), \"Artwork dei giochi\",\n            \"Aggiungi la chiave API di SteamGridDB per scaricare automaticamente copertine, sfondi e loghi.\"));",
+        "Category": "ui",
+        "Reason": "Heading/body/command helper"
+      }
+    ]
+  },
+  {
+    "Key": "Aggiungi una chiave SteamGridDB oppure scegli gli artwork ufficiali di Steam.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 7651,
+        "Member": "ShowUwpArtworkDialogAsync",
+        "Context": "SetStatus(\n                \"Aggiungi una chiave SteamGridDB oppure scegli gli artwork ufficiali di Steam.\",\n                InfoBarSeverity.Informational);",
+        "Category": "ui",
+        "Reason": "User-facing helper SetStatus"
+      }
+    ]
+  },
+  {
+    "Key": "App all'avvio",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2219,
+        "Member": "BuildGamingPage",
+        "Context": "apps.Children.Add(IconHeader(((char)0xE710).ToString(), \"App all'avvio\",\n            \"Scegli le app da aprire insieme a Gaming Mode.\"));",
+        "Category": "ui",
+        "Reason": "Heading/body/command helper"
+      }
+    ]
+  },
+  {
+    "Key": "Apre i giochi a tutto schermo senza cornici di Windows.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2123,
+        "Member": "BuildGamingPage",
+        "Context": "AddExplainedToggle(screenCard, \"Finestre senza bordi\",\n            \"Apre i giochi a tutto schermo senza cornici di Windows.\", \"borderless\");",
+        "Category": "ui",
+        "Reason": "Toggle heading/body"
+      }
+    ]
+  },
+  {
+    "Key": "Apri Gaming Mode dal menu rapido di Decky, senza lasciare il controller.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1986",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 1988,
+        "Member": "BuildGamingPage",
+        "Context": "quickAccess = BuildQuickAccessTutorialCard(\n            \"gaming\",\n            \"Apri il plugin Gaming Mode\",\n            \"Apri Gaming Mode dal menu rapido di Decky, senza lasciare il controller.\",\n            \"\",\n            warning: \"Se il menu rapido non risponde, chiudi Steam per tornare al desktop. Puoi anche tenere premuto Shift durante l'accesso a Windows.\",\n            videoFile: \"Gaming-Mode-Plugin.mp4\",\n            compact: true)",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Apri su GitHub",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 278,
+        "Member": "BuildPlayhubUpdateDialogContent",
+        "Context": "Content = T(\"Apri su GitHub\")",
+        "Category": "ui",
+        "Reason": "UI text property Content"
+      },
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 461,
+        "Member": "ApplyPlayhubUpdateDialogTranslation",
+        "Context": "SetLocalizedToolTip(attribution, \"Apri su GitHub\");",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Aprilo dal menu rapido di Steam con il controller o la tastiera.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1393",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 1395,
+        "Member": "BuildDeckyPage",
+        "Context": "quickAccess = BuildQuickAccessTutorialCard(\n            \"decky\",\n            \"Esplora Decky\",\n            \"Aprilo dal menu rapido di Steam con il controller o la tastiera.\",\n            \"\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Apro la Dashboard in Gaming Mode…",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2010,
+        "Member": "BuildGamingPage",
+        "Context": "SetStatus(opened\n                ? \"Apro la Dashboard in Gaming Mode…\"\n                : \"Non riesco ad aprire la Dashboard. Assicurati che Gaming Mode sia attivo e riprova.\",\n                opened ? InfoBarSeverity.Success : InfoBarSeverity.Warning);",
+        "Category": "ui",
+        "Reason": "User-facing helper SetStatus"
+      }
+    ]
+  },
+  {
+    "Key": "Archivio non valido.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 678,
+        "Member": "ExtractAsync",
+        "Context": "new InvalidDataException(\"Archivio non valido.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Avvia l'host scelto quando entri in Gaming Mode, così puoi collegarti subito da un altro dispositivo.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2101,
+        "Member": "BuildGamingPage",
+        "Context": "AddExplainedToggle(startCard, \"Avvia lo streaming\",\n            \"Avvia l'host scelto quando entri in Gaming Mode, così puoi collegarti subito da un altro dispositivo.\", \"sunshineRequired\");",
+        "Category": "ui",
+        "Reason": "Toggle heading/body"
+      }
+    ]
+  },
+  {
+    "Key": "Avvia servizio",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2817,
+        "Member": "AdvancedGamingTools",
+        "Context": "actions = ActionRow(\n            Button(\"Avvia servizio\", () => { _gamingMode.StartAgent(); SetStatus(\"Servizio avviato.\", InfoBarSeverity.Informational); }),\n            Button(\"Controlla servizio\", async () => SetStatus(await _gamingMode.IsAgentHealthyAsync(_gamingConfig.Safety.ApiPort) ? \"Servizio attivo.\" : \"Servizio non raggiungibile.\", InfoBarSeverity.Informational)))",
+        "Category": "ui",
+        "Reason": "Control label"
+      }
+    ]
+  },
+  {
+    "Key": "Banner",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:7703",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 7659,
+        "Member": "ShowUwpArtworkDialogAsync",
+        "Context": "categories = new[]\n        {\n            (Type: \"cover\", Text: \"Copertina\", Symbol: Symbol.Library),\n            (Type: \"banner\", Text: \"Banner\", Symbol: Symbol.Pictures),\n            (Type: \"hero\", Text: \"Sfondo\", Symbol: Symbol.FullScreen),\n            (Type: \"logo\", Text: \"Logo\", Symbol: Symbol.Font),\n            (Type: \"icon\", Text: \"Icona\", Symbol: Symbol.Emoji)\n        }",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Big Picture a tutto schermo, pronto per il controller.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2041",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2043,
+        "Member": "BuildGamingPage",
+        "Context": "_gamingModeTile = ModeTileShell(gamingIconRow, \"Gaming\", \"Big Picture a tutto schermo, pronto per il controller.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "CSS Loader non installato.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:37",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 37,
+        "Member": "GetStatus",
+        "Context": "new(false, \"\", folder, \"CSS Loader non installato.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "CSS Loader non è installato.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:152",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 152,
+        "Member": "UninstallAsync",
+        "Context": "new CssLoaderInstallResult(true, \"CSS Loader non è installato.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "CSS Loader verrà rimosso. Il profilo Playhub resterà disponibile per una futura reinstallazione.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 3149,
+        "Member": "UninstallCssLoaderAsync",
+        "Context": "if (!await ConfirmAsync(\"Disinstallare CSS Loader?\", \"CSS Loader verrà rimosso. Il profilo Playhub resterà disponibile per una futura reinstallazione.\"))\n        {\n            return;\n        }",
+        "Category": "ui",
+        "Reason": "Dialog/status helper"
+      }
+    ]
+  },
+  {
+    "Key": "CSS Loader {0} installato.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:53",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 53,
+        "Member": "GetStatus",
+        "Context": "new(true, version, folder, $\"CSS Loader {version} installato.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "CSS Loader {0} è pronto.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:122",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 122,
+        "Member": "InstallLatestAsync",
+        "Context": "progress?.Report((1, $\"CSS Loader {verified.Version} è pronto.\"));",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "CSS Loader {0} è pronto. Ora puoi applicare il profilo Playhub.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 3110,
+        "Member": "RefreshCssLoaderState",
+        "Context": "_cssLoaderStatusText.Text = status.Installed\n            ? $\"CSS Loader {status.Version} è pronto. Ora puoi applicare il profilo Playhub.\"\n            : \"Installa CSS Loader per usare il profilo Playhub.\"",
+        "Category": "ui",
+        "Reason": "UI text property Text"
+      }
+    ]
+  },
+  {
+    "Key": "CSS Loader {0} è pronto. Riavvia Steam per usarlo.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:124",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 124,
+        "Member": "InstallLatestAsync",
+        "Context": "new(true,\n                $\"CSS Loader {verified.Version} è pronto. Riavvia Steam per usarlo.\",\n                verified.Version)",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "CSS Loader è stato disinstallato.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:168",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 168,
+        "Member": "UninstallAsync",
+        "Context": "new CssLoaderInstallResult(true, \"CSS Loader è stato disinstallato.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Catalog HTTP {0}.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/RemotePluginCatalogService.cs",
+        "Line": 106,
+        "Member": "LoadCoreAsync",
+        "Context": "new HttpRequestException($\"Catalog HTTP {(int)response.StatusCode}.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Catalog exceeds the byte limit.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/RemotePluginCatalogService.cs",
+        "Line": 108,
+        "Member": "LoadCoreAsync",
+        "Context": "new InvalidDataException(\"Catalog exceeds the byte limit.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      },
+      {
+        "File": "Services/RemotePluginCatalogService.cs",
+        "Line": 180,
+        "Member": "ReadBoundedAsync",
+        "Context": "new InvalidDataException(\"Catalog exceeds the byte limit.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      },
+      {
+        "File": "Services/RemotePluginCatalogService.cs",
+        "Line": 204,
+        "Member": "Parse",
+        "Context": "new InvalidDataException(\"Catalog exceeds the byte limit.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Catalog revision rollback rejected.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/RemotePluginCatalogService.cs",
+        "Line": 113,
+        "Member": "LoadCoreAsync",
+        "Context": "new InvalidDataException(\"Catalog revision rollback rejected.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      },
+      {
+        "File": "Services/RemotePluginCatalogService.cs",
+        "Line": 343,
+        "Member": "Merge",
+        "Context": "new InvalidDataException(\"Catalog revision rollback rejected.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Cerca di nuovo",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 7372,
+        "Member": "BuildUwpGameCard",
+        "Context": "refetchButton = Button(\"Cerca di nuovo\", async () => await ShowSteamGridDbRefetchDialogAsync(game))",
+        "Category": "ui",
+        "Reason": "Control label"
+      }
+    ]
+  },
+  {
+    "Key": "Cerca di nuovo — {0}",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 7510,
+        "Member": "ShowSteamGridDbRefetchDialogAsync",
+        "Context": "Title = string.Format(T(\"Cerca di nuovo — {0}\"), game.Name)",
+        "Category": "ui",
+        "Reason": "UI text property Title"
+      }
+    ]
+  },
+  {
+    "Key": "Cerco aggiornamenti…",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 8717,
+        "Member": "CheckPlayhubUpdatesAsync",
+        "Context": "_playhubUpdateStatus.Text = \"Cerco aggiornamenti…\"",
+        "Category": "ui",
+        "Reason": "UI text property Text"
+      }
+    ]
+  },
+  {
+    "Key": "Cerco l'ultima versione…",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:77",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 77,
+        "Member": "InstallLatestAsync",
+        "Context": "progress?.Report((0.02, \"Cerco l'ultima versione…\"));",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Chiave API SteamGridDB",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2953,
+        "Member": "BuildXboxPage",
+        "Context": "PlaceholderText = \"Chiave API SteamGridDB\"",
+        "Category": "ui",
+        "Reason": "UI text property PlaceholderText"
+      }
+    ]
+  },
+  {
+    "Key": "Chiude la schermata anche se il gioco non risponde.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2180,
+        "Member": "BuildGamingPage",
+        "Context": "splashOptions.Children.Add(TwoColumn(\n            NumberWithHint(_splashMinBox, \"Tempo minimo per cui la schermata resta visibile, anche se il gioco è già pronto.\"),\n            NumberWithHint(_splashMaxBox, \"Chiude la schermata anche se il gioco non risponde.\")));",
+        "Category": "ui",
+        "Reason": "Numeric control explanatory text"
+      }
+    ]
+  },
+  {
+    "Key": "Chiusura automatica dopo (ms)",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2157,
+        "Member": "BuildGamingPage",
+        "Context": "_splashMaxBox = Number(\"Chiusura automatica dopo (ms)\", 1000, 300000)",
+        "Category": "ui",
+        "Reason": "Control label"
+      }
+    ]
+  },
+  {
+    "Key": "Chiusura browser hook CSS Loader 2.1.2 non riconosciuta.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:368",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 368,
+        "Member": "ApplyWindowsBrowserHookFix",
+        "Context": "source = ApplyPatch(source,\n            \"\"\"\n                async def close_websocket(self):\n                    self.connected_tabs.clear()\n                    await self.websocket.close()\n            \"\"\",\n            \"\"\"\n                async def close_websocket(self):\n                    self.connected_tabs.clear()\n                    self.pending_targets.clear()\n                    await self.websocket.close()\n            \"\"\",\n            \"Chiusura browser hook CSS Loader 2.1.2 non riconosciuta.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Collegamenti simbolici non consentiti.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 692,
+        "Member": "ExtractAsync",
+        "Context": "new InvalidDataException(\"Collegamenti simbolici non consentiti.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Colore principale",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 3248,
+        "Member": "BuildSettingsPage",
+        "Context": "appearance.Children.Add(Labeled(\"Colore principale\", _accentColorPanel));",
+        "Category": "ui",
+        "Reason": "User-facing helper Labeled"
+      }
+    ]
+  },
+  {
+    "Key": "Completato",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.PluginInstallProgress.cs",
+        "Line": 58,
+        "Member": "CreatePluginInstallButton",
+        "Context": "string PhaseLabel(PluginInstallPhase phase) => phase switch\n        {\n            PluginInstallPhase.Resolving => T(\"Preparazione\"),\n            PluginInstallPhase.Downloading => T(\"Download\"),\n            PluginInstallPhase.Extracting => T(\"Estrazione\"),\n            PluginInstallPhase.Installing => T(\"Installazione\"),\n            PluginInstallPhase.Completed => T(\"Completato\"),\n            _ => T(\"Preparazione\")\n        };",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      },
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 536,
+        "Member": "RefreshPlayhubUpdateDialogState",
+        "Context": "status = !string.IsNullOrWhiteSpace(_playhubUpdateDialogStatusText) ? _playhubUpdateDialogStatusText\n            : busy ? T(\"Aggiornamento in corso\") : complete ? T(\"Completato\") : \"\"",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      }
+    ]
+  },
+  {
+    "Key": "Contenuto espanso non valido.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 681,
+        "Member": "ExtractAsync",
+        "Context": "new InvalidDataException(\"Contenuto espanso non valido.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Controlla servizio",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2818,
+        "Member": "AdvancedGamingTools",
+        "Context": "actions = ActionRow(\n            Button(\"Avvia servizio\", () => { _gamingMode.StartAgent(); SetStatus(\"Servizio avviato.\", InfoBarSeverity.Informational); }),\n            Button(\"Controlla servizio\", async () => SetStatus(await _gamingMode.IsAgentHealthyAsync(_gamingConfig.Safety.ApiPort) ? \"Servizio attivo.\" : \"Servizio non raggiungibile.\", InfoBarSeverity.Informational)))",
+        "Category": "ui",
+        "Reason": "Control label"
+      }
+    ]
+  },
+  {
+    "Key": "Controller, Game Bar e streaming sulla rete di casa.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2131,
+        "Member": "BuildGamingPage",
+        "Context": "inputCard.Children.Add(IconHeader(((char)0xE7FC).ToString(), \"Controller e streaming\",\n            \"Controller, Game Bar e streaming sulla rete di casa.\"));",
+        "Category": "ui",
+        "Reason": "Heading/body/command helper"
+      }
+    ]
+  },
+  {
+    "Key": "Controllo il servizio Gaming Mode…",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:95",
+    "Occurrences": [
+      {
+        "File": "Services/RepairService.cs",
+        "Line": 95,
+        "Member": "RunAsync",
+        "Context": "progress.Report((0.72, \"Controllo il servizio Gaming Mode…\"));",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Controllo tab CSS Loader 2.1.2 non riconosciuto.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:534",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 534,
+        "Member": "ApplyWindowsBrowserHookFix",
+        "Context": "source = ApplyPatch(source, oldSanity, newSanity, \"Controllo tab CSS Loader 2.1.2 non riconosciuto.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Copertina",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:7702",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 7658,
+        "Member": "ShowUwpArtworkDialogAsync",
+        "Context": "categories = new[]\n        {\n            (Type: \"cover\", Text: \"Copertina\", Symbol: Symbol.Library),\n            (Type: \"banner\", Text: \"Banner\", Symbol: Symbol.Pictures),\n            (Type: \"hero\", Text: \"Sfondo\", Symbol: Symbol.FullScreen),\n            (Type: \"logo\", Text: \"Logo\", Symbol: Symbol.Font),\n            (Type: \"icon\", Text: \"Icona\", Symbol: Symbol.Emoji)\n        }",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Costanti browser hook CSS Loader 2.1.2 non riconosciute.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:254",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 254,
+        "Member": "ApplyWindowsBrowserHookFix",
+        "Context": "source = ApplyPatch(source,\n            \"MAX_QUEUE_SIZE = 500\\n\\nclass BrowserTabHook:\",\n            \"\"\"\n            MAX_QUEUE_SIZE = 500\n            SUPPORTED_POPUP_TITLE = re.compile(r\"^(MainMenu|QuickAccess|notificationtoasts)(?:_uid\\d+)?$\")\n\n            class BrowserTabHook:\n            \"\"\",\n            \"Costanti browser hook CSS Loader 2.1.2 non riconosciute.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Cover",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:7786",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 7742,
+        "Member": "ShowUwpArtworkDialogAsync",
+        "Context": "string CategoryLabel(string artworkType)\n            => categories.FirstOrDefault(category => category.Type == artworkType).Text ?? \"Cover\";",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "DeckyLoader non era installato. I collegamenti rimasti sono stati rimossi.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:212",
+    "Occurrences": [
+      {
+        "File": "Services/DeckyInstallerService.cs",
+        "Line": 212,
+        "Member": "RemoveAsync",
+        "Context": "return Task.FromResult(\"DeckyLoader non era installato. I collegamenti rimasti sono stati rimossi.\");",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "DeckyLoader è pronto. Riavvia Steam per attivarlo.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:176",
+    "Occurrences": [
+      {
+        "File": "Services/DeckyInstallerService.cs",
+        "Line": 176,
+        "Member": "InstallFromBytesAsync",
+        "Context": "return \"DeckyLoader è pronto. Riavvia Steam per attivarlo.\";",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "DeckyLoader è stato rimosso. I plugin installati restano al loro posto.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:209",
+    "Occurrences": [
+      {
+        "File": "Services/DeckyInstallerService.cs",
+        "Line": 209,
+        "Member": "RemoveAsync",
+        "Context": "return Task.FromResult(\"DeckyLoader è stato rimosso. I plugin installati restano al loro posto.\");",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Dimensione del pacchetto non valida.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 608,
+        "Member": "DownloadAsync",
+        "Context": "new InvalidDataException(\"Dimensione del pacchetto non valida.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Dimensione download non coerente.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 630,
+        "Member": "DownloadAsync",
+        "Context": "new InvalidDataException(\"Dimensione download non coerente.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Disattivata",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2554",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2556,
+        "Member": "RefreshGameBarStep",
+        "Context": "SetStepState(_gameBarTile, _gameBarGlyph, _gameBarStatus, disabled, ((char)0xE7FC).ToString(),\n            disabled ? \"Disattivata\" : \"Attiva\");",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Discovery tab CSS Loader 2.1.2 non riconosciuta.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:383",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 383,
+        "Member": "ApplyWindowsBrowserHookFix",
+        "Context": "source = ApplyPatch(source,\n            \"\"\"\n                async def _tab_exists(self, tab_id : str):\n                    result = await self.send_command(\"Target.getTargets\", {}, None)\n                    return tab_id in [x[\"targetId\"] for x in result[\"result\"][\"targetInfos\"] if x[\"type\"] == \"page\"]\n            \"\"\",\n            \"\"\"\n                async def _tab_exists(self, tab_id : str):\n                    result = await self.send_command(\"Target.getTargets\", {}, None)\n                    if result == None:\n                        return False\n                    return tab_id in [x[\"targetId\"] for x in result[\"result\"][\"targetInfos\"] if self.is_supported_target(x)]\n            \"\"\",\n            \"Discovery tab CSS Loader 2.1.2 non riconosciuta.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Disinstalla CSS Loader",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 3028,
+        "Member": "BuildBigPictureStylerPage",
+        "Context": "_cssLoaderRemoveButton = Button(\"Disinstalla CSS Loader\", UninstallCssLoaderAsync)",
+        "Category": "ui",
+        "Reason": "Control label"
+      }
+    ]
+  },
+  {
+    "Key": "Disinstallare CSS Loader?",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 3149,
+        "Member": "UninstallCssLoaderAsync",
+        "Context": "if (!await ConfirmAsync(\"Disinstallare CSS Loader?\", \"CSS Loader verrà rimosso. Il profilo Playhub resterà disponibile per una futura reinstallazione.\"))\n        {\n            return;\n        }",
+        "Category": "ui",
+        "Reason": "Dialog/status helper"
+      }
+    ]
+  },
+  {
+    "Key": "Download",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.PluginInstallProgress.cs",
+        "Line": 55,
+        "Member": "CreatePluginInstallButton",
+        "Context": "string PhaseLabel(PluginInstallPhase phase) => phase switch\n        {\n            PluginInstallPhase.Resolving => T(\"Preparazione\"),\n            PluginInstallPhase.Downloading => T(\"Download\"),\n            PluginInstallPhase.Extracting => T(\"Estrazione\"),\n            PluginInstallPhase.Installing => T(\"Installazione\"),\n            PluginInstallPhase.Completed => T(\"Completato\"),\n            _ => T(\"Preparazione\")\n        };",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      }
+    ]
+  },
+  {
+    "Key": "Download completato. Apro l'installer…",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 8766,
+        "Member": "DownloadAndInstallUpdateAsync",
+        "Context": "UpdatePlayhubUpdateDialogProgress(1, \"Download completato. Apro l'installer…\");",
+        "Category": "ui",
+        "Reason": "Dialog/status helper"
+      }
+    ]
+  },
+  {
+    "Key": "Download completato. Preparo l'installazione…",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:86",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 86,
+        "Member": "InstallLatestAsync",
+        "Context": "progress?.Report((0.62, \"Download completato. Preparo l'installazione…\"));",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Duplicate JSON property.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/RemotePluginCatalogService.cs",
+        "Line": 244,
+        "Member": "RejectDuplicateProperties",
+        "Context": "new InvalidDataException(\"Duplicate JSON property.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Duplicate catalog identity.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/RemotePluginCatalogService.cs",
+        "Line": 227,
+        "Member": "Parse",
+        "Context": "new InvalidDataException(\"Duplicate catalog identity.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Eseguibile di DeckyLoader",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2088,
+        "Member": "BuildGamingPage",
+        "Context": "_deckyPathBox = TextBox(\"Eseguibile di DeckyLoader\")",
+        "Category": "ui",
+        "Reason": "Control label"
+      },
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2106,
+        "Member": "BuildGamingPage",
+        "Context": "advancedStart.Children.Add(TwoColumn(\n            Labeled(\"Eseguibile di DeckyLoader\", BrowseRow(_deckyPathBox, folder: false, exts: new[] { \".exe\" })),\n            NumberWithHint(_delaySteamBox, \"Pausa prima di aprire Steam, per dare tempo a DeckyLoader di caricarsi.\")));",
+        "Category": "ui",
+        "Reason": "User-facing helper Labeled"
+      }
+    ]
+  },
+  {
+    "Key": "Estrazione",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.PluginInstallProgress.cs",
+        "Line": 56,
+        "Member": "CreatePluginInstallButton",
+        "Context": "string PhaseLabel(PluginInstallPhase phase) => phase switch\n        {\n            PluginInstallPhase.Resolving => T(\"Preparazione\"),\n            PluginInstallPhase.Downloading => T(\"Download\"),\n            PluginInstallPhase.Extracting => T(\"Estrazione\"),\n            PluginInstallPhase.Installing => T(\"Installazione\"),\n            PluginInstallPhase.Completed => T(\"Completato\"),\n            _ => T(\"Preparazione\")\n        };",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      }
+    ]
+  },
+  {
+    "Key": "Evento aggiornamento tab CSS Loader 2.1.2 non riconosciuto.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:430",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 430,
+        "Member": "ApplyWindowsBrowserHookFix",
+        "Context": "source = ApplyPatch(source,\n            \"\"\"\n                        if \"method\" in message and message[\"method\"] == \"Target.targetInfoChanged\":\n                            target_info = message[\"params\"][\"targetInfo\"]\n\n                            if not await self._tab_exists(message[\"params\"][\"targetInfo\"][\"targetId\"]):\n                                continue\n            \"\"\",\n            \"\"\"\n                        if \"method\" in message and message[\"method\"] == \"Target.targetInfoChanged\":\n                            target_info = message[\"params\"][\"targetInfo\"]\n                            target_id = target_info[\"targetId\"]\n\n                            if not self.is_supported_target(target_info) or not await self._tab_exists(target_id):\n                                continue\n\n                            failed_info = self.failed_targets.get(target_id)\n                            if failed_info != None and failed_info != (target_info.get(\"title\", \"\"), target_info.get(\"url\", \"\")):\n                                self.failed_targets.pop(target_id, None)\n                                await self.attach_target(target_info)\n            \"\"\",\n            \"Evento aggiornamento tab CSS Loader 2.1.2 non riconosciuto.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Evento attach tab CSS Loader 2.1.2 non riconosciuto.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:449",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 449,
+        "Member": "ApplyWindowsBrowserHookFix",
+        "Context": "source = ApplyPatch(source,\n            \"\"\"\n                        if \"method\" in message and message[\"method\"] == \"Target.attachedToTarget\":\n                            self.connected_tabs.append(BrowserTabHook(self, message[\"params\"][\"sessionId\"], message[\"params\"][\"targetInfo\"]))\n            \"\"\",\n            \"\"\"\n                        if \"method\" in message and message[\"method\"] == \"Target.attachedToTarget\":\n                            target_info = message[\"params\"][\"targetInfo\"]\n                            target_id = target_info[\"targetId\"]\n                            self.pending_targets.pop(target_id, None)\n                            if not self.is_supported_target(target_info):\n                                await self.send_command(\"Target.detachFromTarget\", {\"sessionId\": message[\"params\"][\"sessionId\"]}, None, False)\n                                continue\n                            if target_id in [x.id for x in self.connected_tabs]:\n                                continue\n                            self.connected_tabs.append(BrowserTabHook(self, message[\"params\"][\"sessionId\"], target_info))\n            \"\"\",\n            \"Evento attach tab CSS Loader 2.1.2 non riconosciuto.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Evento creazione tab CSS Loader 2.1.2 non riconosciuto.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:407",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 407,
+        "Member": "ApplyWindowsBrowserHookFix",
+        "Context": "source = ApplyPatch(source,\n            \"\"\"\n                        if \"method\" in message and message[\"method\"] == \"Target.targetCreated\":\n                            if message[\"params\"][\"targetInfo\"][\"type\"] != \"page\":\n                                continue\n\n                            if not await self._tab_exists(message[\"params\"][\"targetInfo\"][\"targetId\"]):\n                                continue\n\n                            await self.send_command(\"Target.attachToTarget\", {\"targetId\": message[\"params\"][\"targetInfo\"][\"targetId\"], \"flatten\": True}, None, False)\n            \"\"\",\n            \"\"\"\n                        if \"method\" in message and message[\"method\"] == \"Target.targetCreated\":\n                            target_info = message[\"params\"][\"targetInfo\"]\n                            if not self.is_supported_target(target_info):\n                                continue\n\n                            if not await self._tab_exists(target_info[\"targetId\"]):\n                                continue\n\n                            await self.attach_target(target_info)\n            \"\"\",\n            \"Evento creazione tab CSS Loader 2.1.2 non riconosciuto.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Expected schemaVersion 3, positive catalogRevision and plugins array.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/RemotePluginCatalogService.cs",
+        "Line": 213,
+        "Member": "Parse",
+        "Context": "new InvalidDataException(\"Expected schemaVersion 3, positive catalogRevision and plugins array.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Gaming Mode non risponde. Avvialo e riprova.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2059,
+        "Member": "BuildGamingPage",
+        "Context": "SetStatus(\"Gaming Mode non risponde. Avvialo e riprova.\", InfoBarSeverity.Warning);",
+        "Category": "ui",
+        "Reason": "User-facing helper SetStatus"
+      },
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2072,
+        "Member": "BuildGamingPage",
+        "Context": "SetStatus(\"Gaming Mode non risponde. Avvialo e riprova.\", InfoBarSeverity.Warning);",
+        "Category": "ui",
+        "Reason": "User-facing helper SetStatus"
+      }
+    ]
+  },
+  {
+    "Key": "Gaming Mode è pronto. Riavvia Steam per trovarlo nel menu rapido.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/GamingModeService.cs:62",
+    "Occurrences": [
+      {
+        "File": "Services/GamingModeService.cs",
+        "Line": 62,
+        "Member": "InstallAsync",
+        "Context": "new(true, \"Gaming Mode è pronto. Riavvia Steam per trovarlo nel menu rapido.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      },
+      {
+        "File": "Services/GamingModeService.cs",
+        "Line": 280,
+        "Member": "InstallDeckyPlugin",
+        "Context": "new(true, \"Gaming Mode è pronto. Riavvia Steam per trovarlo nel menu rapido.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Gaming Mode è stato rimosso.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/GamingModeService.cs:84",
+    "Occurrences": [
+      {
+        "File": "Services/GamingModeService.cs",
+        "Line": 84,
+        "Member": "UninstallAsync",
+        "Context": "new(true, \"Gaming Mode è stato rimosso.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Hash SHA-256 del pacchetto non valido.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 636,
+        "Member": "DownloadAsync",
+        "Context": "new CryptographicException(\"Hash SHA-256 del pacchetto non valido.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Host per il gioco in remoto",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2139,
+        "Member": "BuildGamingPage",
+        "Context": "inputCard.Children.Add(Labeled(\n            \"Host per il gioco in remoto\",\n            BrowseRow(_sunshinePathBox, folder: false, exts: new[] { \".exe\" })));",
+        "Category": "ui",
+        "Reason": "User-facing helper Labeled"
+      }
+    ]
+  },
+  {
+    "Key": "Icona",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:7706",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 7662,
+        "Member": "ShowUwpArtworkDialogAsync",
+        "Context": "categories = new[]\n        {\n            (Type: \"cover\", Text: \"Copertina\", Symbol: Symbol.Library),\n            (Type: \"banner\", Text: \"Banner\", Symbol: Symbol.Pictures),\n            (Type: \"hero\", Text: \"Sfondo\", Symbol: Symbol.FullScreen),\n            (Type: \"logo\", Text: \"Logo\", Symbol: Symbol.Font),\n            (Type: \"icon\", Text: \"Icona\", Symbol: Symbol.Emoji)\n        }",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Il contenuto estratto non corrisponde alla release dichiarata.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 95,
+        "Member": "InstallLatestAsync",
+        "Context": "new InvalidDataException(\"Il contenuto estratto non corrisponde alla release dichiarata.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Il desktop di Windows, con mouse e tastiera.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2033",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2035,
+        "Member": "BuildGamingPage",
+        "Context": "_desktopModeTile = ModeTileShell(desktopIconRow, \"Desktop\", \"Il desktop di Windows, con mouse e tastiera.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Il download dell'installer è incompleto.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/PlayhubUpdateService.cs",
+        "Line": 227,
+        "Member": "DownloadInstallerAsync",
+        "Context": "new InvalidDataException(\"Il download dell'installer è incompleto.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Il file scaricato non è un installer Windows valido.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/PlayhubUpdateService.cs",
+        "Line": 243,
+        "Member": "DownloadInstallerAsync",
+        "Context": "new InvalidDataException(\"Il file scaricato non è un installer Windows valido.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Il profilo Playhub non è installato.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:114",
+    "Occurrences": [
+      {
+        "File": "Services/ExtraService.cs",
+        "Line": 114,
+        "Member": "RemoveCssLoaderProfileAsync",
+        "Context": "return Task.FromResult(\"Il profilo Playhub non è installato.\");",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Il servizio Gaming Mode non risponde. Prova a riavviare il PC.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:114",
+    "Occurrences": [
+      {
+        "File": "Services/RepairService.cs",
+        "Line": 114,
+        "Member": "RunAsync",
+        "Context": "notes.Add(\"Il servizio Gaming Mode non risponde. Prova a riavviare il PC.\");",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Il servizio Gaming Mode è stato riavviato.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:110",
+    "Occurrences": [
+      {
+        "File": "Services/RepairService.cs",
+        "Line": 110,
+        "Member": "RunAsync",
+        "Context": "notes.Add(\"Il servizio Gaming Mode è stato riavviato.\");",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Inizializzazione tab CSS Loader 2.1.2 non riconosciuta.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:276",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 276,
+        "Member": "ApplyWindowsBrowserHookFix",
+        "Context": "source = ApplyPatch(source,\n            \"\"\"\n                    else:\n                        Log(f\"Failed to connect to tab with id {self.id}\")\n                        self.hook.connected_tabs.remove(self)\n                        return\n\n                    self.init_done = True\n            \"\"\",\n            \"\"\"\n                    else:\n                        Log(f\"Failed to connect to tab with id {self.id}\")\n                        self.hook.mark_target_failed(self.id, self.title, self.url)\n                        if self in self.hook.connected_tabs:\n                            self.hook.connected_tabs.remove(self)\n                        return\n\n                    self.hook.mark_target_ready(self.id)\n                    self.init_done = True\n            \"\"\",\n            \"Inizializzazione tab CSS Loader 2.1.2 non riconosciuta.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Installa CSS Loader",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 3027,
+        "Member": "BuildBigPictureStylerPage",
+        "Context": "_cssLoaderInstallButton = Button(\"Installa CSS Loader\", InstallCssLoaderAsync, primary: true)",
+        "Category": "ui",
+        "Reason": "Control label"
+      }
+    ]
+  },
+  {
+    "Key": "Installa CSS Loader per usare il profilo Playhub.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 3111,
+        "Member": "RefreshCssLoaderState",
+        "Context": "_cssLoaderStatusText.Text = status.Installed\n            ? $\"CSS Loader {status.Version} è pronto. Ora puoi applicare il profilo Playhub.\"\n            : \"Installa CSS Loader per usare il profilo Playhub.\"",
+        "Category": "ui",
+        "Reason": "UI text property Text"
+      }
+    ]
+  },
+  {
+    "Key": "Installazione",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.PluginInstallProgress.cs",
+        "Line": 57,
+        "Member": "CreatePluginInstallButton",
+        "Context": "string PhaseLabel(PluginInstallPhase phase) => phase switch\n        {\n            PluginInstallPhase.Resolving => T(\"Preparazione\"),\n            PluginInstallPhase.Downloading => T(\"Download\"),\n            PluginInstallPhase.Extracting => T(\"Estrazione\"),\n            PluginInstallPhase.Installing => T(\"Installazione\"),\n            PluginInstallPhase.Completed => T(\"Completato\"),\n            _ => T(\"Preparazione\")\n        };",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      }
+    ]
+  },
+  {
+    "Key": "Installazione annullata senza modificare CSS Loader.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:129",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 129,
+        "Member": "InstallLatestAsync",
+        "Context": "new(false, \"Installazione annullata senza modificare CSS Loader.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Invalid catalog metadata or plugin count.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/RemotePluginCatalogService.cs",
+        "Line": 218,
+        "Member": "Parse",
+        "Context": "new InvalidDataException(\"Invalid catalog metadata or plugin count.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "L'avvio in modalità Desktop è stato ripristinato.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:260",
+    "Occurrences": [
+      {
+        "File": "Services/RepairService.cs",
+        "Line": 260,
+        "Member": "RepairStartupShell",
+        "Context": "return \"L'avvio in modalità Desktop è stato ripristinato.\";",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "L'avvio in modalità Gaming è stato ripristinato.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:267",
+    "Occurrences": [
+      {
+        "File": "Services/RepairService.cs",
+        "Line": 267,
+        "Member": "RepairStartupShell",
+        "Context": "return \"L'avvio in modalità Gaming è stato ripristinato.\";",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "L'installer indicato dalla release è troppo grande.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/PlayhubUpdateService.cs",
+        "Line": 184,
+        "Member": "DownloadInstallerAsync",
+        "Context": "new InvalidDataException(\"L'installer indicato dalla release è troppo grande.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "La cartella CSS Loader esistente non supera la verifica.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:51",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 51,
+        "Member": "GetStatus",
+        "Context": "new(false, \"\", folder, \"La cartella CSS Loader esistente non supera la verifica.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "La cartella CSS Loader esistente non è leggibile.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:57",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 57,
+        "Member": "GetStatus",
+        "Context": "new(false, \"\", folder, \"La cartella CSS Loader esistente non è leggibile.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "La cartella esistente non è un'installazione verificata di CSS Loader.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:162",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 162,
+        "Member": "UninstallAsync",
+        "Context": "new CssLoaderInstallResult(false,\n                    \"La cartella esistente non è un'installazione verificata di CSS Loader.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "La configurazione di Gaming Mode è danneggiata. Reinstalla Playhub.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:72",
+    "Occurrences": [
+      {
+        "File": "Services/RepairService.cs",
+        "Line": 72,
+        "Member": "RunAsync",
+        "Context": "notes.Add(\"La configurazione di Gaming Mode è danneggiata. Reinstalla Playhub.\");",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "La release contiene più pacchetti ZIP CSS Loader per Decky: selezione ambigua, installazione bloccata.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 576,
+        "Member": "ResolveLatestAsync",
+        "Context": "new InvalidDataException(assets.Count == 0\n                ? \"La release ufficiale non contiene un unico pacchetto ZIP CSS Loader per Decky.\"\n                : \"La release contiene più pacchetti ZIP CSS Loader per Decky: selezione ambigua, installazione bloccata.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "La release ha restituito un URL inatteso.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 584,
+        "Member": "ResolveLatestAsync",
+        "Context": "new InvalidDataException(\"La release ha restituito un URL inatteso.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "La release non contiene un installer Playhub valido.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/PlayhubUpdateService.cs",
+        "Line": 154,
+        "Member": "DownloadInstallerAsync",
+        "Context": "new InvalidOperationException(\"La release non contiene un installer Playhub valido.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "La release ufficiale non contiene un unico pacchetto ZIP CSS Loader per Decky.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 575,
+        "Member": "ResolveLatestAsync",
+        "Context": "new InvalidDataException(assets.Count == 0\n                ? \"La release ufficiale non contiene un unico pacchetto ZIP CSS Loader per Decky.\"\n                : \"La release contiene più pacchetti ZIP CSS Loader per Decky: selezione ambigua, installazione bloccata.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "La verifica SHA-256 dell'installer non è riuscita.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/PlayhubUpdateService.cs",
+        "Line": 235,
+        "Member": "DownloadInstallerAsync",
+        "Context": "new InvalidDataException(\"La verifica SHA-256 dell'installer non è riuscita.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Limite GitHub raggiunto; riprova più tardi.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 548,
+        "Member": "ResolveLatestAsync",
+        "Context": "new InvalidOperationException(\"Limite GitHub raggiunto; riprova più tardi.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Logo",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:7705",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 7661,
+        "Member": "ShowUwpArtworkDialogAsync",
+        "Context": "categories = new[]\n        {\n            (Type: \"cover\", Text: \"Copertina\", Symbol: Symbol.Library),\n            (Type: \"banner\", Text: \"Banner\", Symbol: Symbol.Pictures),\n            (Type: \"hero\", Text: \"Sfondo\", Symbol: Symbol.FullScreen),\n            (Type: \"logo\", Text: \"Logo\", Symbol: Symbol.Font),\n            (Type: \"icon\", Text: \"Icona\", Symbol: Symbol.Emoji)\n        }",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Manca un file necessario. Reinstalla Playhub e riprova.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:27",
+    "Occurrences": [
+      {
+        "File": "Services/ExtraService.cs",
+        "Line": 27,
+        "Member": "ApplySteamCfgAsync",
+        "Context": "return Task.FromResult(\"Manca un file necessario. Reinstalla Playhub e riprova.\");",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      },
+      {
+        "File": "Services/ExtraService.cs",
+        "Line": 70,
+        "Member": "ApplyCssLoaderProfileAsync",
+        "Context": "return Task.FromResult(\"Manca un file necessario. Reinstalla Playhub e riprova.\");",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Mancano alcuni file di Gaming Mode. Reinstalla Playhub e riprova.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/GamingModeService.cs:37",
+    "Occurrences": [
+      {
+        "File": "Services/GamingModeService.cs",
+        "Line": 37,
+        "Member": "InstallAsync",
+        "Context": "new(false, \"Mancano alcuni file di Gaming Mode. Reinstalla Playhub e riprova.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      },
+      {
+        "File": "Services/GamingModeService.cs",
+        "Line": 70,
+        "Member": "UninstallAsync",
+        "Context": "new(false, \"Mancano alcuni file di Gaming Mode. Reinstalla Playhub e riprova.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      },
+      {
+        "File": "Services/GamingModeService.cs",
+        "Line": 269,
+        "Member": "InstallDeckyPlugin",
+        "Context": "new(false, \"Mancano alcuni file di Gaming Mode. Reinstalla Playhub e riprova.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Manifest non leggibile.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:199",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 199,
+        "Member": "GetStatusFromFolder",
+        "Context": "new(false, \"\", folder, \"Manifest non leggibile.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Manifest non valido.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:195",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 195,
+        "Member": "GetStatusFromFolder",
+        "Context": "new(false, \"\", folder, \"Manifest non valido.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Manifest senza versione",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/PluginCatalogService.cs:21",
+    "Occurrences": [
+      {
+        "File": "Services/PluginCatalogService.cs",
+        "Line": 22,
+        "Member": "MissingInstalledVersion",
+        "Context": "MissingInstalledVersion = \"Manifest senza versione\"",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Mantieni la versione attuale di Steam. Puoi riattivare gli aggiornamenti in qualsiasi momento.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 3088,
+        "Member": "BuildBigPictureStylerPage",
+        "Context": "steam.Children.Add(IconHeader(((char)0xE72E).ToString(), \"Aggiornamenti di Steam\",\n            \"Mantieni la versione attuale di Steam. Puoi riattivare gli aggiornamenti in qualsiasi momento.\"));",
+        "Category": "ui",
+        "Reason": "Heading/body/command helper"
+      }
+    ]
+  },
+  {
+    "Key": "Metodi browser hook CSS Loader 2.1.2 non riconosciuti.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:354",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 354,
+        "Member": "ApplyWindowsBrowserHookFix",
+        "Context": "source = ApplyPatch(source,\n            \"\"\"\n                def get_id(self) -> int:\n                    self.current_id += 1\n                    return self.current_id\n\n                async def open_websocket(self):\n            \"\"\",\n            \"\"\"\n                def get_id(self) -> int:\n                    self.current_id += 1\n                    return self.current_id\n\n                def is_supported_target(self, target_info : dict) -> bool:\n                    if target_info.get(\"type\") != \"page\":\n                        return False\n\n                    title = target_info.get(\"title\", \"\")\n                    url = target_info.get(\"url\", \"\")\n                    if url.startswith(\"https://steamloopback.host/\") or url.startswith(\"http://steamloopback.host/\"):\n                        return True\n                    if url.startswith(\"about:blank?createflags=\"):\n                        return True\n\n                    return url.startswith(\"about:blank?browserviewpopup=1\") and SUPPORTED_POPUP_TITLE.match(title) != None\n\n                def can_attach_target(self, target_id : str) -> bool:\n                    now = time.monotonic()\n                    pending_until = self.pending_targets.get(target_id)\n                    if pending_until != None:\n                        if pending_until > now:\n                            return False\n                        del self.pending_targets[target_id]\n\n                    return target_id not in self.failed_targets\n\n                def mark_target_failed(self, target_id : str, title : str, url : str):\n                    self.pending_targets.pop(target_id, None)\n                    self.failed_targets[target_id] = (title, url)\n                    Log(f\"Target {target_id} quarantined after initialization failure\")\n\n                def mark_target_ready(self, target_id : str):\n                    self.pending_targets.pop(target_id, None)\n                    self.failed_targets.pop(target_id, None)\n\n                async def attach_target(self, target_info : dict):\n                    target_id = target_info.get(\"targetId\", \"\")\n                    if not target_id or not self.is_supported_target(target_info) or not self.can_attach_target(target_id):\n                        return\n\n                    self.pending_targets[target_id] = time.monotonic() + 10\n                    try:\n                        await self.s\n[Context abbreviated; inspect the referenced source location.]",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Non ci sono backup degli artwork da ripristinare.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:172",
+    "Occurrences": [
+      {
+        "File": "Services/ExtraService.cs",
+        "Line": 172,
+        "Member": "RestoreLatestSteamArtworkAsync",
+        "Context": "return Task.FromResult(\"Non ci sono backup degli artwork da ripristinare.\");",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      },
+      {
+        "File": "Services/ExtraService.cs",
+        "Line": 178,
+        "Member": "RestoreLatestSteamArtworkAsync",
+        "Context": "return Task.FromResult(\"Non ci sono backup degli artwork da ripristinare.\");",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Non riesco a completare il ripristino. Riprova.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 3402,
+        "Member": "RunRepairAsync",
+        "Context": "_repairStatusText.Text = T(\"Non riesco a completare il ripristino. Riprova.\")",
+        "Category": "ui",
+        "Reason": "UI text property Text"
+      }
+    ]
+  },
+  {
+    "Key": "Non riesco a creare il report. Riprova.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 3444,
+        "Member": "RunDiagnosticsAsync",
+        "Context": "_diagnosticsStatusText.Text = T(\"Non riesco a creare il report. Riprova.\")",
+        "Category": "ui",
+        "Reason": "UI text property Text"
+      }
+    ]
+  },
+  {
+    "Key": "Non riesco a installare Gaming Mode. Riprova.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/GamingModeService.cs:59",
+    "Occurrences": [
+      {
+        "File": "Services/GamingModeService.cs",
+        "Line": 59,
+        "Member": "InstallAsync",
+        "Context": "new(false, \"Non riesco a installare Gaming Mode. Riprova.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      },
+      {
+        "File": "Services/GamingModeService.cs",
+        "Line": 285,
+        "Member": "InstallDeckyPlugin",
+        "Context": "new(false, \"Non riesco a installare Gaming Mode. Riprova.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Non riesco a rimuovere CSS Loader. Chiudi Steam e riprova.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:167",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 167,
+        "Member": "UninstallAsync",
+        "Context": "new CssLoaderInstallResult(false, \"Non riesco a rimuovere CSS Loader. Chiudi Steam e riprova.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      },
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 174,
+        "Member": "UninstallAsync",
+        "Context": "new CssLoaderInstallResult(false,\n                \"Non riesco a rimuovere CSS Loader. Chiudi Steam e riprova.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Non riesco a rimuovere Gaming Mode. Riprova.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/GamingModeService.cs:79",
+    "Occurrences": [
+      {
+        "File": "Services/GamingModeService.cs",
+        "Line": 79,
+        "Member": "UninstallAsync",
+        "Context": "new(false, \"Non riesco a rimuovere Gaming Mode. Riprova.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      },
+      {
+        "File": "Services/GamingModeService.cs",
+        "Line": 314,
+        "Member": "RemoveDeckyPlugin",
+        "Context": "new(false, \"Non riesco a rimuovere Gaming Mode. Riprova.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Non riesco a rimuovere il profilo Playhub. Riprova.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:137",
+    "Occurrences": [
+      {
+        "File": "Services/ExtraService.cs",
+        "Line": 137,
+        "Member": "RemoveCssLoaderProfileAsync",
+        "Context": "return Task.FromResult(\"Non riesco a rimuovere il profilo Playhub. Riprova.\");",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Non riesco a verificare il download di CSS Loader. Riprova più tardi.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:82",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 82,
+        "Member": "InstallLatestAsync",
+        "Context": "new(false, \"Non riesco a verificare il download di CSS Loader. Riprova più tardi.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      },
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 135,
+        "Member": "InstallLatestAsync",
+        "Context": "new(false, \"Non riesco a verificare il download di CSS Loader. Riprova più tardi.\")",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Non riesco ad aggiornare Playhub. Riprova.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 489,
+        "Member": "InvokePlayhubUpdateDialogUpdateAsync",
+        "Context": "UpdatePlayhubUpdateDialogProgress(null, T(\"Non riesco ad aggiornare Playhub. Riprova.\"), failed: true);",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      },
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 8781,
+        "Member": "DownloadAndInstallUpdateAsync",
+        "Context": "UpdatePlayhubUpdateDialogProgress(null, \"Non riesco ad aggiornare Playhub. Riprova.\", failed: true);",
+        "Category": "ui",
+        "Reason": "Dialog/status helper"
+      }
+    ]
+  },
+  {
+    "Key": "Non riesco ad aprire la Dashboard. Assicurati che Gaming Mode sia attivo e riprova.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2011,
+        "Member": "BuildGamingPage",
+        "Context": "SetStatus(opened\n                ? \"Apro la Dashboard in Gaming Mode…\"\n                : \"Non riesco ad aprire la Dashboard. Assicurati che Gaming Mode sia attivo e riprova.\",\n                opened ? InfoBarSeverity.Success : InfoBarSeverity.Warning);",
+        "Category": "ui",
+        "Reason": "User-facing helper SetStatus"
+      }
+    ]
+  },
+  {
+    "Key": "Non sono riuscito a ripristinare Gaming Mode. Riprova o reinstalla Playhub.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:56",
+    "Occurrences": [
+      {
+        "File": "Services/RepairService.cs",
+        "Line": 56,
+        "Member": "RunAsync",
+        "Context": "notes.Add(\"Non sono riuscito a ripristinare Gaming Mode. Riprova o reinstalla Playhub.\");",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Non trovo alcun profilo Steam su questo PC.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:146",
+    "Occurrences": [
+      {
+        "File": "Services/ExtraService.cs",
+        "Line": 146,
+        "Member": "BackupSteamArtworkAsync",
+        "Context": "return Task.FromResult(\"Non trovo alcun profilo Steam su questo PC.\");",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      },
+      {
+        "File": "Services/UwpXboxService.cs",
+        "Line": 708,
+        "Member": "ExportSelectedToSteamAsync",
+        "Context": "return \"Non trovo alcun profilo Steam su questo PC.\";",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Note di rilascio",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 293,
+        "Member": "BuildPlayhubUpdateDialogContent",
+        "Context": "AutomationProperties.SetName(changelog, T(\"Note di rilascio\"));",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      }
+    ]
+  },
+  {
+    "Key": "Note di rilascio non disponibili.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 272,
+        "Member": "BuildPlayhubUpdateDialogContent",
+        "Context": "Text = T(\"Note di rilascio non disponibili.\")",
+        "Category": "ui",
+        "Reason": "UI text property Text"
+      }
+    ]
+  },
+  {
+    "Key": "Operazione in corso",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.DeckyActions.cs",
+        "Line": 35,
+        "Member": "RunDeckyOperationAsync",
+        "Context": "AutomationProperties.SetName(spinner, T(\"Operazione in corso\"));",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      }
+    ]
+  },
+  {
+    "Key": "Opzioni di avvio di Steam",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2087,
+        "Member": "BuildGamingPage",
+        "Context": "_steamArgsBox = TextBox(\"Opzioni di avvio di Steam\")",
+        "Category": "ui",
+        "Reason": "Control label"
+      },
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2104,
+        "Member": "BuildGamingPage",
+        "Context": "advancedStart.Children.Add(TwoColumn(Labeled(\"Cartella di Steam\", BrowseRow(_steamPathBox, folder: true)), Labeled(\"Opzioni di avvio di Steam\", _steamArgsBox)));",
+        "Category": "ui",
+        "Reason": "User-facing helper Labeled"
+      }
+    ]
+  },
+  {
+    "Key": "Ottieni la chiave",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2968,
+        "Member": "BuildXboxPage",
+        "Context": "apiButton = Button(\"Ottieni la chiave\", async () =>\n            await Windows.System.Launcher.LaunchUriAsync(new Uri(\"https://www.steamgriddb.com/profile/preferences/api\")), primary: true)",
+        "Category": "ui",
+        "Reason": "Control label"
+      }
+    ]
+  },
+  {
+    "Key": "Pacchetto incompleto.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:187",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 187,
+        "Member": "GetStatusFromFolder",
+        "Context": "new(false, \"\", folder, \"Pacchetto incompleto.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Pacchetto troppo grande.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 621,
+        "Member": "DownloadAsync",
+        "Context": "new InvalidDataException(\"Pacchetto troppo grande.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Pacchetto valido.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:194",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 194,
+        "Member": "GetStatusFromFolder",
+        "Context": "new(true, version, folder, \"Pacchetto valido.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Percorso di installazione mancante per {0}. Aggiorna l'elenco dei plugin e riprova.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/DeckyPluginService.cs",
+        "Line": 147,
+        "Member": "UninstallAsync",
+        "Context": "new InvalidOperationException(\n                $\"Percorso di installazione mancante per {plugin.Name}. Aggiorna l'elenco dei plugin e riprova.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Percorso non sicuro nel pacchetto.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 689,
+        "Member": "ExtractAsync",
+        "Context": "new InvalidDataException(\"Percorso non sicuro nel pacchetto.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Playhub verrà riavviato.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 3241,
+        "Member": "BuildSettingsPage",
+        "Context": "Text = \"Playhub verrà riavviato.\"",
+        "Category": "ui",
+        "Reason": "UI text property Text"
+      }
+    ]
+  },
+  {
+    "Key": "Playhub è un progetto indipendente e non è affiliato né approvato da Valve. Steam e Steam Controller sono marchi di Valve Corporation.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 3339,
+        "Member": "BuildSettingsPage",
+        "Context": "about.Children.Add(Body(\"Playhub è un progetto indipendente e non è affiliato né approvato da Valve. Steam e Steam Controller sono marchi di Valve Corporation.\"));",
+        "Category": "ui",
+        "Reason": "User-facing helper Body"
+      }
+    ]
+  },
+  {
+    "Key": "Plugin installato localmente e non ancora identificato dal catalogo Playhub.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/PluginCatalogService.cs:1809",
+    "Occurrences": [
+      {
+        "File": "Services/PluginCatalogService.cs",
+        "Line": 1842,
+        "Member": "AppendUncataloguedInstalledPlugins",
+        "Context": "Compatibility = \"Plugin installato localmente e non ancora identificato dal catalogo Playhub.\"",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Porta di comunicazione",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2092,
+        "Member": "BuildGamingPage",
+        "Context": "_apiPortBox = Number(\"Porta di comunicazione\", 1, 65535)",
+        "Category": "ui",
+        "Reason": "Control label"
+      }
+    ]
+  },
+  {
+    "Key": "Preparazione",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.PluginInstallProgress.cs",
+        "Line": 54,
+        "Member": "CreatePluginInstallButton",
+        "Context": "string PhaseLabel(PluginInstallPhase phase) => phase switch\n        {\n            PluginInstallPhase.Resolving => T(\"Preparazione\"),\n            PluginInstallPhase.Downloading => T(\"Download\"),\n            PluginInstallPhase.Extracting => T(\"Estrazione\"),\n            PluginInstallPhase.Installing => T(\"Installazione\"),\n            PluginInstallPhase.Completed => T(\"Completato\"),\n            _ => T(\"Preparazione\")\n        };",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      },
+      {
+        "File": "MainWindow.PluginInstallProgress.cs",
+        "Line": 59,
+        "Member": "CreatePluginInstallButton",
+        "Context": "string PhaseLabel(PluginInstallPhase phase) => phase switch\n        {\n            PluginInstallPhase.Resolving => T(\"Preparazione\"),\n            PluginInstallPhase.Downloading => T(\"Download\"),\n            PluginInstallPhase.Extracting => T(\"Estrazione\"),\n            PluginInstallPhase.Installing => T(\"Installazione\"),\n            PluginInstallPhase.Completed => T(\"Completato\"),\n            _ => T(\"Preparazione\")\n        };",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      }
+    ]
+  },
+  {
+    "Key": "Preparo CSS Loader · {0}%",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:704",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 704,
+        "Member": "ExtractAsync",
+        "Context": "progress?.Report((0.64 + fraction * 0.26, $\"Preparo CSS Loader · {Math.Round(fraction * 100)}%\"));",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Profilo Playhub installato. Le altre opzioni di CSS Loader non sono cambiate.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:102",
+    "Occurrences": [
+      {
+        "File": "Services/ExtraService.cs",
+        "Line": 102,
+        "Member": "ApplyCssLoaderProfileAsync",
+        "Context": "return Task.FromResult(\"Profilo Playhub installato. Le altre opzioni di CSS Loader non sono cambiate.\");",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Qualcosa non ha funzionato. Riprova.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 9039,
+        "Member": "FriendlyError",
+        "Context": "return T(\"Qualcosa non ha funzionato. Riprova.\");",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      }
+    ]
+  },
+  {
+    "Key": "Redirect verso un host non consentito.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 651,
+        "Member": "SendDownloadRequestAsync",
+        "Context": "new InvalidDataException(\"Redirect verso un host non consentito.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Remote identity/source conflicts with local catalog.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/RemotePluginCatalogService.cs",
+        "Line": 359,
+        "Member": "Merge",
+        "Context": "new InvalidDataException(\"Remote identity/source conflicts with local catalog.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Remote install folder conflicts with local identity.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/RemotePluginCatalogService.cs",
+        "Line": 351,
+        "Member": "Merge",
+        "Context": "new InvalidDataException(\"Remote install folder conflicts with local identity.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Rende disponibili i plugin appena si apre la libreria.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2099,
+        "Member": "BuildGamingPage",
+        "Context": "AddExplainedToggle(startCard, \"Avvia DeckyLoader prima di Steam\",\n            \"Rende disponibili i plugin appena si apre la libreria.\", \"deckyRequired\");",
+        "Category": "ui",
+        "Reason": "Toggle heading/body"
+      }
+    ]
+  },
+  {
+    "Key": "Riavvio il servizio Gaming Mode…",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:99",
+    "Occurrences": [
+      {
+        "File": "Services/RepairService.cs",
+        "Line": 99,
+        "Member": "RunAsync",
+        "Context": "progress.Report((0.78, \"Riavvio il servizio Gaming Mode…\"));",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Riprova",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 527,
+        "Member": "RefreshPlayhubUpdateDialogState",
+        "Context": "label = _playhubUpdateDialogFailed ? T(\"Riprova\") : T(\"Aggiorna ora\")",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      }
+    ]
+  },
+  {
+    "Key": "Risultato aggiornato: {0}. Nessuna copertina disponibile.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 7642,
+        "Member": "ShowSteamGridDbRefetchDialogAsync",
+        "Context": "SetStatus(\n            coverLoaded\n                ? string.Format(T(\"Risultato aggiornato: {0}.\"), selected.Name)\n                : string.Format(T(\"Risultato aggiornato: {0}. Nessuna copertina disponibile.\"), selected.Name),\n            coverLoaded ? InfoBarSeverity.Success : InfoBarSeverity.Warning);",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      }
+    ]
+  },
+  {
+    "Key": "Risultato rimosso. Il gioco resterà senza artwork.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 7613,
+        "Member": "ShowSteamGridDbRefetchDialogAsync",
+        "Context": "SetStatus(\"Risultato rimosso. Il gioco resterà senza artwork.\", InfoBarSeverity.Success);",
+        "Category": "ui",
+        "Reason": "User-facing helper SetStatus"
+      }
+    ]
+  },
+  {
+    "Key": "Riunisci i tuoi giochi in Steam e completa automaticamente copertine, sfondi e loghi.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2835,
+        "Member": "BuildXboxPage",
+        "Context": "panel = Page(\"xbox\", \"Importa Giochi\", \"Riunisci i tuoi giochi in Steam e completa automaticamente copertine, sfondi e loghi.\")",
+        "Category": "ui",
+        "Reason": "Heading/body/command helper"
+      }
+    ]
+  },
+  {
+    "Key": "Scaricati {0:0.0} MB",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 8762,
+        "Member": "DownloadAndInstallUpdateAsync",
+        "Context": "status = value.TotalBytes > 0\n                    ? $\"Scaricati {receivedMb:0.0} di {value.TotalBytes / 1024d / 1024d:0.0} MB ({value.Fraction:P0})\"\n                    : $\"Scaricati {receivedMb:0.0} MB\"",
+        "Category": "ui",
+        "Reason": "Display text variable"
+      }
+    ]
+  },
+  {
+    "Key": "Scaricati {0:0.0} di {1:0.0} MB ({2:P0})",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 8761,
+        "Member": "DownloadAndInstallUpdateAsync",
+        "Context": "status = value.TotalBytes > 0\n                    ? $\"Scaricati {receivedMb:0.0} di {value.TotalBytes / 1024d / 1024d:0.0} MB ({value.Fraction:P0})\"\n                    : $\"Scaricati {receivedMb:0.0} MB\"",
+        "Category": "ui",
+        "Reason": "Display text variable"
+      }
+    ]
+  },
+  {
+    "Key": "Scarico CSS Loader · {0}%",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:625",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 625,
+        "Member": "DownloadAsync",
+        "Context": "progress?.Report((0.08 + fraction * 0.5, $\"Scarico CSS Loader · {Math.Round(fraction * 100)}%\"));",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Scarico Playhub {0}…",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 8753,
+        "Member": "DownloadAndInstallUpdateAsync",
+        "Context": "UpdatePlayhubUpdateDialogProgress(info.DownloadSize > 0 ? 0 : null, $\"Scarico Playhub {info.LatestVersion}…\");",
+        "Category": "ui",
+        "Reason": "Dialog/status helper"
+      }
+    ]
+  },
+  {
+    "Key": "Scegli come si presenta Gaming Mode.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2119,
+        "Member": "BuildGamingPage",
+        "Context": "screenCard.Children.Add(IconHeader(((char)0xE7F4).ToString(), \"Schermo e desktop\",\n            \"Scegli come si presenta Gaming Mode.\"));",
+        "Category": "ui",
+        "Reason": "Heading/body/command helper"
+      }
+    ]
+  },
+  {
+    "Key": "Scegli cosa deve essere pronto prima di Big Picture.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2097,
+        "Member": "BuildGamingPage",
+        "Context": "startCard.Children.Add(IconHeader(((char)0xE945).ToString(), \"Avvio\",\n            \"Scegli cosa deve essere pronto prima di Big Picture.\"));",
+        "Category": "ui",
+        "Reason": "Heading/body/command helper"
+      }
+    ]
+  },
+  {
+    "Key": "Scegli cosa vedere quando accendi il PC.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2025,
+        "Member": "BuildGamingPage",
+        "Context": "modeCard.Children.Add(IconHeader(((char)0xE7FC).ToString(), \"Modalità predefinita\",\n            \"Scegli cosa vedere quando accendi il PC.\"));",
+        "Category": "ui",
+        "Reason": "Heading/body/command helper"
+      }
+    ]
+  },
+  {
+    "Key": "Scegli le app da aprire insieme a Gaming Mode.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2220,
+        "Member": "BuildGamingPage",
+        "Context": "apps.Children.Add(IconHeader(((char)0xE710).ToString(), \"App all'avvio\",\n            \"Scegli le app da aprire insieme a Gaming Mode.\"));",
+        "Category": "ui",
+        "Reason": "Heading/body/command helper"
+      }
+    ]
+  },
+  {
+    "Key": "Scegli una cartella o un file .exe. Playhub trova i giochi nelle sottocartelle e li prepara per Steam.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2918,
+        "Member": "BuildXboxPage",
+        "Context": "_executableChevron = AddCollapsibleHeader(executableImport, IconHeader(((char)0xE8B7).ToString(), \"Aggiungi giochi e app dal PC\",\n            \"Scegli una cartella o un file .exe. Playhub trova i giochi nelle sottocartelle e li prepara per Steam.\"), () => _executableGamesPanel)",
+        "Category": "ui",
+        "Reason": "Heading/body/command helper"
+      }
+    ]
+  },
+  {
+    "Key": "Se il menu rapido non risponde, chiudi Steam per tornare al desktop. Puoi anche tenere premuto Shift durante l'accesso a Windows.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1988",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 1990,
+        "Member": "BuildGamingPage",
+        "Context": "quickAccess = BuildQuickAccessTutorialCard(\n            \"gaming\",\n            \"Apri il plugin Gaming Mode\",\n            \"Apri Gaming Mode dal menu rapido di Decky, senza lasciare il controller.\",\n            \"\",\n            warning: \"Se il menu rapido non risponde, chiudi Steam per tornare al desktop. Puoi anche tenere premuto Shift durante l'accesso a Windows.\",\n            videoFile: \"Gaming-Mode-Plugin.mp4\",\n            compact: true)",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Servizio attivo.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2818,
+        "Member": "AdvancedGamingTools",
+        "Context": "actions = ActionRow(\n            Button(\"Avvia servizio\", () => { _gamingMode.StartAgent(); SetStatus(\"Servizio avviato.\", InfoBarSeverity.Informational); }),\n            Button(\"Controlla servizio\", async () => SetStatus(await _gamingMode.IsAgentHealthyAsync(_gamingConfig.Safety.ApiPort) ? \"Servizio attivo.\" : \"Servizio non raggiungibile.\", InfoBarSeverity.Informational)))",
+        "Category": "ui",
+        "Reason": "User-facing helper SetStatus"
+      }
+    ]
+  },
+  {
+    "Key": "Servizio avviato.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2817,
+        "Member": "AdvancedGamingTools",
+        "Context": "SetStatus(\"Servizio avviato.\", InfoBarSeverity.Informational);",
+        "Category": "ui",
+        "Reason": "User-facing helper SetStatus"
+      }
+    ]
+  },
+  {
+    "Key": "Servizio non raggiungibile.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2818,
+        "Member": "AdvancedGamingTools",
+        "Context": "actions = ActionRow(\n            Button(\"Avvia servizio\", () => { _gamingMode.StartAgent(); SetStatus(\"Servizio avviato.\", InfoBarSeverity.Informational); }),\n            Button(\"Controlla servizio\", async () => SetStatus(await _gamingMode.IsAgentHealthyAsync(_gamingConfig.Safety.ApiPort) ? \"Servizio attivo.\" : \"Servizio non raggiungibile.\", InfoBarSeverity.Informational)))",
+        "Category": "ui",
+        "Reason": "User-facing helper SetStatus"
+      }
+    ]
+  },
+  {
+    "Key": "Sicurezza di Windows impedisce a Playhub di aggiornare la libreria. Consenti Playhub in “Accesso alle cartelle controllato”, poi riprova.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/UwpXboxService.cs:829",
+    "Occurrences": [
+      {
+        "File": "Services/UwpXboxService.cs",
+        "Line": 829,
+        "Member": "ExportSelectedToSteamAsync",
+        "Context": "return \"Sicurezza di Windows impedisce a Playhub di aggiornare la libreria. Consenti Playhub in “Accesso alle cartelle controllato”, poi riprova.\";",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "Sistema",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Models/PlayhubSettings.cs:7",
+    "Occurrences": [
+      {
+        "File": "Models/PlayhubSettings.cs",
+        "Line": 7,
+        "Member": "Theme",
+        "Context": "= \"Sistema\"",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Stato browser hook CSS Loader 2.1.2 non riconosciuto.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:293",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 293,
+        "Member": "ApplyWindowsBrowserHookFix",
+        "Context": "source = ApplyPatch(source,\n            \"\"\"\n                    self.ws_response : List[asyncio.Queue] = []\n                    self.connected_tabs : List[BrowserTabHook] = []\n\n                    asyncio.create_task(self.on_new_tab())\n            \"\"\",\n            \"\"\"\n                    self.ws_response : List[asyncio.Queue] = []\n                    self.connected_tabs : List[BrowserTabHook] = []\n                    self.pending_targets = {}\n                    self.failed_targets = {}\n\n                    asyncio.create_task(self.on_new_tab())\n            \"\"\",\n            \"Stato browser hook CSS Loader 2.1.2 non riconosciuto.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Strumenti per diagnosi e sviluppo.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2815,
+        "Member": "AdvancedGamingTools",
+        "Context": "tools.Children.Add(Body(\"Strumenti per diagnosi e sviluppo.\"));",
+        "Category": "ui",
+        "Reason": "User-facing helper Body"
+      }
+    ]
+  },
+  {
+    "Key": "Timeout CSS Loader 2.1.2 non riconosciuto.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:244",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 244,
+        "Member": "ApplyWindowsBrowserHookFix",
+        "Context": "source = ApplyPatch(source, oldWait, newWait, \"Timeout CSS Loader 2.1.2 non riconosciuto.\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Troppi redirect durante il download.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 668,
+        "Member": "SendDownloadRequestAsync",
+        "Context": "new InvalidDataException(\"Troppi redirect durante il download.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Trova i giochi GOG installati con Galaxy o da un installer offline e aggiungili a Steam.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2891",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2893,
+        "Member": "BuildXboxPage",
+        "Context": "_gogChevron = AddCollapsibleHeader(gogImport, ImageHeader(\"Gog.png\", \"Importa giochi da GOG\",\n            \"Trova i giochi GOG installati con Galaxy o da un installer offline e aggiungili a Steam.\"), () => _gogGamesPanel)",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Trova i giochi Xbox, Game Pass e Microsoft Store installati e aggiungili a Steam.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2837",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2839,
+        "Member": "BuildXboxPage",
+        "Context": "_uwpChevron = AddCollapsibleHeader(import, ImageHeader(\"Xbox.png\", \"Importa giochi Xbox e Microsoft Store\",\n            \"Trova i giochi Xbox, Game Pass e Microsoft Store installati e aggiungili a Steam.\"), () => _uwpGamesPanel)",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Trova i giochi installati con Epic Games Launcher e aggiungili a Steam.",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2865",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 2867,
+        "Member": "BuildXboxPage",
+        "Context": "_epicChevron = AddCollapsibleHeader(epicImport, ImageHeader(\"Epic.png\", \"Importa giochi da Epic Games Store\",\n            \"Trova i giochi installati con Epic Games Launcher e aggiungili a Steam.\"), () => _epicGamesPanel)",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Verifica post-installazione non riuscita.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "Services/CssLoaderInstallService.cs",
+        "Line": 118,
+        "Member": "InstallLatestAsync",
+        "Context": "new InvalidDataException(\"Verifica post-installazione non riuscita.\")",
+        "Category": "ui",
+        "Reason": "Service/user-facing exception message (conservative)"
+      }
+    ]
+  },
+  {
+    "Key": "Visualizzazione a schede",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:4693",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 4671,
+        "Member": "BuildPluginAllLayoutSelector",
+        "Context": "cards = LayoutButton(\"cards\", ((char)0xE8A9).ToString(), \"Visualizzazione a schede\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "Visualizzazione elenco",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:4694",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 4672,
+        "Member": "BuildPluginAllLayoutSelector",
+        "Context": "list = LayoutButton(\"list\", ((char)0xE8FD).ToString(), \"Visualizzazione elenco\")",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "build {0}",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:138",
+    "Occurrences": [
+      {
+        "File": "Services/DeckyInstallerService.cs",
+        "Line": 138,
+        "Member": "InstallBuildAsync",
+        "Context": "return await InstallFromBytesAsync(bytes, $\"build {build.Id}\");",
+        "Category": "review",
+        "Reason": "Returned value may reach UI"
+      }
+    ]
+  },
+  {
+    "Key": "versione con console",
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:125",
+    "Occurrences": [
+      {
+        "File": "Services/DeckyInstallerService.cs",
+        "Line": 125,
+        "Member": "InstallLatestConsoleAsync",
+        "Context": "\"versione con console\"",
+        "Category": "review",
+        "Reason": "Requires source-context classification"
+      }
+    ]
+  },
+  {
+    "Key": "{0} problemi trovati, {1} risolti.",
+    "Category": "ui",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.xaml.cs",
+        "Line": 3392,
+        "Member": "RunRepairAsync",
+        "Context": "summary = report.IssuesFound == 0\n                ? T(\"Tutto a posto: nessun problema trovato.\")\n                : string.Format(T(\"{0} problemi trovati, {1} risolti.\"), report.IssuesFound, report.IssuesFixed)",
+        "Category": "ui",
+        "Reason": "User-facing helper T"
+      }
+    ]
+  }
+]

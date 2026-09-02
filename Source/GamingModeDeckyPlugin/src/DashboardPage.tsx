@@ -189,7 +189,18 @@ export async function prepareDashboardOverlay(): Promise<boolean> {
       ? infos.find((info: any) => Number(info?.appID ?? 0) > 0 && Number(info?.unPID ?? 0) > 0 && `${info?.gameID ?? ""}`)
       : null;
     dashboardOverlayGameId = current ? `${current.gameID}` : "";
-    return Boolean(dashboardOverlayGameId);
+    if (!dashboardOverlayGameId) return false;
+
+    await (window as any).SteamClient?.Overlay?.SetOverlayState?.(dashboardOverlayGameId, 2);
+    const deadline = performance.now() + 1600;
+    while (performance.now() < deadline) {
+      if (overlayDocument()?.body) return true;
+      await new Promise((resolve) => window.setTimeout(resolve, 40));
+    }
+
+    try { await (window as any).SteamClient?.Overlay?.SetOverlayState?.(dashboardOverlayGameId, 0); } catch {}
+    dashboardOverlayGameId = "";
+    return false;
   } catch {
     dashboardOverlayGameId = "";
     return false;
@@ -252,6 +263,7 @@ function focusDashboard(selector: string): boolean {
 function activateDashboardSteamContext(): boolean {
   const store = (DFL as any)?.Router?.WindowStore;
   const candidates = [
+    ...(Array.isArray(store?.OverlayWindows) ? store.OverlayWindows : []),
     ...(Array.isArray(store?.SteamUIWindows) ? store.SteamUIWindows : []),
     store?.GamepadUIMainWindowInstance,
   ];
@@ -263,6 +275,9 @@ function activateDashboardSteamContext(): boolean {
       const browserWindow = steamWindow.m_BrowserWindow ?? steamWindow.BrowserWindow;
       if (!browserWindow?.document?.querySelector?.(".ph-dashboard")) continue;
       const context = steamWindow.m_FocusNavContext;
+      try { browserWindow.SteamClient?.Window?.MarkLastFocused?.(); } catch {}
+      try { browserWindow.SteamClient?.Window?.SetKeyFocus?.(true); } catch {}
+      try { browserWindow.focus?.(); } catch {}
       if (!context?.BIsActive?.()) context?.OnActivate?.(browserWindow);
       steamWindow.FocusApplicationRoot?.();
       return true;
@@ -621,6 +636,8 @@ const STYLE = `
   .ph-process-stat { text-align: right; opacity: .68; }
   .ph-restart-decky { min-height: 44px; padding: 0 16px; border-radius: 17px; display: inline-flex; align-items: center; gap: 9px; color: rgba(255,255,255,.86); background: rgba(255,255,255,.09); font-size: 15px; font-weight: 650; white-space: nowrap; }
   .ph-restart-decky svg { width: 19px; height: 19px; }
+  .ph-restart-decky.ph-busy { opacity: .82; }
+  .ph-restart-decky.ph-busy svg { animation: phSpin .72s linear infinite; }
   .ph-restart-decky.ph-focus, .ph-restart-decky:focus { color: #12151a; background: rgba(248,250,255,.95); box-shadow: 0 0 0 3px rgba(255,255,255,.68); }
   .ph-spinner { width: 32px; height: 32px; margin: 30px auto; border-radius: 50%; border: 3px solid rgba(255,255,255,.2); border-top-color: #fff; animation: phSpin .8s linear infinite; }
   .ph-confirm-backdrop { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(4,6,10,.58); animation: phPageIn 150ms ease; }
@@ -938,6 +955,29 @@ async function loadFallback(entry: WindowEntry): Promise<string> {
 
 let cachedSwitcherWindows: WindowEntry[] = [];
 let cachedSwitcherArtwork: Record<string, string> = {};
+let switcherWindowsRequest: Promise<WindowEntry[]> | null = null;
+
+function sortSwitcherWindows(windows: WindowEntry[]): WindowEntry[] {
+  return windows.slice().sort((left, right) =>
+    Number(right.primary) - Number(left.primary) || Number(right.foreground) - Number(left.foreground));
+}
+
+export function preloadDashboardWindows(force = false): Promise<WindowEntry[]> {
+  if (!force && cachedSwitcherWindows.length > 0) return Promise.resolve(cachedSwitcherWindows);
+  if (switcherWindowsRequest) return switcherWindowsRequest;
+
+  switcherWindowsRequest = listWindows()
+    .then((windows) => {
+      const latest = sortSwitcherWindows(windows);
+      cachedSwitcherWindows = latest;
+      return latest;
+    })
+    .finally(() => {
+      switcherWindowsRequest = null;
+    });
+
+  return switcherWindowsRequest;
+}
 
 function TaskSwitcher({ copy, onReady, onSelectWindow }: {
   copy: Copy;
@@ -949,15 +989,11 @@ function TaskSwitcher({ copy, onReady, onSelectWindow }: {
   const rail = useRef<any>(null);
   const readySent = useRef(false);
   const focusedPrimaryHandle = useRef("");
-  const orderedWindows = useMemo(() => windows.slice().sort((left, right) =>
-    Number(right.primary) - Number(left.primary) || Number(right.foreground) - Number(left.foreground)), [windows]);
+  const orderedWindows = useMemo(() => sortSwitcherWindows(windows), [windows]);
 
   const refresh = useCallback(async () => {
-    const latest = (await listWindows()).slice().sort((left, right) =>
-      Number(right.primary) - Number(left.primary) || Number(right.foreground) - Number(left.foreground));
+    const latest = await preloadDashboardWindows(true);
     setWindows((current) => {
-      cachedSwitcherWindows = latest;
-
       const unchanged = current.length === latest.length && current.every((entry, index) => {
         const next = latest[index];
         return next?.handle === entry.handle
@@ -1045,8 +1081,7 @@ function TaskSwitcher({ copy, onReady, onSelectWindow }: {
   }, [windows.map((entry) => entry.handle).join("|")]);
 
   const closeEntry = useCallback(async (entry: WindowEntry, index: number) => {
-    const ordered = windows.slice().sort((left, right) =>
-      Number(right.primary) - Number(left.primary) || Number(right.foreground) - Number(left.foreground));
+    const ordered = sortSwitcherWindows(windows);
     const fallbackHandle = ordered[index + 1]?.handle ?? ordered[index - 1]?.handle ?? "";
     await closeWindow(entry.handle);
     window.setTimeout(async () => {
@@ -1284,6 +1319,8 @@ function SystemTab({ copy, extra, onConfirm }: { copy: Copy; extra: ExtraCopy; o
   const [processes, setProcesses] = useState<ProcessEntry[]>([]);
   const [selectedProcess, setSelectedProcess] = useState<ProcessEntry | null>(null);
   const [history, setHistory] = useState<Record<string, number[]>>({});
+  const [deckyRestarting, setDeckyRestarting] = useState(false);
+  const deckyRestartingRef = useRef(false);
   const refreshing = useRef(false);
   const refresh = useCallback(async () => {
     if (refreshing.current) return;
@@ -1320,6 +1357,16 @@ function SystemTab({ copy, extra, onConfirm }: { copy: Copy; extra: ExtraCopy; o
   }, []);
   useEffect(() => { void refresh(); const timer = window.setInterval(() => void refresh(), 2500); return () => window.clearInterval(timer); }, [refresh]);
 
+  const requestDeckyRestart = useCallback(() => {
+    if (deckyRestartingRef.current) return;
+    deckyRestartingRef.current = true;
+    setDeckyRestarting(true);
+    // Decky ricarica o chiude questa pagina durante il riavvio. Lo spinner
+    // resta quindi attivo per tutta la vita residua della pagina, anche se la
+    // richiesta HTTP termina prima del riavvio effettivo.
+    void restartDecky();
+  }, []);
+
   return (
     <div className="ph-page ph-page-scroll">
       <div className="ph-system-stack">
@@ -1335,8 +1382,13 @@ function SystemTab({ copy, extra, onConfirm }: { copy: Copy; extra: ExtraCopy; o
           <div className="ph-process-heading">
             <div className="ph-device-list-head" style={{ padding: 0 }}>{copy.processes}</div>
             <FocusItem
-              className="ph-restart-decky"
-              onPress={() => onConfirm(copy.confirmAction, copy.restartDecky, () => void restartDecky())}
+              className={`ph-restart-decky${deckyRestarting ? " ph-busy" : ""}`}
+              aria-busy={deckyRestarting ? "true" : "false"}
+              aria-disabled={deckyRestarting ? "true" : "false"}
+              onPress={() => {
+                if (deckyRestartingRef.current) return;
+                onConfirm(copy.confirmAction, copy.restartDecky, requestDeckyRestart);
+              }}
               onButtonDown={(event: any) => {
                 const direction = gridDirectionFromGamepad(event?.detail?.button);
                 if (direction === "up") { stopDirectionalEvent(event); focusSystemMetric(0); }
@@ -1822,17 +1874,30 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (!inOverlay || !portalTarget) return;
+    let leaving = false;
+    const returnToSource = () => {
+      if (leaving) return;
+      leaving = true;
+      closeDashboardOverlay();
+      Navigation?.NavigateBack?.();
+      void restoreDashboardSourceFocus();
+    };
     const frame = window.requestAnimationFrame(() => {
       const mounted = Boolean(portalTarget.querySelector(".ph-dashboard"));
       if (!mounted || !dashboardOverlayGameId) {
-        closeDashboardOverlay();
-        Navigation?.NavigateBack?.();
-        void restoreDashboardSourceFocus();
+        returnToSource();
         return;
       }
       try { (window as any).SteamClient?.Overlay?.SetOverlayState?.(dashboardOverlayGameId, 2); } catch {}
     });
-    return () => window.cancelAnimationFrame(frame);
+    const monitor = window.setInterval(() => {
+      if (portalTarget.isConnected && dashboardOverlayGameId) return;
+      returnToSource();
+    }, 250);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearInterval(monitor);
+    };
   }, [inOverlay, portalTarget]);
 
   useEffect(() => () => {

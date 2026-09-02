@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -16,7 +16,8 @@ public sealed record InstallOptions(
     string InstallDir,
     bool DesktopShortcut,
     bool StartMenuShortcut,
-    string Language);
+    string Language,
+    bool PreserveExistingShortcuts = false);
 
 /// <summary>
 /// Logica di installazione/disinstallazione di Playhub (per-utente, niente UAC).
@@ -25,7 +26,7 @@ public sealed record InstallOptions(
 public static class Installer
 {
     public const string AppName = "Playhub";
-    public const string AppVersion = "1.2.0";
+    public const string AppVersion = "1.3.0";
     public const string Publisher = "Andrea Sgarro (LoZazaMastro)";
     public const string AppExeName = "Playhub.exe";
     public const string UninstallerName = "unins-playhub.exe";
@@ -67,10 +68,13 @@ public static class Installer
             var iconPath = exePath;
 
             progress.Report((0.90, Loc.T("CreatingShortcuts")));
-            if (options.StartMenuShortcut)
-                Shortcuts.Create(StartMenuShortcut, exePath, options.InstallDir, iconPath);
-            if (options.DesktopShortcut)
-                Shortcuts.Create(DesktopShortcut, exePath, options.InstallDir, iconPath);
+            if (!options.PreserveExistingShortcuts)
+            {
+                if (options.StartMenuShortcut)
+                    Shortcuts.Create(StartMenuShortcut, exePath, options.InstallDir, iconPath);
+                if (options.DesktopShortcut)
+                    Shortcuts.Create(DesktopShortcut, exePath, options.InstallDir, iconPath);
+            }
 
             progress.Report((0.95, Loc.T("Registering")));
             CopySelfAsUninstaller(options.InstallDir);
@@ -119,66 +123,122 @@ public static class Installer
     private static bool TryExtractAppendedPayload(string exePath, string installDir,
         IProgress<(double, string)> progress)
     {
-        try
-        {
-            using var fs = File.Open(exePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            if (fs.Length <= FooterSize) return false;
+        using var fs = File.Open(exePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        if (fs.Length <= FooterSize) return false;
 
-            fs.Seek(-FooterSize, SeekOrigin.End);
-            var footer = new byte[FooterSize];
-            fs.ReadExactly(footer);
-
-            if (footer[8] != PayloadMagic[0] || footer[9] != PayloadMagic[1] ||
-                footer[10] != PayloadMagic[2] || footer[11] != PayloadMagic[3])
-            {
-                return false;
-            }
-
-            long length = BitConverter.ToInt64(footer, 0);
-            if (length <= 0 || length > fs.Length - FooterSize) return false;
-
-            fs.Seek(-(FooterSize + length), SeekOrigin.End);
-            var buffer = new byte[length];
-            fs.ReadExactly(buffer);
-
-            using var ms = new MemoryStream(buffer, writable: false);
-            ExtractZip(ms, installDir, progress);
-            return true;
-        }
-        catch
+        fs.Seek(-FooterSize, SeekOrigin.End);
+        var footer = new byte[FooterSize];
+        fs.ReadExactly(footer);
+        if (footer[8] != PayloadMagic[0] || footer[9] != PayloadMagic[1] ||
+            footer[10] != PayloadMagic[2] || footer[11] != PayloadMagic[3])
         {
             return false;
         }
+
+        long length = BitConverter.ToInt64(footer, 0);
+        if (length <= 0 || length > fs.Length - FooterSize)
+            throw new InvalidDataException(Loc.T("PackageError"));
+
+        fs.Seek(-(FooterSize + length), SeekOrigin.End);
+        var buffer = new byte[length];
+        fs.ReadExactly(buffer);
+        using var ms = new MemoryStream(buffer, writable: false);
+        ExtractZip(ms, installDir, progress);
+        return true;
     }
 
     private static void ExtractZip(Stream zipStream, string destDir, IProgress<(double, string)> progress)
     {
         using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read);
-        var entries = archive.Entries;
-        var total = entries.Count == 0 ? 1 : entries.Count;
-        var done = 0;
-
-        foreach (var entry in entries)
+        var destination = Path.GetFullPath(destDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var prefix = destination + Path.DirectorySeparatorChar;
+        var entries = archive.Entries.Select(entry =>
         {
-            var targetPath = Path.GetFullPath(Path.Combine(destDir, entry.FullName));
+            var target = Path.GetFullPath(Path.Combine(destination, entry.FullName));
+            if (!target.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("The update contains a path outside its installation directory.");
+            return (Entry: entry, Target: target, Relative: Path.GetRelativePath(destination, target));
+        }).ToList();
+        var work = Path.Combine(Path.GetDirectoryName(destination)!, ".playhub-update-" + Guid.NewGuid().ToString("N"));
+        var staged = Path.Combine(work, "staged");
+        var backup = Path.Combine(work, "backup");
+        var replaced = new List<(string Target, string? Backup)>();
+        var createdDirectories = new List<string>();
+        var preserveRecovery = false;
 
-            // Protezione "zip slip".
-            if (!targetPath.StartsWith(Path.GetFullPath(destDir), StringComparison.OrdinalIgnoreCase))
-                continue;
+        void EnsureDirectory(string path)
+        {
+            if (Directory.Exists(path)) return;
+            var parent = Path.GetDirectoryName(path);
+            if (parent is not null && !Directory.Exists(parent)) EnsureDirectory(parent);
+            Directory.CreateDirectory(path);
+            createdDirectories.Add(path);
+        }
 
-            if (string.IsNullOrEmpty(entry.Name))
+        try
+        {
+            // Validate and extract the whole package before replacing existing files.
+            Directory.CreateDirectory(staged);
+            foreach (var item in entries)
             {
-                Directory.CreateDirectory(targetPath);
-            }
-            else
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(targetPath)!);
-                entry.ExtractToFile(targetPath, overwrite: true);
+                var file = Path.Combine(staged, item.Relative);
+                if (string.IsNullOrEmpty(item.Entry.Name)) Directory.CreateDirectory(file);
+                else
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+                    item.Entry.ExtractToFile(file, overwrite: false);
+                }
             }
 
-            done++;
-            // 0.05 → 0.88 durante l'estrazione.
-            progress.Report((0.05 + 0.83 * done / total, Loc.T("CopyingFiles") + " " + done + "/" + total));
+            var total = Math.Max(1, entries.Count);
+            var done = 0;
+            foreach (var item in entries)
+            {
+                if (string.IsNullOrEmpty(item.Entry.Name)) EnsureDirectory(item.Target);
+                else
+                {
+                    EnsureDirectory(Path.GetDirectoryName(item.Target)!);
+                    string? original = null;
+                    if (File.Exists(item.Target))
+                    {
+                        original = Path.Combine(backup, item.Relative);
+                        Directory.CreateDirectory(Path.GetDirectoryName(original)!);
+                        File.Move(item.Target, original);
+                    }
+                    replaced.Add((item.Target, original));
+                    File.Move(Path.Combine(staged, item.Relative), item.Target);
+                }
+                done++;
+                progress.Report((0.05 + 0.83 * done / total, Loc.T("CopyingFiles") + " " + done + "/" + total));
+            }
+        }
+        catch (Exception installError)
+        {
+            var errors = new List<Exception>();
+            foreach (var item in replaced.AsEnumerable().Reverse())
+            {
+                try
+                {
+                    if (File.Exists(item.Target)) File.Delete(item.Target);
+                    if (item.Backup is not null) File.Move(item.Backup, item.Target);
+                }
+                catch (Exception error) { errors.Add(error); }
+            }
+            foreach (var directory in createdDirectories.AsEnumerable().Reverse())
+            {
+                try { Directory.Delete(directory, recursive: false); } catch { }
+            }
+            if (errors.Count > 0)
+            {
+                preserveRecovery = true;
+                throw new AggregateException("Update failed. Recovery files retained at " + backup,
+                    new[] { installError }.Concat(errors));
+            }
+            throw;
+        }
+        finally
+        {
+            if (!preserveRecovery && Directory.Exists(work)) Directory.Delete(work, recursive: true);
         }
     }
 

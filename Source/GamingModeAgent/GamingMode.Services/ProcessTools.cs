@@ -36,7 +36,7 @@ public sealed class ProcessTools
 		("Steam Client Service", "Steam Client Service")
 	};
 
-	private static readonly (string Name, string Label)[] SunshineCompatibilityServices = new(string, string)[23]
+	private static readonly (string Name, string Label)[] SunshineCompatibilityServices = new(string, string)[24]
 	{
 		("AudioEndpointBuilder", "Windows Audio Endpoint Builder"),
 		("Audiosrv", "Windows Audio"),
@@ -46,6 +46,7 @@ public sealed class ProcessTools
 		("SunshineService", "Sunshine Service"),
 		("ApolloService", "Apollo Service"),
 		("VibepolloService", "Vibepollo Service"),
+		("VibeshineService", "Vibeshine Service"),
 		("DisplayEnhancementService", "Display Enhancement Service"),
 		("GraphicsPerfSvc", "Graphics Performance Service"),
 		("DolbyDAXAPI", "Dolby DAX API Service"),
@@ -788,7 +789,7 @@ public sealed class ProcessTools
 	{
 		string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
 		string folderPath2 = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-		return new string[10]
+		return new string[14]
 		{
 			Path.Combine(folderPath, "Sunshine", "sunshine.exe"),
 			Path.Combine(folderPath, "LizardByte", "Sunshine", "sunshine.exe"),
@@ -796,10 +797,14 @@ public sealed class ProcessTools
 			Path.Combine(folderPath, "Apollo", "apollo.exe"),
 			Path.Combine(folderPath, "Vibepollo", "sunshine.exe"),
 			Path.Combine(folderPath, "Vibepollo", "vibepollo.exe"),
+			Path.Combine(folderPath, "Vibeshine", "sunshine.exe"),
+			Path.Combine(folderPath, "Vibeshine", "vibeshine.exe"),
 			Path.Combine(folderPath2, "Programs", "Apollo", "sunshine.exe"),
 			Path.Combine(folderPath2, "Programs", "Apollo", "apollo.exe"),
 			Path.Combine(folderPath2, "Programs", "Vibepollo", "sunshine.exe"),
-			Path.Combine(folderPath2, "Programs", "Vibepollo", "vibepollo.exe")
+			Path.Combine(folderPath2, "Programs", "Vibepollo", "vibepollo.exe"),
+			Path.Combine(folderPath2, "Programs", "Vibeshine", "sunshine.exe"),
+			Path.Combine(folderPath2, "Programs", "Vibeshine", "vibeshine.exe")
 		};
 	}
 

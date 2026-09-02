@@ -11,7 +11,7 @@ rem    [2] plugin Decky        -> compila src\*.tsx e aggiorna gli Assets
 rem    [3] app Playhub         -> publish self-contained x64
 rem    [4] payload.zip         -> archivio dell'app
 rem    [5] stub installer      -> PlayhubSetup
-rem    [6] installer finale    -> Output\Playhub-Setup.exe
+rem    [6] installer finale    -> Output\Playhub Setup.exe
 rem
 rem  Uso:
 rem    build-all.bat            build completa dell'installer
@@ -26,7 +26,7 @@ set AGENT_BAT=..\GamingModeAgent\build-agent.bat
 set PLUGIN_BAT=..\GamingModeDeckyPlugin\build-plugin.bat
 set PAYLOAD=Payload\payload.zip
 set STUB_DIR=Output\stub
-set FINAL=Output\Playhub-Setup.exe
+set FINAL=Output\Playhub Setup.exe
 
 set WITH_DEBUG=0
 if /i "%~1"=="debug" set WITH_DEBUG=1
@@ -63,6 +63,7 @@ if "%WITH_DEBUG%"=="1" (
 
 echo [3/6] Pubblico l'app ^(self-contained x64^)... puo' richiedere qualche minuto.
 echo. >> "%LOG%" & echo ===== [3/6] PUBLISH APP ===== >> "%LOG%"
+if exist "%APP_OUT%" rmdir /s /q "%APP_OUT%"
 dotnet publish "%APP_PROJ%" -c Release -r win-x64 --self-contained true -p:Platform=x64 -p:WindowsAppSDKSelfContained=true -o "%APP_OUT%" >> "%LOG%" 2>&1
 if errorlevel 1 goto :fail
 
@@ -83,7 +84,7 @@ echo [6/6] Appendo il payload e finalizzo l'installer...
 echo. >> "%LOG%" & echo ===== [6/6] APPEND + CLEANUP ===== >> "%LOG%"
 powershell -NoProfile -Command "$len=(Get-Item '%PAYLOAD%').Length; $b=[System.BitConverter]::GetBytes([int64]$len); $m=[System.Text.Encoding]::ASCII.GetBytes('PLHB'); [System.IO.File]::WriteAllBytes('Output\footer.bin', $b + $m)" >> "%LOG%" 2>&1
 if errorlevel 1 goto :fail
-copy /b "%STUB_DIR%\Playhub-Setup.exe"+"%PAYLOAD%"+"Output\footer.bin" "%FINAL%" >> "%LOG%" 2>&1
+copy /b "%STUB_DIR%\Playhub Setup.exe"+"%PAYLOAD%"+"Output\footer.bin" "%FINAL%" >> "%LOG%" 2>&1
 if errorlevel 1 goto :fail
 del /q "Output\footer.bin" 2>nul
 rmdir /s /q "%STUB_DIR%" 2>nul

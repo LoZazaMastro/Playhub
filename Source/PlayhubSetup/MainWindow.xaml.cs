@@ -12,12 +12,13 @@ public partial class MainWindow : Window
 {
     private readonly SetupMode _mode;
     private string _installDir = Installer.DefaultInstallDir;
-    private bool _busy;
-    private bool _launchAtEnd;
+    private readonly SetupSession _session = new();
+    private readonly bool _automaticUpdate;
 
-    public MainWindow(SetupMode mode)
+    public MainWindow(SetupMode mode, bool automaticUpdate = false)
     {
         _mode = mode;
+        _automaticUpdate = automaticUpdate && mode == SetupMode.Install;
         InitializeComponent();
 
         PathText.Text = _installDir;
@@ -49,6 +50,18 @@ public partial class MainWindow : Window
             BtnPrimary.Visibility = Visibility.Visible;
             ChkRemoveData.Visibility = Visibility.Visible;
             ChkRemoveUWPHook.Visibility = Visibility.Visible;
+        }
+        else if (_automaticUpdate)
+        {
+            Loc.Lang = savedLanguage;
+            _installDir = Installer.ReadInstallDir();
+            PathText.Text = _installDir;
+            PanelLanguage.Visibility = Visibility.Collapsed;
+            PanelReady.Visibility = Visibility.Visible;
+            BtnLangNext.Visibility = Visibility.Collapsed;
+            BtnCancel.Visibility = Visibility.Collapsed;
+            BtnPrimary.Visibility = Visibility.Collapsed;
+            ContentRendered += StartAutomaticUpdate;
         }
 
         TitleBar.MouseLeftButtonDown += (_, e) =>
@@ -157,10 +170,15 @@ public partial class MainWindow : Window
         }
     }
 
+    private void StartAutomaticUpdate(object? sender, EventArgs e)
+    {
+        ContentRendered -= StartAutomaticUpdate;
+        Start();
+    }
+
     private async void Start()
     {
-        if (_busy) return;
-        _busy = true;
+        if (!_session.TryStart()) return;
         ShowProgress();
 
         var progress = new Progress<(double Percent, string Status)>(p =>
@@ -173,12 +191,12 @@ public partial class MainWindow : Window
         {
             if (_mode == SetupMode.Install)
             {
-                _launchAtEnd = ChkLaunchEnd.IsChecked == true;
                 var options = new InstallOptions(
                     _installDir,
                     ChkDesktop.IsChecked == true,
                     ChkStartMenu.IsChecked == true,
-                    Loc.Lang);
+                    Loc.Lang,
+                    PreserveExistingShortcuts: _automaticUpdate);
                 await Installer.InstallAsync(options, progress);
             }
             else
@@ -189,25 +207,26 @@ public partial class MainWindow : Window
                     ChkRemoveUWPHook.IsChecked == true);
             }
 
+            _session.Complete(succeeded: true);
             ShowDone();
         }
         catch (Exception ex)
         {
+            _session.Complete(succeeded: false);
             ShowError(Installer.FriendlyError(ex));
-        }
-        finally
-        {
-            _busy = false;
         }
     }
 
     private void Finish()
     {
-        if (_mode == SetupMode.Install && _launchAtEnd)
+        if (!_session.TryFinish(out var succeeded)) return;
+        BtnDone.IsEnabled = false;
+        try
         {
-            Installer.LaunchApp(_installDir);
+            if (succeeded && _mode == SetupMode.Install && ChkLaunchEnd.IsChecked == true)
+                Installer.LaunchApp(_installDir);
         }
-        Close();
+        finally { Close(); }
     }
 
     // -------------------------------------------------------------- stati UI
@@ -221,6 +240,7 @@ public partial class MainWindow : Window
         BtnCancel.Visibility = Visibility.Collapsed;
         BtnPrimary.Visibility = Visibility.Collapsed;
         BtnDone.Visibility = Visibility.Collapsed;
+        ChkLaunchEnd.Visibility = Visibility.Collapsed;
         BtnClose.IsEnabled = false;
     }
 
@@ -235,14 +255,16 @@ public partial class MainWindow : Window
         if (_mode == SetupMode.Install)
         {
             DoneTitle.Text = Loc.T("DoneTitle");
-            DoneSub.Text = _launchAtEnd ? Loc.T("Launching") : Loc.T("DoneSub");
+            DoneSub.Text = Loc.T("DoneSub");
             BtnDone.Content = Loc.T("Finish");
+            ChkLaunchEnd.Visibility = Visibility.Visible;
         }
         else
         {
             DoneTitle.Text = Loc.T("UninstallDone");
             DoneSub.Text = Loc.T("UninstallDoneSub");
             BtnDone.Content = Loc.T("Close");
+            ChkLaunchEnd.Visibility = Visibility.Collapsed;
         }
     }
 
@@ -263,6 +285,7 @@ public partial class MainWindow : Window
         PanelDone.Visibility = Visibility.Visible;
         BtnDone.Visibility = Visibility.Visible;
         BtnClose.IsEnabled = true;
+        ChkLaunchEnd.Visibility = Visibility.Collapsed;
         DoneTitle.Text = Loc.T("Error");
         DoneSub.Text = message;
         BtnDone.Content = Loc.T("Close");

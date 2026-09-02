@@ -1,0 +1,302 @@
+[
+  {
+    "Source": "Se il menu rapido non risponde, chiudi Steam per tornare al desktop. Puoi anche tenere premuto Shift durante l'accesso a Windows.",
+    "Contexts": [
+      "MainWindow.xaml.cs:1990"
+    ],
+    "Translations": {
+      "en": "If the quick menu is not responding, close Steam to return to the desktop. You can also hold Shift while signing in to Windows.",
+      "es": "Si el menú rápido no responde, cierra Steam para volver al escritorio. También puedes mantener pulsada la tecla Mayús al iniciar sesión en Windows.",
+      "fr": "Si le menu d’accès rapide ne répond pas, ferme Steam pour revenir au bureau. Tu peux aussi maintenir la touche Maj enfoncée pendant la connexion à Windows.",
+      "de": "Wenn das Schnellzugriffsmenü nicht reagiert, schließe Steam, um zum Desktop zurückzukehren. Du kannst auch die Umschalttaste während der Windows-Anmeldung gedrückt halten.",
+      "pt": "Se o menu de acesso rápido não responder, feche o Steam para voltar à área de trabalho. Você também pode manter Shift pressionado ao entrar no Windows.",
+      "uk": "Якщо меню швидкого доступу не відповідає, закрий Steam, щоб повернутися до робочого столу. Також можна утримувати Shift під час входу у Windows.",
+      "zh": "如果快捷菜单无响应，请关闭 Steam 以返回桌面。你也可以在登录 Windows 时按住 Shift 键。",
+      "ja": "クイックアクセスメニューが応答しない場合は、Steam を閉じるとデスクトップに戻れます。Windows へのサインイン時に Shift キーを押し続ける方法もあります。",
+      "ko": "빠른 액세스 메뉴가 응답하지 않으면 Steam을 닫아 데스크톱으로 돌아가세요. Windows에 로그인하는 동안 Shift 키를 길게 눌러도 됩니다.",
+      "hi": "अगर क्विक ऐक्सेस मेनू जवाब नहीं देता, तो डेस्कटॉप पर लौटने के लिए Steam बंद करें। आप Windows में साइन इन करते समय Shift दबाकर भी रख सकते हैं।",
+      "ru": "Если меню быстрого доступа не отвечает, закрой Steam, чтобы вернуться на рабочий стол. Также можно удерживать Shift при входе в Windows.",
+      "it": "Se il menu rapido non risponde, chiudi Steam per tornare al desktop. Puoi anche tenere premuto Shift durante l'accesso a Windows."
+    }
+  },
+  {
+    "Source": "Apri Gaming Mode dal menu rapido di Decky, senza lasciare il controller.",
+    "Contexts": [
+      "MainWindow.xaml.cs:1988"
+    ],
+    "Translations": {
+      "en": "Open Gaming Mode from Decky's quick menu without putting down your controller.",
+      "es": "Abre Gaming Mode desde el menú rápido de Decky sin soltar el mando.",
+      "fr": "Ouvre Gaming Mode depuis le menu d’accès rapide de Decky, sans lâcher ta manette.",
+      "de": "Öffne Gaming Mode über das Schnellzugriffsmenü von Decky, ohne den Controller wegzulegen.",
+      "pt": "Abra o Gaming Mode pelo menu de acesso rápido do Decky, sem largar o controle.",
+      "uk": "Відкривай Gaming Mode з меню швидкого доступу Decky, не випускаючи геймпад із рук.",
+      "zh": "无需放下手柄，即可从 Decky 快捷菜单打开 Gaming Mode。",
+      "ja": "コントローラーを置かずに、Decky のクイックアクセスメニューから Gaming Mode を開けます。",
+      "ko": "컨트롤러를 놓지 않고 Decky 빠른 액세스 메뉴에서 Gaming Mode를 여세요.",
+      "hi": "कंट्रोलर छोड़े बिना Decky के क्विक ऐक्सेस मेनू से Gaming Mode खोलें।",
+      "ru": "Открой Gaming Mode через меню быстрого доступа Decky, не выпуская геймпад из рук.",
+      "it": "Apri Gaming Mode dal menu rapido di Decky, senza lasciare il controller."
+    }
+  },
+  {
+    "Source": "Avvia l'host scelto quando entri in Gaming Mode, così puoi collegarti subito da un altro dispositivo.",
+    "Contexts": [
+      "MainWindow.xaml.cs:2101"
+    ],
+    "Translations": {
+      "en": "Starts your chosen host when you enter Gaming Mode so you can connect from another device right away.",
+      "es": "Inicia el host elegido al entrar en Gaming Mode para que puedas conectarte enseguida desde otro dispositivo.",
+      "fr": "Lance l’hôte choisi au démarrage de Gaming Mode pour te connecter immédiatement depuis un autre appareil.",
+      "de": "Startet den gewählten Host beim Wechsel in Gaming Mode, damit du dich sofort von einem anderen Gerät aus verbinden kannst.",
+      "pt": "Inicia o host escolhido ao entrar no Gaming Mode, para você se conectar imediatamente de outro dispositivo.",
+      "uk": "Запускає вибраний хост під час входу в Gaming Mode, щоб можна було одразу підключитися з іншого пристрою.",
+      "zh": "进入 Gaming Mode 时启动所选串流服务端，让你能立即从其他设备连接。",
+      "ja": "Gaming Mode に切り替えると選択したホストを起動し、すぐに別のデバイスから接続できるようにします。",
+      "ko": "Gaming Mode에 들어가면 선택한 호스트를 시작해 다른 기기에서 바로 연결할 수 있습니다.",
+      "hi": "Gaming Mode में प्रवेश करते ही चुना गया होस्ट शुरू करता है, ताकि आप दूसरे डिवाइस से तुरंत जुड़ सकें।",
+      "ru": "Запускает выбранный сервер стриминга при входе в Gaming Mode, чтобы можно было сразу подключиться с другого устройства.",
+      "it": "Avvia l'host scelto quando entri in Gaming Mode, così puoi collegarti subito da un altro dispositivo."
+    }
+  },
+  {
+    "Source": "Scegli una versione di DeckyLoader",
+    "Contexts": [
+      "MainWindow.xaml.cs:1402"
+    ],
+    "Translations": {
+      "en": "Choose a DeckyLoader version",
+      "es": "Elige una versión de DeckyLoader",
+      "fr": "Choisis une version de DeckyLoader",
+      "de": "Wähle eine DeckyLoader-Version",
+      "pt": "Escolha uma versão do DeckyLoader",
+      "uk": "Вибери версію DeckyLoader",
+      "zh": "选择 DeckyLoader 版本",
+      "ja": "DeckyLoader のバージョンを選択",
+      "ko": "DeckyLoader 버전 선택",
+      "hi": "DeckyLoader का संस्करण चुनें",
+      "ru": "Выбери версию DeckyLoader",
+      "it": "Scegli una versione di DeckyLoader"
+    }
+  },
+  {
+    "Source": "Usa questa opzione solo se ti serve una versione precisa.",
+    "Contexts": [
+      "MainWindow.xaml.cs:1403"
+    ],
+    "Translations": {
+      "en": "Use this option only if you need a specific version.",
+      "es": "Usa esta opción solo si necesitas una versión específica.",
+      "fr": "Utilise cette option uniquement si tu as besoin d'une version précise.",
+      "de": "Verwende diese Option nur, wenn du eine bestimmte Version benötigst.",
+      "pt": "Use esta opção apenas se precisar de uma versão específica.",
+      "uk": "Використовуй цю опцію лише тоді, коли потрібна певна версія.",
+      "zh": "仅在需要特定版本时使用此选项。",
+      "ja": "特定のバージョンが必要な場合にのみ、このオプションを使用してください。",
+      "ko": "특정 버전이 필요한 경우에만 이 옵션을 사용하세요.",
+      "hi": "इस विकल्प का उपयोग केवल तभी करें जब आपको कोई विशिष्ट संस्करण चाहिए।",
+      "ru": "Используй эту опцию, только если нужна определённая версия.",
+      "it": "Usa questa opzione solo se ti serve una versione precisa."
+    }
+  },
+  {
+    "Source": "DeckyLoader con console",
+    "Contexts": [
+      "MainWindow.xaml.cs:1411"
+    ],
+    "Translations": {
+      "en": "DeckyLoader with console",
+      "es": "DeckyLoader con consola",
+      "fr": "DeckyLoader avec console",
+      "de": "DeckyLoader mit Konsole",
+      "pt": "DeckyLoader com console",
+      "uk": "DeckyLoader з консоллю",
+      "zh": "带控制台的 DeckyLoader",
+      "ja": "コンソール付き DeckyLoader",
+      "ko": "콘솔이 포함된 DeckyLoader",
+      "hi": "कंसोल वाला DeckyLoader",
+      "ru": "DeckyLoader с консолью",
+      "it": "DeckyLoader con console"
+    }
+  },
+  {
+    "Source": "Mostra una finestra con il registro in tempo reale. Utile per diagnosi e sviluppo.",
+    "Contexts": [
+      "MainWindow.xaml.cs:1412"
+    ],
+    "Translations": {
+      "en": "Shows a window with a live log. Useful for diagnostics and development.",
+      "es": "Muestra una ventana con el registro en tiempo real. Útil para diagnóstico y desarrollo.",
+      "fr": "Affiche une fenêtre avec le journal en temps réel. Utile pour le diagnostic et le développement.",
+      "de": "Zeigt ein Fenster mit dem Echtzeitprotokoll. Hilfreich für Diagnose und Entwicklung.",
+      "pt": "Mostra uma janela com o registro em tempo real. Útil para diagnóstico e desenvolvimento.",
+      "uk": "Показує вікно з журналом у реальному часі. Корисно для діагностики та розробки.",
+      "zh": "显示包含实时日志的窗口，便于诊断和开发。",
+      "ja": "リアルタイムのログをウィンドウに表示します。診断や開発に役立ちます。",
+      "ko": "실시간 로그가 표시되는 창을 엽니다. 진단 및 개발에 유용합니다.",
+      "hi": "रीयल-टाइम लॉग वाली विंडो दिखाता है। निदान और विकास के लिए उपयोगी है।",
+      "ru": "Показывает окно с журналом в реальном времени. Полезно для диагностики и разработки.",
+      "it": "Mostra una finestra con il registro in tempo reale. Utile per diagnosi e sviluppo."
+    }
+  },
+  {
+    "Source": "Scegli una cartella o un file .exe. Playhub trova i giochi nelle sottocartelle e li prepara per Steam.",
+    "Contexts": [
+      "MainWindow.xaml.cs:2918"
+    ],
+    "Translations": {
+      "en": "Choose a folder or an .exe file. Playhub finds games in subfolders and prepares them for Steam.",
+      "es": "Elige una carpeta o un archivo .exe. Playhub busca los juegos en las subcarpetas y los prepara para Steam.",
+      "fr": "Choisis un dossier ou un fichier .exe. Playhub trouve les jeux dans les sous-dossiers et les prépare pour Steam.",
+      "de": "Wähle einen Ordner oder eine .exe-Datei. Playhub findet die Spiele in den Unterordnern und bereitet sie für Steam vor.",
+      "pt": "Escolha uma pasta ou um arquivo .exe. O Playhub encontra os jogos nas subpastas e os prepara para o Steam.",
+      "uk": "Вибери папку або файл .exe. Playhub знайде ігри в підпапках і підготує їх для Steam.",
+      "zh": "选择文件夹或 .exe 文件。Playhub 会查找子文件夹中的游戏，并准备将其添加到 Steam。",
+      "ja": "フォルダーまたは .exe ファイルを選択してください。Playhub がサブフォルダー内のゲームを見つけ、Steam に追加する準備をします。",
+      "ko": "폴더나 .exe 파일을 선택하세요. Playhub가 하위 폴더에서 게임을 찾아 Steam에 추가할 수 있도록 준비합니다.",
+      "hi": "कोई फ़ोल्डर या .exe फ़ाइल चुनें। Playhub सबफ़ोल्डर में गेम खोजकर उन्हें Steam के लिए तैयार करता है।",
+      "ru": "Выбери папку или файл .exe. Playhub найдёт игры в подпапках и подготовит их для Steam.",
+      "it": "Scegli una cartella o un file .exe. Playhub trova i giochi nelle sottocartelle e li prepara per Steam."
+    }
+  },
+  {
+    "Source": "CSS Loader {0} è pronto. Ora puoi applicare il profilo Playhub.",
+    "Contexts": [
+      "MainWindow.xaml.cs:3110"
+    ],
+    "Translations": {
+      "en": "CSS Loader {0} is ready. You can now apply the Playhub profile.",
+      "es": "CSS Loader {0} está listo. Ya puedes aplicar el perfil de Playhub.",
+      "fr": "CSS Loader {0} est prêt. Tu peux maintenant appliquer le profil Playhub.",
+      "de": "CSS Loader {0} ist bereit. Du kannst jetzt das Playhub-Profil anwenden.",
+      "pt": "O CSS Loader {0} está pronto. Agora você pode aplicar o perfil Playhub.",
+      "uk": "CSS Loader {0} готовий. Тепер можна застосувати профіль Playhub.",
+      "zh": "CSS Loader {0} 已就绪。现在可以应用 Playhub 配置。",
+      "ja": "CSS Loader {0} の準備ができました。Playhub プロファイルを適用できます。",
+      "ko": "CSS Loader {0} 준비가 완료되었습니다. 이제 Playhub 프로필을 적용할 수 있습니다.",
+      "hi": "CSS Loader {0} तैयार है। अब आप Playhub प्रोफ़ाइल लागू कर सकते हैं।",
+      "ru": "CSS Loader {0} готов. Теперь можно применить профиль Playhub.",
+      "it": "CSS Loader {0} è pronto. Ora puoi applicare il profilo Playhub."
+    }
+  },
+  {
+    "Source": "La release ufficiale non contiene un unico pacchetto ZIP CSS Loader per Decky.",
+    "Contexts": [
+      "Services/CssLoaderInstallService.cs:575"
+    ],
+    "Translations": {
+      "en": "The official release does not contain exactly one CSS Loader ZIP package for Decky.",
+      "es": "La versión oficial no contiene un único paquete ZIP de CSS Loader para Decky.",
+      "fr": "La version officielle ne contient pas de paquet ZIP unique de CSS Loader pour Decky.",
+      "de": "Die offizielle Version enthält nicht genau ein ZIP-Paket von CSS Loader für Decky.",
+      "pt": "A versão oficial não contém um único pacote ZIP do CSS Loader para Decky.",
+      "uk": "Офіційний випуск не містить рівно одного ZIP-пакета CSS Loader для Decky.",
+      "zh": "官方发布版本中未找到唯一的适用于 Decky 的 CSS Loader ZIP 包。",
+      "ja": "公式リリースから Decky 用 CSS Loader の ZIP パッケージを一つに特定できません。",
+      "ko": "공식 릴리스에 Decky용 CSS Loader ZIP 패키지가 정확히 하나 있어야 합니다.",
+      "hi": "आधिकारिक रिलीज़ में Decky के लिए CSS Loader का एकमात्र ZIP पैकेज नहीं मिला।",
+      "ru": "В официальном выпуске не удалось найти ровно один ZIP-пакет CSS Loader для Decky.",
+      "it": "La release ufficiale non contiene un unico pacchetto ZIP CSS Loader per Decky."
+    }
+  },
+  {
+    "Source": "Playhub è un progetto indipendente e non è affiliato né approvato da Valve. Steam e Steam Controller sono marchi di Valve Corporation.",
+    "Contexts": [
+      "MainWindow.xaml.cs:3339"
+    ],
+    "Translations": {
+      "en": "Playhub is an independent project and is not affiliated with or endorsed by Valve. Steam and Steam Controller are trademarks of Valve Corporation.",
+      "es": "Playhub es un proyecto independiente y no está afiliado a Valve ni cuenta con su aprobación. Steam y Steam Controller son marcas de Valve Corporation.",
+      "fr": "Playhub est un projet indépendant qui n’est ni affilié à Valve ni approuvé par Valve. Steam et Steam Controller sont des marques de Valve Corporation.",
+      "de": "Playhub ist ein unabhängiges Projekt und ist weder mit Valve verbunden noch von Valve gebilligt. Steam und Steam Controller sind Marken der Valve Corporation.",
+      "pt": "O Playhub é um projeto independente, sem afiliação nem aprovação da Valve. Steam e Steam Controller são marcas comerciais da Valve Corporation.",
+      "uk": "Playhub — незалежний проєкт, не пов’язаний із Valve та не схвалений нею. Steam і Steam Controller — торговельні марки Valve Corporation.",
+      "zh": "Playhub 是独立项目，与 Valve 无隶属关系，也未获其认可。Steam 和 Steam Controller 是 Valve Corporation 的商标。",
+      "ja": "Playhub は独立したプロジェクトであり、Valve との提携関係はなく、Valve の承認も受けていません。Steam および Steam Controller は Valve Corporation の商標です。",
+      "ko": "Playhub는 독립 프로젝트이며 Valve와 제휴 관계가 없고 Valve의 승인을 받지 않았습니다. Steam과 Steam Controller는 Valve Corporation의 상표입니다.",
+      "hi": "Playhub एक स्वतंत्र प्रोजेक्ट है और यह न तो Valve से संबद्ध है, न ही Valve द्वारा अनुमोदित है। Steam और Steam Controller, Valve Corporation के ट्रेडमार्क हैं।",
+      "ru": "Playhub — независимый проект, не связанный с Valve и не одобренный этой компанией. Steam и Steam Controller — товарные знаки Valve Corporation.",
+      "it": "Playhub è un progetto indipendente e non è affiliato né approvato da Valve. Steam e Steam Controller sono marchi di Valve Corporation."
+    }
+  },
+  {
+    "Source": "Playhub verrà riavviato.",
+    "Contexts": [
+      "MainWindow.xaml.cs:3241"
+    ],
+    "Translations": {
+      "en": "Playhub will restart.",
+      "es": "Playhub se reiniciará.",
+      "fr": "Playhub va redémarrer.",
+      "de": "Playhub wird neu gestartet.",
+      "pt": "O Playhub será reiniciado.",
+      "uk": "Playhub буде перезапущено.",
+      "zh": "Playhub 将重新启动。",
+      "ja": "Playhub が再起動します。",
+      "ko": "Playhub가 다시 시작됩니다.",
+      "hi": "Playhub फिर से शुरू होगा।",
+      "ru": "Playhub будет перезапущен.",
+      "it": "Playhub verrà riavviato."
+    }
+  },
+  {
+    "Source": "Inattività prima di nascondere il cursore.",
+    "Contexts": [
+      "MainWindow.xaml.cs:2126"
+    ],
+    "Translations": {
+      "en": "How long to wait while idle before hiding the cursor.",
+      "es": "Tiempo de inactividad antes de ocultar el cursor.",
+      "fr": "Durée d’inactivité avant de masquer le curseur.",
+      "de": "Dauer der Inaktivität, bevor der Cursor ausgeblendet wird.",
+      "pt": "Tempo de inatividade antes de ocultar o cursor.",
+      "uk": "Час бездіяльності перед приховуванням курсора.",
+      "zh": "空闲多久后隐藏光标。",
+      "ja": "操作がない状態でカーソルを隠すまでの時間。",
+      "ko": "마우스를 움직이지 않을 때 커서를 숨기기까지의 시간입니다.",
+      "hi": "कर्सर छिपाने से पहले निष्क्रियता की अवधि।",
+      "ru": "Время бездействия до скрытия курсора.",
+      "it": "Inattività prima di nascondere il cursore."
+    }
+  },
+  {
+    "Source": "Personalizza lo sfondo e il colore di Playhub.",
+    "Contexts": [
+      "MainWindow.xaml.cs:3206"
+    ],
+    "Translations": {
+      "en": "Customize Playhub's background and color.",
+      "es": "Personaliza el fondo y el color de Playhub.",
+      "fr": "Personnalise l’arrière-plan et la couleur de Playhub.",
+      "de": "Passe den Hintergrund und die Farbe von Playhub an.",
+      "pt": "Personalize o fundo e a cor do Playhub.",
+      "uk": "Налаштуй фон і колір Playhub.",
+      "zh": "自定义 Playhub 的背景和颜色。",
+      "ja": "Playhub の背景と色をカスタマイズします。",
+      "ko": "Playhub의 배경과 색상을 원하는 대로 바꾸세요.",
+      "hi": "Playhub का बैकग्राउंड और रंग अपनी पसंद के अनुसार बदलें।",
+      "ru": "Настрой фон и цвет Playhub.",
+      "it": "Personalizza lo sfondo e il colore di Playhub."
+    }
+  },
+  {
+    "Source": "Windows ha impedito la scrittura del file shortcuts di Steam. Consenti Playhub in Accesso alle cartelle controllato e riprova. ",
+    "Contexts": [
+      "MainWindow.xaml.cs:8975"
+    ],
+    "Translations": {
+      "en": "Windows prevented Playhub from writing to Steam's shortcuts file. Allow Playhub through Controlled folder access and try again. ",
+      "es": "Windows ha bloqueado la escritura del archivo de accesos directos de Steam. Autoriza Playhub en «Acceso controlado a carpetas» e inténtalo de nuevo. ",
+      "fr": "Windows a bloqué l’écriture du fichier shortcuts de Steam. Autorise Playhub dans «\u00A0Accès contrôlé aux dossiers\u00A0», puis réessaie. ",
+      "de": "Windows hat das Schreiben der Steam-Verknüpfungsdatei blockiert. Lass Playhub unter „Überwachter Ordnerzugriff“ zu und versuche es erneut. ",
+      "pt": "O Windows bloqueou a gravação do arquivo de atalhos do Steam. Permita o Playhub no Acesso controlado a pastas e tente novamente. ",
+      "uk": "Windows заблокувала запис файлу ярликів Steam. Додай Playhub до дозволених програм у розділі «Контрольований доступ до папок» і спробуй ще раз. ",
+      "zh": "Windows 阻止写入 Steam shortcuts 文件。请在“受控文件夹访问”中允许 Playhub 后重试。",
+      "ja": "Windows が Steam の shortcuts ファイルへの書き込みをブロックしました。「コントロールされたフォルダー アクセス」で Playhub を許可して再試行してください。 ",
+      "ko": "Windows가 Steam 바로가기 파일 쓰기를 차단했습니다. 제어된 폴더 액세스에서 Playhub를 허용한 뒤 다시 시도하세요. ",
+      "hi": "Windows ने Steam की शॉर्टकट फ़ाइल में लिखने से रोक दिया। “नियंत्रित फ़ोल्डर ऐक्सेस” में Playhub को अनुमति दें और फिर कोशिश करें। ",
+      "ru": "Windows заблокировала запись файла ярлыков Steam. Разреши Playhub в разделе «Контролируемый доступ к папкам» и попробуй снова. ",
+      "it": "Windows ha impedito la scrittura del file shortcuts di Steam. Consenti Playhub in Accesso alle cartelle controllato e riprova. "
+    }
+  }
+]

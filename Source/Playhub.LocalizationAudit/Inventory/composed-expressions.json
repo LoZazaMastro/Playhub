@@ -1,0 +1,1921 @@
+[
+  {
+    "File": "MainWindow.Navigation.cs",
+    "Line": 20,
+    "Expression": "\"plugins/\" + _pluginStoreMode + (_pluginStoreMode == \"discover\"\n            ? \"/\" + (_pluginCategoryFilter ?? (_pluginShowAll ? \"all\" : \"home\")) : string.Empty)",
+    "Parts": [
+      {
+        "Key": "plugins/",
+        "Category": "excluded"
+      },
+      {
+        "Key": "discover",
+        "Category": "excluded"
+      },
+      {
+        "Key": "/",
+        "Category": "excluded"
+      },
+      {
+        "Key": "all",
+        "Category": "excluded"
+      },
+      {
+        "Key": "home",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.Navigation.cs",
+    "Line": 21,
+    "Expression": "\"/\" + (_pluginCategoryFilter ?? (_pluginShowAll ? \"all\" : \"home\"))",
+    "Parts": [
+      {
+        "Key": "/",
+        "Category": "excluded"
+      },
+      {
+        "Key": "all",
+        "Category": "excluded"
+      },
+      {
+        "Key": "home",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.PluginDiscovery.cs",
+    "Line": 21,
+    "Expression": "\"category:\" + category",
+    "Parts": [
+      {
+        "Key": "category:",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.PluginInstallProgress.cs",
+    "Line": 409,
+    "Expression": "T(operation.Updating\n                ? \"Aggiornamento non riuscito: \" : \"Installazione del plugin non riuscita: \") + FriendlyError(ex)",
+    "Parts": [
+      {
+        "Key": "Aggiornamento non riuscito: ",
+        "Category": "ui"
+      },
+      {
+        "Key": "Installazione del plugin non riuscita: ",
+        "Category": "ui"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.PluginInstallProgress.cs",
+    "Line": 442,
+    "Expression": "T(\"Rimozione del plugin non riuscita: \") + FriendlyError(ex)",
+    "Parts": [
+      {
+        "Key": "Rimozione del plugin non riuscita: ",
+        "Category": "ui"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.RemoteCatalog.cs",
+    "Line": 87,
+    "Expression": "\"Remote plugin catalog: \" + ex.Message",
+    "Parts": [
+      {
+        "Key": "Remote plugin catalog: ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.SupportReminder.cs",
+    "Line": 292,
+    "Expression": "\"Support reminder deferred: \" + ex.GetType().Name",
+    "Parts": [
+      {
+        "Key": "Support reminder deferred: ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 40,
+    "Expression": "@\"(?<link>\\[(?<linkText>[^\\]]+)\\]\\((?<linkUrl>https?://[^)\\s]+)\\))|\" +\n        @\"(?<bold>\\*\\*(?<boldText>.+?)\\*\\*)|(?<boldAlt>__(?<boldAltText>.+?)__)|\" +\n        @\"(?<italic>(?<!\\*)\\*(?<italicText>[^*\\n]+)\\*(?!\\*))|\" +\n        @\"(?<italicAlt>(?<!_)_(?<italicAltText>[^_\\n]+)_(?!_))|\" +\n        @\"(?<code>`(?<codeText>[^`\\n]+)`)|(?<url>https?://[^\\s]+)\"",
+    "Parts": [
+      {
+        "Key": "(?<link>\\[(?<linkText>[^\\]]+)\\]\\((?<linkUrl>https?://[^)\\s]+)\\))|",
+        "Category": "excluded"
+      },
+      {
+        "Key": "(?<bold>\\*\\*(?<boldText>.+?)\\*\\*)|(?<boldAlt>__(?<boldAltText>.+?)__)|",
+        "Category": "excluded"
+      },
+      {
+        "Key": "(?<italic>(?<!\\*)\\*(?<italicText>[^*\\n]+)\\*(?!\\*))|",
+        "Category": "excluded"
+      },
+      {
+        "Key": "(?<italicAlt>(?<!_)_(?<italicAltText>[^_\\n]+)_(?!_))|",
+        "Category": "excluded"
+      },
+      {
+        "Key": "(?<code>`(?<codeText>[^`\\n]+)`)|(?<url>https?://[^\\s]+)",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 384,
+    "Expression": "\"LoadAsync: aggiornamento dell'agente non riuscito: \" + ex.Message",
+    "Parts": [
+      {
+        "Key": "LoadAsync: aggiornamento dell'agente non riuscito: ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 397,
+    "Expression": "\"LoadAsync: sync plugin Decky non riuscita: \" + ex.Message",
+    "Parts": [
+      {
+        "Key": "LoadAsync: sync plugin Decky non riuscita: ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 429,
+    "Expression": "DateTime.Now + \" LoadAsync\\n\" + ex + \"\\n\\n\"",
+    "Parts": [
+      {
+        "Key": " LoadAsync\n",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\n\n",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 794,
+    "Expression": "\"<PathIcon xmlns=\\\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\\\" Data=\\\"\" + pathData + \"\\\"/>\"",
+    "Parts": [
+      {
+        "Key": "<PathIcon xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" Data=\"",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\"/>",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 3395,
+    "Expression": "\"\\n• \" + string.Join(\"\\n• \", report.Notes.Select(T))",
+    "Parts": [
+      {
+        "Key": "\n• ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\n• ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 3432,
+    "Expression": "\"/select,\\\"\" + reportPath + \"\\\"\"",
+    "Parts": [
+      {
+        "Key": "/select,\"",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\"",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 3987,
+    "Expression": "string.Format(\n                    T(\"Aggiornamento di {0} su {1}\"), index + 1, updates.Count) + $\": {plugin.Name}\"",
+    "Parts": [
+      {
+        "Key": "Aggiornamento di {0} su {1}",
+        "Category": "ui"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 3994,
+    "Expression": "string.Format(\n                        T(\"Aggiornamento di {0} su {1}\"), index + 1, updates.Count) + $\": {plugin.Name}\"",
+    "Parts": [
+      {
+        "Key": "Aggiornamento di {0} su {1}",
+        "Category": "ui"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 4948,
+    "Expression": "\"<DataTemplate xmlns=\\\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\\\">\" +\n            \"<ContentPresenter HorizontalContentAlignment=\\\"Stretch\\\" />\" +\n            \"</DataTemplate>\"",
+    "Parts": [
+      {
+        "Key": "<DataTemplate xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\">",
+        "Category": "excluded"
+      },
+      {
+        "Key": "<ContentPresenter HorizontalContentAlignment=\"Stretch\" />",
+        "Category": "excluded"
+      },
+      {
+        "Key": "</DataTemplate>",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 5308,
+    "Expression": "\"<PathIcon xmlns=\\\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\\\" Data=\\\"\" + GitHubMarkPath + \"\\\"/>\"",
+    "Parts": [
+      {
+        "Key": "<PathIcon xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" Data=\"",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\"/>",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 5524,
+    "Expression": "\"<PathIcon xmlns=\\\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\\\" Data=\\\"\" + GitHubMarkPath + \"\\\"/>\"",
+    "Parts": [
+      {
+        "Key": "<PathIcon xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" Data=\"",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\"/>",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 5960,
+    "Expression": "paragraph.Substring(0, 320).TrimEnd() + \"…\"",
+    "Parts": [
+      {
+        "Key": "…",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 6279,
+    "Expression": "plugin.Name + \".jpg\"",
+    "Parts": [
+      {
+        "Key": ".jpg",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 6330,
+    "Expression": "\" - \" + version",
+    "Parts": [
+      {
+        "Key": " - ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 7822,
+    "Expression": "sizeText + \" · Steam\"",
+    "Parts": [
+      {
+        "Key": " · Steam",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 8063,
+    "Expression": "selected + \".png\"",
+    "Parts": [
+      {
+        "Key": ".png",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 8389,
+    "Expression": "\"<PathIcon xmlns=\\\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\\\" Data=\\\"\" + GitHubMarkPath + \"\\\"/>\"",
+    "Parts": [
+      {
+        "Key": "<PathIcon xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" Data=\"",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\"/>",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 8860,
+    "Expression": "\"Plugin Store: \" + message",
+    "Parts": [
+      {
+        "Key": "Plugin Store: ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 8912,
+    "Expression": "\"Language restart failed: \" + failure",
+    "Parts": [
+      {
+        "Key": "Language restart failed: ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "MainWindow.xaml.cs",
+    "Line": 8940,
+    "Expression": "\" \" + string.Format(T(\"File bloccato: {0}\"), blockedFile)",
+    "Parts": [
+      {
+        "Key": " ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "File bloccato: {0}",
+        "Category": "ui"
+      }
+    ]
+  },
+  {
+    "File": "Services/AppPaths.cs",
+    "Line": 78,
+    "Expression": "path + \".bak\"",
+    "Parts": [
+      {
+        "Key": ".bak",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/AppPaths.cs",
+    "Line": 90,
+    "Expression": "path + \".\" + Guid.NewGuid().ToString(\"N\") + \".tmp\"",
+    "Parts": [
+      {
+        "Key": ".",
+        "Category": "excluded"
+      },
+      {
+        "Key": "N",
+        "Category": "excluded"
+      },
+      {
+        "Key": ".tmp",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/AppPaths.cs",
+    "Line": 145,
+    "Expression": "path + \".bak\"",
+    "Parts": [
+      {
+        "Key": ".bak",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/CssLoaderInstallService.cs",
+    "Line": 69,
+    "Expression": "\".playhub-cssloader-stage-\" + Guid.NewGuid().ToString(\"N\")",
+    "Parts": [
+      {
+        "Key": ".playhub-cssloader-stage-",
+        "Category": "excluded"
+      },
+      {
+        "Key": "N",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/CssLoaderInstallService.cs",
+    "Line": 70,
+    "Expression": "\".playhub-cssloader-rollback-\" + Guid.NewGuid().ToString(\"N\")",
+    "Parts": [
+      {
+        "Key": ".playhub-cssloader-rollback-",
+        "Category": "excluded"
+      },
+      {
+        "Key": "N",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/CssLoaderInstallService.cs",
+    "Line": 114,
+    "Expression": "destination + \".invalid-\" + Guid.NewGuid().ToString(\"N\")",
+    "Parts": [
+      {
+        "Key": ".invalid-",
+        "Category": "excluded"
+      },
+      {
+        "Key": "N",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/CssLoaderInstallService.cs",
+    "Line": 719,
+    "Expression": "\"/\" + assetName",
+    "Parts": [
+      {
+        "Key": "/",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DeckyInstallerService.cs",
+    "Line": 312,
+    "Expression": "\"\\\"\" + loader + \"\\\"\"",
+    "Parts": [
+      {
+        "Key": "\"",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\"",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DeckyPluginService.cs",
+    "Line": 280,
+    "Expression": "\"plugin-\" + Path.GetFileNameWithoutExtension(zip)",
+    "Parts": [
+      {
+        "Key": "plugin-",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DeckyPluginService.cs",
+    "Line": 307,
+    "Expression": "target + \".partial\"",
+    "Parts": [
+      {
+        "Key": ".partial",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/Diag.cs",
+    "Line": 24,
+    "Expression": "\"STEP  \" + stage",
+    "Parts": [
+      {
+        "Key": "STEP  ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/Diag.cs",
+    "Line": 27,
+    "Expression": "\"CRASH \" + source + \"\\n\" + error",
+    "Parts": [
+      {
+        "Key": "CRASH ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\n",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/Diag.cs",
+    "Line": 31,
+    "Expression": "DateTime.Now.ToString(\"yyyy-MM-dd HH:mm:ss.fff\") + \"  \" + message + \"\\n\"",
+    "Parts": [
+      {
+        "Key": "yyyy-MM-dd HH:mm:ss.fff",
+        "Category": "excluded"
+      },
+      {
+        "Key": "  ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\n",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 53,
+    "Expression": "\"Generated : \" + DateTimeOffset.Now.ToString(\"yyyy-MM-dd HH:mm:ss zzz\", CultureInfo.InvariantCulture)",
+    "Parts": [
+      {
+        "Key": "Generated : ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "yyyy-MM-dd HH:mm:ss zzz",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 71,
+    "Expression": "\"Playhub-Report-\" + DateTime.Now.ToString(\"yyyyMMdd-HHmmss\", CultureInfo.InvariantCulture) + \".txt\"",
+    "Parts": [
+      {
+        "Key": "Playhub-Report-",
+        "Category": "excluded"
+      },
+      {
+        "Key": "yyyyMMdd-HHmmss",
+        "Category": "excluded"
+      },
+      {
+        "Key": ".txt",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 82,
+    "Expression": "\"---------- \" + title + \" ----------\"",
+    "Parts": [
+      {
+        "Key": "---------- ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " ----------",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 89,
+    "Expression": "\"SECTION ERROR: \" + ex.Message",
+    "Parts": [
+      {
+        "Key": "SECTION ERROR: ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 96,
+    "Expression": "\"---------- \" + title + \" ----------\"",
+    "Parts": [
+      {
+        "Key": "---------- ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " ----------",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 103,
+    "Expression": "\"SECTION ERROR: \" + ex.Message",
+    "Parts": [
+      {
+        "Key": "SECTION ERROR: ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 109,
+    "Expression": "\"OS            : \" + Environment.OSVersion.VersionString",
+    "Parts": [
+      {
+        "Key": "OS            : ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 110,
+    "Expression": "\"64-bit OS     : \" + Environment.Is64BitOperatingSystem + \" (process 64-bit: \" + Environment.Is64BitProcess + \")\"",
+    "Parts": [
+      {
+        "Key": "64-bit OS     : ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " (process 64-bit: ",
+        "Category": "excluded"
+      },
+      {
+        "Key": ")",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 111,
+    "Expression": "\".NET runtime  : \" + RuntimeInformation.FrameworkDescription",
+    "Parts": [
+      {
+        "Key": ".NET runtime  : ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 112,
+    "Expression": "\"Architecture  : \" + RuntimeInformation.OSArchitecture",
+    "Parts": [
+      {
+        "Key": "Architecture  : ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 113,
+    "Expression": "\"CPU           : \" + (Environment.GetEnvironmentVariable(\"PROCESSOR_IDENTIFIER\") ?? \"?\") + \" (\" + Environment.ProcessorCount + \" logical cores)\"",
+    "Parts": [
+      {
+        "Key": "CPU           : ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "PROCESSOR_IDENTIFIER",
+        "Category": "excluded"
+      },
+      {
+        "Key": "?",
+        "Category": "excluded"
+      },
+      {
+        "Key": " (",
+        "Category": "excluded"
+      },
+      {
+        "Key": " logical cores)",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 117,
+    "Expression": "\"RAM           : \" + memory.Value.TotalMb + \" MB total, \" + memory.Value.AvailableMb + \" MB free (\" + memory.Value.LoadPercent + \"% in use)\"",
+    "Parts": [
+      {
+        "Key": "RAM           : ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " MB total, ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " MB free (",
+        "Category": "excluded"
+      },
+      {
+        "Key": "% in use)",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 119,
+    "Expression": "\"Uptime        : \" + TimeSpan.FromMilliseconds(Environment.TickCount64).ToString(@\"d\\.hh\\:mm\\:ss\", CultureInfo.InvariantCulture)",
+    "Parts": [
+      {
+        "Key": "Uptime        : ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "d\\.hh\\:mm\\:ss",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 120,
+    "Expression": "\"Culture       : \" + CultureInfo.CurrentCulture.Name + \" (UI: \" + CultureInfo.CurrentUICulture.Name + \")\"",
+    "Parts": [
+      {
+        "Key": "Culture       : ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " (UI: ",
+        "Category": "excluded"
+      },
+      {
+        "Key": ")",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 121,
+    "Expression": "\"Primary screen: \" + GetSystemMetrics(0) + \"x\" + GetSystemMetrics(1)",
+    "Parts": [
+      {
+        "Key": "Primary screen: ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "x",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 122,
+    "Expression": "\"Virtual screen: \" + GetSystemMetrics(78) + \"x\" + GetSystemMetrics(79) + \" (\" + GetSystemMetrics(80) + \" monitor(s))\"",
+    "Parts": [
+      {
+        "Key": "Virtual screen: ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "x",
+        "Category": "excluded"
+      },
+      {
+        "Key": " (",
+        "Category": "excluded"
+      },
+      {
+        "Key": " monitor(s))",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 123,
+    "Expression": "\"Session state : shutting down = \" + (GetSystemMetrics(0x2000) != 0)",
+    "Parts": [
+      {
+        "Key": "Session state : shutting down = ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 128,
+    "Expression": "\"Version       : \" + (System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? \"?\")",
+    "Parts": [
+      {
+        "Key": "Version       : ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "?",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 129,
+    "Expression": "\"Base directory: \" + AppContext.BaseDirectory",
+    "Parts": [
+      {
+        "Key": "Base directory: ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 130,
+    "Expression": "\"Process ID    : \" + Environment.ProcessId",
+    "Parts": [
+      {
+        "Key": "Process ID    : ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 131,
+    "Expression": "\"GamingMode pkg: \" + Describe(AppPaths.GamingModePackage)",
+    "Parts": [
+      {
+        "Key": "GamingMode pkg: ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 132,
+    "Expression": "\"UWPHook pkg   : \" + Describe(AppPaths.UwpHookPackage)",
+    "Parts": [
+      {
+        "Key": "UWPHook pkg   : ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 133,
+    "Expression": "\"Decky inst pkg: \" + Describe(AppPaths.DeckyInstallerPackage)",
+    "Parts": [
+      {
+        "Key": "Decky inst pkg: ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 139,
+    "Expression": "\"Installed     : \" + _gamingMode.IsInstalled",
+    "Parts": [
+      {
+        "Key": "Installed     : ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 144,
+    "Expression": "\"Agent exe     : \" + _gamingMode.InstalledExe",
+    "Parts": [
+      {
+        "Key": "Agent exe     : ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 145,
+    "Expression": "\"Agent version : \" + (info.FileVersion ?? \"?\") + \" (\" + file.Length + \" bytes, modified \" + file.LastWriteTime.ToString(\"yyyy-MM-dd HH:mm\", CultureInfo.InvariantCulture) + \")\"",
+    "Parts": [
+      {
+        "Key": "Agent version : ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "?",
+        "Category": "excluded"
+      },
+      {
+        "Key": " (",
+        "Category": "excluded"
+      },
+      {
+        "Key": " bytes, modified ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "yyyy-MM-dd HH:mm",
+        "Category": "excluded"
+      },
+      {
+        "Key": ")",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 152,
+    "Expression": "\"Bundled exe   : \" + (info.FileVersion ?? \"?\") + \" (\" + file.Length + \" bytes)\"",
+    "Parts": [
+      {
+        "Key": "Bundled exe   : ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "?",
+        "Category": "excluded"
+      },
+      {
+        "Key": " (",
+        "Category": "excluded"
+      },
+      {
+        "Key": " bytes)",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 165,
+    "Expression": "\"http://127.0.0.1:47991\" + endpoint",
+    "Parts": [
+      {
+        "Key": "http://127.0.0.1:47991",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 167,
+    "Expression": "endpoint + \" -> HTTP \" + (int)response.StatusCode",
+    "Parts": [
+      {
+        "Key": " -> HTTP ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 172,
+    "Expression": "endpoint + \" -> UNREACHABLE (\" + ex.GetBaseException().Message + \")\"",
+    "Parts": [
+      {
+        "Key": " -> UNREACHABLE (",
+        "Category": "excluded"
+      },
+      {
+        "Key": ")",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 181,
+    "Expression": "\"Winlogon Shell (HKCU): \" + ((key?.GetValue(\"Shell\") as string) ?? \"<not set - Explorer default>\")",
+    "Parts": [
+      {
+        "Key": "Winlogon Shell (HKCU): ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "Shell",
+        "Category": "excluded"
+      },
+      {
+        "Key": "<not set - Explorer default>",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 190,
+    "Expression": "\"  - \" + Path.GetFileName(file)",
+    "Parts": [
+      {
+        "Key": "  - ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 201,
+    "Expression": "\"  - \" + name + \" = \" + run.GetValue(name)",
+    "Parts": [
+      {
+        "Key": "  - ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " = ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 211,
+    "Expression": "\"SteamExe (registry): \" + ((key?.GetValue(\"SteamExe\") as string) ?? \"<not found>\")",
+    "Parts": [
+      {
+        "Key": "SteamExe (registry): ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "SteamExe",
+        "Category": "excluded"
+      },
+      {
+        "Key": "<not found>",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 212,
+    "Expression": "\"SteamPath          : \" + ((key?.GetValue(\"SteamPath\") as string) ?? \"<not found>\")",
+    "Parts": [
+      {
+        "Key": "SteamPath          : ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "SteamPath",
+        "Category": "excluded"
+      },
+      {
+        "Key": "<not found>",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 217,
+    "Expression": "name + \" running    : \" + (processes.Length > 0 ? processes.Length + \" process(es), PID \" + string.Join(\", \", processes.Select(p => p.Id)) : \"no\")",
+    "Parts": [
+      {
+        "Key": " running    : ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " process(es), PID ",
+        "Category": "excluded"
+      },
+      {
+        "Key": ", ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "no",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 217,
+    "Expression": "processes.Length + \" process(es), PID \" + string.Join(\", \", processes.Select(p => p.Id))",
+    "Parts": [
+      {
+        "Key": " process(es), PID ",
+        "Category": "excluded"
+      },
+      {
+        "Key": ", ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 225,
+    "Expression": "\"homebrew dir  : \" + Describe(homebrew)",
+    "Parts": [
+      {
+        "Key": "homebrew dir  : ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 231,
+    "Expression": "\"  - \" + Path.GetFileName(dir)",
+    "Parts": [
+      {
+        "Key": "  - ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 235,
+    "Expression": "\"PluginLoader  : \" + (File.Exists(Path.Combine(services, \"PluginLoader_noconsole.exe\")) || File.Exists(Path.Combine(services, \"PluginLoader.exe\")) ? \"installed\" : \"not found\")",
+    "Parts": [
+      {
+        "Key": "PluginLoader  : ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "PluginLoader_noconsole.exe",
+        "Category": "excluded"
+      },
+      {
+        "Key": "PluginLoader.exe",
+        "Category": "excluded"
+      },
+      {
+        "Key": "installed",
+        "Category": "excluded"
+      },
+      {
+        "Key": "not found",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 237,
+    "Expression": "\"Loader running: \" + (running.Length > 0 ? \"yes, PID \" + string.Join(\", \", running.Select(p => p.Id)) : \"no\")",
+    "Parts": [
+      {
+        "Key": "Loader running: ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "yes, PID ",
+        "Category": "excluded"
+      },
+      {
+        "Key": ", ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "no",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 237,
+    "Expression": "\"yes, PID \" + string.Join(\", \", running.Select(p => p.Id))",
+    "Parts": [
+      {
+        "Key": "yes, PID ",
+        "Category": "excluded"
+      },
+      {
+        "Key": ", ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 266,
+    "Expression": "\"Found         : \" + path + \" (v\" + (info.FileVersion ?? \"?\") + \")\"",
+    "Parts": [
+      {
+        "Key": "Found         : ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " (v",
+        "Category": "excluded"
+      },
+      {
+        "Key": "?",
+        "Category": "excluded"
+      },
+      {
+        "Key": ")",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 274,
+    "Expression": "name + \" running: yes, PID \" + string.Join(\", \", processes.Select(p => p.Id))",
+    "Parts": [
+      {
+        "Key": " running: yes, PID ",
+        "Category": "excluded"
+      },
+      {
+        "Key": ", ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 288,
+    "Expression": "\"RUNNING: \" + name + \" (PID \" + string.Join(\", \", processes.Select(p => p.Id)) + \") - may interfere with overlays/fullscreen/controllers\"",
+    "Parts": [
+      {
+        "Key": "RUNNING: ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " (PID ",
+        "Category": "excluded"
+      },
+      {
+        "Key": ", ",
+        "Category": "excluded"
+      },
+      {
+        "Key": ") - may interfere with overlays/fullscreen/controllers",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 307,
+    "Expression": "process.ProcessName.PadRight(32).Substring(0, 32) + \" \" + process.Id.ToString(CultureInfo.InvariantCulture).PadRight(8) + \" \" + ram.ToString(CultureInfo.InvariantCulture).PadRight(8) + \" \" + Truncate(title, 60)",
+    "Parts": [
+      {
+        "Key": " ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 332,
+    "Expression": "\"--- \" + label + \" (\" + path + \") ---\"",
+    "Parts": [
+      {
+        "Key": "--- ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " (",
+        "Category": "excluded"
+      },
+      {
+        "Key": ") ---",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 339,
+    "Expression": "\"<unreadable: \" + ex.Message + \">\"",
+    "Parts": [
+      {
+        "Key": "<unreadable: ",
+        "Category": "excluded"
+      },
+      {
+        "Key": ">",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 345,
+    "Expression": "\"--- \" + label + \" (last \" + lines + \" lines of \" + path + \") ---\"",
+    "Parts": [
+      {
+        "Key": "--- ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " (last ",
+        "Category": "excluded"
+      },
+      {
+        "Key": " lines of ",
+        "Category": "excluded"
+      },
+      {
+        "Key": ") ---",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 360,
+    "Expression": "\"<unreadable: \" + ex.Message + \">\"",
+    "Parts": [
+      {
+        "Key": "<unreadable: ",
+        "Category": "excluded"
+      },
+      {
+        "Key": ">",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 368,
+    "Expression": "dir + \" (present)\"",
+    "Parts": [
+      {
+        "Key": " (present)",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 368,
+    "Expression": "dir + \" (MISSING)\"",
+    "Parts": [
+      {
+        "Key": " (MISSING)",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/DiagnosticsService.cs",
+    "Line": 382,
+    "Expression": "value[..maxChars] + \"\\n<...truncated...>\"",
+    "Parts": [
+      {
+        "Key": "\n<...truncated...>",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/GamingModeService.cs",
+    "Line": 437,
+    "Expression": "ConfigFile + \".bak\"",
+    "Parts": [
+      {
+        "Key": ".bak",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PlayhubUpdateService.cs",
+    "Line": 68,
+    "Expression": "\"tags/\" + Uri.EscapeDataString(releaseTag)",
+    "Parts": [
+      {
+        "Key": "tags/",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PlayhubUpdateService.cs",
+    "Line": 167,
+    "Expression": "destination + \".\" + Guid.NewGuid().ToString(\"N\") + \".part\"",
+    "Parts": [
+      {
+        "Key": ".",
+        "Category": "excluded"
+      },
+      {
+        "Key": "N",
+        "Category": "excluded"
+      },
+      {
+        "Key": ".part",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 370,
+    "Expression": "Owner + \"/\"",
+    "Parts": [
+      {
+        "Key": "/",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 723,
+    "Expression": "slug + \".png\"",
+    "Parts": [
+      {
+        "Key": ".png",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 826,
+    "Expression": "atom + \"entry\"",
+    "Parts": [
+      {
+        "Key": "entry",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 832,
+    "Expression": "atom + \"link\"",
+    "Parts": [
+      {
+        "Key": "link",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 838,
+    "Expression": "atom + \"content\"",
+    "Parts": [
+      {
+        "Key": "content",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 840,
+    "Expression": "atom + \"updated\"",
+    "Parts": [
+      {
+        "Key": "updated",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 914,
+    "Expression": "SanitizeCacheName(repoName) + \".json\"",
+    "Parts": [
+      {
+        "Key": ".json",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 966,
+    "Expression": "SanitizeCacheName(repoName) + \"-\" + SanitizeCacheName(installedVersion) + \".json\"",
+    "Parts": [
+      {
+        "Key": "-",
+        "Category": "excluded"
+      },
+      {
+        "Key": ".json",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 976,
+    "Expression": "SanitizeCacheName(repoName) + \".json\"",
+    "Parts": [
+      {
+        "Key": ".json",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 1070,
+    "Expression": "\"/\" + escapedPath",
+    "Parts": [
+      {
+        "Key": "/",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 1244,
+    "Expression": "url + \" \" + alt",
+    "Parts": [
+      {
+        "Key": " ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 1253,
+    "Expression": "@\"(?m)^[ \\t]{0,3}\\[(?<id>[^\\]]+)\\]:[ \\t]*\" + MarkdownMediaDestination",
+    "Parts": [
+      {
+        "Key": "(?m)^[ \\t]{0,3}\\[(?<id>[^\\]]+)\\]:[ \\t]*",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 1257,
+    "Expression": "@\"(?<image>!)?\\[(?<alt>[^\\[\\]\\r\\n]*)\\]\\(\\s*\" + MarkdownMediaDestination + @\"(?:\\s+[\"\"'][^\\r\\n]*?[\"\"'])?\\s*\\)\"",
+    "Parts": [
+      {
+        "Key": "(?<image>!)?\\[(?<alt>[^\\[\\]\\r\\n]*)\\]\\(\\s*",
+        "Category": "excluded"
+      },
+      {
+        "Key": "(?:\\s+[\"'][^\\r\\n]*?[\"'])?\\s*\\)",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 1313,
+    "Expression": "\"https:\" + value",
+    "Parts": [
+      {
+        "Key": "https:",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 1338,
+    "Expression": "@\"!\\[[^\\]]*\\]\\(\\s*\" + MarkdownMediaDestination + @\"(?:\\s+[\"\"'][^\\r\\n]*?[\"\"'])?\\s*\\)\"",
+    "Parts": [
+      {
+        "Key": "!\\[[^\\]]*\\]\\(\\s*",
+        "Category": "excluded"
+      },
+      {
+        "Key": "(?:\\s+[\"'][^\\r\\n]*?[\"'])?\\s*\\)",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 1391,
+    "Expression": "\"\\n\" + string.Join(\"\\n\", match.Groups[\"value\"].Value.Trim().Split('\\n').Select(line => \"> \" + line.Trim())) + \"\\n\"",
+    "Parts": [
+      {
+        "Key": "\n",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\n",
+        "Category": "excluded"
+      },
+      {
+        "Key": "value",
+        "Category": "excluded"
+      },
+      {
+        "Key": "> ",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\n",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 1391,
+    "Expression": "\"> \" + line.Trim()",
+    "Parts": [
+      {
+        "Key": "> ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 1429,
+    "Expression": "firstParagraph[..257].TrimEnd() + \"...\"",
+    "Parts": [
+      {
+        "Key": "...",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 1723,
+    "Expression": "string.Join('.', core) +\n                        (prerelease.Count == 0 ? \"\" : \"-\" + string.Join('.', prerelease).ToLowerInvariant())",
+    "Parts": [
+      {
+        "Key": "",
+        "Category": "excluded"
+      },
+      {
+        "Key": "-",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/PluginCatalogService.cs",
+    "Line": 1724,
+    "Expression": "\"-\" + string.Join('.', prerelease).ToLowerInvariant()",
+    "Parts": [
+      {
+        "Key": "-",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/ReleaseNotesTranslationService.cs",
+    "Line": 31,
+    "Expression": "@\"(?<ticks>`+)[^\\r\\n]*?\\k<ticks>|\" +\n        @\"\\]\\((?:[^()\\\\\\r\\n]|\\\\.|(?<depth>\\()|(?<-depth>\\)))*(?(depth)(?!))\\)|\" +\n        @\"\\]\\[[^\\]\\r\\n]*\\]|(?m:^[ \\t]*\\[[^\\]\\r\\n]+\\]:[^\\r\\n]*)|\" +\n        @\"<[^>\\r\\n]+>|https?://[^\\s<>]+|\\\\.|\" +\n        @\"(?m:^[ \\t]*(?:>[ \\t]*)*(?:#{1,6}|[-+*]|\\d+[.)])[ \\t]+)|\" +\n        @\"(?m:^[ \\t]*(?:>[ \\t]*)+)|[\\r\\n`*_\\[\\]#<>~|()!\\\\]\"",
+    "Parts": [
+      {
+        "Key": "(?<ticks>`+)[^\\r\\n]*?\\k<ticks>|",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\\]\\((?:[^()\\\\\\r\\n]|\\\\.|(?<depth>\\()|(?<-depth>\\)))*(?(depth)(?!))\\)|",
+        "Category": "excluded"
+      },
+      {
+        "Key": "\\]\\[[^\\]\\r\\n]*\\]|(?m:^[ \\t]*\\[[^\\]\\r\\n]+\\]:[^\\r\\n]*)|",
+        "Category": "excluded"
+      },
+      {
+        "Key": "<[^>\\r\\n]+>|https?://[^\\s<>]+|\\\\.|",
+        "Category": "excluded"
+      },
+      {
+        "Key": "(?m:^[ \\t]*(?:>[ \\t]*)*(?:#{1,6}|[-+*]|\\d+[.)])[ \\t]+)|",
+        "Category": "excluded"
+      },
+      {
+        "Key": "(?m:^[ \\t]*(?:>[ \\t]*)+)|[\\r\\n`*_\\[\\]#<>~|()!\\\\]",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/RemotePluginCatalogService.cs",
+    "Line": 121,
+    "Expression": "\"Cache write: \" + ex.Message",
+    "Parts": [
+      {
+        "Key": "Cache write: ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/RemotePluginCatalogService.cs",
+    "Line": 187,
+    "Expression": "_cachePath + \".\" + Guid.NewGuid().ToString(\"N\") + \".tmp\"",
+    "Parts": [
+      {
+        "Key": ".",
+        "Category": "excluded"
+      },
+      {
+        "Key": "N",
+        "Category": "excluded"
+      },
+      {
+        "Key": ".tmp",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/RemotePluginCatalogService.cs",
+    "Line": 280,
+    "Expression": "\"/\" + p.Repository",
+    "Parts": [
+      {
+        "Key": "/",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/RemotePluginCatalogService.cs",
+    "Line": 289,
+    "Expression": "\"/\" + p.Repository + \"/releases/\"",
+    "Parts": [
+      {
+        "Key": "/",
+        "Category": "excluded"
+      },
+      {
+        "Key": "/releases/",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/UwpXboxService.cs",
+    "Line": 172,
+    "Expression": "unsignedAppId + \"p\"",
+    "Parts": [
+      {
+        "Key": "p",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/UwpXboxService.cs",
+    "Line": 298,
+    "Expression": "cacheKey + \".png\"",
+    "Parts": [
+      {
+        "Key": ".png",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/UwpXboxService.cs",
+    "Line": 352,
+    "Expression": "stem + \"*\" + extension",
+    "Parts": [
+      {
+        "Key": "*",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/UwpXboxService.cs",
+    "Line": 474,
+    "Expression": "\"https://www.steamgriddb.com/api/v2/\" + endpoint",
+    "Parts": [
+      {
+        "Key": "https://www.steamgriddb.com/api/v2/",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/UwpXboxService.cs",
+    "Line": 574,
+    "Expression": "\"https://store.steampowered.com/api/storesearch/?l=english&cc=us&term=\"\n                + Uri.EscapeDataString(name)",
+    "Parts": [
+      {
+        "Key": "https://store.steampowered.com/api/storesearch/?l=english&cc=us&term=",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/UwpXboxService.cs",
+    "Line": 781,
+    "Expression": "game.Aumid + \" \" + game.Executable",
+    "Parts": [
+      {
+        "Key": " ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/UwpXboxService.cs",
+    "Line": 869,
+    "Expression": "game.Aumid + \" \"",
+    "Parts": [
+      {
+        "Key": " ",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/UwpXboxService.cs",
+    "Line": 1059,
+    "Expression": "appId + \"_hero\"",
+    "Parts": [
+      {
+        "Key": "_hero",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/UwpXboxService.cs",
+    "Line": 1060,
+    "Expression": "appId + \"_logo\"",
+    "Parts": [
+      {
+        "Key": "_logo",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/UwpXboxService.cs",
+    "Line": 1061,
+    "Expression": "appId + \"p\"",
+    "Parts": [
+      {
+        "Key": "p",
+        "Category": "excluded"
+      }
+    ]
+  },
+  {
+    "File": "Services/UwpXboxService.cs",
+    "Line": 1220,
+    "Expression": "kvp.Key + \"_\"",
+    "Parts": [
+      {
+        "Key": "_",
+        "Category": "excluded"
+      }
+    ]
+  }
+]

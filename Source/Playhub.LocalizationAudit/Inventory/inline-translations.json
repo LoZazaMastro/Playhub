@@ -1,0 +1,182 @@
+[
+  {
+    "Key": "Automatic translation",
+    "Category": "inline",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 444,
+        "Member": "ApplyPlayhubUpdateDialogTranslation",
+        "Context": "automaticLabel = language switch\n        {\n            \"it\" => \"Traduzione automatica\",\n            \"es\" => \"Traducción automática\",\n            \"fr\" => \"Traduction automatique\",\n            \"de\" => \"Automatische Übersetzung\",\n            \"pt\" => \"Tradução automática\",\n            \"uk\" => \"Автоматичний переклад\",\n            \"zh\" => \"自动翻译\",\n            \"ja\" => \"自動翻訳\",\n            \"ko\" => \"자동 번역\",\n            \"hi\" => \"स्वचालित अनुवाद\",\n            \"ru\" => \"Автоматический перевод\",\n            _ => \"Automatic translation\"\n        }",
+        "Category": "inline",
+        "Reason": "Complete existing language switch; reuse native inline translation, do not duplicate"
+      }
+    ]
+  },
+  {
+    "Key": "Automatische Übersetzung",
+    "Category": "inline",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 436,
+        "Member": "ApplyPlayhubUpdateDialogTranslation",
+        "Context": "automaticLabel = language switch\n        {\n            \"it\" => \"Traduzione automatica\",\n            \"es\" => \"Traducción automática\",\n            \"fr\" => \"Traduction automatique\",\n            \"de\" => \"Automatische Übersetzung\",\n            \"pt\" => \"Tradução automática\",\n            \"uk\" => \"Автоматичний переклад\",\n            \"zh\" => \"自动翻译\",\n            \"ja\" => \"自動翻訳\",\n            \"ko\" => \"자동 번역\",\n            \"hi\" => \"स्वचालित अनुवाद\",\n            \"ru\" => \"Автоматический перевод\",\n            _ => \"Automatic translation\"\n        }",
+        "Category": "inline",
+        "Reason": "Complete existing language switch; reuse native inline translation, do not duplicate"
+      }
+    ]
+  },
+  {
+    "Key": "Traducción automática",
+    "Category": "inline",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 434,
+        "Member": "ApplyPlayhubUpdateDialogTranslation",
+        "Context": "automaticLabel = language switch\n        {\n            \"it\" => \"Traduzione automatica\",\n            \"es\" => \"Traducción automática\",\n            \"fr\" => \"Traduction automatique\",\n            \"de\" => \"Automatische Übersetzung\",\n            \"pt\" => \"Tradução automática\",\n            \"uk\" => \"Автоматичний переклад\",\n            \"zh\" => \"自动翻译\",\n            \"ja\" => \"自動翻訳\",\n            \"ko\" => \"자동 번역\",\n            \"hi\" => \"स्वचालित अनुवाद\",\n            \"ru\" => \"Автоматический перевод\",\n            _ => \"Automatic translation\"\n        }",
+        "Category": "inline",
+        "Reason": "Complete existing language switch; reuse native inline translation, do not duplicate"
+      }
+    ]
+  },
+  {
+    "Key": "Traduction automatique",
+    "Category": "inline",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 435,
+        "Member": "ApplyPlayhubUpdateDialogTranslation",
+        "Context": "automaticLabel = language switch\n        {\n            \"it\" => \"Traduzione automatica\",\n            \"es\" => \"Traducción automática\",\n            \"fr\" => \"Traduction automatique\",\n            \"de\" => \"Automatische Übersetzung\",\n            \"pt\" => \"Tradução automática\",\n            \"uk\" => \"Автоматичний переклад\",\n            \"zh\" => \"自动翻译\",\n            \"ja\" => \"自動翻訳\",\n            \"ko\" => \"자동 번역\",\n            \"hi\" => \"स्वचालित अनुवाद\",\n            \"ru\" => \"Автоматический перевод\",\n            _ => \"Automatic translation\"\n        }",
+        "Category": "inline",
+        "Reason": "Complete existing language switch; reuse native inline translation, do not duplicate"
+      }
+    ]
+  },
+  {
+    "Key": "Traduzione automatica",
+    "Category": "inline",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 433,
+        "Member": "ApplyPlayhubUpdateDialogTranslation",
+        "Context": "automaticLabel = language switch\n        {\n            \"it\" => \"Traduzione automatica\",\n            \"es\" => \"Traducción automática\",\n            \"fr\" => \"Traduction automatique\",\n            \"de\" => \"Automatische Übersetzung\",\n            \"pt\" => \"Tradução automática\",\n            \"uk\" => \"Автоматичний переклад\",\n            \"zh\" => \"自动翻译\",\n            \"ja\" => \"自動翻訳\",\n            \"ko\" => \"자동 번역\",\n            \"hi\" => \"स्वचालित अनुवाद\",\n            \"ru\" => \"Автоматический перевод\",\n            _ => \"Automatic translation\"\n        }",
+        "Category": "inline",
+        "Reason": "Complete existing language switch; reuse native inline translation, do not duplicate"
+      }
+    ]
+  },
+  {
+    "Key": "Tradução automática",
+    "Category": "inline",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 437,
+        "Member": "ApplyPlayhubUpdateDialogTranslation",
+        "Context": "automaticLabel = language switch\n        {\n            \"it\" => \"Traduzione automatica\",\n            \"es\" => \"Traducción automática\",\n            \"fr\" => \"Traduction automatique\",\n            \"de\" => \"Automatische Übersetzung\",\n            \"pt\" => \"Tradução automática\",\n            \"uk\" => \"Автоматичний переклад\",\n            \"zh\" => \"自动翻译\",\n            \"ja\" => \"自動翻訳\",\n            \"ko\" => \"자동 번역\",\n            \"hi\" => \"स्वचालित अनुवाद\",\n            \"ru\" => \"Автоматический перевод\",\n            _ => \"Automatic translation\"\n        }",
+        "Category": "inline",
+        "Reason": "Complete existing language switch; reuse native inline translation, do not duplicate"
+      }
+    ]
+  },
+  {
+    "Key": "Автоматический перевод",
+    "Category": "inline",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 443,
+        "Member": "ApplyPlayhubUpdateDialogTranslation",
+        "Context": "automaticLabel = language switch\n        {\n            \"it\" => \"Traduzione automatica\",\n            \"es\" => \"Traducción automática\",\n            \"fr\" => \"Traduction automatique\",\n            \"de\" => \"Automatische Übersetzung\",\n            \"pt\" => \"Tradução automática\",\n            \"uk\" => \"Автоматичний переклад\",\n            \"zh\" => \"自动翻译\",\n            \"ja\" => \"自動翻訳\",\n            \"ko\" => \"자동 번역\",\n            \"hi\" => \"स्वचालित अनुवाद\",\n            \"ru\" => \"Автоматический перевод\",\n            _ => \"Automatic translation\"\n        }",
+        "Category": "inline",
+        "Reason": "Complete existing language switch; reuse native inline translation, do not duplicate"
+      }
+    ]
+  },
+  {
+    "Key": "Автоматичний переклад",
+    "Category": "inline",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 438,
+        "Member": "ApplyPlayhubUpdateDialogTranslation",
+        "Context": "automaticLabel = language switch\n        {\n            \"it\" => \"Traduzione automatica\",\n            \"es\" => \"Traducción automática\",\n            \"fr\" => \"Traduction automatique\",\n            \"de\" => \"Automatische Übersetzung\",\n            \"pt\" => \"Tradução automática\",\n            \"uk\" => \"Автоматичний переклад\",\n            \"zh\" => \"自动翻译\",\n            \"ja\" => \"自動翻訳\",\n            \"ko\" => \"자동 번역\",\n            \"hi\" => \"स्वचालित अनुवाद\",\n            \"ru\" => \"Автоматический перевод\",\n            _ => \"Automatic translation\"\n        }",
+        "Category": "inline",
+        "Reason": "Complete existing language switch; reuse native inline translation, do not duplicate"
+      }
+    ]
+  },
+  {
+    "Key": "स्वचालित अनुवाद",
+    "Category": "inline",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 442,
+        "Member": "ApplyPlayhubUpdateDialogTranslation",
+        "Context": "automaticLabel = language switch\n        {\n            \"it\" => \"Traduzione automatica\",\n            \"es\" => \"Traducción automática\",\n            \"fr\" => \"Traduction automatique\",\n            \"de\" => \"Automatische Übersetzung\",\n            \"pt\" => \"Tradução automática\",\n            \"uk\" => \"Автоматичний переклад\",\n            \"zh\" => \"自动翻译\",\n            \"ja\" => \"自動翻訳\",\n            \"ko\" => \"자동 번역\",\n            \"hi\" => \"स्वचालित अनुवाद\",\n            \"ru\" => \"Автоматический перевод\",\n            _ => \"Automatic translation\"\n        }",
+        "Category": "inline",
+        "Reason": "Complete existing language switch; reuse native inline translation, do not duplicate"
+      }
+    ]
+  },
+  {
+    "Key": "自动翻译",
+    "Category": "inline",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 439,
+        "Member": "ApplyPlayhubUpdateDialogTranslation",
+        "Context": "automaticLabel = language switch\n        {\n            \"it\" => \"Traduzione automatica\",\n            \"es\" => \"Traducción automática\",\n            \"fr\" => \"Traduction automatique\",\n            \"de\" => \"Automatische Übersetzung\",\n            \"pt\" => \"Tradução automática\",\n            \"uk\" => \"Автоматичний переклад\",\n            \"zh\" => \"自动翻译\",\n            \"ja\" => \"自動翻訳\",\n            \"ko\" => \"자동 번역\",\n            \"hi\" => \"स्वचालित अनुवाद\",\n            \"ru\" => \"Автоматический перевод\",\n            _ => \"Automatic translation\"\n        }",
+        "Category": "inline",
+        "Reason": "Complete existing language switch; reuse native inline translation, do not duplicate"
+      }
+    ]
+  },
+  {
+    "Key": "自動翻訳",
+    "Category": "inline",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 440,
+        "Member": "ApplyPlayhubUpdateDialogTranslation",
+        "Context": "automaticLabel = language switch\n        {\n            \"it\" => \"Traduzione automatica\",\n            \"es\" => \"Traducción automática\",\n            \"fr\" => \"Traduction automatique\",\n            \"de\" => \"Automatische Übersetzung\",\n            \"pt\" => \"Tradução automática\",\n            \"uk\" => \"Автоматичний переклад\",\n            \"zh\" => \"自动翻译\",\n            \"ja\" => \"自動翻訳\",\n            \"ko\" => \"자동 번역\",\n            \"hi\" => \"स्वचालित अनुवाद\",\n            \"ru\" => \"Автоматический перевод\",\n            _ => \"Automatic translation\"\n        }",
+        "Category": "inline",
+        "Reason": "Complete existing language switch; reuse native inline translation, do not duplicate"
+      }
+    ]
+  },
+  {
+    "Key": "자동 번역",
+    "Category": "inline",
+    "Reason": "",
+    "Occurrences": [
+      {
+        "File": "MainWindow.UpdateDialog.cs",
+        "Line": 441,
+        "Member": "ApplyPlayhubUpdateDialogTranslation",
+        "Context": "automaticLabel = language switch\n        {\n            \"it\" => \"Traduzione automatica\",\n            \"es\" => \"Traducción automática\",\n            \"fr\" => \"Traduction automatique\",\n            \"de\" => \"Automatische Übersetzung\",\n            \"pt\" => \"Tradução automática\",\n            \"uk\" => \"Автоматичний переклад\",\n            \"zh\" => \"自动翻译\",\n            \"ja\" => \"自動翻訳\",\n            \"ko\" => \"자동 번역\",\n            \"hi\" => \"स्वचालित अनुवाद\",\n            \"ru\" => \"Автоматический перевод\",\n            _ => \"Automatic translation\"\n        }",
+        "Category": "inline",
+        "Reason": "Complete existing language switch; reuse native inline translation, do not duplicate"
+      }
+    ]
+  }
+]

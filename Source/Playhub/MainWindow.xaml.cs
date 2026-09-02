@@ -1,7 +1,10 @@
-using Microsoft.UI;
+﻿using Microsoft.UI;
 using Microsoft.UI.Windowing;
+using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -12,14 +15,19 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
+using Windows.Storage;
 using Windows.System;
 using Windows.UI;
 using WinRT.Interop;
@@ -28,6 +36,13 @@ namespace Playhub;
 
 public sealed partial class MainWindow : Window
 {
+    private static readonly Regex DescriptionInlinePattern = new(
+        @"(?<link>\[(?<linkText>[^\]]+)\]\((?<linkUrl>https?://[^)\s]+)\))|" +
+        @"(?<bold>\*\*(?<boldText>.+?)\*\*)|(?<boldAlt>__(?<boldAltText>.+?)__)|" +
+        @"(?<italic>(?<!\*)\*(?<italicText>[^*\n]+)\*(?!\*))|" +
+        @"(?<italicAlt>(?<!_)_(?<italicAltText>[^_\n]+)_(?!_))|" +
+        @"(?<code>`(?<codeText>[^`\n]+)`)|(?<url>https?://[^\s]+)",
+        RegexOptions.Compiled);
     private readonly SettingsService _settingsService = new();
     private readonly DeckyInstallerService _deckyInstaller = new();
     private readonly PluginCatalogService _catalog = new();
@@ -37,6 +52,7 @@ public sealed partial class MainWindow : Window
     private readonly ExecutableGameService _executableGameService = new();
     private readonly EpicGamesService _epicService = new();
     private readonly GogService _gogService = new();
+    private readonly CssLoaderInstallService _cssLoaderInstaller = new();
     private readonly ExtraService _extra = new();
     private readonly SteamService _steam = new();
     private readonly PlayhubUpdateService _updateService = new();
@@ -48,9 +64,9 @@ public sealed partial class MainWindow : Window
     private readonly ObservableCollection<UwpGameEntry> _epicGames = new();
     private readonly ObservableCollection<UwpGameEntry> _gogGames = new();
     private readonly Dictionary<string, ToggleSwitch> _gamingToggles = new();
-    private readonly List<Button> _primaryButtons = new();
+    private readonly List<WeakReference<Button>> _primaryButtons = new();
     // Weak keys so rebuilt UI elements (e.g. plugin cards) can be garbage-collected.
-    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<DependencyObject, string> _localizationKeys = new();
+    private readonly NativeLocalizationKeys _localizationKeys = new();
 
     private PlayhubSettings _settings = new();
     private GamingModeConfig _gamingConfig = GamingModeService.CreateDefaultConfig();
@@ -82,6 +98,47 @@ public sealed partial class MainWindow : Window
     private TextBlock _gameBarStatus = new();
     private Button _gameBarButton = new();
     private StackPanel _pluginCards = new();
+    private Grid _pluginFeaturedHost = new();
+    private Grid _pluginFeaturedCarouselHost = new();
+    private Button _pluginFeaturedPreviousButton = new();
+    private Button _pluginFeaturedNextButton = new();
+    private TextBox _pluginSearchBox = new();
+    private Grid _pluginDiscoverTools = new();
+    private Button _pluginShowAllButton = new();
+    private StackPanel _pluginDiscoverView = new();
+    private StackPanel _pluginManageView = new();
+    private StackPanel _pluginManageContent = new();
+    private StackPanel _pluginDetailsHost = new();
+    private Button _pluginDiscoverButton = new();
+    private Button _pluginManageButton = new();
+    private ProgressBar _pluginManageProgress = new();
+    private TextBlock _pluginManageProgressText = new();
+    private string _pluginStoreMode = "discover";
+    private bool _pluginBulkUpdateRunning;
+    private bool _pluginManageCompact;
+    private bool _pluginShowAll;
+    private string _pluginAllSource = "all";
+    private string _pluginAllSort = "name";
+    private UIElement? _pluginAllCardsCache;
+    private UIElement? _pluginAllListCache;
+    private UIElement? _pluginManageCardsCache;
+    private UIElement? _pluginManageListCache;
+    private string _pluginManageQuery = string.Empty;
+    private int _pluginManageColumnCount = 3;
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<UIElement, Panel> PluginViewOwners = new();
+    private DataTemplate? _pluginRepeaterTemplate;
+    private bool _pluginCardsDirty = true;
+    private bool _pluginManagementDirty = true;
+    private bool _suppressPluginSearchRender;
+    private string? _expandedPluginKey;
+    private int _pluginStoreColumnCount = 3;
+    private int _featuredPluginIndex = -1;
+    private bool _featuredPluginTransitioning;
+    private bool _featuredPluginExpanded;
+    private readonly List<string> _featuredPluginKeys = new();
+    private readonly Dictionary<string, FrameworkElement> _featuredFrameCache = new(StringComparer.OrdinalIgnoreCase);
+    private int _featuredFrameCacheVersion;
+    private Storyboard? _featuredSlideStoryboard;
     private Grid _loadingOverlay = new();
 
     // Media gallery (lightbox) state.
@@ -93,15 +150,22 @@ public sealed partial class MainWindow : Window
     private List<PluginMediaInfo> _lightboxMedia = new();
     private int _lightboxIndex;
     private Action? _collapseOpenPluginCard; // accordion: collapses the currently open store card
+    private Action? _cancelPluginMorphVisual;
+    private int _pluginCardMorphVersion;
     private Grid _welcomeRoot = new();
     private NavigationView _navigation = new();
-    private Windows.Media.Playback.MediaPlayer? _welcomePlayer;
-    private int _welcomeSlideIndex;
+    private const int CurrentWelcomeVersion = 3;
     // Ri-traduce la slide di benvenuto attualmente mostrata. La prima slide è
     // costruita prima del caricamento della lingua, quindi va aggiornata dopo
     // il load (vedi ApplyLanguage), altrimenti resterebbe nella lingua di default.
     private Action? _refreshWelcomeSlide;
-    private MediaPlayerElement? _welcomeBackgroundElement;
+#if PLAYHUB_UI_REVIEW
+    private Action<int>? _navigateWelcomeSlide;
+    private Func<(int RequestedIndex, int RenderedIndex, bool IsAnimating, double Opacity,
+        double OffsetX, int ArtworkSources, int ArtworkOpened)>? _readWelcomeMotionState;
+    private Func<(int ActiveLayers, int LayerCount, int SizeChanges, int Transitions, int Failures,
+        double LastSubmitMs, double LastCompletionMs, double MaxCompletionMs)>? _readWelcomeMotionDiagnostics;
+#endif
     private Windows.Media.Playback.MediaPlayer? _lightboxPlayer;
     private readonly List<TutorialVideoSession> _tutorialVideos = new();
     private string _currentPageTag = "welcome";
@@ -111,6 +175,12 @@ public sealed partial class MainWindow : Window
     private StackPanel _executableSourcesPanel = new();
     private StackPanel _epicGamesPanel = new();
     private StackPanel _gogGamesPanel = new();
+    private TextBlock _cssLoaderStatusText = new();
+    private Button _cssLoaderInstallButton = new();
+    private Button _cssLoaderRemoveButton = new();
+    private Button _cssProfileInstallButton = new();
+    private ProgressBar _cssLoaderInstallBar = new();
+    private bool _cssLoaderInstallBusy;
     private bool _executableScanInProgress;
     private int _uwpCardColumnCount = 3;
     private int _executableCardColumnCount = 3;
@@ -130,6 +200,10 @@ public sealed partial class MainWindow : Window
     private Button _diagnosticsButton = new();
     private TextBlock _diagnosticsStatusText = new();
     private bool _diagnosticsRunning;
+    private Button _playhubUpdateButton = new();
+    private ProgressBar _playhubUpdateBar = new();
+    private TextBlock _playhubUpdateStatus = new();
+    private bool _playhubUpdateRunning;
 
     // Gaming Mode: visual mode selector + logo preview.
     private Border _desktopModeTile = new();
@@ -142,8 +216,13 @@ public sealed partial class MainWindow : Window
     private ComboBox _backdropCombo = new();
     private ComboBox _startupPageCombo = new();
     private StackPanel _accentColorPanel = new();
+    private readonly List<Button> _accentSwatches = new();
+    private readonly List<Button> _welcomeBackdropButtons = new();
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Button, Dictionary<string, SolidColorBrush>>
+        WelcomeBackdropBrushes = new();
+    private string? _pluginViewLanguage;
     private TextBox _deckyPluginsBox = new();
-    private TextBox _xboxSteamGridDbKeyBox = new();
+    private PasswordBox _xboxSteamGridDbKeyBox = new();
 
     private ComboBox _defaultModeCombo = new();
     private TextBox _steamPathBox = new();
@@ -174,6 +253,7 @@ public sealed partial class MainWindow : Window
         public string VideoPath { get; }
         public Grid Host { get; }
         public Windows.Media.Playback.MediaPlayer? Player { get; set; }
+        public bool IsInViewport { get; set; }
     }
 
     private sealed class ComboChoice
@@ -201,7 +281,7 @@ public sealed partial class MainWindow : Window
     private static readonly ComboOption[] StartupPageOptions =
     {
         new("decky", "DeckyLoader"),
-        new("plugins", "Playhub Plugin Store"),
+        new("plugins", "Plugin Store"),
         new("gaming", "Gaming Mode"),
         new("xbox", "Importa Giochi"),
         new("styler", "Big Picture Styler"),
@@ -234,16 +314,25 @@ public sealed partial class MainWindow : Window
         Title = "Playhub";
         ExtendsContentIntoTitleBar = true;
         SystemBackdrop = new MicaBackdrop();
-        Closed += (_, _) => ReleaseMediaForShutdown();
+        Closed += (_, _) => { CancelNavigationRestore(); CancelPluginCardMorph(); ReleaseMediaForShutdown(); };
         SetWindowShape();
         // Seed accent brushes BEFORE the navigation is built so its selection
         // indicator and item brushes resolve our instances (and update live).
         ApplyAccentResources(ParseColor(_settings.AccentColor));
         BuildShell();
+#if PLAYHUB_UI_REVIEW
+        Diag.Step("UI review: shell ready");
+        _loadingOverlay.Visibility = Visibility.Collapsed;
+#else
         // Al ritorno sull'app (es. dopo aver cambiato l'impostazione in Windows),
         // aggiorna lo stato della card Game Bar.
-        Activated += (_, _) => { try { RefreshGameBarStep(); } catch { } };
+        Activated += (_, args) =>
+        {
+            if (args.WindowActivationState != WindowActivationState.Deactivated)
+                try { RefreshGameBarStep(); } catch { }
+        };
         _ = LoadAsync();
+#endif
     }
 
     private async Task LoadAsync()
@@ -257,9 +346,9 @@ public sealed partial class MainWindow : Window
             {
                 _settings.DeckyPluginsPath = AppPaths.DefaultDeckyPluginsPath;
             }
-
-            // After the user completes the welcome once, open the preferred startup page.
-            if (_settings.WelcomeCompleted)
+            var needsCurrentWelcome = !_settings.WelcomeCompleted ||
+                                      _settings.WelcomeVersion < CurrentWelcomeVersion;
+            if (!needsCurrentWelcome)
             {
                 var startupTag = string.IsNullOrWhiteSpace(_settings.StartupPage) ? "decky" : _settings.StartupPage;
                 var startupItem = _navigation.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(i => Equals(i.Tag, startupTag));
@@ -311,11 +400,12 @@ public sealed partial class MainWindow : Window
             ApplyTheme();
             ApplyBackdrop();
             PopulateSettingsControls();
+            RefreshCssLoaderState();
             ApplyLanguage();
             Diag.Step("LoadAsync: LoadDeckyBuildsSilently");
-            await LoadDeckyBuildsSilentlyAsync();
+            _ = LoadDeckyBuildsSilentlyAsync();
             Diag.Step("LoadAsync: RefreshPlugins");
-            await RefreshPluginsAsync();
+            _ = RefreshPluginsAsync();
             Diag.Step("LoadAsync: RefreshGamingMode");
             await RefreshGamingModeAsync();
             Diag.Step("LoadAsync: ResetXboxGameBarIfStuck");
@@ -324,6 +414,7 @@ public sealed partial class MainWindow : Window
             await RefreshDeckyStateAsync();
             Diag.Step("LoadAsync: steps done");
             ApplyLanguage();
+            InitializeSupportReminder();
 
             // Controllo aggiornamenti non bloccante: se c'è una versione nuova
             // su GitHub, compare una notifica in-app con il link alla release.
@@ -430,14 +521,12 @@ public sealed partial class MainWindow : Window
             ExpandedModeThresholdWidth = 0,
             Background = new SolidColorBrush(Colors.Transparent)
         };
-        // Remove the NavigationView's default top content inset (title-bar auto padding +
-        // content margin) so pages and the full-bleed Welcome video start at the very top.
         navigation.Resources["NavigationViewContentMargin"] = new Thickness(0);
         _navigation = navigation;
 
         navigation.MenuItems.Add(NavItem("Benvenuto", "welcome", Symbol.Home));
-        navigation.MenuItems.Add(NavItem("DeckyLoader", "decky", Symbol.Download));
-        navigation.MenuItems.Add(NavItem("Playhub Plugin Store", "plugins", Symbol.Shop));
+        navigation.MenuItems.Add(NavItem("Decky", "decky", Symbol.Download));
+        navigation.MenuItems.Add(NavItem("Plugin Store", "plugins", Symbol.Shop));
         navigation.MenuItems.Add(NavItem("Gaming Mode", "gaming", Symbol.Play));
         navigation.MenuItems.Add(NavItem("Importa Giochi", "xbox", VectorIcon(LayerDiagonalAddPath)));
         navigation.MenuItems.Add(NavItem("Big Picture Styler", "styler", ((char)0xE771).ToString()));
@@ -450,14 +539,27 @@ public sealed partial class MainWindow : Window
                 ShowPage(tag);
             }
         };
+        navigation.ItemInvoked += (_, args) =>
+        {
+            if (_currentPageTag == "plugin-detail" && args.InvokedItemContainer?.Tag is string tag)
+                ShowPage(tag);
+        };
 
         _status = new InfoBar
         {
             IsOpen = false,
             Margin = new Thickness(28, 14, 28, 0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            IsClosable = true
+            IsClosable = true,
+            Visibility = Visibility.Collapsed
         };
+        _status.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, (sender, _) =>
+        {
+            if (sender is InfoBar infoBar)
+            {
+                infoBar.Visibility = infoBar.IsOpen ? Visibility.Visible : Visibility.Collapsed;
+            }
+        });
 
         _pageHost = new Grid { HorizontalAlignment = HorizontalAlignment.Stretch };
         Diag.Step("BuildShell: Decky");
@@ -499,11 +601,16 @@ public sealed partial class MainWindow : Window
         {
             Background = new SolidColorBrush(Colors.Transparent)
         };
-        // Scroller fills the whole content area; the status InfoBar is an overlay at the top
-        // (so it never reserves a row / empty strip above the full-bleed Welcome video).
-        content.Children.Add(_contentScroller);
-        _status.VerticalAlignment = VerticalAlignment.Top;
+        content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        content.RowDefinitions.Add(new RowDefinition());
+        Grid.SetRow(_status, 0);
         content.Children.Add(_status);
+        Grid.SetRow(_pluginStoreToolbar, 1);
+        _pluginStoreToolbar.Margin = new Thickness(36, 26, 36, 0);
+        content.Children.Add(_pluginStoreToolbar);
+        Grid.SetRow(_contentScroller, 2);
+        content.Children.Add(_contentScroller);
 
         navigation.AddHandler(UIElement.PointerWheelChangedEvent, new PointerEventHandler(OnPointerWheelChanged), true);
         content.AddHandler(UIElement.PointerWheelChangedEvent, new PointerEventHandler(OnPointerWheelChanged), true);
@@ -521,8 +628,6 @@ public sealed partial class MainWindow : Window
         Grid.SetRow(navigation, 1);
         root.Children.Add(navigation);
 
-        // Welcome is a root overlay over the content area (right of the 260px pane), spanning
-        // both rows so its full-bleed video reaches the very top of the window.
         BuildWelcomePage(navigation); // sets _welcomeRoot
         _welcomeRoot.Margin = new Thickness(260, 0, 0, 0);
         Grid.SetRow(_welcomeRoot, 0);
@@ -607,8 +712,6 @@ public sealed partial class MainWindow : Window
         };
         _titleBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         _titleBar.ColumnDefinitions.Add(new ColumnDefinition());
-        // (no accent line before the icon)
-        Grid.SetColumn(icon, 0);
         _titleBar.Children.Add(icon);
         return _titleBar;
     }
@@ -627,6 +730,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        CancelNavigationRestore();
         var target = Math.Max(0, _contentScroller.VerticalOffset - delta);
         _contentScroller.ChangeView(null, target, null, disableAnimation: false);
         args.Handled = true;
@@ -691,58 +795,42 @@ public sealed partial class MainWindow : Window
 
     private static NavigationViewItem MakeNavItem(string label, string tag, IconElement icon)
     {
-        icon.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5);
-        icon.RenderTransform = new ScaleTransform();
         var item = new NavigationViewItem { Content = label, Tag = tag, Icon = icon };
-        item.Tapped += (_, _) => BounceElement(icon);
+        AttachSidebarIconMotion(item, icon);
         return item;
     }
 
-    // A short "pop" bounce, used on the sidebar tab icons when clicked.
-    private static void BounceElement(UIElement element)
+    private void ShowPage(string tag, bool preserveMorph = false)
     {
-        try
+        var changed = _currentPageTag != tag;
+        if (changed)
         {
-            if (element.RenderTransform is not ScaleTransform scale)
+            CancelPluginSearch();
+            SaveNavigationPosition();
+            if (tag == "plugins") ResetPluginSourceFilter();
+            if (!preserveMorph) CancelPluginCardMorph();
+            if (_currentPageTag == "plugin-detail" && tag != "plugin-detail")
             {
-                element.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5);
-                scale = new ScaleTransform();
-                element.RenderTransform = scale;
+                _pluginPagePluginKey = null;
+                _pluginPageContent.Children.Clear();
+                if (tag != "plugins") _pluginStoreHistory.Clear();
             }
-
-            var storyboard = new Storyboard();
-            foreach (var property in new[] { "ScaleX", "ScaleY" })
-            {
-                var anim = new DoubleAnimationUsingKeyFrames();
-                Storyboard.SetTarget(anim, scale);
-                Storyboard.SetTargetProperty(anim, property);
-                anim.KeyFrames.Add(new EasingDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.Zero), Value = 1 });
-                anim.KeyFrames.Add(new EasingDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(110)), Value = 1.3 });
-                anim.KeyFrames.Add(new EasingDoubleKeyFrame
-                {
-                    KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(360)),
-                    Value = 1,
-                    EasingFunction = new BackEase { Amplitude = 0.6, EasingMode = EasingMode.EaseOut }
-                });
-                storyboard.Children.Add(anim);
-            }
-
-            storyboard.Begin();
         }
-        catch
-        {
-        }
-    }
-
-    private void ShowPage(string tag)
-    {
         _currentPageTag = tag;
+        if (tag is "plugins" or "plugin-detail" && !Equals(_status.Tag, "update-notification"))
+            _status.IsOpen = false;
         var welcome = tag == "welcome";
         _welcomeRoot.Visibility = welcome ? Visibility.Visible : Visibility.Collapsed;
         foreach (var child in _pageHost.Children.OfType<FrameworkElement>())
         {
             child.Visibility = (!welcome && Equals(child.Tag, tag)) ? Visibility.Visible : Visibility.Collapsed;
+            if (child.Visibility == Visibility.Visible) LocalizeElement(child);
         }
+        if (welcome) LocalizeElement(_welcomeRoot);
+        RenderVisiblePluginView();
+        if (changed) RestoreNavigationPosition();
+        UpdateFeaturedAutoAdvanceState();
+        UpdatePluginBackButton();
 
         if (!_mediaPlaybackReady)
         {
@@ -757,51 +845,7 @@ public sealed partial class MainWindow : Window
             _ = ScanExecutableGamesAsync();
         }
 
-        UpdateWelcomePlayback(welcome);
         UpdateTutorialPlayback(tag);
-    }
-
-    private void UpdateWelcomePlayback(bool visible)
-    {
-        if (visible && _welcomePlayer is null && _welcomeBackgroundElement is not null)
-        {
-            var player = new Windows.Media.Playback.MediaPlayer
-            {
-                IsMuted = true,
-                IsLoopingEnabled = true,
-                AutoPlay = false
-            };
-            try { player.CommandManager.IsEnabled = false; } catch { }
-            _welcomeBackgroundElement.SetMediaPlayer(player);
-            _welcomePlayer = player;
-        }
-
-        if (_welcomePlayer is null)
-        {
-            return;
-        }
-
-        try
-        {
-            _welcomePlayer.CommandManager.IsEnabled = false;
-            if (visible)
-            {
-                if (_welcomePlayer.Source is null)
-                {
-                    _welcomePlayer.Source = Windows.Media.Core.MediaSource.CreateFromUri(
-                        new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "Welcome", $"welcome-{_welcomeSlideIndex}.mp4")));
-                }
-                _welcomePlayer.Play();
-            }
-            else
-            {
-                _welcomePlayer.Pause();
-                _welcomePlayer.Source = null;
-            }
-        }
-        catch
-        {
-        }
     }
 
     private void UpdateTutorialPlayback(string pageTag)
@@ -817,6 +861,7 @@ public sealed partial class MainWindow : Window
         foreach (var tutorial in _tutorialVideos)
         {
             var canPlay = string.Equals(tutorial.PageTag, pageTag, StringComparison.Ordinal) &&
+                          tutorial.IsInViewport && tutorial.Host.IsLoaded &&
                           (!tutorial.RequiresDeckyInstalled || _deckyQuickAccessCard.Visibility == Visibility.Visible);
             try
             {
@@ -827,7 +872,6 @@ public sealed partial class MainWindow : Window
                 else if (tutorial.Player is not null)
                 {
                     tutorial.Player.Pause();
-                    tutorial.Player.Source = null;
                 }
             }
             catch
@@ -885,13 +929,6 @@ public sealed partial class MainWindow : Window
         }
         _tutorialVideos.Clear();
 
-        if (_welcomePlayer is not null)
-        {
-            try { _welcomePlayer.Pause(); } catch { }
-            try { _welcomePlayer.Source = null; } catch { }
-            _welcomePlayer = null;
-        }
-
         if (_lightboxPlayer is not null)
         {
             try { _lightboxPlayer.Pause(); } catch { }
@@ -902,85 +939,80 @@ public sealed partial class MainWindow : Window
 
     private UIElement BuildWelcomePage(NavigationView navigation)
     {
-        var slides = new (string Glyph, string Title, string Body, bool ShowColor)[]
+        var slides = new (string Asset, string Title, string Body, bool ShowColor)[]
         {
-            ("", "Benvenuto in Playhub", "Un minuto per scoprire cosa puoi fare.", false),
-            (((char)0xE790).ToString(), "Scegli il tuo colore", "Dai a Playhub il tuo tocco scegliendo il colore che preferisci.", true),
-            (((char)0xE719).ToString(), "Plugin Store", "Installa DeckyLoader e i plugin di Playhub per accedere a musica, trailer, meteo, achievement e molto altro mentre giochi.", false),
-            (((char)0xE945).ToString(), "Gaming Mode", "Avvia il tuo PC come se fosse una console, naviga con il controller e torna al desktop quando vuoi.", false),
-            (((char)0xE896).ToString(), "Importa i tuoi giochi", "Porta i giochi Xbox Game Pass, Xbox Store, Microsoft Store e gli EXE del tuo PC nella tua libreria, completi di artwork e titolo corretti, pronti da avviare.", false),
-            (((char)0xE7FC).ToString(), "Divertiti", "Ora tocca a te. Buon divertimento con Playhub!", false)
+            ("welcome-onboarding.png", "Benvenuto in Playhub", "Il tuo PC da gioco, con l'anima di una console.", false),
+            ("decky-installation-onboarding.png", "Installare Decky è semplice, come dovrebbe essere", "Playhub ti guida passo dopo passo e installa DeckyLoader in modo semplice.", false),
+            ("plugin-store-grid-v2.png", "I migliori plugin sono tutti qui", "Scopri, installa, aggiorna, e disinstalla i plugin di Playhub, quelli del Decky Store e i progetti indipendenti pubblicati su GitHub.", false),
+            ("gaming-mode-page-header.png", "Il tuo PC è la migliore console mai creata", "Con Playhub Gaming Mode puoi scegliere se avviare il PC in Desktop Mode, la classica esperienza Windows, oppure in Gaming Mode: un'esperienza da console che ottimizza i processi del PC, esclude i processi non necessari per giocare e mette Steam Big Picture al centro di tutto, così puoi dimenticare mouse e tastiera.", false),
+            ("import-games-onboarding.png", "Tutti i tuoi giochi, una sola libreria", "Scansiona i giochi di Xbox, Epic e GOG, oppure le tue cartelle, e aggiungili a Steam con il nome e gli artwork corretti.", false),
+            ("choose-color-onboarding.png", "Scegli il tuo stile", "Scegli un colore per la tua app Playhub.", true),
+            ("final-onboarding.png", "È il momento di giocare come mai prima d'ora", "Scopri, prova, personalizza, gioca e divertiti. Questo è lo spirito di Playhub.", false)
         };
         var index = 0;
-
-        // ----- per-slide looping video background (full-bleed, 70% opacity) -----
-        // The player is created lazily after the first cold-start load completes.
-        // On a fresh install or right after a reboot, initializing media too early
-        // can make WinUI unstable before the main window is fully shown.
-        var background = new MediaPlayerElement
+        var renderedIndex = 0;
+#if PLAYHUB_UI_REVIEW
+        var artworkOpened = 0;
+#endif
+        // Each source stays attached to its own Image for the lifetime of the page.
+        var artworkCache = slides.Select(slide =>
         {
-            Stretch = Stretch.UniformToFill,
-            Opacity = 0.7,
-            AreTransportControlsEnabled = false,
+            var path = Path.Combine(AppContext.BaseDirectory, "Assets", "Welcome", "Mascots", slide.Asset);
+            if (!File.Exists(path)) return null;
+            var bitmap = new BitmapImage { DecodePixelWidth = 1240 };
+#if PLAYHUB_UI_REVIEW
+            bitmap.ImageOpened += (_, _) => artworkOpened++;
+#endif
+            bitmap.UriSource = new Uri(path);
+            return bitmap;
+        }).ToArray();
+
+        var background = new Grid
+        {
             IsHitTestVisible = false,
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            VerticalAlignment = VerticalAlignment.Stretch
+            VerticalAlignment = VerticalAlignment.Stretch,
+            Background = new LinearGradientBrush
+            {
+                StartPoint = new Windows.Foundation.Point(0, 0),
+                EndPoint = new Windows.Foundation.Point(1, 1),
+                GradientStops =
+                {
+                    new GradientStop { Color = Color.FromArgb(255, 18, 19, 23), Offset = 0 },
+                    new GradientStop { Color = Color.FromArgb(255, 29, 27, 22), Offset = 1 }
+                }
+            }
         };
-        _welcomeBackgroundElement = background;
 
-        void SetSlideVideo()
-        {
-            _welcomeSlideIndex = index;
-            try { if (_welcomePlayer is not null) _welcomePlayer.Source = null; } catch { }
-            UpdateWelcomePlayback(_currentPageTag == "welcome");
-        }
-
-        // ----- hero content -----
-        var logoImage = new Image
-        {
-            Source = new BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "Brand", "cube.png"))),
-            Width = 156,
-            Height = 156,
-            Stretch = Stretch.Uniform,
-            HorizontalAlignment = HorizontalAlignment.Center
-        };
-        var icon = new FontIcon
-        {
-            FontSize = 140,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            Foreground = ResourceBrush("AccentFillColorDefaultBrush", ParseColor(_settings.AccentColor))
-        };
-        // Tag "noloc": questi due TextBlock sono CONDIVISI tra le slide e il loro
-        // testo cambia ad ogni slide. Il localizzatore globale (che memorizza una
-        // chiave per elemento) li bloccherebbe sul testo della prima slide, quindi
-        // li escludiamo e traduciamo a mano in Render() con T(s.Title)/T(s.Body).
-        var title = new TextBlock
-        {
-            Tag = "noloc",
-            FontSize = 34,
-            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            TextAlignment = TextAlignment.Center,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            TextWrapping = TextWrapping.Wrap,
-            Foreground = new SolidColorBrush(Colors.White)
-        };
-        var body = new TextBlock
-        {
-            Tag = "noloc",
-            FontSize = 16,
-            Opacity = 0.82,
-            TextAlignment = TextAlignment.Center,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            TextWrapping = TextWrapping.Wrap,
-            MaxWidth = 620,
-            LineHeight = 25
-        };
-        var welcomeAccent = BuildAccentPicker();
+        var welcomeAccent = BuildAccentPicker(welcome: true);
         welcomeAccent.HorizontalAlignment = HorizontalAlignment.Center;
+        var welcomeAppearance = new StackPanel { Spacing = 16, HorizontalAlignment = HorizontalAlignment.Center };
+        welcomeAppearance.Children.Add(welcomeAccent);
+        var backdropSelector = new Grid { ColumnSpacing = 6, HorizontalAlignment = HorizontalAlignment.Stretch };
+        foreach (var option in BackdropOptions)
+        {
+            var button = Button(option.LabelKey, async () =>
+            {
+                _settings.Backdrop = option.Key;
+                ApplyBackdrop();
+                ApplyChrome(ParseColor(_settings.AccentColor));
+                SelectComboKey(_backdropCombo, option.Key);
+                await SaveSettingsSilentlyAsync();
+            });
+            button.Tag = option.Key;
+            button.Height = 40;
+            button.HorizontalAlignment = HorizontalAlignment.Stretch;
+            backdropSelector.ColumnDefinitions.Add(new ColumnDefinition());
+            Grid.SetColumn(button, _welcomeBackdropButtons.Count);
+            backdropSelector.Children.Add(button);
+            _welcomeBackdropButtons.Add(button);
+        }
+        welcomeAppearance.Children.Add(backdropSelector);
 
-        var startButton = Button("Cominciamo", async () =>
+        var startButton = Button("Iniziamo!", async () =>
         {
             _settings.WelcomeCompleted = true;
+            _settings.WelcomeVersion = CurrentWelcomeVersion;
             await SaveSettingsSilentlyAsync();
             var target = navigation.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(i => Equals(i.Tag, "decky"));
             if (target is not null)
@@ -989,53 +1021,119 @@ public sealed partial class MainWindow : Window
             }
         }, primary: true);
         startButton.HorizontalAlignment = HorizontalAlignment.Center;
+        startButton.Name = "WelcomeStartButton";
+        startButton.MinWidth = 0;
+        startButton.Width = CompactPrimaryActionWidth(startButton);
+        startButton.Height = 40;
 
-        var hero = new StackPanel
+        var frames = new StackPanel[slides.Length];
+        var titles = new TextBlock[slides.Length];
+        var bodies = new TextBlock[slides.Length];
+        var visuals = new Visual[slides.Length];
+        var moving = new bool[slides.Length];
+        var motionSettings = new Windows.UI.ViewManagement.UISettings();
+        CompositionScopedBatch? transition = null;
+        var transitionDeadline = DispatcherQueue.CreateTimer();
+        transitionDeadline.IsRepeating = false;
+        transitionDeadline.Interval = TimeSpan.FromMilliseconds(300);
+        long transitionStarted = 0;
+        var motionFailures = 0;
+#if PLAYHUB_UI_REVIEW
+        var sizeChanges = 0;
+        var transitions = 0;
+        var lastSubmitMs = 0d;
+        var lastCompletionMs = 0d;
+        var maxCompletionMs = 0d;
+#endif
+        // Keep layout and image surfaces intact. Only compositor properties change on navigation.
+        for (var i = 0; i < slides.Length; i++)
         {
-            Spacing = 22,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            MaxWidth = 700
-        };
-        hero.Children.Add(logoImage);
-        hero.Children.Add(icon);
-        hero.Children.Add(title);
-        hero.Children.Add(body);
-        hero.Children.Add(welcomeAccent);
-        hero.Children.Add(startButton);
-
-        // hero slide/fade transition
-        var heroTransform = new TranslateTransform();
-        hero.RenderTransform = heroTransform;
-
-        void SlideIn(int dir)
-        {
-            try
+            var slide = slides[i];
+            var frame = frames[i] = new StackPanel
             {
-                heroTransform.X = dir * 60;
-                hero.Opacity = 0;
-                var sb = new Storyboard();
-                var ax = new DoubleAnimation
+                Spacing = 22,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                MaxWidth = 760,
+                Margin = new Thickness(60, 36, 60, 54),
+                IsHitTestVisible = i == index
+            };
+            frame.Children.Add(new Border
+            {
+                Width = 680,
+                Height = 340,
+                Padding = new Thickness(0),
+                Background = new SolidColorBrush(Colors.Transparent),
+                BorderThickness = new Thickness(0),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Child = new Image
                 {
-                    To = 0,
-                    Duration = new Duration(TimeSpan.FromMilliseconds(300)),
-                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-                };
-                Storyboard.SetTarget(ax, heroTransform);
-                Storyboard.SetTargetProperty(ax, "X");
-                var ao = new DoubleAnimation { To = 1, Duration = new Duration(TimeSpan.FromMilliseconds(300)) };
-                Storyboard.SetTarget(ao, hero);
-                Storyboard.SetTargetProperty(ao, "Opacity");
-                sb.Children.Add(ax);
-                sb.Children.Add(ao);
-                sb.Begin();
-            }
-            catch
+                    Source = artworkCache[i],
+                    Width = 620,
+                    Height = 310,
+                    Stretch = Stretch.Uniform,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    RenderTransformOrigin = new Windows.Foundation.Point(0.5, 1),
+                    RenderTransform = new ScaleTransform
+                    {
+                        ScaleX = i == 1 ? 1.3 : i == slides.Length - 1 ? 1.2 : 1,
+                        ScaleY = i == 1 ? 1.3 : i == slides.Length - 1 ? 1.2 : 1
+                    }
+                }
+            });
+            titles[i] = new TextBlock
             {
-                hero.Opacity = 1;
-                heroTransform.X = 0;
-            }
+                Tag = "noloc", Text = T(slide.Title), FontSize = 34,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                TextAlignment = TextAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = new SolidColorBrush(Colors.White)
+            };
+            bodies[i] = new TextBlock
+            {
+                Tag = "noloc", Text = T(slide.Body), FontSize = 16, Opacity = 0.82,
+                TextAlignment = TextAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                TextWrapping = TextWrapping.Wrap, MaxWidth = 620, LineHeight = 25,
+                Foreground = new SolidColorBrush(Colors.White)
+            };
+            frame.Children.Add(titles[i]);
+            frame.Children.Add(bodies[i]);
+            if (slide.ShowColor) frame.Children.Add(welcomeAppearance);
+            if (i == slides.Length - 1) frame.Children.Add(startButton);
+            ElementCompositionPreview.SetIsTranslationEnabled(frame, true);
+            visuals[i] = ElementCompositionPreview.GetElementVisual(frame);
+            visuals[i].Opacity = i == index ? 1 : 0;
+#if PLAYHUB_UI_REVIEW
+            frame.SizeChanged += (_, _) => sizeChanges++;
+#endif
         }
+
+        var backgroundVisual = ElementCompositionPreview.GetElementVisual(background);
+        var compositor = backgroundVisual.Compositor;
+        var ease = compositor.CreateCubicBezierEasingFunction(new Vector2(0.16f, 1), new Vector2(0.3f, 1));
+        ScalarKeyFrameAnimation Fade(float target)
+        {
+            var animation = compositor.CreateScalarKeyFrameAnimation();
+            animation.InsertExpressionKeyFrame(0, "this.StartingValue");
+            animation.InsertKeyFrame(1, target);
+            animation.Duration = TimeSpan.FromMilliseconds(240);
+            return animation;
+        }
+        Vector3KeyFrameAnimation Move(float target)
+        {
+            var animation = compositor.CreateVector3KeyFrameAnimation();
+            animation.InsertExpressionKeyFrame(0, "this.StartingValue");
+            animation.InsertKeyFrame(1, new Vector3(target, 0, 0), ease);
+            animation.Duration = TimeSpan.FromMilliseconds(240);
+            return animation;
+        }
+        var fadeIn = Fade(1);
+        var fadeOut = Fade(0);
+        var moveIn = Move(0);
+        var moveLeft = Move(-24);
+        var moveRight = Move(24);
 
         // ----- dots (clickable) -----
         var dots = new StackPanel
@@ -1047,6 +1145,7 @@ public sealed partial class MainWindow : Window
             Margin = new Thickness(0, 0, 0, 26)
         };
         var dotList = new List<Border>();
+        var inactiveDotBrush = new SolidColorBrush(Color.FromArgb(70, 255, 255, 255));
 
         // ----- circular arrows -----
         var left = GlyphCircleButton(((char)0xE76B).ToString(), 52);
@@ -1058,47 +1157,70 @@ public sealed partial class MainWindow : Window
         right.VerticalAlignment = VerticalAlignment.Center;
         right.Margin = new Thickness(0, 0, 26, 0);
 
-        void Render()
+        void RefreshNavigation()
         {
-            var s = slides[index];
-            var isLogo = index == 0;
-            var isFinish = index == slides.Length - 1;
-
-            SetSlideVideo();
-
-            logoImage.Visibility = isLogo ? Visibility.Visible : Visibility.Collapsed;
-            icon.Visibility = isLogo ? Visibility.Collapsed : Visibility.Visible;
-            if (!isLogo)
-            {
-                icon.Glyph = s.Glyph;
-            }
-
-            // Traduzione per-slide diretta (vedi nota "noloc" sui TextBlock).
-            title.Text = T(s.Title);
-            body.Text = T(s.Body);
-            welcomeAccent.Visibility = s.ShowColor ? Visibility.Visible : Visibility.Collapsed;
-            startButton.Visibility = isFinish ? Visibility.Visible : Visibility.Collapsed;
-
             for (var i = 0; i < dotList.Count; i++)
             {
                 dotList[i].Background = i == index
                     ? ResourceBrush("AccentFillColorDefaultBrush", ParseColor(_settings.AccentColor))
-                    : new SolidColorBrush(Color.FromArgb(70, 255, 255, 255));
+                    : inactiveDotBrush;
             }
 
             left.Visibility = index > 0 ? Visibility.Visible : Visibility.Collapsed;
-            right.Visibility = isFinish ? Visibility.Collapsed : Visibility.Visible;
+            right.Visibility = index == slides.Length - 1 ? Visibility.Collapsed : Visibility.Visible;
+            for (var i = 0; i < frames.Length; i++)
+            {
+                frames[i].IsHitTestVisible = i == index;
+                var view = i == index ? Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Content
+                    : Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw;
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetAccessibilityView(titles[i], view);
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetAccessibilityView(bodies[i], view);
+            }
+            foreach (var row in welcomeAccent.Children.OfType<StackPanel>())
+            foreach (var button in row.Children.OfType<Button>()) button.IsTabStop = slides[index].ShowColor;
+            foreach (var button in _welcomeBackdropButtons) button.IsTabStop = slides[index].ShowColor;
+            startButton.IsTabStop = index == slides.Length - 1;
         }
 
-        // La slide 0 è costruita nel costruttore, prima che le impostazioni (e
-        // quindi la lingua) siano caricate da disco: ApplyLanguage() chiama questo
-        // callback dopo il load per ri-tradurre la slide attualmente visibile.
+        // Translate cached text only when the language changes, never during navigation.
         _refreshWelcomeSlide = () =>
         {
-            var s = slides[index];
-            title.Text = T(s.Title);
-            body.Text = T(s.Body);
+            for (var i = 0; i < slides.Length; i++)
+            {
+                titles[i].Text = T(slides[i].Title);
+                bodies[i].Text = T(slides[i].Body);
+            }
+            startButton.Width = CompactPrimaryActionWidth(startButton);
         };
+
+        void SettleWelcome()
+        {
+            transitionDeadline.Stop();
+#if PLAYHUB_UI_REVIEW
+            if (transition is not null)
+            {
+                lastCompletionMs = Stopwatch.GetElapsedTime(transitionStarted).TotalMilliseconds;
+                maxCompletionMs = Math.Max(maxCompletionMs, lastCompletionMs);
+            }
+#endif
+            var previous = transition;
+            transition = null;
+            previous?.Dispose();
+            for (var i = 0; i < visuals.Length; i++)
+            {
+                visuals[i].StopAnimation("Opacity");
+                visuals[i].StopAnimation("Translation");
+                visuals[i].Opacity = i == index ? 1 : 0;
+                visuals[i].Properties.InsertVector3("Translation", Vector3.Zero);
+                moving[i] = false;
+            }
+            backgroundVisual.StopAnimation("Opacity");
+            backgroundVisual.Opacity = 1;
+            renderedIndex = index;
+        }
+        // The compositor can delay its completion event after the visual has finished.
+        // Bound cleanup independently so a new navigation never inherits stale layers.
+        transitionDeadline.Tick += (_, _) => { if (transition is not null) SettleWelcome(); };
 
         void GoTo(int target)
         {
@@ -1107,10 +1229,62 @@ public sealed partial class MainWindow : Window
                 return;
             }
 
-            var dir = target > index ? 1 : -1;
+#if PLAYHUB_UI_REVIEW
+            var started = Stopwatch.GetTimestamp();
+#endif
+            var previousIndex = index;
+            var direction = Math.Sign(target - index);
             index = target;
-            Render();
-            SlideIn(dir);
+            renderedIndex = target;
+            RefreshNavigation();
+            if (!_welcomeRoot.IsLoaded || _welcomeRoot.Visibility != Visibility.Visible || !motionSettings.AnimationsEnabled)
+            {
+                SettleWelcome();
+                return;
+            }
+            try
+            {
+#if PLAYHUB_UI_REVIEW
+                transitions++;
+#endif
+                var previous = transition;
+                transition = null;
+                previous?.Dispose();
+                transitionDeadline.Stop();
+                // Do not stop active properties here: StartingValue samples their current compositor pose.
+                if (!moving[index])
+                    visuals[index].Properties.InsertVector3("Translation", new Vector3(direction * 60, 0, 0));
+                var batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+                transition = batch;
+                transitionStarted = Stopwatch.GetTimestamp();
+                batch.Completed += (_, _) =>
+                {
+                    if (!ReferenceEquals(transition, batch)) return;
+                    SettleWelcome();
+#if PLAYHUB_UI_REVIEW
+                    lastCompletionMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+                    maxCompletionMs = Math.Max(maxCompletionMs, lastCompletionMs);
+#endif
+                };
+                for (var i = 0; i < visuals.Length; i++)
+                {
+                    if (i != index && i != previousIndex && !moving[i]) continue;
+                    moving[i] = true;
+                    visuals[i].StartAnimation("Opacity", i == index ? fadeIn : fadeOut);
+                    visuals[i].StartAnimation("Translation", i == index ? moveIn : direction > 0 ? moveLeft : moveRight);
+                }
+                backgroundVisual.StartAnimation("Opacity", fadeIn);
+                batch.End();
+                transitionDeadline.Start();
+#if PLAYHUB_UI_REVIEW
+                lastSubmitMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+#endif
+            }
+            catch
+            {
+                motionFailures++;
+                SettleWelcome();
+            }
         }
 
         for (var i = 0; i < slides.Length; i++)
@@ -1129,24 +1303,20 @@ public sealed partial class MainWindow : Window
             dots.Children.Add(hit);
         }
 
-        left.Click += (_, _) =>
+        left.Click += (_, _) => GoTo(index - 1);
+        right.Click += (_, _) => GoTo(index + 1);
+#if PLAYHUB_UI_REVIEW
+        _navigateWelcomeSlide = GoTo;
+        _readWelcomeMotionState = () =>
         {
-            BounceElement(left);
-            GoTo(index - 1);
+            visuals[index].Properties.TryGetVector3("Translation", out var offset);
+            // Composition getters expose base values; these two fields verify the settled endpoint only.
+            return (index, renderedIndex, transition is not null, visuals[index].Opacity,
+                offset.X, artworkCache.Count(source => source is not null), artworkOpened);
         };
-        right.Click += (_, _) =>
-        {
-            BounceElement(right);
-            GoTo(index + 1);
-        };
-
-        // ----- assemble: full-bleed (no card), fills the right side of the window -----
-        // Darken the video ~30% so the text and controls stay readable.
-        var videoScrim = new Border
-        {
-            Background = new SolidColorBrush(Color.FromArgb(80, 0, 0, 0)),
-            IsHitTestVisible = false
-        };
+        _readWelcomeMotionDiagnostics = () => (moving.Count(value => value), frames.Length, sizeChanges,
+            transitions, motionFailures, lastSubmitMs, lastCompletionMs, maxCompletionMs);
+#endif
 
         _welcomeRoot = new Grid
         {
@@ -1156,30 +1326,45 @@ public sealed partial class MainWindow : Window
             VerticalAlignment = VerticalAlignment.Stretch
         };
         _welcomeRoot.Children.Add(background);
-        _welcomeRoot.Children.Add(videoScrim);
-        _welcomeRoot.Children.Add(hero);
+        foreach (var frame in frames) _welcomeRoot.Children.Add(frame);
         _welcomeRoot.Children.Add(dots);
         _welcomeRoot.Children.Add(left);
         _welcomeRoot.Children.Add(right);
+        _welcomeRoot.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, (_, _) =>
+        {
+            if (_welcomeRoot.Visibility != Visibility.Visible) SettleWelcome();
+        });
+        _welcomeRoot.Unloaded += (_, _) => SettleWelcome();
+        _welcomeRoot.Loaded += (_, _) => SettleWelcome();
+        Closed += (_, _) =>
+        {
+            SettleWelcome();
+            fadeIn.Dispose();
+            fadeOut.Dispose();
+            moveIn.Dispose();
+            moveLeft.Dispose();
+            moveRight.Dispose();
+            ease.Dispose();
+        };
 
-        Render();
+        SettleWelcome();
+        RefreshNavigation();
+        RefreshAccentPicker();
         return _welcomeRoot;
     }
 
     private UIElement BuildDeckyPage()
     {
-        var panel = Page("decky", "DeckyLoader", "Pochi passi e i plugin sono pronti in Steam. Ogni passo diventa verde quando è completato.");
+        var panel = Page("decky", "Decky", "Pochi passi e i plugin sono pronti in Steam. Ogni passo diventa verde quando è completato.");
 
-        // Step 1 — Steam installed?
         _steamButton = Button("Scarica Steam", async () => { await Windows.System.Launcher.LaunchUriAsync(new Uri("https://store.steampowered.com/about/")); });
         panel.Children.Add(BuildDeckyStep(
             "",
-            "Steam installato",
+            "Steam",
             "DeckyLoader funziona dentro Steam: serve che Steam sia installato sul PC.",
             _steamButton,
             out _steamTile, out _steamGlyph, out _steamStatus));
 
-        // Step 2 — Windows Developer Mode
         panel.Children.Add(BuildDeckyStep(
             "",
             "Modalità sviluppatore di Windows",
@@ -1187,15 +1372,14 @@ public sealed partial class MainWindow : Window
             Button("Apri impostazioni", async () => { await _deckyInstaller.OpenDeveloperSettingsAsync(); }),
             out _devTile, out _devGlyph, out _devStatus));
 
-        // Step 2 — Install DeckyLoader
-        _installButton = Button("Installa", async () => { await InstallLatestDeckyBuildAsync(); await RefreshDeckyStateAsync(); }, primary: true);
+        _installButton = DeckyOperationButton(_deckyInstaller.IsInstalled() ? "Aggiorna" : "Installa", InstallLatestDeckyBuildAsync, primary: true);
         panel.Children.Add(BuildDeckyStep(
             "",
             "Installa DeckyLoader",
             "Scarico e configuro l'ultima versione di DeckyLoader.",
             ActionRow(
                 _installButton,
-                Button("Rimuovi", async () => { SetStatus(await _deckyInstaller.RemoveAsync(), InfoBarSeverity.Warning); await RefreshDeckyStateAsync(); })),
+                DeckyOperationButton("Rimuovi", async () => { SetStatus(await Task.Run(() => _deckyInstaller.RemoveAsync()), InfoBarSeverity.Warning); await RefreshDeckyStateAsync(); })),
             out _installTile, out _installGlyph, out _installStatus));
 
         var bigPicture = BuildBigPictureTutorialCard();
@@ -1208,26 +1392,25 @@ public sealed partial class MainWindow : Window
         var quickAccess = BuildQuickAccessTutorialCard(
             "decky",
             "Esplora Decky",
-            "Aprilo dal Quick Access Menu con il controller o la tastiera.",
+            "Aprilo dal menu rapido di Steam con il controller o la tastiera.",
             "");
         _deckyQuickAccessCard = quickAccess.Root;
         _deckyQuickAccessCard.Visibility = Visibility.Collapsed;
         panel.Children.Add(quickAccess);
 
-        // Advanced — pick a specific build
         var update = Card();
-        update.Children.Add(IconHeader(((char)0xE896).ToString(), "Installa una versione specifica di DeckyLoader",
-            "Di solito non serve: l'installazione qui sopra usa già l'ultima versione. Scegli una data solo se ti occorre una versione precisa."));
+        update.Children.Add(IconHeader(((char)0xE896).ToString(), "Scegli una versione di DeckyLoader",
+            "Usa questa opzione solo se ti serve una versione precisa."));
         _deckyBuildCombo = new ComboBox { PlaceholderText = "Scegli una versione", HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 4, 0, 0) };
         update.Children.Add(_deckyBuildCombo);
-        update.Children.Add(ActionRow(Button("Installa questa versione", async () => { await InstallSelectedDeckyBuildAsync(); await RefreshDeckyStateAsync(); })));
+        update.Children.Add(ActionRow(DeckyOperationButton("Installa questa versione", async () => { await InstallSelectedDeckyBuildAsync(); await RefreshDeckyStateAsync(); })));
         panel.Children.Add(update);
 
         // Variante avanzata: DeckyLoader con console visibile (log in tempo reale).
         var consoleCard = Card();
-        consoleCard.Children.Add(IconHeader(((char)0xE756).ToString(), "Versione con console (per esperti)",
-            "Playhub consiglia l'installazione normale qui sopra. Questa versione tiene sempre aperta la finestra della console con il registro in tempo reale: utile solo se sei esperto e vuoi tenere d'occhio cosa succede."));
-        consoleCard.Children.Add(ActionRow(Button("Installa la versione con console", async () => { SetStatus(await _deckyInstaller.InstallLatestConsoleAsync(), InfoBarSeverity.Success); await RefreshDeckyStateAsync(); })));
+        consoleCard.Children.Add(IconHeader(((char)0xE756).ToString(), "DeckyLoader con console",
+            "Mostra una finestra con il registro in tempo reale. Utile per diagnosi e sviluppo."));
+        consoleCard.Children.Add(ActionRow(DeckyOperationButton("Installa la versione con console", async () => { SetStatus(await _deckyInstaller.InstallLatestConsoleAsync(), InfoBarSeverity.Success); await RefreshDeckyStateAsync(); })));
         panel.Children.Add(consoleCard);
 
         return panel;
@@ -1305,9 +1488,9 @@ public sealed partial class MainWindow : Window
         _deckyBigPictureCard.Visibility = ready ? Visibility.Visible : Visibility.Collapsed;
         _deckyQuickAccessCard.Visibility = ready ? Visibility.Visible : Visibility.Collapsed;
         UpdateTutorialPlayback(_currentPageTag);
-        var installLabel = installed ? "Reinstalla" : "Installa";
+        var installLabel = installed ? "Aggiorna" : "Installa";
         _localizationKeys.AddOrUpdate(_installButton, installLabel);
-        _installButton.Content = T(installLabel);
+        if (!_deckyOperationRunning) _installButton.Content = T(installLabel);
         await Task.CompletedTask;
     }
 
@@ -1336,32 +1519,456 @@ public sealed partial class MainWindow : Window
 
     private UIElement BuildPluginsPage()
     {
-        var panel = Page("plugins", "Playhub Plugin Store", "I plugin della suite Playhub: installali, aggiornali e gestiscili da qui.");
-        panel.Children.Add(BuildPluginRestartCard());
+        var panel = PageWithoutHeader("plugins");
+        _pluginStoreHomeHost = panel;
+
+        var modeBar = new Grid
+        {
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        modeBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        modeBar.ColumnDefinitions.Add(new ColumnDefinition());
+        _pluginStoreToolbar = modeBar;
+        var localNavigation = new Grid { VerticalAlignment = VerticalAlignment.Top };
+        localNavigation.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        localNavigation.ColumnDefinitions.Add(new ColumnDefinition());
+        localNavigation.Children.Add(BuildPluginBackButton());
+        _pluginStoreSwitcher = BuildPluginStoreModeSelector();
+        _pluginStoreSwitcher.RenderTransform = _pluginBackSwitcherOffset;
+        Grid.SetColumn(_pluginStoreSwitcher, 1);
+        localNavigation.Children.Add(_pluginStoreSwitcher);
+        modeBar.Children.Add(localNavigation);
+
+        _pluginDiscoverView = new StackPanel
+        {
+            Spacing = 18,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+
+        _pluginFeaturedHost = new Grid
+        {
+            Height = 380,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        _pluginFeaturedHost.SizeChanged += (_, args) =>
+        {
+            if (_featuredPluginExpanded || args.NewSize.Width <= 0)
+            {
+                return;
+            }
+
+            var height = Math.Clamp(args.NewSize.Width * 0.26, 340, 470);
+            _pluginFeaturedHost.Height = height;
+            _pluginFeaturedHost.Clip = new RectangleGeometry
+            {
+                Rect = new Windows.Foundation.Rect(0, 0, args.NewSize.Width, height)
+            };
+        };
+        _pluginDiscoverView.Children.Add(_pluginFeaturedHost);
+
+        var storeTools = new Grid
+        {
+            ColumnSpacing = 10,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        _pluginDiscoverTools = storeTools;
+        storeTools.ColumnDefinitions.Add(new ColumnDefinition());
+        storeTools.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        storeTools.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        storeTools.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        storeTools.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        var showAllPlugins = IconButton(((char)0xE8A9).ToString(), "Vedi tutti i plugin", () =>
+        {
+            if (!_pluginShowAll || _pluginCategoryFilter is not null || !string.IsNullOrWhiteSpace(_pluginSearchBox.Text))
+                PushPluginStoreHistory();
+            CancelPluginSearch();
+            _pluginCategoryFilter = null;
+            _pluginShowAll = true;
+            _pluginAllSource = "all";
+            InvalidatePluginAllViews();
+            _suppressPluginSearchRender = true;
+            try
+            {
+                _pluginSearchBox.Text = string.Empty;
+            }
+            finally
+            {
+                _suppressPluginSearchRender = false;
+            }
+            _pluginFeaturedHost.Visibility = Visibility.Collapsed;
+            _pluginCardsDirty = true;
+            RenderPluginCards();
+            UpdatePluginBackButton();
+            UpdateFeaturedAutoAdvanceState();
+            RestoreNavigationPosition(reset: true);
+        });
+        _pluginShowAllButton = showAllPlugins;
+        showAllPlugins.Height = 40;
+        showAllPlugins.MinHeight = 40;
+        showAllPlugins.Padding = new Thickness(14, 0, 14, 0);
+        showAllPlugins.HorizontalAlignment = HorizontalAlignment.Right;
+        showAllPlugins.VerticalAlignment = VerticalAlignment.Center;
+        Grid.SetColumn(showAllPlugins, 1);
+        storeTools.Children.Add(showAllPlugins);
+        _pluginSearchBox = new TextBox
+        {
+            MinWidth = 0,
+            MinHeight = 40,
+            Height = 40,
+            Padding = new Thickness(40, 9, 12, 3),
+            Margin = new Thickness(0),
+            BorderThickness = new Thickness(1),
+            BorderBrush = ResourceBrush("ControlStrokeColorDefaultBrush", Color.FromArgb(58, 255, 255, 255)),
+            Background = new SolidColorBrush(Color.FromArgb(130, 38, 38, 42)),
+            CornerRadius = new CornerRadius(6),
+            VerticalContentAlignment = VerticalAlignment.Center,
+            FontSize = 14,
+            PlaceholderText = "Cerca plugin e funzioni",
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            AcceptsReturn = false,
+            TextWrapping = TextWrapping.NoWrap,
+            IsSpellCheckEnabled = false
+        };
+        _localizationKeys.AddOrUpdate(_pluginSearchBox, "Cerca plugin e funzioni");
+        _pluginSearchBox.TextChanged += (_, _) =>
+        {
+            if (_suppressPluginSearchRender)
+            {
+                return;
+            }
+
+            if (_pluginStoreMode == "manage")
+            {
+                _pluginManageQuery = _pluginSearchBox.Text;
+                _pluginManageCardsCache = null;
+                _pluginManageListCache = null;
+                _pluginManagementDirty = true;
+                SchedulePluginSearch();
+                return;
+            }
+
+            var hasQuery = !string.IsNullOrWhiteSpace(_pluginSearchBox.Text);
+            if (hasQuery)
+            {
+                _pluginShowAll = false;
+            }
+            else if (_pluginCategoryFilter is not null)
+            {
+                _pluginShowAll = true;
+            }
+            _pluginFeaturedHost.Visibility = hasQuery || _pluginShowAll || _pluginCategoryFilter is not null
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+            _pluginCardsDirty = true;
+            SchedulePluginSearch();
+        };
+        var searchHost = BuildCollapsiblePluginSearch(showAllPlugins);
+        Grid.SetColumn(searchHost, 2);
+        storeTools.Children.Add(searchHost);
+        storeTools.SizeChanged += (_, args) =>
+        {
+            var compact = args.NewSize.Width > 0 && args.NewSize.Width < 650;
+            Grid.SetColumn(showAllPlugins, compact ? 0 : 1);
+            Grid.SetColumnSpan(showAllPlugins, compact ? 3 : 1);
+            Grid.SetRow(showAllPlugins, 0);
+            showAllPlugins.HorizontalAlignment = HorizontalAlignment.Right;
+            Grid.SetColumn(searchHost, compact ? 0 : 2);
+            Grid.SetColumnSpan(searchHost, compact ? 3 : 1);
+            Grid.SetRow(searchHost, compact ? 1 : 0);
+            searchHost.Margin = compact ? new Thickness(0, 10, 0, 0) : new Thickness(0);
+            UpdatePluginSearchWidth(compact ? args.NewSize.Width : args.NewSize.Width - showAllPlugins.ActualWidth - 10);
+        };
+        Grid.SetColumn(storeTools, 1);
+        modeBar.Children.Add(storeTools);
+
+        _pluginDetailsHost = new StackPanel
+        {
+            Spacing = 0,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Visibility = Visibility.Collapsed,
+            Opacity = 0
+        };
+        _pluginDiscoverView.Children.Add(_pluginDetailsHost);
+
         _pluginCards = new StackPanel { Spacing = 14, HorizontalAlignment = HorizontalAlignment.Stretch };
-        panel.Children.Add(_pluginCards);
-        panel.Children.Add(BuildQuickAccessTutorialCard(
+        _pluginCards.SizeChanged += (_, args) =>
+        {
+            var columns = GetPluginStoreColumnCount(args.NewSize.Width);
+            if (columns == _pluginStoreColumnCount)
+            {
+                return;
+            }
+
+            _pluginStoreColumnCount = columns;
+            _pluginAllCardsCache = null;
+            _pluginCardsDirty = true;
+            if (string.Equals(_pluginStoreMode, "discover", StringComparison.Ordinal))
+            {
+                DispatcherQueue.TryEnqueue(RenderPluginCardsIfNeeded);
+            }
+        };
+        _pluginDiscoverView.Children.Add(_pluginCards);
+        panel.Children.Add(_pluginDiscoverView);
+
+        _pluginManageView = new StackPanel
+        {
+            Spacing = 18,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Visibility = Visibility.Collapsed
+        };
+        _pluginManageContent = new StackPanel
+        {
+            Spacing = 12,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        _pluginManageContent.SizeChanged += (_, args) =>
+        {
+            var compact = args.NewSize.Width > 0 && args.NewSize.Width < 820;
+            var columns = GetPluginStoreColumnCount(args.NewSize.Width);
+            if (compact == _pluginManageCompact && columns == _pluginManageColumnCount)
+            {
+                return;
+            }
+
+            _pluginManageCompact = compact;
+            _pluginManageColumnCount = columns;
+            _pluginManageCardsCache = null;
+            _pluginManagementDirty = true;
+            if (string.Equals(_pluginStoreMode, "manage", StringComparison.Ordinal))
+            {
+                DispatcherQueue.TryEnqueue(RenderPluginManagementIfNeeded);
+            }
+        };
+        _pluginManageView.Children.Add(_pluginManageContent);
+        _pluginManageView.Children.Add(BuildPluginRestartCard());
+        panel.Children.Add(_pluginManageView);
+
+        SwitchPluginStoreMode("discover", animate: false);
+        return panel;
+    }
+
+    private Border BuildPluginStoreModeSelector()
+    {
+        var grid = new Grid { ColumnSpacing = 4 };
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+
+        _pluginDiscoverButton = BuildPluginStoreModeButton(
+            ((char)0xE721).ToString(), "Scopri", "discover");
+        grid.Children.Add(_pluginDiscoverButton);
+
+        _pluginManageButton = BuildPluginStoreModeButton(
+            ((char)0xE8F1).ToString(), "Gestisci", "manage");
+        Grid.SetColumn(_pluginManageButton, 1);
+        grid.Children.Add(_pluginManageButton);
+
+        return new Border
+        {
+            Height = 54,
+            VerticalAlignment = VerticalAlignment.Top,
+            Padding = new Thickness(4),
+            CornerRadius = new CornerRadius(8),
+            Background = ResourceBrush("CardBackgroundFillColorDefaultBrush", Color.FromArgb(220, 28, 28, 32)),
+            BorderBrush = ResourceBrush("CardStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255)),
+            BorderThickness = new Thickness(1),
+            Child = grid
+        };
+    }
+
+    private Button BuildPluginStoreModeButton(string glyph, string label, string mode)
+    {
+        var button = new Button
+        {
+            MinWidth = 150,
+            Height = 44,
+            Padding = new Thickness(16, 0, 16, 0),
+            CornerRadius = new CornerRadius(6),
+            BorderThickness = new Thickness(0),
+            HorizontalContentAlignment = HorizontalAlignment.Center,
+            Content = IconContent(glyph, label)
+        };
+        button.Click += (_, _) => SwitchPluginStoreMode(mode);
+        return button;
+    }
+
+    private void SwitchPluginStoreMode(string mode, bool animate = true)
+    {
+        CancelPluginSearch();
+        ResetPluginSourceFilter();
+        CancelPluginCardMorph();
+        _pluginStoreHistory.Clear();
+        var managing = string.Equals(mode, "manage", StringComparison.OrdinalIgnoreCase);
+        var modeChanged = !string.Equals(
+            _pluginStoreMode,
+            managing ? "manage" : "discover",
+            StringComparison.Ordinal);
+        if (modeChanged) SaveNavigationPosition();
+        _pluginStoreMode = managing ? "manage" : "discover";
+        _pluginDiscoverView.Visibility = managing ? Visibility.Collapsed : Visibility.Visible;
+        _pluginManageView.Visibility = managing ? Visibility.Visible : Visibility.Collapsed;
+        _pluginDiscoverTools.Visibility = Visibility.Visible;
+        _pluginShowAllButton.Visibility = managing ? Visibility.Collapsed : Visibility.Visible;
+        UpdatePluginStoreModeButtons();
+
+        if (managing)
+        {
+            _suppressPluginSearchRender = true;
+            try { _pluginSearchBox.Text = _pluginManageQuery; }
+            finally { _suppressPluginSearchRender = false; }
+            RenderPluginManagementIfNeeded();
+        }
+        else
+        {
+            var resetHome = _pluginShowAll || _pluginCategoryFilter is not null || !string.IsNullOrWhiteSpace(_pluginSearchBox.Text);
+            _pluginCategoryFilter = null;
+            _pluginShowAll = false;
+            if (resetHome) InvalidatePluginAllViews();
+            _suppressPluginSearchRender = true;
+            try
+            {
+                _pluginSearchBox.Text = string.Empty;
+            }
+            finally
+            {
+                _suppressPluginSearchRender = false;
+            }
+            _pluginFeaturedHost.Visibility = Visibility.Visible;
+            if (resetHome)
+            {
+                _pluginCardsDirty = true;
+            }
+            RenderPluginCardsIfNeeded();
+        }
+
+        if (animate && modeChanged)
+        {
+            AnimateStoreEntrance(managing ? _pluginManageView : _pluginDiscoverView, managing ? 18 : -18);
+        }
+        if (_currentPageTag == "plugins")
+            RestoreNavigationPosition(reset: !managing);
+        UpdateFeaturedAutoAdvanceState();
+        if (_currentPageTag == "plugin-detail") ShowPage("plugins");
+        UpdatePluginBackButton();
+    }
+
+    private void UpdatePluginStoreModeButtons()
+    {
+        UpdatePluginStoreModeButton(_pluginDiscoverButton, _pluginStoreMode == "discover");
+        UpdatePluginStoreModeButton(_pluginManageButton, _pluginStoreMode == "manage");
+    }
+
+    private void UpdatePluginStoreModeButton(Button button, bool selected)
+    {
+        if (button is null)
+        {
+            return;
+        }
+
+        var accent = ParseColor(_settings.AccentColor);
+        var foreground = selected
+            ? (NeedsLightForeground(accent) ? Colors.White : Colors.Black)
+            : Color.FromArgb(220, 255, 255, 255);
+        var background = selected ? accent : Colors.Transparent;
+        button.Background = new SolidColorBrush(background);
+        button.Foreground = new SolidColorBrush(foreground);
+        SetLocalBrush(button, "ButtonBackground", background);
+        SetLocalBrush(button, "ButtonBackgroundPointerOver", selected ? Mix(accent, Colors.White, 0.12) : Color.FromArgb(28, 255, 255, 255));
+        SetLocalBrush(button, "ButtonBackgroundPressed", selected ? Mix(accent, Colors.Black, 0.12) : Color.FromArgb(42, 255, 255, 255));
+        SetLocalBrush(button, "ButtonForeground", foreground);
+        SetLocalBrush(button, "ButtonForegroundPointerOver", foreground);
+        SetLocalBrush(button, "ButtonForegroundPressed", foreground);
+    }
+
+    private static void AnimateStoreEntrance(UIElement element, double fromX)
+    {
+        if (!MotionEnabled()) { element.Opacity = 1; return; }
+        try
+        {
+            var transform = new TranslateTransform { X = fromX };
+            element.RenderTransform = transform;
+            element.Opacity = 0;
+
+            var storyboard = new Storyboard();
+            var movement = new DoubleAnimation
+            {
+                To = 0,
+                Duration = new Duration(TimeSpan.FromMilliseconds(220)),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            Storyboard.SetTarget(movement, transform);
+            Storyboard.SetTargetProperty(movement, "X");
+            storyboard.Children.Add(movement);
+
+            var fade = new DoubleAnimation
+            {
+                To = 1,
+                Duration = new Duration(TimeSpan.FromMilliseconds(170))
+            };
+            Storyboard.SetTarget(fade, element);
+            Storyboard.SetTargetProperty(fade, "Opacity");
+            storyboard.Children.Add(fade);
+            storyboard.Begin();
+        }
+        catch
+        {
+            element.Opacity = 1;
+        }
+    }
+
+    private void AddStoreCardInteractions(Border card)
+    {
+        var originalBorder = card.BorderBrush;
+        card.PointerEntered += (_, _) =>
+        {
+            card.BorderBrush = new SolidColorBrush(WithAlpha(ParseColor(_settings.AccentColor), 150));
+        };
+        card.PointerExited += (_, _) =>
+        {
+            card.BorderBrush = originalBorder;
+        };
+    }
+
+    private UIElement BuildDeckyStoreCard()
+    {
+        return BuildQuickAccessTutorialCard(
             "plugins",
             "Decky Store",
             "Apri lo store di Decky dal Quick Access Menu e scopri altri plugin.",
             "",
             "I plugin dello store di Decky sono sviluppati per Linux, a volte potrebbero non funzionare come previsto su Windows.",
-            "Decky-Store.mp4"));
-        return panel;
+            "Decky-Store.mp4");
     }
 
     private UIElement BuildGamingPage()
     {
-        var panel = Page("gaming", "Gaming Mode", "Usa il tuo PC come una console senza bisogno di mouse e tastiera.");
+        var panel = Page("gaming", "Gaming Mode", "Apri direttamente Big Picture e controlla il PC dal divano.");
 
         // Backing value for the default mode (driven by the two tiles below).
         _defaultModeCombo = ChoiceCombo(ModeOptions);
 
         // ---------- 1. What it is + install ----------
         var manage = Card();
-        manage.Children.Add(IconHeader(((char)0xE896).ToString(), "Installa Gaming Mode",
-            "Installa Gaming Mode e il plugin companion per DeckyLoader in un solo passaggio."));
-        manage.Children.Add(ActionRow(
+        var installHeading = new Grid { ColumnSpacing = 10 };
+        installHeading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        installHeading.ColumnDefinitions.Add(new ColumnDefinition());
+        installHeading.Children.Add(new FontIcon
+        {
+            Glyph = ((char)0xE896).ToString(), FontSize = 18, VerticalAlignment = VerticalAlignment.Center,
+            Foreground = ResourceBrush("AccentFillColorDefaultBrush", ParseColor(_settings.AccentColor))
+        });
+        var installTitle = new TextBlock
+        {
+            Text = "Installa Gaming Mode", Style = StyleResource("PlayhubSectionTitleStyle"),
+            TextWrapping = TextWrapping.Wrap
+        };
+        Grid.SetColumn(installTitle, 1);
+        installHeading.Children.Add(installTitle);
+        var installHeader = new StackPanel { Spacing = 8 };
+        installHeader.Children.Add(installHeading);
+        installHeader.Children.Add(Body("Installa Gaming Mode e il plugin per DeckyLoader."));
+        manage.Children.Add(installHeader);
+        var installActions = ActionRow(
             Button("Installa o aggiorna", async () =>
             {
                 var result = await _gamingMode.InstallAsync(_settings.DeckyPluginsPath);
@@ -1371,16 +1978,26 @@ public sealed partial class MainWindow : Window
             {
                 var result = await _gamingMode.UninstallAsync(_settings.DeckyPluginsPath);
                 SetStatus(result.Message, result.Success ? InfoBarSeverity.Warning : InfoBarSeverity.Error);
-            })));
+            }));
+        installActions.Orientation = Orientation.Vertical;
+        foreach (var action in installActions.Children.OfType<Button>())
+            action.HorizontalAlignment = HorizontalAlignment.Stretch;
+        manage.Children.Add(installActions);
         manage.Children.Add(AdvancedGamingTools());
-        panel.Children.Add(manage);
-        panel.Children.Add(BuildQuickAccessTutorialCard(
+        var quickAccess = BuildQuickAccessTutorialCard(
             "gaming",
             "Apri il plugin Gaming Mode",
-            "Gaming Mode vive nel Quick Access Menu di Decky, sempre a portata di controller.",
+            "Apri Gaming Mode dal menu rapido di Decky, senza lasciare il controller.",
             "",
-            warning: "Per qualche motivo non riesci ad accedere al plugin Gaming Mode? Nessun problema: mentre sei in Gaming Mode ti basta chiudere Steam e il PC torna da solo in Desktop Mode. In alternativa, tieni premuto Shift mentre accedi a Windows per avviarlo direttamente sul desktop. Da lì riapri Playhub quando vuoi.",
-            videoFile: "Gaming-Mode-Plugin.mp4"));
+            warning: "Se il menu rapido non risponde, chiudi Steam per tornare al desktop. Puoi anche tenere premuto Shift durante l'accesso a Windows.",
+            videoFile: "Gaming-Mode-Plugin.mp4",
+            compact: true);
+        manage.Root.VerticalAlignment = VerticalAlignment.Stretch;
+        quickAccess.Root.VerticalAlignment = VerticalAlignment.Stretch;
+        var gamingTopCards = CardsRow(manage, quickAccess);
+        gamingTopCards.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+        gamingTopCards.ColumnDefinitions[1].Width = new GridLength(3, GridUnitType.Star);
+        panel.Children.Add(gamingTopCards);
 
         var dashboardCard = Card();
         dashboardCard.Children.Add(IconHeader(((char)0xE80F).ToString(), "Playhub Dashboard",
@@ -1392,8 +2009,8 @@ public sealed partial class MainWindow : Window
             await SaveGamingConfigAsync();
             var opened = await _gamingMode.OpenDashboardAsync(_gamingConfig.Safety.ApiPort);
             SetStatus(opened
-                ? "Richiesta inviata. La Dashboard si apre in Gaming Mode."
-                : "La Dashboard non è disponibile. Attivala e verifica che Gaming Mode e il plugin Decky siano in esecuzione.",
+                ? "Apro la Dashboard in Gaming Mode…"
+                : "Non riesco ad aprire la Dashboard. Assicurati che Gaming Mode sia attivo e riprova.",
                 opened ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
         }, primary: true);
         tryDashboard.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -1403,12 +2020,11 @@ public sealed partial class MainWindow : Window
             dashboardToggle.Toggled += (_, _) => tryDashboard.IsEnabled = dashboardToggle.IsOn;
         }
         dashboardCard.Children.Add(tryDashboard);
-        panel.Children.Add(dashboardCard);
 
         // ---------- 2. Default mode: two big tiles + one-time switch ----------
         var modeCard = Card();
         modeCard.Children.Add(IconHeader(((char)0xE7FC).ToString(), "Modalità predefinita",
-            "Scegli come si accende il PC. La scheda illuminata è quella attiva ad ogni avvio."));
+            "Scegli cosa vedere quando accendi il PC."));
 
         var desktopIcons = new List<FontIcon>();
         var desktopIconRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, HorizontalAlignment = HorizontalAlignment.Center };
@@ -1418,7 +2034,7 @@ public sealed partial class MainWindow : Window
         desktopIcons.Add(mouseIcon);
         desktopIconRow.Children.Add(keyboardIcon);
         desktopIconRow.Children.Add(mouseIcon);
-        _desktopModeTile = ModeTileShell(desktopIconRow, "Desktop", "Mouse, tastiera e finestre, come un PC normale.");
+        _desktopModeTile = ModeTileShell(desktopIconRow, "Desktop", "Il desktop di Windows, con mouse e tastiera.");
         _desktopModeTile.Tapped += async (_, _) => await SelectDefaultModeAsync("Desktop");
 
         var gamingIcons = new List<FontIcon>();
@@ -1426,7 +2042,7 @@ public sealed partial class MainWindow : Window
         var padIcon = new FontIcon { Glyph = ((char)0xE7FC).ToString(), FontSize = 48, VerticalAlignment = VerticalAlignment.Center };
         gamingIcons.Add(padIcon);
         gamingIconRow.Children.Add(padIcon);
-        _gamingModeTile = ModeTileShell(gamingIconRow, "Gaming", "Il tuo PC in modalità gaming, da divano e controller.");
+        _gamingModeTile = ModeTileShell(gamingIconRow, "Gaming", "Big Picture a tutto schermo, pronto per il controller.");
         _gamingModeTile.Tapped += async (_, _) => await SelectDefaultModeAsync("Gaming");
 
         _setDesktopSelected = sel => ApplyModeTileState(_desktopModeTile, desktopIcons, sel);
@@ -1442,7 +2058,7 @@ public sealed partial class MainWindow : Window
         {
             if (!await _gamingMode.SwitchModeAsync("Desktop", _gamingConfig.Safety.ApiPort))
             {
-                SetStatus("Gaming Mode non risponde. Installa o avvia l'agente e riprova.", InfoBarSeverity.Warning);
+                SetStatus("Gaming Mode non risponde. Avvialo e riprova.", InfoBarSeverity.Warning);
             }
         });
         desktopSwitch.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -1455,7 +2071,7 @@ public sealed partial class MainWindow : Window
         {
             if (!await _gamingMode.SwitchModeAsync("Gaming", _gamingConfig.Safety.ApiPort))
             {
-                SetStatus("Gaming Mode non risponde. Installa o avvia l'agente e riprova.", InfoBarSeverity.Warning);
+                SetStatus("Gaming Mode non risponde. Avvialo e riprova.", InfoBarSeverity.Warning);
             }
         });
         gamingSwitch.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -1466,29 +2082,30 @@ public sealed partial class MainWindow : Window
         modeGrid.Children.Add(gamingCol);
         modeCard.Children.Add(modeGrid);
         panel.Children.Add(modeCard);
+        panel.Children.Add(dashboardCard);
 
         // Shared fields (placed into the concept cards below).
         _steamPathBox = TextBox("Cartella di Steam");
-        _steamArgsBox = TextBox("Argomenti di Steam");
-        _deckyPathBox = TextBox("Percorso di PluginLoader_noconsole.exe");
+        _steamArgsBox = TextBox("Opzioni di avvio di Steam");
+        _deckyPathBox = TextBox("Eseguibile di DeckyLoader");
         _sunshinePathBox = TextBox("Cartella dello strumento di streaming");
         _delaySteamBox = Number("Attesa prima di Steam (ms)", 0, 60000);
         _mouseDelayBox = Number("Nascondi il cursore dopo (ms)", 0, 30000);
-        _apiPortBox = Number("Porta agente", 1, 65535);
+        _apiPortBox = Number("Porta di comunicazione", 1, 65535);
 
         // ---------- 3. Avvio ----------
         var startCard = Card();
         startCard.Children.Add(IconHeader(((char)0xE945).ToString(), "Avvio",
-            "Cosa parte quando entri in Gaming Mode."));
+            "Scegli cosa deve essere pronto prima di Big Picture."));
         AddExplainedToggle(startCard, "Avvia DeckyLoader prima di Steam",
-            "Carica i plugin Decky prima di Steam, così sono pronti quando si apre la libreria.", "deckyRequired");
+            "Rende disponibili i plugin appena si apre la libreria.", "deckyRequired");
         AddExplainedToggle(startCard, "Avvia lo streaming",
-            "Apre Sunshine, Apollo o Vibepollo per giocare in streaming da un altro dispositivo.", "sunshineRequired");
+            "Avvia l'host scelto quando entri in Gaming Mode, così puoi collegarti subito da un altro dispositivo.", "sunshineRequired");
 
         var advancedStart = new StackPanel { Spacing = 12 };
-        advancedStart.Children.Add(TwoColumn(Labeled("Cartella di Steam", BrowseRow(_steamPathBox, folder: true)), Labeled("Argomenti di Steam", _steamArgsBox)));
+        advancedStart.Children.Add(TwoColumn(Labeled("Cartella di Steam", BrowseRow(_steamPathBox, folder: true)), Labeled("Opzioni di avvio di Steam", _steamArgsBox)));
         advancedStart.Children.Add(TwoColumn(
-            Labeled("PluginLoader_noconsole.exe", BrowseRow(_deckyPathBox, folder: false, exts: new[] { ".exe" })),
+            Labeled("Eseguibile di DeckyLoader", BrowseRow(_deckyPathBox, folder: false, exts: new[] { ".exe" })),
             NumberWithHint(_delaySteamBox, "Pausa prima di aprire Steam, per dare tempo a DeckyLoader di caricarsi.")));
         startCard.Children.Add(new Expander
         {
@@ -1501,11 +2118,11 @@ public sealed partial class MainWindow : Window
         // ---------- 4. Schermo e desktop ----------
         var screenCard = Card();
         screenCard.Children.Add(IconHeader(((char)0xE7F4).ToString(), "Schermo e desktop",
-            "L'aspetto dell'esperienza a tutto schermo."));
+            "Scegli come si presenta Gaming Mode."));
         AddExplainedToggle(screenCard, "Nascondi il desktop in Gaming Mode",
             "In Gaming Mode il desktop di Windows non viene avviato, per un'esperienza pulita da console. Al ritorno in Desktop Mode viene sempre ripristinato.", "closeExplorer");
         AddExplainedToggle(screenCard, "Finestre senza bordi",
-            "Tiene i giochi a schermo intero senza bordi, per la massima immersività.", "borderless");
+            "Apre i giochi a tutto schermo senza cornici di Windows.", "borderless");
         AddExplainedToggle(screenCard, "Nascondi il cursore",
             "Fa sparire il puntatore del mouse quando giochi con il controller.", "hideMouse");
         screenCard.Children.Add(NumberWithHint(_mouseDelayBox, "Inattività prima di nascondere il cursore."));
@@ -1513,14 +2130,16 @@ public sealed partial class MainWindow : Window
         // ---------- 5. Controller, streaming e audio ----------
         var inputCard = Card();
         inputCard.Children.Add(IconHeader(((char)0xE7FC).ToString(), "Controller e streaming",
-            "Input e gioco in streaming."));
+            "Controller, Game Bar e streaming sulla rete di casa."));
         AddExplainedToggle(inputCard, "Prepara i controller",
             "Applica le impostazioni dei controller quando entri in Gaming Mode.", "inputCompatibility");
         AddExplainedToggle(inputCard, "Prepara lo streaming locale",
             "Configura il sistema per lo streaming dei giochi sulla rete di casa.", "sunshineCompatibility");
         AddExplainedToggle(inputCard, "Xbox Game Bar automatica",
             "Attiva la Xbox Game Bar dal controller nei giochi Xbox e Microsoft Store, poi la rispegne quando esci.", "xboxGameBar");
-        inputCard.Children.Add(Labeled("Strumento di streaming (Sunshine, Apollo o Vibepollo)", BrowseRow(_sunshinePathBox, folder: true)));
+        inputCard.Children.Add(Labeled(
+            "Host per il gioco in remoto",
+            BrowseRow(_sunshinePathBox, folder: false, exts: new[] { ".exe" })));
 
         // ---------- 6. Avanzate ----------
         var advancedCard = Card();
@@ -1537,7 +2156,7 @@ public sealed partial class MainWindow : Window
         _splashLogoCombo = ChoiceCombo(SplashLogoOptions);
         _splashLogoBox = TextBox("Percorso logo personalizzato");
         _splashMinBox = Number("Durata minima (ms)", 0, 30000);
-        _splashMaxBox = Number("Timeout massimo (ms)", 1000, 300000);
+        _splashMaxBox = Number("Chiusura automatica dopo (ms)", 1000, 300000);
         _splashLogoCombo.SelectionChanged += (_, _) => UpdateLogoPreview();
         _splashLogoBox.TextChanged += (_, _) => UpdateLogoPreview();
 
@@ -1560,7 +2179,7 @@ public sealed partial class MainWindow : Window
         splashOptions.Children.Add(TwoColumn(Labeled("Logo di avvio", _splashLogoCombo), Labeled("Logo personalizzato", chooseLogo)));
         splashOptions.Children.Add(TwoColumn(
             NumberWithHint(_splashMinBox, "Tempo minimo per cui la schermata resta visibile, anche se il gioco è già pronto."),
-            NumberWithHint(_splashMaxBox, "Dopo questo tempo la schermata si chiude comunque, per sicurezza.")));
+            NumberWithHint(_splashMaxBox, "Chiude la schermata anche se il gioco non risponde.")));
 
         _splashLogoPreview = new Image
         {
@@ -1599,9 +2218,9 @@ public sealed partial class MainWindow : Window
 
         // ---------- Custom processes ----------
         var apps = Card();
-        apps.Children.Add(IconHeader(((char)0xE710).ToString(), "Processi personalizzati",
-            "App da avviare prima di Steam in Gaming Mode."));
-        apps.Children.Add(ActionRow(Button("Aggiungi processo", async () =>
+        apps.Children.Add(IconHeader(((char)0xE710).ToString(), "App all'avvio",
+            "Scegli le app da aprire insieme a Gaming Mode."));
+        apps.Children.Add(ActionRow(Button("Aggiungi app", async () =>
         {
             var exe = await PickFileAsync(new[] { ".exe" });
             if (string.IsNullOrWhiteSpace(exe))
@@ -1715,7 +2334,7 @@ public sealed partial class MainWindow : Window
             // Shared accent brush (mutates in place) so icons follow the accent live.
             Foreground = ResourceBrush("AccentFillColorDefaultBrush", ParseColor(_settings.AccentColor))
         });
-        row.Children.Add(new TextBlock { Text = title, Style = StyleResource("PlayhubSectionTitleStyle"), VerticalAlignment = VerticalAlignment.Center });
+        row.Children.Add(LocalizedText(new TextBlock { Text = title, Style = StyleResource("PlayhubSectionTitleStyle"), VerticalAlignment = VerticalAlignment.Center }, title));
         header.Children.Add(row);
         if (!string.IsNullOrWhiteSpace(subtitle))
         {
@@ -1773,13 +2392,16 @@ public sealed partial class MainWindow : Window
     }
 
     // Come IconHeader, ma con un logo PNG (Assets\ServiceLogos\<file>) al posto della glifo.
-    private StackPanel ImageHeader(string logoFile, string title, string subtitle)
+    private Grid ImageHeader(string logoFile, string title, string subtitle)
     {
-        var header = new StackPanel { Spacing = 8 };
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, VerticalAlignment = VerticalAlignment.Center };
+        var header = new Grid { ColumnSpacing = 14, Tag = "import-store-header" };
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        header.ColumnDefinitions.Add(new ColumnDefinition());
+        var copy = new StackPanel { Spacing = 8 };
         var logo = new Image
         {
-            Height = 22,
+            Height = 54,
+            MaxWidth = 100,
             Stretch = Stretch.Uniform,
             VerticalAlignment = VerticalAlignment.Center,
             RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5)
@@ -1792,13 +2414,18 @@ public sealed partial class MainWindow : Window
         catch
         {
         }
-        row.Children.Add(logo);
-        row.Children.Add(new TextBlock { Text = title, Style = StyleResource("PlayhubSectionTitleStyle"), VerticalAlignment = VerticalAlignment.Center });
-        header.Children.Add(row);
+        header.Children.Add(logo);
+        copy.Children.Add(new TextBlock { Text = title, Style = StyleResource("PlayhubSectionTitleStyle"), TextWrapping = TextWrapping.Wrap });
         if (!string.IsNullOrWhiteSpace(subtitle))
         {
-            header.Children.Add(Body(subtitle));
+            copy.Children.Add(Body(subtitle));
         }
+        copy.SizeChanged += (_, args) =>
+        {
+            if (args.NewSize.Height > 0) logo.Height = args.NewSize.Height;
+        };
+        Grid.SetColumn(copy, 1);
+        header.Children.Add(copy);
         return header;
     }
 
@@ -1808,12 +2435,15 @@ public sealed partial class MainWindow : Window
         string subtitle,
         string finalStep,
         string warning = "",
-        string videoFile = "DeckyLoader-QAM.mp4")
+        string videoFile = "DeckyLoader-QAM.mp4",
+        bool compact = false)
     {
         var card = Card();
         var text = new StackPanel { Spacing = 14, VerticalAlignment = VerticalAlignment.Center };
         var headerGlyph = pageTag == "plugins" ? ((char)0xE719).ToString() : ((char)0xE7FC).ToString();
-        text.Children.Add(IconHeader(headerGlyph, title, subtitle));
+        var header = IconHeader(headerGlyph, title, subtitle);
+        if (compact) card.Children.Add(header);
+        else text.Children.Add(header);
         text.Children.Add(BuildQuickAccessShortcuts());
         if (!string.IsNullOrWhiteSpace(finalStep))
         {
@@ -1833,6 +2463,20 @@ public sealed partial class MainWindow : Window
         Grid.SetColumn(text, 1);
         grid.Children.Add(video);
         grid.Children.Add(text);
+        if (compact)
+        {
+            grid.RowSpacing = 14;
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.SizeChanged += (_, args) =>
+            {
+                var stacked = args.NewSize.Width < 560;
+                grid.ColumnDefinitions[0].Width = new GridLength(stacked ? 1 : 2, GridUnitType.Star);
+                grid.ColumnDefinitions[1].Width = stacked ? new GridLength(0) : new GridLength(3, GridUnitType.Star);
+                Grid.SetRow(text, stacked ? 1 : 0);
+                Grid.SetColumn(text, stacked ? 0 : 1);
+            };
+        }
         card.Children.Add(grid);
         return card;
     }
@@ -1923,8 +2567,8 @@ public sealed partial class MainWindow : Window
             ColumnSpacing = 24,
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(280) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
 
         var text = new StackPanel
         {
@@ -1941,6 +2585,8 @@ public sealed partial class MainWindow : Window
         var imagePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Tutorials", "Big Picture Mode tutorial.png");
         var imageStage = new Border
         {
+            Width = 260,
+            MaxHeight = 150,
             CornerRadius = new CornerRadius(8),
             Background = new SolidColorBrush(Color.FromArgb(255, 14, 14, 16)),
             BorderBrush = ResourceBrush("CardStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255)),
@@ -1959,10 +2605,10 @@ public sealed partial class MainWindow : Window
             };
         }
 
-        Grid.SetColumn(text, 0);
-        Grid.SetColumn(imageStage, 1);
-        grid.Children.Add(text);
+        Grid.SetColumn(imageStage, 0);
+        Grid.SetColumn(text, 1);
         grid.Children.Add(imageStage);
+        grid.Children.Add(text);
         card.Children.Add(grid);
         return card;
     }
@@ -2037,7 +2683,22 @@ public sealed partial class MainWindow : Window
             }
         };
         var videoPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Tutorials", videoFile);
-        _tutorialVideos.Add(new TutorialVideoSession(pageTag, requiresDeckyInstalled, videoPath, stage));
+        var tutorial = new TutorialVideoSession(pageTag, requiresDeckyInstalled, videoPath, stage);
+        _tutorialVideos.Add(tutorial);
+        stage.EffectiveViewportChanged += (_, args) =>
+        {
+            var viewport = args.EffectiveViewport;
+            var visible = Math.Min(stage.ActualWidth, viewport.Right) > Math.Max(0, viewport.Left) &&
+                          Math.Min(stage.ActualHeight, viewport.Bottom) > Math.Max(0, viewport.Top);
+            if (tutorial.IsInViewport == visible) return;
+            tutorial.IsInViewport = visible;
+            UpdateTutorialPlayback(_currentPageTag);
+        };
+        stage.Unloaded += (_, _) =>
+        {
+            tutorial.IsInViewport = false;
+            try { tutorial.Player?.Pause(); } catch { }
+        };
 
         return new Border
         {
@@ -2061,7 +2722,11 @@ public sealed partial class MainWindow : Window
             FontSize = 19,
             FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
             HorizontalAlignment = HorizontalAlignment.Center,
-            Foreground = new SolidColorBrush(Colors.White)
+            Foreground = new SolidColorBrush(Colors.White),
+            TextAlignment = TextAlignment.Center,
+            TextWrapping = TextWrapping.Wrap,
+            MaxLines = 2,
+            MinHeight = 46
         });
         content.Children.Add(new TextBlock
         {
@@ -2071,11 +2736,13 @@ public sealed partial class MainWindow : Window
             TextAlignment = TextAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
             HorizontalAlignment = HorizontalAlignment.Center,
-            MaxWidth = 250
+            MaxWidth = 250,
+            MinHeight = 38
         });
 
         return new Border
         {
+            Height = 220,
             Padding = new Thickness(20, 22, 20, 22),
             CornerRadius = new CornerRadius(16),
             BorderThickness = new Thickness(1.5),
@@ -2147,10 +2814,14 @@ public sealed partial class MainWindow : Window
     private Expander AdvancedGamingTools()
     {
         var tools = new StackPanel { Spacing = 10 };
-        tools.Children.Add(Body("Strumenti utili solo per diagnosi o sviluppo."));
-        tools.Children.Add(ActionRow(
-            Button("Avvia agente", () => { _gamingMode.StartAgent(); SetStatus("Agente avviato.", InfoBarSeverity.Informational); }),
-            Button("Controlla agente", async () => SetStatus(await _gamingMode.IsAgentHealthyAsync(_gamingConfig.Safety.ApiPort) ? "Agente attivo." : "Agente non raggiungibile.", InfoBarSeverity.Informational))));
+        tools.Children.Add(Body("Strumenti per diagnosi e sviluppo."));
+        var actions = ActionRow(
+            Button("Avvia servizio", () => { _gamingMode.StartAgent(); SetStatus("Servizio avviato.", InfoBarSeverity.Informational); }),
+            Button("Controlla servizio", async () => SetStatus(await _gamingMode.IsAgentHealthyAsync(_gamingConfig.Safety.ApiPort) ? "Servizio attivo." : "Servizio non raggiungibile.", InfoBarSeverity.Informational)));
+        actions.Orientation = Orientation.Vertical;
+        foreach (var action in actions.Children.OfType<Button>())
+            action.HorizontalAlignment = HorizontalAlignment.Stretch;
+        tools.Children.Add(actions);
 
         return new Expander
         {
@@ -2163,11 +2834,11 @@ public sealed partial class MainWindow : Window
 
     private UIElement BuildXboxPage()
     {
-        var panel = Page("xbox", "Importa Giochi", "Porta i tuoi giochi nella libreria di Steam e completa automaticamente gli artwork.");
+        var panel = Page("xbox", "Importa Giochi", "Riunisci i tuoi giochi in Steam e completa automaticamente copertine, sfondi e loghi.");
 
         var import = Card();
         _uwpChevron = AddCollapsibleHeader(import, ImageHeader("Xbox.png", "Importa giochi Xbox e Microsoft Store",
-            "Trova i giochi Xbox, Game Pass e Microsoft Store installati e li aggiunge a Steam, pronti da avviare."), () => _uwpGamesPanel);
+            "Trova i giochi Xbox, Game Pass e Microsoft Store installati e aggiungili a Steam."), () => _uwpGamesPanel);
         import.Children.Add(ActionRow(
             Button("Scansiona", async () => await ScanUwpGamesAsync()),
             Button("Importa in Steam", async () => await ExportUwpGamesAsync(), primary: true),
@@ -2195,7 +2866,7 @@ public sealed partial class MainWindow : Window
         // ---------- Epic Games Store ----------
         var epicImport = Card();
         _epicChevron = AddCollapsibleHeader(epicImport, ImageHeader("Epic.png", "Importa giochi da Epic Games Store",
-            "Trova i giochi installati con l'Epic Games Launcher e li aggiunge a Steam."), () => _epicGamesPanel);
+            "Trova i giochi installati con Epic Games Launcher e aggiungili a Steam."), () => _epicGamesPanel);
         epicImport.Children.Add(ActionRow(
             Button("Scansiona", async () => await ScanEpicGamesAsync()),
             Button("Importa in Steam", async () => await ExportEpicGamesAsync(), primary: true),
@@ -2221,7 +2892,7 @@ public sealed partial class MainWindow : Window
         // ---------- GOG ----------
         var gogImport = Card();
         _gogChevron = AddCollapsibleHeader(gogImport, ImageHeader("Gog.png", "Importa giochi da GOG",
-            "Trova i giochi GOG installati (Galaxy o installer offline) e li aggiunge a Steam."), () => _gogGamesPanel);
+            "Trova i giochi GOG installati con Galaxy o da un installer offline e aggiungili a Steam."), () => _gogGamesPanel);
         gogImport.Children.Add(ActionRow(
             Button("Scansiona", async () => await ScanGogGamesAsync()),
             Button("Importa in Steam", async () => await ExportGogGamesAsync(), primary: true),
@@ -2245,8 +2916,8 @@ public sealed partial class MainWindow : Window
         panel.Children.Add(gogImport);
 
         var executableImport = Card();
-        _executableChevron = AddCollapsibleHeader(executableImport, IconHeader(((char)0xE8B7).ToString(), "Importa giochi da cartelle e file",
-            "Scegli le tue cartelle preferite o aggiungi singoli file e scansiona gli EXE presenti nelle cartelle e nelle sottocartelle. Playhub riconoscerà automaticamente i giochi e li preparerà per la tua libreria."), () => _executableGamesPanel);
+        _executableChevron = AddCollapsibleHeader(executableImport, IconHeader(((char)0xE8B7).ToString(), "Aggiungi giochi e app dal PC",
+            "Scegli una cartella o un file .exe. Playhub trova i giochi nelle sottocartelle e li prepara per Steam."), () => _executableGamesPanel);
         executableImport.Children.Add(ActionRow(
             Button("Aggiungi cartella", async () => await ChooseExecutableFolderAsync()),
             Button("Aggiungi file", async () => await ChooseExecutableFileAsync()),
@@ -2278,12 +2949,17 @@ public sealed partial class MainWindow : Window
 
         var artwork = Card();
         artwork.Children.Add(IconHeader(((char)0xE91B).ToString(), "Artwork dei giochi",
-            "Inserisci qui la tua chiave API di SteamGridDB che serve a scaricare automaticamente copertine, sfondi e loghi quando importi i giochi."));
-        _xboxSteamGridDbKeyBox = TextBox("SteamGridDB API key");
-        _xboxSteamGridDbKeyBox.TextChanged += async (_, _) =>
+            "Aggiungi la chiave API di SteamGridDB per scaricare automaticamente copertine, sfondi e loghi."));
+        _xboxSteamGridDbKeyBox = new PasswordBox
+        {
+            PlaceholderText = "Chiave API SteamGridDB",
+            MinWidth = 220,
+            PasswordRevealMode = PasswordRevealMode.Hidden
+        };
+        _xboxSteamGridDbKeyBox.PasswordChanged += async (_, _) =>
         {
             if (_loadingSettings) return;
-            _settings.SteamGridDbApiKey = _xboxSteamGridDbKeyBox.Text;
+            _settings.SteamGridDbApiKey = _xboxSteamGridDbKeyBox.Password;
             await SaveSettingsSilentlyAsync();
         };
 
@@ -2291,7 +2967,7 @@ public sealed partial class MainWindow : Window
         apiRow.ColumnDefinitions.Add(new ColumnDefinition());
         apiRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         apiRow.Children.Add(_xboxSteamGridDbKeyBox);
-        var apiButton = Button("La tua API", async () =>
+        var apiButton = Button("Ottieni la chiave", async () =>
             await Windows.System.Launcher.LaunchUriAsync(new Uri("https://www.steamgriddb.com/profile/preferences/api")), primary: true);
         apiButton.VerticalAlignment = VerticalAlignment.Stretch;
         Grid.SetColumn(apiButton, 1);
@@ -2316,13 +2992,11 @@ public sealed partial class MainWindow : Window
         var card = Card();
         card.Root.Background = new SolidColorBrush(WithAlpha(accent, 38));
         card.Root.BorderBrush = new SolidColorBrush(WithAlpha(accent, 145));
-        card.Children.Add(new TextBlock
-        {
-            Text = "Hai installato tutto?",
-            FontSize = 18,
-            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
-        });
-        card.Children.Add(ActionRow(Button("Riavvia DeckyLoader e Steam", async () =>
+        card.Children.Add(IconHeader(
+            ((char)0xE7B8).ToString(),
+            "Applica le modifiche",
+            "Riavvia Steam e DeckyLoader per rendere subito disponibili i plugin."));
+        card.Children.Add(ActionRow(Button("Riavvia ora", async () =>
         {
             var success = await _deckyInstaller.RestartWithSteamAsync(_steam);
             SetStatus(
@@ -2336,17 +3010,50 @@ public sealed partial class MainWindow : Window
 
     private UIElement BuildBigPictureStylerPage()
     {
-        var panel = Page("styler", "Big Picture Styler", "Personalizza Big Picture e prenditi cura della tua libreria Steam.");
+        var panel = Page("styler", "Big Picture Styler", "Dai a Big Picture lo stile di Playhub e proteggi gli artwork della libreria.");
 
         var css = Card();
         var cssText = new StackPanel { Spacing = 12, VerticalAlignment = VerticalAlignment.Center };
         cssText.Children.Add(IconHeader(((char)0xE790).ToString(), "Tema Playhub per CSS Loader",
-            "Installa il profilo Playhub in CSS Loader senza sostituire le tue opzioni attuali: puoi provarlo in sicurezza, senza rischiare di azzerare le impostazioni che hai già. È consigliato per la migliore esperienza con i plugin di Playhub."));
-        cssText.Children.Add(BuildYellowWarning(
-            "Per poter installare il tema è prima necessario installare il plugin CSS Loader dal Decky Store."));
+            "Installa il profilo Playhub e porta lo stesso stile in tutta Big Picture."));
+        var cssLoaderRow = new Grid { ColumnSpacing = 12 };
+        cssLoaderRow.ColumnDefinitions.Add(new ColumnDefinition());
+        cssLoaderRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        _cssLoaderStatusText = new TextBlock
+        {
+            Tag = "noloc",
+            Text = "Controllo CSS Loader…",
+            TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        _cssLoaderInstallButton = Button("Installa CSS Loader", InstallCssLoaderAsync, primary: true);
+        _cssLoaderRemoveButton = Button("Disinstalla CSS Loader", UninstallCssLoaderAsync);
+        var cssLoaderActions = ActionRow(_cssLoaderInstallButton, _cssLoaderRemoveButton);
+        cssLoaderRow.Children.Add(_cssLoaderStatusText);
+        Grid.SetColumn(cssLoaderActions, 1);
+        cssLoaderRow.Children.Add(cssLoaderActions);
+        cssText.Children.Add(new Border
+        {
+            Padding = new Thickness(14, 12, 14, 12),
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1),
+            BorderBrush = ResourceBrush("CardStrokeColorDefaultBrush", Color.FromArgb(36, 255, 255, 255)),
+            Background = ResourceBrush("SubtleFillColorSecondaryBrush", Color.FromArgb(20, 255, 255, 255)),
+            Child = cssLoaderRow
+        });
+        _cssLoaderInstallBar = new ProgressBar
+        {
+            Minimum = 0,
+            Maximum = 1,
+            Visibility = Visibility.Collapsed,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        cssText.Children.Add(_cssLoaderInstallBar);
+        _cssProfileInstallButton = Button("Installa profilo", async () =>
+            SetStatus(await _extra.ApplyCssLoaderProfileAsync(_settings.CssLoaderProfileUrl), InfoBarSeverity.Success), primary: true);
         cssText.Children.Add(ActionRow(
-            Button("Installa", async () => SetStatus(await _extra.ApplyCssLoaderProfileAsync(_settings.CssLoaderProfileUrl), InfoBarSeverity.Success)),
-            Button("Rimuovi", async () => SetStatus(await _extra.RemoveCssLoaderProfileAsync(), InfoBarSeverity.Warning))));
+            _cssProfileInstallButton,
+            Button("Rimuovi profilo", async () => SetStatus(await _extra.RemoveCssLoaderProfileAsync(), InfoBarSeverity.Warning))));
 
         var cssPreviewPath = System.IO.Path.Combine(System.AppContext.BaseDirectory, "Assets", "Extra", "css-theme-preview.png");
         if (System.IO.File.Exists(cssPreviewPath))
@@ -2376,10 +3083,11 @@ public sealed partial class MainWindow : Window
             css.Children.Add(cssText);
         }
         panel.Children.Add(css);
+        RefreshCssLoaderState();
 
         var steam = Card();
         steam.Children.Add(IconHeader(((char)0xE72E).ToString(), "Aggiornamenti di Steam",
-            "Blocca gli aggiornamenti del client di Steam copiando steam.cfg nella sua cartella. Puoi rimuoverlo quando vuoi."));
+            "Mantieni la versione attuale di Steam. Puoi riattivare gli aggiornamenti in qualsiasi momento."));
         steam.Children.Add(ActionRow(
             Button("Blocca aggiornamenti", async () => SetStatus(await _extra.ApplySteamCfgAsync(), InfoBarSeverity.Success)),
             Button("Rimuovi blocco", async () => SetStatus(await _extra.RemoveSteamCfgAsync(), InfoBarSeverity.Warning))));
@@ -2396,10 +3104,71 @@ public sealed partial class MainWindow : Window
         return panel;
     }
 
+    private void RefreshCssLoaderState()
+    {
+        if (_cssLoaderStatusText is null || _cssLoaderInstallButton is null || _cssLoaderRemoveButton is null) return;
+        var status = _cssLoaderInstaller.GetStatus(_settings.DeckyPluginsPath);
+        _cssLoaderStatusText.Text = status.Installed
+            ? $"CSS Loader {status.Version} è pronto. Ora puoi applicare il profilo Playhub."
+            : "Installa CSS Loader per usare il profilo Playhub.";
+        _cssLoaderInstallButton.Visibility = status.Installed ? Visibility.Collapsed : Visibility.Visible;
+        _cssLoaderRemoveButton.Visibility = status.Installed ? Visibility.Visible : Visibility.Collapsed;
+        _cssLoaderInstallButton.IsEnabled = !_cssLoaderInstallBusy && !status.Installed;
+        _cssLoaderRemoveButton.IsEnabled = !_cssLoaderInstallBusy && status.Installed;
+        _cssProfileInstallButton.IsEnabled = !_cssLoaderInstallBusy && status.Installed;
+    }
+
+    private async Task InstallCssLoaderAsync()
+    {
+        if (_cssLoaderInstallBusy) return;
+        _cssLoaderInstallBusy = true;
+        _cssLoaderInstallButton.IsEnabled = false;
+        _cssProfileInstallButton.IsEnabled = false;
+        _cssLoaderInstallBar.Visibility = Visibility.Visible;
+        _cssLoaderInstallBar.IsIndeterminate = false;
+        _cssLoaderInstallBar.Value = 0;
+        try
+        {
+            var progress = new Progress<(double Percent, string Status)>(value =>
+            {
+                _cssLoaderInstallBar.Value = Math.Clamp(value.Percent, 0, 1);
+                _cssLoaderStatusText.Text = value.Status;
+            });
+            var result = await _cssLoaderInstaller.InstallLatestAsync(_settings.DeckyPluginsPath, progress);
+            SetStatus(result.Message, result.Success ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+        }
+        finally
+        {
+            _cssLoaderInstallBusy = false;
+            _cssLoaderInstallBar.Visibility = Visibility.Collapsed;
+            RefreshCssLoaderState();
+        }
+    }
+
+    private async Task UninstallCssLoaderAsync()
+    {
+        if (_cssLoaderInstallBusy) return;
+        if (!await ConfirmAsync("Disinstallare CSS Loader?", "CSS Loader verrà rimosso. Il profilo Playhub resterà disponibile per una futura reinstallazione."))
+        {
+            return;
+        }
+
+        _cssLoaderInstallBusy = true;
+        try
+        {
+            var result = await _cssLoaderInstaller.UninstallAsync(_settings.DeckyPluginsPath);
+            SetStatus(result.Message, result.Success ? InfoBarSeverity.Warning : InfoBarSeverity.Error);
+        }
+        finally
+        {
+            _cssLoaderInstallBusy = false;
+            RefreshCssLoaderState();
+        }
+    }
+
     private UIElement BuildSupportPage()
     {
-        var panel = Page("support", "Supporto",
-            "Playhub cresce grazie alla community e al tempo dedicato al progetto.");
+        var panel = PageWithoutHeader("support");
 
         panel.Children.Add(new Image
         {
@@ -2420,6 +3189,11 @@ public sealed partial class MainWindow : Window
             "Se Playhub ti è utile e vuoi aiutare il progetto a continuare a crescere, una donazione è sempre apprezzata. Nessun contenuto è bloccato: è semplicemente un modo gentile per sostenere il lavoro che c'è dietro."));
         support.Children.Add(ActionRow(Button("Fai una donazione", async () =>
             await Windows.System.Launcher.LaunchUriAsync(new Uri("https://ko-fi.com/lozazamastro")), primary: true)));
+#if PLAYHUB_UPDATE_PREVIEW
+        var testReminder = Button("Test", () => ShowSupportReminderAsync(force: true));
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(testReminder, "SupportReminderTest");
+        support.Children.Add(ActionRow(testReminder));
+#endif
         panel.Children.Add(support);
         return panel;
     }
@@ -2433,28 +3207,15 @@ public sealed partial class MainWindow : Window
         appearance.Children.Add(IconHeader(((char)0xE713).ToString(), "Aspetto",
             "Personalizza lo sfondo e il colore di Playhub."));
         _languageCombo = LanguageCombo();
-        _languageCombo.SelectionChanged += async (_, _) =>
-        {
-            if (_loadingSettings) return;
-            var selectedLanguage = GetComboKey(_languageCombo) ?? "en";
-            if (string.Equals(
-                    LocalizationService.NormalizeLanguageKey(_settings.Language),
-                    LocalizationService.NormalizeLanguageKey(selectedLanguage),
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            _settings.Language = selectedLanguage;
-            await SaveSettingsSilentlyAsync();
-            RestartPlayhub();
-        };
+        _languageCombo.SelectionChanged += async (_, _) => await ChangeLanguageAsync();
 
         _backdropCombo = ChoiceCombo(BackdropOptions);
         _backdropCombo.SelectionChanged += async (_, _) =>
         {
             if (_loadingSettings) return;
-            _settings.Backdrop = GetComboKey(_backdropCombo) ?? "mica";
+            var backdrop = GetComboKey(_backdropCombo) ?? "mica";
+            if (backdrop == NormalizeBackdropKey(_settings.Backdrop)) return;
+            _settings.Backdrop = backdrop;
             ApplyBackdrop();
             ApplyChrome(ParseColor(_settings.AccentColor));
             await SaveSettingsSilentlyAsync();
@@ -2479,14 +3240,14 @@ public sealed partial class MainWindow : Window
         languageRow.Children.Add(_languageCombo);
         languageRow.Children.Add(new TextBlock
         {
-            Text = "Questo riavvierà Playhub",
+            Text = "Playhub verrà riavviato.",
             Opacity = 0.68,
             FontSize = 13,
             VerticalAlignment = VerticalAlignment.Center,
             TextWrapping = TextWrapping.Wrap
         });
         appearance.Children.Add(TwoColumn(Labeled("Lingua", languageRow), Labeled("Sfondo", _backdropCombo)));
-        appearance.Children.Add(Labeled("Colore accent", _accentColorPanel));
+        appearance.Children.Add(Labeled("Colore principale", _accentColorPanel));
         panel.Children.Add(appearance);
 
         // ---------- Avvio ----------
@@ -2506,15 +3267,31 @@ public sealed partial class MainWindow : Window
         // ---------- Aggiornamenti Playhub ----------
         var updates = Card();
         updates.Children.Add(IconHeader(((char)0xE895).ToString(), "Aggiorna Playhub",
-            "Controlla se c'è una nuova versione pronta da installare."));
-        updates.Children.Add(ActionRow(Button("Controlla aggiornamenti", async () => await CheckPlayhubUpdatesAsync(), primary: true)));
+            "Installa l'ultima versione senza uscire dall'app."));
+        _playhubUpdateButton = Button("Cerca aggiornamenti", CheckPlayhubUpdatesAsync, primary: true);
+        _playhubUpdateBar = new ProgressBar
+        {
+            Minimum = 0,
+            Maximum = 1,
+            Visibility = Visibility.Collapsed,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        _playhubUpdateStatus = new TextBlock
+        {
+            Tag = "noloc",
+            Style = StyleResource("PlayhubBodyTextStyle"),
+            Visibility = Visibility.Collapsed
+        };
+        updates.Children.Add(ActionRow(_playhubUpdateButton));
+        updates.Children.Add(_playhubUpdateBar);
+        updates.Children.Add(_playhubUpdateStatus);
         panel.Children.Add(updates);
 
         // ---------- Risoluzione problemi ----------
         var repair = Card();
         repair.Children.Add(IconHeader(((char)0xE90F).ToString(), "Risoluzione problemi",
-            "Controlla i componenti installati da Playhub (Gaming Mode e il suo plugin per Decky, agente, UWPHook, configurazione) e ripara automaticamente ciò che non va. Gli altri plugin Decky non vengono toccati."));
-        _repairButton = Button("Ripara tutto", RunRepairAsync, primary: true);
+            "Controlla Gaming Mode, DeckyLoader e l'importazione dei giochi e ripristina ciò che non funziona."));
+        _repairButton = Button("Controlla e ripara", RunRepairAsync, primary: true);
         _repairBar = new ProgressBar
         {
             Minimum = 0,
@@ -2561,7 +3338,7 @@ public sealed partial class MainWindow : Window
         about.Children.Add(IconHeader(((char)0xE946).ToString(), "Informazioni",
             $"Playhub {GetAppVersion()} · © 2026 Andrea Sgarro (LoZazaMastro)"));
         about.Children.Add(Body("Componenti di terze parti (licenza MIT): UWPHook © 2016 Brian Lima · VDFParser © 2016 Victor Gama · SharpSteam © 2020 Brian Lima."));
-        about.Children.Add(Body("Steam e lo Steam Controller sono marchi di Valve Corporation, usati solo a scopo identificativo. Playhub non è affiliata né approvata da Valve."));
+        about.Children.Add(Body("Playhub è un progetto indipendente e non è affiliato né approvato da Valve. Steam e Steam Controller sono marchi di Valve Corporation."));
         about.Children.Add(ActionRow(
             Button("UWPHook", async () => await Windows.System.Launcher.LaunchUriAsync(new Uri("https://github.com/BrianLima/UWPHook"))),
             Button("VDFParser", async () => await Windows.System.Launcher.LaunchUriAsync(new Uri("https://github.com/BrianLima/VDFParser"))),
@@ -2614,7 +3391,7 @@ public sealed partial class MainWindow : Window
 
             var summary = report.IssuesFound == 0
                 ? T("Tutto a posto: nessun problema trovato.")
-                : string.Format(T("Problemi trovati: {0}. Problemi risolti: {1}."), report.IssuesFound, report.IssuesFixed);
+                : string.Format(T("{0} problemi trovati, {1} risolti."), report.IssuesFound, report.IssuesFixed);
             if (report.Notes.Count > 0)
             {
                 summary += "\n• " + string.Join("\n• ", report.Notes.Select(T));
@@ -2623,7 +3400,8 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            _repairStatusText.Text = T("Errore durante la riparazione: ") + ex.Message;
+            Diag.Crash("RunRepairAsync", ex);
+            _repairStatusText.Text = T("Non riesco a completare il ripristino. Riprova.");
         }
         finally
         {
@@ -2664,7 +3442,8 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            _diagnosticsStatusText.Text = T("Impossibile creare il report: ") + ex.Message;
+            Diag.Crash("RunDiagnosticsAsync", ex);
+            _diagnosticsStatusText.Text = T("Non riesco a creare il report. Riprova.");
         }
         finally
         {
@@ -2702,15 +3481,13 @@ SOFTWARE.
 
 Trademarks
 
-LG and the LG logo are trademarks of LG Electronics Inc.
-Sony and the Sony logo are trademarks of Sony Group Corporation.
 Steam, the Steam Controller and related logos and images are trademarks of
 Valve Corporation.
 
 All trademarks, logos and product images are the property of their respective
 owners and are used here for identification (nominative) purposes only. Playhub
 is an independent project and is not affiliated with, sponsored by, or endorsed
-by LG Electronics, Sony, or Valve.";
+by Valve.";
 
 
     private async Task CheckDeveloperModeAsync()
@@ -2746,9 +3523,15 @@ by LG Electronics, Sony, or Valve.";
 
     private async Task InstallLatestDeckyBuildAsync()
     {
-        // Installs the latest official build directly (no dependency on the
-        // GitHub listing API, which is rate-limited without a token).
-        SetStatus(await _deckyInstaller.InstallLatestAsync(), InfoBarSeverity.Success);
+        using var context = BeginNotificationContext("decky");
+        try
+        {
+            SetStatus(await _deckyInstaller.InstallOrUpdateLatestAsync(), InfoBarSeverity.Success);
+        }
+        finally
+        {
+            await RefreshDeckyStateAsync();
+        }
     }
 
     private async Task InstallSelectedDeckyBuildAsync()
@@ -2762,121 +3545,2187 @@ by LG Electronics, Sony, or Valve.";
         SetStatus(await _deckyInstaller.InstallBuildAsync(run), InfoBarSeverity.Success);
     }
 
-    private async Task RefreshPluginsAsync()
+    private void RenderPluginCardsIfNeeded()
     {
-        _plugins.Clear();
-        try
+        if (_pluginCardsDirty)
         {
-            foreach (var plugin in await _catalog.LoadAsync(_settings.PluginRoot, _settings.DeckyPluginsPath))
-            {
-                _plugins.Add(plugin);
-            }
             RenderPluginCards();
         }
-        catch
+    }
+
+    private void RenderPluginManagementIfNeeded()
+    {
+        if (_pluginManagementDirty)
         {
-            SetStatus("Plugin Store non disponibile. Riprova tra poco.", InfoBarSeverity.Warning);
+            RenderPluginManagement();
+        }
+    }
+
+    private void RenderVisiblePluginView()
+    {
+        if (_currentPageTag != "plugins") return;
+        if (_pluginStoreMode == "manage") RenderPluginManagementIfNeeded();
+        else RenderPluginCardsIfNeeded();
+    }
+
+    private Task RefreshPluginsAsync() => RefreshRemoteAwarePluginsAsync();
+
+    private void RenderPluginManagement()
+    {
+        CancelPluginCardMorph();
+        _pluginManagementDirty = false;
+        _pluginManageContent.Children.Clear();
+
+        var installed = _plugins
+            .Where(plugin => plugin.IsInstalled && !IsIntegratedGamingModePlugin(plugin))
+            .OrderByDescending(plugin => plugin.HasUpdate)
+            .ThenBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+        var updates = installed.Where(plugin => plugin.HasUpdate).ToList();
+        var visible = SortPluginAll(FilterPluginAllBySource(installed
+            .Where(plugin => string.IsNullOrWhiteSpace(_pluginManageQuery) ||
+                MatchesPluginSearch(plugin, _pluginManageQuery.Trim())))).ToList();
+
+        var heading = new Grid { ColumnSpacing = 16, Tag = "plugin-management-heading" };
+        heading.ColumnDefinitions.Add(new ColumnDefinition());
+        heading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        heading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        heading.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        heading.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        var headingCopy = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Bottom };
+        headingCopy.Children.Add(new TextBlock
+        {
+            Text = T("Plugin installati"),
+            FontSize = 25,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+        });
+        heading.Children.Add(headingCopy);
+
+        if (updates.Count > 1 && !_pluginBulkUpdateRunning)
+        {
+            var updateAll = IconButton(((char)0xE895).ToString(), "Aggiorna tutti", UpdateAllPluginsAsync, primary: true);
+            updateAll.VerticalAlignment = VerticalAlignment.Center;
+            Grid.SetColumn(updateAll, 1);
+            heading.Children.Add(updateAll);
+        }
+        var selectors = BuildPluginViewSelectors();
+        selectors.VerticalAlignment = VerticalAlignment.Bottom;
+        Grid.SetColumn(selectors, 2);
+        heading.Children.Add(selectors);
+        heading.SizeChanged += (_, args) =>
+        {
+            selectors.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+            headingCopy.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+            var actionWidth = heading.Children.OfType<Button>().Sum(button => button.ActualWidth + 16);
+            var compact = args.NewSize.Width < headingCopy.DesiredSize.Width + selectors.DesiredSize.Width + actionWidth + 16;
+            Grid.SetColumn(selectors, compact ? 0 : 2);
+            Grid.SetColumnSpan(selectors, compact ? 3 : 1);
+            Grid.SetRow(headingCopy, compact ? 1 : 0);
+            headingCopy.Margin = new Thickness(0, compact ? 12 : 0, 0, 0);
+            foreach (var button in heading.Children.OfType<Button>()) Grid.SetRow(button, compact ? 1 : 0);
+        };
+        _pluginManageContent.Children.Add(heading);
+
+        _pluginManageProgress = new ProgressBar
+        {
+            Minimum = 0,
+            Maximum = Math.Max(1, updates.Count),
+            Height = 4,
+            Visibility = _pluginBulkUpdateRunning ? Visibility.Visible : Visibility.Collapsed,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        _pluginManageProgressText = new TextBlock
+        {
+            FontSize = 13,
+            Foreground = ResourceBrush("TextFillColorSecondaryBrush", Color.FromArgb(200, 255, 255, 255)),
+            Visibility = _pluginBulkUpdateRunning ? Visibility.Visible : Visibility.Collapsed,
+            Tag = "noloc"
+        };
+        var progress = new StackPanel { Spacing = 6 };
+        progress.Children.Add(_pluginManageProgressText);
+        progress.Children.Add(_pluginManageProgress);
+        _pluginManageContent.Children.Add(progress);
+
+        if (installed.Count == 0)
+        {
+            var empty = new StackPanel
+            {
+                Spacing = 10,
+                Padding = new Thickness(24, 44, 24, 44),
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            empty.Children.Add(new FontIcon
+            {
+                Glyph = ((char)0xE7B8).ToString(),
+                FontSize = 30,
+                Opacity = 0.58,
+                HorizontalAlignment = HorizontalAlignment.Center
+            });
+            empty.Children.Add(new TextBlock
+            {
+                Text = T("Nessun plugin installato"),
+                FontSize = 16,
+                Opacity = 0.74,
+                HorizontalAlignment = HorizontalAlignment.Center
+            });
+            _pluginManageContent.Children.Add(empty);
+        }
+        else if (visible.Count == 0)
+            _pluginManageContent.Children.Add(Body(T("Nessun plugin trovato.")));
+        else if (_pluginAllLayout == "list")
+        {
+            _pluginManageListCache ??= BuildPluginStoreListRepeater(visible, managed: true);
+            AttachPluginView(_pluginManageContent, _pluginManageListCache);
+        }
+        else
+        {
+            _pluginManageCardsCache ??= BuildPluginStoreGrid(visible, managed: true);
+            AttachPluginView(_pluginManageContent, _pluginManageCardsCache);
+        }
+
+        LocalizeElement(_pluginManageContent);
+    }
+
+    private UIElement BuildManagedPluginRow(DeckyPluginInfo plugin)
+    {
+        var compactHost = new StackPanel
+        {
+            Spacing = 10,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        var expandedHost = new StackPanel
+        {
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Visibility = Visibility.Collapsed,
+            Opacity = 0
+        };
+
+        async Task ToggleDetails()
+        {
+            OpenPluginPage(plugin, compactHost);
+            await Task.CompletedTask;
+        }
+
+        var visual = new Grid();
+        var image = PluginImageElement(plugin, 320);
+        if (image is not null)
+        {
+            visual.Children.Add(image);
+        }
+        else
+        {
+            visual.Background = new SolidColorBrush(WithAlpha(ParseColor(_settings.AccentColor), 54));
+            visual.Children.Add(new FontIcon
+            {
+                Glyph = plugin.IconGlyph,
+                FontSize = 28,
+                Opacity = 0.8,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+        }
+
+        var thumbnail = new Border
+        {
+            Width = _pluginManageCompact ? 76 : 96,
+            Height = _pluginManageCompact ? 52 : 64,
+            CornerRadius = new CornerRadius(7),
+            Child = visual,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var metadata = new StackPanel
+        {
+            Spacing = 4,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        metadata.Children.Add(new TextBlock
+        {
+            Text = plugin.Name,
+            FontSize = 18,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            TextWrapping = TextWrapping.Wrap
+        });
+        var installedVersion = new[] { plugin.InstalledVersion, plugin.Version }
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        var versionText = string.IsNullOrWhiteSpace(installedVersion)
+            ? T("Versione non rilevata")
+            : plugin.HasUpdate && !string.IsNullOrWhiteSpace(plugin.Version)
+                ? $"{T("Versione installata")} {installedVersion}  ·  {T("Ultima versione")} {plugin.Version}"
+                : $"{T("Versione installata")} {installedVersion}";
+        metadata.Children.Add(new TextBlock
+        {
+            Text = versionText,
+            FontSize = 13,
+            Foreground = ResourceBrush("TextFillColorSecondaryBrush", Color.FromArgb(205, 255, 255, 255)),
+            Tag = "noloc"
+        });
+        var secondary = string.Join("  ·  ", new[] { plugin.Author, plugin.Category }
+            .Where(value => !string.IsNullOrWhiteSpace(value)));
+        if (!string.IsNullOrWhiteSpace(secondary))
+        {
+            metadata.Children.Add(new TextBlock
+            {
+                Text = secondary,
+                FontSize = 12,
+                Opacity = 0.58,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                MaxLines = 1,
+                Tag = "noloc"
+            });
+        }
+
+        var actions = BuildManagedPluginActions(plugin, ToggleDetails);
+        UIElement content;
+        if (_pluginManageCompact)
+        {
+            var compact = new StackPanel { Spacing = 14 };
+            var summary = new Grid { ColumnSpacing = 14 };
+            summary.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            summary.ColumnDefinitions.Add(new ColumnDefinition());
+            summary.Children.Add(thumbnail);
+            Grid.SetColumn(metadata, 1);
+            summary.Children.Add(metadata);
+            compact.Children.Add(summary);
+            compact.Children.Add(actions);
+            content = compact;
+        }
+        else
+        {
+            var row = new Grid { ColumnSpacing = 16 };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition());
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.Children.Add(thumbnail);
+            Grid.SetColumn(metadata, 1);
+            row.Children.Add(metadata);
+            Grid.SetColumn(actions, 2);
+            row.Children.Add(actions);
+            content = row;
+        }
+
+        var card = new Border
+        {
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(16),
+            BorderThickness = new Thickness(1),
+            BorderBrush = ResourceBrush("CardStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255)),
+            Background = ResourceBrush("CardBackgroundFillColorDefaultBrush", Color.FromArgb(232, 32, 32, 36)),
+            Child = content
+        };
+        card.Tapped += async (_, args) =>
+        {
+            if (ComesFromButton(args.OriginalSource))
+            {
+                return;
+            }
+
+            args.Handled = true;
+            await ToggleDetails();
+        };
+        AddStoreCardInteractions(card);
+        compactHost.Children.Add(card);
+        var updateNotes = BuildManagedUpdateNotesCard(plugin);
+        if (updateNotes is not null)
+        {
+            compactHost.Children.Add(updateNotes);
+        }
+
+        var wrapper = new StackPanel
+        {
+            Spacing = 0,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        wrapper.Children.Add(compactHost);
+        wrapper.Children.Add(expandedHost);
+        return wrapper;
+    }
+
+    private StackPanel BuildManagedPluginActions(DeckyPluginInfo plugin, Func<Task> detailsAction)
+    {
+        var row = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            HorizontalAlignment = _pluginManageCompact ? HorizontalAlignment.Left : HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        row.Children.Add(BuildCatalogStatusBadge(plugin, expanded: false));
+
+        if (plugin.HasUpdate)
+        {
+            var update = CreatePluginInstallButton(plugin, compact: false);
+            update.IsEnabled = !_pluginBulkUpdateRunning && !_pluginInstallOperations.ContainsKey(PluginStoreKey(plugin));
+            row.Children.Add(update);
+        }
+
+        var uninstall = IconButton(((char)0xE74D).ToString(), "Disinstalla",
+            () => UninstallStorePluginAsync(plugin));
+        uninstall.Height = 42;
+        uninstall.MinHeight = 42;
+        uninstall.IsEnabled = !_pluginBulkUpdateRunning;
+        row.Children.Add(BindPluginUninstallButton(uninstall, plugin, compact: false));
+
+        return row;
+    }
+
+    private UIElement? BuildManagedUpdateNotesCard(DeckyPluginInfo plugin)
+    {
+        if (!plugin.HasUpdate || string.IsNullOrWhiteSpace(plugin.ReleaseNotes))
+        {
+            return null;
+        }
+
+        var gold = Color.FromArgb(255, 255, 205, 28);
+        var header = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 9,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        header.Children.Add(new FontIcon
+        {
+            Glyph = ((char)0xE895).ToString(),
+            FontSize = 14,
+            Foreground = new SolidColorBrush(gold),
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        header.Children.Add(new TextBlock
+        {
+            Text = T("Novità"),
+            FontSize = 14,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Foreground = new SolidColorBrush(gold),
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        var targetVersion = new[] { plugin.ReleaseNotesVersion, plugin.Version }
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        if (!string.IsNullOrWhiteSpace(targetVersion))
+        {
+            header.Children.Add(new TextBlock
+            {
+                Text = targetVersion,
+                FontSize = 12,
+                Opacity = 0.78,
+                VerticalAlignment = VerticalAlignment.Center,
+                Tag = "noloc"
+            });
+        }
+
+        var content = new StackPanel { Spacing = 8 };
+        content.Children.Add(header);
+        var notes = BuildDescription(plugin.ReleaseNotes);
+        notes.Tag = "noloc";
+        content.Children.Add(notes);
+
+        return new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(26, 255, 205, 28)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(112, 255, 205, 28)),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(14, 12, 14, 12),
+            Child = content
+        };
+    }
+
+    private static void MarkPluginInstalled(DeckyPluginInfo plugin)
+    {
+        plugin.IsInstalled = true;
+        plugin.HasUpdate = false;
+        var installedVersion = new[]
+        {
+            plugin.Version,
+            plugin.ReleaseNotesVersion,
+            plugin.InstalledVersion
+        }.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        if (!string.IsNullOrWhiteSpace(installedVersion))
+        {
+            plugin.InstalledVersion = installedVersion;
+        }
+    }
+
+    private async Task CommitPluginInstallStateAsync(DeckyPluginInfo plugin)
+    {
+        MarkPluginInstalled(plugin);
+        InvalidatePluginAllViews();
+        InvalidateFeaturedFrames();
+        _pluginCardsDirty = true;
+        _pluginManagementDirty = true;
+        RenderVisiblePluginView();
+        RefreshOpenPluginPage();
+        await Task.Yield();
+        await RefreshPluginsAsync();
+    }
+
+    private async Task UpdateAllPluginsAsync()
+    {
+        using var context = BeginNotificationContext("plugins");
+        if (_pluginBulkUpdateRunning || _pluginInstallOperations.Count > 0 || _pluginUninstalls.Count > 0)
+        {
+            return;
+        }
+
+        var updates = _plugins
+            .Where(plugin => plugin.IsInstalled && plugin.HasUpdate)
+            .OrderBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+        if (updates.Count < 2)
+        {
+            return;
+        }
+
+        _pluginBulkUpdateRunning = true;
+        RenderPluginManagement();
+        var failures = new List<string>();
+        try
+        {
+            for (var index = 0; index < updates.Count; index++)
+            {
+                var plugin = updates[index];
+                _pluginManageProgress.Value = index;
+                _pluginManageProgressText.Text = string.Format(
+                    T("Aggiornamento di {0} su {1}"), index + 1, updates.Count) + $": {plugin.Name}";
+                try
+                {
+                    if (!await InstallPluginWithProgressAsync(plugin, bulkOperation: true)) failures.Add(plugin.Name);
+                    RenderPluginManagement();
+                    _pluginManageProgress.Value = index + 1;
+                    _pluginManageProgressText.Text = string.Format(
+                        T("Aggiornamento di {0} su {1}"), index + 1, updates.Count) + $": {plugin.Name}";
+                }
+                catch
+                {
+                    failures.Add(plugin.Name);
+                }
+                _pluginManageProgress.Value = index + 1;
+            }
+        }
+        finally
+        {
+            _pluginBulkUpdateRunning = false;
+            await RefreshPluginsAsync();
+        }
+
+        if (failures.Count == 0)
+        {
+            SetStatus(T("Tutti i plugin sono aggiornati."), InfoBarSeverity.Success);
+        }
+        else
+        {
+            SetStatus($"{T("Aggiornamento non riuscito")}: {string.Join(", ", failures)}", InfoBarSeverity.Warning);
         }
     }
 
     private void RenderPluginCards()
     {
-        _pluginCards.Children.Clear();
-        foreach (var plugin in _plugins)
+        var refreshFeatured = _pluginFeaturedHost.Visibility == Visibility.Visible &&
+            (_pluginCardsDirty || _pluginFeaturedHost.Children.Count == 0);
+        _pluginCardsDirty = false;
+        _collapseOpenPluginCard?.Invoke();
+        _collapseOpenPluginCard = null;
+        CancelPluginCardMorph();
+        if (refreshFeatured)
         {
-            _pluginCards.Children.Add(PluginBannerCard(plugin));
+            RenderFeaturedPlugin();
+        }
+        _pluginCards.Children.Clear();
+
+        var query = _pluginSearchBox.Text?.Trim() ?? string.Empty;
+        IEnumerable<DeckyPluginInfo> visibleQuery = _plugins
+            .Where(plugin => _pluginCategoryFilter is null ||
+                PluginBelongsToCategory(plugin, _pluginCategoryFilter))
+            .Where(plugin => string.IsNullOrWhiteSpace(query) || MatchesPluginSearch(plugin, query));
+        var visible = _pluginShowAll || !string.IsNullOrWhiteSpace(query) || _pluginCategoryFilter is not null
+            ? SortPluginAll(FilterPluginAllBySource(visibleQuery)).ToList()
+            : visibleQuery.OrderBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+
+        if (visible.Count == 0 && !_pluginShowAll && string.IsNullOrWhiteSpace(query) && _pluginCategoryFilter is null)
+        {
+            _pluginCards.Children.Add(new TextBlock
+            {
+                Text = T("Nessun plugin trovato."),
+                Style = StyleResource("PlayhubBodyTextStyle"),
+                Margin = new Thickness(0, 28, 0, 28),
+                HorizontalAlignment = HorizontalAlignment.Center
+            });
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            _pluginCards.Children.Add(BuildPluginStoreCategory("Risultati", visible, showLayoutToggle: true));
+        }
+        else if (_pluginShowAll)
+        {
+            _pluginCards.Children.Add(BuildPluginStoreCategory(_pluginCategoryFilter ?? "Tutti i plugin", visible, showLayoutToggle: true));
+        }
+        else
+        {
+            foreach (var category in new[] { "I plugin di Playhub", "Personalizzazione e media", "Libreria e giochi",
+                "Social e community", "Strumenti e utilità", "Sistema e hardware" })
+            {
+                var group = visible.Where(plugin => PluginBelongsToCategory(plugin, category)).ToList();
+                if (group.Count == 0) continue;
+                _pluginCards.Children.Add(BuildPluginDiscoveryCategory(
+                    category,
+                    group.OrderBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase).ToList()));
+            }
         }
 
         LocalizeElement(_pluginCards);
     }
 
-    private UIElement PluginBannerCard(DeckyPluginInfo plugin)
+    private static int PluginStoreCategoryOrder(string category)
+    {
+        return NormalizePluginStoreCategory(category).ToLowerInvariant() switch
+        {
+            "i plugin di playhub" => 0,
+            "personalizzazione e media" => 1,
+            "libreria e giochi" => 2,
+            "social e community" => 3,
+            "strumenti e utilità" => 4,
+            "sistema e hardware" => 5,
+            _ => 6
+        };
+    }
+
+    private static string NormalizePluginStoreCategory(string category)
+    {
+        return category.Trim().ToLowerInvariant() switch
+        {
+            "media e personalizzazione" => "Personalizzazione e media",
+            "personalizzazione e media" => "Personalizzazione e media",
+            "sistema e connettività" => "Sistema e hardware",
+            "sistema e hardware" => "Sistema e hardware",
+            "rete e strumenti" => "Sistema e hardware",
+            "controller e hardware" => "Sistema e hardware",
+            "giochi e libreria" => "Libreria e giochi",
+            "libreria e giochi" => "Libreria e giochi",
+            "social e community" => "Social e community",
+            "strumenti e utilita" or "strumenti e utilità" => "Strumenti e utilità",
+            _ => category
+        };
+    }
+
+    private void RenderFeaturedPlugin()
+    {
+        StopFeaturedAutoAdvance();
+        CompleteFeaturedSlideTransition();
+        _featuredSlideStoryboard?.Stop();
+        _featuredSlideStoryboard = null;
+        _featuredPluginTransitioning = false;
+        _pluginFeaturedCarouselHost.Children.Clear();
+        _pluginFeaturedHost.Children.Clear();
+        _pluginFeaturedHost.Background = new SolidColorBrush(Colors.Transparent);
+        _featuredPluginExpanded = false;
+        SetFeaturedPluginCollapsedSize(_pluginFeaturedHost.ActualWidth);
+        var featured = GetFeaturedPlugins();
+        if (featured.Count == 0)
+        {
+            _pluginFeaturedHost.Children.Add(new ProgressRing
+            {
+                IsActive = true,
+                Width = 36,
+                Height = 36,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            return;
+        }
+
+        if (_featuredPluginIndex < 0 || _featuredPluginIndex >= featured.Count)
+        {
+            _featuredPluginIndex = 0;
+        }
+
+        var frame = new Grid
+        {
+            Margin = new Thickness(4, 4, 4, 6),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch
+        };
+
+        _pluginFeaturedCarouselHost = new Grid
+        {
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch
+        };
+        _pluginFeaturedCarouselHost.SizeChanged += (sender, args) =>
+        {
+            if (ReferenceEquals(sender, _pluginFeaturedCarouselHost)) CompleteFeaturedSlideTransition();
+            ((Grid)sender).Clip = new RectangleGeometry
+            {
+                Rect = new Windows.Foundation.Rect(0, 0, args.NewSize.Width, args.NewSize.Height)
+            };
+        };
+        _pluginFeaturedCarouselHost.Children.Add(GetFeaturedFrame(featured[_featuredPluginIndex]));
+        frame.Children.Add(_pluginFeaturedCarouselHost);
+
+        _pluginFeaturedPreviousButton = StoreArrowButton(
+            ((char)0xE76B).ToString(), "Plugin precedente", -1, HorizontalAlignment.Left);
+        _pluginFeaturedNextButton = StoreArrowButton(
+            ((char)0xE76C).ToString(), "Plugin successivo", 1, HorizontalAlignment.Right);
+        _pluginFeaturedPreviousButton.Margin = new Thickness(12, 0, 0, 0);
+        _pluginFeaturedNextButton.Margin = new Thickness(0, 0, 12, 0);
+        var navigationVisibility = featured.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+        _pluginFeaturedPreviousButton.Visibility = navigationVisibility;
+        _pluginFeaturedNextButton.Visibility = navigationVisibility;
+        frame.Children.Add(_pluginFeaturedPreviousButton);
+        frame.Children.Add(_pluginFeaturedNextButton);
+
+        _pluginFeaturedHost.Children.Add(frame);
+        WarmFeaturedFrames(featured);
+        ResetFeaturedAutoAdvance();
+    }
+
+    private void InvalidateFeaturedFrames()
+    {
+        _featuredFrameCacheVersion++;
+        _featuredFrameCache.Clear();
+    }
+
+    private FrameworkElement GetFeaturedFrame(DeckyPluginInfo plugin)
+    {
+        var key = PluginStoreKey(plugin);
+        if (!_featuredFrameCache.TryGetValue(key, out var frame))
+        {
+            frame = BuildFeaturedPluginFrame(plugin);
+            LocalizeElement(frame);
+            _featuredFrameCache[key] = frame;
+        }
+        if (frame.Parent is Panel previousHost) previousHost.Children.Remove(frame);
+        return frame;
+    }
+
+    private void WarmFeaturedFrames(IReadOnlyList<DeckyPluginInfo> featured)
+    {
+        var version = _featuredFrameCacheVersion;
+        foreach (var plugin in featured)
+        {
+            var key = PluginStoreKey(plugin);
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+            {
+                if (version != _featuredFrameCacheVersion || _featuredFrameCache.ContainsKey(key)) return;
+                GetFeaturedFrame(plugin);
+            });
+        }
+    }
+
+    private IReadOnlyList<DeckyPluginInfo> GetFeaturedPlugins()
+    {
+        var playhubPlugins = _plugins
+            .Where(plugin => plugin.IsPlayhubPlugin && !IsIntegratedGamingModePlugin(plugin))
+            .ToList();
+        var orderedKeys = playhubPlugins
+            .OrderBy(plugin => plugin.HasUpdate ? 0 : !plugin.IsInstalled ? 1 : 2)
+            .ThenBy(plugin =>
+            {
+                var index = _featuredPluginKeys.FindIndex(key =>
+                    string.Equals(key, PluginStoreKey(plugin), StringComparison.OrdinalIgnoreCase));
+                return index < 0 ? int.MaxValue : index;
+            })
+            .ThenBy(_ => Random.Shared.Next())
+            .Select(PluginStoreKey)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(5)
+            .ToList();
+        if (!_featuredPluginKeys.SequenceEqual(orderedKeys, StringComparer.OrdinalIgnoreCase))
+        {
+            _featuredPluginIndex = 0;
+            InvalidateFeaturedFrames();
+        }
+        _featuredPluginKeys.Clear();
+        _featuredPluginKeys.AddRange(orderedKeys);
+
+        return _featuredPluginKeys
+            .Select(key => playhubPlugins.FirstOrDefault(plugin =>
+                string.Equals(PluginStoreKey(plugin), key, StringComparison.OrdinalIgnoreCase)))
+            .Where(plugin => plugin is not null)
+            .Cast<DeckyPluginInfo>()
+            .Take(5)
+            .ToList();
+    }
+
+    private static string PluginStoreKey(DeckyPluginInfo plugin)
+        => string.IsNullOrWhiteSpace(plugin.RepositoryName) ? plugin.Name : plugin.RepositoryName;
+
+    private FrameworkElement BuildFeaturedPluginFrame(DeckyPluginInfo plugin)
+    {
+        var stage = new Grid();
+        var imagePath = PluginImagePath(plugin);
+        if (imagePath is not null)
+        {
+            stage.Background = new ImageBrush
+            {
+                ImageSource = CachedPluginBitmap(imagePath, 1600),
+                Stretch = Stretch.UniformToFill,
+                AlignmentX = AlignmentX.Center,
+                AlignmentY = AlignmentY.Center
+            };
+        }
+        else
+        {
+            stage.Background = new SolidColorBrush(WithAlpha(ParseColor(_settings.AccentColor), 88));
+        }
+
+        stage.Children.Add(new Border
+        {
+            Background = Scrim(0.92, 0.18),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch
+        });
+
+        var copy = new StackPanel
+        {
+            Spacing = 8,
+            Margin = new Thickness(72, 32, 72, 58),
+            MaxWidth = 760,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Bottom
+        };
+        copy.Children.Add(new TextBlock
+        {
+            Text = plugin.Name,
+            FontSize = 34,
+            FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+            Foreground = new SolidColorBrush(Colors.White),
+            TextWrapping = TextWrapping.Wrap
+        });
+        copy.Children.Add(new TextBlock
+        {
+            Text = PluginCatalogService.LocalizedShortDescription(
+                plugin, LocalizationService.ResolveLanguage(_settings.Language)),
+            FontSize = 16,
+            Foreground = new SolidColorBrush(Color.FromArgb(230, 255, 255, 255)),
+            TextWrapping = TextWrapping.Wrap,
+            MaxLines = 2,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            Tag = "noloc"
+        });
+        var featuredActions = (FrameworkElement)BuildPluginStoreActions(
+            plugin,
+            compact: true,
+            includeUninstall: false);
+        featuredActions.Margin = new Thickness(0, 12, 0, 0);
+        copy.Children.Add(featuredActions);
+        stage.Children.Add(copy);
+
+        if (plugin.HasUpdate)
+        {
+            var updatePill = PluginStatusPill(plugin);
+            updatePill.Margin = new Thickness(18);
+            updatePill.HorizontalAlignment = HorizontalAlignment.Left;
+            updatePill.VerticalAlignment = VerticalAlignment.Top;
+            stage.Children.Add(updatePill);
+        }
+
+        var featuredBadge = BuildCatalogStatusBadge(plugin, expanded: true);
+        featuredBadge.Margin = new Thickness(18);
+        featuredBadge.HorizontalAlignment = HorizontalAlignment.Right;
+        featuredBadge.VerticalAlignment = VerticalAlignment.Top;
+        stage.Children.Add(featuredBadge);
+
+        var card = new Border
+        {
+            CornerRadius = new CornerRadius(8),
+            Background = ResourceBrush("CardBackgroundFillColorDefaultBrush", Color.FromArgb(255, 32, 32, 36)),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            Child = stage
+        };
+        stage.Children.Add(BuildFeaturedAutoAdvanceControl(card));
+        card.Tapped += (_, args) =>
+        {
+            if (ComesFromButton(args.OriginalSource))
+            {
+                return;
+            }
+
+            args.Handled = true;
+            ExpandFeaturedPlugin(plugin);
+        };
+        return card;
+    }
+
+    private void SlideFeaturedPlugin(int direction)
+    {
+        CompleteFeaturedSlideIfElapsed();
+        if (_featuredPluginTransitioning || _featuredPluginExpanded || direction == 0) return;
+        var featured = GetFeaturedPlugins();
+        if (featured.Count < 2)
+        {
+            return;
+        }
+
+        direction = Math.Sign(direction);
+        var previous = _pluginFeaturedCarouselHost.Children.OfType<FrameworkElement>().LastOrDefault();
+        _featuredPluginIndex = (_featuredPluginIndex + direction + featured.Count) % featured.Count;
+        var next = GetFeaturedFrame(featured[_featuredPluginIndex]);
+        if (!MotionEnabled() || previous == null || _pluginFeaturedCarouselHost.ActualWidth <= 0)
+        {
+            _pluginFeaturedCarouselHost.Children.Clear();
+            _pluginFeaturedCarouselHost.Children.Add(next);
+            ResetFeaturedAutoAdvance();
+            return;
+        }
+        StartFeaturedSlideTransition(previous, next, direction);
+        ResetFeaturedAutoAdvance();
+    }
+
+    private void ExpandFeaturedPlugin(DeckyPluginInfo plugin)
+    {
+        if (_featuredPluginExpanded || _featuredPluginTransitioning)
+        {
+            return;
+        }
+
+        OpenPluginPage(plugin, _pluginFeaturedCarouselHost.Children.OfType<FrameworkElement>().Last());
+    }
+
+    private void CloseFeaturedPluginDetails()
+    {
+        var source = _pluginFeaturedCarouselHost.Children.OfType<FrameworkElement>().Last();
+        MorphPluginCard(source, () =>
+        {
+            _featuredPluginExpanded = false;
+            RenderFeaturedPlugin();
+            return _pluginFeaturedCarouselHost.Children.OfType<FrameworkElement>().Last();
+        });
+    }
+
+    private void CancelPluginCardMorph()
+    {
+        _pluginCardMorphVersion++;
+        var cancel = _cancelPluginMorphVisual;
+        _cancelPluginMorphVisual = null;
+        try { cancel?.Invoke(); } catch { }
+    }
+
+    private void MorphPluginCard(FrameworkElement source, Func<FrameworkElement> switchView)
+    {
+        CancelPluginCardMorph();
+        var destination = switchView();
+        destination.Opacity = 1;
+    }
+
+    private void SetFeaturedPluginCollapsedSize(double width)
+    {
+        if (width <= 0)
+        {
+            width = 1280;
+        }
+
+        var height = Math.Clamp(width * 0.26, 340, 470);
+        _pluginFeaturedHost.Height = height;
+        _pluginFeaturedHost.Clip = new RectangleGeometry
+        {
+            Rect = new Windows.Foundation.Rect(0, 0, width, height)
+        };
+    }
+
+    private Button StoreArrowButton(string glyph, string tooltip, int direction, HorizontalAlignment alignment)
+    {
+        var button = new Button
+        {
+            Width = 40,
+            Height = 40,
+            Padding = new Thickness(0),
+            Margin = new Thickness(0),
+            CornerRadius = new CornerRadius(20),
+            BorderThickness = new Thickness(0),
+            Background = new SolidColorBrush(Color.FromArgb(164, 18, 18, 22)),
+            Foreground = new SolidColorBrush(Colors.White),
+            HorizontalAlignment = alignment,
+            VerticalAlignment = VerticalAlignment.Center,
+            Content = new FontIcon { Glyph = glyph, FontSize = 18 }
+        };
+        SetLocalizedToolTip(button, tooltip);
+        button.Click += (_, _) => SlideFeaturedPlugin(direction);
+        return button;
+    }
+
+    private UIElement BuildPluginStoreCategory(
+        string title,
+        IReadOnlyList<DeckyPluginInfo> plugins,
+        bool showLayoutToggle = false,
+        bool clickableHeading = false)
+    {
+        var section = new StackPanel
+        {
+            Spacing = 14,
+            Margin = new Thickness(0, 0, 0, 24),
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        var heading = new Grid { ColumnSpacing = 12 };
+        heading.ColumnDefinitions.Add(new ColumnDefinition());
+        heading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        heading.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        heading.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        heading.Children.Add(clickableHeading ? BuildPluginCategoryHeading(title) : new TextBlock
+        {
+            Text = T(title),
+            FontSize = 24,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        if (showLayoutToggle)
+        {
+            var selectors = BuildPluginViewSelectors();
+            Grid.SetColumn(selectors, 1);
+            heading.Children.Add(selectors);
+            heading.SizeChanged += (_, args) =>
+            {
+                var compact = args.NewSize.Width > 0 && args.NewSize.Width < selectors.ActualWidth + 260;
+                Grid.SetColumn(selectors, compact ? 0 : 1);
+                Grid.SetColumnSpan(selectors, compact ? 2 : 1);
+                Grid.SetRow(selectors, compact ? 1 : 0);
+                selectors.Margin = compact ? new Thickness(0, 10, 0, 0) : new Thickness(0);
+            };
+        }
+        section.Children.Add(heading);
+
+        if (plugins.Count == 0)
+        {
+            section.Children.Add(new TextBlock
+            {
+                Text = T("Nessun plugin trovato."), Style = StyleResource("PlayhubBodyTextStyle"),
+                Margin = new Thickness(0, 28, 0, 28), HorizontalAlignment = HorizontalAlignment.Center
+            });
+            return section;
+        }
+
+        if (showLayoutToggle)
+        {
+            if (string.Equals(_pluginAllLayout, "list", StringComparison.Ordinal))
+            {
+                _pluginAllListCache ??= BuildPluginStoreListRepeater(plugins);
+                AttachPluginView(section, _pluginAllListCache);
+            }
+            else
+            {
+                _pluginAllCardsCache ??= BuildPluginStoreGrid(plugins);
+                AttachPluginView(section, _pluginAllCardsCache);
+            }
+            return section;
+        }
+
+        section.Children.Add(BuildPluginStoreGrid(plugins));
+        return section;
+    }
+
+    private UIElement BuildPluginStoreGrid(IReadOnlyList<DeckyPluginInfo> plugins, bool managed = false)
+    {
+        var columns = Math.Max(1, managed ? _pluginManageColumnCount : _pluginStoreColumnCount);
+        var rowGroups = new List<IReadOnlyList<DeckyPluginInfo>>();
+        for (var rowStart = 0; rowStart < plugins.Count; rowStart += columns)
+        {
+            rowGroups.Add(plugins.Skip(rowStart).Take(columns).ToList());
+        }
+
+        var repeater = new ItemsRepeater
+        {
+            ItemsSource = rowGroups,
+            ItemTemplate = PluginRepeaterTemplate(),
+            Layout = new StackLayout { Spacing = 14 },
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        repeater.ElementPrepared += (_, args) =>
+        {
+            if (args.Element is ContentPresenter presenter &&
+                args.Index >= 0 && args.Index < rowGroups.Count)
+            {
+                var index = args.Index;
+                var width = managed ? _pluginManageContent.ActualWidth : _pluginCards.ActualWidth;
+                var tileWidth = Math.Max(260, (width - 14 * (columns - 1)) / columns);
+                QueuePluginRow(repeater, presenter, index, Math.Max(160, tileWidth * 0.5) + 150,
+                    () => BuildPluginStoreGridRow(rowGroups[index], columns, managed));
+            }
+        };
+        repeater.ElementClearing += ClearPluginRow;
+        return repeater;
+    }
+
+    private UIElement BuildPluginStoreGridRow(
+        IReadOnlyList<DeckyPluginInfo> plugins,
+        int columns,
+        bool managed = false)
+    {
+        var compactRow = new Grid
+        {
+            ColumnSpacing = 14,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        for (var column = 0; column < columns; column++)
+        {
+            compactRow.ColumnDefinitions.Add(new ColumnDefinition());
+        }
+
+        var expandedHost = new StackPanel
+        {
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Visibility = Visibility.Collapsed,
+            Opacity = 0
+        };
+        var tiles = new Dictionary<string, FrameworkElement>(StringComparer.OrdinalIgnoreCase);
+
+        async Task OpenInRow(DeckyPluginInfo selected)
+        {
+            OpenPluginPage(selected, tiles[PluginStoreKey(selected)]);
+            await Task.CompletedTask;
+        }
+
+        for (var column = 0; column < plugins.Count; column++)
+        {
+            var tile = BuildPluginStoreTile(plugins[column], OpenInRow);
+            tiles[PluginStoreKey(plugins[column])] = tile;
+            var item = managed ? WithManagedUpdateNotes(tile, plugins[column]) : tile;
+            Grid.SetColumn(item, column);
+            compactRow.Children.Add(item);
+        }
+
+        var rowShell = new StackPanel
+        {
+            Spacing = 0,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        rowShell.Children.Add(compactRow);
+        rowShell.Children.Add(expandedHost);
+        return rowShell;
+    }
+
+    private FrameworkElement WithManagedUpdateNotes(FrameworkElement content, DeckyPluginInfo plugin)
+    {
+        if (!plugin.HasUpdate || string.IsNullOrWhiteSpace(plugin.ReleaseNotes)) return content;
+        var stack = new StackPanel { Spacing = 10 };
+        stack.Children.Add(content);
+        if (BuildManagedUpdateNotesCard(plugin) is { } notes) stack.Children.Add(notes);
+        return stack;
+    }
+
+    private FrameworkElement BuildPluginViewSelectors()
+    {
+        var selectors = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 10,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = "plugin-view-selectors"
+        };
+        selectors.Children.Add(BuildPluginAllSourceSelector());
+        selectors.Children.Add(BuildPluginAllSortSelector());
+        selectors.Children.Add(BuildPluginAllLayoutSelector());
+        return selectors;
+    }
+
+    private FrameworkElement BuildPluginAllLayoutSelector()
+    {
+        var accent = ParseColor(_settings.AccentColor);
+        var selectedForeground = NeedsLightForeground(accent) ? Colors.White : Colors.Black;
+        var buttons = new Grid { ColumnSpacing = 2 };
+        buttons.ColumnDefinitions.Add(new ColumnDefinition());
+        buttons.ColumnDefinitions.Add(new ColumnDefinition());
+
+        Button LayoutButton(string layout, string glyph, string tooltip)
+        {
+            var selected = string.Equals(_pluginAllLayout, layout, StringComparison.Ordinal);
+            var button = new Button
+            {
+                Width = 40,
+                Height = 40,
+                Padding = new Thickness(0),
+                CornerRadius = new CornerRadius(6),
+                BorderThickness = new Thickness(0),
+                Background = selected
+                    ? new SolidColorBrush(accent)
+                    : new SolidColorBrush(Colors.Transparent),
+                Foreground = selected
+                    ? new SolidColorBrush(selectedForeground)
+                    : ResourceBrush("TextFillColorSecondaryBrush", Color.FromArgb(210, 255, 255, 255)),
+                Content = new FontIcon
+                {
+                    Glyph = glyph,
+                    FontFamily = new FontFamily("Segoe Fluent Icons"),
+                    FontSize = 16
+                }
+            };
+            SetLocalizedToolTip(button, tooltip);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, T(tooltip));
+            button.Click += (_, _) =>
+            {
+                if (string.Equals(_pluginAllLayout, layout, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                _pluginAllLayout = layout;
+                _pluginCardsDirty = true;
+                _pluginManagementDirty = true;
+                RenderVisiblePluginView();
+                _ = PersistPluginLayoutAsync();
+            };
+            return button;
+        }
+
+        var cards = LayoutButton("cards", ((char)0xE8A9).ToString(), "Visualizzazione a schede");
+        var list = LayoutButton("list", ((char)0xE8FD).ToString(), "Visualizzazione elenco");
+        buttons.Children.Add(list);
+        Grid.SetColumn(cards, 1);
+        buttons.Children.Add(cards);
+
+        return new Border
+        {
+            Height = 44,
+            Padding = new Thickness(2),
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1),
+            BorderBrush = ResourceBrush("ControlStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255)),
+            Background = new SolidColorBrush(Color.FromArgb(74, 255, 255, 255)),
+            Child = buttons
+        };
+    }
+
+    private FrameworkElement BuildPluginAllSourceSelector()
+    {
+        var accent = ParseColor(_settings.AccentColor);
+        var selectedForeground = NeedsLightForeground(accent) ? Colors.White : Colors.Black;
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 2
+        };
+
+        FrameworkElement SourceIcon(string source)
+        {
+            if (string.Equals(source, "all", StringComparison.Ordinal))
+            {
+                return new TextBlock
+                {
+                    Text = T("Tutti"),
+                    FontSize = 13,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+            }
+
+            var sourcePlugin = source switch
+            {
+                "playhub" => new DeckyPluginInfo { IsPlayhubPlugin = true },
+                "decky" => new DeckyPluginInfo
+                {
+                    IsPlayhubPlugin = false,
+                    CatalogStatus = "decky",
+                    CatalogSource = "decky-store"
+                },
+                _ => new DeckyPluginInfo
+                {
+                    IsPlayhubPlugin = false,
+                    CatalogStatus = "github",
+                    CatalogSource = "outside-store"
+                }
+            };
+            return new Viewbox
+            {
+                Width = 28,
+                Height = 28,
+                Child = BuildCatalogStatusBadge(sourcePlugin, expanded: false)
+            };
+        }
+
+        Button SourceButton(string source, string label)
+        {
+            var selected = string.Equals(_pluginAllSource, source, StringComparison.Ordinal);
+            var isAll = string.Equals(source, "all", StringComparison.Ordinal);
+            var width = isAll ? 64d : 40d;
+            var button = new Button
+            {
+                Width = width,
+                Height = 40,
+                MinWidth = width,
+                Padding = isAll ? new Thickness(10, 0, 10, 0) : new Thickness(0),
+                CornerRadius = new CornerRadius(6),
+                BorderThickness = new Thickness(0),
+                Background = selected
+                    ? new SolidColorBrush(accent)
+                    : new SolidColorBrush(Colors.Transparent),
+                Foreground = selected
+                    ? new SolidColorBrush(selectedForeground)
+                    : ResourceBrush("TextFillColorSecondaryBrush", Color.FromArgb(210, 255, 255, 255)),
+                Content = SourceIcon(source)
+            };
+            SetLocalizedToolTip(button, label);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, T(label));
+            button.Click += (_, _) =>
+            {
+                if (string.Equals(_pluginAllSource, source, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                _pluginAllSource = source;
+                InvalidatePluginAllViews();
+                RenderVisiblePluginView();
+            };
+            return button;
+        }
+
+        buttons.Children.Add(SourceButton("all", "Tutti"));
+        buttons.Children.Add(SourceButton("playhub", "Playhub"));
+        buttons.Children.Add(SourceButton("decky", "Decky"));
+        buttons.Children.Add(SourceButton("github", "GitHub"));
+
+        return new Border
+        {
+            Height = 44,
+            Padding = new Thickness(2),
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1),
+            BorderBrush = ResourceBrush("ControlStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255)),
+            Background = new SolidColorBrush(Color.FromArgb(74, 255, 255, 255)),
+            Child = buttons
+        };
+    }
+
+    private FrameworkElement BuildPluginAllSortSelector()
+    {
+        var selectedLabel = _pluginAllSort switch
+        {
+            "added" => "Data di aggiunta",
+            "updated" => "Data di aggiornamento",
+            _ => "Nome"
+        };
+        var content = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        content.Children.Add(new FontIcon
+        {
+            Glyph = ((char)0xE8CB).ToString(),
+            FontFamily = new FontFamily("Segoe Fluent Icons"),
+            FontSize = 15
+        });
+        content.Children.Add(new TextBlock
+        {
+            Text = T(selectedLabel),
+            FontSize = 13,
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        content.Children.Add(new FontIcon
+        {
+            Glyph = ((char)0xE70D).ToString(),
+            FontFamily = new FontFamily("Segoe Fluent Icons"),
+            FontSize = 11,
+            Opacity = 0.72
+        });
+
+        var button = new Button
+        {
+            Height = 40,
+            MinHeight = 40,
+            Padding = new Thickness(12, 0, 12, 0),
+            CornerRadius = new CornerRadius(6),
+            BorderThickness = new Thickness(0),
+            Background = new SolidColorBrush(Colors.Transparent),
+            Content = content
+        };
+        var flyout = new MenuFlyout
+        {
+            Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.BottomEdgeAlignedRight
+        };
+
+        void AddSortOption(string sort, string label)
+        {
+            var item = new MenuFlyoutItem { Text = T(label) };
+            if (string.Equals(_pluginAllSort, sort, StringComparison.Ordinal))
+            {
+                item.Icon = new FontIcon
+                {
+                    Glyph = ((char)0xE73E).ToString(),
+                    FontFamily = new FontFamily("Segoe Fluent Icons")
+                };
+            }
+            item.Click += (_, _) =>
+            {
+                if (string.Equals(_pluginAllSort, sort, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                _pluginAllSort = sort;
+                InvalidatePluginAllViews();
+                RenderVisiblePluginView();
+            };
+            flyout.Items.Add(item);
+        }
+
+        AddSortOption("name", "Nome");
+        AddSortOption("added", "Data di aggiunta");
+        AddSortOption("updated", "Data di aggiornamento");
+        button.Flyout = flyout;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, T("Ordina per"));
+        return new Border
+        {
+            Height = 44,
+            Padding = new Thickness(2),
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1),
+            BorderBrush = ResourceBrush("ControlStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255)),
+            Background = new SolidColorBrush(Color.FromArgb(74, 255, 255, 255)),
+            Child = button
+        };
+    }
+
+    private IEnumerable<DeckyPluginInfo> FilterPluginAllBySource(IEnumerable<DeckyPluginInfo> plugins)
+    {
+        return _pluginAllSource switch
+        {
+            "playhub" => plugins.Where(plugin => plugin.IsPlayhubPlugin),
+            "decky" => plugins.Where(plugin =>
+                string.Equals(plugin.CatalogSource, "decky-store", StringComparison.OrdinalIgnoreCase)),
+            "github" => plugins.Where(plugin =>
+                !plugin.IsPlayhubPlugin &&
+                !string.Equals(plugin.CatalogSource, "decky-store", StringComparison.OrdinalIgnoreCase)),
+            _ => plugins
+        };
+    }
+
+    private IEnumerable<DeckyPluginInfo> SortPluginAll(IEnumerable<DeckyPluginInfo> plugins)
+    {
+        return _pluginAllSort switch
+        {
+            "added" => plugins
+                .OrderByDescending(plugin => PluginCatalogDate(plugin.ReleasePublishedAt))
+                .ThenBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase),
+            "updated" => plugins
+                .OrderByDescending(plugin => PluginCatalogDate(
+                    string.IsNullOrWhiteSpace(plugin.UpdatedAt)
+                        ? plugin.ReleasePublishedAt
+                        : plugin.UpdatedAt))
+                .ThenBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase),
+            _ => plugins.OrderBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase)
+        };
+    }
+
+    private static DateTime PluginCatalogDate(string value)
+    {
+        if (DateTime.TryParseExact(
+                value,
+                new[] { "dd/MM/yyyy", "yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ssZ" },
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var parsed))
+        {
+            return parsed;
+        }
+
+        return DateTime.MinValue;
+    }
+
+    private void InvalidatePluginAllViews()
+    {
+        _pluginAllCardsCache = null;
+        _pluginAllListCache = null;
+        _pluginManageCardsCache = null;
+        _pluginManageListCache = null;
+        _pluginCardsDirty = true;
+        _pluginManagementDirty = true;
+    }
+
+    private static void AttachPluginView(Panel target, UIElement view)
+    {
+        if (PluginViewOwners.TryGetValue(view, out var currentParent)) currentParent.Children.Remove(view);
+        PluginViewOwners.Remove(view);
+        target.Children.Add(view);
+        PluginViewOwners.Add(view, target);
+    }
+
+    private DataTemplate PluginRepeaterTemplate()
+    {
+        return _pluginRepeaterTemplate ??= (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+            "<DataTemplate xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\">" +
+            "<ContentPresenter HorizontalContentAlignment=\"Stretch\" />" +
+            "</DataTemplate>");
+    }
+
+    private UIElement BuildPluginStoreListRepeater(IReadOnlyList<DeckyPluginInfo> plugins, bool managed = false)
+    {
+        var items = plugins.ToList();
+        var repeater = new ItemsRepeater
+        {
+            ItemsSource = items,
+            ItemTemplate = PluginRepeaterTemplate(),
+            Layout = new StackLayout { Spacing = 10 },
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        repeater.ElementPrepared += (_, args) =>
+        {
+            if (args.Element is ContentPresenter presenter &&
+                args.Index >= 0 && args.Index < items.Count)
+            {
+                var index = args.Index;
+                QueuePluginRow(repeater, presenter, index, 121, () =>
+                {
+                    var row = (FrameworkElement)BuildPluginStoreListRow(items[index]);
+                    return managed ? WithManagedUpdateNotes(row, items[index]) : row;
+                });
+            }
+        };
+        repeater.ElementClearing += ClearPluginRow;
+        return repeater;
+    }
+
+    private UIElement BuildPluginStoreListRow(DeckyPluginInfo plugin)
+    {
+        var compactHost = new Grid { HorizontalAlignment = HorizontalAlignment.Stretch };
+        var expandedHost = new StackPanel
+        {
+            Visibility = Visibility.Collapsed,
+            Opacity = 0,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+
+        async Task ToggleRow()
+        {
+            OpenPluginPage(plugin, compactHost);
+            await Task.CompletedTask;
+        }
+
+        var row = new Grid
+        {
+            ColumnSpacing = 14,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition());
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var imageStage = new Border
+        {
+            Width = 176,
+            Height = 99,
+            CornerRadius = new CornerRadius(6),
+            Background = new SolidColorBrush(Color.FromArgb(255, 22, 22, 26))
+        };
+        var image = PluginImageElement(plugin, 520);
+        if (image is not null)
+        {
+            image.Stretch = Stretch.UniformToFill;
+            image.HorizontalAlignment = HorizontalAlignment.Stretch;
+            image.VerticalAlignment = VerticalAlignment.Stretch;
+            imageStage.Child = image;
+        }
+        else
+        {
+            imageStage.Child = new FontIcon
+            {
+                Glyph = plugin.IconGlyph,
+                FontSize = 34,
+                Opacity = 0.8,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+        }
+        row.Children.Add(imageStage);
+
+        var copy = new StackPanel
+        {
+            Spacing = 5,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        copy.Children.Add(new TextBlock
+        {
+            Text = plugin.Name,
+            FontSize = 18,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        Grid.SetColumn(copy, 1);
+        row.Children.Add(copy);
+
+        var badge = BuildCatalogStatusBadge(plugin, expanded: false);
+        badge.Margin = new Thickness(4, 0, 4, 0);
+        Grid.SetColumn(badge, 2);
+        row.Children.Add(badge);
+
+        var actions = (FrameworkElement)BuildPluginStoreActions(plugin, compact: true, showRepository: false);
+        Grid.SetColumn(actions, 3);
+        row.Children.Add(actions);
+
+        var card = new Border
+        {
+            Padding = new Thickness(10),
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1),
+            BorderBrush = ResourceBrush("CardStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255)),
+            Background = ResourceBrush("CardBackgroundFillColorDefaultBrush", Color.FromArgb(232, 32, 32, 36)),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Child = row
+        };
+        card.Tapped += async (_, args) =>
+        {
+            if (ComesFromButton(args.OriginalSource))
+            {
+                return;
+            }
+
+            args.Handled = true;
+            await ToggleRow();
+        };
+        AddStoreCardInteractions(card);
+        compactHost.Children.Add(card);
+
+        var shell = new StackPanel
+        {
+            Spacing = 0,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        shell.Children.Add(compactHost);
+        shell.Children.Add(expandedHost);
+        return shell;
+    }
+
+    private Border BuildPluginStoreTile(
+        DeckyPluginInfo plugin,
+        Func<DeckyPluginInfo, Task> openDetails)
+    {
+        var content = new Grid();
+        content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        content.RowDefinitions.Add(new RowDefinition());
+        var imageStage = new Grid
+        {
+            Height = 190,
+            Background = new SolidColorBrush(Color.FromArgb(255, 22, 22, 26))
+        };
+        var image = PluginImageElement(plugin, 760);
+        if (image is not null)
+        {
+            image.Stretch = Stretch.UniformToFill;
+            image.HorizontalAlignment = HorizontalAlignment.Stretch;
+            image.VerticalAlignment = VerticalAlignment.Stretch;
+            imageStage.Children.Add(image);
+        }
+        else
+        {
+            imageStage.Background = new SolidColorBrush(WithAlpha(ParseColor(_settings.AccentColor), 74));
+            imageStage.Children.Add(new FontIcon
+            {
+                Glyph = plugin.IconGlyph,
+                FontSize = 46,
+                Opacity = 0.8,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+        }
+        imageStage.Children.Add(new Border
+        {
+            Height = 74,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Background = CardScrim()
+        });
+        content.Children.Add(imageStage);
+
+        var body = new Grid
+        {
+            RowSpacing = 8,
+            Padding = new Thickness(16, 14, 16, 12)
+        };
+        body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        var heading = new Grid { ColumnSpacing = 12 };
+        heading.ColumnDefinitions.Add(new ColumnDefinition());
+        heading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        heading.Children.Add(new TextBlock
+        {
+            Text = plugin.Name,
+            FontSize = 20,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            TextWrapping = TextWrapping.Wrap,
+            MaxLines = 2,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            Tag = "noloc"
+        });
+        var actions = (FrameworkElement)BuildPluginStoreActions(plugin, compact: true);
+        actions.VerticalAlignment = VerticalAlignment.Top;
+        actions.HorizontalAlignment = HorizontalAlignment.Right;
+        Grid.SetColumn(actions, 1);
+        heading.Children.Add(actions);
+        body.Children.Add(heading);
+        var description = new TextBlock
+        {
+            Text = PluginCatalogService.LocalizedShortDescription(plugin,
+                LocalizationService.ResolveLanguage(_settings.Language)),
+            FontSize = 14, TextWrapping = TextWrapping.Wrap, MaxLines = 2,
+            LineHeight = 20, MinHeight = 40,
+            TextTrimming = TextTrimming.CharacterEllipsis, Tag = "noloc",
+            VerticalAlignment = VerticalAlignment.Top
+        };
+        Grid.SetRow(description, 1);
+        body.Children.Add(description);
+        var badge = BuildCatalogStatusBadge(plugin, expanded: false);
+        badge.HorizontalAlignment = HorizontalAlignment.Right;
+        badge.VerticalAlignment = VerticalAlignment.Bottom;
+        badge.Tag = "plugin-card-source-badge";
+        Grid.SetRow(badge, 2);
+        body.Children.Add(badge);
+        Grid.SetRow(body, 1);
+        content.Children.Add(body);
+
+        var card = new Border
+        {
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1),
+            BorderBrush = ResourceBrush("CardStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255)),
+            Background = ResourceBrush("CardBackgroundFillColorDefaultBrush", Color.FromArgb(232, 32, 32, 36)),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Child = content
+        };
+        card.SizeChanged += (_, args) =>
+        {
+            if (args.NewSize.Width <= 0)
+            {
+                return;
+            }
+
+            var imageHeight = Math.Max(160, args.NewSize.Width * 0.5);
+            if (Math.Abs(imageStage.Height - imageHeight) > 0.5) imageStage.Height = imageHeight;
+        };
+        card.Tapped += async (_, args) =>
+        {
+            if (ComesFromButton(args.OriginalSource))
+            {
+                return;
+            }
+
+            args.Handled = true;
+            await openDetails(plugin);
+        };
+        AddStoreCardInteractions(card);
+        card.IsTabStop = true;
+        card.KeyDown += async (_, args) =>
+        {
+            if (ComesFromButton(args.OriginalSource) ||
+                (args.Key != VirtualKey.Enter && args.Key != VirtualKey.Space)) return;
+            args.Handled = true;
+            await openDetails(plugin);
+        };
+        return card;
+    }
+
+    private UIElement BuildPluginStoreActions(
+        DeckyPluginInfo plugin,
+        bool compact,
+        Func<Task>? detailsAction = null,
+        bool showRepository = true,
+        bool includeInstall = true,
+        bool includeUninstall = true)
+    {
+        if (!compact)
+        {
+            return PluginActions(plugin, includeUninstall);
+        }
+
+        var grid = new Grid
+        {
+            ColumnSpacing = 8,
+            HorizontalAlignment = HorizontalAlignment.Left
+        };
+
+        void Add(Button button)
+        {
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            button.Width = button.MinWidth = button.MaxWidth = 32;
+            button.Height = button.MinHeight = button.MaxHeight = 32;
+            button.Padding = new Thickness(0);
+            button.HorizontalAlignment = HorizontalAlignment.Left;
+            button.HorizontalContentAlignment = HorizontalAlignment.Center;
+            Grid.SetColumn(button, grid.Children.Count);
+            grid.Children.Add(button);
+        }
+
+        if (includeInstall && (!plugin.IsInstalled || plugin.HasUpdate))
+        {
+            Add(CreatePluginInstallButton(plugin, compact: true));
+        }
+
+        if (includeUninstall && plugin.IsInstalled)
+        {
+            Add(BindPluginUninstallButton(StoreIconButton(((char)0xE74D).ToString(), "Disinstalla",
+                () => UninstallStorePluginAsync(plugin)), plugin, compact: true));
+        }
+
+        if (showRepository && !string.IsNullOrWhiteSpace(plugin.RepositoryUrl))
+        {
+            Add(StoreGitHubIconButton(async () =>
+                await Launcher.LaunchUriAsync(new Uri(plugin.RepositoryUrl))));
+        }
+        return grid;
+    }
+
+    private Button StoreIconButton(string glyph, string tooltip, Func<Task> action, bool primary = false)
+    {
+        var button = new Button
+        {
+            MinWidth = 42,
+            Height = 42,
+            Padding = new Thickness(0),
+            Content = new FontIcon { Glyph = glyph, FontSize = 16 },
+            Style = StyleResource(primary ? "PlayhubPrimaryButtonStyle" : "PlayhubSecondaryButtonStyle")
+        };
+        RegisterButton(button, primary);
+        SetLocalizedToolTip(button, tooltip);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, T(tooltip));
+        button.Click += async (_, _) =>
+        {
+            using var context = BeginNotificationContext("plugins");
+            using var reminderOperation = BeginSupportReminderOperation();
+            try
+            {
+                button.IsEnabled = false;
+                await action();
+            }
+            catch (Exception ex)
+            {
+                SetStatus(FriendlyError(ex), InfoBarSeverity.Error);
+            }
+            finally
+            {
+                button.IsEnabled = true;
+            }
+        };
+        return button;
+    }
+
+    private Button StoreGitHubIconButton(Func<Task> action)
+    {
+        var mark = (UIElement)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+            "<PathIcon xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" Data=\"" + GitHubMarkPath + "\"/>");
+        var button = new Button
+        {
+            MinWidth = 42,
+            Height = 42,
+            Padding = new Thickness(0),
+            Content = new Viewbox { Width = 16, Height = 16, Child = mark },
+            Style = StyleResource("PlayhubSecondaryButtonStyle")
+        };
+        ToolTipService.SetToolTip(button, "GitHub");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, "GitHub");
+        button.Click += async (_, _) =>
+        {
+            try
+            {
+                button.IsEnabled = false;
+                await action();
+            }
+            catch (Exception ex)
+            {
+                SetStatus(FriendlyError(ex), InfoBarSeverity.Error);
+            }
+            finally
+            {
+                button.IsEnabled = true;
+            }
+        };
+        return button;
+    }
+
+    private async Task ShowPluginDetailsAsync(DeckyPluginInfo plugin)
+    {
+        var key = PluginStoreKey(plugin);
+        if (_pluginDetailsHost.Visibility == Visibility.Visible &&
+            string.Equals(_expandedPluginKey, key, StringComparison.OrdinalIgnoreCase))
+        {
+            ClosePluginDetails();
+            return;
+        }
+
+        _expandedPluginKey = key;
+        _pluginDetailsHost.Children.Clear();
+        _pluginDetailsHost.Children.Add(PluginBannerCard(
+            plugin,
+            initiallyExpanded: true,
+            closeRequested: ClosePluginDetails));
+        _pluginDetailsHost.Visibility = Visibility.Visible;
+        _pluginDetailsHost.Opacity = 0;
+        FadeIn(_pluginDetailsHost);
+        DispatcherQueue.TryEnqueue(() => ScrollCardIntoView(_pluginDetailsHost));
+        await Task.CompletedTask;
+    }
+
+    private void ClosePluginDetails()
+    {
+        _expandedPluginKey = null;
+        FadeOutThenHide(_pluginDetailsHost);
+    }
+
+    private static bool MatchesPluginSearch(DeckyPluginInfo plugin, string query)
+    {
+        var haystack = string.Join(' ', new[]
+        {
+            plugin.Name,
+            plugin.Author,
+            plugin.ShortDescription,
+            plugin.LongDescription,
+            plugin.Category,
+            plugin.Keywords,
+            plugin.CatalogStatus,
+            plugin.RepositoryName
+        });
+        return haystack.Contains(query, StringComparison.CurrentCultureIgnoreCase);
+    }
+
+    private Border BuildCatalogStatusBadge(DeckyPluginInfo plugin, bool expanded)
+    {
+        var catalogStatus = plugin.CatalogStatus.Trim().ToLowerInvariant();
+        var status = plugin.IsPlayhubPlugin
+            ? "playhub"
+            : catalogStatus.Contains("decky", StringComparison.Ordinal) ||
+              plugin.CatalogSource.Contains("decky", StringComparison.OrdinalIgnoreCase)
+                ? "decky"
+                : "github";
+        var label = status switch
+        {
+            "playhub" => "Playhub",
+            "decky" => "Decky Store",
+            _ => "GitHub"
+        };
+        var start = status switch
+        {
+            "playhub" => Color.FromArgb(255, 188, 132, 0),
+            "decky" => Color.FromArgb(255, 57, 211, 197),
+            _ => Color.FromArgb(255, 102, 56, 157)
+        };
+        var end = status switch
+        {
+            "playhub" => Color.FromArgb(255, 112, 72, 0),
+            "decky" => Color.FromArgb(255, 31, 52, 91),
+            _ => Color.FromArgb(255, 102, 56, 157)
+        };
+        var brush = new LinearGradientBrush
+        {
+            StartPoint = new Windows.Foundation.Point(0, 0),
+            EndPoint = new Windows.Foundation.Point(1, 1),
+            GradientStops =
+            {
+                new GradientStop { Color = start, Offset = 0 },
+                new GradientStop { Color = end, Offset = 1 }
+            }
+        };
+
+        var iconHost = new Grid
+        {
+            Width = 36,
+            Height = 36,
+            UseLayoutRounding = true,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        if (status == "playhub")
+        {
+            iconHost.Children.Add(new Border
+            {
+                Width = 36,
+                Height = 36,
+                CornerRadius = new CornerRadius(18),
+                BorderThickness = new Thickness(0),
+                Background = new LinearGradientBrush
+                {
+                    StartPoint = new Windows.Foundation.Point(0, 0),
+                    EndPoint = new Windows.Foundation.Point(1, 1),
+                    GradientStops =
+                    {
+                        new GradientStop { Color = Color.FromArgb(255, 255, 241, 157), Offset = 0 },
+                        new GradientStop { Color = Color.FromArgb(255, 236, 185, 49), Offset = 0.2 },
+                        new GradientStop { Color = Color.FromArgb(255, 170, 101, 0), Offset = 0.5 },
+                        new GradientStop { Color = Color.FromArgb(255, 219, 155, 22), Offset = 0.73 },
+                        new GradientStop { Color = Color.FromArgb(255, 103, 54, 0), Offset = 1 }
+                    }
+                }
+            });
+            var logoPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Brand", "PlayhubTag.png");
+            if (File.Exists(logoPath))
+            {
+                iconHost.Children.Add(new Image
+                {
+                    Source = new BitmapImage(new Uri(logoPath)),
+                    Width = 17.1,
+                    Height = 17.1,
+                    Stretch = Stretch.Uniform,
+                    RenderTransform = new CompositeTransform { TranslateX = 0.5 },
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+            }
+            else
+            {
+                iconHost.Children.Add(new TextBlock
+                {
+                    Text = "P",
+                    FontSize = 19,
+                    FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+                    Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 223, 76)),
+                    Margin = new Thickness(0),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+            }
+        }
+        else if (status == "decky")
+        {
+            var logoPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Brand", "DeckyStoreBadge.png");
+            if (File.Exists(logoPath))
+            {
+                iconHost.Children.Add(new Image
+                {
+                    Source = new BitmapImage(new Uri(logoPath)),
+                    Width = 36,
+                    Height = 36,
+                    Stretch = Stretch.Uniform,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+            }
+            else
+            {
+                iconHost.Children.Add(new Border
+                {
+                    Width = 34,
+                    Height = 34,
+                    CornerRadius = new CornerRadius(17),
+                    Background = brush,
+                    Child = new TextBlock
+                    {
+                        Text = "D",
+                        FontSize = 17,
+                        FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+                        Foreground = new SolidColorBrush(Colors.White),
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    }
+                });
+            }
+        }
+        else
+        {
+            var githubCircle = new Border
+            {
+                Width = 34,
+                Height = 34,
+                CornerRadius = new CornerRadius(17),
+                Background = new SolidColorBrush(Color.FromArgb(255, 102, 56, 157))
+            };
+            var mark = (PathIcon)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+                "<PathIcon xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" Data=\"" + GitHubMarkPath + "\"/>");
+            mark.Foreground = new SolidColorBrush(Colors.White);
+            githubCircle.Child = new Viewbox
+            {
+                Width = 19,
+                Height = 19,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Child = mark
+            };
+            iconHost.Children.Add(githubCircle);
+        }
+
+        var row = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = expanded ? 8 : 0,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        row.Children.Add(iconHost);
+        if (expanded)
+        {
+            row.Children.Add(new TextBlock
+            {
+                Text = T(label),
+                FontSize = 13,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                Foreground = new SolidColorBrush(Colors.White),
+                VerticalAlignment = VerticalAlignment.Center
+            });
+        }
+
+        if (!expanded)
+        {
+            return new Border
+            {
+                Width = 40,
+                Height = 40,
+                Padding = new Thickness(2),
+                CornerRadius = new CornerRadius(20),
+                Background = new SolidColorBrush(Colors.Transparent),
+                Child = row
+            };
+        }
+
+        return new Border
+        {
+            Height = 42,
+            MinWidth = 42,
+            Padding = new Thickness(3, 0, 13, 0),
+            CornerRadius = new CornerRadius(21),
+            BorderThickness = new Thickness(0),
+            Background = brush,
+            Child = row
+        };
+    }
+
+    private static int GetPluginStoreColumnCount(double width)
+    {
+        if (width >= 2200) return 6;
+        if (width >= 1760) return 5;
+        if (width >= 1320) return 4;
+        if (width >= 900) return 3;
+        if (width >= 600) return 2;
+        return 1;
+    }
+
+    private UIElement PluginBannerCard(
+        DeckyPluginInfo plugin,
+        bool initiallyExpanded = false,
+        Action? closeRequested = null,
+        bool pageMode = false)
     {
         const double compressedHeight = 188;
-        const double expandedAspect = 9.0 / 16.0; // banner is always 16:9 when expanded
-        var expanded = false;
+        var expandedAspect = 9.0 / 16.0;
+        var expanded = initiallyExpanded;
         Border card = null!; // declared early so ToggleDetails can scroll it into view
 
-        var banner = new Grid { Height = compressedHeight };
+        var banner = new Grid { Height = initiallyExpanded ? 360 : compressedHeight };
+        void SizeExpandedArtwork()
+        {
+            if (pageMode || !expanded || banner.ActualWidth <= 0) return;
+            var height = banner.ActualWidth * expandedAspect;
+            if (Math.Abs(banner.Height - height) > 0.5) banner.Height = height;
+        }
+        banner.SizeChanged += (_, args) =>
+        {
+            if (Math.Abs(args.NewSize.Width - args.PreviousSize.Width) > 0.5) SizeExpandedArtwork();
+        };
 
         var imagePath = PluginImagePath(plugin);
         if (imagePath is not null)
         {
-            var bitmap = new BitmapImage { DecodePixelWidth = 1500 };
-            bitmap.UriSource = new Uri(imagePath);
-            banner.Children.Add(new Image
+            var bitmap = CachedPluginBitmap(imagePath, 1500);
+            var artwork = new Image
             {
                 Source = bitmap,
-                Stretch = Stretch.UniformToFill,
+                Stretch = initiallyExpanded ? Stretch.Uniform : Stretch.UniformToFill,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Center // center the crop when compressed
-            });
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            void UpdateArtworkAspect()
+            {
+                if (bitmap.PixelWidth > 0 && bitmap.PixelHeight > 0)
+                    expandedAspect = (double)bitmap.PixelHeight / bitmap.PixelWidth;
+                SizeExpandedArtwork();
+            }
+            artwork.ImageOpened += (_, _) => UpdateArtworkAspect();
+            UpdateArtworkAspect();
+            banner.Children.Add(artwork);
         }
         else
         {
             banner.Background = new SolidColorBrush(WithAlpha(ParseColor(_settings.AccentColor), 70));
         }
-        banner.Children.Add(new Border
+        var artworkScrim = new Border
         {
             Height = 210,
+            Tag = "plugin-artwork-scrim",
             VerticalAlignment = VerticalAlignment.Bottom,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Background = CardScrim()
-        });
+        };
+        banner.Children.Add(artworkScrim);
 
-        // status pill — top-left
         var pill = PluginStatusPill(plugin);
         pill.HorizontalAlignment = HorizontalAlignment.Left;
         pill.VerticalAlignment = VerticalAlignment.Top;
         pill.Margin = new Thickness(20, 18, 0, 0);
         banner.Children.Add(pill);
 
-        // close (X) — top-right, only when expanded
-        var closeButton = new Button
-        {
-            Width = 36,
-            Height = 36,
-            Padding = new Thickness(0),
-            CornerRadius = new CornerRadius(18),
-            HorizontalAlignment = HorizontalAlignment.Right,
-            VerticalAlignment = VerticalAlignment.Top,
-            Margin = new Thickness(0, 12, 12, 0),
-            Visibility = Visibility.Collapsed,
-            Content = new FontIcon { Glyph = "", FontSize = 14 }
-        };
-        // (no X button — Dettagli toggles open/closed)
+        var catalogBadge = BuildCatalogStatusBadge(plugin, expanded: true);
+        catalogBadge.HorizontalAlignment = HorizontalAlignment.Right;
+        catalogBadge.VerticalAlignment = VerticalAlignment.Top;
+        catalogBadge.Margin = new Thickness(0, 16, 18, 0);
+        banner.Children.Add(catalogBadge);
 
-        // ---------- details (continuation) — declared before it's captured below ----------
         var details = new StackPanel
         {
-            Visibility = Visibility.Collapsed,
-            Opacity = 0,
+            Visibility = initiallyExpanded ? Visibility.Visible : Visibility.Collapsed,
+            Opacity = initiallyExpanded ? 1 : 0,
             Padding = new Thickness(24, 8, 24, 22),
             Spacing = 14
         };
-        // Screenshots/video first (like every app store), then the changelog, then the text.
-        if (plugin.Media.Count > 0)
+        void RenderDetailsContent()
         {
-            details.Children.Add(PluginMediaStrip(plugin));
-        }
-        var noveltyCard = PluginNoveltyCard(plugin);
-        if (noveltyCard is not null)
-        {
-            details.Children.Add(noveltyCard);
-        }
-        var localizedLong = PluginCatalogService.LocalizedLongDescription(
-            plugin, LocalizationService.ResolveLanguage(_settings.Language));
-        if (!string.IsNullOrWhiteSpace(localizedLong))
-        {
-            var description = BuildDescription(localizedLong);
-            // Testo già nella lingua giusta (blocco unico): il walker NON deve
-            // ritradurlo riga per riga, altrimenti tornerebbe il "misto".
-            description.Tag = "noloc";
-            details.Children.Add(description);
+            details.Children.Clear();
+            // Keep screenshots immediately below the actions, before the page description.
+            if (plugin.Media.Count > 0)
+            {
+                details.Children.Add(PluginMediaStrip(plugin));
+            }
+            var noveltyCard = PluginNoveltyCard(plugin);
+            if (noveltyCard is not null)
+            {
+                details.Children.Add(noveltyCard);
+            }
+            var localizedLong = PluginCatalogService.LocalizedLongDescription(
+                plugin, LocalizationService.ResolveLanguage(_settings.Language));
+            if (!string.IsNullOrWhiteSpace(localizedLong))
+            {
+                var description = BuildDescription(localizedLong);
+                description.Name = "PluginDescription";
+                // Testo già nella lingua giusta (blocco unico): il walker NON deve
+                // ritradurlo riga per riga, altrimenti tornerebbe il "misto".
+                description.Tag = "noloc";
+                details.Children.Insert(pageMode ? (plugin.Media.Count > 0 ? 1 : 0) : details.Children.Count, description);
+            }
+            if (!plugin.IsPlayhubPlugin) details.Children.Add(BuildExternalPluginWarning(plugin));
         }
 
+        var enrichmentRequested = false;
+        void RequestExternalDetails()
+        {
+            if (enrichmentRequested || plugin.IsPlayhubPlugin)
+            {
+                return;
+            }
+
+            enrichmentRequested = true;
+            _ = EnrichExternalDetailsAsync();
+        }
+
+        async Task EnrichExternalDetailsAsync()
+        {
+            await _catalog.EnsurePluginDetailsAsync(plugin);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (card?.IsLoaded == true && details.Visibility == Visibility.Visible)
+                    RenderDetailsContent();
+            });
+        }
+
+        RenderDetailsContent();
+
         // Dettagli toggle (expands/collapses; the chevron flips)
-        var chevron = new FontIcon { Glyph = ((char)0xE70D).ToString(), FontSize = 15, VerticalAlignment = VerticalAlignment.Center };
+        var chevron = new FontIcon
+        {
+            Glyph = (initiallyExpanded ? (char)0xE70E : (char)0xE70D).ToString(),
+            FontSize = 15,
+            VerticalAlignment = VerticalAlignment.Center
+        };
         var detailsLabel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
         detailsLabel.Children.Add(chevron);
         detailsLabel.Children.Add(new TextBlock { Text = "Dettagli", VerticalAlignment = VerticalAlignment.Center });
@@ -2885,6 +5734,11 @@ by LG Electronics, Sony, or Valve.";
         {
             if (expanded)
             {
+                if (closeRequested is not null)
+                {
+                    closeRequested();
+                    return;
+                }
                 Collapse();
                 chevron.Glyph = ((char)0xE70D).ToString();
                 _collapseOpenPluginCard = null;
@@ -2901,8 +5755,17 @@ by LG Electronics, Sony, or Valve.";
             }
         }
         detailsButton.Click += (_, _) => ToggleDetails();
-        // Clicking the banner/image (not the action buttons) also expands/collapses.
-        banner.Tapped += (_, _) => ToggleDetails();
+        banner.Tapped += (_, args) =>
+        {
+            if (pageMode) return;
+            if (ComesFromButton(args.OriginalSource))
+            {
+                return;
+            }
+
+            ToggleDetails();
+            args.Handled = true;
+        };
 
         // bottom-left: name + short description + actions
         var bottom = new StackPanel
@@ -2931,7 +5794,7 @@ by LG Electronics, Sony, or Valve.";
             // Già localizzata sopra: il walker non deve ritoccarla.
             Tag = "noloc"
         });
-        bottom.Children.Add(PluginActions(plugin, detailsButton));
+        bottom.Children.Add(PluginActions(plugin));
         banner.Children.Add(bottom);
 
         // ---------- assemble ----------
@@ -2941,16 +5804,27 @@ by LG Electronics, Sony, or Valve.";
 
         card = new Border
         {
-            CornerRadius = new CornerRadius(14),
+            CornerRadius = new CornerRadius(8),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Background = new SolidColorBrush(Color.FromArgb(255, 30, 30, 34)),
             Child = stack
         };
+        if (pageMode)
+            ConfigurePluginDetailHero(banner, stack, bottom, details, pill, catalogBadge);
+        if (initiallyExpanded)
+        {
+            card.Loaded += (_, _) =>
+            {
+                SizeExpandedArtwork();
+                RequestExternalDetails();
+            };
+        }
 
         void Expand()
         {
             if (expanded) return;
             expanded = true;
+            RequestExternalDetails();
             details.Visibility = Visibility.Visible;
             var width = banner.ActualWidth;
             var target = width > 0 ? width * expandedAspect : 360;
@@ -2978,7 +5852,24 @@ by LG Electronics, Sony, or Valve.";
             chevron.Glyph = "";
         }
 
+        LocalizeElement(card);
         return card;
+    }
+
+    private static bool ComesFromButton(object? source)
+    {
+        var node = source as DependencyObject;
+        while (node is not null)
+        {
+            if (node is Microsoft.UI.Xaml.Controls.Primitives.ButtonBase)
+            {
+                return true;
+            }
+
+            node = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(node);
+        }
+
+        return false;
     }
 
     private void ScrollCardIntoView(FrameworkElement card)
@@ -3134,9 +6025,11 @@ by LG Electronics, Sony, or Valve.";
     // lets the source strings be written as indented verbatim text.
     private FrameworkElement BuildDescription(string text)
     {
+        text = PluginCatalogService.PrepareDescriptionForDisplay(text);
         var panel = new StackPanel { Spacing = 9 };
         var lines = text.Replace("\r\n", "\n").Split('\n');
         StackPanel? bullets = null;
+        StackPanel? quoteLines = null;
 
         foreach (var raw in lines)
         {
@@ -3144,24 +6037,57 @@ by LG Electronics, Sony, or Valve.";
             if (line.Length == 0)
             {
                 bullets = null;
+                quoteLines = null;
                 continue;
             }
 
-            if (line.StartsWith("## ", StringComparison.Ordinal))
+            if (line.StartsWith(">", StringComparison.Ordinal))
             {
                 bullets = null;
-                panel.Children.Add(new TextBlock
+                line = line.TrimStart('>', ' ');
+                if (line.Length == 0)
                 {
-                    Text = line.Substring(3).Trim(),
-                    FontSize = 15,
-                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                    Margin = new Thickness(0, 4, 0, 0),
-                    Foreground = ResourceBrush("TextFillColorPrimaryBrush", Colors.White)
-                });
+                    continue;
+                }
+
+                if (quoteLines is null)
+                {
+                    quoteLines = new StackPanel { Spacing = 6 };
+                    panel.Children.Add(new Border
+                    {
+                        BorderBrush = ResourceBrush("AccentFillColorDefaultBrush", ParseColor(_settings.AccentColor)),
+                        BorderThickness = new Thickness(3, 0, 0, 0),
+                        Padding = new Thickness(13, 4, 0, 4),
+                        Child = quoteLines
+                    });
+                }
+
+                var quoteHeadingMatch = Regex.Match(line, @"^#{1,6}\s+(.+?)(?:\s+#+)?$");
+                var quoteHeading = quoteHeadingMatch.Success;
+                quoteLines.Children.Add(DescriptionTextBlock(
+                    quoteHeading ? quoteHeadingMatch.Groups[1].Value.Trim() : line,
+                    quoteHeading ? 15 : 14,
+                    quoteHeading,
+                    0.86,
+                    21));
                 continue;
             }
 
-            if (line.StartsWith("• ", StringComparison.Ordinal) || line.StartsWith("- ", StringComparison.Ordinal))
+            quoteLines = null;
+
+            var headingMatch = Regex.Match(line, @"^#{1,6}\s+(.+?)(?:\s+#+)?$");
+            if (headingMatch.Success)
+            {
+                bullets = null;
+                var heading = DescriptionTextBlock(headingMatch.Groups[1].Value.Trim(), 15, true, 1, 21);
+                heading.Margin = new Thickness(0, 4, 0, 0);
+                heading.Foreground = ResourceBrush("TextFillColorPrimaryBrush", Colors.White);
+                panel.Children.Add(heading);
+                continue;
+            }
+
+            var numberedItem = Regex.Match(line, @"^(?<marker>\d+[.)])\s+(?<text>.+)$");
+            if (line.StartsWith("• ", StringComparison.Ordinal) || line.StartsWith("- ", StringComparison.Ordinal) || numberedItem.Success)
             {
                 if (bullets is null)
                 {
@@ -3175,7 +6101,7 @@ by LG Electronics, Sony, or Valve.";
 
                 var dot = new TextBlock
                 {
-                    Text = "•",
+                    Text = numberedItem.Success ? numberedItem.Groups["marker"].Value : "•",
                     FontSize = 16,
                     Margin = new Thickness(2, 0, 12, 0),
                     VerticalAlignment = VerticalAlignment.Top,
@@ -3183,13 +6109,7 @@ by LG Electronics, Sony, or Valve.";
                 };
                 Grid.SetColumn(dot, 0);
 
-                var content = new TextBlock
-                {
-                    Text = line.Substring(2).Trim(),
-                    TextWrapping = TextWrapping.Wrap,
-                    LineHeight = 21,
-                    Opacity = 0.9
-                };
+                var content = DescriptionTextBlock(numberedItem.Success ? numberedItem.Groups["text"].Value : line[2..].Trim(), 14, false, 0.9, 21);
                 Grid.SetColumn(content, 1);
 
                 row.Children.Add(dot);
@@ -3199,16 +6119,106 @@ by LG Electronics, Sony, or Valve.";
             }
 
             bullets = null;
-            panel.Children.Add(new TextBlock
-            {
-                Text = line,
-                TextWrapping = TextWrapping.Wrap,
-                LineHeight = 22,
-                Opacity = 0.92
-            });
+            panel.Children.Add(DescriptionTextBlock(line, 14, false, 0.92, 22));
         }
 
         return panel;
+    }
+
+    private TextBlock DescriptionTextBlock(
+        string text,
+        double fontSize,
+        bool semiBold,
+        double opacity,
+        double lineHeight)
+    {
+        var block = new TextBlock
+        {
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = fontSize,
+            FontWeight = semiBold
+                ? Microsoft.UI.Text.FontWeights.SemiBold
+                : Microsoft.UI.Text.FontWeights.Normal,
+            LineHeight = lineHeight,
+            Opacity = opacity
+        };
+        AppendDescriptionInlines(block.Inlines, text);
+        return block;
+    }
+
+    private static void AppendDescriptionInlines(InlineCollection target, string text)
+    {
+        var cursor = 0;
+        foreach (Match match in DescriptionInlinePattern.Matches(text))
+        {
+            if (match.Index > cursor)
+            {
+                target.Add(new Run { Text = text[cursor..match.Index] });
+            }
+
+            if (match.Groups["link"].Success)
+            {
+                AppendDescriptionLink(target, match.Groups["linkText"].Value, match.Groups["linkUrl"].Value);
+            }
+            else if (match.Groups["bold"].Success || match.Groups["boldAlt"].Success)
+            {
+                var value = match.Groups["bold"].Success
+                    ? match.Groups["boldText"].Value
+                    : match.Groups["boldAltText"].Value;
+                var bold = new Bold();
+                AppendDescriptionInlines(bold.Inlines, value);
+                target.Add(bold);
+            }
+            else if (match.Groups["italic"].Success || match.Groups["italicAlt"].Success)
+            {
+                var value = match.Groups["italic"].Success
+                    ? match.Groups["italicText"].Value
+                    : match.Groups["italicAltText"].Value;
+                var italic = new Italic();
+                AppendDescriptionInlines(italic.Inlines, value);
+                target.Add(italic);
+            }
+            else if (match.Groups["code"].Success)
+            {
+                target.Add(new Run
+                {
+                    Text = match.Groups["codeText"].Value,
+                    FontFamily = new FontFamily("Cascadia Mono, Consolas")
+                });
+            }
+            else
+            {
+                var rawUrl = match.Groups["url"].Value;
+                var url = rawUrl.TrimEnd('.', ',', ';');
+                AppendDescriptionLink(target, url, url);
+                if (url.Length < rawUrl.Length)
+                {
+                    target.Add(new Run { Text = rawUrl[url.Length..] });
+                }
+            }
+
+            cursor = match.Index + match.Length;
+        }
+
+        if (cursor < text.Length)
+        {
+            target.Add(new Run { Text = text[cursor..] });
+        }
+    }
+
+    private static void AppendDescriptionLink(InlineCollection target, string label, string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            target.Add(new Run { Text = label });
+            return;
+        }
+
+        var link = new Hyperlink { NavigateUri = uri };
+        // A bare URL uses the URL itself as its label. Feeding that label back into
+        // the inline parser would match the same URL forever and overflow the stack.
+        link.Inlines.Add(new Run { Text = label });
+        target.Add(link);
     }
 
     private async Task<bool> ConfirmAsync(string title, string message)
@@ -3224,56 +6234,29 @@ by LG Electronics, Sony, or Valve.";
                 DefaultButton = ContentDialogButton.Close,
                 XamlRoot = Content.XamlRoot
             };
+            ConfigureDialogEntrance(dialog);
             return await dialog.ShowAsync() == ContentDialogResult.Primary;
         }
         catch
         {
-            return true;
+            return false;
         }
     }
 
-    private StackPanel PluginActions(DeckyPluginInfo plugin, Button? detailsButton = null)
+    private StackPanel PluginActions(DeckyPluginInfo plugin, bool includeUninstall = true)
     {
         var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
 
         // Accent (primary) only for a real confirm action: install or update.
-        if (!plugin.IsInstalled)
+        if (!plugin.IsInstalled || plugin.HasUpdate)
         {
-            row.Children.Add(IconButton(((char)0xE896).ToString(), "Installa", async () =>
-            {
-                await _pluginService.InstallOrUpdateAsync(plugin, _settings.DeckyPluginsPath);
-                await RefreshPluginsAsync();
-                SetStatus($"{plugin.Name}: {T("Installato")}.", InfoBarSeverity.Success);
-            }, primary: true));
-        }
-        else if (plugin.HasUpdate)
-        {
-            row.Children.Add(IconButton(((char)0xE895).ToString(), "Aggiorna", async () =>
-            {
-                await _pluginService.InstallOrUpdateAsync(plugin, _settings.DeckyPluginsPath);
-                await RefreshPluginsAsync();
-                SetStatus($"{plugin.Name}: {T("Aggiornato")}.", InfoBarSeverity.Success);
-            }, primary: true));
+            row.Children.Add(CreatePluginInstallButton(plugin, compact: false));
         }
 
-        if (plugin.IsInstalled)
+        if (includeUninstall && plugin.IsInstalled)
         {
-            row.Children.Add(IconButton(((char)0xE74D).ToString(), "Disinstalla", async () =>
-            {
-                if (!await ConfirmAsync("Disinstallare il plugin?", "Il plugin verrà rimosso da DeckyLoader. Potrai reinstallarlo quando vuoi."))
-                {
-                    return;
-                }
-
-                await _pluginService.UninstallAsync(plugin);
-                await RefreshPluginsAsync();
-                SetStatus($"{plugin.Name}: {T("Rimosso")}.", InfoBarSeverity.Warning);
-            }));
-        }
-
-        if (detailsButton is not null)
-        {
-            row.Children.Add(detailsButton);
+            row.Children.Add(BindPluginUninstallButton(IconButton(((char)0xE74D).ToString(), "Disinstalla",
+                () => UninstallStorePluginAsync(plugin)), plugin, compact: false));
         }
 
         // GitHub is always last.
@@ -3285,40 +6268,42 @@ by LG Electronics, Sony, or Valve.";
             }
         }));
 
+        foreach (var action in row.Children.OfType<FrameworkElement>())
+        {
+            action.Height = 42;
+            action.MinHeight = 42;
+        }
         return row;
     }
 
     private static string? PluginImagePath(DeckyPluginInfo plugin)
     {
         var path = System.IO.Path.Combine(System.AppContext.BaseDirectory, "Assets", "PluginImages", plugin.Name + ".jpg");
-        return System.IO.File.Exists(path) ? path : null;
-    }
-
-    private static Image? PluginImageElement(DeckyPluginInfo plugin, int decodeWidth)
-    {
-        var path = PluginImagePath(plugin);
-        if (path is null)
+        if (System.IO.File.Exists(path))
         {
-            return null;
+            return path;
         }
 
-        try
+        foreach (var candidate in new[] { plugin.CoverImage, plugin.Image })
         {
-            var bitmap = new BitmapImage { DecodePixelWidth = decodeWidth };
-            bitmap.UriSource = new Uri(path);
-            return new Image
+            if (string.IsNullOrWhiteSpace(candidate))
             {
-                Source = bitmap,
-                Stretch = Stretch.UniformToFill,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Stretch
-            };
+                continue;
+            }
+
+            if (System.IO.File.Exists(candidate) ||
+                (Uri.TryCreate(candidate, UriKind.Absolute, out var uri) &&
+                 (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp)))
+            {
+                return candidate;
+            }
         }
-        catch
-        {
-            return null;
-        }
+
+        return null;
     }
+
+    private Image? PluginImageElement(DeckyPluginInfo plugin, int decodeWidth)
+        => CreatePluginPreviewImage(plugin, decodeWidth);
 
     // Dark gradient from the bottom-left (more opaque) to the top-right, for text legibility over images.
     private static Microsoft.UI.Xaml.Media.LinearGradientBrush Scrim(double bottomLeftAlpha, double topRightAlpha)
@@ -3337,7 +6322,11 @@ by LG Electronics, Sony, or Valve.";
     private FrameworkElement PluginStatusPill(DeckyPluginInfo plugin)
     {
         var text = T(plugin.HasUpdate ? "Aggiornamento disponibile" : plugin.IsInstalled ? "Installato" : "Non installato");
-        var version = plugin.IsInstalled ? plugin.InstalledVersion : plugin.Version;
+        var version = plugin.HasUpdate
+            ? plugin.Version
+            : plugin.IsInstalled
+                ? plugin.InstalledVersion
+                : plugin.Version;
         if (!string.IsNullOrWhiteSpace(version))
         {
             text += " - " + version;
@@ -3369,11 +6358,23 @@ by LG Electronics, Sony, or Valve.";
     private FrameworkElement PluginMediaStrip(DeckyPluginInfo plugin)
     {
         var items = plugin.Media.Take(4).ToList();
-        var grid = new Grid { ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Stretch };
+        var grid = new Grid { Name = "PluginScreenshots", ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Stretch };
+        void RemoveFailedMedia(FrameworkElement tile, PluginMediaInfo media)
+        {
+            items.Remove(media);
+            grid.Children.Remove(tile);
+            grid.ColumnDefinitions.Clear();
+            for (var column = 0; column < grid.Children.Count; column++)
+            {
+                grid.ColumnDefinitions.Add(new ColumnDefinition());
+                Grid.SetColumn((FrameworkElement)grid.Children[column], column);
+            }
+            grid.Visibility = grid.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
         for (var i = 0; i < items.Count; i++)
         {
             grid.ColumnDefinitions.Add(new ColumnDefinition());
-            var tile = PluginMediaTile(items, i);
+            var tile = PluginMediaTile(items, i, RemoveFailedMedia);
             Grid.SetColumn(tile, i);
             grid.Children.Add(tile);
         }
@@ -3381,7 +6382,7 @@ by LG Electronics, Sony, or Valve.";
         return grid;
     }
 
-    private FrameworkElement PluginMediaTile(List<PluginMediaInfo> all, int index)
+    private FrameworkElement PluginMediaTile(List<PluginMediaInfo> all, int index, Action<FrameworkElement, PluginMediaInfo> failed)
     {
         var media = all[index];
         var border = new Border
@@ -3398,14 +6399,17 @@ by LG Electronics, Sony, or Valve.";
         if (media.Kind == "image" && hasUri)
         {
             // Whole image, letterboxed inside the tile (never cropped).
-            border.Child = new Image { Source = new BitmapImage(uri), Stretch = Stretch.Uniform };
+            var image = new Image { Stretch = Stretch.Uniform };
+            image.ImageFailed += (_, _) => failed(border, media);
+            border.Child = image;
+            image.Source = new BitmapImage(uri);
         }
         else
         {
             var stack = new Grid();
             if (hasUri)
             {
-                stack.Children.Add(BuildVideoPoster(uri!));
+                stack.Children.Add(BuildVideoPoster(uri!, () => failed(border, media)));
                 // dim the poster a touch so the play badge reads well
                 stack.Children.Add(new Border { Background = new SolidColorBrush(Color.FromArgb(70, 0, 0, 0)) });
             }
@@ -3436,33 +6440,54 @@ by LG Electronics, Sony, or Valve.";
 
         if (hasUri)
         {
-            border.Tapped += (_, _) => OpenLightbox(all, index);
+            border.Tapped += (_, _) =>
+            {
+                var currentIndex = all.IndexOf(media);
+                if (currentIndex >= 0) OpenLightbox(all, currentIndex);
+            };
         }
+        else border.Loaded += (_, _) => failed(border, media);
 
         return border;
     }
 
     // A muted, paused MediaPlayerElement showing the video's first frame as a poster.
-    private FrameworkElement BuildVideoPoster(Uri uri)
+    private FrameworkElement BuildVideoPoster(Uri uri, Action? failed = null)
     {
-        try
+        var element = new MediaPlayerElement { AreTransportControlsEnabled = false, Stretch = Stretch.Uniform };
+        Windows.Media.Playback.MediaPlayer? player = null;
+        void ReleasePlayer()
         {
-            var player = new Windows.Media.Playback.MediaPlayer { IsMuted = true, AutoPlay = false };
-            try { player.CommandManager.IsEnabled = false; } catch { }
-            player.Source = Windows.Media.Core.MediaSource.CreateFromUri(uri);
-            player.MediaOpened += (s, _) => DispatcherQueue.TryEnqueue(() =>
+            element.SetMediaPlayer(null);
+            player?.Dispose();
+            player = null;
+        }
+        element.Loaded += (_, _) =>
+        {
+            if (player is not null) return;
+            try
             {
-                try { s.StepForwardOneFrame(); } catch { }
-            });
-
-            var element = new MediaPlayerElement { AreTransportControlsEnabled = false, Stretch = Stretch.Uniform };
-            element.SetMediaPlayer(player);
-            return element;
-        }
-        catch
-        {
-            return new Border { Background = new SolidColorBrush(Color.FromArgb(255, 18, 18, 22)) };
-        }
+                player = new Windows.Media.Playback.MediaPlayer { IsMuted = true, AutoPlay = false };
+                player.CommandManager.IsEnabled = false;
+                var current = player;
+                player.MediaOpened += (sender, _) => DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (!ReferenceEquals(current, player)) return;
+                    try { sender.StepForwardOneFrame(); } catch { }
+                });
+                player.MediaFailed += (_, _) => DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (!ReferenceEquals(current, player)) return;
+                    ReleasePlayer();
+                    failed?.Invoke();
+                });
+                element.SetMediaPlayer(player);
+                player.Source = Windows.Media.Core.MediaSource.CreateFromUri(uri);
+            }
+            catch { ReleasePlayer(); failed?.Invoke(); }
+        };
+        element.Unloaded += (_, _) => ReleasePlayer();
+        return element;
     }
 
     private Button GlyphCircleButton(string glyph, double size = 44)
@@ -3777,7 +6802,7 @@ by LG Electronics, Sony, or Valve.";
     {
         var result = await _uwpXbox.ExportSelectedToSteamAsync(_uwpGames, _settings.SteamGridDbApiKey);
         _uwpXbox.RefreshLibraryState(_uwpGames);
-        if (result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase))
+        if (result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase))
         {
             foreach (var game in _uwpGames.Where(game => game.InSteamLibrary))
             {
@@ -3785,7 +6810,7 @@ by LG Electronics, Sony, or Valve.";
             }
         }
         RenderUwpGames();
-        SetStatus(result, result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase)
+        SetStatus(result, result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
             ? InfoBarSeverity.Success
             : InfoBarSeverity.Warning);
     }
@@ -3835,7 +6860,7 @@ by LG Electronics, Sony, or Valve.";
         RenderUwpGames();
         _ = LoadUwpCoversAsync(_uwpGames.ToList());
 
-        if (result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase))
+        if (result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase))
         {
             SetStatus(
                 string.Format(T("Ho ricollegato {0} giochi Xbox. Riavvia Steam per applicare le modifiche."), linkedGames.Count),
@@ -3958,7 +6983,7 @@ by LG Electronics, Sony, or Valve.";
     {
         var result = await _uwpXbox.ExportSelectedToSteamAsync(_executableGames, _settings.SteamGridDbApiKey);
         _uwpXbox.RefreshLibraryState(_executableGames);
-        if (result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase))
+        if (result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase))
         {
             foreach (var game in _executableGames.Where(game => game.InSteamLibrary))
             {
@@ -3966,7 +6991,7 @@ by LG Electronics, Sony, or Valve.";
             }
         }
         RenderExecutableGames();
-        SetStatus(result, result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase)
+        SetStatus(result, result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
             ? InfoBarSeverity.Success
             : InfoBarSeverity.Warning);
     }
@@ -4000,7 +7025,7 @@ by LG Electronics, Sony, or Valve.";
             Padding = new Thickness(0),
             CornerRadius = new CornerRadius(6)
         };
-        ToolTipService.SetToolTip(remove, T("Rimuovi"));
+        SetLocalizedToolTip(remove, "Rimuovi");
         remove.Click += async (_, _) => await RemoveExecutableSourceAsync(path, isFolder);
 
         var row = new Grid { ColumnSpacing = 8 };
@@ -4138,7 +7163,7 @@ by LG Electronics, Sony, or Valve.";
     {
         var result = await _uwpXbox.ExportSelectedToSteamAsync(_epicGames, _settings.SteamGridDbApiKey);
         _uwpXbox.RefreshLibraryState(_epicGames);
-        if (result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase))
+        if (result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase))
         {
             foreach (var game in _epicGames.Where(game => game.InSteamLibrary))
             {
@@ -4147,7 +7172,7 @@ by LG Electronics, Sony, or Valve.";
         }
 
         RenderEpicGames();
-        SetStatus(result, result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase)
+        SetStatus(result, result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
             ? InfoBarSeverity.Success
             : InfoBarSeverity.Warning);
     }
@@ -4174,7 +7199,7 @@ by LG Electronics, Sony, or Valve.";
     {
         var result = await _uwpXbox.ExportSelectedToSteamAsync(_gogGames, _settings.SteamGridDbApiKey);
         _uwpXbox.RefreshLibraryState(_gogGames);
-        if (result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase))
+        if (result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase))
         {
             foreach (var game in _gogGames.Where(game => game.InSteamLibrary))
             {
@@ -4183,7 +7208,7 @@ by LG Electronics, Sony, or Valve.";
         }
 
         RenderGogGames();
-        SetStatus(result, result.StartsWith("Ho importato", StringComparison.OrdinalIgnoreCase)
+        SetStatus(result, result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
             ? InfoBarSeverity.Success
             : InfoBarSeverity.Warning);
     }
@@ -4346,7 +7371,7 @@ by LG Electronics, Sony, or Valve.";
         artworkButton.MinWidth = 0;
         artworkButton.IsEnabled = !game.SteamGridDbArtworkDisabled;
         actions.Children.Add(artworkButton);
-        var refetchButton = Button("Refetch", async () => await ShowSteamGridDbRefetchDialogAsync(game));
+        var refetchButton = Button("Cerca di nuovo", async () => await ShowSteamGridDbRefetchDialogAsync(game));
         refetchButton.HorizontalAlignment = HorizontalAlignment.Stretch;
         refetchButton.MinWidth = 0;
         Grid.SetColumn(refetchButton, 1);
@@ -4484,7 +7509,7 @@ by LG Electronics, Sony, or Valve.";
 
         var dialog = new ContentDialog
         {
-            Title = string.Format(T("Refetch - {0}"), game.Name),
+            Title = string.Format(T("Cerca di nuovo — {0}"), game.Name),
             Content = content,
             PrimaryButtonText = T("Usa risultato"),
             CloseButtonText = T("Chiudi"),
@@ -4536,7 +7561,7 @@ by LG Electronics, Sony, or Valve.";
                 });
                 var year = new TextBlock
                 {
-                    Text = option.ReleaseYear?.ToString() ?? "—",
+                    Text = option.ReleaseYear?.ToString() ?? "-",
                     Opacity = option.ReleaseYear.HasValue ? 1 : 0.5,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
@@ -4569,6 +7594,7 @@ by LG Electronics, Sony, or Valve.";
         };
         dialog.Opened += async (_, _) => await LoadResultsAsync();
 
+        ConfigureDialogEntrance(dialog);
         var result = await dialog.ShowAsync();
         if (removeRequested)
         {
@@ -4586,7 +7612,7 @@ by LG Electronics, Sony, or Valve.";
             RenderExecutableGames();
             RenderEpicGames();
             RenderGogGames();
-            SetStatus("Il risultato SteamGridDB è stato rimosso. Il gioco verrà mostrato senza artwork.", InfoBarSeverity.Success);
+            SetStatus("Risultato rimosso. Il gioco resterà senza artwork.", InfoBarSeverity.Success);
             return;
         }
 
@@ -4615,7 +7641,7 @@ by LG Electronics, Sony, or Valve.";
         SetStatus(
             coverLoaded
                 ? string.Format(T("Risultato aggiornato: {0}."), selected.Name)
-                : string.Format(T("Risultato aggiornato: {0}. Nessuna cover disponibile."), selected.Name),
+                : string.Format(T("Risultato aggiornato: {0}. Nessuna copertina disponibile."), selected.Name),
             coverLoaded ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
     }
 
@@ -4623,18 +7649,19 @@ by LG Electronics, Sony, or Valve.";
     {
         if (string.IsNullOrWhiteSpace(_settings.SteamGridDbApiKey))
         {
-            SetStatus("Inserisci prima la chiave API SteamGridDB nella sezione Artwork dei giochi.", InfoBarSeverity.Warning);
-            return;
+            SetStatus(
+                "Aggiungi una chiave SteamGridDB oppure scegli gli artwork ufficiali di Steam.",
+                InfoBarSeverity.Informational);
         }
 
         var selector = new SelectorBar { HorizontalAlignment = HorizontalAlignment.Stretch };
         var categories = new[]
         {
-            (Type: "cover", Text: "Cover", Symbol: Symbol.Library),
+            (Type: "cover", Text: "Copertina", Symbol: Symbol.Library),
             (Type: "banner", Text: "Banner", Symbol: Symbol.Pictures),
-            (Type: "hero", Text: "Hero", Symbol: Symbol.FullScreen),
+            (Type: "hero", Text: "Sfondo", Symbol: Symbol.FullScreen),
             (Type: "logo", Text: "Logo", Symbol: Symbol.Font),
-            (Type: "icon", Text: "Icon", Symbol: Symbol.Emoji)
+            (Type: "icon", Text: "Icona", Symbol: Symbol.Emoji)
         };
         foreach (var category in categories)
         {
@@ -4675,10 +7702,24 @@ by LG Electronics, Sony, or Valve.";
         stage.Children.Add(empty);
         stage.Children.Add(loading);
 
+        var sourceButton = new Button
+        {
+            Style = StyleResource("PlayhubSecondaryButtonStyle"),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var header = new Grid { Margin = new Thickness(0, 0, 6, 0) };
+        header.ColumnDefinitions.Add(new ColumnDefinition());
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        header.Children.Add(selector);
+        Grid.SetColumn(sourceButton, 1);
+        header.Children.Add(sourceButton);
+
         var content = new Grid { RowSpacing = 14, Width = 1000, Height = 600 };
         content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         content.RowDefinitions.Add(new RowDefinition());
-        content.Children.Add(selector);
+        content.Children.Add(header);
         Grid.SetRow(stage, 1);
         content.Children.Add(stage);
 
@@ -4692,11 +7733,30 @@ by LG Electronics, Sony, or Valve.";
             IsPrimaryButtonEnabled = false,
             XamlRoot = Content.XamlRoot
         };
-        dialog.Resources["ContentDialogMinWidth"] = 1040d;
-        dialog.Resources["ContentDialogMaxWidth"] = 1040d;
+        dialog.Resources["ContentDialogMinWidth"] = 1100d;
+        dialog.Resources["ContentDialogMaxWidth"] = 1100d;
 
         var selectedArtworks = new Dictionary<string, SteamGridArtworkOption>(StringComparer.OrdinalIgnoreCase);
         var activeArtworkType = "cover";
+        var showOfficial = false;
+
+        string CategoryLabel(string artworkType)
+            => categories.FirstOrDefault(category => category.Type == artworkType).Text ?? "Cover";
+
+        void UpdateSourceButton()
+        {
+            var supportsOfficial = !string.Equals(activeArtworkType, "icon", StringComparison.OrdinalIgnoreCase);
+            sourceButton.Visibility = supportsOfficial ? Visibility.Visible : Visibility.Collapsed;
+            if (!supportsOfficial)
+            {
+                showOfficial = false;
+                return;
+            }
+
+            sourceButton.Content = showOfficial
+                ? T("Artwork da SteamGridDB")
+                : string.Format(T("{0} ufficiale di Steam"), T(CategoryLabel(activeArtworkType)));
+        }
         var suppressSelectionChanged = false;
         var loadVersion = 0;
 
@@ -4715,7 +7775,9 @@ by LG Electronics, Sony, or Valve.";
             IReadOnlyList<SteamGridArtworkOption> artworks;
             try
             {
-                artworks = await _uwpXbox.GetSteamGridDbArtworkAsync(game, artworkType, _settings.SteamGridDbApiKey);
+                artworks = showOfficial
+                    ? await _uwpXbox.GetOfficialSteamArtworkAsync(game, artworkType)
+                    : await _uwpXbox.GetSteamGridDbArtworkAsync(game, artworkType, _settings.SteamGridDbApiKey);
             }
             catch
             {
@@ -4729,6 +7791,9 @@ by LG Electronics, Sony, or Valve.";
 
             loading.IsActive = false;
             loading.Visibility = Visibility.Collapsed;
+            empty.Text = showOfficial
+                ? T("Steam non pubblica un artwork ufficiale di questo tipo per questo gioco.")
+                : T("Nessun artwork disponibile per questa categoria.");
             empty.Visibility = artworks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
             var (previewWidth, previewHeight) = ArtworkPreviewSize(artworkType);
@@ -4751,9 +7816,12 @@ by LG Electronics, Sony, or Valve.";
                         Stretch = artworkType == "cover" ? Stretch.UniformToFill : Stretch.Uniform
                     }
                 });
+                var sizeText = artwork.Width > 0 && artwork.Height > 0
+                    ? $"{artwork.Width}x{artwork.Height}"
+                    : T("Dimensione originale");
                 preview.Children.Add(new TextBlock
                 {
-                    Text = $"{artwork.Width}x{artwork.Height}",
+                    Text = showOfficial ? sizeText + " · Steam" : sizeText,
                     FontSize = 12,
                     Opacity = 0.72,
                     HorizontalAlignment = HorizontalAlignment.Center
@@ -4791,15 +7859,26 @@ by LG Electronics, Sony, or Valve.";
 
             dialog.IsPrimaryButtonEnabled = selectedArtworks.Count > 0;
         };
+        sourceButton.Click += async (_, _) =>
+        {
+            showOfficial = !showOfficial;
+            UpdateSourceButton();
+            await LoadCategoryAsync(activeArtworkType);
+        };
         selector.SelectionChanged += async (_, _) =>
         {
             if (selector.SelectedItem?.Tag is string artworkType)
             {
+                showOfficial = false;
+                activeArtworkType = artworkType;
+                UpdateSourceButton();
                 await LoadCategoryAsync(artworkType);
             }
         };
+        UpdateSourceButton();
         dialog.Opened += async (_, _) => await LoadCategoryAsync("cover");
 
+        ConfigureDialogEntrance(dialog);
         var result = await dialog.ShowAsync();
         if (result != ContentDialogResult.Primary || selectedArtworks.Count == 0)
         {
@@ -4878,7 +7957,7 @@ by LG Electronics, Sony, or Valve.";
         SelectComboKey(_startupPageCombo, NormalizeStartupPageKey(_settings.StartupPage));
         RenderExecutableSources();
         _deckyPluginsBox.Text = _settings.DeckyPluginsPath;
-        _xboxSteamGridDbKeyBox.Text = _settings.SteamGridDbApiKey;
+        _xboxSteamGridDbKeyBox.Password = _settings.SteamGridDbApiKey;
         RefreshAccentPicker();
         _loadingSettings = false;
     }
@@ -5083,7 +8162,6 @@ by LG Electronics, Sony, or Valve.";
         _gamingConfig.Gaming.DashboardEnabled = GetToggle("dashboardEnabled");
         _gamingConfig.Gaming.ManageAudio = GetToggle("manageAudio");
         _gamingConfig.Safety.AllowRemoteApi = GetToggle("remoteApi");
-        // No confirmation dialog when switching modes — always on.
         _gamingConfig.Safety.RestartWithoutPrompt = true;
     }
 
@@ -5099,7 +8177,14 @@ by LG Electronics, Sony, or Valve.";
 
     private StackPanel Page(string tag, string title, string subtitle = "")
     {
-        var content = new StackPanel
+        var content = PageWithoutHeader(tag);
+        content.Children.Add(BuildPageHeader(tag, title, subtitle));
+        return content;
+    }
+
+    private static StackPanel PageWithoutHeader(string tag)
+    {
+        return new StackPanel
         {
             Spacing = 18,
             Padding = (Thickness)(Application.Current.Resources.TryGetValue("PlayhubPagePadding", out var value) && value is Thickness thickness
@@ -5109,12 +8194,79 @@ by LG Electronics, Sony, or Valve.";
             Visibility = Visibility.Collapsed,
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
-        content.Children.Add(new TextBlock { Text = title, Style = StyleResource("PlayhubPageTitleStyle") });
+    }
+
+    private FrameworkElement BuildPageHeader(string tag, string title, string subtitle)
+    {
+        var asset = tag switch
+        {
+            "decky" => "decky-installation-onboarding.png",
+            "gaming" => "gaming-mode-page-header.png",
+            "xbox" => "import-games-onboarding.png",
+            "styler" => "big-picture-styler-page-header.png",
+            "settings" => "settings-page-header.png",
+            _ => string.Empty
+        };
+
+        var text = new StackPanel
+        {
+            Spacing = 10,
+            VerticalAlignment = VerticalAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            MaxWidth = 610
+        };
+        text.Children.Add(new TextBlock
+        {
+            Text = title,
+            Style = StyleResource("PlayhubPageTitleStyle"),
+            TextWrapping = TextWrapping.Wrap
+        });
         if (!string.IsNullOrWhiteSpace(subtitle))
         {
-            content.Children.Add(new TextBlock { Text = subtitle, Style = StyleResource("PlayhubBodyTextStyle") });
+            text.Children.Add(new TextBlock
+            {
+                Text = subtitle,
+                Style = StyleResource("PlayhubBodyTextStyle"),
+                TextWrapping = TextWrapping.Wrap
+            });
         }
-        return content;
+
+        var grid = new Grid
+        {
+            ColumnSpacing = 0,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            MinHeight = 300,
+            Tag = "page-mascot-header"
+        };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(260) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+        grid.SizeChanged += (_, args) =>
+        {
+            if (args.NewSize.Width > 0)
+                grid.ColumnDefinitions[0].Width = new GridLength(Math.Clamp(args.NewSize.Width * 0.3, 200, 260));
+        };
+        Grid.SetColumn(text, 1);
+        grid.Children.Add(text);
+
+        var path = Path.Combine(AppContext.BaseDirectory, "Assets", "Welcome", "Mascots", asset);
+        if (File.Exists(path))
+        {
+            var image = new Image
+            {
+                Source = new BitmapImage(new Uri(path)),
+                MaxWidth = 300,
+                Height = 300,
+                Stretch = Stretch.Uniform,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(-36, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                IsHitTestVisible = false
+            };
+            Grid.SetColumn(image, 0);
+            grid.Children.Add(image);
+        }
+
+        return grid;
     }
 
     private static FluentCard Card()
@@ -5122,26 +8274,26 @@ by LG Electronics, Sony, or Valve.";
         return new FluentCard();
     }
 
-    private static TextBlock SectionTitle(string text) => new()
+    private TextBlock SectionTitle(string text) => LocalizedText(new TextBlock
     {
         Text = text,
         Style = StyleResource("PlayhubSectionTitleStyle")
-    };
+    }, text);
 
-    private static TextBlock GroupTitle(string text) => new()
+    private TextBlock GroupTitle(string text) => LocalizedText(new TextBlock
     {
         Text = text,
         FontSize = 14,
         FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
         Margin = new Thickness(0, 8, 0, 0),
         Foreground = ResourceBrush("TextFillColorSecondaryBrush", Color.FromArgb(210, 255, 255, 255))
-    };
+    }, text);
 
-    private static TextBlock Body(string text) => new()
+    private TextBlock Body(string text) => LocalizedText(new TextBlock
     {
         Text = text,
         Style = StyleResource("PlayhubBodyTextStyle")
-    };
+    }, text);
 
     private static StackPanel ActionRow(params UIElement[] children)
     {
@@ -5157,7 +8309,7 @@ by LG Electronics, Sony, or Valve.";
     {
         var button = new Button { Content = text, Style = StyleResource(primary ? "PlayhubPrimaryButtonStyle" : "PlayhubSecondaryButtonStyle") };
         RegisterButton(button, primary);
-        button.Click += (_, _) => action();
+        button.Click += (_, _) => { using var context = BeginNotificationContext(); action(); };
         return button;
     }
 
@@ -5167,6 +8319,8 @@ by LG Electronics, Sony, or Valve.";
         RegisterButton(button, primary);
         button.Click += async (_, _) =>
         {
+            using var context = BeginNotificationContext();
+            using var reminderOperation = BeginSupportReminderOperation();
             try
             {
                 button.IsEnabled = false;
@@ -5184,11 +8338,11 @@ by LG Electronics, Sony, or Valve.";
         return button;
     }
 
-    private static UIElement IconContent(string glyph, string text)
+    private UIElement IconContent(string glyph, string text)
     {
         var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
         row.Children.Add(new FontIcon { Glyph = glyph, FontSize = 15, VerticalAlignment = VerticalAlignment.Center });
-        row.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
+        row.Children.Add(LocalizedText(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center }, text));
         return row;
     }
 
@@ -5196,7 +8350,7 @@ by LG Electronics, Sony, or Valve.";
     {
         var button = new Button { Content = IconContent(glyph, text), Style = StyleResource(primary ? "PlayhubPrimaryButtonStyle" : "PlayhubSecondaryButtonStyle") };
         RegisterButton(button, primary);
-        button.Click += (_, _) => action();
+        button.Click += (_, _) => { using var context = BeginNotificationContext(); action(); };
         return button;
     }
 
@@ -5206,6 +8360,8 @@ by LG Electronics, Sony, or Valve.";
         RegisterButton(button, primary);
         button.Click += async (_, _) =>
         {
+            using var context = BeginNotificationContext();
+            using var reminderOperation = BeginSupportReminderOperation();
             try
             {
                 button.IsEnabled = false;
@@ -5260,23 +8416,24 @@ by LG Electronics, Sony, or Valve.";
 
     private void RegisterButton(Button button, bool primary)
     {
+        LocalizeElement(button);
         if (!primary)
         {
             return;
         }
 
-        _primaryButtons.Add(button);
+        _primaryButtons.Add(new WeakReference<Button>(button));
         ApplyAccentToButton(button);
     }
 
-    private static FrameworkElement Labeled(string label, FrameworkElement element)
+    private FrameworkElement Labeled(string label, FrameworkElement element)
     {
         return new StackPanel
         {
             Spacing = 6,
             Children =
             {
-                new TextBlock { Text = label, Opacity = 0.72 },
+                LocalizedText(new TextBlock { Text = label, Opacity = 0.72 }, label),
                 element
             }
         };
@@ -5427,11 +8584,23 @@ by LG Electronics, Sony, or Valve.";
         return stack;
     }
 
-    private StackPanel BuildAccentPicker()
+    private StackPanel BuildAccentPicker(bool welcome = false)
     {
-        var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
-        foreach (var color in new[] { "#FFCB0F", "#0F6CBD", "#107C10", "#C50F1F", "#8764B8" })
+        var panel = new StackPanel { Spacing = 10 };
+        StackPanel? row = null;
+        var index = 0;
+        foreach (var color in new[]
         {
+            "#FFCB0F", "#0F6CBD", "#107C10", "#C50F1F", "#8764B8",
+            "#E97A9D", "#7DDCB5", "#73BCEB", "#B79AE8", "#F2A36F"
+        })
+        {
+            if (welcome && index == 10) break;
+            if (index++ % 10 == 0)
+            {
+                row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
+                panel.Children.Add(row);
+            }
             var button = new Button
             {
                 Tag = color,
@@ -5446,14 +8615,16 @@ by LG Electronics, Sony, or Valve.";
                     Background = new SolidColorBrush(ParseColor(color))
                 }
             };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, color);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, color);
             button.Click += async (_, _) =>
             {
                 _settings.AccentColor = color;
                 ApplyTheme();
-                RefreshAccentPicker();
                 await SaveSettingsSilentlyAsync();
             };
-            panel.Children.Add(button);
+            row!.Children.Add(button);
+            _accentSwatches.Add(button);
         }
 
         return panel;
@@ -5461,7 +8632,7 @@ by LG Electronics, Sony, or Valve.";
 
     private void RefreshAccentPicker()
     {
-        foreach (var button in _accentColorPanel.Children.OfType<Button>())
+        foreach (var button in _accentSwatches)
         {
             var selected = string.Equals(button.Tag?.ToString(), _settings.AccentColor, StringComparison.OrdinalIgnoreCase);
             button.BorderThickness = selected ? new Thickness(2) : new Thickness(1);
@@ -5469,6 +8640,42 @@ by LG Electronics, Sony, or Valve.";
                 ? new SolidColorBrush(ParseColor(_settings.AccentColor))
                 : ResourceBrush("ControlStrokeColorDefaultBrush", Color.FromArgb(80, 128, 128, 128));
         }
+        RefreshWelcomeBackdrop();
+    }
+
+    private void RefreshWelcomeBackdrop()
+    {
+        var selected = NormalizeBackdropKey(_settings.Backdrop);
+        var accent = ParseColor(_settings.AccentColor);
+        foreach (var button in _welcomeBackdropButtons)
+        {
+            var active = Equals(button.Tag, selected);
+            var foreground = active
+                ? (NeedsLightForeground(accent) ? Colors.White : Colors.Black)
+                : Color.FromArgb(220, 255, 255, 255);
+            button.Background = WelcomeBackdropBrush(button, "ButtonBackground", active ? accent : Colors.Transparent);
+            button.Foreground = WelcomeBackdropBrush(button, "ButtonForeground", foreground);
+            WelcomeBackdropBrush(button, "ButtonBackgroundPointerOver", active ? Mix(accent, Colors.White, 0.12) : Color.FromArgb(28, 255, 255, 255));
+            WelcomeBackdropBrush(button, "ButtonBackgroundPressed", active ? Mix(accent, Colors.Black, 0.12) : Color.FromArgb(42, 255, 255, 255));
+            WelcomeBackdropBrush(button, "ButtonForegroundPointerOver", foreground);
+            WelcomeBackdropBrush(button, "ButtonForegroundPressed", foreground);
+        }
+    }
+
+    private static SolidColorBrush WelcomeBackdropBrush(Button button, string key, Color color)
+    {
+        // Resource lookup can return a shared theme brush. Animate only brushes owned by this button.
+        var brushes = WelcomeBackdropBrushes.GetOrCreateValue(button);
+        if (brushes.TryGetValue(key, out var brush))
+        {
+            if (brush.Color != color) AnimateBrushColor(brush, color);
+            return brush;
+        }
+
+        var created = new SolidColorBrush(color);
+        brushes.Add(key, created);
+        button.Resources[key] = created;
+        return created;
     }
 
     private FrameworkElement PluginImage(DeckyPluginInfo plugin, double width, double height)
@@ -5502,22 +8709,78 @@ by LG Electronics, Sony, or Valve.";
 
     private async Task CheckPlayhubUpdatesAsync()
     {
-        SetStatus("Controllo aggiornamenti in corso…", InfoBarSeverity.Informational);
-        var info = await _updateService.CheckAsync(_settings.PlayhubUpdateRepository, GetAppVersion());
-
-        if (info is null)
+        if (_playhubUpdateRunning)
         {
-            SetStatus("Non riesco a contattare GitHub per gli aggiornamenti. Riprova tra poco.", InfoBarSeverity.Warning);
+            if (_playhubUpdateDialogInfo is not null) ShowPlayhubUpdateDialog(_playhubUpdateDialogInfo, force: true);
             return;
         }
+        _playhubUpdateButton.IsEnabled = false;
+        _playhubUpdateStatus.Visibility = Visibility.Visible;
+        _playhubUpdateStatus.Text = "Cerco aggiornamenti…";
+        try
+        {
+            var info = await _updateService.CheckAsync(PlayhubUpdatePolicy.Repository(_settings.PlayhubUpdateRepository), GetAppVersion(), PlayhubUpdatePolicy.ReleaseTag);
 
-        if (info.IsNewer)
-        {
-            ShowUpdateNotification(info);
+            if (info is null)
+            {
+                _playhubUpdateStatus.Text = "Non riesco a contattare GitHub. Riprova tra poco.";
+                SetStatus("Non riesco a contattare GitHub per gli aggiornamenti. Riprova tra poco.", InfoBarSeverity.Warning);
+                return;
+            }
+
+            if (PlayhubUpdatePolicy.ShouldOffer(info))
+            {
+                _playhubUpdateStatus.Text = $"Playhub {info.LatestVersion} disponibile";
+                ShowPlayhubUpdateDialog(info, force: true);
+            }
+            else
+            {
+                _playhubUpdateStatus.Text = "Playhub è già aggiornato.";
+                SetStatus("Playhub è aggiornato.", InfoBarSeverity.Success);
+            }
         }
-        else
+        finally
         {
-            SetStatus("Playhub è aggiornato.", InfoBarSeverity.Success);
+            if (!_playhubUpdateRunning) _playhubUpdateButton.IsEnabled = true;
+        }
+    }
+
+    private async Task DownloadAndInstallUpdateAsync(PlayhubUpdateService.UpdateInfo info)
+    {
+        if (_playhubUpdateRunning) return;
+        _playhubUpdateRunning = true;
+        _playhubUpdateButton.IsEnabled = true;
+        _playhubUpdateBar.Visibility = Visibility.Collapsed;
+        _playhubUpdateStatus.Visibility = Visibility.Collapsed;
+        UpdatePlayhubUpdateDialogProgress(info.DownloadSize > 0 ? 0 : null, $"Scarico Playhub {info.LatestVersion}…");
+
+        try
+        {
+            var progress = new Progress<PlayhubUpdateService.DownloadProgress>(value =>
+            {
+                var receivedMb = value.BytesReceived / 1024d / 1024d;
+                var status = value.TotalBytes > 0
+                    ? $"Scaricati {receivedMb:0.0} di {value.TotalBytes / 1024d / 1024d:0.0} MB ({value.Fraction:P0})"
+                    : $"Scaricati {receivedMb:0.0} MB";
+                UpdatePlayhubUpdateDialogProgress(value.TotalBytes > 0 ? value.Fraction : null, status);
+            });
+            var installer = await _updateService.DownloadInstallerAsync(info, progress);
+            UpdatePlayhubUpdateDialogProgress(1, "Download completato. Apro l'installer…");
+
+            Process.Start(new ProcessStartInfo(installer, "--update")
+            {
+                UseShellExecute = true,
+                WorkingDirectory = Path.GetDirectoryName(installer) ?? ""
+            });
+            await Task.Delay(500);
+            Close();
+        }
+        catch (Exception ex)
+        {
+            _playhubUpdateRunning = false;
+            _playhubUpdateButton.IsEnabled = true;
+            Diag.Crash("DownloadAndInstallUpdateAsync", ex);
+            UpdatePlayhubUpdateDialogProgress(null, "Non riesco ad aggiornare Playhub. Riprova.", failed: true);
         }
     }
 
@@ -5527,8 +8790,8 @@ by LG Electronics, Sony, or Valve.";
     {
         try
         {
-            var info = await _updateService.CheckAsync(_settings.PlayhubUpdateRepository, GetAppVersion());
-            if (info is { IsNewer: true })
+            var info = await _updateService.CheckAsync(PlayhubUpdatePolicy.Repository(_settings.PlayhubUpdateRepository), GetAppVersion(), PlayhubUpdatePolicy.ReleaseTag);
+            if (info is not null && PlayhubUpdatePolicy.ShouldOffer(info))
             {
                 ShowUpdateNotification(info);
                 return;
@@ -5553,6 +8816,7 @@ by LG Electronics, Sony, or Valve.";
             return;
         }
 
+        _status.Tag = "update-notification";
         _status.Title = T(updates.Count == 1
             ? "Aggiornamento plugin disponibile"
             : "Aggiornamenti plugin disponibili");
@@ -5573,6 +8837,7 @@ by LG Electronics, Sony, or Valve.";
             {
                 _navigation.SelectedItem = storeItem;
             }
+            SwitchPluginStoreMode("manage");
             _status.IsOpen = false;
         };
         _status.ActionButton = openStore;
@@ -5581,38 +8846,23 @@ by LG Electronics, Sony, or Valve.";
 
     private void ShowUpdateNotification(PlayhubUpdateService.UpdateInfo info)
     {
-        WindowsToastService.ShowPlayhubUpdate(info.LatestVersion);
-        _localizationKeys.AddOrUpdate(_status, "È disponibile una nuova versione di Playhub.");
-        _status.Title = string.Format(T("Playhub {0} disponibile"), info.LatestVersion);
-        _status.Message = T("È disponibile una nuova versione di Playhub.");
-        _status.Severity = InfoBarSeverity.Success;
-
-        if (!string.IsNullOrWhiteSpace(info.ReleaseUrl) &&
-            Uri.TryCreate(info.ReleaseUrl, UriKind.Absolute, out var releaseUri))
-        {
-            var goButton = new Button
-            {
-                Content = T("Vai alla release"),
-                Style = StyleResource("PlayhubPrimaryButtonStyle")
-            };
-            goButton.Click += async (_, _) => await Windows.System.Launcher.LaunchUriAsync(releaseUri);
-            _status.ActionButton = goButton;
-        }
-        else
-        {
-            _status.ActionButton = null;
-        }
-
-        _status.IsOpen = true;
+        ShowPlayhubUpdateDialog(info);
     }
 
     private async Task SaveSettingsSilentlyAsync()
     {
+        CaptureSupportReminderUsageForSave();
         await _settingsService.SaveAsync();
     }
 
     private void SetStatus(string message, InfoBarSeverity severity)
     {
+        if (IsStoreNotificationContext())
+        {
+            Diag.Step("Plugin Store: " + message);
+            return;
+        }
+        _status.Tag = null;
         _localizationKeys.AddOrUpdate(_status, message);
         // Ripulisci eventuali titolo/pulsante lasciati da una notifica precedente
         // (es. quella di aggiornamento), così i messaggi normali restano puliti.
@@ -5652,38 +8902,32 @@ by LG Electronics, Sony, or Valve.";
 
     private string T(string text) => LocalizationService.Translate(_settings.Language, text);
 
-    private void RestartPlayhub()
+    private bool RestartPlayhub()
     {
         try
         {
-            var executable = Environment.ProcessPath;
-            if (string.IsNullOrWhiteSpace(executable) || !File.Exists(executable))
-            {
-                SetStatus("Non riesco a riavviare Playhub. Chiudilo e riaprilo manualmente.", InfoBarSeverity.Warning);
-                return;
-            }
-
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = executable,
-                WorkingDirectory = AppContext.BaseDirectory,
-                UseShellExecute = true
-            });
-            Close();
+            // The SDK agent waits for this process to exit before relaunching,
+            // so single-instance activation cannot redirect back to this window.
+            var failure = Microsoft.Windows.AppLifecycle.AppInstance.Restart("");
+            if (failure == Windows.ApplicationModel.Core.AppRestartFailureReason.RestartPending)
+                return true;
+            Diag.Step("Language restart failed: " + failure);
         }
-        catch
+        catch (Exception ex)
         {
-            SetStatus("Non riesco a riavviare Playhub. Chiudilo e riaprilo manualmente.", InfoBarSeverity.Warning);
+            Diag.Crash("Language restart", ex);
         }
+        SetStatus("Non riesco a riavviare Playhub. Chiudilo e riaprilo manualmente.", InfoBarSeverity.Warning);
+        return false;
     }
 
     private string TranslateMessage(string message)
     {
-        if (message.StartsWith("Ho importato ", StringComparison.Ordinal) &&
-            message.Contains(" giochi in Steam.", StringComparison.Ordinal))
+        if (message.StartsWith("Ho aggiunto ", StringComparison.Ordinal) &&
+            message.Contains(" giochi a Steam.", StringComparison.Ordinal))
         {
-            var countText = message["Ho importato ".Length..].Split(' ', 2)[0];
-            return string.Format(T("Ho importato {0} giochi in Steam. Ho creato anche un backup degli shortcut. Riavvia Steam per vederli."), countText);
+            var countText = message["Ho aggiunto ".Length..].Split(' ', 2)[0];
+            return string.Format(T("Ho aggiunto {0} giochi a Steam. Riavvia Steam per vederli."), countText);
         }
 
         const string blockedPrefix = "Windows ha impedito la scrittura del file shortcuts di Steam. Non dipende dal fatto che Steam sia aperto: è la protezione \"Accesso alle cartelle controllato\" di Sicurezza di Windows che blocca questa app (UWPHook funziona perché è già tra le app consentite). Per risolvere: Sicurezza di Windows → Protezione da virus e minacce → Gestisci protezione ransomware → Accesso alle cartelle controllato → Consenti app tramite Accesso alle cartelle controllato → Aggiungi Playhub.exe. Poi riprova.";
@@ -5768,12 +9012,16 @@ by LG Electronics, Sony, or Valve.";
                 : TranslateMessage(_status.Message);
         }
 
-        // Le descrizioni dei plugin sono risolte per lingua al momento della
-        // costruzione della card (e marcate "noloc"), quindi ricostruiamo le
-        // card per riflettere subito la nuova lingua.
-        if (_plugins.Count > 0)
+        // Invalidate localized descriptions only when the language changes;
+        // hidden store views are built on demand when their page is opened.
+        if (!string.Equals(_pluginViewLanguage, _settings.Language, StringComparison.Ordinal))
         {
-            RenderPluginCards();
+            _pluginViewLanguage = _settings.Language;
+            InvalidatePluginAllViews();
+            InvalidateFeaturedFrames();
+            _pluginCardsDirty = true;
+            _pluginManagementDirty = true;
+            RenderVisiblePluginView();
         }
 
         // Aggiorna la slide di benvenuto: la prima è costruita prima del load della
@@ -5781,114 +9029,16 @@ by LG Electronics, Sony, or Valve.";
         _refreshWelcomeSlide?.Invoke();
     }
 
-    private void LocalizeElement(DependencyObject element)
-    {
-        LocalizeElement(element, new HashSet<DependencyObject>());
-    }
-
-    private void LocalizeElement(DependencyObject element, HashSet<DependencyObject> visited)
-    {
-        if (!visited.Add(element))
-        {
-            return;
-        }
-
-        // I sottoalberi marcati "noloc" (es. descrizioni dei plugin già tradotte
-        // come blocco unico) non vanno ritradotti riga per riga.
-        if (element is FrameworkElement { Tag: "noloc" })
-        {
-            return;
-        }
-
-        switch (element)
-        {
-            case TextBlock textBlock:
-                textBlock.Text = T(GetLocalizationKey(textBlock, textBlock.Text));
-                break;
-            case Button { Content: string buttonText } button:
-                button.Content = T(GetLocalizationKey(button, buttonText));
-                break;
-            case NavigationViewItem { Content: string itemText } item:
-                item.Content = T(GetLocalizationKey(item, itemText));
-                break;
-            case Expander { Header: string expanderHeader } expander:
-                expander.Header = T(GetLocalizationKey(expander, expanderHeader));
-                break;
-            case ToggleSwitch toggle:
-                if (toggle.Header is string toggleHeader)
-                {
-                    toggle.Header = T(GetLocalizationKey(toggle, toggleHeader));
-                }
-                ApplyToggleStateText(toggle);
-                break;
-            case TextBox textBox:
-                textBox.PlaceholderText = T(GetLocalizationKey(textBox, textBox.PlaceholderText));
-                break;
-            case NumberBox numberBox when numberBox.Header is string numberHeader:
-                numberBox.Header = T(GetLocalizationKey(numberBox, numberHeader));
-                break;
-            case InfoBar infoBar:
-                infoBar.Message = _localizationKeys.TryGetValue(infoBar, out var infoKey)
-                    ? TranslateMessage(infoKey)
-                    : TranslateMessage(GetLocalizationKey(infoBar, infoBar.Message));
-                // NON scendere nel template dell'InfoBar: impostare il Text del
-                // TextBlock interno romperebbe il TemplateBinding alla proprietà
-                // Message e i messaggi resterebbero vuoti. Message è già gestito qui.
-                return;
-        }
-
-        if (element is ContentControl { Content: DependencyObject contentObject })
-        {
-            LocalizeElement(contentObject, visited);
-        }
-
-        if (element is Border { Child: DependencyObject borderChild })
-        {
-            LocalizeElement(borderChild, visited);
-        }
-
-        if (element is Panel panel)
-        {
-            foreach (var panelChild in panel.Children.OfType<DependencyObject>())
-            {
-                LocalizeElement(panelChild, visited);
-            }
-        }
-
-        if (element is Expander { Content: DependencyObject expanderContent })
-        {
-            LocalizeElement(expanderContent, visited);
-        }
-
-        var count = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(element);
-        for (var i = 0; i < count; i++)
-        {
-            LocalizeElement(Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(element, i), visited);
-        }
-    }
-
-    private string GetLocalizationKey(DependencyObject element, string currentText)
-    {
-        if (_localizationKeys.TryGetValue(element, out var key))
-        {
-            // Keep the original Italian key across every language change.
-            // Replacing it with the currently translated text made the second
-            // change irreversible (for example Italian -> English -> Italian).
-            return key;
-        }
-
-        _localizationKeys.AddOrUpdate(element, currentText);
-        return currentText;
-    }
-
     private string FriendlyError(Exception ex)
     {
+        Diag.Crash("Azione dell'interfaccia non riuscita", ex);
+
         if (ex is UnauthorizedAccessException)
         {
             return T("Windows ha bloccato l'accesso a un file. Riprova.");
         }
 
-        return ex.Message;
+        return T("Qualcosa non ha funzionato. Riprova.");
     }
 
     private static string NormalizeBackdropKey(string? value)
@@ -6016,15 +9166,17 @@ by LG Electronics, Sony, or Valve.";
             element.RequestedTheme = ElementTheme.Dark;
         }
 
-        foreach (var button in _primaryButtons)
+        _primaryButtons.RemoveAll(reference => !reference.TryGetTarget(out _));
+        foreach (var reference in _primaryButtons)
         {
-            ApplyAccentToButton(button);
+            if (reference.TryGetTarget(out var button)) ApplyAccentToButton(button);
         }
 
         ApplyChrome(accent);
         RefreshAccentPicker();
         // Re-tint the Gaming Mode mode tiles (border/background/icons) with the new accent.
         UpdateModeTiles();
+        UpdatePluginStoreModeButtons();
     }
 
     private static void AnimateStopColor(GradientStop stop, Color to)
@@ -6051,6 +9203,7 @@ by LG Electronics, Sony, or Valve.";
 
     private void ApplyBackdrop()
     {
+        RefreshWelcomeBackdrop();
         try
         {
             SystemBackdrop = _settings.Backdrop switch
@@ -6131,7 +9284,6 @@ by LG Electronics, Sony, or Valve.";
         SetResource("TextOnAccentFillColorPrimary", onAccent);
 
         SetBrush("NavigationViewSelectionIndicatorForeground", accent);
-        // Selected tab text stays white (readable) like the hover state — not the accent colour.
         SetBrush("NavigationViewItemForegroundSelected", Colors.White);
         SetBrush("NavigationViewItemForegroundSelectedPointerOver", Colors.White);
         SetBrush("NavigationViewItemForegroundSelectedPressed", Colors.White);

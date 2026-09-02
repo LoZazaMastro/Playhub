@@ -1,0 +1,13 @@
+{
+  "Catalog HTTP {0}.": "Errore HTTP {0} del catalogo.",
+  "Catalog exceeds the byte limit.": "Il catalogo supera il limite di dimensione in byte.",
+  "Catalog revision rollback rejected.": "Ripristino di una revisione precedente del catalogo rifiutato.",
+  "Duplicate JSON property.": "Proprietà JSON duplicata.",
+  "Duplicate catalog identity.": "Identità duplicata nel catalogo.",
+  "Expected schemaVersion 3, positive catalogRevision and plugins array.": "Sono richiesti schemaVersion pari a 3, catalogRevision maggiore di zero e un array plugins.",
+  "Invalid catalog metadata or plugin count.": "Metadati del catalogo o numero di plugin non validi.",
+  "Remote identity/source conflicts with local catalog.": "L’identità o l’origine nel catalogo remoto è in conflitto con il catalogo locale.",
+  "Remote install folder conflicts with local identity.": "La cartella di installazione indicata nel catalogo remoto è in conflitto con l’identità locale.",
+  "Start DeckyLoader before Steam": "Avvia DeckyLoader prima di Steam",
+  "Start streaming": "Avvia lo streaming"
+}

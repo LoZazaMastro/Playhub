@@ -27,14 +27,11 @@ public static class OverlaySteamArtworkResolver
 		@"AppID\s+(?<app>\d+)\s+no longer tracking PID\s+(?<pid>\d+)",
 		RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-	// IDENTIFICAZIONE DEL GIOCO.
-	//
-	// Si parte SEMPRE dal percorso dell'eseguibile della finestra:
-	//   1. manifest di Steam (appmanifest_*.acf) per i giochi installati;
-	//   2. shortcuts.vdf per i giochi non Steam aggiunti alla libreria.
-	// Il registro dei processi di Steam NON viene piu' usato: la parentela fra
-	// processi passa tutta da steam.exe, quindi qualunque finestra risultava
-	// "imparentata" con il gioco in esecuzione e si ritrovava la sua copertina.
+	// Per risolvere la grafica si usa prima la sessione attiva di Steam e poi,
+	// come fallback, il percorso presente nei manifest o in shortcuts.vdf.
+	// Per decidere se una finestra puo' attivare il recupero focus, invece, vale
+	// soltanto la sessione realmente tracciata da Steam: essere nella libreria
+	// non basta a trasformare una normale applicazione in un gioco in uscita.
 	// INDICE DELLA LIBRERIA, COSTRUITO UNA VOLTA SOLA.
 	//
 	// Prima, per OGNI finestra dell'elenco, si rileggevano da capo tutti i
@@ -82,16 +79,12 @@ public static class OverlaySteamArtworkResolver
 		}
 	}
 
-	public static bool IsSteamGameProcess(int processId, string executablePath = "")
+	public static bool IsSteamGameProcess(int processId)
 	{
 		try
 		{
 			string steamPath = FindSteamPath();
-			EnsureIndex(steamPath);
-			if (FindActiveGame(steamPath, processId) is not null) return true;
-			if (string.IsNullOrWhiteSpace(executablePath)) return false;
-			string fullExecutable = Path.GetFullPath(executablePath);
-			return LookupInstalled(fullExecutable) is not null || LookupShortcut(fullExecutable) is not null;
+			return FindActiveGame(steamPath, processId) is not null;
 		}
 		catch
 		{

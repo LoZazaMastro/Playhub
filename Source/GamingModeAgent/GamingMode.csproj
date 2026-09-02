@@ -12,6 +12,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <DebugType>none</DebugType>
   </PropertyGroup>
   <PropertyGroup>
     <LangVersion>12.0</LangVersion>

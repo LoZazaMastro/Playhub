@@ -16,6 +16,9 @@ public partial class App : Application
         var silent = e.Args.Any(a =>
             a.Equals("--silent", StringComparison.OrdinalIgnoreCase) ||
             a.Equals("/silent", StringComparison.OrdinalIgnoreCase));
+        var update = e.Args.Any(a =>
+            a.Equals("--update", StringComparison.OrdinalIgnoreCase) ||
+            a.Equals("/update", StringComparison.OrdinalIgnoreCase));
 
         // Disinstallazione silenziosa (QuietUninstallString da "App installate").
         if (uninstall && silent)
@@ -24,7 +27,7 @@ public partial class App : Application
             return;
         }
 
-        var window = new MainWindow(uninstall ? SetupMode.Uninstall : SetupMode.Install);
+        var window = new MainWindow(uninstall ? SetupMode.Uninstall : SetupMode.Install, update);
         MainWindow = window;
         window.Show();
     }

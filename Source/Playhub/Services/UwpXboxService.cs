@@ -1,9 +1,10 @@
-using Playhub.Models;
+﻿using Playhub.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -22,7 +23,7 @@ public sealed record SteamGridGameOption(int Id, string Name, int? ReleaseYear, 
 /// This uses the EXACT engine of UWPHook: shortcuts.vdf is read and written with
 /// the original VDFParser library (vendored under Vendor/VDFParser), the exported
 /// shortcut points at UWPHook.exe with launch options "{aumid} {executable}", and
-/// the Steam grid app id is crc32(exe + name) | 0x80000000 — byte-for-byte the
+/// the Steam grid app id is crc32(exe + name) | 0x80000000 - byte-for-byte the
 /// same as UWPHook. The previous hand-rolled binary writer produced a malformed
 /// file (missing terminator) which is what caused the missing games and the
 /// "LoadLibrary failed with error 87" overlay error.
@@ -506,6 +507,161 @@ public sealed class UwpXboxService
             .ToList();
     }
 
+    public async Task<IReadOnlyList<SteamGridArtworkOption>> GetOfficialSteamArtworkAsync(
+        UwpGameEntry game,
+        string artworkType)
+    {
+        var appId = await ResolveSteamAppIdAsync(game);
+        if (appId <= 0)
+        {
+            return Array.Empty<SteamGridArtworkOption>();
+        }
+
+        var candidates = NormalizeArtworkType(artworkType) switch
+        {
+            "cover" => new[]
+            {
+                ("library_600x900_2x.jpg", 1200, 1800),
+                ("library_600x900.jpg", 600, 900)
+            },
+            "banner" => new[]
+            {
+                ("header.jpg", 460, 215),
+                ("capsule_616x353.jpg", 616, 353)
+            },
+            "hero" => new[]
+            {
+                ("library_hero.jpg", 3840, 1240)
+            },
+            "logo" => new[]
+            {
+                ("logo.png", 0, 0),
+                ("library_logo.png", 0, 0)
+            },
+            // L'icona di Steam vive nell'appinfo del client, non sul CDN pubblico.
+            _ => Array.Empty<(string, int, int)>()
+        };
+
+        var options = new List<SteamGridArtworkOption>();
+        foreach (var (fileName, width, height) in candidates)
+        {
+            var url = $"https://cdn.cloudflare.steamstatic.com/steam/apps/{appId}/{fileName}";
+            if (await RemoteFileExistsAsync(url))
+            {
+                options.Add(new SteamGridArtworkOption(url, url, width, height));
+            }
+        }
+
+        return options;
+    }
+
+    private async Task<int> ResolveSteamAppIdAsync(UwpGameEntry game)
+    {
+        if (game.SteamAppId != 0)
+        {
+            return game.SteamAppId;
+        }
+
+        var name = (game.Name ?? "").Trim();
+        if (name.Length == 0)
+        {
+            game.SteamAppId = -1;
+            return -1;
+        }
+
+        try
+        {
+            var url = "https://store.steampowered.com/api/storesearch/?l=english&cc=us&term="
+                + Uri.EscapeDataString(name);
+            using var response = await _http.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
+            {
+                game.SteamAppId = -1;
+                return -1;
+            }
+
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            if (!document.RootElement.TryGetProperty("items", out var items) ||
+                items.ValueKind != JsonValueKind.Array)
+            {
+                game.SteamAppId = -1;
+                return -1;
+            }
+
+            var wanted = NormalizeTitle(name);
+            var first = 0;
+            foreach (var item in items.EnumerateArray())
+            {
+                if (!item.TryGetProperty("id", out var idProperty) || !idProperty.TryGetInt32(out var id))
+                {
+                    continue;
+                }
+
+                var itemName = item.TryGetProperty("name", out var nameProperty) ? nameProperty.GetString() ?? "" : "";
+                if (first == 0)
+                {
+                    first = id;
+                }
+
+                if (NormalizeTitle(itemName) == wanted)
+                {
+                    game.SteamAppId = id;
+                    return id;
+                }
+            }
+
+            game.SteamAppId = first > 0 ? first : -1;
+            return game.SteamAppId;
+        }
+        catch
+        {
+            game.SteamAppId = -1;
+            return -1;
+        }
+    }
+
+    private static string NormalizeTitle(string value)
+    {
+        var builder = new StringBuilder(value.Length);
+        foreach (var character in value.ToLowerInvariant())
+        {
+            if (char.IsLetterOrDigit(character))
+            {
+                builder.Append(character);
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    private async Task<bool> RemoteFileExistsAsync(string url)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Head, url);
+            using var response = await _http.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            if (response.StatusCode != HttpStatusCode.MethodNotAllowed &&
+                response.StatusCode != HttpStatusCode.Forbidden)
+            {
+                return false;
+            }
+
+            using var ranged = new HttpRequestMessage(HttpMethod.Get, url);
+            ranged.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(0, 0);
+            using var rangedResponse = await _http.SendAsync(ranged);
+            return rangedResponse.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public async Task<bool> DownloadAndApplySteamGridDbArtworkAsync(
         UwpGameEntry game,
         string artworkType,
@@ -549,7 +705,7 @@ public sealed class UwpXboxService
         var users = UwpHookSteamManager.GetUsers(steamFolder);
         if (users.Length == 0)
         {
-            return "Non trovo utenti Steam in userdata.";
+            return "Non trovo alcun profilo Steam su questo PC.";
         }
 
         string? uwpHookExe = null;
@@ -669,12 +825,11 @@ public sealed class UwpXboxService
 
         if (blockedPaths.Count > 0)
         {
-            return "Windows ha impedito la scrittura del file shortcuts di Steam. Non dipende dal fatto che Steam sia aperto: è la protezione \"Accesso alle cartelle controllato\" di Sicurezza di Windows che blocca questa app (UWPHook funziona perché è già tra le app consentite). " +
-                   "Per risolvere: Sicurezza di Windows → Protezione da virus e minacce → Gestisci protezione ransomware → Accesso alle cartelle controllato → Consenti app tramite Accesso alle cartelle controllato → Aggiungi Playhub.exe. Poi riprova. " +
-                   $"(File bloccato: {blockedPaths[0]})";
+            Diag.Crash("UwpXboxService.ExportSelectedToSteamAsync", $"Accesso negato: {blockedPaths[0]}");
+            return "Sicurezza di Windows impedisce a Playhub di aggiornare la libreria. Consenti Playhub in “Accesso alle cartelle controllato”, poi riprova.";
         }
 
-        return $"Ho importato {selected.Count} giochi in Steam. Ho creato anche un backup degli shortcut. Riavvia Steam per vederli.";
+        return $"Ho aggiunto {selected.Count} giochi a Steam. Riavvia Steam per vederli.";
     }
 
     private static string TryPersistIcon(UwpGameEntry game)

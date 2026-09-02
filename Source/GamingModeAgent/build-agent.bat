@@ -4,6 +4,7 @@ cd /d "%~dp0"
 echo ===== BUILD AGENT START %DATE% %TIME% ===== > build_agent_log.txt 2>&1
 
 rem Pubblica l'agente Gaming Mode come singolo eseguibile autosufficiente.
+if exist "publish_tmp" rmdir /s /q "publish_tmp"
 dotnet publish "GamingMode.csproj" -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "publish_tmp" >> build_agent_log.txt 2>&1
 if errorlevel 1 (
     echo ERRORE: dotnet publish fallito. Vedi build_agent_log.txt
@@ -23,6 +24,7 @@ if errorlevel 1 (
     echo ERRORE: copia nel pacchetto Playhub fallita. Vedi build_agent_log.txt
     exit /b 1
 )
+rmdir /s /q "publish_tmp"
 
 echo ===== BUILD AGENT DONE ===== >> build_agent_log.txt 2>&1
 echo Fatto. GamingMode.exe aggiornato in publish\ e nel pacchetto "Plugins\Gaming Mode\gaming-mode-win-x64".

@@ -91,6 +91,35 @@ public sealed class DeckyInstallerService
     /// <summary>Installs the latest main build.</summary>
     public Task<string> InstallLatestAsync() => InstallFromUrlAsync(LatestZipUrl, "ultima versione");
 
+    /// <summary>Installs the latest main artifact only when its files differ or are missing.</summary>
+    public async Task<string> InstallOrUpdateLatestAsync()
+    {
+        var bytes = await TryDownloadAsync(LatestZipUrl);
+        if (bytes is null)
+        {
+            throw new InvalidOperationException("Non riesco a scaricare DeckyLoader. Controlla la connessione e riprova.");
+        }
+
+        if (bytes.Length < 500_000)
+        {
+            throw new InvalidDataException("Il download di DeckyLoader sembra incompleto. Riprova.");
+        }
+
+        var servicesDir = ServicesDir;
+        var comparison = await Task.Run(() => DeckyArtifactComparison.Compare(bytes, servicesDir));
+        if (comparison == DeckyArtifactMatch.Invalid)
+        {
+            throw new InvalidDataException("Il download di DeckyLoader sembra incompleto. Riprova.");
+        }
+
+        if (comparison == DeckyArtifactMatch.Identical)
+        {
+            return "La versione installata di DeckyLoader è già la più recente.";
+        }
+
+        return await InstallFromBytesAsync(bytes, "ultima versione");
+    }
+
     // Variante per utenti esperti: registra e avvia PluginLoader.exe (con finestra
     // console/log sempre visibile) invece di PluginLoader_noconsole.exe.
     public Task<string> InstallLatestConsoleAsync() => InstallFromUrlAsync(LatestZipUrl, "versione con console", console: true);
@@ -114,7 +143,7 @@ public sealed class DeckyInstallerService
         var bytes = await TryDownloadAsync(url);
         if (bytes is null)
         {
-            return "Non riesco a scaricare DeckyLoader (rete non disponibile o artifact assente). Riprova più tardi.";
+            return "Non riesco a scaricare DeckyLoader. Controlla la connessione e riprova.";
         }
 
         return await InstallFromBytesAsync(bytes, label, console);
@@ -144,8 +173,7 @@ public sealed class DeckyInstallerService
         notes.Add(SetupAutostartAndLaunch(console) ? "autostart impostato e loader avviato" : "autostart non riuscito");
         RemoveLegacyDesktopShortcut();
 
-        return $"DeckyLoader installato ({label}): {string.Join(", ", notes)}. " +
-               "Chiudi e riapri Steam per attivare DeckyLoader.";
+        return "DeckyLoader è pronto. Riavvia Steam per attivarlo.";
     }
 
     public Task<string> RemoveAsync()
@@ -178,10 +206,10 @@ public sealed class DeckyInstallerService
         if (Directory.Exists(ServicesDir))
         {
             try { Directory.Delete(ServicesDir, recursive: true); } catch { }
-            return Task.FromResult("DeckyLoader rimosso. I plugin installati restano in homebrew/plugins.");
+            return Task.FromResult("DeckyLoader è stato rimosso. I plugin installati restano al loro posto.");
         }
 
-        return Task.FromResult("DeckyLoader non risultava installato (puliti comunque scorciatoia e autostart).");
+        return Task.FromResult("DeckyLoader non era installato. I collegamenti rimasti sono stati rimossi.");
     }
 
     public async Task<bool> RestartWithSteamAsync(SteamService steam)

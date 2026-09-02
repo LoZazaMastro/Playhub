@@ -59,7 +59,7 @@ public sealed class DiagnosticsService
         AppendSection(sb, "STARTUP & SHELL", AppendStartupAndShellInfo);
         AppendSection(sb, "STEAM", AppendSteamInfo);
         AppendSection(sb, "DECKY LOADER", AppendDeckyInfo);
-        AppendSection(sb, "STREAMING (SUNSHINE / APOLLO / VIBEPOLLO)", AppendStreamingInfo);
+        AppendSection(sb, "STREAMING (SUNSHINE / APOLLO / VIBEPOLLO / VIBESHINE)", AppendStreamingInfo);
         AppendSection(sb, "POTENTIAL CONFLICTS", AppendConflictInfo);
         AppendSection(sb, "RUNNING PROCESSES", AppendProcessList);
         AppendSection(sb, "LOG TAILS", AppendLogTails);
@@ -246,9 +246,17 @@ public sealed class DiagnosticsService
             Path.Combine(programFiles, "Sunshine", "sunshine.exe"),
             Path.Combine(programFiles, "LizardByte", "Sunshine", "sunshine.exe"),
             Path.Combine(programFiles, "Apollo", "sunshine.exe"),
+            Path.Combine(programFiles, "Apollo", "apollo.exe"),
             Path.Combine(programFiles, "Vibepollo", "sunshine.exe"),
+            Path.Combine(programFiles, "Vibepollo", "vibepollo.exe"),
+            Path.Combine(programFiles, "Vibeshine", "sunshine.exe"),
+            Path.Combine(programFiles, "Vibeshine", "vibeshine.exe"),
             Path.Combine(localAppData, "Programs", "Apollo", "sunshine.exe"),
-            Path.Combine(localAppData, "Programs", "Vibepollo", "sunshine.exe")
+            Path.Combine(localAppData, "Programs", "Apollo", "apollo.exe"),
+            Path.Combine(localAppData, "Programs", "Vibepollo", "sunshine.exe"),
+            Path.Combine(localAppData, "Programs", "Vibepollo", "vibepollo.exe"),
+            Path.Combine(localAppData, "Programs", "Vibeshine", "sunshine.exe"),
+            Path.Combine(localAppData, "Programs", "Vibeshine", "vibeshine.exe")
         };
         foreach (var path in candidates)
         {
@@ -258,7 +266,7 @@ public sealed class DiagnosticsService
                 sb.AppendLine("Found         : " + path + " (v" + (info.FileVersion ?? "?") + ")");
             }
         }
-        foreach (var name in new[] { "sunshine", "apollo", "vibepollo" })
+        foreach (var name in new[] { "sunshine", "apollo", "vibepollo", "vibeshine" })
         {
             var processes = Process.GetProcessesByName(name);
             if (processes.Length > 0)

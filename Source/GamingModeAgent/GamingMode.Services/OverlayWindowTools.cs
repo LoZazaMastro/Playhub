@@ -577,8 +577,9 @@ public static class OverlayWindowTools
 			}
 
 			bool ok = Activate(best);
-			report = $"scelta 0x{best:X} candidate={candidates}, prima='{beforeName}', dopo='{DescribeWindow(GetForegroundWindow())}', esito={(ok ? "in primo piano" : "negato da Windows")}";
-			return ok;
+			bool foreground = IsSteamForeground();
+			report = $"scelta 0x{best:X} candidate={candidates}, prima='{beforeName}', dopo='{DescribeWindow(GetForegroundWindow())}', esito={(foreground ? "in primo piano" : ok ? "attivazione richiesta" : "negato da Windows")}";
+			return foreground;
 		}
 		catch (Exception exception)
 		{

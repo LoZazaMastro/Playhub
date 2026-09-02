@@ -1,10 +1,12 @@
 import { definePlugin, routerHook, toaster, DFL, SP_REACT as React } from "./decky";
 import { FaGamepad } from "react-icons/fa";
-import { consumeOpenRequest, logToAgent, readEnvironment, API_BASE, requestDashboardSteamFocus, restoreDashboardSourceFocus } from "./api";
-import { DashboardPage, DASHBOARD_ROUTE, clearDashboardChrome, focusDashboardSurface, markDashboardChrome, prepareDashboardOverlay } from "./DashboardPage";
+import { captureDashboardSourceFocus, consumeOpenRequest, logToAgent, readEnvironment, readSettings, writeSettings, API_BASE, requestDashboardSteamFocus, restoreDashboardSourceFocus } from "./api";
+import { DashboardPage, DASHBOARD_ROUTE, clearDashboardChrome, focusDashboardSurface, markDashboardChrome, preloadDashboardWindows, prepareDashboardOverlay } from "./DashboardPage";
+import { configureNavigationHaptics, installNavigationHaptics } from "./navigationHaptics";
+import { installPowerMenuPatch } from "./powerMenuPatch";
 
 const { useState, useEffect, useMemo } = React;
-const { PanelSection, PanelSectionRow, ButtonItem, DropdownItem, Navigation, staticClasses } = DFL as any;
+const { PanelSection, PanelSectionRow, ButtonItem, DropdownItem, ToggleField, SliderField, Navigation, Router, staticClasses, ConfirmModal, showModal } = DFL as any;
 
 // IL PLUGIN GAMING MODE.
 //
@@ -37,6 +39,14 @@ interface Strings {
   dashboardShortcut: string;
   dashboardSteamInput: string;
   dashboardWindowSwitch: string;
+  haptics: string;
+  hapticsDescription: string;
+  hapticsIntensity: string;
+  restartGaming: string;
+  restartDesktop: string;
+  restartConfirm: string;
+  restartNow: string;
+  cancel: string;
 }
 
 const strings: Record<string, Strings> = {
@@ -54,6 +64,11 @@ const strings: Record<string, Strings> = {
     dashboardShortcut: "Open it with CTRL + ALT + P",
     dashboardSteamInput: "In Steam Input, assign this shortcut to Guide + any button for instant controller access.",
     dashboardWindowSwitch: "You can also map ALT + TAB in Steam Input to switch windows immediately.",
+    haptics: "Controller feedback",
+    hapticsDescription: "Adds tactile feedback while navigating Steam.",
+    hapticsIntensity: "Feedback intensity",
+    restartGaming: "Restart in Gaming Mode", restartDesktop: "Restart in Desktop Mode",
+    restartConfirm: "The system will restart now. Continue?", restartNow: "Restart", cancel: "Cancel",
   },
   it: {
     mode: "Modalità",
@@ -69,6 +84,11 @@ const strings: Record<string, Strings> = {
     dashboardShortcut: "Aprila con CTRL + ALT + P",
     dashboardSteamInput: "In Steam Input, assegna questa scorciatoia a Guida + un pulsante per aprirla subito dal controller.",
     dashboardWindowSwitch: "Puoi anche associare tramite Steam Input la combinazione ALT + TAB per cambiare immediatamente finestra.",
+    haptics: "Feedback del controller",
+    hapticsDescription: "Aggiunge una risposta tattile mentre navighi in Steam.",
+    hapticsIntensity: "Intensità del feedback",
+    restartGaming: "Riavvia in Gaming Mode", restartDesktop: "Riavvia in Desktop Mode",
+    restartConfirm: "Il sistema verrà riavviato ora. Vuoi continuare?", restartNow: "Riavvia", cancel: "Annulla",
   },
   es: {
     mode: "Modo",
@@ -84,6 +104,9 @@ const strings: Record<string, Strings> = {
     dashboardShortcut: "Ábrelo con CTRL + ALT + P",
     dashboardSteamInput: "En Steam Input, asigna este atajo a Guía + un botón para abrirlo al instante con el mando.",
     dashboardWindowSwitch: "También puedes asignar ALT + TAB en Steam Input para cambiar de ventana al instante.",
+    haptics: "Respuesta del mando", hapticsDescription: "Añade respuesta táctil al navegar por Steam.", hapticsIntensity: "Intensidad",
+    restartGaming: "Reiniciar en modo Gaming", restartDesktop: "Reiniciar en modo Escritorio",
+    restartConfirm: "El sistema se reiniciará ahora. ¿Quieres continuar?", restartNow: "Reiniciar", cancel: "Cancelar",
   },
   fr: {
     mode: "Mode",
@@ -99,6 +122,9 @@ const strings: Record<string, Strings> = {
     dashboardShortcut: "Ouvrez-le avec CTRL + ALT + P",
     dashboardSteamInput: "Dans Steam Input, associez ce raccourci à Guide + un bouton pour l'ouvrir instantanément avec la manette.",
     dashboardWindowSwitch: "Vous pouvez aussi associer ALT + TAB dans Steam Input pour changer immédiatement de fenêtre.",
+    haptics: "Retour de la manette", hapticsDescription: "Ajoute un retour tactile lors de la navigation dans Steam.", hapticsIntensity: "Intensité",
+    restartGaming: "Redémarrer en mode Gaming", restartDesktop: "Redémarrer en mode Bureau",
+    restartConfirm: "Le système va redémarrer maintenant. Continuer ?", restartNow: "Redémarrer", cancel: "Annuler",
   },
   de: {
     mode: "Modus",
@@ -114,6 +140,9 @@ const strings: Record<string, Strings> = {
     dashboardShortcut: "Mit CTRL + ALT + P öffnen",
     dashboardSteamInput: "Weise diese Tastenkombination in Steam Input Guide + einer Taste zu, um das Dashboard direkt per Controller zu öffnen.",
     dashboardWindowSwitch: "Du kannst in Steam Input auch ALT + TAB zuweisen, um sofort zwischen Fenstern zu wechseln.",
+    haptics: "Controller-Feedback", hapticsDescription: "Fügt beim Navigieren in Steam taktiles Feedback hinzu.", hapticsIntensity: "Intensität",
+    restartGaming: "Im Gaming-Modus neu starten", restartDesktop: "Im Desktop-Modus neu starten",
+    restartConfirm: "Das System wird jetzt neu gestartet. Fortfahren?", restartNow: "Neu starten", cancel: "Abbrechen",
   },
   pt: {
     mode: "Modo",
@@ -129,6 +158,9 @@ const strings: Record<string, Strings> = {
     dashboardShortcut: "Abra com CTRL + ALT + P",
     dashboardSteamInput: "No Steam Input, atribua este atalho a Guia + um botão para abrir imediatamente pelo comando.",
     dashboardWindowSwitch: "Também pode atribuir ALT + TAB no Steam Input para mudar imediatamente de janela.",
+    haptics: "Resposta do controle", hapticsDescription: "Adiciona resposta tátil ao navegar pelo Steam.", hapticsIntensity: "Intensidade",
+    restartGaming: "Reiniciar no modo Gaming", restartDesktop: "Reiniciar no modo Desktop",
+    restartConfirm: "O sistema será reiniciado agora. Continuar?", restartNow: "Reiniciar", cancel: "Cancelar",
   },
   uk: {
     mode: "Режим", switchGaming: "Перейти в ігровий режим", switchDesktop: "Перейти в режим робочого столу",
@@ -138,6 +170,9 @@ const strings: Record<string, Strings> = {
     dashboardShortcut: "Відкрийте за допомогою CTRL + ALT + P",
     dashboardSteamInput: "У Steam Input призначте це сполучення на Guide + будь-яку кнопку для миттєвого доступу з контролера.",
     dashboardWindowSwitch: "Також можна призначити ALT + TAB у Steam Input для миттєвого перемикання вікон.",
+    haptics: "Відгук контролера", hapticsDescription: "Додає тактильний відгук під час навігації Steam.", hapticsIntensity: "Інтенсивність",
+    restartGaming: "Перезапустити в ігровому режимі", restartDesktop: "Перезапустити в режимі робочого столу",
+    restartConfirm: "Систему буде перезапущено зараз. Продовжити?", restartNow: "Перезапустити", cancel: "Скасувати",
   },
   zh: {
     mode: "模式", switchGaming: "切换到游戏模式", switchDesktop: "切换到桌面模式",
@@ -147,6 +182,9 @@ const strings: Record<string, Strings> = {
     dashboardShortcut: "按 CTRL + ALT + P 打开",
     dashboardSteamInput: "在 Steam Input 中，将此快捷键绑定到 Guide + 任意按钮，即可通过控制器快速打开。",
     dashboardWindowSwitch: "也可以在 Steam Input 中绑定 ALT + TAB，以便立即切换窗口。",
+    haptics: "手柄反馈", hapticsDescription: "在 Steam 中导航时提供触觉反馈。", hapticsIntensity: "反馈强度",
+    restartGaming: "重启到游戏模式", restartDesktop: "重启到桌面模式",
+    restartConfirm: "系统将立即重启。是否继续？", restartNow: "重启", cancel: "取消",
   },
   ja: {
     mode: "モード", switchGaming: "ゲーミングモードに切り替え", switchDesktop: "デスクトップモードに切り替え",
@@ -156,6 +194,9 @@ const strings: Record<string, Strings> = {
     dashboardShortcut: "CTRL + ALT + P で開きます",
     dashboardSteamInput: "Steam Input でこのショートカットを Guide + 任意のボタンに割り当てると、コントローラーからすぐに開けます。",
     dashboardWindowSwitch: "Steam Input に ALT + TAB を割り当てて、ウィンドウをすぐに切り替えることもできます。",
+    haptics: "コントローラーのフィードバック", hapticsDescription: "Steam の操作に触覚フィードバックを加えます。", hapticsIntensity: "フィードバックの強さ",
+    restartGaming: "ゲーミングモードで再起動", restartDesktop: "デスクトップモードで再起動",
+    restartConfirm: "システムを今すぐ再起動します。続行しますか？", restartNow: "再起動", cancel: "キャンセル",
   },
   ko: {
     mode: "모드", switchGaming: "게이밍 모드로 전환", switchDesktop: "데스크톱 모드로 전환",
@@ -165,6 +206,9 @@ const strings: Record<string, Strings> = {
     dashboardShortcut: "CTRL + ALT + P로 열기",
     dashboardSteamInput: "Steam Input에서 이 단축키를 Guide + 원하는 버튼에 지정하면 컨트롤러로 즉시 열 수 있습니다.",
     dashboardWindowSwitch: "Steam Input에 ALT + TAB을 지정하여 창을 즉시 전환할 수도 있습니다.",
+    haptics: "컨트롤러 피드백", hapticsDescription: "Steam을 탐색할 때 촉각 피드백을 추가합니다.", hapticsIntensity: "피드백 강도",
+    restartGaming: "게이밍 모드로 다시 시작", restartDesktop: "데스크톱 모드로 다시 시작",
+    restartConfirm: "시스템을 지금 다시 시작합니다. 계속하시겠습니까?", restartNow: "다시 시작", cancel: "취소",
   },
   hi: {
     mode: "मोड", switchGaming: "गेमिंग मोड पर जाएं", switchDesktop: "डेस्कटॉप मोड पर जाएं",
@@ -174,6 +218,9 @@ const strings: Record<string, Strings> = {
     dashboardShortcut: "CTRL + ALT + P से खोलें",
     dashboardSteamInput: "कंट्रोलर से तुरंत खोलने के लिए Steam Input में इस शॉर्टकट को Guide + किसी बटन से जोड़ें।",
     dashboardWindowSwitch: "विंडो तुरंत बदलने के लिए Steam Input में ALT + TAB भी जोड़ सकते हैं।",
+    haptics: "कंट्रोलर फ़ीडबैक", hapticsDescription: "Steam में नेविगेट करते समय स्पर्श प्रतिक्रिया जोड़ता है।", hapticsIntensity: "फ़ीडबैक की तीव्रता",
+    restartGaming: "गेमिंग मोड में रीस्टार्ट करें", restartDesktop: "डेस्कटॉप मोड में रीस्टार्ट करें",
+    restartConfirm: "सिस्टम अब रीस्टार्ट होगा। जारी रखें?", restartNow: "रीस्टार्ट", cancel: "रद्द करें",
   },
   ru: {
     mode: "Режим", switchGaming: "Перейти в игровой режим", switchDesktop: "Перейти в режим рабочего стола",
@@ -183,6 +230,9 @@ const strings: Record<string, Strings> = {
     dashboardShortcut: "Откройте с помощью CTRL + ALT + P",
     dashboardSteamInput: "В Steam Input назначьте это сочетание на Guide + любую кнопку для мгновенного доступа с контроллера.",
     dashboardWindowSwitch: "Также можно назначить ALT + TAB в Steam Input для мгновенного переключения окон.",
+    haptics: "Отклик контроллера", hapticsDescription: "Добавляет тактильный отклик при навигации в Steam.", hapticsIntensity: "Интенсивность",
+    restartGaming: "Перезапустить в игровом режиме", restartDesktop: "Перезапустить в режиме рабочего стола",
+    restartConfirm: "Система будет перезапущена сейчас. Продолжить?", restartNow: "Перезапустить", cancel: "Отмена",
   },
 };
 
@@ -230,6 +280,19 @@ let currentLocale = detectSteamLocale();
 
 function t(): Strings {
   return strings[currentLocale] ?? strings.en;
+}
+
+function confirmRestart(mode: "gaming" | "desktop", action: () => void) {
+  const local = t();
+  showModal(
+    <ConfirmModal
+      strTitle={mode === "gaming" ? local.restartGaming : local.restartDesktop}
+      strDescription={local.restartConfirm}
+      strOKButtonText={local.restartNow}
+      strCancelButtonText={local.cancel}
+      onOK={action}
+    />
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -297,9 +360,12 @@ async function post(path: string): Promise<AgentResult> {
 // route, la richiesta termina senza sovrapporre superfici al gioco.
 async function openDashboard(reason = "richiesta") {
   logToAgent("apertura richiesta");
-  const environment = await readEnvironment();
+  const environmentRequest = readEnvironment();
+  const dashboardWindowsReady = preloadDashboardWindows();
+  const environment = await environmentRequest;
   if (!environment?.enabled) return;
-  const useSteamOverlay = await prepareDashboardOverlay();
+  void captureDashboardSourceFocus();
+  const [useSteamOverlay] = await Promise.all([prepareDashboardOverlay(), dashboardWindowsReady]);
   if (useSteamOverlay) {
     try {
       Navigation?.CloseSideMenus?.();
@@ -307,6 +373,7 @@ async function openDashboard(reason = "richiesta") {
     } catch (error) {
       logToAgent(`navigazione overlay NON riuscita: ${error}`);
     }
+    [80, 180, 360, 700].forEach((delay) => window.setTimeout(focusDashboardSurface, delay));
     return;
   }
   await requestDashboardSteamFocus();
@@ -326,16 +393,90 @@ async function openDashboard(reason = "richiesta") {
   }
 }
 
-function startOpenRequestWatcher(): () => void {
+function restoreSteamNavigationFocus(reason: string): boolean {
+  const store = (DFL as any)?.Router?.WindowStore;
+  const main = store?.GamepadUIMainWindowInstance;
+  const browserWindow = main?.m_BrowserWindow ?? main?.BrowserWindow;
+  const context = main?.m_FocusNavContext;
+  if (!main || !browserWindow || !context) return false;
+
+  if (browserWindow.document?.querySelector?.(".ph-dashboard")) {
+    return focusDashboardSurface();
+  }
+
+  const controller = (DFL as any)?.getFocusNavController?.() ?? (window as any).FocusNavController;
+  const hasRealFocus = () => {
+    const activeContext = controller?.GetActiveContext?.() ?? controller?.m_ActiveContext;
+    const active = activeContext === context || context.BIsActive?.() === true;
+    const documentFocused = browserWindow.document?.hasFocus?.() === true;
+    const navigationFocused = !!browserWindow.document?.querySelector?.(".gpfocus");
+    return active && documentFocused && navigationFocused;
+  };
+
+  try { browserWindow.SteamClient?.Window?.BringToFront?.(1); } catch {}
+  try { browserWindow.SteamClient?.Window?.MarkLastFocused?.(); } catch {}
+  if (hasRealFocus()) return true;
+
+  try { browserWindow.focus?.(); } catch {}
+  try {
+    if (!context.BIsActive?.()) context.OnActivate?.(browserWindow);
+    main.FocusApplicationRoot?.();
+    browserWindow.SteamClient?.Window?.SetKeyFocus?.(true);
+  } catch {
+    return false;
+  }
+
+  const focused = hasRealFocus();
+  if (focused) logToAgent(`focus Steam ripristinato (${reason})`);
+  return focused;
+}
+
+function installSteamNavigationFocusRecovery(): { schedule: (reason: string) => void; uninstall: () => void } {
+  const timers = new Set<number>();
+  const clearTimers = () => {
+    timers.forEach((timer) => window.clearTimeout(timer));
+    timers.clear();
+  };
+  const schedule = (reason: string) => {
+    clearTimers();
+    [0, 100, 280, 650].forEach((delay) => {
+      const timer = window.setTimeout(() => {
+        timers.delete(timer);
+        if (restoreSteamNavigationFocus(reason)) clearTimers();
+      }, delay);
+      timers.add(timer);
+    });
+  };
+
+  return {
+    schedule,
+    uninstall: clearTimers,
+  };
+}
+
+function startOpenRequestWatcher(onFocusRecovery: () => void): () => void {
   let alive = true;
   let inFlight = false;
+  let focusRecoveryVersion: number | undefined;
+  let focusRecoveryPending = false;
 
   const timer = window.setInterval(async () => {
     if (!alive || inFlight) return;
     inFlight = true;
     try {
-      if (await consumeOpenRequest()) {
+      const signal = await consumeOpenRequest();
+      if (signal.open) {
         openDashboard();
+      }
+      if (focusRecoveryVersion === undefined) {
+        focusRecoveryVersion = signal.focusRecovery;
+      } else if (signal.focusRecovery !== focusRecoveryVersion) {
+        focusRecoveryVersion = signal.focusRecovery;
+        focusRecoveryPending = true;
+      }
+      if (focusRecoveryPending && signal.steamForeground) {
+        focusRecoveryPending = false;
+        onFocusRecovery();
       }
     } catch (error) {
       console.warn("Playhub Dashboard: attesa dell'apertura non riuscita", error);
@@ -360,13 +501,15 @@ function Content() {
   const [status, setStatus] = useState<AgentStatus | undefined>();
   const [busy, setBusy] = useState(false);
   const [dashboardEnabled, setDashboardEnabled] = useState(true);
+  const [hapticsEnabled, setHapticsEnabled] = useState(false);
+  const [hapticsIntensity, setHapticsIntensity] = useState(55);
 
   const defaultOptions = useMemo(
     () => [
-      { data: "Desktop", label: local.desktopMode },
-      { data: "Gaming", label: local.gamingMode },
+      { data: "Desktop", label: "Desktop" },
+      { data: "Gaming", label: "Gaming" },
     ],
-    [local.desktopMode, local.gamingMode]
+    []
   );
 
   const refresh = async () => {
@@ -413,37 +556,20 @@ function Content() {
     });
     refresh();
     void readEnvironment().then((environment) => setDashboardEnabled(environment?.enabled !== false));
+    void readSettings().then((settings) => {
+      if (!settings) return;
+      const enabled = settings.navigationHapticsEnabled === true;
+      const intensity = Math.max(5, Math.min(100, Number(settings.navigationHapticsIntensity) || 55));
+      setHapticsEnabled(enabled);
+      setHapticsIntensity(intensity);
+      configureNavigationHaptics({ enabled, intensity });
+    });
     const timer = window.setInterval(refresh, 5000);
     return () => { alive = false; window.clearInterval(timer); };
   }, []);
 
   return (
     <>
-      <PanelSection title={local.mode}>
-        <PanelSectionRow>
-          <ButtonItem disabled={busy} layout="below" onClick={() => run("/mode/gaming/switch", local.gamingMode)}>
-            {local.switchGaming}
-          </ButtonItem>
-        </PanelSectionRow>
-        <PanelSectionRow>
-          <ButtonItem disabled={busy} layout="below" onClick={() => run("/mode/desktop/switch", local.desktopMode)}>
-            {local.switchDesktop}
-          </ButtonItem>
-        </PanelSectionRow>
-        <PanelSectionRow>
-          <DropdownItem
-            label={local.defaultStartup}
-            disabled={busy}
-            rgOptions={defaultOptions}
-            selectedOption={status?.defaultMode ?? "Desktop"}
-            onChange={setDefault}
-          />
-        </PanelSectionRow>
-      </PanelSection>
-
-      {/* La Dashboard sta sotto ai tre comandi della Gaming Mode: quelli sono
-          le voci storiche del pannello, e chi le cerca le trova dove sono
-          sempre state. */}
       <PanelSection title={local.dashboard}>
         <PanelSectionRow>
           <ButtonItem
@@ -498,6 +624,63 @@ function Content() {
           </div>
         </PanelSectionRow>
       </PanelSection>
+
+      <PanelSection title={local.mode}>
+        <PanelSectionRow>
+          <ButtonItem disabled={busy} layout="below" onClick={() => confirmRestart("gaming", () => { void run("/mode/gaming/switch", local.gamingMode); })}>
+            {local.switchGaming}
+          </ButtonItem>
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <ButtonItem disabled={busy} layout="below" onClick={() => confirmRestart("desktop", () => { void run("/mode/desktop/switch", local.desktopMode); })}>
+            {local.switchDesktop}
+          </ButtonItem>
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <DropdownItem
+            label={local.defaultStartup}
+            disabled={busy}
+            rgOptions={defaultOptions}
+            selectedOption={status?.defaultMode ?? "Desktop"}
+            onChange={setDefault}
+          />
+        </PanelSectionRow>
+      </PanelSection>
+
+      <PanelSection>
+        <PanelSectionRow>
+          <ToggleField
+            label={local.haptics}
+            description={local.hapticsDescription}
+            checked={hapticsEnabled}
+            onChange={(enabled: boolean) => {
+              setHapticsEnabled(enabled);
+              configureNavigationHaptics({ enabled });
+              void writeSettings({ navigationHapticsEnabled: enabled });
+            }}
+          />
+        </PanelSectionRow>
+        {hapticsEnabled && (
+          <PanelSectionRow>
+            <SliderField
+              label={local.hapticsIntensity}
+              value={hapticsIntensity}
+              min={5}
+              max={100}
+              step={5}
+              valueSuffix="%"
+              showValue
+              onChange={(intensity: number) => {
+                const value = Math.max(5, Math.min(100, Math.round(intensity)));
+                setHapticsIntensity(value);
+                configureNavigationHaptics({ intensity: value });
+                void writeSettings({ navigationHapticsIntensity: value });
+              }}
+            />
+          </PanelSectionRow>
+        )}
+      </PanelSection>
+
     </>
   );
 }
@@ -530,16 +713,26 @@ async function overlayHookedInGame(appId: number): Promise<boolean> {
 
 function installFocusRescue(): () => void {
   let overlayWasActive = false;
+  let overlayActivationGeneration = 0;
+  let focusRetry: number | undefined;
   let registration: any;
   try {
     registration = (window as any).SteamClient.Overlay.RegisterForOverlayActivated(
       async (_overlayPid: number, appId: number, active: boolean) => {
+        const activationGeneration = ++overlayActivationGeneration;
         try {
           if (active) {
+            // Steam can report the highlighted library app as appId even when
+            // no game is running. MainRunningApp is the reliable boundary:
+            // without it this is a normal Big Picture panel and forcing focus
+            // would immediately dismiss the QAM or the sidebar.
+            const runningAppId = Number.parseInt(String(Router?.MainRunningApp?.appid ?? "0"), 10);
+            if (!Number.isFinite(runningAppId) || runningAppId <= 0) return;
             overlayWasActive = true;
             // Se l'overlay Steam e' gia' agganciato in-game, il menu appare
             // dentro il gioco: non interferire.
-            if (await overlayHookedInGame(appId)) {
+            const hookedInGame = await overlayHookedInGame(runningAppId || appId);
+            if (hookedInGame || !overlayWasActive || activationGeneration !== overlayActivationGeneration) {
               return;
             }
             try {
@@ -548,9 +741,15 @@ function installFocusRescue(): () => void {
             void requestDashboardSteamFocus();
             // Retry: se il primo tentativo e' arrivato mentre Windows stava
             // ancora negando il cambio di primo piano.
-            window.setTimeout(() => { void requestDashboardSteamFocus(); }, 450);
+            if (focusRetry !== undefined) window.clearTimeout(focusRetry);
+            focusRetry = window.setTimeout(() => {
+              focusRetry = undefined;
+              if (overlayWasActive) void requestDashboardSteamFocus();
+            }, 450);
           } else if (overlayWasActive) {
             overlayWasActive = false;
+            if (focusRetry !== undefined) window.clearTimeout(focusRetry);
+            focusRetry = undefined;
             void restoreDashboardSourceFocus();
           }
         } catch {}
@@ -558,6 +757,10 @@ function installFocusRescue(): () => void {
     );
   } catch {}
   return () => {
+    overlayActivationGeneration += 1;
+    overlayWasActive = false;
+    if (focusRetry !== undefined) window.clearTimeout(focusRetry);
+    focusRetry = undefined;
     try {
       registration?.unregister?.();
     } catch {}
@@ -567,8 +770,24 @@ function installFocusRescue(): () => void {
 // ---------------------------------------------------------------------------
 
 export default definePlugin(() => {
+  // Riempie la cache prima della prima apertura: la dashboard monta subito la
+  // finestra primaria invece di mostrarla soltanto dopo il primo effect React.
+  void preloadDashboardWindows();
   const uninstallFocusRescue = installFocusRescue();
-  const stopOpenRequestWatcher = startOpenRequestWatcher();
+  const steamFocusRecovery = installSteamNavigationFocusRecovery();
+  const stopOpenRequestWatcher = startOpenRequestWatcher(() => steamFocusRecovery.schedule("chiusura gioco"));
+  const uninstallNavigationHaptics = installNavigationHaptics();
+  const uninstallPowerMenuPatch = installPowerMenuPatch(
+    () => ({ gaming: t().restartGaming, desktop: t().restartDesktop }),
+    (mode) => confirmRestart(mode, () => { void post(`/mode/${mode}/restart`); })
+  );
+
+  void readSettings().then((settings) => {
+    if (settings) configureNavigationHaptics({
+      enabled: settings.navigationHapticsEnabled === true,
+      intensity: settings.navigationHapticsIntensity,
+    });
+  });
 
   try {
     routerHook?.addRoute?.(DASHBOARD_ROUTE, () => <DashboardPage />, { exact: true });
@@ -584,7 +803,10 @@ export default definePlugin(() => {
     onDismount() {
       clearDashboardChrome();
       uninstallFocusRescue();
+      steamFocusRecovery.uninstall();
       stopOpenRequestWatcher();
+      uninstallNavigationHaptics();
+      uninstallPowerMenuPatch();
       try {
         routerHook?.removeRoute?.(DASHBOARD_ROUTE);
       } catch (error) {

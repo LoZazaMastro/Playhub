@@ -34,7 +34,7 @@ public sealed class GamingModeService
         var script = Path.Combine(AppPaths.GamingModePackage, "install.ps1");
         if (!File.Exists(script))
         {
-            return new(false, "Non trovo install.ps1 nel pacchetto Gaming Mode locale.");
+            return new(false, "Mancano alcuni file di Gaming Mode. Reinstalla Playhub e riprova.");
         }
 
         var companionPath = ResolveDeckyPluginPath(deckyPluginsPath);
@@ -55,10 +55,11 @@ public sealed class GamingModeService
                 RemoveDeckyPlugin(deckyPluginsPath);
             }
 
-            return new(false, result.Error + result.Output);
+            Diag.Crash("GamingModeService.InstallAsync", result.Error + result.Output);
+            return new(false, "Non riesco a installare Gaming Mode. Riprova.");
         }
 
-        return new(true, "Gaming Mode e Companion per DeckyLoader sono pronti. Riavvia Steam per vedere il plugin nel menu rapido.");
+        return new(true, "Gaming Mode è pronto. Riavvia Steam per trovarlo nel menu rapido.");
     }
 
     public async Task<GamingModeOperationResult> UninstallAsync(string deckyPluginsPath)
@@ -66,7 +67,7 @@ public sealed class GamingModeService
         var script = Path.Combine(AppPaths.GamingModePackage, "uninstall.ps1");
         if (!File.Exists(script))
         {
-            return new(false, "Non trovo uninstall.ps1 nel pacchetto Gaming Mode locale.");
+            return new(false, "Mancano alcuni file di Gaming Mode. Reinstalla Playhub e riprova.");
         }
 
         var args = $"-NoProfile -ExecutionPolicy Bypass -File \"{script}\"";
@@ -74,12 +75,13 @@ public sealed class GamingModeService
         if (!result.Success)
         {
             // Keep the Companion available as an exit route until Gaming Mode is gone.
-            return new(false, result.Error + result.Output);
+            Diag.Crash("GamingModeService.UninstallAsync", result.Error + result.Output);
+            return new(false, "Non riesco a rimuovere Gaming Mode. Riprova.");
         }
 
         var companionResult = RemoveDeckyPlugin(deckyPluginsPath);
         return companionResult.Success
-            ? new(true, "Gaming Mode e Companion per DeckyLoader sono stati rimossi.")
+            ? new(true, "Gaming Mode è stato rimosso.")
             : new(false, companionResult.Message);
     }
 
@@ -264,7 +266,7 @@ public sealed class GamingModeService
         {
             if (!Directory.Exists(DeckyPluginSource))
             {
-                return new(false, "Non trovo i file del plugin Gaming Mode nel pacchetto.");
+                return new(false, "Mancano alcuni file di Gaming Mode. Reinstalla Playhub e riprova.");
             }
 
             if (string.IsNullOrWhiteSpace(deckyPluginsPath))
@@ -275,11 +277,12 @@ public sealed class GamingModeService
             Directory.CreateDirectory(deckyPluginsPath);
             var dest = Path.Combine(deckyPluginsPath, "gaming-mode");
             CopyDirectory(DeckyPluginSource, dest);
-            return new(true, "Plugin Gaming Mode installato in DeckyLoader. Riavvia Steam per vederlo nel menu rapido.");
+            return new(true, "Gaming Mode è pronto. Riavvia Steam per trovarlo nel menu rapido.");
         }
         catch (Exception ex)
         {
-            return new(false, "Installazione del plugin non riuscita: " + ex.Message);
+            Diag.Crash("GamingModeService.InstallDeckyPlugin", ex);
+            return new(false, "Non riesco a installare Gaming Mode. Riprova.");
         }
     }
 
@@ -307,7 +310,8 @@ public sealed class GamingModeService
         }
         catch (Exception ex)
         {
-            return new(false, "Rimozione del plugin non riuscita: " + ex.Message);
+            Diag.Crash("GamingModeService.RemoveDeckyPlugin", ex);
+            return new(false, "Non riesco a rimuovere Gaming Mode. Riprova.");
         }
     }
 

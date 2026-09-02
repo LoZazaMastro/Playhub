@@ -51,7 +51,7 @@
             <Image Source="Assets/wordmark.png" Width="200"
                    RenderOptions.BitmapScalingMode="HighQuality"/>
             <Border Width="64" Height="4" CornerRadius="2" Background="#FFCB0F" Margin="0,24,0,0"/>
-            <TextBlock x:Name="VersionText" Text="versione 1.0.0" Foreground="#8AFFFFFF"
+            <TextBlock x:Name="VersionText" Text="versione 1.3.0" Foreground="#8AFFFFFF"
                        FontSize="12" HorizontalAlignment="Center" Margin="0,16,0,0"/>
           </StackPanel>
         </Border>
@@ -134,8 +134,6 @@
                         Content="Crea un collegamento sul desktop" IsChecked="True"/>
               <CheckBox x:Name="ChkStartMenu" Style="{StaticResource DarkCheck}"
                         Content="Aggiungi al menu Start" IsChecked="True" Margin="0,12,0,0"/>
-              <CheckBox x:Name="ChkLaunchEnd" Style="{StaticResource DarkCheck}"
-                        Content="Avvia Playhub al termine dell'installazione" IsChecked="True" Margin="0,12,0,0"/>
             </StackPanel>
           </StackPanel>
 
@@ -161,6 +159,9 @@
                        FontSize="25" FontWeight="SemiBold" Margin="0,18,0,0"/>
             <TextBlock x:Name="DoneSub" Text="Playhub è pronto all'uso." Foreground="#A8A8A8"
                        FontSize="13.5" TextWrapping="Wrap" Margin="0,8,0,0"/>
+            <CheckBox x:Name="ChkLaunchEnd" Style="{StaticResource DarkCheck}"
+                      Content="Apri Playhub ora" IsChecked="True" Margin="0,18,0,0"
+                      Visibility="Collapsed"/>
           </StackPanel>
 
           </Grid>

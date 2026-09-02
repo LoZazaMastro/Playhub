@@ -1,0 +1,662 @@
+{
+  "Strumenti e utilità": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.PluginDiscovery.cs:71"
+  },
+  "Personalizzazione e media": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.PluginDiscovery.cs:72"
+  },
+  "Libreria e giochi": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.PluginDiscovery.cs:73"
+  },
+  "Social e community": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.PluginDiscovery.cs:74"
+  },
+  "Sistema e hardware": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.PluginDiscovery.cs:75"
+  },
+  "I plugin di Playhub": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.PluginDiscovery.cs:81"
+  },
+  "Mica": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:276"
+  },
+  "Acrylic": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:277"
+  },
+  "Sfondo pieno": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:278"
+  },
+  "Plugin Store": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:284"
+  },
+  "Desktop": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:293"
+  },
+  "Gaming": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:294"
+  },
+  "Personalizzato": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:308"
+  },
+  "Benvenuto": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:527"
+  },
+  "Supporto": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:534"
+  },
+  "Benvenuto in Playhub": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:942"
+  },
+  "Il tuo PC da gioco, con l'anima di una console.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:942"
+  },
+  "Installare Decky è semplice, come dovrebbe essere": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:943"
+  },
+  "Playhub ti guida passo dopo passo e installa DeckyLoader in modo semplice.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:943"
+  },
+  "I migliori plugin sono tutti qui": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:944"
+  },
+  "Scopri, installa, aggiorna, e disinstalla i plugin di Playhub, quelli del Decky Store e i progetti indipendenti pubblicati su GitHub.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:944"
+  },
+  "Il tuo PC è la migliore console mai creata": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:945"
+  },
+  "Con Playhub Gaming Mode puoi scegliere se avviare il PC in Desktop Mode, la classica esperienza Windows, oppure in Gaming Mode: un'esperienza da console che ottimizza i processi del PC, esclude i processi non necessari per giocare e mette Steam Big Picture al centro di tutto, così puoi dimenticare mouse e tastiera.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:945"
+  },
+  "Tutti i tuoi giochi, una sola libreria": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:946"
+  },
+  "Scansiona i giochi di Xbox, Epic e GOG, oppure le tue cartelle, e aggiungili a Steam con il nome e gli artwork corretti.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:946"
+  },
+  "Scegli il tuo stile": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:947"
+  },
+  "Scegli un colore per la tua app Playhub.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:947"
+  },
+  "È il momento di giocare come mai prima d'ora": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:948"
+  },
+  "Scopri, prova, personalizza, gioca e divertiti. Questo è lo spirito di Playhub.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:948"
+  },
+  "Esplora Decky": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1392"
+  },
+  "Aprilo dal menu rapido di Steam con il controller o la tastiera.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1393"
+  },
+  "Non trovato": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1477"
+  },
+  "Attiva": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1482"
+  },
+  "Da attivare": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1482"
+  },
+  "Scopri": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1756"
+  },
+  "Gestisci": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1760"
+  },
+  "Apri lo store di Decky dal Quick Access Menu e scopri altri plugin.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1933"
+  },
+  "I plugin dello store di Decky sono sviluppati per Linux, a volte potrebbero non funzionare come previsto su Windows.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1935"
+  },
+  "Apri il plugin Gaming Mode": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1985"
+  },
+  "Apri Gaming Mode dal menu rapido di Decky, senza lasciare il controller.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1986"
+  },
+  "Se il menu rapido non risponde, chiudi Steam per tornare al desktop. Puoi anche tenere premuto Shift durante l'accesso a Windows.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:1988"
+  },
+  "Il desktop di Windows, con mouse e tastiera.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2033"
+  },
+  "Big Picture a tutto schermo, pronto per il controller.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2041"
+  },
+  "Disattivata": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2554"
+  },
+  "Tastiera": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2625"
+  },
+  "Importa giochi Xbox e Microsoft Store": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2836"
+  },
+  "Trova i giochi Xbox, Game Pass e Microsoft Store installati e aggiungili a Steam.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2837"
+  },
+  "Importa giochi da Epic Games Store": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2864"
+  },
+  "Trova i giochi installati con Epic Games Launcher e aggiungili a Steam.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2865"
+  },
+  "Importa giochi da GOG": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2890"
+  },
+  "Trova i giochi GOG installati con Galaxy o da un installer offline e aggiungili a Steam.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:2891"
+  },
+  "Risultati": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:4079"
+  },
+  "Tutti i plugin": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:4083"
+  },
+  "Plugin precedente": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:4188"
+  },
+  "Plugin successivo": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:4190"
+  },
+  "Visualizzazione a schede": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:4693"
+  },
+  "Visualizzazione elenco": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:4694"
+  },
+  "Data di aggiunta": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:4816"
+  },
+  "Data di aggiornamento": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:4817"
+  },
+  "Nome": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:4818"
+  },
+  "Descrizione": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:6703"
+  },
+  "Questa versione è disponibile su GitHub.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:6714"
+  },
+  "Copertina": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:7702"
+  },
+  "Banner": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:7703"
+  },
+  "Logo": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:7705"
+  },
+  "Icona": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:7706"
+  },
+  "Cover": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:7786"
+  },
+  "Windows ha impedito la scrittura del file shortcuts di Steam. Non dipende dal fatto che Steam sia aperto: è la protezione \"Accesso alle cartelle controllato\" di Sicurezza di Windows che blocca questa app (UWPHook funziona perché è già tra le app consentite). Per risolvere: Sicurezza di Windows → Protezione da virus e minacce → Gestisci protezione ransomware → Accesso alle cartelle controllato → Consenti app tramite Accesso alle cartelle controllato → Aggiungi Playhub.exe. Poi riprova.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:8974"
+  },
+  "Rimozione non riuscita: ": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:9015"
+  },
+  "Windows ha impedito la scrittura del file shortcuts di Steam. Consenti Playhub in Accesso alle cartelle controllato e riprova. ": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence MainWindow.xaml.cs:9018"
+  },
+  "Sistema": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Models/PlayhubSettings.cs:7"
+  },
+  "CSS Loader non installato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:37"
+  },
+  "La cartella CSS Loader esistente non supera la verifica.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:51"
+  },
+  "CSS Loader {0} installato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:53"
+  },
+  "La cartella CSS Loader esistente non è leggibile.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:57"
+  },
+  "Cerco l'ultima versione…": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:77"
+  },
+  "Non riesco a verificare il download di CSS Loader. Riprova più tardi.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:82"
+  },
+  "Download completato. Preparo l'installazione…": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:86"
+  },
+  "CSS Loader {0} è pronto.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:122"
+  },
+  "CSS Loader {0} è pronto. Riavvia Steam per usarlo.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:124"
+  },
+  "Installazione annullata senza modificare CSS Loader.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:129"
+  },
+  "CSS Loader non è installato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:152"
+  },
+  "La cartella esistente non è un'installazione verificata di CSS Loader.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:162"
+  },
+  "Non riesco a rimuovere CSS Loader. Chiudi Steam e riprova.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:167"
+  },
+  "CSS Loader è stato disinstallato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:168"
+  },
+  "Pacchetto incompleto.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:187"
+  },
+  "Pacchetto valido.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:194"
+  },
+  "Manifest non valido.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:195"
+  },
+  "Manifest non leggibile.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:199"
+  },
+  "Timeout CSS Loader 2.1.2 non riconosciuto.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:244"
+  },
+  "Costanti browser hook CSS Loader 2.1.2 non riconosciute.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:254"
+  },
+  "Inizializzazione tab CSS Loader 2.1.2 non riconosciuta.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:276"
+  },
+  "Stato browser hook CSS Loader 2.1.2 non riconosciuto.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:293"
+  },
+  "Metodi browser hook CSS Loader 2.1.2 non riconosciuti.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:354"
+  },
+  "Chiusura browser hook CSS Loader 2.1.2 non riconosciuta.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:368"
+  },
+  "Discovery tab CSS Loader 2.1.2 non riconosciuta.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:383"
+  },
+  "Evento creazione tab CSS Loader 2.1.2 non riconosciuto.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:407"
+  },
+  "Evento aggiornamento tab CSS Loader 2.1.2 non riconosciuto.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:430"
+  },
+  "Evento attach tab CSS Loader 2.1.2 non riconosciuto.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:449"
+  },
+  "Controllo tab CSS Loader 2.1.2 non riconosciuto.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:534"
+  },
+  "Scarico CSS Loader · {0}%": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:625"
+  },
+  "Preparo CSS Loader · {0}%": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/CssLoaderInstallService.cs:704"
+  },
+  "ultima versione": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:92"
+  },
+  "La versione installata di DeckyLoader è già la più recente.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:117"
+  },
+  "versione con console": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:125"
+  },
+  "build {0}": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:138"
+  },
+  "debug CEF attivato": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:172"
+  },
+  "debug CEF non riuscito": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:172"
+  },
+  "autostart impostato e loader avviato": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:173"
+  },
+  "autostart non riuscito": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:173"
+  },
+  "DeckyLoader è pronto. Riavvia Steam per attivarlo.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:176"
+  },
+  "DeckyLoader è stato rimosso. I plugin installati restano al loro posto.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:209"
+  },
+  "DeckyLoader non era installato. I collegamenti rimasti sono stati rimossi.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/DeckyInstallerService.cs:212"
+  },
+  "Non trovo la cartella di Steam.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:21"
+  },
+  "Manca un file necessario. Reinstalla Playhub e riprova.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:27"
+  },
+  "Aggiornamenti del client di Steam bloccati.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:39"
+  },
+  "Aggiornamenti del client di Steam riattivati.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:54"
+  },
+  "Gli aggiornamenti del client di Steam erano già attivi.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:57"
+  },
+  "Profilo Playhub installato. Le altre opzioni di CSS Loader non sono cambiate.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:102"
+  },
+  "Il profilo Playhub non è installato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:114"
+  },
+  "Profilo Playhub rimosso da CSS Loader.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:132"
+  },
+  "Non riesco a rimuovere il profilo Playhub. Riprova.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:137"
+  },
+  "Non trovo alcun profilo Steam su questo PC.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:146"
+  },
+  "Backup degli artwork creato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:163"
+  },
+  "Non ho trovato artwork Steam da salvare.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:164"
+  },
+  "Non ci sono backup degli artwork da ripristinare.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:172"
+  },
+  "Artwork di Steam ripristinati.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/ExtraService.cs:199"
+  },
+  "Mancano alcuni file di Gaming Mode. Reinstalla Playhub e riprova.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/GamingModeService.cs:37"
+  },
+  "Non riesco a installare Gaming Mode. Riprova.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/GamingModeService.cs:59"
+  },
+  "Gaming Mode è pronto. Riavvia Steam per trovarlo nel menu rapido.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/GamingModeService.cs:62"
+  },
+  "Non riesco a rimuovere Gaming Mode. Riprova.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/GamingModeService.cs:79"
+  },
+  "Gaming Mode è stato rimosso.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/GamingModeService.cs:84"
+  },
+  "Plugin Gaming Mode rimosso da DeckyLoader.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/GamingModeService.cs:309"
+  },
+  "Manifest senza versione": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/PluginCatalogService.cs:21"
+  },
+  "Rete e strumenti": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/PluginCatalogService.cs:651"
+  },
+  "No content.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/PluginCatalogService.cs:824"
+  },
+  "Plugin installato localmente e non ancora identificato dal catalogo Playhub.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/PluginCatalogService.cs:1809"
+  },
+  "Controllo i file di Playhub…": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:33"
+  },
+  "Il pacchetto Gaming Mode incluso in Playhub è incompleto: reinstalla Playhub per ripristinarlo.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:39"
+  },
+  "Controllo i componenti di Gaming Mode…": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:43"
+  },
+  "Sistemo Gaming Mode…": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:48"
+  },
+  "Gaming Mode è stato reinstallato/aggiornato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:52"
+  },
+  "Non sono riuscito a ripristinare Gaming Mode. Riprova o reinstalla Playhub.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:56"
+  },
+  "Verifico la configurazione di Gaming Mode…": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:61"
+  },
+  "La configurazione di Gaming Mode è danneggiata. Reinstalla Playhub.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:72"
+  },
+  "Controllo il plugin Gaming Mode per Decky…": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:76"
+  },
+  "Sistemo il plugin Gaming Mode per Decky…": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:81"
+  },
+  "Il plugin Gaming Mode per Decky è stato ripristinato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:86"
+  },
+  "Il plugin Gaming Mode per Decky non è stato ripristinato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:90"
+  },
+  "Controllo il servizio Gaming Mode…": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:95"
+  },
+  "Riavvio il servizio Gaming Mode…": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:99"
+  },
+  "Il servizio Gaming Mode è stato riavviato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:110"
+  },
+  "Il servizio Gaming Mode non risponde. Prova a riavviare il PC.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:114"
+  },
+  "Verifico la modalità di avvio…": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:119"
+  },
+  "Controllo UWPHook…": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:129"
+  },
+  "Installo UWPHook…": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:134"
+  },
+  "UWPHook è stato reinstallato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:138"
+  },
+  "UWPHook non è stato reinstallato (pacchetto non disponibile).": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:142"
+  },
+  "Controllo completato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:146"
+  },
+  "L'avvio in modalità Desktop è stato ripristinato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:260"
+  },
+  "L'avvio in modalità Gaming è stato ripristinato.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/RepairService.cs:267"
+  },
+  "Seleziona almeno un gioco da importare.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/UwpXboxService.cs:691"
+  },
+  "Ogni gioco selezionato deve avere un nome.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/UwpXboxService.cs:696"
+  },
+  "Non trovo il componente UWPHook integrato. Reinstalla Playhub e riprova.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/UwpXboxService.cs:717"
+  },
+  "Sicurezza di Windows impedisce a Playhub di aggiornare la libreria. Consenti Playhub in “Accesso alle cartelle controllato”, poi riprova.": {
+    "Category": "ui",
+    "Reason": "Coordinator reviewed source occurrence Services/UwpXboxService.cs:829"
+  }
+}
