@@ -197,8 +197,8 @@
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "I tuoi plugin preferiti, direttamente nel menu rapido.",
-      "longDescription": "Shortcuts porta i plugin Decky che usi di pi\u00F9 nella barra principale del menu rapido. Scegli i pannelli compatibili, assegna un\u0027icona e riordinali come preferisci, senza rimuovere la voce originale da Decky.\n\n## Cosa fa\n\u2022 Trasforma i pannelli QAM dei plugin Decky caricati in tab indipendenti.\n\u2022 Mantiene anche l\u0027accesso originale dentro Decky.\n\u2022 Permette di scegliere l\u0027icona originale o una delle icone Tabler incluse.\n\u2022 Riordina e rimuove solo le tab create da Shortcuts.\n\u2022 Conserva le preferenze e ripristina automaticamente i plugin temporaneamente non disponibili.\n\n## Nota\n\u2022 Usa il registro interno delle tab QAM di Decky, perch\u00E9 non esiste ancora un\u0027API pubblica per creare tab principali indipendenti. Un aggiornamento di Decky potrebbe richiedere un adeguamento del plugin.",
+      "shortDescription": "Your favourite plugins, directly in the Quick Access Menu.",
+      "longDescription": "Shortcuts brings the Decky plugins you use most into the main Quick Access Menu tab bar. Choose compatible panels, assign an icon and arrange them as you like without removing their original Decky entries.\n\n## What it does\n\u2022 Turns loaded Decky plugin QAM panels into independent tabs.\n\u2022 Keeps the original access point inside Decky.\n\u2022 Lets you use the original icon or choose from the included Tabler icons.\n\u2022 Reorders and removes only the tabs created by Shortcuts.\n\u2022 Saves your preferences and automatically restores temporarily unavailable plugins.\n\n## Note\n\u2022 It uses Decky\u0027s internal QAM tab registry because there is no public API for independent top-level tabs yet. A future Decky update may require an adjustment to the plugin.",
       "coverUrl": "https://raw.githubusercontent.com/LoZazaMastro/Shortcuts/main/assets/cover.jpg",
       "iconGlyph": "\uE71B",
       "catalogStatus": "playhub",
@@ -206,13 +206,14 @@
       "catalogPluginId": 0,
       "compatibility": "",
       "keywords": [
-        "shortcut",
-        "tab",
+        "shortcuts",
+        "tabs",
         "QAM",
+        "quick",
+        "access",
         "menu",
-        "rapido",
-        "plugin",
-        "icone",
+        "plugins",
+        "icons",
         "Decky"
       ],
       "aliases": [
@@ -5386,5 +5387,5 @@
       "catalogPluginId": 0
     }
   ],
-  "catalogRevision": 2
+  "catalogRevision": 3
 }
