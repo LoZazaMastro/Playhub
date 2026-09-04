@@ -37,11 +37,13 @@ namespace Playhub
         private readonly ObservableCollection<DeckyPluginInfo> _plugins = new();
         private readonly TestCatalog _catalog = new();
         private readonly TestSettings _settings = new();
-        private int _renders, _errors;
+        private int _renders, _errors, _pluginUpdateNotifications;
         private Microsoft.UI.Dispatching.TestDispatcher DispatcherQueue { get; } = new();
         private sealed class TestSettings { public string PluginRoot = ""; public string DeckyPluginsPath = ""; }
         private sealed class TestCatalog
         {
+            public Func<Task<bool>> ReleaseRefresher = () => Task.FromResult(false);
+            public Task<bool> RefreshReleasesAsync(IReadOnlyList<DeckyPluginInfo> plugins) => ReleaseRefresher();
             public Func<string, string, RemotePluginCatalog, Task<IReadOnlyList<DeckyPluginInfo>>> Loader =
                 (root, installed, catalog) => new PluginCatalogService().LoadAsync(root, installed, catalog);
             public Task<IReadOnlyList<DeckyPluginInfo>> LoadAsync(string root, string installed, RemotePluginCatalog catalog) => Loader(root, installed, catalog);
@@ -57,6 +59,7 @@ namespace Playhub
             _renders++;
         }
         private static void RefreshOpenPluginPage() { }
+        private void ShowPluginUpdatesNotification() => _pluginUpdateNotifications++;
         private static bool IsIntegratedGamingModePlugin(DeckyPluginInfo plugin) => plugin.Name == "Gaming Mode";
         private Task RefreshPluginsAsync() => RefreshRemoteAwarePluginsAsync();
 
@@ -116,6 +119,15 @@ namespace Playhub
             IntegrationTests.Check(window._visiblePluginCatalogRevision == 3 && window._renders == 3, "Deferred revision not applied on natural refresh.");
             window.DispatcherQueue.RunNext();
             await WaitFor(() => !window._remotePluginCatalogRefreshQueued);
+            window._catalog.ReleaseRefresher = () => Task.FromResult(true);
+            window.QueueRemotePluginCatalogRefresh();
+            window.DispatcherQueue.RunNext();
+            await WaitFor(() => !window._remotePluginCatalogRefreshQueued);
+            IntegrationTests.Check(window._renders == 4 && window._visiblePluginCatalogRevision == 3,
+                "New plugin releases did not refresh the UI when catalog revision stayed unchanged.");
+            IntegrationTests.Check(window._pluginUpdateNotifications == window._renders,
+                "Plugin update notification was not refreshed after background release discovery.");
+            window._catalog.ReleaseRefresher = () => Task.FromResult(false);
 #endif
             var original = window._plugins[0];
             var renders = window._renders;

@@ -1,4 +1,5 @@
 {
+  "Aggiorna tutto": "Aggiorna tutto",
   "Catalog HTTP {0}.": "Errore HTTP {0} del catalogo.",
   "Catalog exceeds the byte limit.": "Il catalogo supera il limite di dimensione in byte.",
   "Catalog revision rollback rejected.": "Ripristino di una revisione precedente del catalogo rifiutato.",

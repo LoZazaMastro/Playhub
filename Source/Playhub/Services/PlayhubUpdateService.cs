@@ -4,6 +4,9 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using System.Net;
+using System.Text.RegularExpressions;
 
 namespace Playhub.Services;
 
@@ -15,7 +18,6 @@ namespace Playhub.Services;
 public sealed class PlayhubUpdateService
 {
     private const string PublicInstallerName = "Playhub Setup.exe";
-    private const string LegacyInstallerPrefix = "Playhub-Setup";
     private static readonly TimeSpan DownloadStallTimeout = TimeSpan.FromSeconds(60);
     private static readonly HttpClient Http = CreateHttpClient();
     private readonly TimeProvider _downloadTimeProvider;
@@ -56,6 +58,7 @@ public sealed class PlayhubUpdateService
     /// </summary>
     public async Task<UpdateInfo?> CheckAsync(string repository, string currentVersion, string? releaseTag = null)
     {
+        releaseTag = string.IsNullOrWhiteSpace(releaseTag) ? null : releaseTag;
         if (string.IsNullOrWhiteSpace(repository))
         {
             return null;
@@ -81,7 +84,11 @@ public sealed class PlayhubUpdateService
 
             var url = root.TryGetProperty("html_url", out var h) ? h.GetString() : null;
             var notes = root.TryGetProperty("body", out var b) ? b.GetString() : null;
+            if (string.IsNullOrWhiteSpace(notes))
+                notes = await ReadReleaseNotesFromFeedAsync(repository, tag);
             var asset = FindInstallerAsset(root, tag);
+            if (string.IsNullOrWhiteSpace(asset.DownloadUrl))
+                asset = await FindPublishedInstallerAsync(repository, tag);
 
             var latest = ParseVersion(tag);
             var current = ParseVersion(currentVersion);
@@ -129,9 +136,10 @@ public sealed class PlayhubUpdateService
             var current = ParseVersion(currentVersion);
             var isNewer = latest is not null && current is not null && latest > current;
             var version = NormalizeTag(tag);
-            var guessedAsset = PublicInstallerName;
-            var guessedUrl = $"https://github.com/{repository.Trim('/')}/releases/download/{Uri.EscapeDataString(tag)}/{Uri.EscapeDataString(guessedAsset)}";
-            return new UpdateInfo(isNewer, version, currentVersion, releaseUrl, null, guessedUrl, guessedAsset, 0, null);
+            var asset = await FindPublishedInstallerAsync(repository, tag);
+            var notes = await ReadReleaseNotesFromFeedAsync(repository, tag);
+            return new UpdateInfo(isNewer, version, currentVersion, releaseUrl, notes,
+                asset.DownloadUrl, asset.Name, asset.Size, asset.Digest);
         }
         catch
         {
@@ -139,7 +147,62 @@ public sealed class PlayhubUpdateService
         }
     }
 
+    private static async Task<string?> ReadReleaseNotesFromFeedAsync(string repository, string tag)
+    {
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+            var xml = await Http.GetStringAsync(
+                $"https://github.com/{repository.Trim('/')}/releases.atom", timeout.Token);
+            var feed = XDocument.Parse(xml);
+            XNamespace atom = "http://www.w3.org/2005/Atom";
+            var expectedPath = $"/{repository.Trim('/')}/releases/tag/{tag}";
+            // The stable redirect/API selects the version. The feed supplies only
+            // that release's rich text, never a different or prerelease version.
+            var entry = feed.Root?.Elements(atom + "entry").FirstOrDefault(item =>
+                item.Elements(atom + "link").Any(link =>
+                    Uri.TryCreate((string?)link.Attribute("href"), UriKind.Absolute, out var uri) &&
+                    uri.Scheme == Uri.UriSchemeHttps &&
+                    string.Equals(uri.Host, "github.com", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(Uri.UnescapeDataString(uri.AbsolutePath), expectedPath, StringComparison.Ordinal)));
+            var content = entry?.Element(atom + "content");
+            var notes = content?.Value;
+            // Atom's HTML is handled by the same description reader as API Markdown.
+            return string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+        }
+        catch { return null; }
+    }
+
     private static string NormalizeTag(string tag) => tag.Trim().TrimStart('v', 'V');
+
+    private static bool IsInstallerAssetName(string? name) =>
+        !string.IsNullOrWhiteSpace(name) && Regex.IsMatch(name,
+            @"^Playhub[ ._-]Setup(?:[ ._-]v?\d+(?:\.\d+){1,3})?\.exe$",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    private static async Task<(string? Name, string? DownloadUrl, long Size, string? Digest)>
+        FindPublishedInstallerAsync(string repository, string tag)
+    {
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+            var html = await Http.GetStringAsync(
+                $"https://github.com/{repository.Trim('/')}/releases/expanded_assets/{Uri.EscapeDataString(tag)}", timeout.Token);
+            var prefix = $"/{repository.Trim('/')}/releases/download/{tag}/";
+            foreach (Match match in Regex.Matches(html, "href\\s*=\\s*[\"']([^\"']+)[\"']", RegexOptions.IgnoreCase))
+            {
+                var href = WebUtility.HtmlDecode(match.Groups[1].Value);
+                if (!Uri.TryCreate(new Uri("https://github.com"), href, out var uri) ||
+                    uri.Scheme != Uri.UriSchemeHttps || uri.Host != "github.com") continue;
+                var path = Uri.UnescapeDataString(uri.AbsolutePath);
+                if (!path.StartsWith(prefix, StringComparison.Ordinal)) continue;
+                var name = path[prefix.Length..];
+                if (IsInstallerAssetName(name)) return (name, uri.AbsoluteUri, 0, null);
+            }
+        }
+        catch { }
+        return (null, null, 0, null);
+    }
 
     public async Task<string> DownloadInstallerAsync(
         UpdateInfo info,
@@ -275,10 +338,7 @@ public sealed class PlayhubUpdateService
                 Digest = asset.TryGetProperty("digest", out var digest) ? digest.GetString() : null
             })
             .Where(asset =>
-                !string.IsNullOrWhiteSpace(asset.Name) &&
-                asset.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
-                (string.Equals(asset.Name, PublicInstallerName, StringComparison.OrdinalIgnoreCase) ||
-                 asset.Name.StartsWith(LegacyInstallerPrefix, StringComparison.OrdinalIgnoreCase)))
+                IsInstallerAssetName(asset.Name))
             .OrderByDescending(asset =>
                 string.Equals(asset.Name, PublicInstallerName, StringComparison.OrdinalIgnoreCase))
             .ThenByDescending(asset =>

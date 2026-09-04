@@ -61,6 +61,7 @@ public sealed partial class MainWindow
             _pluginManagementDirty = true;
             RenderVisiblePluginView();
             RefreshOpenPluginPage();
+            ShowPluginUpdatesNotification();
             QueueRemotePluginCatalogRefresh();
         }
         catch
@@ -80,8 +81,9 @@ public sealed partial class MainWindow
             {
                 var bundled = await BundledPluginCatalogAsync();
                 var refreshed = await _remotePluginCatalog!.RefreshAsync(bundled);
+                var releasesChanged = await _catalog.RefreshReleasesAsync(_plugins.ToArray());
                 // No rebuild for unchanged revisions or while install/uninstall owns objects.
-                if (refreshed.Catalog.CatalogRevision > _visiblePluginCatalogRevision && !PluginCatalogOperationsActive)
+                if ((releasesChanged || refreshed.Catalog.CatalogRevision > _visiblePluginCatalogRevision) && !PluginCatalogOperationsActive)
                     await RefreshPluginsAsync();
             }
             catch (Exception ex) { Diag.Step("Remote plugin catalog: " + ex.Message); }

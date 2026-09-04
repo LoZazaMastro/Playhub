@@ -12,6 +12,6 @@
     <Compile Include="../Playhub/Services/RemotePluginCatalogService.cs" Link="RemotePluginCatalogService.cs" />
     <Compile Include="../Playhub/Models/DeckyPluginInfo.cs" Link="DeckyPluginInfo.cs" />
     <Compile Include="../Playhub/Models/RemotePluginCatalog.cs" Link="RemotePluginCatalog.cs" />
-    <Compile Include="PluginMediaTests.cs" />
+    <Compile Include="Program.cs" />
   </ItemGroup>
 </Project>
