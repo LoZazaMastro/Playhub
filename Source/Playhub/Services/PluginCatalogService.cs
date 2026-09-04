@@ -48,7 +48,7 @@ public sealed partial class PluginCatalogService
             ["Now-Playing"] = "musica player Spotify YouTube Music sessione media surround",
             ["Playhub-Surround"] = "surround stereo 5.1 7.1 altoparlanti audio",
             ["Quick-Settings"] = "volume microfono HDR display impostazioni rapide Windows",
-            ["Shortcuts"] = "shortcut tab QAM menu rapido plugin icone Decky",
+            ["Shortcuts"] = "shortcuts tabs QAM quick access menu plugins icons Decky",
             ["Playhub-Notifications"] = "notifiche toast achievement temi suoni overlay",
             ["News"] = "news RSS Atom feed articoli informazioni",
             ["Weather"] = "meteo previsioni temperatura Open-Meteo",
@@ -182,18 +182,18 @@ public sealed partial class PluginCatalogService
             "Shortcuts",
             "shortcuts",
             ((char)0xE71B).ToString(),
-            "I tuoi plugin preferiti, direttamente nel menu rapido.",
-            @"Shortcuts porta i plugin Decky che usi di più nella barra principale del menu rapido. Scegli i pannelli compatibili, assegna un'icona e riordinali come preferisci, senza rimuovere la voce originale da Decky.
+            "Your favourite plugins, directly in the Quick Access Menu.",
+            @"Shortcuts brings the Decky plugins you use most into the main Quick Access Menu tab bar. Choose compatible panels, assign an icon and arrange them as you like without removing their original Decky entries.
 
-## Cosa fa
-• Trasforma i pannelli QAM dei plugin Decky caricati in tab indipendenti.
-• Mantiene anche l'accesso originale dentro Decky.
-• Permette di scegliere l'icona originale o una delle icone Tabler incluse.
-• Riordina e rimuove solo le tab create da Shortcuts.
-• Conserva le preferenze e ripristina automaticamente i plugin temporaneamente non disponibili.
+## What it does
+• Turns loaded Decky plugin QAM panels into independent tabs.
+• Keeps the original access point inside Decky.
+• Lets you use the original icon or choose from the included Tabler icons.
+• Reorders and removes only the tabs created by Shortcuts.
+• Saves your preferences and automatically restores temporarily unavailable plugins.
 
-## Nota
-• Usa il registro interno delle tab QAM di Decky, perché non esiste ancora un'API pubblica per creare tab principali indipendenti. Un aggiornamento di Decky potrebbe richiedere un adeguamento del plugin."),
+## Note
+• It uses Decky's internal QAM tab registry because there is no public API for independent top-level tabs yet. A future Decky update may require an adjustment to the plugin."),
         new PluginDefinition(
             "Playhub-Notifications",
             "Playhub Notifications",
@@ -3042,6 +3042,19 @@ public sealed partial class PluginCatalogService
             },
             ["Shortcuts"] = new Dictionary<string, PluginText>(StringComparer.OrdinalIgnoreCase)
             {
+                ["it"] = new PluginText(
+                    "I tuoi plugin preferiti, direttamente nel menu rapido.",
+                    @"Shortcuts porta i plugin Decky che usi di più nella barra principale del menu rapido. Scegli i pannelli compatibili, assegna un'icona e riordinali come preferisci, senza rimuovere la voce originale da Decky.
+
+## Cosa fa
+• Trasforma i pannelli QAM dei plugin Decky caricati in tab indipendenti.
+• Mantiene anche l'accesso originale dentro Decky.
+• Permette di scegliere l'icona originale o una delle icone Tabler incluse.
+• Riordina e rimuove solo le tab create da Shortcuts.
+• Conserva le preferenze e ripristina automaticamente i plugin temporaneamente non disponibili.
+
+## Nota
+• Usa il registro interno delle tab QAM di Decky, perché non esiste ancora un'API pubblica per creare tab principali indipendenti. Un aggiornamento di Decky potrebbe richiedere un adeguamento del plugin."),
                 ["en"] = new PluginText(
                     "Your favourite plugins, directly in the Quick Access Menu.",
                     @"Shortcuts brings the Decky plugins you use most into the main Quick Access Menu tab bar. Choose compatible panels, assign an icon and arrange them as you like without removing their original Decky entries.
@@ -3984,8 +3997,7 @@ public sealed partial class PluginCatalogService
     private static PluginText? ResolveTranslation(string repositoryName, string languageKey)
     {
         if (string.IsNullOrWhiteSpace(repositoryName) ||
-            string.IsNullOrWhiteSpace(languageKey) ||
-            languageKey == "it")
+            string.IsNullOrWhiteSpace(languageKey))
         {
             return null;
         }

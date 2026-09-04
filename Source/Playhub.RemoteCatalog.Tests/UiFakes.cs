@@ -76,7 +76,7 @@ namespace Playhub
             var extra = bundled.Plugins[0] with { Repository = "LoZazaMastro/Ui-New", RepositoryUrl = "https://github.com/LoZazaMastro/Ui-New",
                 Name = "UI New", InstallFolder = "ui-new", Aliases = Array.Empty<string>() };
             fixture.Handler.Respond = (_, _) => Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
-            { Content = new ByteArrayContent(IntegrationTests.Serialize(new RemotePluginCatalog { CatalogRevision = 3, Plugins = new[] { extra } })) });
+            { Content = new ByteArrayContent(IntegrationTests.Serialize(new RemotePluginCatalog { CatalogRevision = 4, Plugins = new[] { extra } })) });
             window._remotePluginCatalog = fixture.Service;
 #endif
             AppPaths.Reads = 0;
@@ -89,7 +89,7 @@ namespace Playhub
             IntegrationTests.Check(fixture.Handler.Calls == 0 && window.DispatcherQueue.Pending.Count == 1, "Network ran before first render.");
             window.DispatcherQueue.RunNext();
             await WaitFor(() => !window._remotePluginCatalogRefreshQueued);
-            IntegrationTests.Check(window._renders == 2 && window._plugins.Count == 175 && window._visiblePluginCatalogRevision == 3,
+            IntegrationTests.Check(window._renders == 2 && window._plugins.Count == 175 && window._visiblePluginCatalogRevision == 4,
                 "New remote revision did not refresh visible catalog.");
             window.QueueRemotePluginCatalogRefresh();
             window.DispatcherQueue.RunNext();
@@ -104,7 +104,7 @@ namespace Playhub
                 entered.SetResult();
                 await release.Task.WaitAsync(token);
                 return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
-                { Content = new ByteArrayContent(IntegrationTests.Serialize(new RemotePluginCatalog { CatalogRevision = 4, Plugins = new[] { extra with { Version = "3.0.0" } } })) };
+                { Content = new ByteArrayContent(IntegrationTests.Serialize(new RemotePluginCatalog { CatalogRevision = 5, Plugins = new[] { extra with { Version = "3.0.0" } } })) };
             };
             window.QueueRemotePluginCatalogRefresh();
             window.DispatcherQueue.RunNext();
@@ -116,14 +116,14 @@ namespace Playhub
             IntegrationTests.Check(window._renders == 2 && ReferenceEquals(window._plugins[0], protectedObject), "Refresh replaced an installing object.");
             window._pluginInstallOperations.Clear();
             await window.RefreshPluginsAsync();
-            IntegrationTests.Check(window._visiblePluginCatalogRevision == 4 && window._renders == 3, "Deferred revision not applied on natural refresh.");
+            IntegrationTests.Check(window._visiblePluginCatalogRevision == 5 && window._renders == 3, "Deferred revision not applied on natural refresh.");
             window.DispatcherQueue.RunNext();
             await WaitFor(() => !window._remotePluginCatalogRefreshQueued);
             window._catalog.ReleaseRefresher = () => Task.FromResult(true);
             window.QueueRemotePluginCatalogRefresh();
             window.DispatcherQueue.RunNext();
             await WaitFor(() => !window._remotePluginCatalogRefreshQueued);
-            IntegrationTests.Check(window._renders == 4 && window._visiblePluginCatalogRevision == 4,
+            IntegrationTests.Check(window._renders == 4 && window._visiblePluginCatalogRevision == 5,
                 "New plugin releases did not refresh the UI when catalog revision stayed unchanged.");
             IntegrationTests.Check(window._pluginUpdateNotifications == window._renders,
                 "Plugin update notification was not refreshed after background release discovery.");

@@ -57,7 +57,7 @@ internal static class BundledManifest
             });
         }
         foreach (var external in catalog["plugins"]!.AsArray()) builtIns.Add(external!.DeepClone());
-        catalog["catalogRevision"] = 2;
+        catalog["catalogRevision"] = 3;
         catalog["plugins"] = builtIns;
         return catalog;
     }
