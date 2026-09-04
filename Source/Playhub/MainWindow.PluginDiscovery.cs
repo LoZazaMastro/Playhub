@@ -73,7 +73,7 @@ public sealed partial class MainWindow
     private static string PluginDiscoveryCategory(DeckyPluginInfo plugin) => plugin.IsPlayhubPlugin
         ? plugin.Name switch
         {
-            "Quick Settings" or "Launch Curtain" or "Playhub Notifications" or "Playhub Surround" or "Weather" => "Strumenti e utilità",
+            "Quick Settings" or "Shortcuts" or "Launch Curtain" or "Playhub Notifications" or "Playhub Surround" or "Weather" => "Strumenti e utilità",
             "Playhub Artworks" or "Now Playing" or "ThemeDeck" or "TrailerHero" => "Personalizzazione e media",
             "Playhub Metadata" => "Libreria e giochi",
             "News" => "Social e community",
