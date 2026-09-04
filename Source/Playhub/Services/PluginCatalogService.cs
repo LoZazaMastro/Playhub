@@ -15,7 +15,7 @@ using ExternalPluginDefinition = Playhub.Models.RemotePluginCatalogEntry;
 
 namespace Playhub.Services;
 
-public sealed class PluginCatalogService
+public sealed partial class PluginCatalogService
 {
     private const string Owner = "LoZazaMastro";
     private const string InstalledReleaseMarker = ".playhub-release.json";
@@ -32,7 +32,11 @@ public sealed class PluginCatalogService
     public PluginCatalogService() => _readmes = SharedReadmes;
 
     internal PluginCatalogService(HttpClient detailsHttp, Func<DateTimeOffset>? clock = null,
-        TimeSpan? requestTimeout = null) => _readmes = new ReadmeLoader(detailsHttp, clock, requestTimeout);
+        TimeSpan? requestTimeout = null)
+    {
+        _readmes = new ReadmeLoader(detailsHttp, clock, requestTimeout);
+        _releaseHttp = detailsHttp;
+    }
     private static readonly IReadOnlyDictionary<string, string> PlayhubKeywords =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -373,14 +377,14 @@ public sealed class PluginCatalogService
             var sourceFolder = localFolder is null ? "" : FindSourceFolder(localFolder);
             var cachedRelease = new ReleaseInfo(null, null, null, null, null);
 #if !PLAYHUB_UI_REVIEW
-            if (isPlayhub) cachedRelease = LoadReleaseCache(repositoryName);
+            cachedRelease = LoadReleaseCache(ReleaseCacheKey(definition.Repository, definition.CatalogSource));
 #endif
             releases[definition.Repository] = cachedRelease;
             var catalogVersion = isPlayhub
                 ? SelectNewestVersion(definition.Version, PlayhubCatalogVersions.GetValueOrDefault(repositoryName, ""),
                     string.IsNullOrWhiteSpace(sourceFolder) ? "" : ReadInstalledVersion(sourceFolder, repositoryName),
                     cachedRelease.Version ?? "")
-                : definition.Version;
+                : SelectNewestVersion(definition.Version, cachedRelease.Version ?? "");
             var aliases = definition.Aliases.Append(definition.Name).Append(definition.InstallFolder)
                 .Append(repositoryName).Append(definition.Repository).Where(value => !string.IsNullOrWhiteSpace(value))
                 .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -388,7 +392,7 @@ public sealed class PluginCatalogService
             var cover = !string.IsNullOrWhiteSpace(definition.CoverUrl) ? definition.CoverUrl
                 : bundledDefinition is null ? null : ResolveCover(bundledDefinition.Cover);
             var manifestRelease = !string.IsNullOrWhiteSpace(definition.CatalogReleaseUrl) &&
-                (!isPlayhub || VersionsEquivalent(catalogVersion, definition.Version));
+                VersionsEquivalent(catalogVersion, definition.Version);
             var published = manifestRelease ? FormatDate(definition.ReleasePublishedAt) : cachedRelease.PublishedAt ?? "";
 
             plugins.Add(new DeckyPluginInfo
@@ -430,10 +434,15 @@ public sealed class PluginCatalogService
         // One installed-folder pass hydrates both bundled and newly published definitions.
         AppendUncataloguedInstalledPlugins(plugins, deckyPluginsPath, claimedInstalledFolders);
 #if !PLAYHUB_UI_REVIEW
-        foreach (var plugin in plugins.Where(plugin => plugin.IsPlayhubPlugin))
+        foreach (var plugin in plugins)
         {
-            var changelog = SelectChangelog(plugin.RepositoryName, plugin.IsInstalled, plugin.InstalledVersion,
-                plugin.HasUpdate, releases[plugin.RepositorySlug]);
+            var cacheKey = ReleaseCacheKey(plugin.RepositorySlug, plugin.CatalogSource);
+            var latest = releases.GetValueOrDefault(plugin.RepositorySlug) ?? LoadReleaseCache(cacheKey);
+            ApplyLatestRelease(plugin, latest);
+            if (plugin.HasUpdate && !VersionsEquivalent(latest.Version, plugin.Version))
+                latest = new ReleaseInfo(null, null, null, null, null);
+            var changelog = SelectChangelog(cacheKey, plugin.IsInstalled, plugin.InstalledVersion,
+                plugin.HasUpdate, latest);
             plugin.ReleaseNotes = changelog.Notes ?? "";
             plugin.ReleaseNotesVersion = changelog.Version ?? "";
             plugin.ReleaseNotesPublishedAt = changelog.PublishedAt ?? "";
@@ -748,12 +757,13 @@ public sealed class PluginCatalogService
         }
     }
 
-    private static async Task<ReleaseInfo> SafeGetLatestReleaseAsync(string repoName)
+    private static async Task<ReleaseInfo> SafeGetLatestReleaseAsync(string repoName,
+        string? repositorySlug = null, HttpClient? http = null)
     {
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
-            var json = await Http.GetStringAsync($"https://api.github.com/repos/{Owner}/{repoName}/releases/latest", cts.Token);
+            var json = await (http ?? Http).GetStringAsync($"https://api.github.com/repos/{repositorySlug ?? Owner + "/" + repoName}/releases/latest", cts.Token);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
             var assets = root.TryGetProperty("assets", out var assetsProperty)
@@ -769,7 +779,7 @@ public sealed class PluginCatalogService
                 asset.ValueKind == JsonValueKind.Undefined ? null : asset.GetProperty("browser_download_url").GetString(),
                 root.TryGetProperty("html_url", out var h) ? h.GetString() : null,
                 root.TryGetProperty("tag_name", out var t) ? t.GetString() : null,
-                root.TryGetProperty("body", out var b) ? CleanMarkdown(b.GetString() ?? "") : null,
+                root.TryGetProperty("body", out var b) ? b.GetString() : null,
                 root.TryGetProperty("published_at", out var p) ? FormatDate(p.GetString()) : null);
             release = PreserveCachedNotes(repoName, release);
             SaveReleaseCache(repoName, release);
@@ -777,7 +787,7 @@ public sealed class PluginCatalogService
         }
         catch
         {
-            var atomRelease = await TryGetLatestReleaseFromAtomAsync(repoName);
+            var atomRelease = await TryGetLatestReleaseFromAtomAsync(repoName, repositorySlug, http);
             if (!string.IsNullOrWhiteSpace(atomRelease.Version) || !string.IsNullOrWhiteSpace(atomRelease.Notes))
             {
                 atomRelease = PreserveCachedReleaseData(repoName, atomRelease);
@@ -802,7 +812,7 @@ public sealed class PluginCatalogService
 
         if (!hasUpdate)
         {
-            if (!string.IsNullOrWhiteSpace(latestRelease.Notes))
+            if (VersionsEquivalent(installedVersion, latestRelease.Version) && !string.IsNullOrWhiteSpace(latestRelease.Notes))
             {
                 SaveInstalledReleaseCache(repoName, installedVersion, latestRelease);
                 return latestRelease;
@@ -810,17 +820,16 @@ public sealed class PluginCatalogService
             return LoadInstalledReleaseCache(repoName, installedVersion);
         }
 
-        // Keep showing the changelog of the installed version while a newer
-        // release is available. It switches only after that release is installed.
-        return LoadInstalledReleaseCache(repoName, installedVersion);
+        return latestRelease;
     }
 
-    private static async Task<ReleaseInfo> TryGetLatestReleaseFromAtomAsync(string repoName)
+    private static async Task<ReleaseInfo> TryGetLatestReleaseFromAtomAsync(string repoName,
+        string? repositorySlug = null, HttpClient? http = null)
     {
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
-            var xml = await Http.GetStringAsync($"https://github.com/{Owner}/{repoName}/releases.atom", cts.Token);
+            var xml = await (http ?? Http).GetStringAsync($"https://github.com/{repositorySlug ?? Owner + "/" + repoName}/releases.atom", cts.Token);
             var document = XDocument.Parse(xml);
             XNamespace atom = "http://www.w3.org/2005/Atom";
             var entry = document.Root?.Elements(atom + "entry").FirstOrDefault();
@@ -1736,6 +1745,7 @@ public sealed class PluginCatalogService
             return;
         }
 
+        var catalogPlugins = plugins.ToArray();
         foreach (var folder in Directory.GetDirectories(deckyPluginsPath)
                      .OrderBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase))
         {
@@ -1770,33 +1780,35 @@ public sealed class PluginCatalogService
                 .Where(value => !string.IsNullOrWhiteSpace(value))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            var matchingPlugin = plugins.FirstOrDefault(plugin =>
+            DeckyPluginInfo[] candidates;
+            // Repository metadata (with the installed marker taking precedence) is
+            // authoritative. Never fall back to shared names after a repository miss.
+            if (!string.IsNullOrWhiteSpace(metadata.RepositorySlug))
             {
-                // A declared repository is authoritative over folder/name aliases.
-                if (!string.IsNullOrWhiteSpace(metadata.RepositorySlug))
-                    return string.Equals(plugin.RepositorySlug, metadata.RepositorySlug, StringComparison.OrdinalIgnoreCase);
-
-                if (!string.IsNullOrWhiteSpace(plugin.InstalledFolder) &&
-                    string.Equals(CanonicalPath(plugin.InstalledFolder), canonicalFolder, StringComparison.OrdinalIgnoreCase))
+                candidates = catalogPlugins.Where(plugin => string.Equals(
+                    plugin.RepositorySlug, metadata.RepositorySlug, StringComparison.OrdinalIgnoreCase)).Take(2).ToArray();
+            }
+            else
+            {
+                // Resolve the strongest match across the whole catalog before
+                // considering weaker aliases; enumeration order is not identity.
+                candidates = catalogPlugins.Where(plugin =>
+                    !string.IsNullOrWhiteSpace(plugin.InstalledFolder) &&
+                    string.Equals(CanonicalPath(plugin.InstalledFolder), canonicalFolder,
+                        StringComparison.OrdinalIgnoreCase)).Take(2).ToArray();
+                if (candidates.Length == 0)
                 {
-                    return true;
+                    candidates = catalogPlugins.Where(plugin => plugin.InstallAliases
+                        .Append(plugin.Name)
+                        .Append(plugin.FolderName)
+                        .Append(plugin.RepositoryName)
+                        .Append(plugin.RepositorySlug)
+                        .Where(value => !string.IsNullOrWhiteSpace(value))
+                        .Select(Normalize)
+                        .Any(normalizedIdentities.Contains)).Take(2).ToArray();
                 }
-
-                if (!string.IsNullOrWhiteSpace(metadata.RepositorySlug) &&
-                    string.Equals(plugin.RepositorySlug, metadata.RepositorySlug, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-
-                return plugin.InstallAliases
-                    .Append(plugin.Name)
-                    .Append(plugin.FolderName)
-                    .Append(plugin.RepositoryName)
-                    .Append(plugin.RepositorySlug)
-                    .Where(value => !string.IsNullOrWhiteSpace(value))
-                    .Select(Normalize)
-                    .Any(normalizedIdentities.Contains);
-            });
+            }
+            var matchingPlugin = candidates.Length == 1 ? candidates[0] : null;
 
             if (matchingPlugin is not null)
             {
@@ -1997,10 +2009,6 @@ public sealed class PluginCatalogService
         }
 
         var repositorySlug = ExtractGithubRepositorySlug(repositoryValue);
-        if (string.IsNullOrWhiteSpace(repositorySlug))
-        {
-            repositorySlug = ExtractGithubRepositorySlug(image);
-        }
         var repositoryName = !string.IsNullOrWhiteSpace(repositorySlug)
             ? repositorySlug[(repositorySlug.IndexOf('/') + 1)..]
             : RepositoryNameFromValue(repositoryValue, folderName);

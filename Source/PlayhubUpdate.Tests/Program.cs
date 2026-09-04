@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Xml.Linq;
 using Playhub.Services;
 using PlayhubSetup;
 using UpdateTests;
@@ -38,15 +39,71 @@ byte[] Package(byte[] zip)
 var payload = Package(Zip(("Playhub.exe", "NEW-1.4.0"), ("Assets/new.txt", "new asset")));
 var digest = Convert.ToHexString(SHA256.HashData(payload));
 var service = new PlayhubUpdateService();
-string Release(string tag) => JsonSerializer.Serialize(new {
-    tag_name = tag, html_url = "https://github.com/offline-test/fixture/releases/tag/" + tag, body = "Test release",
-    assets = new[] { new { name = "Playhub Setup.exe", browser_download_url = "https://github.com/offline-test/fixture/releases/download/" + tag + "/Playhub%20Setup.exe", size = payload.Length, digest = "sha256:" + digest } }
+string Release(string tag, string? notes = "Test release", string assetName = "Playhub Setup.exe") => JsonSerializer.Serialize(new {
+    tag_name = tag, html_url = "https://github.com/offline-test/fixture/releases/tag/" + tag, body = notes,
+    assets = new[] { new { name = assetName, browser_download_url = "https://github.com/offline-test/fixture/releases/download/" + tag + "/" + Uri.EscapeDataString(assetName), size = payload.Length, digest = "sha256:" + digest } }
 });
 void SetRelease(string tag)
 {
     State.Reply = (request, token) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {
         Content = request.RequestUri!.Host == "api.github.com" ? new StringContent(Release(tag)) : new ByteArrayContent(payload)
     });
+}
+const string stableReleaseUrl = "https://github.com/offline-test/fixture/releases/tag/v1.3.1";
+const string stableNotes = "<h2>Stable 1.3.1</h2><p><strong>Important fix</strong></p><ul><li>First fix</li><li>Second fix</li></ul><blockquote><p>Update safely</p></blockquote><p><a href=\"https://github.com/offline-test/fixture/issues/42\">Details</a></p>";
+string Atom(params (string Tag, string Notes)[] entries)
+{
+    XNamespace ns = "http://www.w3.org/2005/Atom";
+    return new XDocument(new XElement(ns + "feed", entries.Select(entry =>
+        new XElement(ns + "entry",
+            new XElement(ns + "id", "tag:github.com,2008:Repository/123/" + entry.Tag),
+            new XElement(ns + "title", "Playhub release"),
+            new XElement(ns + "link", new XAttribute("rel", "alternate"),
+                new XAttribute("href", "https://github.com/offline-test/fixture/releases/tag/" + entry.Tag)),
+            new XElement(ns + "content", new XAttribute("type", "html"), entry.Notes)))))
+        .ToString(SaveOptions.DisableFormatting);
+}
+List<string> SetNotesFixture(string feed, bool apiSuccess = false, string? apiNotes = "", bool resolveRedirect = true)
+{
+    var calls = new List<string>();
+    State.Reply = (request, _) => {
+        var uri = request.RequestUri!;
+        calls.Add(uri.AbsoluteUri);
+        if (uri.AbsoluteUri == "https://api.github.com/repos/offline-test/fixture/releases/latest")
+        {
+            var response = new HttpResponseMessage(apiSuccess ? HttpStatusCode.OK : HttpStatusCode.Forbidden) {
+                Content = new StringContent(apiSuccess ? Release("v1.3.1", apiNotes) : "{\"message\":\"API rate limit exceeded\"}")
+            };
+            if (!apiSuccess) response.Headers.Add("X-RateLimit-Remaining", "0");
+            return Task.FromResult(response);
+        }
+        if (uri.AbsoluteUri == "https://github.com/offline-test/fixture/releases/latest")
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {
+                RequestMessage = resolveRedirect ? new HttpRequestMessage(HttpMethod.Get, stableReleaseUrl) : request,
+                Content = new StringContent("fixture")
+            });
+        if (uri.AbsoluteUri == "https://github.com/offline-test/fixture/releases.atom")
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {
+                Content = new StringContent(feed, System.Text.Encoding.UTF8, "application/atom+xml")
+            });
+        if (uri.AbsolutePath == "/offline-test/fixture/releases/expanded_assets/v1.3.1")
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {
+                Content = new StringContent("<a href=\"/offline-test/fixture/releases/download/v1.3.1/Playhub%20Setup.exe\">Installer</a>")
+            });
+        throw new InvalidOperationException("Unexpected fixture request: " + uri);
+    };
+    return calls;
+}
+void RequireNotesRequests(List<string> calls, bool apiSuccess = false)
+{
+    var expected = new List<string> { "https://api.github.com/repos/offline-test/fixture/releases/latest" };
+    if (!apiSuccess)
+    {
+        expected.Add("https://github.com/offline-test/fixture/releases/latest");
+        expected.Add("https://github.com/offline-test/fixture/releases/expanded_assets/v1.3.1");
+    }
+    expected.Add("https://github.com/offline-test/fixture/releases.atom");
+    Require(calls.SequenceEqual(expected), "wrong note discovery request order: " + string.Join(", ", calls));
 }
 Directory.CreateDirectory(State.Root);
 var progress = new InlineProgress<(double Percent, string Status)>(_ => { });
@@ -64,6 +121,28 @@ void Extract(byte[] data, string destination)
 
 try
 {
+    foreach (var name in new[] { "Playhub.Setup.exe", "Playhub Setup.exe", "Playhub-Setup.exe", "Playhub-Setup-1.3.1.exe" })
+        await Test("published installer naming: " + name, async () => {
+            State.Reply = (_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {
+                Content = new StringContent(Release("v1.3.1", "Release notes", name))
+            });
+            var found = await service.CheckAsync("offline-test/fixture", "1.3.0");
+            Require(found?.AssetName == name && !string.IsNullOrWhiteSpace(found.DownloadUrl), "published installer not recognized; update button would be disabled");
+        });
+    await Test("rate-limited API resolves actual dotted asset without guessing", async () => {
+        State.Reply = (request, _) => {
+            var uri = request.RequestUri!;
+            if (uri.Host == "api.github.com") return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Forbidden));
+            if (uri.AbsolutePath.EndsWith("/latest")) return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {
+                RequestMessage = new HttpRequestMessage(HttpMethod.Get, stableReleaseUrl), Content = new StringContent("") });
+            if (uri.AbsolutePath.Contains("/expanded_assets/")) return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {
+                Content = new StringContent("<a href=\"/offline-test/fixture/releases/download/v1.3.1/Playhub.Setup.-.Update.Test.exe\">Test</a><a href=\"/offline-test/fixture/releases/download/v1.3.1/Playhub.Setup.exe\">Normal</a>") });
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(Atom(("v1.3.1", stableNotes))) });
+        };
+        var found = await service.CheckAsync("offline-test/fixture", "1.3.0");
+        Require(found?.AssetName == "Playhub.Setup.exe" && found.DownloadUrl!.EndsWith("/Playhub.Setup.exe"), "actual normal asset was not selected");
+        Require(found!.Notes == stableNotes, "release notes lost");
+    });
     await Test("preview policy is isolated from release version comparison", () => {
         var older = info with { IsNewer = false, LatestVersion = "1.2.1" };
         Require(PlayhubUpdatePolicy.ShouldOffer(older) == PlayhubUpdatePolicy.IsPreview, "normal build offered older version");
@@ -174,22 +253,57 @@ try
         State.Reply = (_, _) => throw new HttpRequestException("offline fixture");
         Require(await service.CheckAsync("offline-test/fixture", "1.3.0") is null, "wrong offline result");
     });
-    await Test("stable redirect fallback, never Atom", async () => {
-        State.Reply = (request, _) => {
-            if (request.RequestUri!.Host == "api.github.com") throw new HttpRequestException("rate limit fixture");
-            Require(request.RequestUri.AbsolutePath.EndsWith("/releases/latest"), "unstable fallback used");
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {
-                RequestMessage = new HttpRequestMessage(HttpMethod.Get, "https://github.com/offline-test/fixture/releases/tag/v1.4.0"),
-                Content = new StringContent("fixture")
-            });
-        };
-        Require((await service.CheckAsync("offline-test/fixture", "1.3.0"))?.IsNewer == true, "fallback failed");
+    await Test("API 403: stable redirect resolves version before Atom HTML notes", async () => {
+        var calls = SetNotesFixture(Atom(("v1.3.1", stableNotes)));
+        var result = await service.CheckAsync("offline-test/fixture", "1.3.0");
+        Require(result is { IsNewer: true, LatestVersion: "1.3.1", CurrentVersion: "1.3.0" }, "stable fallback failed");
+        Require(result!.ReleaseUrl == stableReleaseUrl, "stable release link changed");
+        Require(result.Notes == stableNotes, "HTML heading, bold, list, quote or link was lost");
+        RequireNotesRequests(calls);
+    });
+    await Test("newest prerelease Atom entry cannot replace matching stable notes or version", async () => {
+        var calls = SetNotesFixture(Atom(("v1.4.0-beta.1", "<h2>PRERELEASE ONLY</h2>"), ("v1.3.1", stableNotes)));
+        var result = await service.CheckAsync("offline-test/fixture", "1.3.0");
+        Require(result is { IsNewer: true, LatestVersion: "1.3.1" }, "Atom prerelease selected as update");
+        Require(result!.ReleaseUrl == stableReleaseUrl && result.Notes == stableNotes, "matching stable notes not selected");
+        Require(result.DownloadUrl == "https://github.com/offline-test/fixture/releases/download/v1.3.1/Playhub%20Setup.exe", "installer version changed by feed");
+        RequireNotesRequests(calls);
+    });
+    await Test("unrelated Atom notes are never attached to stable release", async () => {
+        var calls = SetNotesFixture(Atom(("v1.3.1-beta.1", "<p>Not stable</p>"), ("v1.3.10", "<p>Prefix is not exact tag</p>"), ("v1.3.0", "<p>Older notes</p>")));
+        var result = await service.CheckAsync("offline-test/fixture", "1.3.0");
+        Require(result is { IsNewer: true, LatestVersion: "1.3.1" }, "unmatched feed discarded stable update");
+        Require(string.IsNullOrWhiteSpace(result!.Notes), "unrelated feed notes used");
+        RequireNotesRequests(calls);
+    });
+    await Test("equal installed stable version is not an update despite newer Atom prerelease", async () => {
+        SetNotesFixture(Atom(("v1.4.0-beta.1", "<p>Newer preview</p>"), ("v1.3.1", stableNotes)));
+        var result = await service.CheckAsync("offline-test/fixture", "1.3.1");
+        Require(result is { IsNewer: false, LatestVersion: "1.3.1", CurrentVersion: "1.3.1" }, "equal stable version offered as update");
+        Require(result!.ReleaseUrl == stableReleaseUrl, "equal stable release link changed");
+    });
+    foreach (var emptyNotes in new string?[] { "", " \r\n ", null })
+        await Test("API 200 empty release body hydrates exact-tag HTML notes: " + JsonSerializer.Serialize(emptyNotes), async () => {
+            var calls = SetNotesFixture(Atom(("v1.4.0-beta.1", "<p>Wrong preview notes</p>"), ("v1.3.1", stableNotes)), apiSuccess: true, apiNotes: emptyNotes);
+            var result = await service.CheckAsync("offline-test/fixture", "1.3.0");
+            Require(result is { IsNewer: true, LatestVersion: "1.3.1" }, "API version was replaced");
+            Require(result!.Notes == stableNotes && result.ReleaseUrl == stableReleaseUrl, "API notes not hydrated from matching tag");
+            Require(result.DownloadSize == payload.Length && result.Sha256Digest == "sha256:" + digest, "API asset metadata lost during hydration");
+            RequireNotesRequests(calls, apiSuccess: true);
+        });
+    await Test("API release body takes precedence over Atom", async () => {
+        var calls = SetNotesFixture(Atom(("v1.3.1", stableNotes)), apiSuccess: true, apiNotes: "## API notes");
+        var result = await service.CheckAsync("offline-test/fixture", "1.3.0");
+        Require(result?.Notes == "## API notes", "existing API notes replaced");
+        Require(calls.SequenceEqual(new[] { "https://api.github.com/repos/offline-test/fixture/releases/latest" }), "unnecessary notes fallback");
     });
     await Test("unresolved redirect is not an update", async () => {
-        State.Reply = (request, _) => request.RequestUri!.Host == "api.github.com"
-            ? throw new HttpRequestException("rate limit fixture")
-            : Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { RequestMessage = request, Content = new StringContent("no release") });
+        var calls = SetNotesFixture(Atom(("v1.4.0-beta.1", "<p>Preview</p>"), ("v1.3.1", stableNotes)), resolveRedirect: false);
         Require(await service.CheckAsync("offline-test/fixture", "1.3.0") is null, "unverified fallback accepted");
+        Require(calls.SequenceEqual(new[] {
+            "https://api.github.com/repos/offline-test/fixture/releases/latest",
+            "https://github.com/offline-test/fixture/releases/latest"
+        }), "Atom used before stable version resolved");
     });
     await Test("ZIP cannot escape into sibling directory", () => {
         var dest = Path.Combine(State.Root, "zip-target"); Directory.CreateDirectory(dest);

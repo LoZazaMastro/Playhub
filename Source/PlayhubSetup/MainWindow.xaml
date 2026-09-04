@@ -51,7 +51,7 @@
             <Image Source="Assets/wordmark.png" Width="200"
                    RenderOptions.BitmapScalingMode="HighQuality"/>
             <Border Width="64" Height="4" CornerRadius="2" Background="#FFCB0F" Margin="0,24,0,0"/>
-            <TextBlock x:Name="VersionText" Text="versione 1.3.0" Foreground="#8AFFFFFF"
+            <TextBlock x:Name="VersionText" Text="versione 1.3.1" Foreground="#8AFFFFFF"
                        FontSize="12" HorizontalAlignment="Center" Margin="0,16,0,0"/>
           </StackPanel>
         </Border>

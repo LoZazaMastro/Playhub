@@ -314,7 +314,7 @@ public sealed partial class MainWindow : Window
         Title = "Playhub";
         ExtendsContentIntoTitleBar = true;
         SystemBackdrop = new MicaBackdrop();
-        Closed += (_, _) => { CancelNavigationRestore(); CancelPluginCardMorph(); ReleaseMediaForShutdown(); };
+        Closed += (_, _) => { _playhubUpdateCheckTimer?.Stop(); CancelNavigationRestore(); CancelPluginCardMorph(); ReleaseMediaForShutdown(); };
         SetWindowShape();
         // Seed accent brushes BEFORE the navigation is built so its selection
         // indicator and item brushes resolve our instances (and update live).
@@ -329,7 +329,10 @@ public sealed partial class MainWindow : Window
         Activated += (_, args) =>
         {
             if (args.WindowActivationState != WindowActivationState.Deactivated)
+            {
                 try { RefreshGameBarStep(); } catch { }
+                if (_playhubUpdateCheckTimer is not null) _ = CheckPlayhubUpdatesSilentlyAsync();
+            }
         };
         _ = LoadAsync();
 #endif
@@ -363,6 +366,8 @@ public sealed partial class MainWindow : Window
                 _settings.AccentColor = "#FFCB0F";
                 await _settingsService.SaveAsync();
             }
+
+            StartPlayhubUpdateChecks();
 
             // Il plugin Decky si aggiorna da solo, senza chiedere niente:
             // dopo l'installazione di Playhub e dopo ogni aggiornamento. Non
@@ -416,9 +421,6 @@ public sealed partial class MainWindow : Window
             ApplyLanguage();
             InitializeSupportReminder();
 
-            // Controllo aggiornamenti non bloccante: se c'è una versione nuova
-            // su GitHub, compare una notifica in-app con il link alla release.
-            _ = CheckPlayhubUpdatesSilentlyAsync();
         }
         catch (Exception ex)
         {
@@ -1794,6 +1796,7 @@ public sealed partial class MainWindow : Window
 
     private void SwitchPluginStoreMode(string mode, bool animate = true)
     {
+        if (_plugins.Count > 0) QueueRemotePluginCatalogRefresh();
         CancelPluginSearch();
         ResetPluginSourceFilter();
         CancelPluginCardMorph();
@@ -3570,6 +3573,8 @@ by Valve.";
 
     private Task RefreshPluginsAsync() => RefreshRemoteAwarePluginsAsync();
 
+    private List<(DeckyPluginInfo Plugin, bool HasUpdate)>? _pluginManageVisibleSnapshot;
+
     private void RenderPluginManagement()
     {
         CancelPluginCardMorph();
@@ -3578,13 +3583,23 @@ by Valve.";
 
         var installed = _plugins
             .Where(plugin => plugin.IsInstalled && !IsIntegratedGamingModePlugin(plugin))
-            .OrderByDescending(plugin => plugin.HasUpdate)
-            .ThenBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
         var updates = installed.Where(plugin => plugin.HasUpdate).ToList();
         var visible = SortPluginAll(FilterPluginAllBySource(installed
             .Where(plugin => string.IsNullOrWhiteSpace(_pluginManageQuery) ||
-                MatchesPluginSearch(plugin, _pluginManageQuery.Trim())))).ToList();
+                MatchesPluginSearch(plugin, _pluginManageQuery.Trim()))))
+            // OrderBy is stable, preserving the selected sort within each update group.
+            .OrderByDescending(plugin => plugin.HasUpdate)
+            .ToList();
+
+        var snapshot = visible.Select(plugin => (Plugin: plugin, HasUpdate: plugin.HasUpdate)).ToList();
+        // Bulk updates bypass commit invalidation; unchanged renders keep both cached layouts.
+        if (_pluginManageVisibleSnapshot is null || !_pluginManageVisibleSnapshot.SequenceEqual(snapshot))
+        {
+            _pluginManageListCache = null;
+            _pluginManageCardsCache = null;
+            _pluginManageVisibleSnapshot = snapshot;
+        }
 
         var heading = new Grid { ColumnSpacing = 16, Tag = "plugin-management-heading" };
         heading.ColumnDefinitions.Add(new ColumnDefinition());
@@ -3604,8 +3619,12 @@ by Valve.";
 
         if (updates.Count > 1 && !_pluginBulkUpdateRunning)
         {
-            var updateAll = IconButton(((char)0xE895).ToString(), "Aggiorna tutti", UpdateAllPluginsAsync, primary: true);
-            updateAll.VerticalAlignment = VerticalAlignment.Center;
+            var updateAll = IconButton(((char)0xE895).ToString(), "Aggiorna tutto", UpdateAllPluginsAsync, primary: true);
+            updateAll.Height = 44;
+            updateAll.MinHeight = 44;
+            updateAll.Padding = new Thickness(12, 0, 12, 0);
+            updateAll.VerticalContentAlignment = VerticalAlignment.Center;
+            updateAll.VerticalAlignment = VerticalAlignment.Bottom;
             Grid.SetColumn(updateAll, 1);
             heading.Children.Add(updateAll);
         }
@@ -8784,10 +8803,27 @@ by Valve.";
         }
     }
 
+    private DispatcherTimer? _playhubUpdateCheckTimer;
+    private bool _playhubAutomaticUpdateCheckRunning;
+    private DateTimeOffset _nextPlayhubAutomaticUpdateCheck;
+
+    private void StartPlayhubUpdateChecks()
+    {
+        if (_playhubUpdateCheckTimer is not null) return;
+        _playhubUpdateCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(5) };
+        _playhubUpdateCheckTimer.Tick += (_, _) => _ = CheckPlayhubUpdatesSilentlyAsync();
+        _playhubUpdateCheckTimer.Start();
+        _ = CheckPlayhubUpdatesSilentlyAsync();
+    }
+
     // Controllo silenzioso all'avvio: notifica SOLO se c'è una versione nuova,
     // senza disturbare con messaggi di "tutto a posto" o errori di rete.
     private async Task CheckPlayhubUpdatesSilentlyAsync()
     {
+        if (_playhubAutomaticUpdateCheckRunning || _playhubUpdateRunning ||
+            DateTimeOffset.UtcNow < _nextPlayhubAutomaticUpdateCheck) return;
+        _playhubAutomaticUpdateCheckRunning = true;
+        _nextPlayhubAutomaticUpdateCheck = DateTimeOffset.UtcNow.AddMinutes(2);
         try
         {
             var info = await _updateService.CheckAsync(PlayhubUpdatePolicy.Repository(_settings.PlayhubUpdateRepository), GetAppVersion(), PlayhubUpdatePolicy.ReleaseTag);
@@ -8801,9 +8837,12 @@ by Valve.";
         {
             // L'avvio non deve mai fallire per il controllo aggiornamenti.
         }
+        finally { _playhubAutomaticUpdateCheckRunning = false; }
 
         ShowPluginUpdatesNotification();
     }
+
+    private readonly HashSet<string> _announcedPluginUpdates = new(StringComparer.OrdinalIgnoreCase);
 
     private void ShowPluginUpdatesNotification()
     {
@@ -8813,8 +8852,14 @@ by Valve.";
             .ToList();
         if (updates.Count == 0)
         {
+            if (Equals(_status.Tag, "update-notification")) _status.IsOpen = false;
             return;
         }
+
+        var keys = updates.Select(plugin => $"{plugin.RepositorySlug}|{plugin.Version}").ToArray();
+        var hasNewUpdates = keys.Any(key => !_announcedPluginUpdates.Contains(key));
+        if (!hasNewUpdates && !(_status.IsOpen && Equals(_status.Tag, "update-notification"))) return;
+        foreach (var key in keys) _announcedPluginUpdates.Add(key);
 
         _status.Tag = "update-notification";
         _status.Title = T(updates.Count == 1
