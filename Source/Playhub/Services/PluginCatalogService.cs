@@ -48,6 +48,7 @@ public sealed partial class PluginCatalogService
             ["Now-Playing"] = "musica player Spotify YouTube Music sessione media surround",
             ["Playhub-Surround"] = "surround stereo 5.1 7.1 altoparlanti audio",
             ["Quick-Settings"] = "volume microfono HDR display impostazioni rapide Windows",
+            ["Shortcuts"] = "shortcut tab QAM menu rapido plugin icone Decky",
             ["Playhub-Notifications"] = "notifiche toast achievement temi suoni overlay",
             ["News"] = "news RSS Atom feed articoli informazioni",
             ["Weather"] = "meteo previsioni temperatura Open-Meteo",
@@ -64,6 +65,7 @@ public sealed partial class PluginCatalogService
             ["Now-Playing"] = "2.5.0",
             ["Playhub-Surround"] = "1.2.1",
             ["Quick-Settings"] = "2.3.1",
+            ["Shortcuts"] = "1.0.0",
             ["Playhub-Notifications"] = "1.3.0",
             ["News"] = "1.0.0",
             ["Weather"] = "2.1.0",
@@ -174,6 +176,24 @@ public sealed partial class PluginCatalogService
 • Selettori di uscita audio e ingresso microfono.
 • Interruttore HDR con conferma a 10 secondi.
 • Stato HDR letto direttamente da Windows (DisplayConfig / Advanced Color) invece di affidarsi a uno stato salvato dal plugin."),
+        new PluginDefinition(
+            "Shortcuts",
+            "Shortcuts",
+            "Shortcuts",
+            "shortcuts",
+            ((char)0xE71B).ToString(),
+            "I tuoi plugin preferiti, direttamente nel menu rapido.",
+            @"Shortcuts porta i plugin Decky che usi di più nella barra principale del menu rapido. Scegli i pannelli compatibili, assegna un'icona e riordinali come preferisci, senza rimuovere la voce originale da Decky.
+
+## Cosa fa
+• Trasforma i pannelli QAM dei plugin Decky caricati in tab indipendenti.
+• Mantiene anche l'accesso originale dentro Decky.
+• Permette di scegliere l'icona originale o una delle icone Tabler incluse.
+• Riordina e rimuove solo le tab create da Shortcuts.
+• Conserva le preferenze e ripristina automaticamente i plugin temporaneamente non disponibili.
+
+## Nota
+• Usa il registro interno delle tab QAM di Decky, perché non esiste ancora un'API pubblica per creare tab principali indipendenti. Un aggiornamento di Decky potrebbe richiedere un adeguamento del plugin."),
         new PluginDefinition(
             "Playhub-Notifications",
             "Playhub Notifications",
@@ -3019,6 +3039,152 @@ public sealed partial class PluginCatalogService
 • Выбор аудиовыхода и входа микрофона.
 • Переключатель HDR с подтверждением на 10 секунд.
 • Состояние HDR читается напрямую из Windows (DisplayConfig / Advanced Color), а не из сохранённого состояния плагина.")
+            },
+            ["Shortcuts"] = new Dictionary<string, PluginText>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["en"] = new PluginText(
+                    "Your favourite plugins, directly in the Quick Access Menu.",
+                    @"Shortcuts brings the Decky plugins you use most into the main Quick Access Menu tab bar. Choose compatible panels, assign an icon and arrange them as you like without removing their original Decky entries.
+
+## What it does
+• Turns loaded Decky plugin QAM panels into independent tabs.
+• Keeps the original access point inside Decky.
+• Lets you use the original icon or choose from the included Tabler icons.
+• Reorders and removes only the tabs created by Shortcuts.
+• Saves your preferences and automatically restores temporarily unavailable plugins.
+
+## Note
+• It uses Decky's internal QAM tab registry because there is no public API for independent top-level tabs yet. A future Decky update may require an adjustment to the plugin."),
+                ["es"] = new PluginText(
+                    "Tus plugins favoritos, directamente en el menú de acceso rápido.",
+                    @"Shortcuts lleva los plugins de Decky que más usas a la barra principal del menú de acceso rápido. Elige paneles compatibles, asigna un icono y ordénalos a tu gusto sin eliminar su acceso original en Decky.
+
+## Qué hace
+• Convierte los paneles QAM de los plugins de Decky cargados en pestañas independientes.
+• Mantiene el acceso original dentro de Decky.
+• Permite usar el icono original o elegir entre los iconos de Tabler incluidos.
+• Reordena y elimina solo las pestañas creadas por Shortcuts.
+• Guarda tus preferencias y restaura automáticamente los plugins que no estaban disponibles temporalmente.
+
+## Nota
+• Usa el registro interno de pestañas QAM de Decky porque todavía no existe una API pública para crear pestañas principales independientes. Una futura actualización de Decky podría requerir adaptar el plugin."),
+                ["fr"] = new PluginText(
+                    "Tes plugins préférés, directement dans le menu d'accès rapide.",
+                    @"Shortcuts place les plugins Decky que tu utilises le plus dans la barre principale du menu d'accès rapide. Choisis les panneaux compatibles, attribue-leur une icône et organise-les comme tu veux sans retirer leur entrée d'origine dans Decky.
+
+## Ce qu'il fait
+• Transforme les panneaux QAM des plugins Decky chargés en onglets indépendants.
+• Conserve l'accès d'origine dans Decky.
+• Permet d'utiliser l'icône d'origine ou l'une des icônes Tabler incluses.
+• Réorganise et supprime uniquement les onglets créés par Shortcuts.
+• Enregistre tes préférences et restaure automatiquement les plugins temporairement indisponibles.
+
+## Remarque
+• Il utilise le registre interne des onglets QAM de Decky, car il n'existe pas encore d'API publique pour créer des onglets principaux indépendants. Une future mise à jour de Decky pourra demander une adaptation du plugin."),
+                ["de"] = new PluginText(
+                    "Deine Lieblingsplugins direkt im Schnellzugriffsmenü.",
+                    @"Shortcuts bringt deine meistgenutzten Decky-Plugins in die Hauptleiste des Schnellzugriffsmenüs. Wähle kompatible Bereiche aus, weise ihnen ein Symbol zu und ordne sie nach Wunsch, ohne den ursprünglichen Eintrag in Decky zu entfernen.
+
+## Funktionen
+• Macht QAM-Bereiche geladener Decky-Plugins zu eigenständigen Tabs.
+• Behält den ursprünglichen Zugriff in Decky bei.
+• Verwendet wahlweise das Originalsymbol oder eines der enthaltenen Tabler-Symbole.
+• Ordnet und entfernt nur Tabs, die von Shortcuts erstellt wurden.
+• Speichert deine Auswahl und stellt vorübergehend nicht verfügbare Plugins automatisch wieder her.
+
+## Hinweis
+• Das Plugin nutzt Deckys interne QAM-Tab-Verwaltung, da es noch keine öffentliche API für eigenständige Haupt-Tabs gibt. Ein künftiges Decky-Update kann eine Anpassung erfordern."),
+                ["pt"] = new PluginText(
+                    "Os teus plugins favoritos, diretamente no menu de acesso rápido.",
+                    @"O Shortcuts coloca os plugins Decky que mais usas na barra principal do menu de acesso rápido. Escolhe painéis compatíveis, atribui um ícone e organiza-os como preferires sem remover a entrada original do Decky.
+
+## O que faz
+• Transforma os painéis QAM dos plugins Decky carregados em separadores independentes.
+• Mantém o acesso original dentro do Decky.
+• Permite usar o ícone original ou escolher entre os ícones Tabler incluídos.
+• Reordena e remove apenas os separadores criados pelo Shortcuts.
+• Guarda as preferências e restaura automaticamente plugins temporariamente indisponíveis.
+
+## Nota
+• Usa o registo interno de separadores QAM do Decky porque ainda não existe uma API pública para criar separadores principais independentes. Uma futura atualização do Decky poderá exigir uma adaptação do plugin."),
+                ["uk"] = new PluginText(
+                    "Улюблені плагіни безпосередньо в меню швидкого доступу.",
+                    @"Shortcuts переносить плагіни Decky, якими ти користуєшся найчастіше, на головну панель меню швидкого доступу. Обирай сумісні панелі, призначай іконки та впорядковуй їх, не прибираючи початкові записи з Decky.
+
+## Можливості
+• Перетворює QAM-панелі завантажених плагінів Decky на окремі вкладки.
+• Зберігає початковий доступ усередині Decky.
+• Дозволяє використовувати оригінальну іконку або одну з вбудованих іконок Tabler.
+• Змінює порядок і видаляє лише вкладки, створені Shortcuts.
+• Зберігає налаштування й автоматично відновлює тимчасово недоступні плагіни.
+
+## Примітка
+• Плагін використовує внутрішній реєстр вкладок QAM у Decky, оскільки публічного API для незалежних вкладок верхнього рівня поки немає. Майбутнє оновлення Decky може вимагати адаптації плагіна."),
+                ["zh"] = new PluginText(
+                    "把常用插件直接放进快捷菜单。",
+                    @"Shortcuts 会把你最常用的 Decky 插件放到快捷菜单的主标签栏中。你可以选择兼容的面板、分配图标并自由排序，同时保留它们在 Decky 中的原始入口。
+
+## 功能
+• 将已加载 Decky 插件的 QAM 面板变成独立标签。
+• 保留 Decky 中原有的访问入口。
+• 可使用插件原始图标，也可选择内置的 Tabler 图标。
+• 只调整或移除由 Shortcuts 创建的标签。
+• 保存你的设置，并在暂时不可用的插件恢复后自动还原标签。
+
+## 注意
+• 由于目前没有用于创建独立顶层标签的公开 API，本插件使用 Decky 的内部 QAM 标签注册机制。未来的 Decky 更新可能需要相应调整插件。"),
+                ["ja"] = new PluginText(
+                    "お気に入りのプラグインをクイックアクセスメニューに直接。",
+                    @"Shortcuts は、よく使う Decky プラグインをクイックアクセスメニューのメインタブバーに追加します。対応パネルを選び、アイコンを設定して好きな順番に並べても、Decky 内の元の項目はそのまま残ります。
+
+## 主な機能
+• 読み込み済み Decky プラグインの QAM パネルを独立したタブにします。
+• Decky 内の元のアクセス方法を維持します。
+• 元のアイコン、または同梱の Tabler アイコンを選べます。
+• Shortcuts が作成したタブだけを並べ替え、削除します。
+• 設定を保存し、一時的に利用できなかったプラグインも復帰時に自動で戻します。
+
+## 注意
+• 独立したトップレベルタブを作る公開 API がまだないため、Decky の内部 QAM タブレジストリを使用しています。今後の Decky 更新に合わせてプラグインの調整が必要になる場合があります。"),
+                ["ko"] = new PluginText(
+                    "즐겨 쓰는 플러그인을 빠른 액세스 메뉴에서 바로 만나세요.",
+                    @"Shortcuts는 자주 사용하는 Decky 플러그인을 빠른 액세스 메뉴의 기본 탭 바에 배치합니다. 호환 패널을 고르고 아이콘과 순서를 정해도 Decky 안의 원래 항목은 그대로 유지됩니다.
+
+## 주요 기능
+• 로드된 Decky 플러그인의 QAM 패널을 독립 탭으로 만듭니다.
+• Decky 안의 원래 접근 경로를 유지합니다.
+• 원래 아이콘이나 포함된 Tabler 아이콘을 선택할 수 있습니다.
+• Shortcuts가 만든 탭만 순서를 바꾸거나 제거합니다.
+• 설정을 저장하고 일시적으로 사용할 수 없던 플러그인이 돌아오면 자동으로 복원합니다.
+
+## 참고
+• 독립적인 최상위 탭을 만드는 공개 API가 아직 없어 Decky의 내부 QAM 탭 레지스트리를 사용합니다. 향후 Decky 업데이트에 맞춰 플러그인 조정이 필요할 수 있습니다."),
+                ["hi"] = new PluginText(
+                    "आपके पसंदीदा प्लगइन सीधे Quick Access Menu में।",
+                    @"Shortcuts आपके सबसे अधिक उपयोग किए जाने वाले Decky प्लगइन को Quick Access Menu की मुख्य tab bar में लाता है। compatible panel चुनें, icon तय करें और उन्हें अपनी पसंद के क्रम में रखें, जबकि Decky में उनकी मूल entry बनी रहती है।
+
+## यह क्या करता है
+• लोड किए गए Decky plugin के QAM panel को स्वतंत्र tab में बदलता है।
+• Decky के भीतर मूल access को बनाए रखता है।
+• मूल icon या शामिल Tabler icons में से किसी एक को चुनने देता है।
+• केवल Shortcuts द्वारा बनाई गई tabs को क्रमबद्ध या हटाता है।
+• आपकी preferences सहेजता है और अस्थायी रूप से अनुपलब्ध plugins को वापस आने पर अपने आप पुनर्स्थापित करता है।
+
+## नोट
+• स्वतंत्र top-level tabs बनाने के लिए अभी कोई public API नहीं है, इसलिए यह Decky के internal QAM tab registry का उपयोग करता है। भविष्य के Decky update के बाद plugin में बदलाव की आवश्यकता हो सकती है।"),
+                ["ru"] = new PluginText(
+                    "Любимые плагины прямо в меню быстрого доступа.",
+                    @"Shortcuts переносит самые нужные плагины Decky на главную панель вкладок меню быстрого доступа. Выбирайте совместимые панели, назначайте значки и меняйте их порядок, не удаляя исходные пункты из Decky.
+
+## Возможности
+• Превращает QAM-панели загруженных плагинов Decky в отдельные вкладки.
+• Сохраняет исходный доступ внутри Decky.
+• Позволяет использовать исходный значок или выбрать один из встроенных значков Tabler.
+• Меняет порядок и удаляет только вкладки, созданные Shortcuts.
+• Сохраняет настройки и автоматически восстанавливает временно недоступные плагины.
+
+## Примечание
+• Плагин использует внутренний реестр вкладок QAM в Decky, поскольку публичного API для независимых вкладок верхнего уровня пока нет. Будущее обновление Decky может потребовать адаптации плагина.")
             },
             ["Playhub-Notifications"] = new Dictionary<string, PluginText>(StringComparer.OrdinalIgnoreCase)
             {

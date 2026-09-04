@@ -44,7 +44,9 @@ internal static class BundledManifest
                 ["category"] = "Playhub",
                 ["shortDescription"] = Literal(5),
                 ["longDescription"] = Literal(6),
-                ["coverUrl"] = "",
+                ["coverUrl"] = repository == "Shortcuts"
+                    ? "https://raw.githubusercontent.com/LoZazaMastro/Shortcuts/main/assets/cover.jpg"
+                    : "",
                 ["iconGlyph"] = ((char)Convert.ToInt32(glyph)).ToString(),
                 ["catalogStatus"] = "playhub",
                 ["catalogSource"] = "playhub",
@@ -55,7 +57,7 @@ internal static class BundledManifest
             });
         }
         foreach (var external in catalog["plugins"]!.AsArray()) builtIns.Add(external!.DeepClone());
-        catalog["catalogRevision"] = 1;
+        catalog["catalogRevision"] = 2;
         catalog["plugins"] = builtIns;
         return catalog;
     }
