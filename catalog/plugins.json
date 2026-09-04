@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "verifiedAt": "2026-09-01",
+  "verifiedAt": "2026-09-04",
   "officialDeckyCatalogUrl": "https://plugins.deckbrew.xyz/plugins",
   "plugins": [
     {
@@ -183,6 +183,43 @@
         "Quick Settings",
         "quick-settings",
         "Quick-Settings"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Shortcuts",
+      "installFolder": "shortcuts",
+      "author": "LoZazaMastro",
+      "repository": "LoZazaMastro/Shortcuts",
+      "repositoryUrl": "https://github.com/LoZazaMastro/Shortcuts",
+      "version": "1.0.0",
+      "releaseAssetName": "",
+      "catalogReleaseUrl": "",
+      "releasePublishedAt": "",
+      "category": "Playhub",
+      "shortDescription": "I tuoi plugin preferiti, direttamente nel menu rapido.",
+      "longDescription": "Shortcuts porta i plugin Decky che usi di pi\u00F9 nella barra principale del menu rapido. Scegli i pannelli compatibili, assegna un\u0027icona e riordinali come preferisci, senza rimuovere la voce originale da Decky.\n\n## Cosa fa\n\u2022 Trasforma i pannelli QAM dei plugin Decky caricati in tab indipendenti.\n\u2022 Mantiene anche l\u0027accesso originale dentro Decky.\n\u2022 Permette di scegliere l\u0027icona originale o una delle icone Tabler incluse.\n\u2022 Riordina e rimuove solo le tab create da Shortcuts.\n\u2022 Conserva le preferenze e ripristina automaticamente i plugin temporaneamente non disponibili.\n\n## Nota\n\u2022 Usa il registro interno delle tab QAM di Decky, perch\u00E9 non esiste ancora un\u0027API pubblica per creare tab principali indipendenti. Un aggiornamento di Decky potrebbe richiedere un adeguamento del plugin.",
+      "coverUrl": "https://raw.githubusercontent.com/LoZazaMastro/Shortcuts/main/assets/cover.jpg",
+      "iconGlyph": "\uE71B",
+      "catalogStatus": "playhub",
+      "catalogSource": "playhub",
+      "catalogPluginId": 0,
+      "compatibility": "",
+      "keywords": [
+        "shortcut",
+        "tab",
+        "QAM",
+        "menu",
+        "rapido",
+        "plugin",
+        "icone",
+        "Decky"
+      ],
+      "aliases": [
+        "Shortcuts",
+        "Shortcuts",
+        "shortcuts",
+        "Shortcuts"
       ]
     },
     {
@@ -5349,5 +5386,5 @@
       "catalogPluginId": 0
     }
   ],
-  "catalogRevision": 1
+  "catalogRevision": 2
 }
