@@ -9,7 +9,7 @@ internal static class IntegrationTests
         using var files = new TestFiles();
         using var remote = new Fixture();
         var bundled = PluginCatalogService.GetBundledCatalog();
-        Check(bundled.CatalogRevision == 2 && bundled.Plugins.Count == 174, "Combined packaged baseline missing.");
+        Check(bundled.CatalogRevision == 3 && bundled.Plugins.Count == 174, "Combined packaged baseline missing.");
         var service = new PluginCatalogService();
         var empty = await service.LoadAsync(files.PluginRoot, files.InstalledRoot);
         Check(empty.Count == 174 && empty.Count(p => p.IsPlayhubPlugin) == 13 &&
@@ -37,7 +37,7 @@ internal static class IntegrationTests
         files.Install(own, "1.0.0");
         var updatedDecky = decky with { Version = "9.0.0", LongDescription = "Remote updated description",
             ReleaseAssetName = "updated.zip", CatalogReleaseUrl = "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/updated.zip" };
-        var document = new RemotePluginCatalog { CatalogRevision = 3,
+        var document = new RemotePluginCatalog { CatalogRevision = 4,
             Plugins = new[] { artwork with { Version = "2.0.0" }, updatedDecky, own, github } };
         remote.Handler.Respond = (_, _) => Task.FromResult(new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK)
         { Content = new System.Net.Http.ByteArrayContent(Serialize(document)) });
