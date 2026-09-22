@@ -18,7 +18,7 @@ Lo script:
 3. ne crea un `Payload\payload.zip`;
 4. compila l'installer **single-file** con il payload incorporato.
 
-Risultato: **`Output\Playhub-Setup.exe`**.
+Risultato: **`Output\Playhub Setup.exe`**.
 
 ## Cosa fa l'installer
 

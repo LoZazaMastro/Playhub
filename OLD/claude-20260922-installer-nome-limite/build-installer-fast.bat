@@ -11,7 +11,7 @@ rem ====================================================================
 set LOG=build-installer-log.txt
 set PAYLOAD=Payload\payload.zip
 set STUB_DIR=Output\stub
-set FINAL=Output\Playhub-Setup.exe
+set FINAL=Output\Playhub Setup.exe
 
 if not exist "%PAYLOAD%" (
   echo Manca %PAYLOAD%. Esegui prima build-installer.bat almeno una volta.

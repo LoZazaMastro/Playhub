@@ -78,7 +78,7 @@ try {
             } finally { $data.Dispose() }
         }
     } finally { $archive.Dispose() }
-    $name = 'Playhub-Setup.exe'
+    $name = 'Playhub Setup.exe'
     $partial = Join-Path $stage $name
     $target = [IO.File]::Create($partial)
     try {

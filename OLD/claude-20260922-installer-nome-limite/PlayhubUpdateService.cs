@@ -242,6 +242,11 @@ public sealed class PlayhubUpdateService
             stallTimeout.CancelAfter(DownloadStallTimeout);
 
             var total = response.Content.Headers.ContentLength ?? info.DownloadSize;
+            if (total > 1_000_000_000)
+            {
+                throw new InvalidDataException("L'installer indicato dalla release è troppo grande.");
+            }
+
             await using var source = await response.Content.ReadAsStreamAsync(downloadToken).ConfigureAwait(false);
             stallTimeout.CancelAfter(Timeout.InfiniteTimeSpan);
             await using var output = new FileStream(

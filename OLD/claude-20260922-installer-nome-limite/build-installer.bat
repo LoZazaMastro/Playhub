@@ -8,7 +8,7 @@ set APP_OUT=..\Playhub\dist_publish
 set PLUGIN_BAT=..\GamingModeDeckyPlugin\build-plugin.bat
 set PAYLOAD=Payload\payload.zip
 set STUB_DIR=Output\stub
-set FINAL=Output\Playhub-Setup.exe
+set FINAL=Output\Playhub Setup.exe
 
 echo ===== PLAYHUB INSTALLER BUILD %DATE% %TIME% ===== > "%LOG%" 2>&1
 echo Log completo in: %~dp0%LOG%

@@ -11,7 +11,7 @@ rem    [2] plugin Decky        -> compila src\*.tsx e aggiorna gli Assets
 rem    [3] app Playhub         -> publish self-contained x64
 rem    [4] payload.zip         -> archivio dell'app
 rem    [5] stub installer      -> PlayhubSetup
-rem    [6] installer finale    -> Output\Playhub-Setup.exe
+rem    [6] installer finale    -> Output\Playhub Setup.exe
 rem
 rem  Uso:
 rem    build-all.bat            build completa dell'installer
@@ -26,7 +26,7 @@ set AGENT_BAT=..\GamingModeAgent\build-agent.bat
 set PLUGIN_BAT=..\GamingModeDeckyPlugin\build-plugin.bat
 set PAYLOAD=Payload\payload.zip
 set STUB_DIR=Output\stub
-set FINAL=Output\Playhub-Setup.exe
+set FINAL=Output\Playhub Setup.exe
 
 set WITH_DEBUG=0
 if /i "%~1"=="debug" set WITH_DEBUG=1
