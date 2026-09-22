@@ -1,12 +1,17 @@
 {
-  "name": "Gaming Mode",
-  "version": "1.4.0",
+  "name": "Playhub",
+  "version": "2.0.1",
   "author": "LoZazaMastro",
   "flags": [],
   "api_version": 1,
   "publish": {
-    "tags": ["windows", "steam", "gaming-mode", "playhub"],
+    "tags": [
+      "windows",
+      "steam",
+      "gaming-mode",
+      "playhub"
+    ],
     "description": "Passa fra Desktop Mode e Gaming Mode, e apre la Playhub Dashboard come schermata di Steam.",
-    "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
+    "image": "assets/playhub-logo-decky.png"
   }
 }

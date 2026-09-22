@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-09-08",
+  "deliveryState": "source-and-review-patch-only",
+  "packaged": false,
+  "nativeBinariesIncluded": [],
+  "driverPackagesIncluded": [],
+  "artifacts": [
+    {"path": "controller_porting/__init__.py", "license": "MIT", "origin": "independent Playhub"},
+    {"path": "controller_porting/sdl_backend.py", "license": "MIT", "origin": "independent public SDL ABI bindings", "includeInPassivePayload": false},
+    {"path": "controller_porting/passive_diagnostics.py", "license": "MIT", "origin": "independent Playhub", "includeInPassivePayload": true},
+    {"path": "src/controllerDiagnostics.ts", "license": "MIT", "origin": "independent Playhub", "delivery": "compiled into frontend after parent patch"},
+    {"path": "controller_porting/test_sdl_backend.py", "license": "MIT", "delivery": "test only"},
+    {"path": "controller_porting/test_passive_diagnostics.py", "license": "MIT", "delivery": "test only"},
+    {"path": "tests/controllerDiagnostics.test.mjs", "license": "MIT", "delivery": "test only"},
+    {"path": "controller_porting/parent-integration.patch", "license": "MIT", "delivery": "review only; NOT applied"},
+    {"path": "controller_porting/LICENSE", "license": "MIT", "delivery": "retain with distributed code"},
+    {"path": "controller_porting/PROVENANCE.md", "delivery": "license provenance"},
+    {"path": "controller_porting/DELIVERABLES.md", "delivery": "capability and dependency matrix"}
+  ],
+  "externalCandidates": [
+    {
+      "name": "SDL3",
+      "license": "Zlib",
+      "referenceVersion": "3.4.10",
+      "referenceCommit": "8e37db5e797b6167f3a00d697d816a684bd259c7",
+      "licenseSource": "https://github.com/libsdl-org/SDL/blob/8e37db5e797b6167f3a00d697d816a684bd259c7/LICENSE.txt",
+      "bundled": false,
+      "requiredFor": "future authorized physical input/rumble, not passive diagnostics",
+      "redistributionGate": "Audit official architecture-matched binary and bundled dependencies; ship exact release notices. Do not redistribute Steam private DLL based only on file presence."
+    },
+    {
+      "name": "HandheldCompanion archive",
+      "sha256": "a8484c699b4ec0c902c0bc8403b4a81be3bcfdaa49670edd40f4496f23413fd4",
+      "rootLicense": "CC-BY-NC-SA-4.0",
+      "wrapperLicenseTexts": "hidapi.net and steam-hidapi.net contain GPLv3",
+      "bundled": false,
+      "codeBorrowed": false,
+      "redistributionGate": "Excluded; no HC source/encoder/DLL transplant. Root license does not replace per-component audit."
+    },
+    {
+      "name": "VIIPER server and TCP client",
+      "license": "GPL-3.0-or-later server; MIT client route per upstream guidance",
+      "bundled": false,
+      "selectedRelease": null,
+      "requiredFor": "one possible future system-wide virtual output path",
+      "redistributionGate": "Select exact server/client release; audit GPL source delivery and notices plus Windows USBIP driver signing/install obligations. No approved package selected."
+    }
+  ]
+}

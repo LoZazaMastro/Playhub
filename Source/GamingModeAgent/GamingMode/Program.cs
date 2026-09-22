@@ -14,6 +14,15 @@ internal static class Program
 	{
 		try
 		{
+			// Preview is deliberately isolated from the agent and every mode-switch command.
+			if (args.Length > 0 && args[0] == "preview-animation")
+			{
+				if (args.Length != 4 || args[1] is not ("boot" or "desktop" or "gaming")) return 2;
+				var settings = System.Text.Json.JsonSerializer.Deserialize<GamingSplashSettings>(Convert.FromBase64String(args[2]));
+				if (settings == null) return 2;
+				SplashScreenService.ShowPreview(args[1], settings, args[3]);
+				return 0;
+			}
 			return MainAsync(args).GetAwaiter().GetResult();
 		}
 		catch (Exception ex)
@@ -61,6 +70,7 @@ internal static class Program
 				? File.GetLastWriteTime(exePath).ToString("yyyy-MM-dd HH:mm:ss")
 				: "sconosciuta";
 			logger.Info($"Gaming Mode agent avviato. Eseguibile: {exePath} (compilato il {built}).");
+			logger.Info($"Startup entry: shell={Array.Exists(args, a => a.Equals("shell", StringComparison.OrdinalIgnoreCase))}, boot={Array.Exists(args, a => a.Equals("--boot", StringComparison.OrdinalIgnoreCase) || a.Equals("boot", StringComparison.OrdinalIgnoreCase))}, uptimeMs={Environment.TickCount64}.");
 		}
 		catch
 		{

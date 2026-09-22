@@ -1,0 +1,5 @@
+from pathlib import Path
+p=Path('tests/test_panel_backend.py');s=p.read_text(encoding='utf8');a=s.index('        """Accende');b=s.index('        return plugin',a);s=s[:a]+'''        """The fixture exposes verified HDR-capable targets."""
+'''+s[b:];s=s.replace("return_value={'available': True}","return_value={'available': True, 'real_state': True, 'targets': [{'supported': True, 'force_disabled': False}]}");s=s.replace("source.indexOf('export function QuickSettingsContent')","source.indexOf('const sharedDisplayModal')");p.write_text(s,encoding='utf8')
+p=Path('tests/test_audio_role_transaction.py');s=p.read_text(encoding='utf8').replace('"main.py", "THIRD-PARTY-NOTICES.md", "quick_settings/main.py",','"main.py", "THIRD-PARTY-NOTICES.md", "quick_settings/main.py",\n                "quick_settings/history_editorial.json", "quick_settings/history_images.json",');p.write_text(s,encoding='utf8')
+p=Path('main.py');s=p.read_text(encoding='utf8').replace('_HDR_WRITE_FLAG = "playhub-hdr-write-enabled"\n','');p.write_text(s,encoding='utf8')

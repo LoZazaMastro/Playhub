@@ -1,0 +1,14 @@
+AMD Radeon helper components
+============================
+
+- ADLX C# binding (ADLXCSharpBind.dll + ADLXDepends/*.cs):
+  AMD Device Library eXtra (ADLX). Copyright (c) Advanced Micro Devices, Inc.
+  Distributed under AMD's ADLX SDK license, for use with AMD products.
+  https://gpuopen.com/adlx/
+  The generated C# binding files originate from the GoTweaks project (MIT).
+  https://github.com/corando98/GoTweaks
+
+- AMDSetting.cs / AMDUtilities.cs / AMDDelegates.cs / Settings/*.cs:
+  Reused from GoTweaks under the MIT License.
+
+- Program.cs, NLogShim.cs, build_amd.bat: part of Quick Settings (MIT).

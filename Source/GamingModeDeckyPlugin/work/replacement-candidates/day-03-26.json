@@ -1,0 +1,50 @@
+[
+ {
+  "file": "day-03-26-0.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Steam%2C_Zusatzinhalt_zu_Account_hinzugef%C3%BCgt_Screenshot_2024-12-24_121709.png/1280px-Steam%2C_Zusatzinhalt_zu_Account_hinzugef%C3%BCgt_Screenshot_2024-12-24_121709.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Steam,_Zusatzinhalt_zu_Account_hinzugef%C3%BCgt_Screenshot_2024-12-24_121709.png",
+  "credit": "Valve Inc. / Public domain",
+  "description": "Info message in the game display of the account library. A DLC has been added.",
+  "title": "File:Steam, Zusatzinhalt zu Account hinzugefügt Screenshot 2024-12-24 121709.png"
+ },
+ {
+  "file": "day-03-26-1.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/7/74/SteamOS_Devkit_screenshot.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:SteamOS_Devkit_screenshot.jpg",
+  "credit": "Software:\nKDE developers\nScreenshot: \n\nLiam Dawe/GamingOnLinux / MIT",
+  "description": "Screenshot of SteamOS Devkit Client",
+  "title": "File:SteamOS Devkit screenshot.jpg"
+ },
+ {
+  "file": "day-03-26-2.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d5/Fehler_auf_Steam_2024-06-12_102934.png/1280px-Fehler_auf_Steam_2024-06-12_102934.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Fehler_auf_Steam_2024-06-12_102934.png",
+  "credit": "Steam: Valve Corp.\nScreenshot: PantheraLeo1359531 😺 (talk) / Public domain",
+  "description": "An error occurred after purchasing the Age of Mythology: Retold Premium Edition when trying to install the game. Since this is a pre-order (and the game is probably not ready yet), no game version can be downloaded. However, there was a button for this very purpose...",
+  "title": "File:Fehler auf Steam 2024-06-12 102934.png"
+ },
+ {
+  "file": "day-03-26-3.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/f/f2/STEAM_haupt.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:STEAM_haupt.png",
+  "credit": "Valve / Public domain",
+  "description": "Steam's main window - the 'games list'.",
+  "title": "File:STEAM haupt.png"
+ },
+ {
+  "file": "day-03-26-4.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fb/2026-06-03_Download_eines_Spiels_in_Steam_2026-06-03_184837.png/1280px-2026-06-03_Download_eines_Spiels_in_Steam_2026-06-03_184837.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:2026-06-03_Download_eines_Spiels_in_Steam_2026-06-03_184837.png",
+  "credit": "Software: Valve Inc.\nScreenshot: PantheraLeo1359531 😺 (talk) / Public domain",
+  "description": "Downloading a game (Age of Empires II: Definitive Edition) on Steam. Gamers in rural areas can only dream of such download speeds, as they usually manage only 50 Mbps or just 16 Mbps.",
+  "title": "File:2026-06-03 Download eines Spiels in Steam 2026-06-03 184837.png"
+ },
+ {
+  "file": "day-03-26-5.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/2025-02-09_15_35_39-Steamwebhelper_reagiert_nicht.png/1280px-2025-02-09_15_35_39-Steamwebhelper_reagiert_nicht.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:2025-02-09_15_35_39-Steamwebhelper_reagiert_nicht.png",
+  "credit": "Valve Inc. / Public domain",
+  "description": "Steamwebhelper does not respond",
+  "title": "File:2025-02-09 15 35 39-Steamwebhelper reagiert nicht.png"
+ }
+]

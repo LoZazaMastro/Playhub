@@ -1,0 +1,154 @@
+
+ https://www.konami.com/mg/archive/mgs_tlc/
+https://www.konami.com/mg/archive/mgs_tlc/_common/img/konami_logo.png <img src="./_common/img/konami_logo.png" alt="KONAMI ロゴ" width="110" height="31" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/mainvisual.jpg <img src="./_img/mainvisual.jpg" alt="METAL GEAR SOLID THE LEGACY COLLECTION 1987-2012" width="530" height="567">
+https://www.konami.com/mg/archive/mgs_tlc/_common/img/sns_tw.png <img src="./_common/img/sns_tw.png" alt="Twitter" width="31" height="31" />
+https://www.konami.com/mg/archive/mgs_tlc/_common/img/sns_fb.png <img src="./_common/img/sns_fb.png" alt="Facebook" width="31" height="31" />
+https://www.konami.com/mg/archive/mgs_tlc/_common/img/sns_gg.png <img src="./_common/img/sns_gg.png" alt="google+" width="31" height="31" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/catchcopy.png <img src="./_img/catchcopy.png" alt="メタルギア25周年記念　究極の完全版" width="501" height="98">
+https://www.konami.com/mg/archive/mgs_tlc/_img/readtext.png <img src="./_img/readtext.png" alt="「敵に見つからないように進む」極限の緊張感―。戦闘を避け、隠れながら任務を達成していく“ステルスアクション”を確立した『メタルギア』シリーズ。その25年をかけた小島秀夫監督作品全8作と、デジタルバンドデシネ化した映像作品2作を、一挙に体験できる“伝説”の豪華BOX。" width="563" height="87">
+https://www.konami.com/mg/archive/mgs_tlc/_img/btn-logo-mg.png <img src="./_img/btn-logo-mg.png" alt="METAL GEAR" width="91" height="34">
+https://www.konami.com/mg/archive/mgs_tlc/_img/btn-logo-mg2s.png <img src="./_img/btn-logo-mg2s.png" alt="METAL GEAR 2 SOLID SNAKE" width="100" height="34">
+https://www.konami.com/mg/archive/mgs_tlc/_img/btn-logo-mgs.png <img src="./_img/btn-logo-mgs.png" alt="METAL GEAR SOLID" width="92" height="34">
+https://www.konami.com/mg/archive/mgs_tlc/_img/btn-logo-mgsi.png <img src="./_img/btn-logo-mgsi.png" alt="METAL GEAR SOLID INTEGRAL" width="108" height="34">
+https://www.konami.com/mg/archive/mgs_tlc/_img/btn-logo-mgs2.png <img src="./_img/btn-logo-mgs2.png" alt="METAL GEAR SOLID 2 SONS OF LIBERTY" width="107" height="34">
+https://www.konami.com/mg/archive/mgs_tlc/_img/btn-logo-mgs3.png <img src="./_img/btn-logo-mgs3.png" alt="METAL GEAR SOLID 3 SNAKE EATER " width="91" height="34">
+https://www.konami.com/mg/archive/mgs_tlc/_img/btn-logo-mgs4.png <img src="./_img/btn-logo-mgs4.png" alt="METAL GEAR SOLID 4 GUNS OF THE PATRIOTS" width="100" height="34">
+https://www.konami.com/mg/archive/mgs_tlc/_img/btn-logo-mgsp.png <img src="./_img/btn-logo-mgsp.png" alt="METAL GEAR SOLID PEACE WALKER" width="92" height="34">
+https://www.konami.com/mg/archive/mgs_tlc/_img/btn-logo-mgsm.png <img src="./_img/btn-logo-mgsm.png" alt="METAL GEAR SOLID BANDE DESSINEE" width="108" height="34">
+https://www.konami.com/mg/archive/mgs_tlc/_img/btn-logo-mgs2m.png <img src="./_img/btn-logo-mgs2m.png" alt="METAL GEAR SOLID 2 BANDE DESSINEE" width="107" height="34">
+https://www.konami.com/mg/archive/mgs_tlc/_img/btn-award.png <img src="./_img/btn-award.png" alt="25年の勲章 世界各国から多数の賞をいただきました。" width="356" height="77">
+https://www.konami.com/mg/archive/mgs_tlc/_img/soft-title.png <img src="./_img/soft-title.png" alt="METAL GEAR SOLID THE LEGACY COLLECTION メタルギア ソリッド レガシーコレクション" width="540" height="26">
+https://www.konami.com/mg/archive/mgs_tlc/_img/soft-pkg.jpg <img src="./_img/soft-pkg.jpg" alt="" width="270" height="202" class="pkg">
+https://www.konami.com/mg/archive/mgs_tlc/_img/soft-contents.png <img src="./_img/soft-contents.png" alt="[収録ゲーム]METAL GEAR※1 METAL GEAR 2 SOLID SNAKE※1 METAL GEAR SOLID※2 METAL GEAR SOLID INTEGRAL※2 METAL GEAR SOLID 2 SONS OF LIBERTY※３ METAL GEAR SOLID 3 SNAKE EATER※3 METAL GEAR SOLID 4 GUNS OF THE PATRIOTS※4 METAL GEAR SOLID PEACE WALKER※３ [映像作品] ※Blu-ray Videoフォーマット METAL GEAR SOLID BANDE DESSINÉE METAL GEAR SOLID 2  BANDE DESSINÉE [同梱物]METAL GEAR SOLID THE LEGACY BOOK（ポスター、パンフレットなどを図録した100Pブックレット同梱）" width="244" height="254" class="conts">
+https://www.konami.com/mg/archive/mgs_tlc/_img/soft-legacybook.jpg <img src="./_img/soft-legacybook.jpg" alt="" width="270" height="197" class="book">
+https://www.konami.com/mg/archive/mgs_tlc/_img/soft-spec.png <img src="./_img/soft-spec.png" alt="[ジャンル]アクション [プレイ人数]1人（MGS PWのみオンライン時:最大6人） [対応機種]PlayStation&reg;3 [CERO]D 17歳以上対象 [発売日]2013年7月11日 [価格]7,980円（税抜7,600円）" width="244" height="105" class="spec">
+https://www.konami.com/mg/archive/mgs_tlc/_img/soft-attention.png <img src="./_img/soft-attention.png" alt="※1.MSX2復刻版（[MGS3 HD]内に収録）。　※2.ゲームアーカイブス、プロダクトコード封入。PlayStation&reg;Storeからダウンロード。　※3.HDエディションを収録。　※4.トロフィー機能対応版　※このソフトウェアは2011年発売『METAL GEAR SOLID HD EDITION』『METAL GEAR SOLID PEACE WALKER HD EDITION』、2008年発売『METAL GEAR SOLID 4 GUNS OF THE PATRIOTS』『METAL GEAR SOLID 2 BANDE DESSINÉE』が同一内容で収録されております。　※このゲームには一部、暴力シーンやグロテスクな表現が含まれております。" width="540" height="70" class="atten">
+https://www.konami.com/mg/archive/mgs_tlc/_img/btn-kstyle.png <img src="./_img/btn-kstyle.png" alt="KONAMI STYLEで注文する" width="251" height="42">
+https://www.konami.com/mg/archive/mgs_tlc/_img/trailer-title.png <img src="./_img/trailer-title.png" alt="" width="362" height="26">
+https://www.konami.com/mg/archive/mgs_tlc/_img/pic_movie.jpg <img src="./_img/pic_movie.jpg" alt="" width="360" height="202" class="movie">
+https://www.konami.com/mg/archive/mgs_tlc/_img/information-title.png <img src="./_img/information-title.png" alt="INFORMATION" width="362" height="26">
+https://www.konami.com/mg/archive/mgs_tlc/_img/bnr_mgsv.jpg <img src="./_img/bnr_mgsv.jpg" alt="" width="360" height="86" class="">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs3-ti.png <img src="./_img/hisyory/mgs3-ti.png" alt="1964　MTTAL GEAR SOLID 3 SNAKE EATER" width="269" height="127">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/story.png <img src="./_img/hisyory/story.png" alt="Story" width="35" height="14">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs3-copy.png <img src="./_img/hisyory/mgs3-copy.png" alt="全ての発端となった冷戦下の危機" width="549" height="48">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs3-pic01.jpg <img src="./_img/hisyory/mgs3-pic01.jpg" alt="" width="168" height="90">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs3-pic02.jpg <img src="./_img/hisyory/mgs3-pic02.jpg" alt="" width="168" height="90">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs3-pic03.jpg <img src="./_img/hisyory/mgs3-pic03.jpg" alt="" width="168" height="90">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs3-pic04.jpg <img src="./_img/hisyory/mgs3-pic04.jpg" alt="" width="168" height="90">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs3-pkg.jpg <img src="./_img/hisyory/mgs3-pkg.jpg" alt="" width="93" height="132">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1961.png <img src="./_img/hisyory/his-1961.png" alt="1961" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1962.png <img src="./_img/hisyory/his-1962.png" alt="1962" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1964.png <img src="./_img/hisyory/his-1964.png" alt="1964" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1965.png <img src="./_img/hisyory/his-1965.png" alt="1965" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1968.png <img src="./_img/hisyory/his-1968.png" alt="1968" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgsp-ti.png <img src="./_img/hisyory/mgsp-ti.png" alt="1974　MTTAL GEAR SOLID PEACE WALKER" width="274" height="127">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/story.png <img src="./_img/hisyory/story.png" alt="Story" width="35" height="14">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgsp-copy.png <img src="./_img/hisyory/mgsp-copy.png" alt="幻想の平和が軋む時" width="358" height="48">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgsp-pic01.jpg <img src="./_img/hisyory/mgsp-pic01.jpg" alt="" width="168" height="95">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgsp-pic02.jpg <img src="./_img/hisyory/mgsp-pic02.jpg" alt="" width="168" height="95">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgsp-pic03.jpg <img src="./_img/hisyory/mgsp-pic03.jpg" alt="" width="168" height="95">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgsp-pic04.jpg <img src="./_img/hisyory/mgsp-pic04.jpg" alt="" width="168" height="95">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgsp-pkg.jpg <img src="./_img/hisyory/mgsp-pkg.jpg" alt="" width="78" height="134">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1970.png <img src="./_img/hisyory/his-1970.png" alt="1970" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1971.png <img src="./_img/hisyory/his-1971.png" alt="1971" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1972.png <img src="./_img/hisyory/his-1972.png" alt="1972" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1973.png <img src="./_img/hisyory/his-1973.png" alt="1973" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1974.png <img src="./_img/hisyory/his-1974.png" alt="1974" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1975.png <img src="./_img/hisyory/his-1975.png" alt="1975" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1977.png <img src="./_img/hisyory/his-1977.png" alt="1977" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg-ti.png <img src="./_img/hisyory/mg-ti.png" alt="1995　MTTAL GEAR" width="289" height="127">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/story.png <img src="./_img/hisyory/story.png" alt="Story" width="35" height="14">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg-copy.png <img src="./_img/hisyory/mg-copy.png" alt="OPERATION INTRUDE! METAL GEARヲハカイセヨ・・・・・・。" width="639" height="48">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg-pic01.jpg <img src="./_img/hisyory/mg-pic01.jpg" alt="" width="168" height="147">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg-pic02.jpg <img src="./_img/hisyory/mg-pic02.jpg" alt="" width="168" height="147">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg-pic03.jpg <img src="./_img/hisyory/mg-pic03.jpg" alt="" width="168" height="147">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg-pic04.jpg <img src="./_img/hisyory/mg-pic04.jpg" alt="" width="168" height="147">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg-pkg.jpg <img src="./_img/hisyory/mg-pkg.jpg" alt="" width="97" height="133">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1990.png <img src="./_img/hisyory/his-1990.png" alt="1990" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1991.png <img src="./_img/hisyory/his-1991.png" alt="1991" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1994.png <img src="./_img/hisyory/his-1994.png" alt="1994" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1995.png <img src="./_img/hisyory/his-1995.png" alt="1995" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg2s-ti.png <img src="./_img/hisyory/mg2s-ti.png" alt="1999　MTTAL GEAR 2 SOLID SNAKE" width="187" height="127">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/story.png <img src="./_img/hisyory/story.png" alt="Story" width="35" height="14">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg2s-copy.png <img src="./_img/hisyory/mg2s-copy.png" alt="潜入と破壊の美学。" width="327" height="48">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg2s-pic01.jpg <img src="./_img/hisyory/mg2s-pic01.jpg" alt="" width="168" height="147">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg2s-pic02.jpg <img src="./_img/hisyory/mg2s-pic02.jpg" alt="" width="168" height="147">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg2s-pic03.jpg <img src="./_img/hisyory/mg2s-pic03.jpg" alt="" width="168" height="147">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg2s-pic04.jpg <img src="./_img/hisyory/mg2s-pic04.jpg" alt="" width="168" height="147">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mg2s-pkg.jpg <img src="./_img/hisyory/mg2s-pkg.jpg" alt="" width="98" height="134">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1996.png <img src="./_img/hisyory/his-1996.png" alt="1996" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1997.png <img src="./_img/hisyory/his-1997.png" alt="1997" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1998.png <img src="./_img/hisyory/his-1998.png" alt="1998" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-1999.png <img src="./_img/hisyory/his-1999.png" alt="1999" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs-ti.png <img src="./_img/hisyory/mgs-ti.png" alt="2005　MTTAL GEAR SOLID　/　MTTAL GEAR SOLID INTEGRAL" width="411" height="147">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/story.png <img src="./_img/hisyory/story.png" alt="Story" width="35" height="14">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs-copy.png <img src="./_img/hisyory/mgs-copy.png" alt="史上空前の核ジャック事件" width="445" height="48">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs-pic01.jpg <img src="./_img/hisyory/mgs-pic01.jpg" alt="" width="168" height="117">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs-pic02.jpg <img src="./_img/hisyory/mgs-pic02.jpg" alt="" width="168" height="117">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs-pic03.jpg <img src="./_img/hisyory/mgs-pic03.jpg" alt="" width="168" height="117">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs-pic04.jpg <img src="./_img/hisyory/mgs-pic04.jpg" alt="" width="168" height="117">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs-pkg.jpg <img src="./_img/hisyory/mgs-pkg.jpg" alt="" width="131" height="112">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-2000.png <img src="./_img/hisyory/his-2000.png" alt="2000" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-2001.png <img src="./_img/hisyory/his-2001.png" alt="2001" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-2003.png <img src="./_img/hisyory/his-2003.png" alt="2003" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-2004.png <img src="./_img/hisyory/his-2004.png" alt="2004" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-2005.png <img src="./_img/hisyory/his-2005.png" alt="2005" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs2-ti.png <img src="./_img/hisyory/mgs2-ti.png" alt="2007-2009　MTTAL GEAR SOLID 2 SONS OF LIBERTY" width="270" height="127">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/story.png <img src="./_img/hisyory/story.png" alt="Story" width="35" height="14">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs2-copy.png <img src="./_img/hisyory/mgs2-copy.png" alt="繰り返されるテロリズムの脅威" width="485" height="48">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs2-pic01.jpg <img src="./_img/hisyory/mgs2-pic01.jpg" alt="" width="168" height="95">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs2-pic02.jpg <img src="./_img/hisyory/mgs2-pic02.jpg" alt="" width="168" height="95">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs2-pic03.jpg <img src="./_img/hisyory/mgs2-pic03.jpg" alt="" width="168" height="95">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs2-pic04.jpg <img src="./_img/hisyory/mgs2-pic04.jpg" alt="" width="168" height="95">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs2-pkg.jpg <img src="./_img/hisyory/mgs2-pkg.jpg" alt="" width="93" height="132">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-2007.png <img src="./_img/hisyory/his-2007.png" alt="2007" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-2008.png <img src="./_img/hisyory/his-2008.png" alt="2008" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-2009.png <img src="./_img/hisyory/his-2009.png" alt="2009" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs4-ti.png <img src="./_img/hisyory/mgs4-ti.png" alt="2014　MTTAL GEAR SOLID 4 GUNS OF THE PATRIOTS" width="314" height="127">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/story.png <img src="./_img/hisyory/story.png" alt="Story" width="35" height="14">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs4-copy.png <img src="./_img/hisyory/mgs4-copy.png" alt="戦争がビジネスへと変貌" width="402" height="48">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs4-pic01.jpg <img src="./_img/hisyory/mgs4-pic01.jpg" alt="" width="168" height="95">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs4-pic02.jpg <img src="./_img/hisyory/mgs4-pic02.jpg" alt="" width="168" height="95">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs4-pic03.jpg <img src="./_img/hisyory/mgs4-pic03.jpg" alt="" width="168" height="95">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs4-pic04.jpg <img src="./_img/hisyory/mgs4-pic04.jpg" alt="" width="168" height="95">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/mgs4-pkg.jpg <img src="./_img/hisyory/mgs4-pkg.jpg" alt="" width="92" height="107">
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-2010.png <img src="./_img/hisyory/his-2010.png" alt="2010" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_img/hisyory/his-2011.png <img src="./_img/hisyory/his-2011.png" alt="2011" width="223" height="43" />
+https://www.konami.com/mg/archive/mgs_tlc/_common/img/logo_ps3.png <img src="./_common/img/logo_ps3.png" alt="PS3" width="121" height="38" />
+https://www.konami.com/mg/archive/mgs_tlc/_common/img/copyright.png <img src="_common/img/copyright.png" alt="©2013 Konami Digital Entertainment &quot;Playstation&quot; and the &quot;PS&quot; Family logo are registered trademarks and &quot;PS3&quot; and the Playstation Network logo are trademarks of Sony Computer Entertainment Inc. The PlayStation Network logo is a service mark of Sony Computer Entertainment Inc. &quot;MSX&quot; is a trademark of the MSX Licensing Corporation managed by D4Enterprise Co.,LTD." width="612" height="49" class="ml10" />
+https://www.konami.com/mg/archive/mgs_tlc/_common/img/copyright_konami.png <img src="_common/img/copyright_konami.png" alt="&copy;2013 Konami Digital Entertainment" width="179" height="13" class="" />
+
+ https://www.konami.com/mg/archive/mgs/about_mgs/index.html
+https://www.konami.com/mg/archive/mgs/images/logo_konami.png <img src="../images/logo_konami.png" width="93" height="17" alt="">
+https://www.konami.com/mg/archive/mgs/images/mgs_logo.gif <img src="../images/mgs_logo.gif" width="155" height="40" border="0" alt="METAL GEAR SOLID">
+https://www.konami.com/mg/archive/mgs/images/hmenu01_d.gif <img src="../images/hmenu01_d.gif" name="hmenu01" width="97" height="18" border="0" alt="INTRODUCTION">
+https://www.konami.com/mg/archive/mgs/images/hmenu02_d.gif <img src="../images/hmenu02_d.gif" name="hmenu02" width="97" height="18" border="0" alt="STORY">
+https://www.konami.com/mg/archive/mgs/images/hmenu03_d.gif <img src="../images/hmenu03_d.gif" name="hmenu03" width="98" height="18" border="0" alt="CHARACTER">
+https://www.konami.com/mg/archive/mgs/images/hmenu04_o.gif <img src="../images/hmenu04_o.gif" width="100" height="18" alt="ABOUT MGS">
+https://www.konami.com/mg/archive/mgs/images/hmenu05_d.gif <img src="../images/hmenu05_d.gif" name="hmenu05" width="97" height="18" border="0" alt="GAME ARCHIVES">
+https://www.konami.com/mg/archive/mgs/images/spacer.gif <img src="../images/spacer.gif" width="160" height="30" alt="ABOUT MGS">
+https://www.konami.com/mg/archive/mgs/about_mgs/images/am01_o.gif <img src="images/am01_o.gif" width="200" height="15" alt="「METAL GEAR」とは？">
+https://www.konami.com/mg/archive/mgs/about_mgs/images/am02_d.gif <img src="images/am02_d.gif" name="am02" width="200" height="30" border="0" alt="タクティカル・エスピオナージ・アクションとは？">
+https://www.konami.com/mg/archive/mgs/about_mgs/images/am03_d.gif <img src="images/am03_d.gif" name="am03" width="200" height="15" border="0" alt="ステルスアクションゲームの真髄">
+https://www.konami.com/mg/archive/mgs/about_mgs/images/am04_d.gif <img src="images/am04_d.gif" name="am04" width="200" height="15" border="0" alt="ゲームに深みを増す、緻密な設定・世界観">
+https://www.konami.com/mg/archive/mgs/about_mgs/images/am01_title.gif <img src="images/am01_title.gif" width="464" height="20" alt="「METAL GEAR」とは？">
+https://www.konami.com/mg/archive/mgs/about_mgs/images/am01_1.jpg <img src="images/am01_1.jpg" width="220" height="155" alt="">
+https://www.konami.com/mg/archive/mgs/about_mgs/images/am01_2.jpg <img src="images/am01_2.jpg" width="220" height="155" alt="">
+https://www.konami.com/mg/archive/mgs/images/copyright.gif <img src="../images/copyright.gif" width="210" height="15" alt="&copy;1987 2008 Konami Digital Entertainment Co., Ltd.">
+https://www.konami.com/mg/archive/mgs/images/ps3.gif <img src="../images/ps3.gif" width="160" height="35" alt="">
+https://www.konami.com/mg/archive/mgs/images/psp.gif <img src="../images/psp.gif" width="100" height="35" alt="">
+https://www.konami.com/mg/archive/mgs/images/ps.gif <img src="../images/ps.gif" width="300" height="35" alt="">
+
+ https://www.konami.com/games/eu/en/products/mgsv_tde/
+https://www.konami.com/games/s/eu/img/logo_konami.png <img src="/games/s/eu/img/logo_konami.png" alt="KONAMI">
+https://www.konami.com/products_master/eu_publish/mgsv_tde/eu/en/images/mgsvtdemain.jpg <img src="/products_master/eu_publish/mgsv_tde/eu/en/images/mgsvtdemain.jpg">
+https://www.konami.com/games/s/eu/img/PEGI_18.png <img src="/games/s/eu/img/PEGI_18.png" alt="PEGI 18">
+https://www.konami.com/games/s/eu/img/rec_cs_mgsv.png <img src="/games/s/eu/img/rec_cs_mgsv.png" alt="METAL GEAR SOLID V: THE PHANTOM PAIN">
+https://www.konami.com/games/s/eu/img/rec_cs_mgsv.png <img src="/games/s/eu/img/rec_cs_mgsv.png" alt="METAL GEAR SOLID V: GROUND ZEROES">
+https://www.konami.com/games/eu/en/products/mgsv_tde/<%= thumbnail_data[title][current_country] %> <img src="<%= thumbnail_data[title][current_country] %>
+https://www.konami.com/games/eu/en/products/mgsv_tde/<%= list[i].external_profile_image_url_https %> <img src="<%= list[i].external_profile_image_url_https %>
+https://www.konami.com/games/s/eu/img/thumb_topics_noimage.png <img src="/games/s/eu/img/thumb_topics_noimage.png">
+https://www.konami.com/games/eu/en/products/mgsv_tde/<% if(list[i].thumbnail.medium.url && list[i].thumbnail.medium.w==600){ %> <img src="<% if(list[i].thumbnail.medium.url && list[i].thumbnail.medium.w==600){ %>
+https://www.konami.com/games/s/eu/img/thumb-topics-cover-yt-16x9-s.png <img src="/games/s/eu/img/thumb-topics-cover-yt-16x9-s.png">
+https://www.konami.com/games/eu/en/products/mgsv_tde/<% if(thumbnail.full.url){ %> <img src="<% if(thumbnail.full.url){ %>

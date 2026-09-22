@@ -1,0 +1,26 @@
+{
+  "themes": 51,
+  "chapters": 103,
+  "languages": [
+    "de",
+    "en",
+    "es",
+    "fr",
+    "hi",
+    "it",
+    "ja",
+    "ko",
+    "pt",
+    "ru",
+    "uk",
+    "zh"
+  ],
+  "localized_chapter_titles": 1236,
+  "localized_chapter_bodies": 1236,
+  "calendar_special_days": 16,
+  "anniversaries": 19,
+  "dated_events": 1,
+  "validation": "PASS",
+  "annual_unique_coverage": "NOT COMPLETE: minimum314additionalarticles for365days",
+  "bytes": 760553
+}

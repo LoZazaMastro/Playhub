@@ -34,7 +34,9 @@ public sealed class GamingSettings
 
 	public bool AutoHideMouseCursorInGamingMode { get; set; } = true;
 
-	public int AutoHideMouseCursorAfterMs { get; set; } = 2200;
+	// Playhub owns this value; this fallback only applies to a config written before the
+	// setting existed, and must match the app default in Playhub/Models/GamingModeConfig.cs.
+	public int AutoHideMouseCursorAfterMs { get; set; } = 500;
 
 	public bool BorderlessFullscreenWindowsInGamingMode { get; set; } = true;
 
@@ -63,6 +65,10 @@ public sealed class GamingSettings
 	public bool NavigationHapticsEnabled { get; set; }
 
 	public int NavigationHapticsIntensity { get; set; } = 55;
+
+	// Quando attivo, Playhub avvia i programmi desktop con i riferimenti SDL
+	// necessari al riconoscimento nativo dello Steam Controller.
+	public bool Sdl3NativeControllerEnabled { get; set; }
 
 	public GamingSplashSettings Splash { get; set; } = new GamingSplashSettings();
 

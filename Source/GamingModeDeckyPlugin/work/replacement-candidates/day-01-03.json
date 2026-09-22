@@ -1,0 +1,50 @@
+[
+ {
+  "file": "day-01-03-0.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/Signed_Pong_Cabinet.jpg/1280px-Signed_Pong_Cabinet.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Signed_Pong_Cabinet.jpg",
+  "credit": "Chris Rand / CC BY-SA 3.0",
+  "description": "Pong cabinet signed by Pong creator Allan Alcorn in the 'Golden Age of Video Games' exhibit at Neville Public Museum in Green Bay, Wisconsin.",
+  "title": "File:Signed Pong Cabinet.jpg"
+ },
+ {
+  "file": "day-01-03-1.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/Atari_Pong_Table.jpg/1280px-Atari_Pong_Table.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atari_Pong_Table.jpg",
+  "credit": "Mbrickn / CC BY 4.0",
+  "description": "An Atari Pong Table, similar to the one shown at CES 2019. This was located temporarily at the Union Oval at Bowling Green State University.",
+  "title": "File:Atari Pong Table.jpg"
+ },
+ {
+  "file": "day-01-03-2.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/PONG_arcade.jpg/1280px-PONG_arcade.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:PONG_arcade.jpg",
+  "credit": "Luis Alfredo Romero / CC BY-SA 4.0",
+  "description": "PONG machine in a local arcade.",
+  "title": "File:PONG arcade.jpg"
+ },
+ {
+  "file": "day-01-03-3.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/3/30/Atari_Pong.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atari_Pong.jpg",
+  "credit": "Azerion / Public domain",
+  "description": "Atari Pong played online",
+  "title": "File:Atari Pong.jpg"
+ },
+ {
+  "file": "day-01-03-4.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Atari_Pong_arcade_game_cabinet.jpg/1280px-Atari_Pong_arcade_game_cabinet.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atari_Pong_arcade_game_cabinet.jpg",
+  "credit": "Four_Arcade_Games.jpg: Rob Boudon\nderivative work: Ubcule / CC BY 2.0",
+  "description": "Atari Pong cabinet",
+  "title": "File:Atari Pong arcade game cabinet.jpg"
+ },
+ {
+  "file": "day-01-03-5.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Atari_Pong_arcade_game_front.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atari_Pong_arcade_game_front.jpg",
+  "credit": "spablab / CC BY 2.0",
+  "description": "1st public videogame ever.",
+  "title": "File:Atari Pong arcade game front.jpg"
+ }
+]

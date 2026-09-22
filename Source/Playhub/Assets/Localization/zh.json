@@ -1,4 +1,20 @@
 {
+  "Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop.": "按 Ctrl + Alt + P 打开 Dashboard，即可切换窗口、管理常用应用、查看性能和运行中的进程。无需返回桌面，也能关闭无响应的应用。",
+  "Avvio": "启动",
+  "Passaggio alla Desktop Mode": "切换到桌面模式",
+  "Passaggio alla Gaming Mode": "切换到游戏模式",
+  "Provalo ora": "立即预览",
+  "Premi ESC o fai clic per tornare a Playhub": "按 ESC 或点击即可返回 Playhub",
+  "Colore personalizzato": "自定义颜色",
+  "Tonalita": "色相",
+  "Saturazione": "饱和度",
+  "Livello di nero": "黑色程度",
+  "Opacita": "不透明度",
+  "Impossibile aprire l'anteprima. Riprova.": "无法打开预览，请重试。",
+  "Animazione Gaming Mode": "Gaming Mode 动画",
+  "All'avvio e durante il cambio modalita.": "在启动和切换模式时显示。",
+  "Attiva animazione": "启用动画",
+  "Il colore e indipendente dall'accent di Playhub.": "动画颜色与 Playhub 的强调色分别设置。",
   "Aggiorna tutto": "全部更新",
   "Aggiornamento Playhub": "Playhub 更新",
   "Aggiornamento in corso": "正在更新",
@@ -181,5 +197,10 @@
   "Rimuovi blocco": "解除限制",
   "Xbox Game Bar automatica": "自动管理 Xbox Game Bar",
   "Attiva la Xbox Game Bar dal controller nei giochi Xbox e Microsoft Store, poi la rispegne quando esci.": "在 Xbox 和 Microsoft Store 游戏中启用手柄打开 Xbox Game Bar 的功能，退出游戏后再关闭。",
-  "Nascondi il cursore dopo (ms)": "隐藏光标前的空闲时间（毫秒）"
+  "Nascondi il cursore dopo (ms)": "隐藏光标前的空闲时间（毫秒）",
+  "Installa Playhub per lo stile classico e Playhub (Big Image Mode) per la modalità Big Image di Steam.": "安装 Playhub 以使用经典布局，安装 Playhub (Big Image Mode) 以使用 Steam 的 Big Image 模式。",
+  "Installa profili": "安装配置",
+  "Rimuovi profili": "移除配置",
+  "Profili Playhub installati: Playhub e Playhub (Big Image Mode).": "已安装 Playhub 和 Playhub (Big Image Mode) 配置。",
+  "Profili Playhub rimossi da CSS Loader.": "已从 CSS Loader 移除 Playhub 配置。"
 }

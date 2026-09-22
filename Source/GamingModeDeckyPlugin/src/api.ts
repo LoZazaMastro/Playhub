@@ -101,6 +101,7 @@ export interface ShortcutEntry {
   kind: string;
   target: string;
   iconBase64: string;
+  sdl3NativeControllerEnabled?: boolean | null;
 }
 
 export interface DiskEntry {
@@ -127,6 +128,7 @@ export interface DashboardSettings {
   defaultMode: string;
   navigationHapticsEnabled: boolean;
   navigationHapticsIntensity: number;
+  sdl3NativeControllerEnabled: boolean;
 }
 
 export interface ProcessEntry {
@@ -262,6 +264,10 @@ export function launchShortcut(id: string) {
 
 export function renameShortcut(id: string, name: string) {
   return post("/dash/shortcuts/rename", { id, name });
+}
+
+export function setShortcutSdl3(id: string, enabled: boolean | null) {
+  return post("/dash/shortcuts/sdl3", { id, enabled });
 }
 
 export function removeShortcut(id: string) {
@@ -429,6 +435,7 @@ export function iconSource(base64: string): string {
 // due schede in ascolto non aprono la pagina due volte.
 export interface DashboardSignal {
   open: boolean;
+  exitBigPicture: boolean;
   focusRecovery: number;
   steamForeground: boolean;
 }
@@ -437,6 +444,7 @@ export async function consumeOpenRequest(): Promise<DashboardSignal> {
   const result = await request<DashboardSignal>("/dash/open-requested", undefined, 1500);
   return {
     open: result?.open === true,
+    exitBigPicture: result?.exitBigPicture === true,
     focusRecovery: Number(result?.focusRecovery) || 0,
     steamForeground: result?.steamForeground === true,
   };

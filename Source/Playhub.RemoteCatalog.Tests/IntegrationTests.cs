@@ -9,11 +9,11 @@ internal static class IntegrationTests
         using var files = new TestFiles();
         using var remote = new Fixture();
         var bundled = PluginCatalogService.GetBundledCatalog();
-        Check(bundled.CatalogRevision == 3 && bundled.Plugins.Count == 174, "Combined packaged baseline missing.");
+        Check(bundled.CatalogRevision == 5 && bundled.Plugins.Count == 196, "Combined packaged baseline missing.");
         var service = new PluginCatalogService();
         var empty = await service.LoadAsync(files.PluginRoot, files.InstalledRoot);
-        Check(empty.Count == 174 && empty.Count(p => p.IsPlayhubPlugin) == 13 &&
-            empty.Select(p => p.RepositorySlug).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 174, "Baseline duplicated/lost built-ins.");
+        Check(empty.Count == 196 && empty.Count(p => p.IsPlayhubPlugin) == 13 &&
+            empty.Select(p => p.RepositorySlug).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 196, "Baseline duplicated/lost built-ins.");
 
         var artwork = bundled.Plugins.Single(p => p.Repository == "LoZazaMastro/Playhub-Artworks");
         var decky = bundled.Plugins.First(p => p.CatalogSource == "decky-store");
@@ -37,14 +37,14 @@ internal static class IntegrationTests
         files.Install(own, "1.0.0");
         var updatedDecky = decky with { Version = "9.0.0", LongDescription = "Remote updated description",
             ReleaseAssetName = "updated.zip", CatalogReleaseUrl = "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/updated.zip" };
-        var document = new RemotePluginCatalog { CatalogRevision = 4,
+        var document = new RemotePluginCatalog { CatalogRevision = 6,
             Plugins = new[] { artwork with { Version = "2.0.0" }, updatedDecky, own, github } };
         remote.Handler.Respond = (_, _) => Task.FromResult(new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK)
         { Content = new System.Net.Http.ByteArrayContent(Serialize(document)) });
         var refreshed = await remote.Service.RefreshAsync(bundled);
         Check(refreshed.Origin == "remote", refreshed.Error ?? "Remote manifest rejected.");
         var loaded = await service.LoadAsync(files.PluginRoot, files.InstalledRoot, refreshed.Catalog);
-        Check(loaded.Count == 176 && loaded.Select(p => p.RepositorySlug).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 176,
+        Check(loaded.Count == 198 && loaded.Select(p => p.RepositorySlug).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 198,
             "Remote additions duplicated/lost records.");
         var mappedArtwork = loaded.Single(p => p.RepositorySlug == artwork.Repository);
         Check(mappedArtwork.SourceFolder == source && mappedArtwork.InstallerZip == installer && mappedArtwork.CoverImage == cover &&

@@ -1,6 +1,6 @@
 {
   "name": "playhub-gaming-mode",
-  "version": "1.4.0",
+  "version": "2.0.1",
   "description": "Playhub Gaming Mode per Decky: passaggio fra Desktop e Gaming Mode e la Playhub Dashboard come schermata di Steam.",
   "type": "module",
   "scripts": {
@@ -8,7 +8,14 @@
     "watch": "rollup -c -w",
     "test": "tsc --noEmit && node --test tests/*.test.mjs"
   },
-  "keywords": ["decky", "plugin", "steam", "windows", "big-picture", "playhub"],
+  "keywords": [
+    "decky",
+    "plugin",
+    "steam",
+    "windows",
+    "big-picture",
+    "playhub"
+  ],
   "author": "LoZazaMastro",
   "license": "MIT",
   "devDependencies": {
@@ -26,7 +33,10 @@
   },
   "pnpm": {
     "peerDependencyRules": {
-      "ignoreMissing": ["react", "react-dom"]
+      "ignoreMissing": [
+        "react",
+        "react-dom"
+      ]
     }
   }
 }

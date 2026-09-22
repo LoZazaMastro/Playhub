@@ -309,14 +309,24 @@ public sealed class DeckyInstallerService
 
             using (var run = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", writable: true))
             {
-                run?.SetValue("DeckyLoader", "\"" + loader + "\"");
+                run?.SetValue("DeckyLoader", Playhub.Shared.DeckyStartupGuard.CreateCommand(loader));
             }
 
-            Process.Start(new ProcessStartInfo
+            Playhub.Shared.DeckyStartupGuard.RunExclusive(() =>
             {
-                FileName = loader,
-                WorkingDirectory = ServicesDir,
-                UseShellExecute = true
+                foreach (var name in new[] { "PluginLoader", "PluginLoader_noconsole" })
+                {
+                    var running = Process.GetProcessesByName(name);
+                    foreach (var process in running) process.Dispose();
+                    if (running.Length > 0) return true;
+                }
+                using var started = Process.Start(new ProcessStartInfo
+                {
+                    FileName = loader,
+                    WorkingDirectory = ServicesDir,
+                    UseShellExecute = true
+                });
+                return started != null;
             });
             return true;
         }

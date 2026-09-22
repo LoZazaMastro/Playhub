@@ -1,0 +1,46 @@
+Quick Settings for Decky (Windows)
+Copyright (c) 2026 sgarr
+Licensed under the MIT License (see LICENSE).
+
+================================================================
+This product includes or is derived from the following components.
+================================================================
+
+1) Decky Plugin Template
+   Copyright (c) 2022-2024, Steam Deck Homebrew
+   License: BSD 3-Clause
+   https://github.com/SteamDeckHomebrew/decky-plugin-template
+   The build/runtime scaffolding of this plugin is based on the template.
+
+2) GoTweaks (techniques and original source, MIT parts only)
+   Copyright (c) Microsoft Corporation and GoTweaks contributors
+   License: MIT
+   https://github.com/corando98/GoTweaks
+   Windows power, display, TDP and ADLX Radeon integration techniques in this
+   plugin were adapted from GoTweaks' MIT-licensed source files.
+   IMPORTANT: GoTweaks' *shipped binaries* are GPL-3.0 because they link
+   libviiper.dll (VIIPER). This plugin does NOT include, link, or derive
+   from libviiper.dll or any VIIPER/controller-emulation code, so it is
+   NOT a combined work with VIIPER and remains under the MIT License.
+   See LEGAL.md for the full analysis.
+
+3) RyzenAdj (libryzenadj.dll) - historical dependency, binary not shipped
+   Copyright (c) Jiaxun Yang and RyzenAdj contributors
+   License: LGPL-3.0-or-later
+   https://github.com/FlyGoat/RyzenAdj
+   Earlier packages dynamically loaded it for AMD TDP control. The current
+   Playhub runtime excludes the DLL and disables the legacy path. See
+   licenses/RyzenAdj-LGPL-3.0.txt for the retained notice and historical offer of
+   corresponding source, and licenses/GPL-3.0.txt for the base license text
+   that the LGPL-3.0 incorporates by reference.
+
+4) decky-lsfg-vk - reference implementation
+   Copyright (c) its contributors
+   License: BSD 3-Clause
+   The per-game profile and lifecycle design was studied as a reference.
+   Linux and Vulkan implementation code is not included.
+
+Components deliberately NOT included (to keep the project MIT and broadly
+installable): libviiper.dll (GPL-3.0), WinRing0x64.dll and inpoutx64.dll
+(low-level ring0 drivers flagged by Windows Defender), GamepadMotion.dll
+and all controller-emulation code (Legion Go specific). See LEGAL.md.

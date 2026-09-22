@@ -70,10 +70,10 @@ static Task Canonical()
     var bytes = File.ReadAllBytes(path);
     var parsed = RemotePluginCatalogService.Parse(bytes);
     Check(JsonNode.DeepEquals(JsonNode.Parse(bytes), BundledManifest.Assemble()), "Canonical data differs from configured source.");
-    Check(parsed.Plugins.Count == 174, "Expected 13 built-ins and all 161 external entries.");
+    Check(parsed.Plugins.Count == 196, "Expected 13 built-ins and all 183 external entries.");
     Check(parsed.Plugins.Count(p => p.CatalogSource == "playhub") == 13, "Playhub provenance lost.");
     Check(parsed.Plugins.Count(p => p.CatalogSource == "decky-store") == 108, "Decky provenance lost.");
-    Check(parsed.Plugins.Count(p => p.CatalogSource == "outside-store") == 53, "GitHub provenance lost.");
+    Check(parsed.Plugins.Count(p => p.CatalogSource == "outside-store") == 75, "GitHub provenance lost.");
     Check(parsed.Plugins.Count(p => p.RepositoryUrl.StartsWith("https://gitlab.com/")) == 3, "GitLab sources lost.");
     return Task.CompletedTask;
 }

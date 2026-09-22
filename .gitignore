@@ -39,3 +39,7 @@ build-all-log.txt
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# ===== File pesanti (oltre 100 MB: GitHub li rifiuta) =====
+/Playhub-Decky-*.zip
+Source/GamingModeAgent/publish_verified_*/

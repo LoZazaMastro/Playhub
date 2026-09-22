@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "verifiedAt": "2026-09-04",
+  "verifiedAt": "2026-09-11",
   "officialDeckyCatalogUrl": "https://plugins.deckbrew.xyz/plugins",
   "plugins": [
     {
@@ -15,10 +15,10 @@
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "Le copertine giuste per ogni gioco della tua libreria.",
-      "longDescription": "Playhub Artworks porta la gestione degli artwork dentro Big Picture, pensata per il controller: cerchi, scegli e applichi copertine, banner, hero, loghi e icone senza mai tornare al desktop.\n\n## Cosa fa\n\u2022 Cerca gli artwork su SteamGridDB, IGDB, PlayStation Store, Nintendo eShop, Xbox, AlphaCoders, iiDB e IGN.\n\u2022 Ricorda filtri e ultima fonte usata separatamente per ogni tipo di artwork.\n\u2022 Crea Perfect Hero e Perfect Banner fondendo sfondo e logo, con posizione, scala, opacit\u00E0 e ombra regolabili.\n\u2022 Permette di escludere il logo dalla composizione quando vuoi solo lo sfondo.\n\u2022 Posiziona e ridimensiona il logo del gioco come fa Steam.\n\u2022 Mostra le copertine quadrate nella libreria e in tutte le file della Home, banner di Steam compreso.\n\u2022 Completa in background gli artwork mancanti di tutta la libreria.\n\n## Nota\n\u2022 Per le ricerche che usano SteamGridDB serve una chiave API personale: resta salvata solo sul tuo PC.",
+      "shortDescription": "The right artwork for every game in your library.",
+      "longDescription": "Playhub Artworks brings artwork management into Big Picture with a controller-first experience: search, choose, and apply covers, banners, heroes, logos, and icons without returning to the desktop.\n\n## What it does\n• Searches for artwork across SteamGridDB, IGDB, PlayStation Store, Nintendo eShop, Xbox, AlphaCoders, iiDB, and IGN.\n• Remembers your filters and most recently used source separately for each artwork type.\n• Creates Perfect Heroes and Perfect Banners by blending a background and logo, with adjustable position, scale, opacity, and shadow.\n• Lets you leave the logo out of the composition when you only want the background.\n• Positions and resizes game logos just like Steam.\n• Displays square covers throughout the library and across every Home shelf, including Steam banners.\n• Fills in missing artwork for your entire library in the background.\n\n## Note\n• Searches using SteamGridDB require a personal API key, which is stored only on your PC.",
       "coverUrl": "",
-      "iconGlyph": "\uE91B",
+      "iconGlyph": "",
       "catalogStatus": "playhub",
       "catalogSource": "playhub",
       "catalogPluginId": 0,
@@ -29,9 +29,11 @@
         "banner",
         "hero",
         "logo",
-        "icone",
+        "icons",
         "SteamGridDB",
-        "libreria"
+        "library",
+        "catalog-added:2026-09-04",
+        "first-release:2026-09-02"
       ],
       "aliases": [
         "Playhub Artworks",
@@ -52,21 +54,23 @@
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "Un portale diretto verso il mondo di gioco.",
-      "longDescription": "Launch Curtain trasforma l\u0027avvio dei giochi PC in qualcosa che assomiglia a una console. Quando lanci un gioco da Steam Big Picture, cala una schermata di caricamento a tutto schermo che nasconde i flash del desktop, i launcher e le finestre fuori posto, lasciando in primo piano il logo del gioco con una dissolvenza morbida. \u00C8 un plugin esclusivo per Windows.\n\n## Cosa fa\n\u2022 Avvia una schermata personalizzabile non appena si lancia un gioco.\n\u2022 Personalizza la tua schermata di Launch Curtain come vuoi: scegli dove posizionare il logo e la sua grandezza, scegli quale sfondo utilizzare e la sua opacit\u00E0, e scegli se applicare uno zoom animato al logo.\n\u2022 Si nasconde da sola quando la finestra di gioco raggiunge il fullscreen, o dopo un timeout di sicurezza.\n\u2022 Si pu\u00F2 chiudere con ESC o con il tasto Indietro/Chiudi dei controller pi\u00F9 comuni.\n\n## Personalizzazione\n\u2022 Puoi scegliere un logo tuo (PNG, JPG, WebP o BMP) al posto di quello di Playhub quando non \u00E8 presente il logo del gioco.\n\u2022 Puoi regolare quanto a lungo Launch Curtain resta visibile dopo che il gioco \u00E8 pronto.",
+      "shortDescription": "A direct gateway into the world of every game.",
+      "longDescription": "Launch Curtain turns starting a PC game into a console-like experience. When you launch a game from Steam Big Picture, a full-screen loading curtain hides desktop flashes, launchers, and misplaced windows, keeping the game's logo front and center with a smooth fade. This plugin is exclusive to Windows.\n\n## What it does\n• Shows a customizable curtain as soon as a game launches.\n• Lets you place and resize the logo, choose the background and its opacity, and optionally add an animated zoom to the logo.\n• Hides automatically when the game window reaches fullscreen, or after a safety timeout.\n• Can be dismissed with ESC or the Back/Close button on common controllers.\n\n## Customization\n• You can use your own logo (PNG, JPG, WebP, or BMP) instead of the Playhub logo when the game has no logo available.\n• You can adjust how long Launch Curtain remains visible after the game is ready.",
       "coverUrl": "",
-      "iconGlyph": "\uE8F1",
+      "iconGlyph": "",
       "catalogStatus": "playhub",
       "catalogSource": "playhub",
       "catalogPluginId": 0,
       "compatibility": "",
       "keywords": [
-        "avvio",
+        "launch",
         "curtain",
         "fullscreen",
         "overlay",
         "logo",
-        "soundbites"
+        "soundbites",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-10"
       ],
       "aliases": [
         "Launch Curtain",
@@ -87,23 +91,25 @@
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "Le tue canzoni preferite sempre con te.",
-      "longDescription": "Now Playing \u00E8 il tuo compagno musicale in stile console: porta la sessione multimediale attiva di Windows dentro il menu rapido di Steam, con copertina, titolo e controlli sempre a portata di gamepad.\n\n## Cosa fa\n\u2022 Mostra nel menu rapido la sessione media attiva di Windows.\n\u2022 Visualizza titolo, artista, copertina dell\u0027album e avanzamento del brano.\n\u2022 Offre i controlli play/pausa, precedente, successivo, shuffle e ripeti quando il player li espone.\n\u2022 Avvia al volo le app musicali pi\u00F9 diffuse: Spotify, TIDAL, Apple Music, Deezer, Amazon Music e SoundCloud.\n\u2022 Include una vista Now Playing a schermo intero con visualizer.\n\u2022 Dialoga con Windows tramite un helper dedicato per leggere le sessioni multimediali.",
+      "shortDescription": "Your favorite songs, always within reach.",
+      "longDescription": "Now Playing is your console-style music companion, bringing the active Windows media session into Steam's Quick Access Menu with album art, track details, and controls always within gamepad reach.\n\n## What it does\n• Shows the active Windows media session in the Quick Access Menu.\n• Displays the title, artist, album art, and track progress.\n• Provides play/pause, previous, next, shuffle, and repeat controls whenever the player makes them available.\n• Opens popular music apps in an instant: Spotify, TIDAL, Apple Music, Deezer, Amazon Music, and SoundCloud.\n• Includes a full-screen Now Playing view with a visualizer.\n• Uses a dedicated Windows helper to read media sessions.",
       "coverUrl": "",
-      "iconGlyph": "\uE189",
+      "iconGlyph": "",
       "catalogStatus": "playhub",
       "catalogSource": "playhub",
       "catalogPluginId": 0,
       "compatibility": "",
       "keywords": [
-        "musica",
+        "music",
         "player",
         "Spotify",
         "YouTube",
         "Music",
-        "sessione",
+        "session",
         "media",
-        "surround"
+        "surround",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-10"
       ],
       "aliases": [
         "Now Playing",
@@ -124,10 +130,10 @@
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "Dettagli, immagini e achievement per i tuoi giochi.",
-      "longDescription": "Playhub Metadata rende la libreria Big Picture pi\u00F9 curata, ricca e console-like, soprattutto per i giochi non-Steam: titoli PC esterni, Game Pass, app Xbox ed emulatori. Aggiunge metadati, immagini e video della community, categorie e persino achievement.\n\n## Metadati e immagini\n\u2022 Trova automaticamente i metadati mancanti dei giochi.\n\u2022 Aggiunge descrizioni, sviluppatori, publisher, date di uscita, valutazioni e schede informative.\n\u2022 Aggiunge screenshot e media della community quando disponibili.\n\u2022 Ti lascia modificare manualmente i metadati di ogni gioco.\n\n## Achievement\n\u2022 Mostra gli achievement dei giochi non-Steam dentro Big Picture.\n\u2022 Supporta RetroAchievements per ROM ed emulatori.\n\u2022 Supporta gli achievement Xbox / Game Pass / Microsoft Store tramite OpenXBL (serve importare i giochi tramite la tab Importa Giochi di Playhub).\n\u2022 Permette di scegliere la fonte per ogni gioco: Auto, RetroAchievements, Xbox o Disattivata.\n\u2022 Offre cache flessibili (oraria, giornaliera, settimanale, a sessione o manuale) per limitare le chiamate API.\n\n## Nota\n\u2022 Gli achievement non diventano achievement Steam veri: vengono solo mostrati dentro Big Picture.",
+      "shortDescription": "Details, artwork, and achievements for your games.",
+      "longDescription": "Playhub Metadata gives your Big Picture library a richer, more polished, console-like feel, especially for non-Steam games such as external PC titles, Game Pass games, Xbox apps, and emulators. It adds metadata, community images and videos, categories, and even achievements.\n\n## Metadata and images\n• Automatically finds missing game metadata.\n• Adds descriptions, developers, publishers, release dates, ratings, and information panels.\n• Adds community screenshots and media when available.\n• Lets you edit each game's metadata manually.\n\n## Achievements\n• Displays achievements for non-Steam games inside Big Picture.\n• Supports RetroAchievements for ROMs and emulators.\n• Supports Xbox, Game Pass, and Microsoft Store achievements through OpenXBL (games must be imported through Playhub's Import Games tab).\n• Lets you choose the source for each game: Auto, RetroAchievements, Xbox, or Disabled.\n• Offers flexible hourly, daily, weekly, per-session, or manual caching to limit API calls.\n\n## Note\n• These do not become native Steam achievements; they are displayed only inside Big Picture.",
       "coverUrl": "",
-      "iconGlyph": "\uE946",
+      "iconGlyph": "",
       "catalogStatus": "playhub",
       "catalogSource": "playhub",
       "catalogPluginId": 0,
@@ -137,10 +143,12 @@
         "achievement",
         "RetroAchievements",
         "Xbox",
-        "immagini",
-        "giochi",
-        "non",
-        "Steam"
+        "images",
+        "games",
+        "non-Steam",
+        "Steam",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-15"
       ],
       "aliases": [
         "Playhub Metadata",
@@ -150,7 +158,7 @@
       ]
     },
     {
-      "active": true,
+      "active": false,
       "name": "Quick Settings",
       "installFolder": "quick-settings",
       "author": "LoZazaMastro",
@@ -161,22 +169,24 @@
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "Le impostazioni importanti, sempre a portata di mano.",
-      "longDescription": "Quick Settings porta le impostazioni rapide di Windows dentro Steam Big Picture, tramite un piccolo agente locale avviato dal plugin. Tutto quello che ti serve regolare resta raggiungibile dal menu rapido, senza tornare al desktop.\n\n## Controlli disponibili\n\u2022 Volume del dispositivo.\n\u2022 Volume del microfono.\n\u2022 Overlay per attenuare lo schermo (dimmer).\n\u2022 Selettori di uscita audio e ingresso microfono.\n\u2022 Interruttore HDR con conferma a 10 secondi.\n\u2022 Stato HDR letto direttamente da Windows (DisplayConfig / Advanced Color) invece di affidarsi a uno stato salvato dal plugin.",
+      "shortDescription": "The settings that matter, always within reach.",
+      "longDescription": "Quick Settings brings essential Windows controls into Steam Big Picture through a lightweight local agent started by the plugin. Everything you need remains accessible from the Quick Access Menu, without returning to the desktop.\n\n## Available controls\n• Device volume.\n• Microphone volume.\n• Screen dimmer overlay.\n• Audio output and microphone input selectors.\n• HDR toggle with a 10-second confirmation.\n• HDR status read directly from Windows (DisplayConfig / Advanced Color) instead of relying on a state saved by the plugin.",
       "coverUrl": "",
-      "iconGlyph": "\uE713",
+      "iconGlyph": "",
       "catalogStatus": "playhub",
       "catalogSource": "playhub",
       "catalogPluginId": 0,
       "compatibility": "",
       "keywords": [
         "volume",
-        "microfono",
+        "microphone",
         "HDR",
         "display",
-        "impostazioni",
-        "rapide",
-        "Windows"
+        "settings",
+        "quick",
+        "Windows",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-10"
       ],
       "aliases": [
         "Quick Settings",
@@ -186,21 +196,21 @@
       ]
     },
     {
-      "active": true,
+      "active": false,
       "name": "Shortcuts",
       "installFolder": "shortcuts",
       "author": "LoZazaMastro",
       "repository": "LoZazaMastro/Shortcuts",
       "repositoryUrl": "https://github.com/LoZazaMastro/Shortcuts",
-      "version": "1.0.0",
+      "version": "1.2.0",
       "releaseAssetName": "",
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "Your favourite plugins, directly in the Quick Access Menu.",
-      "longDescription": "Shortcuts brings the Decky plugins you use most into the main Quick Access Menu tab bar. Choose compatible panels, assign an icon and arrange them as you like without removing their original Decky entries.\n\n## What it does\n\u2022 Turns loaded Decky plugin QAM panels into independent tabs.\n\u2022 Keeps the original access point inside Decky.\n\u2022 Lets you use the original icon or choose from the included Tabler icons.\n\u2022 Reorders and removes only the tabs created by Shortcuts.\n\u2022 Saves your preferences and automatically restores temporarily unavailable plugins.\n\n## Note\n\u2022 It uses Decky\u0027s internal QAM tab registry because there is no public API for independent top-level tabs yet. A future Decky update may require an adjustment to the plugin.",
+      "shortDescription": "Arrange Steam, Decky and your favourite plugin tabs from one place.",
+      "longDescription": "Shortcuts gives you one controller-friendly place to arrange Steam's native Quick Access Menu tabs, Decky and compatible plugin shortcuts. Changes appear immediately on the Steam Home screen and while playing.\n\n## What it does\n• Reorders Steam's native QAM tabs, Decky and compatible custom tabs.\n• Turns loaded Decky plugin panels into independent shortcuts.\n• Keeps every plugin's original Decky entry available.\n• Lets you use the original icon or choose from the included Tabler icons.\n• Saves icon and tab choices across Steam and Shortcuts restarts.\n• Restores temporarily unavailable plugins when they return.\n\n## Note\n• It uses guarded integration with Steam and Decky's internal QAM tab registry because no public API currently covers independent top-level tabs and their ordering. A future Steam or Decky update may require an adjustment.",
       "coverUrl": "https://raw.githubusercontent.com/LoZazaMastro/Shortcuts/main/assets/cover.jpg",
-      "iconGlyph": "\uE71B",
+      "iconGlyph": "",
       "catalogStatus": "playhub",
       "catalogSource": "playhub",
       "catalogPluginId": 0,
@@ -214,7 +224,9 @@
         "menu",
         "plugins",
         "icons",
-        "Decky"
+        "Decky",
+        "catalog-added:2026-09-04",
+        "first-release:2026-09-04"
       ],
       "aliases": [
         "Shortcuts",
@@ -235,21 +247,23 @@
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "Notifiche pi\u00F9 belle, chiare e personali.",
-      "longDescription": "Playhub Notifications sostituisce i popup visibili e i suoni delle notifiche di Steam con temi animati pensati per Big Picture, mantenendo intatta la cronologia nativa delle notifiche.\n\n## Cosa fa\n\u2022 Offre sette temi dedicati: Xbox Console, PlayStation, GOG Galaxy, Epic Games Launcher, Nintendo, Android e Playhub.\n\u2022 Personalizza achievement, messaggi, inviti, download, screenshot, controller, avvisi, notifiche di sistema e community.\n\u2022 Usa l\u0027artwork reale degli achievement fornito da Steam quando disponibile.\n\u2022 Permette di scegliere posizione, durata e volume delle notifiche, con un intervallo da 0% a 200%.\n\u2022 Mostra il volume di sistema con un overlay coordinato al tema scelto.\n\u2022 Include anteprime per provare ogni tipo di notifica direttamente dal menu rapido.\n\n## Note\n\u2022 Sostituisce soltanto il popup visibile e il relativo suono: la cronologia originale di Steam resta disponibile.\n\u2022 L\u0027overlay non prende il focus e non intercetta controller, tastiera o mouse mentre giochi.",
+      "shortDescription": "More beautiful, clearer, and more personal notifications.",
+      "longDescription": "Playhub Notifications replaces Steam's visible notification popups and sounds with animated themes designed for Big Picture, while leaving the native notification history intact.\n\n## What it does\n• Offers seven dedicated themes: Xbox Console, PlayStation, GOG Galaxy, Epic Games Launcher, Nintendo, Android, and Playhub.\n• Customizes achievements, messages, invitations, downloads, screenshots, controllers, alerts, system notifications, and community notifications.\n• Uses the real achievement artwork supplied by Steam when available.\n• Lets you choose notification position, duration, and volume, with a range from 0% to 200%.\n• Shows system volume through an overlay matched to the selected theme.\n• Includes previews for testing every notification type directly from the Quick Access Menu.\n\n## Notes\n• Only the visible popup and its sound are replaced; Steam's original notification history remains available.\n• The overlay does not take focus or intercept controller, keyboard, or mouse input while you play.",
       "coverUrl": "",
-      "iconGlyph": "\uEA8F",
+      "iconGlyph": "",
       "catalogStatus": "playhub",
       "catalogSource": "playhub",
       "catalogPluginId": 0,
       "compatibility": "",
       "keywords": [
-        "notifiche",
+        "notifications",
         "toast",
         "achievement",
-        "temi",
-        "suoni",
-        "overlay"
+        "themes",
+        "sounds",
+        "overlay",
+        "catalog-added:2026-09-04",
+        "first-release:2026-08-14"
       ],
       "aliases": [
         "Playhub Notifications",
@@ -270,21 +284,23 @@
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "Le colonne sonore, come meritano di essere ascoltate.",
-      "longDescription": "ThemeDeck d\u00E0 una colonna sonora alla tua libreria: riproduce una traccia musicale quando apri la pagina di un gioco in Gaming Mode, con musica ambientale opzionale per l\u0027interfaccia e un brano dedicato allo Store. \u00C8 un fork pensato per Windows e dentro Decky resta col nome ThemeDeck.\n\n## Cosa fa\n\u2022 Riproduce una traccia personalizzata all\u0027apertura della pagina di dettaglio di un gioco.\n\u2022 Ti lascia scegliere file audio locali o cercare su YouTube con yt-dlp.\n\u2022 Scarica e assegna tracce dai risultati di YouTube, con anteprima prima di confermare.\n\u2022 Supporta volume, skip iniziale e loop per singolo gioco.\n\u2022 Offre una traccia globale/ambientale per le pagine non di gioco e un brano separato per lo Store.\n\u2022 Ferma la musica quando un gioco viene avviato o \u00E8 in esecuzione.\n\u2022 Pu\u00F2 assegnare automaticamente le tracce mancanti cercandole su YouTube.\n\n## Note\n\u2022 Controlla solo il proprio audio: non tocca il volume di sistema di Windows.\n\u2022 La release Windows include yt-dlp.exe per far funzionare ricerca e download.\n\u2022 L\u0027interfaccia si traduce da sola in base alla lingua di Steam/Decky (11 lingue supportate).",
+      "shortDescription": "Soundtracks, heard the way they deserve.",
+      "longDescription": "ThemeDeck gives your library a soundtrack. It plays music when you open a game page in Gaming Mode, with optional ambient music for the interface and a separate track for the Store. This Windows-focused fork remains named ThemeDeck inside Decky.\n\n## What it does\n• Plays a custom track when you open a game's detail page.\n• Lets you choose local audio files or search YouTube with yt-dlp.\n• Downloads and assigns tracks from YouTube results, with a preview before confirmation.\n• Supports per-game volume, start offset, and looping.\n• Provides a global ambient track for non-game pages and a separate track for the Store.\n• Stops the music when a game launches or is running.\n• Can automatically find and assign missing tracks through YouTube searches.\n\n## Notes\n• It controls only its own audio and does not change the Windows system volume.\n• The Windows release includes yt-dlp.exe to power search and downloads.\n• The interface automatically follows the Steam/Decky language, with 11 languages supported.",
       "coverUrl": "",
-      "iconGlyph": "\uE790",
+      "iconGlyph": "",
       "catalogStatus": "playhub",
       "catalogSource": "playhub",
       "catalogPluginId": 0,
       "compatibility": "",
       "keywords": [
-        "musica",
+        "music",
         "soundtrack",
         "YouTube",
         "yt-dlp",
         "audio",
-        "personalizzazione"
+        "customization",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-10"
       ],
       "aliases": [
         "ThemeDeck",
@@ -305,10 +321,10 @@
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "I trailer dei tuoi giochi, alla portata di gamepad.",
-      "longDescription": "TrailerHero fa sembrare Steam Big Picture la dashboard di una console. Quando apri la pagina di un gioco, mantiene l\u0027artwork originale per tre secondi e poi sfuma un trailer in muto nello stesso riquadro hero, scegliendo prima i trailer di Steam e passando a YouTube quando serve.\n\n## Controlli principali\n\u2022 Enabled attiva o disattiva l\u0027effetto.\n\u2022 Enable on home riproduce i trailer anche nella home della libreria Big Picture.\n\u2022 Game page logo sposta il logo del gioco in basso a sinistra durante il trailer e lo ripristina quando esci.\n\u2022 Automatic CRT applica un effetto CRT discreto ai trailer a bassa risoluzione.\n\u2022 Source sceglie per ogni gioco la modalit\u00E0 automatica, Steam o YouTube.\n\u2022 Quality imposta la qualit\u00E0 preferita (720p, 1080p o 2160p) per Steam e YouTube.\n\u2022 Steam video ti lascia scegliere qualsiasi video Steam del gioco da un menu, non solo il trailer in evidenza.\n\u2022 Trim start / Trim end salvano il taglio del video per ogni gioco.\n\u2022 Custom YouTube link salva un trailer YouTube specifico; senza link, l\u0027auto-ricerca preferisce risultati 4K e mantiene rigoroso il match del titolo.\n\n## Note\n\u2022 \u00C8 nato su e per Windows, anche se dovrebbe funzionare su Linux.\n\u2022 Legge e adatta gli elementi dell\u0027interfaccia di Big Picture, che Steam aggiorna spesso: alcuni selettori potrebbero richiedere aggiornamenti nel tempo.",
+      "shortDescription": "Your game trailers, always within gamepad reach.",
+      "longDescription": "TrailerHero gives Steam Big Picture the feel of a console dashboard. When you open a game page, it keeps the original artwork visible for three seconds, then smoothly fades a muted trailer into the same hero area, preferring Steam trailers and falling back to YouTube when needed.\n\n## Main controls\n• Enabled turns the effect on or off.\n• Enable on home also plays trailers on the Big Picture library Home screen.\n• Game page logo moves the game logo to the lower-left corner during the trailer and restores it when you leave.\n• Automatic CRT applies a subtle CRT effect to low-resolution trailers.\n• Source selects Auto, Steam, or YouTube for each game.\n• Quality sets the preferred Steam and YouTube quality to 720p, 1080p, or 2160p.\n• Steam video lets you choose any Steam video for the game from a menu, not only the featured trailer.\n• Trim start / Trim end save a custom video cut for each game.\n• Custom YouTube link saves a specific YouTube trailer; without one, automatic search favors 4K results and applies strict title matching.\n\n## Notes\n• It was created on and for Windows, although it should also work on Linux.\n• It reads and adapts Big Picture interface elements, which Steam updates often, so some selectors may need adjustments over time.",
       "coverUrl": "",
-      "iconGlyph": "\uE714",
+      "iconGlyph": "",
       "catalogStatus": "playhub",
       "catalogSource": "playhub",
       "catalogPluginId": 0,
@@ -319,7 +335,9 @@
         "video",
         "Steam",
         "YouTube",
-        "personalizzazione"
+        "customization",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-10"
       ],
       "aliases": [
         "TrailerHero",
@@ -340,10 +358,10 @@
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "Le notizie che contano, raccolte in un solo posto.",
-      "longDescription": "News porta le tue fonti preferite nel menu rapido e in una comoda edicola a schermo intero, pensata per essere letta anche con il controller.\n\n## Cosa fa\n\u2022 Raccoglie feed RSS e Atom senza richiedere una API key.\n\u2022 Organizza fonti e articoli per categorie.\n\u2022 Offre titoli nel menu rapido e una vista completa in Big Picture.\n\u2022 Include un lettore pulito, ricerca e navigazione in quattro direzioni.\n\u2022 Mantiene le fonti configurate e aggiorna i contenuti senza interrompere la navigazione.",
+      "shortDescription": "The stories that matter, gathered in one place.",
+      "longDescription": "News brings your favorite sources to the Quick Access Menu and a comfortable full-screen newsstand designed for reading with a controller.\n\n## What it does\n• Collects RSS and Atom feeds without requiring an API key.\n• Organizes sources and articles into categories.\n• Shows headlines in the Quick Access Menu and a complete reading view in Big Picture.\n• Includes a clean reader, search, and four-direction navigation.\n• Keeps your configured sources and refreshes content without interrupting navigation.",
       "coverUrl": "",
-      "iconGlyph": "\uE12A",
+      "iconGlyph": "",
       "catalogStatus": "playhub",
       "catalogSource": "playhub",
       "catalogPluginId": 0,
@@ -353,8 +371,10 @@
         "RSS",
         "Atom",
         "feed",
-        "articoli",
-        "informazioni"
+        "articles",
+        "information",
+        "catalog-added:2026-09-04",
+        "first-release:2026-08-22"
       ],
       "aliases": [
         "News",
@@ -375,19 +395,21 @@
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "Il meteo, semplice e discreto, nel menu rapido.",
-      "longDescription": "Weather \u00E8 un plugin compatto che porta meteo attuale, previsioni giornaliere e orarie dentro il menu rapido. \u00C8 pensato per Big Picture e la navigazione con controller, con un layout stretto e sicuro che evita testi tagliati e overflow.\n\n## Cosa fa\n\u2022 Meteo attuale, previsioni a 5 giorni e prossime 24 ore.\n\u2022 Backend Open-Meteo, senza bisogno di API key.\n\u2022 Unit\u00E0 metriche o imperiali.\n\u2022 Vista impostazioni dedicata per cercare citt\u00E0 o coordinate.\n\u2022 Navigazione controller-friendly (su, gi\u00F9, sinistra, destra).\n\u2022 Interfaccia scura e minimale con piccoli dettagli animati.\n\u2022 Rilevamento automatico della lingua (11 lingue supportate).",
+      "shortDescription": "Simple, unobtrusive weather in the Quick Access Menu.",
+      "longDescription": "Weather is a compact plugin that brings current conditions plus daily and hourly forecasts into the Quick Access Menu. It is designed for Big Picture and controller navigation, with a compact, resilient layout that prevents clipped text and overflow.\n\n## What it does\n• Shows current conditions, a five-day forecast, and the next 24 hours.\n• Uses the Open-Meteo backend with no API key required.\n• Supports metric and imperial units.\n• Includes a dedicated settings view for searching by city or coordinates.\n• Supports controller-friendly up, down, left, and right navigation.\n• Uses a dark, minimal interface with subtle animated details.\n• Detects the language automatically, with 11 languages supported.",
       "coverUrl": "",
-      "iconGlyph": "\uE706",
+      "iconGlyph": "",
       "catalogStatus": "playhub",
       "catalogSource": "playhub",
       "catalogPluginId": 0,
       "compatibility": "",
       "keywords": [
-        "meteo",
-        "previsioni",
-        "temperatura",
-        "Open-Meteo"
+        "weather",
+        "forecasts",
+        "temperature",
+        "Open-Meteo",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-10"
       ],
       "aliases": [
         "Weather",
@@ -408,10 +430,10 @@
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "Metti alla prova i tuoi altoparlanti, canale per canale.",
-      "longDescription": "Playhub Surround \u00E8 un piccolo strumento per verificare la disposizione dei tuoi altoparlanti in stereo, 5.1 e 7.1. Mostra una mappa in stile salotto e riproduce suoni di test sintetizzati ispirati ai videogiochi classici - nessun campione protetto da copyright: ogni suono \u00E8 generato dal vivo con la Web Audio API.\n\n## Cosa fa\n\u2022 Mostra una mappa degli altoparlanti in stile salotto.\n\u2022 Supporta i layout stereo, 5.1 e 7.1.\n\u2022 Riproduce suoni di test sintetizzati, ispirati ai videogiochi classici.\n\u2022 Genera ogni suono dal vivo con la Web Audio API, senza campioni protetti.\n\u2022 Include un test sequenziale dei canali, controllo del volume e preset di suoni.\n\u2022 Navigazione con controller su layout, mappa, preset, volume e pulsante di test.\n\u2022 Interfaccia tradotta automaticamente nella lingua di Steam (11 lingue).\n\n## Note\n\u2022 Funziona su Windows; Linux non \u00E8 testato.\n\u2022 La riproduzione multicanale dipende da Steam/Chromium e dal dispositivo di uscita scelto: se il sistema espone solo due canali, i test posteriori, centrale e LFE possono essere mixati verso il basso.",
+      "shortDescription": "Test your speakers, one channel at a time.",
+      "longDescription": "Playhub Surround is a compact tool for checking stereo, 5.1, and 7.1 speaker layouts. It presents a living-room-style map and plays synthesized test sounds inspired by classic video games. No copyrighted samples are used; every sound is generated live through the Web Audio API.\n\n## What it does\n• Shows a living-room-style speaker map.\n• Supports stereo, 5.1, and 7.1 layouts.\n• Plays synthesized test sounds inspired by classic video games.\n• Generates every sound live with the Web Audio API, without protected samples.\n• Includes a sequential channel test, volume control, and sound presets.\n• Supports controller navigation across the layout, map, presets, volume, and test button.\n• Automatically follows the Steam language, with 11 languages supported.\n\n## Notes\n• It works on Windows; Linux has not been tested.\n• Multichannel playback depends on Steam/Chromium and the selected output device. If the system exposes only two channels, rear, center, and LFE tests may be downmixed.",
       "coverUrl": "",
-      "iconGlyph": "\uE767",
+      "iconGlyph": "",
       "catalogStatus": "playhub",
       "catalogSource": "playhub",
       "catalogPluginId": 0,
@@ -421,8 +443,10 @@
         "stereo",
         "5.1",
         "7.1",
-        "altoparlanti",
-        "audio"
+        "speakers",
+        "audio",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-15"
       ],
       "aliases": [
         "Playhub Surround",
@@ -443,10 +467,10 @@
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
       "category": "Playhub",
-      "shortDescription": "La tua VPN, senza lasciare la Gaming Mode.",
-      "longDescription": "Proton VPN porta i controlli essenziali del client Windows nel menu rapido, cos\u00EC puoi proteggere o cambiare la connessione senza tornare al desktop.\n\n## Cosa fa\n\u2022 Mostra lo stato reale della connessione VPN.\n\u2022 Connette e disconnette Proton VPN dal menu rapido.\n\u2022 Consente di scegliere una posizione disponibile.\n\u2022 Mantiene la navigazione semplice e adatta al controller.\n\n## Nota\n\u2022 Richiede l\u0027app ufficiale Proton VPN per Windows gi\u00E0 installata e configurata.",
+      "shortDescription": "Your VPN, without leaving Gaming Mode.",
+      "longDescription": "Proton VPN brings the essential controls of the Windows client into the Quick Access Menu, so you can protect or change your connection without returning to the desktop.\n\n## What it does\n• Shows the actual VPN connection status.\n• Connects and disconnects Proton VPN from the Quick Access Menu.\n• Lets you choose an available location.\n• Keeps navigation simple and controller-friendly.\n\n## Note\n• Requires the official Proton VPN app for Windows to be installed and configured.",
       "coverUrl": "",
-      "iconGlyph": "\uE774",
+      "iconGlyph": "",
       "catalogStatus": "playhub",
       "catalogSource": "playhub",
       "catalogPluginId": 0,
@@ -454,10 +478,12 @@
       "keywords": [
         "VPN",
         "Proton",
-        "rete",
-        "connessione",
+        "network",
+        "connection",
         "privacy",
-        "Windows"
+        "Windows",
+        "catalog-added:2026-09-04",
+        "first-release:2026-08-22"
       ],
       "aliases": [
         "Proton VPN",
@@ -484,7 +510,8 @@
       "keywords": [
         "command",
         "launch",
-        "proton"
+        "proton",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Proton Launch",
@@ -511,7 +538,9 @@
       "shortDescription": "Record your screen even when a game is not running.",
       "longDescription": "Record your screen even when a game is not running.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky-Clipper-754ffbe978c882e5a3a2a1feb8e19a55091ba6edefc8c98650214e372ab50240.jpg",
-      "keywords": [],
+      "keywords": [
+        "catalog-added:2026-09-04"
+      ],
       "aliases": [
         "Decky-Clipper",
         "Managor/Decky-Clipper"
@@ -543,7 +572,8 @@
         "home",
         "library",
         "shelves",
-        "tabs"
+        "tabs",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Deck Shelves",
@@ -575,7 +605,8 @@
         "enhancement",
         "library",
         "progress-tracking",
-        "statistics"
+        "statistics",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Deck Progress Tracker",
@@ -607,7 +638,8 @@
         "non-steam",
         "nonsteam",
         "ui",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Non-Steam Badges",
@@ -638,7 +670,8 @@
         "game-library",
         "recommendations",
         "steam",
-        "suggestion"
+        "suggestion",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "SuggestMe",
@@ -662,13 +695,15 @@
       "releaseAssetName": "0641231eec139e3231e7b5369d0dbacefd686b52e3f2fffb39384876881408da.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/0641231eec139e3231e7b5369d0dbacefd686b52e3f2fffb39384876881408da.zip",
       "releasePublishedAt": "2026-05-21T20:24:49Z",
-      "category": "Strumenti e utilit\u00E0",
-      "shortDescription": "Download All - A plugin that let\u0027s the user immediately queue all scheduled downloads to immediately download.",
-      "longDescription": "Download All - A plugin that let\u0027s the user immediately queue all scheduled downloads to immediately download.",
+      "category": "Strumenti e utilità",
+      "shortDescription": "Download All - A plugin that let's the user immediately queue all scheduled downloads to immediately download.",
+      "longDescription": "Download All - A plugin that let's the user immediately queue all scheduled downloads to immediately download.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Download%20All-8004bb65ffd88097c2392f2dfc40d910fc5250d5d6bd7e8e58b379c9ac3992f0.png",
       "keywords": [
         "downloads",
-        "queue"
+        "queue",
+        "catalog-added:2026-09-04",
+        "first-release:2026-03-27"
       ],
       "aliases": [
         "Download All",
@@ -696,7 +731,8 @@
       "longDescription": "Manage Steam Deck Prefixes, delete orphans, and backup data.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Games%20Prefix%20Manager-3c6c78adc121381e0aa108b0bee670bdac4d16779b4b575a6c220171edd923d9.jpg",
       "keywords": [
-        "utilities"
+        "utilities",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Games Prefix Manager",
@@ -727,7 +763,8 @@
         "network",
         "proxy",
         "root",
-        "vpn"
+        "vpn",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "ShadowDeck",
@@ -749,13 +786,14 @@
       "releaseAssetName": "187871a139862fc21d70286d8c1b2c2f0f7609604f88fc16415da71c4e56cef9.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/187871a139862fc21d70286d8c1b2c2f0f7609604f88fc16415da71c4e56cef9.zip",
       "releasePublishedAt": "2026-03-09T21:11:56Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "Quickly switch between Steam accounts without navigating through menus.",
       "longDescription": "Quickly switch between Steam accounts without navigating through menus.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Quick%20User%20Switcher.png",
       "keywords": [
         "root",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Quick User Switcher",
@@ -778,12 +816,13 @@
       "releaseAssetName": "f7eb253db60633edef22f7a92f1ca3456a355cb035f859dd5336e21731046136.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/f7eb253db60633edef22f7a92f1ca3456a355cb035f859dd5336e21731046136.zip",
       "releasePublishedAt": "2026-02-27T16:43:03Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "Translate anything on your screen to your language",
       "longDescription": "Translate anything on your screen to your language",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky%20Translator-7499f82628f3cc449677e4a45294e90362a9c239d08d882401db39c6cad6355b.png",
       "keywords": [
-        "Translation"
+        "Translation",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Translator",
@@ -813,7 +852,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Launch%20Options-5a34cc61f06d25a49f304d48f74a47f4422d232812dc77810e007489d3bedcf9.png",
       "keywords": [
         "launch options",
-        "quality of life"
+        "quality of life",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Launch Options",
@@ -836,16 +876,17 @@
       "releaseAssetName": "e271ccb55eb23f918b99a69f79aec905df4c9b2ef7b23bbf4ec1c2d1a6f0c6b7.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/e271ccb55eb23f918b99a69f79aec905df4c9b2ef7b23bbf4ec1c2d1a6f0c6b7.zip",
       "releasePublishedAt": "2026-02-18T21:33:51Z",
-      "category": "Strumenti e utilit\u00E0",
-      "shortDescription": "Use Localsend in gaming mode, including fast copy \u0026 paste screenshot and text by using LocalSend Client.",
-      "longDescription": "Use Localsend in gaming mode, including fast copy \u0026 paste screenshot and text by using LocalSend Client.",
+      "category": "Strumenti e utilità",
+      "shortDescription": "Use Localsend in gaming mode, including fast copy & paste screenshot and text by using LocalSend Client.",
+      "longDescription": "Use Localsend in gaming mode, including fast copy & paste screenshot and text by using LocalSend Client.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky%20Localsend-fe50eccd502758132381fc8a3cdadfd469bb050754e4f8d27bcb76ffe61d15bd.jpg",
       "keywords": [
         "Clipboard",
         "localsend",
         "Screenshot",
         "Text",
-        "transfer"
+        "transfer",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Localsend",
@@ -868,7 +909,7 @@
       "releaseAssetName": "17d4166a9e98979df5fdb07c7eae42317acd54a453d3b82757508f971193c0fe.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/17d4166a9e98979df5fdb07c7eae42317acd54a453d3b82757508f971193c0fe.zip",
       "releasePublishedAt": "2026-03-18T22:23:10Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "Advanced alarm and timer with snooze, recurring alarms, Pomodoro mode, and persistent notifications.",
       "longDescription": "Advanced alarm and timer with snooze, recurring alarms, Pomodoro mode, and persistent notifications.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/AlarMe-084a40ef18e4cfcda80fed5da9ec42f98d947a4fc1a971562649d7c390622ea9.png",
@@ -878,7 +919,8 @@
         "pomodoro",
         "productivity",
         "snooze",
-        "timer"
+        "timer",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "AlarMe",
@@ -908,7 +950,8 @@
       "keywords": [
         "monitoring",
         "status",
-        "steam"
+        "steam",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Steam Status",
@@ -936,7 +979,8 @@
       "longDescription": "A Decky Loader plugin for Steam Deck to play tracks from Plex, Jellyfin, Emby, Navidrome, and Subsonic.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Museck-96455c41d986da4a6cee329bbd9bdd051c0ccd44978a029077299d01460be839.png",
       "keywords": [
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Museck",
@@ -958,7 +1002,7 @@
       "releaseAssetName": "4be32fd39ce406e2276b21537c98afc00a8ed1b82a23ff0e01af552352fa48f8.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/4be32fd39ce406e2276b21537c98afc00a8ed1b82a23ff0e01af552352fa48f8.zip",
       "releasePublishedAt": "2026-02-11T23:52:12Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "DeckPass is a Decky Plugin to access passwords directly in SteamOS gaming mode.",
       "longDescription": "DeckPass is a Decky Plugin to access passwords directly in SteamOS gaming mode.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/DeckPass-46092f489f5086ae2e29fba28d3a6468f496def83924d64d4f285278f1071106.jpg",
@@ -967,7 +1011,8 @@
         "keepass",
         "password",
         "password-manager",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "DeckPass",
@@ -997,7 +1042,8 @@
         "developer",
         "memory",
         "tools",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Reroll",
@@ -1020,14 +1066,15 @@
       "releaseAssetName": "d283bd9a5c35b3fac3788391736a6763f3e8c4615831a7c560c9fa6e6c0950ac.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/d283bd9a5c35b3fac3788391736a6763f3e8c4615831a7c560c9fa6e6c0950ac.zip",
       "releasePublishedAt": "2026-01-19T14:04:37Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "Share clipboard between Steam Deck and other devices via web interface.",
       "longDescription": "Share clipboard between Steam Deck and other devices via web interface.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky%20Clipboard-709da867188bf3c2567eae030eb111705758d5190cc96116ba66831e2ac408a1.jpg",
       "keywords": [
         "clipboard",
         "utility",
-        "web"
+        "web",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Clipboard",
@@ -1052,13 +1099,14 @@
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/8b1ee429aece9330b83ea3fc2e7e27d007ac61a737169f20bda3f1a19ab95508.zip",
       "releasePublishedAt": "2026-01-23T23:37:30Z",
       "category": "Rete e strumenti",
-      "shortDescription": "Run internet speed tests directly from your Steam Deck Game Mode using Cloudflare\u0027s global network.",
-      "longDescription": "Run internet speed tests directly from your Steam Deck Game Mode using Cloudflare\u0027s global network.",
+      "shortDescription": "Run internet speed tests directly from your Steam Deck Game Mode using Cloudflare's global network.",
+      "longDescription": "Run internet speed tests directly from your Steam Deck Game Mode using Cloudflare's global network.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Speed%20Test-2c1844c12bee3f51f95ce0597ca77b589ffa5c72d98281ec8c2d427dab0b4d62.jpg",
       "keywords": [
         "network",
         "speed",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Speed Test",
@@ -1081,9 +1129,9 @@
       "releaseAssetName": "193fb3aa0446fbc3c6bae0ae15700b5f04acebfa917b8e1791988c6ce832dddf.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/193fb3aa0446fbc3c6bae0ae15700b5f04acebfa917b8e1791988c6ce832dddf.zip",
       "releasePublishedAt": "2026-01-11T00:18:14Z",
-      "category": "Strumenti e utilit\u00E0",
-      "shortDescription": "Manage the deck\u0027s filesystem from a web browser via Copyparty!",
-      "longDescription": "Manage the deck\u0027s filesystem from a web browser via Copyparty!",
+      "category": "Strumenti e utilità",
+      "shortDescription": "Manage the deck's filesystem from a web browser via Copyparty!",
+      "longDescription": "Manage the deck's filesystem from a web browser via Copyparty!",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/DeckyParty%20File%20Manager-dc65af11a52fca64fa1eb79c1b51606d7bd136aa39adc19904c1753693f1b29c.jpg",
       "keywords": [
         "control",
@@ -1091,7 +1139,8 @@
         "fileserver",
         "management",
         "utility",
-        "web"
+        "web",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "DeckyParty File Manager",
@@ -1123,7 +1172,8 @@
         "multiplayer",
         "p2p",
         "root",
-        "wifi"
+        "wifi",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Muon",
@@ -1152,7 +1202,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky%20Clash-cd080e812a1c7371f5e5069bbb0d830f606e3d5063c6699f5c825678fb7bad5d.png",
       "keywords": [
         "network",
-        "root"
+        "root",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Clash",
@@ -1183,7 +1234,8 @@
         "gaming",
         "monitoring",
         "network",
-        "performance"
+        "performance",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Network Sentinel",
@@ -1216,7 +1268,8 @@
         "lossless",
         "lsfg",
         "scaling",
-        "vulkan"
+        "vulkan",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky LSFG-VK",
@@ -1245,7 +1298,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Better%20Keyboard-fe0345ec80756a44cd8b919018b509e0c0b0118deb51df49b0da39f8363d4987.png",
       "keywords": [
         "keyboard",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Better Keyboard",
@@ -1275,7 +1329,8 @@
       "keywords": [
         "media",
         "mpris",
-        "music"
+        "music",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Music Control",
@@ -1304,7 +1359,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Dimmer%20Deck-f1fd245cf60fbe923e63650171faf95f450208a9bc39a56c4d39d6d7f04b288f.png",
       "keywords": [
         "brightness",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Dimmer Deck",
@@ -1338,7 +1394,8 @@
         "muradeck",
         "mura-fix",
         "oled",
-        "samsung"
+        "samsung",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MuraDeck",
@@ -1365,7 +1422,8 @@
       "longDescription": "LED controller for non-Steam Deck gaming handhelds running SteamOS.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/HueSync-948e46730bc3a43d99d24e5b45cbc4a5df88c57806f49fe85f0a3b595d40c72e.jpg",
       "keywords": [
-        "root"
+        "root",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "HueSync",
@@ -1396,7 +1454,8 @@
         "root",
         "server",
         "streaming",
-        "sunshine"
+        "sunshine",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Sunshine",
@@ -1427,7 +1486,8 @@
         "graphics",
         "presets",
         "reshade",
-        "shaders"
+        "shaders",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "LetMeReShade",
@@ -1456,7 +1516,8 @@
       "keywords": [
         "network",
         "root",
-        "wifi"
+        "wifi",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "WiFi Locker",
@@ -1486,7 +1547,8 @@
       "keywords": [
         "backup",
         "cloud",
-        "rclone"
+        "rclone",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Game Sync",
@@ -1517,7 +1579,8 @@
         "backup",
         "cloud",
         "ludusavi",
-        "sync"
+        "sync",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Ludusavi",
@@ -1553,7 +1616,8 @@
         "equalizer",
         "fx",
         "reverb",
-        "sound"
+        "sound",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "DeckSP",
@@ -1584,7 +1648,8 @@
         "root",
         "XivAlexander",
         "XivMitmLatencyMitigator",
-        "XivOmega"
+        "XivOmega",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "XIVOmega",
@@ -1620,7 +1685,8 @@
         "dolby",
         "dts",
         "headphones",
-        "surround"
+        "surround",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Virtual Surround Sound",
@@ -1649,7 +1715,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky%20Zerotier-33b98e814cd56a08700771c7108c0473d914e68265fe5ed815bb72e7af237e57.jpg",
       "keywords": [
         "network",
-        "zerotier"
+        "zerotier",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Zerotier",
@@ -1672,7 +1739,7 @@
       "releaseAssetName": "49309a02fa028d26c77230cc9f70fec9bcce91d59e887bfe8f9d3e42f8a19139.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/49309a02fa028d26c77230cc9f70fec9bcce91d59e887bfe8f9d3e42f8a19139.zip",
       "releasePublishedAt": "2025-02-15T17:11:31Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "A plugin to quickly access useful sites for the running game.",
       "longDescription": "A plugin to quickly access useful sites for the running game.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky-Lookup-f262ab2b5afa2bc985ab3079393a96a08c4a3c33051e0a3ce2c5443d8224a025.jpg",
@@ -1680,7 +1747,8 @@
         "browser",
         "Lookup",
         "search",
-        "website"
+        "website",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky-Lookup",
@@ -1710,7 +1778,8 @@
         "DLSS",
         "Framegen",
         "FSR",
-        "upscaling"
+        "upscaling",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky-Framegen",
@@ -1732,14 +1801,15 @@
       "releaseAssetName": "973d927e9d9a1feec04679c564af7e389a729b6735d2a988ffc2cb46ce4eb312.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/973d927e9d9a1feec04679c564af7e389a729b6735d2a988ffc2cb46ce4eb312.zip",
       "releasePublishedAt": "2025-02-07T03:40:01Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "Set a timer that will remind you when your session should end.",
       "longDescription": "Set a timer that will remind you when your session should end.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Simple%20Timer-632be1dce826f97242e70ba3bff7afef15fb3f2cdc6b462db8fdfdf1ad0efc54.jpg",
       "keywords": [
         "alarm",
         "decktools",
-        "timer"
+        "timer",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Simple Timer",
@@ -1769,7 +1839,8 @@
       "keywords": [
         "deep-packet-inspection",
         "networking",
-        "spoofdpi"
+        "spoofdpi",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky-SpoofDPI",
@@ -1799,7 +1870,8 @@
       "keywords": [
         "dns",
         "networking",
-        "root"
+        "root",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky DoT DNS",
@@ -1832,7 +1904,8 @@
         "game",
         "settings",
         "setup",
-        "verified"
+        "verified",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Deck Settings",
@@ -1863,7 +1936,8 @@
         "aim",
         "crosshair",
         "HUD",
-        "overlay"
+        "overlay",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Crosshair",
@@ -1894,7 +1968,8 @@
         "Currently Playing",
         "Player Count",
         "Steam Charts",
-        "SteamDB"
+        "SteamDB",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "PlayCount",
@@ -1926,7 +2001,8 @@
         "pip",
         "tv",
         "video",
-        "web"
+        "web",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Picture in Picture",
@@ -1954,7 +2030,8 @@
       "longDescription": "Spy on system information.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/DeckySpy-51c612d591d74fc33cf7bf76d54f68f66e0c6bd1b2c5ece1e6acc68d55e19dbc.png",
       "keywords": [
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "DeckySpy",
@@ -1986,7 +2063,8 @@
         "controller",
         "fix",
         "root",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "steamdeck-input-disabler",
@@ -2014,7 +2092,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/ScreenSaver-3a76929daa4ada55cf09bcb9402484b9a6ea3468d769b412c45cc005a6ef5b50.png",
       "keywords": [
         "dbus",
-        "screensaver"
+        "screensaver",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "ScreenSaver",
@@ -2048,7 +2127,8 @@
         "root",
         "ryzenadj",
         "temperature",
-        "undervolt"
+        "undervolt",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky-Undervolt",
@@ -2077,7 +2157,8 @@
       "keywords": [
         "88mph",
         "Epic",
-        "Launcher"
+        "Launcher",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Junk-Store",
@@ -2093,7 +2174,7 @@
       "active": true,
       "name": "MagicPods",
       "installFolder": "MagicPodsDecky",
-      "author": "Aleksandr Maslov \u0026 Andrey Litvintsev",
+      "author": "Aleksandr Maslov & Andrey Litvintsev",
       "repository": "steam3d/MagicPodsDecky",
       "repositoryUrl": "https://github.com/steam3d/MagicPodsDecky",
       "version": "2.0.15",
@@ -2109,7 +2190,8 @@
         "battery",
         "beats",
         "bluetooth",
-        "headphones"
+        "headphones",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MagicPods",
@@ -2133,12 +2215,13 @@
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/18e133b2e6203f16fd1ee2ed83b5a90bad34491515bef7ec1c82d525f0bfadef.zip",
       "releasePublishedAt": "2025-12-27T23:54:11Z",
       "category": "Libreria e giochi",
-      "shortDescription": "Shows IsThereAnyDeal data on a game\u0027s store page",
-      "longDescription": "Shows IsThereAnyDeal data on a game\u0027s store page",
+      "shortDescription": "Shows IsThereAnyDeal data on a game's store page",
+      "longDescription": "Shows IsThereAnyDeal data on a game's store page",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/IsThereAnyDeal%20for%20Deck-0b997b64b394fd9ab01a7c8baaba452900a813bf3685d7ccfa794fe4e39d110d.png",
       "keywords": [
         "GameDeals",
-        "IsThereAnyDeal"
+        "IsThereAnyDeal",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "IsThereAnyDeal for Deck",
@@ -2172,7 +2255,8 @@
         "oled",
         "overlay",
         "screen",
-        "shortcut"
+        "shortcut",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MagicBlack",
@@ -2195,13 +2279,14 @@
       "releaseAssetName": "3b22dc337209615f91da566ceb968793dc163b2e509de8535fb5d0fc55817312.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/3b22dc337209615f91da566ceb968793dc163b2e509de8535fb5d0fc55817312.zip",
       "releasePublishedAt": "2025-07-11T15:45:15Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "Receive notifications from smartphone using KDE Connect Protocol",
       "longDescription": "Receive notifications from smartphone using KDE Connect Protocol",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky%20Notifications.png",
       "keywords": [
         "KDE Connect",
-        "Notifications"
+        "Notifications",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Notifications",
@@ -2225,12 +2310,13 @@
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/d7aaf6481a24c32c847aa1cd64cf23ba6fe73c5dc166587a2303494a42ae0486.zip",
       "releasePublishedAt": "2025-11-13T15:44:56Z",
       "category": "Personalizzazione e media",
-      "shortDescription": "Displays a customizable brightness bar when the brightness is changed with \u0027STEAM/QAM \u002B LS up/down\u0027 shortcuts.",
-      "longDescription": "Displays a customizable brightness bar when the brightness is changed with \u0027STEAM/QAM \u002B LS up/down\u0027 shortcuts.",
+      "shortDescription": "Displays a customizable brightness bar when the brightness is changed with 'STEAM/QAM + LS up/down' shortcuts.",
+      "longDescription": "Displays a customizable brightness bar when the brightness is changed with 'STEAM/QAM + LS up/down' shortcuts.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Brightness%20Bar-454e29e38632fda558035fe5e042c5520fc896b83b3609d020772c1cb303a89d.jpg",
       "keywords": [
         "brightness",
-        "display"
+        "display",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Brightness Bar",
@@ -2260,7 +2346,8 @@
       "keywords": [
         "bluetooth",
         "utility",
-        "wake"
+        "wake",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "BT Wake Control",
@@ -2290,7 +2377,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/CheatDeck-51bc4968c7a667d554750fa0e56e028a9ebff87d05d85c5e3ab941eb14e86d50.jpg",
       "keywords": [
         "cheat",
-        "trainer"
+        "trainer",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "CheatDeck",
@@ -2317,7 +2405,8 @@
       "longDescription": "A plugin for loading reshade shaders on steam deck",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Reshadeck-b4ed95dec3c0c2be6a898ce6bacbbf4da3c7eac45aefe690e618dd05752afaf5.png",
       "keywords": [
-        "control"
+        "control",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Reshadeck",
@@ -2340,12 +2429,13 @@
       "releaseAssetName": "5f7decb4de48290f8eec15937486c9611aec0d25256515c97f98cf7ba30c79a4.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/5f7decb4de48290f8eec15937486c9611aec0d25256515c97f98cf7ba30c79a4.zip",
       "releasePublishedAt": "2024-03-20T20:17:22Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "A plugin for running KDE Connect in gamemode",
       "longDescription": "A plugin for running KDE Connect in gamemode",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/KDE%20Connect-d57d8e3140a96ef20c874172fd19b16375e7b4605b4aa06da33042b5225395f8.png",
       "keywords": [
-        "control"
+        "control",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "KDE Connect",
@@ -2374,7 +2464,8 @@
       "longDescription": "Official EmuDeck Decky plugin",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/EmuDecky-4cbb20adfdb066cb40577bdb80311154bda4b01409cd668d967911bb80fad991.png",
       "keywords": [
-        "EmuDeck"
+        "EmuDeck",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "EmuDecky",
@@ -2397,12 +2488,13 @@
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/60152ca9a49b3a7c4fe1ac89a2ccb3bada8c84de2c1869591e6e573165d9dd6d.zip",
       "releasePublishedAt": "2024-05-21T13:54:14Z",
       "category": "Personalizzazione e media",
-      "shortDescription": "Screenshot auto uploader because valve don\u0027t do it.",
-      "longDescription": "Screenshot auto uploader because valve don\u0027t do it.",
+      "shortDescription": "Screenshot auto uploader because valve don't do it.",
+      "longDescription": "Screenshot auto uploader because valve don't do it.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/ScreenshotUploader-0edc34053b80433d346e524d3052bc9ce74cc24164c61420ea6bd36fa84b109b.png",
       "keywords": [
         "screenshots",
-        "uploader"
+        "uploader",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "ScreenshotUploader",
@@ -2432,7 +2524,8 @@
       "keywords": [
         "manager",
         "microsd",
-        "sdcard"
+        "sdcard",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MicroSDeck",
@@ -2463,7 +2556,8 @@
         "luxtorpeda",
         "proton",
         "proton-ge",
-        "wine"
+        "wine",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Wine Cellar",
@@ -2492,7 +2586,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Battery%20Tracker-7f96c2176e20d1dba4a107e78430aa477662a98c722465556aebf89aab916450.png",
       "keywords": [
         "root",
-        "template"
+        "template",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Battery Tracker",
@@ -2516,13 +2611,14 @@
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/10fc3beea48991c77cb02867e919b618d4cd6d5e9c6a6d0ccd5266c13214039f.zip",
       "releasePublishedAt": "2026-04-17T22:20:38Z",
       "category": "Libreria e giochi",
-      "shortDescription": "Track time you spend gaming \u2014 whether it\u0027s Steam titles or non-Steam games.",
-      "longDescription": "Track time you spend gaming \u2014 whether it\u0027s Steam titles or non-Steam games.",
+      "shortDescription": "Track time you spend gaming — whether it's Steam titles or non-Steam games.",
+      "longDescription": "Track time you spend gaming — whether it's Steam titles or non-Steam games.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/PlayTime-b91df930175ccdfdf8e9651cdbbb9ef75e980d7e4320d18eff19ef79a257a4b7.png",
       "keywords": [
         "playtime",
         "time-tracking",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "PlayTime",
@@ -2545,12 +2641,13 @@
       "releaseAssetName": "7bd8765ca57663a24178b05687acb52c3723518ac9eac1c14419a87904c0a872.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/7bd8765ca57663a24178b05687acb52c3723518ac9eac1c14419a87904c0a872.zip",
       "releasePublishedAt": "2025-07-02T13:58:39Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "Your terminal is going places.",
       "longDescription": "Your terminal is going places.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky%20Terminal.png",
       "keywords": [
-        "terminal"
+        "terminal",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Terminal",
@@ -2573,7 +2670,7 @@
       "releaseAssetName": "27e47379c280c92253d5533435f57c33b332b215f866d2ac4493daf18ec0d1c4.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/27e47379c280c92253d5533435f57c33b332b215f866d2ac4493daf18ec0d1c4.zip",
       "releasePublishedAt": "2026-02-06T23:54:58Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "Plugin for managing Syncthing to synchronize files with other devices.",
       "longDescription": "Plugin for managing Syncthing to synchronize files with other devices.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Syncthing-3e29af4598a6ba655f4c69e6f1a4a720f40501ba2667703db66a8c5b00db2eda.png",
@@ -2583,7 +2680,8 @@
         "files",
         "services",
         "synchronization",
-        "syncthing"
+        "syncthing",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Syncthing",
@@ -2622,7 +2720,8 @@
         "loader",
         "notifications",
         "steam",
-        "store"
+        "store",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Free Loader",
@@ -2646,11 +2745,12 @@
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/04c853f6e0e20373d1262bf9a57a01f4123598797d73c8a52cdcc64cfe44845c.zip",
       "releasePublishedAt": "2024-09-13T20:53:12Z",
       "category": "Social e community",
-      "shortDescription": "A TeamSpeak 3 client plugin that integrates TeamSpeak 3 into Steam Deck\u0027s quick access menu.",
-      "longDescription": "A TeamSpeak 3 client plugin that integrates TeamSpeak 3 into Steam Deck\u0027s quick access menu.",
+      "shortDescription": "A TeamSpeak 3 client plugin that integrates TeamSpeak 3 into Steam Deck's quick access menu.",
+      "longDescription": "A TeamSpeak 3 client plugin that integrates TeamSpeak 3 into Steam Deck's quick access menu.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/TS3%20QuickAccess-84921449c7c9dc1d46fa8a15f9a286dc0f240dc3411066bd68d9edd34a5eb671.png",
       "keywords": [
-        "teamspeak"
+        "teamspeak",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "TS3 QuickAccess",
@@ -2666,7 +2766,7 @@
       "active": true,
       "name": "TabMaster",
       "installFolder": "TabMaster",
-      "author": "Travis Lane (Tormak), Jesse Bofill, \u0026 Kernel Panic",
+      "author": "Travis Lane (Tormak), Jesse Bofill, & Kernel Panic",
       "repository": "Tormak9970/TabMaster",
       "repositoryUrl": "https://github.com/Tormak9970/TabMaster",
       "version": "2.15.1",
@@ -2680,7 +2780,9 @@
       "keywords": [
         "Customization",
         "Library",
-        "Tabs"
+        "Tabs",
+        "catalog-added:2026-09-04",
+        "first-release:2023-06-25"
       ],
       "aliases": [
         "TabMaster",
@@ -2702,14 +2804,16 @@
       "releaseAssetName": "1192864fddc5d72550346b8dff02c21d71f0c40a06ac41c4e67bb6220d267f9d.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/1192864fddc5d72550346b8dff02c21d71f0c40a06ac41c4e67bb6220d267f9d.zip",
       "releasePublishedAt": "2026-01-05T15:35:56Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "A web browser with multiple features including tabs!, limited gamepad support, favorites and a multifunction search/url bar.",
       "longDescription": "A web browser with multiple features including tabs!, limited gamepad support, favorites and a multifunction search/url bar.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Web%20Browser-ecbc735316cf6dd27394d34a15fb88ae06992583b059362d694fde544427533c.png",
       "keywords": [
         "browser",
         "internet",
-        "web"
+        "web",
+        "catalog-added:2026-09-04",
+        "first-release:2023-06-10"
       ],
       "aliases": [
         "Web Browser",
@@ -2742,7 +2846,8 @@
         "booster",
         "loud",
         "sound",
-        "volume"
+        "volume",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Volume Boost",
@@ -2771,7 +2876,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/MangoPeel-52ba42012bc0a46044793bbc34a0242519338bd33b8594240b0796c9c32561bb.png",
       "keywords": [
         "mangoapp",
-        "mangohud"
+        "mangohud",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MangoPeel",
@@ -2798,7 +2904,8 @@
       "longDescription": "A plugin for copying over screenshots to the Pictures folder",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Shotty-1d91927415ae472afab4b28f6d4dd7c2d7b73e70b68a89a1836c683bc449bff3.png",
       "keywords": [
-        "screenshots"
+        "screenshots",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Shotty",
@@ -2825,7 +2932,8 @@
       "longDescription": "Play theme songs on your game pages",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Game%20Theme%20Music-dce63e3764f8114afd8e21ae8288bb54c09077d8202baa7dab572b352cb12512.png",
       "keywords": [
-        "audio"
+        "audio",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Game Theme Music",
@@ -2848,7 +2956,7 @@
       "releaseAssetName": "1afa1a6f129c5d419de0e0bf0f6db8d8e50385a5659179346e996031ea372591.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/1afa1a6f129c5d419de0e0bf0f6db8d8e50385a5659179346e996031ea372591.zip",
       "releasePublishedAt": "2024-10-22T18:43:44Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "Quickly visualize, select and clear shader cache and compatibility data.",
       "longDescription": "Quickly visualize, select and clear shader cache and compatibility data.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Storage%20Cleaner-9880dcffdd7e9f7db4b7016aec1b6553ffcb1614da3abcb7d608aa1e9d6fb6d6.png",
@@ -2862,7 +2970,8 @@
         "other",
         "shader",
         "storage",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Storage Cleaner",
@@ -2892,7 +3001,8 @@
       "keywords": [
         "backup",
         "cloud",
-        "rclone"
+        "rclone",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Cloud Save",
@@ -2920,7 +3030,8 @@
       "longDescription": "Quickly Launch Non-Steam-Apps from the Quick Access menu without adding them as Shortcuts, or add them to the Steam Library.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Quick%20Launch-7c408083451947f5be988e7a1905fd731631c10b248839bb7efb50b6cc0f181c.png",
       "keywords": [
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Quick Launch",
@@ -2949,7 +3060,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Steamback-e5f4826ada525272ea82cf80307d041c8147322e7f2130f8dac24fd2f1f65021.png",
       "keywords": [
         "backup",
-        "steamback"
+        "steamback",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Steamback",
@@ -2972,7 +3084,7 @@
       "releaseAssetName": "a60cbe438226109a21a3eabf881a73460bfb9d70871b70a1508cfa17e3fed496.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/a60cbe438226109a21a3eabf881a73460bfb9d70871b70a1508cfa17e3fed496.zip",
       "releasePublishedAt": "2025-08-07T00:26:42Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "A plugin that allows your Steam Deck to transfer files to your PC via MTP and USB",
       "longDescription": "A plugin that allows your Steam Deck to transfer files to your PC via MTP and USB",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/DeckMTP-6cb48ce500f55131e6562ff3afb5808e4c9c35291e71f0ec421d82317867df67.png",
@@ -2980,7 +3092,8 @@
         "file-transfer",
         "media",
         "root",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "DeckMTP",
@@ -3007,7 +3120,8 @@
       "longDescription": "A Decky plugin to activate and deactivate Tailscale, while staying in Gaming mode.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Tailscale%20Control.png",
       "keywords": [
-        "tailscale"
+        "tailscale",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Tailscale Control",
@@ -3040,7 +3154,8 @@
         "nintendo",
         "playstation",
         "switch",
-        "xbox"
+        "xbox",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Controller Tools",
@@ -3069,7 +3184,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Volume%20Mixer-f7fabe091001ef1c0df7b6f56e70de470e7ba333904d01034008ad517eee6ed5.png",
       "keywords": [
         "media",
-        "volume"
+        "volume",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Volume Mixer",
@@ -3097,7 +3213,8 @@
       "longDescription": "Displays current Steam Deck game in Discord",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Discord%20Status-97272e072a4a387ab14f139b77c7d3e0a9e597b04b40270b7999acad958378ec.png",
       "keywords": [
-        "discord"
+        "discord",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Discord Status",
@@ -3127,7 +3244,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/SteamGridDB-1a938447c46d3d7816c87181c20b96ca438840cbdbb556c13c37cf1f923b3512.png",
       "keywords": [
         "artwork",
-        "sgdb"
+        "sgdb",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "SteamGridDB",
@@ -3158,7 +3276,8 @@
         "gamestream",
         "moondeck",
         "moonlight",
-        "streaming"
+        "streaming",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MoonDeck",
@@ -3190,7 +3309,8 @@
         "package-management",
         "root",
         "update",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "AutoFlatpaks",
@@ -3219,7 +3339,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/TunnelDeck-0c35ec89be6646bab3c29cee8d167a178452049d0a5fc8b8461670dcd9c0449b.png",
       "keywords": [
         "root",
-        "vpn"
+        "vpn",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "TunnelDeck",
@@ -3247,7 +3368,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Emuchievements-3a3fc6e73d049b216d95cfce8ca671dae88595fb2af9d73641e32e451b4bfc49.png",
       "keywords": [
         "EmuDeck",
-        "retroachievements"
+        "retroachievements",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Emuchievements",
@@ -3277,7 +3399,8 @@
         "battery",
         "power-management",
         "suspend",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "AutoSuspend",
@@ -3307,7 +3430,8 @@
       "keywords": [
         "backlog",
         "how long to beat",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "HLTB for Deck",
@@ -3337,7 +3461,8 @@
       "keywords": [
         "media",
         "music",
-        "radio"
+        "radio",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "RadiYo!",
@@ -3366,7 +3491,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Animation%20Changer-2f01eb07e607c3ebd99b7e76648bc2486910d33081fa8571a8f18f718727d8bd.png",
       "keywords": [
         "boot-animation",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Animation Changer",
@@ -3396,7 +3522,8 @@
       "keywords": [
         "cheats",
         "memory",
-        "scanmem"
+        "scanmem",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Memory Deck",
@@ -3426,7 +3553,8 @@
       "keywords": [
         "power-management",
         "root",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "PowerTools",
@@ -3448,7 +3576,7 @@
       "releaseAssetName": "c35b09de4bba4b4157fbe84cb7b0d20fc3924f78fa3c48ae17686b4314c1cc0c.zip",
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/c35b09de4bba4b4157fbe84cb7b0d20fc3924f78fa3c48ae17686b4314c1cc0c.zip",
       "releasePublishedAt": "2024-07-31T01:16:56Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "Quickly scribble down important codes or notes during your play sessions.",
       "longDescription": "Quickly scribble down important codes or notes during your play sessions.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Notebook-57e1f714c85cf8b3b19da9ef5ce2df0af004fa3b193a40fee831ae7a5795b077.png",
@@ -3458,7 +3586,8 @@
         "notebook",
         "notes",
         "scribble",
-        "write"
+        "write",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Notebook",
@@ -3487,7 +3616,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Bluetooth-c04d77cc7911ae2ed69cf648dc7066b0c27b150c3fe1043ca7d0956338464826.png",
       "keywords": [
         "bluetooth",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Bluetooth",
@@ -3502,7 +3632,7 @@
       "active": true,
       "name": "Audio Loader",
       "installFolder": "SDH-AudioLoader",
-      "author": "EMERALD0874 \u0026 Beebles",
+      "author": "EMERALD0874 & Beebles",
       "repository": "EMERALD0874/SDH-AudioLoader",
       "repositoryUrl": "https://github.com/EMERALD0874/SDH-AudioLoader",
       "version": "1.6.1",
@@ -3516,7 +3646,8 @@
       "keywords": [
         "media",
         "music",
-        "style"
+        "style",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Audio Loader",
@@ -3544,7 +3675,8 @@
       "longDescription": "Display tappable ProtonDB badges on your game pages",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/ProtonDB%20Badges-aa57ab7fbf2d1fcbd51e8d671c7e702405df674aeac6de039f77a135c8c7586a.png",
       "keywords": [
-        "protondb"
+        "protondb",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "ProtonDB Badges",
@@ -3560,7 +3692,7 @@
       "active": true,
       "name": "Pause Games",
       "installFolder": "SDH-PauseGames",
-      "author": "popsUlfr \u0026 wynn1212 \u0026 AkazaRenn",
+      "author": "popsUlfr & wynn1212 & AkazaRenn",
       "repository": "wynn1212/SDH-PauseGames",
       "repositoryUrl": "https://github.com/wynn1212/SDH-PauseGames",
       "version": "1.0.1",
@@ -3568,8 +3700,8 @@
       "catalogReleaseUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/4816c0fd33e71fcea82dbdcf2d300f949f4f3a6ba6a179ce8c7aefff64115715.zip",
       "releasePublishedAt": "2025-10-13T23:23:53Z",
       "category": "Personalizzazione e media",
-      "shortDescription": "Pause/Resume games to redirect resources and even play/stop apps that don\u0027t natively have an immediate option to do so.",
-      "longDescription": "Pause/Resume games to redirect resources and even play/stop apps that don\u0027t natively have an immediate option to do so.",
+      "shortDescription": "Pause/Resume games to redirect resources and even play/stop apps that don't natively have an immediate option to do so.",
+      "longDescription": "Pause/Resume games to redirect resources and even play/stop apps that don't natively have an immediate option to do so.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Pause%20Games-14da87b69a6682d5cee6644f03daa6e4b13655ef96061f097d963ac84a5ef9af.jpg",
       "keywords": [
         "pause",
@@ -3580,7 +3712,8 @@
         "sigstop",
         "sleep",
         "stop",
-        "suspend"
+        "suspend",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Pause Games",
@@ -3610,7 +3743,8 @@
       "keywords": [
         "fan-control",
         "root",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Fantastic",
@@ -3638,7 +3772,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/vibrantDeck-cf0a9fb5eaed94bf5ab0d94a3440ad97b1f555dfafaa21eb65e0ab2a683046b1.jpg",
       "keywords": [
         "saturation",
-        "vibrant"
+        "vibrant",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "vibrantDeck",
@@ -3665,7 +3800,9 @@
       "longDescription": "Dynamically loads themes developed with CSS into the Steam UI.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/CSS%20Loader-521e6e0b59bd89ba3632f15b7a1463cb96127a8a43449d487a4e49b1f1cbafe2.png",
       "keywords": [
-        "style"
+        "style",
+        "catalog-added:2026-09-04",
+        "first-release:2022-04-24"
       ],
       "aliases": [
         "CSS Loader",
@@ -3694,7 +3831,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Example%20Plugin-1362399fcdc3b51eb6e6f670bad777244e8cce460413c188269c6be69ab6d930.png",
       "keywords": [
         "root",
-        "template"
+        "template",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Example Plugin",
@@ -3730,7 +3868,8 @@
         "viture",
         "vr",
         "xr",
-        "xreal"
+        "xreal",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "XR Gaming",
@@ -3760,7 +3899,9 @@
       "keywords": [
         "ludusavi",
         "backup",
-        "saves"
+        "saves",
+        "catalog-added:2026-09-04",
+        "first-release:2026-05-31"
       ],
       "aliases": [
         "SDH Ludusavi",
@@ -3792,7 +3933,9 @@
         "library",
         "non-steam",
         "news",
-        "activity"
+        "activity",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-17"
       ],
       "aliases": [
         "Decky Metadata",
@@ -3816,8 +3959,8 @@
       "catalogReleaseUrl": "https://github.com/mubaraknumann/unifideck/releases/download/Release-0.7.4/unifideck.prod.v0.7.4.zip",
       "releasePublishedAt": "2026-08-23T10:28:03Z",
       "category": "Libreria e giochi",
-      "shortDescription": "Unified game library for Steam Deck \u2014 browse, install and launch games from Epic Games, GOG, Amazon, Ubisoft and Battle.net directly inside Steam\u0027s interface.",
-      "longDescription": "Unified game library for Steam Deck \u2014 browse, install and launch games from Epic Games, GOG, Amazon, Ubisoft and Battle.net directly inside Steam\u0027s interface.",
+      "shortDescription": "Unified game library for Steam Deck — browse, install and launch games from Epic Games, GOG, Amazon, Ubisoft and Battle.net directly inside Steam's interface.",
+      "longDescription": "Unified game library for Steam Deck — browse, install and launch games from Epic Games, GOG, Amazon, Ubisoft and Battle.net directly inside Steam's interface.",
       "coverUrl": "https://github.com/user-attachments/assets/58aafad6-5c54-475d-a309-c44f77895b72",
       "keywords": [
         "library",
@@ -3827,7 +3970,9 @@
         "amazon",
         "ubisoft",
         "battlenet",
-        "multi-store"
+        "multi-store",
+        "catalog-added:2026-09-04",
+        "first-release:2026-01-04"
       ],
       "aliases": [
         "Unifideck",
@@ -3850,14 +3995,16 @@
       "releaseAssetName": "Friendeck.v.0.7.7.zip",
       "catalogReleaseUrl": "https://github.com/panyiwei-home/Friendeck/releases/download/0.7.7/Friendeck.v.0.7.7.zip",
       "releasePublishedAt": "2026-03-03T12:39:10Z",
-      "category": "Strumenti e utilit\u00E0",
-      "shortDescription": "\u901A\u8FC7\u5C40\u57DF\u7F51\u5728\u8BBE\u5907\u95F4\u4F20\u8F93\u6587\u4EF6\u5230 Steam Deck",
-      "longDescription": "\u901A\u8FC7\u5C40\u57DF\u7F51\u5728\u8BBE\u5907\u95F4\u4F20\u8F93\u6587\u4EF6\u5230 Steam Deck",
+      "category": "Strumenti e utilità",
+      "shortDescription": "通过局域网在设备间传输文件到 Steam Deck",
+      "longDescription": "通过局域网在设备间传输文件到 Steam Deck",
       "coverUrl": "https://opengraph.githubassets.com/1/panyiwei-home/friendeck",
       "keywords": [
         "file-transfer",
         "network",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04",
+        "first-release:2026-01-21"
       ],
       "aliases": [
         "Friendeck",
@@ -3887,7 +4034,9 @@
         "romm",
         "rom-manager",
         "retrodeck",
-        "emulation"
+        "emulation",
+        "catalog-added:2026-09-04",
+        "first-release:2026-02-16"
       ],
       "aliases": [
         "RomM Tender",
@@ -3919,7 +4068,9 @@
         "amnezia",
         "root",
         "amneziawg",
-        "vpn"
+        "vpn",
+        "catalog-added:2026-09-04",
+        "first-release:2026-01-26"
       ],
       "aliases": [
         "VPN Deck",
@@ -3948,7 +4099,9 @@
       "coverUrl": "https://raw.githubusercontent.com/hydralauncher/decky-hydra-launcher/main/thumb.gif",
       "keywords": [
         "hydra launcher",
-        "steam"
+        "steam",
+        "catalog-added:2026-09-04",
+        "first-release:2025-10-12"
       ],
       "aliases": [
         "Hydra Launcher",
@@ -3979,7 +4132,9 @@
       "keywords": [
         "proton",
         "compatibility",
-        "launch-options"
+        "launch-options",
+        "catalog-added:2026-09-04",
+        "first-release:2026-04-05"
       ],
       "aliases": [
         "Proton Pulse",
@@ -4003,13 +4158,15 @@
       "catalogReleaseUrl": "https://github.com/Necrosiak/Steamcord/releases/download/v1.30.0/Steamcord.zip",
       "releasePublishedAt": "2026-09-01T08:19:40Z",
       "category": "Social e community",
-      "shortDescription": "Discord in Steam Gaming Mode \u2014 voice chat, DMs, QR login",
-      "longDescription": "Discord in Steam Gaming Mode \u2014 voice chat, DMs, QR login",
+      "shortDescription": "Discord in Steam Gaming Mode — voice chat, DMs, QR login",
+      "longDescription": "Discord in Steam Gaming Mode — voice chat, DMs, QR login",
       "coverUrl": "https://opengraph.githubassets.com/1/necrosiak/steamcord",
       "keywords": [
         "discord",
         "chat",
-        "voice"
+        "voice",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-28"
       ],
       "aliases": [
         "Steamcord",
@@ -4032,13 +4189,15 @@
       "catalogReleaseUrl": "https://github.com/jinzhongjia/decky-music/releases/download/v0.8.0/DeckyMusic.zip",
       "releasePublishedAt": "2026-06-17T08:47:21Z",
       "category": "Personalizzazione e media",
-      "shortDescription": "\u5728 Steam Deck \u4E0A\u64AD\u653E QQ \u97F3\u4E50 / \u7F51\u6613\u4E91\u97F3\u4E50\u3002\u4E1A\u52A1\u903B\u8F91\u4E0E\u97F3\u9891\u64AD\u653E\u8DD1\u5728\u63D2\u4EF6\u6C99\u76D2\u5916\u7684\u72EC\u7ACB\u8FDB\u7A0B\u3002",
-      "longDescription": "\u5728 Steam Deck \u4E0A\u64AD\u653E QQ \u97F3\u4E50 / \u7F51\u6613\u4E91\u97F3\u4E50\u3002\u4E1A\u52A1\u903B\u8F91\u4E0E\u97F3\u9891\u64AD\u653E\u8DD1\u5728\u63D2\u4EF6\u6C99\u76D2\u5916\u7684\u72EC\u7ACB\u8FDB\u7A0B\u3002",
+      "shortDescription": "在 Steam Deck 上播放 QQ 音乐 / 网易云音乐。业务逻辑与音频播放跑在插件沙盒外的独立进程。",
+      "longDescription": "在 Steam Deck 上播放 QQ 音乐 / 网易云音乐。业务逻辑与音频播放跑在插件沙盒外的独立进程。",
       "coverUrl": "https://opengraph.githubassets.com/1/jinzhongjia/decky-music",
       "keywords": [
         "music",
         "qqmusic",
-        "netease"
+        "netease",
+        "catalog-added:2026-09-04",
+        "first-release:2025-12-24"
       ],
       "aliases": [
         "Decky Music",
@@ -4061,7 +4220,7 @@
       "releaseAssetName": "decky-voxtype-v0.2.0.zip",
       "catalogReleaseUrl": "https://github.com/mimed95/decky-voxtype/releases/download/0.2.0/decky-voxtype-v0.2.0.zip",
       "releasePublishedAt": "2026-04-24T14:15:28Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "Push-to-talk voice-to-text in Game Mode.",
       "longDescription": "Push-to-talk voice-to-text in Game Mode.",
       "coverUrl": "https://github.com/mimed95/decky-voxtype/raw/main/assets/logo.png",
@@ -4071,7 +4230,9 @@
         "speech-to-text",
         "whisper",
         "accessibility",
-        "microphone"
+        "microphone",
+        "catalog-added:2026-09-04",
+        "first-release:2026-04-20"
       ],
       "aliases": [
         "VoxType",
@@ -4103,7 +4264,9 @@
         "home-assistant",
         "audio",
         "system-status",
-        "wake-on-lan"
+        "wake-on-lan",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-19"
       ],
       "aliases": [
         "Home Assistant MQTT",
@@ -4134,7 +4297,9 @@
       "keywords": [
         "library",
         "fun",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-21"
       ],
       "aliases": [
         "Game Roulette",
@@ -4165,7 +4330,9 @@
         "streaming",
         "screen-share",
         "capture",
-        "casting"
+        "casting",
+        "catalog-added:2026-09-04",
+        "first-release:2026-04-10"
       ],
       "aliases": [
         "Prysm",
@@ -4198,7 +4365,9 @@
         "asus",
         "rgb",
         "battery",
-        "performance"
+        "performance",
+        "catalog-added:2026-09-04",
+        "first-release:2025-12-27"
       ],
       "aliases": [
         "Ally Center",
@@ -4232,7 +4401,9 @@
         "XGMobile",
         "ROG-Ally",
         "Flow",
-        "ASUS"
+        "ASUS",
+        "catalog-added:2026-09-04",
+        "first-release:2026-05-02"
       ],
       "aliases": [
         "XG Mobile Manager",
@@ -4263,7 +4434,9 @@
       "keywords": [
         "utilities",
         "hardware",
-        "controller"
+        "controller",
+        "catalog-added:2026-09-04",
+        "first-release:2026-05-09"
       ],
       "aliases": [
         "Ally Vibe Control",
@@ -4293,7 +4466,9 @@
       "keywords": [
         "zotac",
         "inputplumber",
-        "root"
+        "root",
+        "catalog-added:2026-09-04",
+        "first-release:2026-03-26"
       ],
       "aliases": [
         "DeckyZone",
@@ -4315,14 +4490,16 @@
       "releaseAssetName": "DeckSMB.zip",
       "catalogReleaseUrl": "https://github.com/chillibeaver/DeckSMB/releases/download/1.0.1/DeckSMB.zip",
       "releasePublishedAt": "2026-04-04T03:04:54Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "Manage SMB on Steam Deck",
       "longDescription": "Manage SMB on Steam Deck",
       "coverUrl": "https://opengraph.githubassets.com/1/chillibeaver/decksmb",
       "keywords": [
         "utility",
         "samba",
-        "root"
+        "root",
+        "catalog-added:2026-09-04",
+        "first-release:2026-04-03"
       ],
       "aliases": [
         "DeckSMB",
@@ -4337,7 +4514,7 @@
       "active": true,
       "name": "RumbleDeck",
       "installFolder": "RumbleDeck",
-      "author": "Dawid Br\u00FCning (n\u00E9 Murawski)",
+      "author": "Dawid Brüning (né Murawski)",
       "repository": "dawidmpunkt/RumbleDeck",
       "repositoryUrl": "https://github.com/dawidmpunkt/RumbleDeck",
       "version": "0.1",
@@ -4351,7 +4528,9 @@
       "keywords": [
         "Rumble",
         "Haptic",
-        "DRV2605"
+        "DRV2605",
+        "catalog-added:2026-09-04",
+        "first-release:2025-10-05"
       ],
       "aliases": [
         "RumbleDeck",
@@ -4381,7 +4560,9 @@
         "controller",
         "xbox",
         "drivers",
-        "xone"
+        "xone",
+        "catalog-added:2026-09-04",
+        "first-release:2026-01-26"
       ],
       "aliases": [
         "Xone Decky Plugin",
@@ -4412,7 +4593,9 @@
       "keywords": [
         "controller",
         "dualsense",
-        "bluetooth"
+        "bluetooth",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-17"
       ],
       "aliases": [
         "DS5 Linux Decky",
@@ -4437,14 +4620,16 @@
       "catalogReleaseUrl": "https://github.com/Hooandee/panel-de-control/releases/download/panel-de-control-v0.37.12/Panel.de.Control.zip",
       "releasePublishedAt": "2026-08-24T19:11:57Z",
       "category": "Sistema e hardware",
-      "shortDescription": "Panel de control definitivo para PCs port\u00E1tiles: TDP, ventiladores y m\u00E1s.",
-      "longDescription": "Panel de control definitivo para PCs port\u00E1tiles: TDP, ventiladores y m\u00E1s.",
+      "shortDescription": "Panel de control definitivo para PCs portátiles: TDP, ventiladores y más.",
+      "longDescription": "Panel de control definitivo para PCs portátiles: TDP, ventiladores y más.",
       "coverUrl": "https://opengraph.githubassets.com/1/Hooandee/panel-de-control",
       "keywords": [
         "root",
         "tdp",
         "power",
-        "performance"
+        "performance",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-02"
       ],
       "aliases": [
         "Panel de Control",
@@ -4470,10 +4655,12 @@
       "category": "Libreria e giochi",
       "shortDescription": "Display Steam achievement progress directly on your library pages.",
       "longDescription": "Display Steam achievement progress directly on your library pages.",
-      "coverUrl": "https://images.steamusercontent.com/ugc/12628921612687895720/62D2DA8FF0F13E28B5B3A24B200BE3236D316D35/?imw=5000\u0026imh=5000\u0026ima=fit\u0026impolicy=Letterbox\u0026imcolor=%23000000\u0026letterbox=false",
+      "coverUrl": "https://images.steamusercontent.com/ugc/12628921612687895720/62D2DA8FF0F13E28B5B3A24B200BE3236D316D35/?imw=5000&imh=5000&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false",
       "keywords": [
         "steam",
-        "achievements"
+        "achievements",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-21"
       ],
       "aliases": [
         "SteamOS Achievements",
@@ -4507,7 +4694,9 @@
         "gaming-mode",
         "ui",
         "fixes",
-        "achievements"
+        "achievements",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-28"
       ],
       "aliases": [
         "Decky UI Restored",
@@ -4523,7 +4712,7 @@
       "active": true,
       "name": "Decky BootNext",
       "installFolder": "BootNext",
-      "author": "Ruben S\u00F8rensen",
+      "author": "Ruben Sørensen",
       "repository": "rsore/decky-bootnext",
       "repositoryUrl": "https://github.com/rsore/decky-bootnext",
       "version": "1.0.0",
@@ -4538,7 +4727,9 @@
         "utility",
         "boot",
         "uefi",
-        "root"
+        "root",
+        "catalog-added:2026-09-04",
+        "first-release:2026-08-01"
       ],
       "aliases": [
         "Decky BootNext",
@@ -4563,15 +4754,17 @@
       "catalogReleaseUrl": "https://github.com/stevensnoeijen/decky-insignia/releases/download/v0.1.2/Insignia-v0.1.2.zip",
       "releasePublishedAt": "2026-08-03T19:39:02Z",
       "category": "Social e community",
-      "shortDescription": "Shows currently active games, player counts, and upcoming events from the Insignia network in the Quick Access Menu, adds a playcount badge to each game\u0027s library page.",
-      "longDescription": "Shows currently active games, player counts, and upcoming events from the Insignia network in the Quick Access Menu, adds a playcount badge to each game\u0027s library page.",
+      "shortDescription": "Shows currently active games, player counts, and upcoming events from the Insignia network in the Quick Access Menu, adds a playcount badge to each game's library page.",
+      "longDescription": "Shows currently active games, player counts, and upcoming events from the Insignia network in the Quick Access Menu, adds a playcount badge to each game's library page.",
       "coverUrl": "https://raw.githubusercontent.com/stevensnoeijen/decky-insignia/main/publish-image.png",
       "keywords": [
         "xbox",
         "stats",
         "multiplayer",
         "events",
-        "library badge"
+        "library badge",
+        "catalog-added:2026-09-04",
+        "first-release:2026-08-02"
       ],
       "aliases": [
         "Decky Insignia",
@@ -4604,7 +4797,9 @@
         "emulation",
         "gaming",
         "utility",
-        "retroachievements"
+        "retroachievements",
+        "catalog-added:2026-09-04",
+        "first-release:2026-03-07"
       ],
       "aliases": [
         "RetroDECKY",
@@ -4634,7 +4829,9 @@
         "utility",
         "reshade",
         "shaders",
-        "addons"
+        "addons",
+        "catalog-added:2026-09-04",
+        "first-release:2026-04-06"
       ],
       "aliases": [
         "RSM Decky",
@@ -4664,7 +4861,9 @@
       "keywords": [
         "utilities",
         "hardware",
-        "performance"
+        "performance",
+        "catalog-added:2026-09-04",
+        "first-release:2026-05-17"
       ],
       "aliases": [
         "LeGo TDP",
@@ -4694,7 +4893,9 @@
       "keywords": [
         "utilities",
         "hardware",
-        "controller"
+        "controller",
+        "catalog-added:2026-09-04",
+        "first-release:2026-05-12"
       ],
       "aliases": [
         "LeGo Vibe Control",
@@ -4718,13 +4919,15 @@
       "catalogReleaseUrl": "https://github.com/Rayekkk/LeGo2BrightnessFix/releases/download/2.0.0/LeGo2BrightnessFix-2.0.0.zip",
       "releasePublishedAt": "2026-08-06T16:27:08Z",
       "category": "Sistema e hardware",
-      "shortDescription": "Picks how the Legion Go 2 OLED panel runs - gamma 2.2, PQ, or both on demand - so brightness works without giving up HDR, and gives games the panel\u0027s real HDR metadata.",
-      "longDescription": "Picks how the Legion Go 2 OLED panel runs - gamma 2.2, PQ, or both on demand - so brightness works without giving up HDR, and gives games the panel\u0027s real HDR metadata.",
+      "shortDescription": "Picks how the Legion Go 2 OLED panel runs - gamma 2.2, PQ, or both on demand - so brightness works without giving up HDR, and gives games the panel's real HDR metadata.",
+      "longDescription": "Picks how the Legion Go 2 OLED panel runs - gamma 2.2, PQ, or both on demand - so brightness works without giving up HDR, and gives games the panel's real HDR metadata.",
       "coverUrl": "https://raw.githubusercontent.com/Rayekkk/LeGo2BrightnessFix/main/docs/store.jpg",
       "keywords": [
         "utilities",
         "hardware",
-        "display"
+        "display",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-26"
       ],
       "aliases": [
         "LeGo2 Brightness Fix",
@@ -4754,7 +4957,9 @@
       "keywords": [
         "networking",
         "vpn",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-01"
       ],
       "aliases": [
         "NordVPN Decky",
@@ -4785,7 +4990,9 @@
       "keywords": [
         "utilities",
         "display",
-        "color"
+        "color",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-28"
       ],
       "aliases": [
         "Decky Vibrance HDR",
@@ -4801,7 +5008,7 @@
       "active": true,
       "name": "Achievement Companion",
       "installFolder": "Achievement Companion",
-      "author": "Adam \u003Cnullbit5@protonmail.com\u003E",
+      "author": "Adam <nullbit5@protonmail.com>",
       "repository": "parvagans/achievement-companion",
       "repositoryUrl": "https://github.com/parvagans/achievement-companion",
       "version": "0.3.3",
@@ -4815,7 +5022,8 @@
       "keywords": [
         "achievements",
         "retroachievements",
-        "steam"
+        "steam",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Achievement Companion",
@@ -4844,7 +5052,8 @@
       "coverUrl": "https://opengraph.githubassets.com/1/lopesleo/decktools",
       "keywords": [
         "gaming",
-        "download-manager"
+        "download-manager",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "DeckTools",
@@ -4867,13 +5076,14 @@
       "catalogReleaseUrl": "https://github.com/beallio/SDH-PlayTime-beallio-remix/releases/download/v3.3.1-beallio.13/SDH-PlayTime-beallio-remix-v3.3.1-beallio.13.zip",
       "releasePublishedAt": "2026-08-09T07:36:50Z",
       "category": "Libreria e giochi",
-      "shortDescription": "Track time you spend gaming \u2014 whether it\u0027s Steam titles or non-Steam games.",
-      "longDescription": "Track time you spend gaming \u2014 whether it\u0027s Steam titles or non-Steam games.",
+      "shortDescription": "Track time you spend gaming — whether it's Steam titles or non-Steam games.",
+      "longDescription": "Track time you spend gaming — whether it's Steam titles or non-Steam games.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/PlayTime-b91df930175ccdfdf8e9651cdbbb9ef75e980d7e4320d18eff19ef79a257a4b7.png",
       "keywords": [
         "utility",
         "time-tracking",
-        "playtime"
+        "playtime",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "SDH PlayTime Remix",
@@ -4905,7 +5115,8 @@
         "usb",
         "gamepad",
         "xinput",
-        "root"
+        "root",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Controller",
@@ -4935,7 +5146,8 @@
       "keywords": [
         "cheat",
         "trainer",
-        "proton"
+        "proton",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Cheat Engine Launcher",
@@ -4966,7 +5178,8 @@
       "keywords": [
         "utilities",
         "hardware",
-        "performance"
+        "performance",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Ayaneo 3 Companion",
@@ -4996,7 +5209,8 @@
       "coverUrl": "https://opengraph.githubassets.com/1/genc-v/mute-on-sleep",
       "keywords": [
         "audio",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MuteOnSleep",
@@ -5019,14 +5233,16 @@
       "releaseAssetName": "decky-ftpd.zip",
       "catalogReleaseUrl": "https://github.com/codevski/decky-ftpd/releases/download/v0.1.4/decky-ftpd.zip",
       "releasePublishedAt": "2026-05-20T01:01:43Z",
-      "category": "Strumenti e utilit\u00E0",
+      "category": "Strumenti e utilità",
       "shortDescription": "Run an FTP server directly from Game Mode.",
       "longDescription": "Run an FTP server directly from Game Mode.",
       "coverUrl": "https://opengraph.githubassets.com/1/codevski/decky-ftpd",
       "keywords": [
         "ftp",
         "file-transfer",
-        "network"
+        "network",
+        "catalog-added:2026-09-04",
+        "first-release:2026-04-17"
       ],
       "aliases": [
         "decky-ftpd",
@@ -5049,14 +5265,15 @@
       "catalogReleaseUrl": "https://github.com/jparisio/Completionist/releases/download/v1.0.0/Completionist.zip",
       "releasePublishedAt": "2026-05-17T14:31:05Z",
       "category": "Libreria e giochi",
-      "shortDescription": "Displays a platinum trophy on the tiles of Steam games you\u0027ve 100% completed.",
-      "longDescription": "Displays a platinum trophy on the tiles of Steam games you\u0027ve 100% completed.",
+      "shortDescription": "Displays a platinum trophy on the tiles of Steam games you've 100% completed.",
+      "longDescription": "Displays a platinum trophy on the tiles of Steam games you've 100% completed.",
       "coverUrl": "https://opengraph.githubassets.com/1/jparisio/Completionist",
       "keywords": [
         "achievements",
         "completion",
         "library",
-        "qol"
+        "qol",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Completionist",
@@ -5086,7 +5303,8 @@
         "forza",
         "dualsense",
         "haptics",
-        "controller"
+        "controller",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Forza DualSense Haptics",
@@ -5109,16 +5327,17 @@
       "releaseAssetName": "Docky.zip",
       "catalogReleaseUrl": "https://github.com/datbird/docky/releases/download/v1.4.8/Docky.zip",
       "releasePublishedAt": "2026-08-07T04:41:03Z",
-      "category": "Strumenti e utilit\u00E0",
-      "shortDescription": "Steam Deck automation: run Tasks \u2192 Actions \u2192 Modes on triggers (dock/undock, AC power, controller connect, resume, startup).",
-      "longDescription": "Steam Deck automation: run Tasks \u2192 Actions \u2192 Modes on triggers (dock/undock, AC power, controller connect, resume, startup).",
+      "category": "Strumenti e utilità",
+      "shortDescription": "Steam Deck automation: run Tasks → Actions → Modes on triggers (dock/undock, AC power, controller connect, resume, startup).",
+      "longDescription": "Steam Deck automation: run Tasks → Actions → Modes on triggers (dock/undock, AC power, controller connect, resume, startup).",
       "coverUrl": "https://opengraph.githubassets.com/1/datbird/docky",
       "keywords": [
         "dock",
         "automation",
         "sunshine",
         "streaming",
-        "triggers"
+        "triggers",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Docky",
@@ -5154,7 +5373,8 @@
         "manager",
         "tools",
         "games",
-        "sideload"
+        "sideload",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Side Deck",
@@ -5183,7 +5403,8 @@
       "coverUrl": "https://opengraph.githubassets.com/1/RedRanger14/decky-nexus",
       "keywords": [
         "mods",
-        "nexus-mods"
+        "nexus-mods",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Nexus",
@@ -5214,7 +5435,8 @@
       "keywords": [
         "games",
         "utility",
-        "shortcuts"
+        "shortcuts",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "CapyDeploy",
@@ -5250,7 +5472,8 @@
         "fx",
         "effects",
         "reverb",
-        "compressor"
+        "compressor",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "AudioForge",
@@ -5273,14 +5496,15 @@
       "catalogReleaseUrl": "https://github.com/Featherwolf/EnhancedGV/releases/download/v0.18.0/EnhancedGV.zip",
       "releasePublishedAt": "2026-08-01T23:03:05Z",
       "category": "Libreria e giochi",
-      "shortDescription": "Enhanced Game View \u2014 brings the Steam store page onto your library game-detail page: trailers, screenshots, description, features, reviews, Steam Deck compatibility and update history, below the Play button.",
-      "longDescription": "Enhanced Game View \u2014 brings the Steam store page onto your library game-detail page: trailers, screenshots, description, features, reviews, Steam Deck compatibility and update history, below the Play button.",
+      "shortDescription": "Enhanced Game View — brings the Steam store page onto your library game-detail page: trailers, screenshots, description, features, reviews, Steam Deck compatibility and update history, below the Play button.",
+      "longDescription": "Enhanced Game View — brings the Steam store page onto your library game-detail page: trailers, screenshots, description, features, reviews, Steam Deck compatibility and update history, below the Play button.",
       "coverUrl": "https://opengraph.githubassets.com/1/Featherwolf/EnhancedGV",
       "keywords": [
         "library",
         "store",
         "media",
-        "reviews"
+        "reviews",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "EnhancedGV",
@@ -5310,7 +5534,8 @@
         "reshade",
         "shaders",
         "graphics",
-        "presets"
+        "presets",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "LetMeReShadeAll",
@@ -5339,7 +5564,8 @@
       "keywords": [
         "vpn",
         "netbird",
-        "network"
+        "network",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky NetBird",
@@ -5366,7 +5592,7 @@
       "category": "Personalizzazione e media",
       "shortDescription": "ThemeDeck lets you add and manage custom music across your Steam library and key Steam UI pages.",
       "longDescription": "ThemeDeck lets you add and manage custom music across your Steam library and key Steam UI pages.",
-      "coverUrl": "https://images.steamusercontent.com/ugc/10246844756434218824/5BE3695A090A9AD263F22EE5F73C7CDA3B84CEB0/?imw=5000\u0026imh=5000\u0026ima=fit\u0026impolicy=Letterbox\u0026imcolor=%23000000\u0026letterbox=false",
+      "coverUrl": "https://images.steamusercontent.com/ugc/10246844756434218824/5BE3695A090A9AD263F22EE5F73C7CDA3B84CEB0/?imw=5000&imh=5000&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false",
       "keywords": [
         "music",
         "theme",
@@ -5374,7 +5600,8 @@
         "youtube",
         "yt-dlp",
         "linux",
-        "steamos"
+        "steamos",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "ThemeDeck (Linux Version)",
@@ -5385,7 +5612,770 @@
       "compatibility": "Versione originale per Linux e SteamOS.",
       "catalogSource": "outside-store",
       "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "DeckCast",
+      "installFolder": "DeckCast",
+      "author": "dPacc",
+      "repository": "dPacc/DeckCast",
+      "repositoryUrl": "https://github.com/dPacc/DeckCast",
+      "version": "1.0.0",
+      "releaseAssetName": "DeckCast.zip",
+      "catalogReleaseUrl": "https://github.com/dPacc/DeckCast/releases/download/v1.0.0/DeckCast.zip",
+      "releasePublishedAt": "2026-05-03T04:58:11Z",
+      "category": "Personalizzazione e media",
+      "shortDescription": "Cast the Steam Deck screen to a browser, transfer recordings over Wi-Fi, and share or stream clips from Gaming Mode.",
+      "longDescription": "DeckCast provides local browser casting, Wi-Fi recording transfers, clip trimming, YouTube uploads, and Twitch streaming without leaving Gaming Mode.",
+      "coverUrl": "https://opengraph.githubassets.com/1/dPacc/DeckCast",
+      "keywords": [
+        "recording",
+        "casting",
+        "streaming",
+        "video",
+        "wifi",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Deck Cast",
+        "DeckCast",
+        "dPacc/DeckCast"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Built for SteamOS and compatible Decky Loader environments. Uses root and debug permissions for capture and streaming features.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "gamescheap",
+      "installFolder": "gamescheap",
+      "author": "redbrake",
+      "repository": "redbrake/gamescheap-decky-plugin",
+      "repositoryUrl": "https://github.com/redbrake/gamescheap-decky-plugin",
+      "version": "0.1.1",
+      "releaseAssetName": "gamescheap.zip",
+      "catalogReleaseUrl": "https://github.com/redbrake/gamescheap-decky-plugin/releases/download/v0.1.1/gamescheap.zip",
+      "releasePublishedAt": "2026-06-03T23:56:50Z",
+      "category": "Libreria e giochi",
+      "shortDescription": "Compare Steam and authorized PC store prices from game pages, with watchlists and deal alerts.",
+      "longDescription": "gamescheap adds price comparisons to Steam game pages and lets you follow games with target prices and deal alerts through gamescheap.win.",
+      "coverUrl": "https://opengraph.githubassets.com/1/redbrake/gamescheap-decky-plugin",
+      "keywords": [
+        "prices",
+        "deals",
+        "watchlist",
+        "store",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "GamesCheap",
+        "gamescheap",
+        "gamescheap Decky plugin",
+        "redbrake/gamescheap-decky-plugin"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Built for SteamOS and compatible Decky Loader environments. Price and alert features use the external gamescheap.win service.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "CachyOS Update",
+      "installFolder": "CachyOS Update",
+      "author": "Christofer Bertonha",
+      "repository": "bertonha/decky-cachy-update",
+      "repositoryUrl": "https://github.com/bertonha/decky-cachy-update",
+      "version": "0.0.4",
+      "releaseAssetName": "decky-cachy-update.zip",
+      "catalogReleaseUrl": "https://github.com/bertonha/decky-cachy-update/releases/download/v0.0.4/decky-cachy-update.zip",
+      "releasePublishedAt": "2026-07-28T15:53:12Z",
+      "category": "Sistema e hardware",
+      "shortDescription": "Run CachyOS system updates from the Quick Access Menu.",
+      "longDescription": "CachyOS Update runs the native cachy-update workflow from Decky's Quick Access Menu and reports progress without requiring a desktop session.",
+      "coverUrl": "https://opengraph.githubassets.com/1/bertonha/decky-cachy-update",
+      "keywords": [
+        "cachyos",
+        "system",
+        "updates",
+        "linux",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "CachyOS Update",
+        "Decky Cachy Update",
+        "bertonha/decky-cachy-update"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Requires CachyOS and its cachy-update command. It is not intended for standard SteamOS installations.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "AirDeck",
+      "installFolder": "AirDeck",
+      "author": "Matthieu \"Chebman\" Poupin",
+      "repository": "matthieupoupin3704-alt/AirDeck",
+      "repositoryUrl": "https://github.com/matthieupoupin3704-alt/AirDeck",
+      "version": "0.2.0",
+      "releaseAssetName": "AirDeck-v0.2.0.zip",
+      "catalogReleaseUrl": "https://github.com/matthieupoupin3704-alt/AirDeck/releases/download/v0.2.0/AirDeck-v0.2.0.zip",
+      "releasePublishedAt": "2026-06-29T19:30:50Z",
+      "category": "Personalizzazione e media",
+      "shortDescription": "Control music playing from a phone over Bluetooth AVRCP from the Steam Deck.",
+      "longDescription": "AirDeck exposes playback controls for a paired phone through Bluetooth AVRCP, keeping music controls available inside Gaming Mode.",
+      "coverUrl": "https://opengraph.githubassets.com/1/matthieupoupin3704-alt/AirDeck",
+      "keywords": [
+        "music",
+        "audio",
+        "bluetooth",
+        "avrcp",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Air Deck",
+        "AirDeck",
+        "matthieupoupin3704-alt/AirDeck"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Requires a paired phone with Bluetooth AVRCP support on SteamOS or a compatible Linux handheld.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "Deckyfin",
+      "installFolder": "deckyfin",
+      "author": "Aviv Illoz",
+      "repository": "avivkilloz/deckyfin",
+      "repositoryUrl": "https://github.com/avivkilloz/deckyfin",
+      "version": "0.1.8",
+      "releaseAssetName": "deckyfin.zip",
+      "catalogReleaseUrl": "https://github.com/avivkilloz/deckyfin/releases/download/v0.1.8/deckyfin.zip",
+      "releasePublishedAt": "2026-06-23T17:46:19Z",
+      "category": "Libreria e giochi",
+      "shortDescription": "Add games and applications from local or network libraries, configure Proton, and apply SteamGridDB artwork.",
+      "longDescription": "Deckyfin manages local and NAS game libraries from Gaming Mode. It can create Steam shortcuts, configure Proton prefixes and dependencies, and apply artwork from SteamGridDB.",
+      "coverUrl": "https://opengraph.githubassets.com/1/avivkilloz/deckyfin",
+      "keywords": [
+        "library",
+        "shortcuts",
+        "proton",
+        "wine",
+        "steamgriddb",
+        "nas",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Deckyfin",
+        "deckyfin",
+        "avivkilloz/deckyfin"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Designed for SteamOS and compatible Linux gaming environments. Some setup actions modify Proton prefixes and game dependencies.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "warp-deck",
+      "installFolder": "warp-deck",
+      "author": "mrwaip & rosakodu",
+      "repository": "rosakodu/warp-deck",
+      "repositoryUrl": "https://github.com/rosakodu/warp-deck",
+      "version": "1.0.0",
+      "releaseAssetName": "warp-deck.zip",
+      "catalogReleaseUrl": "https://github.com/rosakodu/warp-deck/releases/download/v1.0.0/warp-deck.zip",
+      "releasePublishedAt": "2026-06-27T08:26:22Z",
+      "category": "Rete e strumenti",
+      "shortDescription": "Generate and manage a Cloudflare WARP connection through AmneziaWG from Decky.",
+      "longDescription": "warp-deck configures Cloudflare WARP through AmneziaWG and provides connection controls intended for networks where anti-DPI techniques are needed.",
+      "coverUrl": "https://opengraph.githubassets.com/1/rosakodu/warp-deck",
+      "keywords": [
+        "vpn",
+        "warp",
+        "cloudflare",
+        "amneziawg",
+        "network",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Warp Deck",
+        "warp-deck",
+        "rosakodu/warp-deck"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Built for SteamOS and compatible Linux handhelds. Requires root access and changes system networking.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "sub-deck",
+      "installFolder": "sub-deck",
+      "author": "rosakodu",
+      "repository": "rosakodu/sub-deck",
+      "repositoryUrl": "https://github.com/rosakodu/sub-deck",
+      "version": "1.0.4",
+      "releaseAssetName": "sub-deck.zip",
+      "catalogReleaseUrl": "https://github.com/rosakodu/sub-deck/releases/download/v.1.0.4/sub-deck.zip",
+      "releasePublishedAt": "2026-07-26T14:53:28Z",
+      "category": "Rete e strumenti",
+      "shortDescription": "Manage VLESS, VMess, Trojan, Shadowsocks, and Hysteria 2 subscriptions with automatic TUN routing.",
+      "longDescription": "sub-deck manages proxy and VPN subscriptions through sing-box, with support for common protocols and automatic TUN routing from Gaming Mode.",
+      "coverUrl": "https://opengraph.githubassets.com/1/rosakodu/sub-deck",
+      "keywords": [
+        "vpn",
+        "proxy",
+        "sing-box",
+        "vless",
+        "vmess",
+        "network",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "SUB Deck",
+        "Sub Deck",
+        "sub-deck",
+        "rosakodu/sub-deck"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Built for SteamOS and compatible Linux handhelds. Requires root access and a compatible subscription provider.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "cec-mote",
+      "installFolder": "cec-mote",
+      "author": "xXJSONDeruloXx",
+      "repository": "xXJSONDeruloXx/cec-mote",
+      "repositoryUrl": "https://github.com/xXJSONDeruloXx/cec-mote",
+      "version": "0.3.2",
+      "releaseAssetName": "cec-mote.zip",
+      "catalogReleaseUrl": "https://github.com/xXJSONDeruloXx/cec-mote/releases/download/v0.3.2/cec-mote.zip",
+      "releasePublishedAt": "2026-07-05T17:28:06Z",
+      "category": "Sistema e hardware",
+      "shortDescription": "Control HDMI-CEC volume, power, and input functions and configure SteamOS sleep and wake behavior.",
+      "longDescription": "cec-mote provides a compact HDMI-CEC remote in the Quick Access Menu and helps configure compatible television and Bluetooth wake behavior.",
+      "coverUrl": "https://opengraph.githubassets.com/1/xXJSONDeruloXx/cec-mote",
+      "keywords": [
+        "hdmi-cec",
+        "television",
+        "remote",
+        "audio",
+        "wake",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "CEC Mote",
+        "cec-mote",
+        "xXJSONDeruloXx/cec-mote"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Requires compatible HDMI-CEC hardware and root access on SteamOS or a supported Linux gaming system.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "GameModeCord",
+      "installFolder": "GameModeCord",
+      "author": "Memberoffoxhound",
+      "repository": "Memberoffoxhound/GameModeCord",
+      "repositoryUrl": "https://github.com/Memberoffoxhound/GameModeCord",
+      "version": "1.30.2",
+      "releaseAssetName": "GameModeCord.zip",
+      "catalogReleaseUrl": "https://github.com/Memberoffoxhound/GameModeCord/releases/download/v1.30.2/GameModeCord.zip",
+      "releasePublishedAt": "2026-09-04T00:05:54Z",
+      "category": "Social e community",
+      "shortDescription": "Use Discord voice, direct messages, and QR sign-in from the Quick Access Menu.",
+      "longDescription": "GameModeCord brings Discord voice and direct messages into Steam Gaming Mode, with QR sign-in and controller-friendly access from Decky.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Memberoffoxhound/GameModeCord",
+      "keywords": [
+        "discord",
+        "voice",
+        "messages",
+        "social",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Game Mode Cord",
+        "GameModeCord",
+        "GMC",
+        "Memberoffoxhound/GameModeCord"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Built for SteamOS and compatible Decky Loader environments. Requires Discord authentication.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "Decky File Manager",
+      "installFolder": "Decky File Manager",
+      "author": "Ciphay",
+      "repository": "danielcamilo1/Decky-File-Manager",
+      "repositoryUrl": "https://github.com/danielcamilo1/Decky-File-Manager",
+      "version": "1.3.0",
+      "releaseAssetName": "decky-file-manager.zip",
+      "catalogReleaseUrl": "https://github.com/danielcamilo1/Decky-File-Manager/releases/download/v1.3.0/decky-file-manager.zip",
+      "releasePublishedAt": "2026-09-03T20:28:18Z",
+      "category": "Strumenti e utilità",
+      "shortDescription": "Browse and manage files from Gaming Mode with a controller-friendly interface.",
+      "longDescription": "Decky File Manager provides folder navigation, grid view, recent locations, text editing, and access to game files without returning to the desktop.",
+      "coverUrl": "https://opengraph.githubassets.com/1/danielcamilo1/Decky-File-Manager",
+      "keywords": [
+        "files",
+        "folders",
+        "file-manager",
+        "text-editor",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Decky File Manager",
+        "Decky-File-Manager",
+        "danielcamilo1/Decky-File-Manager"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Built for SteamOS and compatible Decky Loader environments. It can modify, move, and delete files, including game folders and Proton prefixes.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "MAKO - Frame Generation",
+      "installFolder": "Mako",
+      "author": "Eugenio Segala",
+      "repository": "eugeniosegala/MAKO",
+      "repositoryUrl": "https://github.com/eugeniosegala/MAKO",
+      "version": "3.1.0",
+      "releaseAssetName": "MAKO-Decky-v3.1.0.zip",
+      "catalogReleaseUrl": "https://github.com/eugeniosegala/MAKO/releases/download/plugin-v3.1.0/MAKO-Decky-v3.1.0.zip",
+      "releasePublishedAt": "2026-09-03T16:41:53Z",
+      "category": "Sistema e hardware",
+      "shortDescription": "Add Vulkan-powered frame generation and spatial scaling controls to supported SteamOS systems.",
+      "longDescription": "MAKO integrates frame generation and spatial scaling for Steam Deck, Steam Machine, and SteamOS systems, with status and configuration available through Decky.",
+      "coverUrl": "https://opengraph.githubassets.com/1/eugeniosegala/MAKO",
+      "keywords": [
+        "frame-generation",
+        "scaling",
+        "vulkan",
+        "graphics",
+        "performance",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "MAKO",
+        "MAKO Frame Generation",
+        "Mako",
+        "eugeniosegala/MAKO"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Requires the separate MAKO Renderer installed through the plugin and a supported SteamOS system. Use only assets obtained from software you lawfully own.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "SimpleDeckyTDP",
+      "installFolder": "SimpleDeckyTDP",
+      "author": "Aarron Lee",
+      "repository": "aarron-lee/SimpleDeckyTDP",
+      "repositoryUrl": "https://github.com/aarron-lee/SimpleDeckyTDP",
+      "version": "1.0.7",
+      "releaseAssetName": "SimpleDeckyTDP.zip",
+      "catalogReleaseUrl": "https://github.com/aarron-lee/SimpleDeckyTDP/releases/download/v1.0.7/SimpleDeckyTDP.zip",
+      "releasePublishedAt": "2026-09-03T02:25:55Z",
+      "category": "Sistema e hardware",
+      "shortDescription": "Control TDP, GPU settings, and other hardware limits on supported Linux handheld PCs.",
+      "longDescription": "SimpleDeckyTDP provides a focused Quick Access Menu for power and GPU controls across supported handheld hardware.",
+      "coverUrl": "https://opengraph.githubassets.com/1/aarron-lee/SimpleDeckyTDP",
+      "keywords": [
+        "tdp",
+        "gpu",
+        "power",
+        "handheld",
+        "hardware",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Simple Decky TDP",
+        "SimpleDeckyTDP",
+        "aarron-lee/SimpleDeckyTDP"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Requires root access and explicitly supported Linux handheld hardware. Incorrect power settings may reduce stability.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "RomM-Dock",
+      "installFolder": "romm-dock",
+      "author": "Crimson3076",
+      "repository": "Crimson3076/romm-dock",
+      "repositoryUrl": "https://github.com/Crimson3076/romm-dock",
+      "version": "0.33.0",
+      "releaseAssetName": "romm-dock.zip",
+      "catalogReleaseUrl": "https://github.com/Crimson3076/romm-dock/releases/download/romm-dock-v0.33.0/romm-dock.zip",
+      "releasePublishedAt": "2026-09-06T14:20:41Z",
+      "category": "Libreria e giochi",
+      "shortDescription": "Sync a self-hosted RomM library to Steam with ROM downloads, saves, BIOS files, metadata, and artwork.",
+      "longDescription": "RomM-Dock connects RomM 4.9 or newer to Steam and launches synchronized games through RetroDECK or EmuDeck. It also manages ROM, BIOS, save, and artwork transfers.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Crimson3076/romm-dock",
+      "keywords": [
+        "romm",
+        "emulation",
+        "retrodeck",
+        "emudeck",
+        "rom-library",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "RomM Dock",
+        "RomM-Dock",
+        "romm-dock",
+        "Crimson3076/romm-dock"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Requires a self-hosted RomM 4.9 or newer server and RetroDECK or EmuDeck. This maintained fork installs separately from RomM Tender.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "StreamKoda",
+      "installFolder": "stream-koda",
+      "author": "Chuck Blackard",
+      "repository": "JustAChucklin/StreamKoda",
+      "repositoryUrl": "https://github.com/JustAChucklin/StreamKoda",
+      "version": "0.3.0",
+      "releaseAssetName": "stream-koda.zip",
+      "catalogReleaseUrl": "https://github.com/JustAChucklin/StreamKoda/releases/download/v0.3.0/stream-koda.zip",
+      "releasePublishedAt": "2026-09-03T01:49:22Z",
+      "category": "Rete e strumenti",
+      "shortDescription": "Replace Install with a one-click Stream action when a game is available on another Steam machine.",
+      "longDescription": "StreamKoda detects games installed on another Steam PC and exposes Steam Remote Play directly from the game page instead of showing the normal Install action.",
+      "coverUrl": "https://opengraph.githubassets.com/1/JustAChucklin/StreamKoda",
+      "keywords": [
+        "remote-play",
+        "streaming",
+        "library",
+        "steam",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Stream Koda",
+        "StreamKoda",
+        "stream-koda",
+        "JustAChucklin/StreamKoda"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Requires Steam Remote Play and another reachable Steam machine with the game installed. The release manifest enables debug mode.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "Apps Manager",
+      "installFolder": "decky-apps-manager",
+      "author": "moi952",
+      "repository": "moi952/decky-apps-manager",
+      "repositoryUrl": "https://github.com/moi952/decky-apps-manager",
+      "version": "0.3.0",
+      "releaseAssetName": "decky-apps-manager-v0.3.0.zip",
+      "catalogReleaseUrl": "https://github.com/moi952/decky-apps-manager/releases/download/v0.3.0/decky-apps-manager-v0.3.0.zip",
+      "releasePublishedAt": "2026-09-06T01:00:56Z",
+      "category": "Strumenti e utilità",
+      "shortDescription": "Discover, install, and update Flatpak apps and Gearlever-managed AppImages from Decky.",
+      "longDescription": "Apps Manager handles Flatpak applications, including apps installed through Discover, and Gearlever-managed AppImages from the Quick Access Menu.",
+      "coverUrl": "https://opengraph.githubassets.com/1/moi952/decky-apps-manager",
+      "keywords": [
+        "flatpak",
+        "appimage",
+        "applications",
+        "updates",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Decky Apps Manager",
+        "Apps Manager",
+        "decky-apps-manager",
+        "moi952/decky-apps-manager"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Built for SteamOS and compatible Linux handhelds. Installation and update features require root access, and the release manifest enables debug mode.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "CreamDeck",
+      "installFolder": "CreamDeck",
+      "author": "Qiming-Liu",
+      "repository": "Qiming-Liu/CreamDeck",
+      "repositoryUrl": "https://github.com/Qiming-Liu/CreamDeck",
+      "version": "1.0.0",
+      "releaseAssetName": "CreamDeck.zip",
+      "catalogReleaseUrl": "https://github.com/Qiming-Liu/CreamDeck/releases/download/1.0.0/CreamDeck.zip",
+      "releasePublishedAt": "2026-09-02T15:58:00Z",
+      "category": "Libreria e giochi",
+      "shortDescription": "Manage supported DLC loaders and related tools from an installed Steam game's context menu.",
+      "longDescription": "CreamDeck provides a Decky interface for installing and managing several third-party DLC loader systems on selected Steam games.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Qiming-Liu/CreamDeck",
+      "keywords": [
+        "dlc",
+        "loaders",
+        "game-tools",
+        "steam",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Cream Deck",
+        "CreamDeck",
+        "Qiming-Liu/CreamDeck"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Requires elevated permissions and changes game files. Use only with content you own and where local law and platform terms permit it.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "Caret Control",
+      "installFolder": "CaretControl",
+      "author": "WooVS",
+      "repository": "woovs-cg/CaretControl",
+      "repositoryUrl": "https://github.com/woovs-cg/CaretControl",
+      "version": "0.7.0",
+      "releaseAssetName": "CaretControl-0.7.0.zip",
+      "catalogReleaseUrl": "https://github.com/woovs-cg/CaretControl/releases/download/v0.7.0/CaretControl-0.7.0.zip",
+      "releasePublishedAt": "2026-09-02T15:38:02Z",
+      "category": "Strumenti e utilità",
+      "shortDescription": "Move the text caret and navigate input fields with a gamepad in Gaming Mode.",
+      "longDescription": "Caret Control adds controller navigation for text fields, including external controller support, hot-plug detection, directional movement, and held-button repeat.",
+      "coverUrl": "https://opengraph.githubassets.com/1/woovs-cg/CaretControl",
+      "keywords": [
+        "controller",
+        "accessibility",
+        "text-input",
+        "caret",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "CaretControl",
+        "Caret Control",
+        "woovs-cg/CaretControl"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Built for SteamOS and Steam Deck. Reads controller input devices and uses elevated permissions.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "Deckygram",
+      "installFolder": "Deckygram",
+      "author": "kissos",
+      "repository": "novasound6945/deckygram",
+      "repositoryUrl": "https://github.com/novasound6945/deckygram",
+      "version": "0.5.1",
+      "releaseAssetName": "Deckygram-v0.5.1.zip",
+      "catalogReleaseUrl": "https://github.com/novasound6945/deckygram/releases/download/v0.5.1/Deckygram-v0.5.1.zip",
+      "releasePublishedAt": "2026-09-02T10:28:23Z",
+      "category": "Social e community",
+      "shortDescription": "Send Steam screenshots and recorded clips to Telegram through your own bot.",
+      "longDescription": "Deckygram automatically sends screenshots and exported clips to Telegram, adds the game name as a caption, and can compress clips locally before upload.",
+      "coverUrl": "https://opengraph.githubassets.com/1/novasound6945/deckygram",
+      "keywords": [
+        "telegram",
+        "screenshots",
+        "clips",
+        "sharing",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Decky Gram",
+        "Deckygram",
+        "novasound6945/deckygram"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Requires a personal Telegram bot token and uploads selected media to Telegram. Built for SteamOS and compatible Decky Loader environments.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "LocalSendPlus",
+      "installFolder": "localsendplus",
+      "author": "Sascha",
+      "repository": "Sudashiii/local-send-plus",
+      "repositoryUrl": "https://github.com/Sudashiii/local-send-plus",
+      "version": "0.47",
+      "releaseAssetName": "localsendplus-0.47.zip",
+      "catalogReleaseUrl": "https://github.com/Sudashiii/local-send-plus/releases/download/0.47/localsendplus-0.47.zip",
+      "releasePublishedAt": "2026-09-02T06:50:12Z",
+      "category": "Rete e strumenti",
+      "shortDescription": "Transfer files, screenshots, and text between Gaming Mode and LocalSend devices on the local network.",
+      "longDescription": "LocalSendPlus adds fast file and clipboard sharing to the Quick Access Menu and communicates directly with LocalSend clients on your local network.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Sudashiii/local-send-plus",
+      "keywords": [
+        "localsend",
+        "file-transfer",
+        "clipboard",
+        "screenshots",
+        "local-network",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Local Send Plus",
+        "LocalSendPlus",
+        "localsendplus",
+        "Sudashiii/local-send-plus"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Requires another device running a compatible LocalSend client on the same local network.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "FengYuMu",
+      "installFolder": "fengyumu-decky",
+      "author": "FengYuMu contributors",
+      "repository": "Herzzzz/fengyumu-decky",
+      "repositoryUrl": "https://github.com/Herzzzz/fengyumu-decky",
+      "version": "0.1.0",
+      "releaseAssetName": "FengYuMu-Decky-0.1.0.zip",
+      "catalogReleaseUrl": "https://github.com/Herzzzz/fengyumu-decky/releases/download/v0.1.0/FengYuMu-Decky-0.1.0.zip",
+      "releasePublishedAt": "2026-09-02T14:32:53Z",
+      "category": "Strumenti e utilità",
+      "shortDescription": "Show a local OCR and dictionary overlay for MapleStory Classic without online translation services.",
+      "longDescription": "FengYuMu combines local RapidOCR processing with an offline dictionary overlay designed specifically for MapleStory Classic in Gaming Mode.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Herzzzz/fengyumu-decky",
+      "keywords": [
+        "ocr",
+        "dictionary",
+        "translation",
+        "maplestory",
+        "offline",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Feng Yu Mu",
+        "FengYuMu Decky",
+        "fengyumu-decky",
+        "Herzzzz/fengyumu-decky"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "An early SteamOS prototype designed for MapleStory Classic. The install package is large and hardware validation is still limited.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "BC-250 Control",
+      "installFolder": "BC-250 Control",
+      "author": "keyboardspecialist",
+      "repository": "keyboardspecialist/bc250-steamos",
+      "repositoryUrl": "https://github.com/keyboardspecialist/bc250-steamos",
+      "version": "0.21.2",
+      "releaseAssetName": "bc250-decky-control-v0.21.2.zip",
+      "catalogReleaseUrl": "https://github.com/keyboardspecialist/bc250-steamos/releases/download/v0.21.2/bc250-decky-control-v0.21.2.zip",
+      "releasePublishedAt": "2026-09-06T16:04:24Z",
+      "category": "Sistema e hardware",
+      "shortDescription": "Control power and hardware settings for AMD BC-250 systems from the Quick Access Menu.",
+      "longDescription": "BC-250 Control exposes live power and hardware controls for the BC-250 SteamOS toolkit inside Gaming Mode.",
+      "coverUrl": "https://opengraph.githubassets.com/1/keyboardspecialist/bc250-steamos",
+      "keywords": [
+        "bc-250",
+        "amd",
+        "power",
+        "hardware",
+        "steam-machine",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "BC250 Control",
+        "BC-250 Control",
+        "BC250 Decky Control",
+        "keyboardspecialist/bc250-steamos"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Only for supported AMD BC-250 systems using the matching SteamOS toolkit. Requires root access and must not be installed on a standard Steam Deck.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "LumaDeck",
+      "installFolder": "LumaDeck",
+      "author": "jayool",
+      "repository": "jayool/LumaDeck",
+      "repositoryUrl": "https://github.com/jayool/LumaDeck",
+      "version": "0.7.5",
+      "releaseAssetName": "LumaDeck.zip",
+      "catalogReleaseUrl": "https://github.com/jayool/LumaDeck/releases/download/v0.7.5/LumaDeck.zip",
+      "releasePublishedAt": "2026-08-31T18:57:32Z",
+      "category": "Libreria e giochi",
+      "shortDescription": "Manage Steam manifests and downloads through lumalinux and SLSsteam from a Decky interface.",
+      "longDescription": "LumaDeck is a separately maintained DeckTools fork that integrates lumalinux and SLSsteam workflows into Gaming Mode for Steam manifest and download management.",
+      "coverUrl": "https://opengraph.githubassets.com/1/jayool/LumaDeck",
+      "keywords": [
+        "steam",
+        "manifests",
+        "downloads",
+        "library",
+        "lumalinux",
+        "catalog-added:2026-09-04"
+      ],
+      "aliases": [
+        "Luma Deck",
+        "LumaDeck",
+        "jayool/LumaDeck"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Designed for stable SteamOS and requires elevated permissions. Use only with accounts and content you lawfully own.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "CheevoDeck",
+      "installFolder": "CheevoDeck",
+      "author": "FAILINATOR5000",
+      "repository": "FAILINATOR5000/decky-cheevodeck",
+      "repositoryUrl": "https://github.com/FAILINATOR5000/decky-cheevodeck",
+      "version": "0.8.8",
+      "releaseAssetName": "CheevoDeck-0.8.8.zip",
+      "catalogReleaseUrl": "https://github.com/FAILINATOR5000/decky-cheevodeck/releases/download/v0.8.8/CheevoDeck-0.8.8.zip",
+      "releasePublishedAt": "2026-09-09T21:21:37Z",
+      "category": "Libreria e giochi",
+      "shortDescription": "Track RetroAchievements, goals, notes, guides, activity, and community events from the Quick Access Menu.",
+      "longDescription": "CheevoDeck is a complete RetroAchievements companion for Gaming Mode. It tracks achievements and mastery goals, organizes notes and reminders, opens guides, follows discussions and community activity, validates compatible game files, and supports multiple RetroAchievements accounts without leaving the Quick Access Menu.",
+      "coverUrl": "https://raw.githubusercontent.com/FAILINATOR5000/decky-cheevodeck/main/docs/images/cheevodeck-wide.webp",
+      "keywords": [
+        "retroachievements",
+        "achievements",
+        "goals",
+        "guides",
+        "community",
+        "emulation",
+        "catalog-added:2026-09-11",
+        "first-release:2026-08-28"
+      ],
+      "aliases": [
+        "Cheevo Deck",
+        "decky-cheevodeck",
+        "FAILINATOR5000/decky-cheevodeck"
+      ],
+      "catalogStatus": "github",
+      "compatibility": "Requires SteamOS, Decky Loader, and a RetroAchievements account with an API key. The plugin manifest requests root access.",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0
     }
   ],
-  "catalogRevision": 3
+  "catalogRevision": 7
 }

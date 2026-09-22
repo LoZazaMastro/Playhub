@@ -35,6 +35,9 @@ $members = @(
     (Get-ProductionMember $main 'private static DateTime PluginCatalogDate(')
     (Get-ProductionMember $discovery 'private sealed class PluginDiscoveryCategoryState')
     (Get-ProductionMember $discovery 'private static List<DeckyPluginInfo> OrderPluginDiscoveryCategory(')
+    (Get-ProductionMember $discovery 'private static DateTimeOffset? PluginKeywordDate(')
+    (Get-ProductionMember $discovery 'private static List<DeckyPluginInfo> OrderPluginDiscoveryPreview(')
+    (Get-ProductionMember $discovery 'private static List<DeckyPluginInfo> SelectFeaturedPlugins(')
     (Get-ProductionMember $service 'private static string NormalizeExternalCategory(')
     (Get-ProductionMember $service 'private static string InferInstalledCategory(')
 )
@@ -42,6 +45,9 @@ foreach ($entry in @(
     @{ Source = $main; Declaration = 'private static string PluginStoreKey(' }
     @{ Source = $discovery; Declaration = 'private static string PluginDiscoveryCategory(' }
     @{ Source = $discovery; Declaration = 'private static bool PluginBelongsToCategory(' }
+    @{ Source = $discovery; Declaration = 'private static DateTimeOffset? PluginCatalogAddedAt(' }
+    @{ Source = $discovery; Declaration = 'private static DateTimeOffset? PluginFirstReleasedAt(' }
+    @{ Source = $discovery; Declaration = 'private static bool IsFeaturedPluginCandidate(' }
 )) {
     $members += Get-ProductionExpression $entry.Source $entry.Declaration
 }
@@ -60,37 +66,37 @@ $tests = @'
 
     public static void Run()
     {
-        var categories = new[] { "I plugin di Playhub", "Personalizzazione e media",
+        var categories = new[] { "Novit\u00e0", "I plugin di Playhub", "Personalizzazione e media",
             "Libreria e giochi", "Social e community", "Strumenti e utilit\u00e0", "Sistema e hardware" };
         Check(PluginDiscoveryPreviewCount == 4, "Home must show four previews");
         for (var index = 0; index < categories.Length; index++)
         {
             var category = categories[index];
             Check(PluginStoreCategoryOrder(category) == index, "Unexpected category order: " + category);
-            if (index == 0) continue;
+            if (index <= 1) continue;
             var variant = "  " + category.ToUpperInvariant() + "  ";
             Check(NormalizePluginStoreCategory(variant) == category, "UI category normalization");
             Check(NormalizeExternalCategory(variant) == category, "Catalog category normalization");
         }
         foreach (var alias in new[] { "Controller e hardware", "Rete e strumenti", "Sistema e connettivit\u00e0" })
         {
-            Check(PluginStoreCategoryOrder(alias) == 5, "Legacy hardware category must stay last");
-            Check(NormalizeExternalCategory(alias) == categories[5], "Legacy catalog category");
+            Check(PluginStoreCategoryOrder(alias) == 6, "Legacy hardware category must stay last");
+            Check(NormalizeExternalCategory(alias) == categories[6], "Legacy catalog category");
         }
-        Check(NormalizePluginStoreCategory("Strumenti e utilita") == categories[4], "ASCII utility alias");
-        Check(NormalizeExternalCategory("Strumenti e utilita") == categories[4], "Catalog utility alias");
-        Check(NormalizePluginStoreCategory("Giochi e libreria") == categories[2], "Legacy library alias");
-        Check(InferInstalledCategory("Discord", "Voice chat in Game Mode", Array.Empty<string>()) == categories[3], "Installed social plugin");
-        Check(InferInstalledCategory("Timer", "Reminder during games", Array.Empty<string>()) == categories[4], "Installed utility plugin");
-        Check(InferInstalledCategory("Metadata", "Community images for your game library", Array.Empty<string>()) == categories[2], "Community artwork is not social chat");
-        Check(InferInstalledCategory("PowerTools", "CPU and battery settings", Array.Empty<string>()) == categories[5], "Installed hardware plugin");
+        Check(NormalizePluginStoreCategory("Strumenti e utilita") == categories[5], "ASCII utility alias");
+        Check(NormalizeExternalCategory("Strumenti e utilita") == categories[5], "Catalog utility alias");
+        Check(NormalizePluginStoreCategory("Giochi e libreria") == categories[3], "Legacy library alias");
+        Check(InferInstalledCategory("Discord", "Voice chat in Game Mode", Array.Empty<string>()) == categories[4], "Installed social plugin");
+        Check(InferInstalledCategory("Timer", "Reminder during games", Array.Empty<string>()) == categories[5], "Installed utility plugin");
+        Check(InferInstalledCategory("Metadata", "Community images for your game library", Array.Empty<string>()) == categories[3], "Community artwork is not social chat");
+        Check(InferInstalledCategory("PowerTools", "CPU and battery settings", Array.Empty<string>()) == categories[6], "Installed hardware plugin");
         var playhubAssignments = new[] {
-            ("Quick Settings", categories[4]),
-            ("Launch Curtain", categories[4]), ("Playhub Notifications", categories[4]),
-            ("Playhub Surround", categories[4]), ("Weather", categories[4]),
-            ("Playhub Artworks", categories[1]), ("Now Playing", categories[1]),
-            ("ThemeDeck", categories[1]), ("TrailerHero", categories[1]),
-            ("Playhub Metadata", categories[2]), ("News", categories[3]), ("Proton VPN", categories[5])
+            ("Quick Settings", categories[5]),
+            ("Launch Curtain", categories[5]), ("Playhub Notifications", categories[5]),
+            ("Playhub Surround", categories[5]), ("Weather", categories[5]),
+            ("Playhub Artworks", categories[2]), ("Now Playing", categories[2]),
+            ("ThemeDeck", categories[2]), ("TrailerHero", categories[2]),
+            ("Playhub Metadata", categories[3]), ("News", categories[4]), ("Proton VPN", categories[6])
         };
         var playhubPlugins = new List<DeckyPluginInfo>();
         foreach (var (name, category) in playhubAssignments)
@@ -98,27 +104,33 @@ $tests = @'
             var plugin = new DeckyPluginInfo { Name = name, IsPlayhubPlugin = true, Category = "Playhub" };
             playhubPlugins.Add(plugin);
             Check(PluginDiscoveryCategory(plugin) == category, "Functional Playhub category: " + name);
-            Check(PluginBelongsToCategory(plugin, categories[0].ToUpperInvariant()), "Playhub membership: " + name);
+            Check(PluginBelongsToCategory(plugin, categories[1].ToUpperInvariant()), "Playhub membership: " + name);
             Check(PluginBelongsToCategory(plugin, category.ToUpperInvariant()), "Functional membership: " + name);
             Check(categories.Count(candidate => PluginBelongsToCategory(plugin, candidate)) == 2,
                 "Playhub plugin must appear once in its source group and once in its functional group: " + name);
         }
         var futurePlayhub = new DeckyPluginInfo { Name = "Future Playhub plugin",
             IsPlayhubPlugin = true, Category = "  MEDIA E PERSONALIZZAZIONE  " };
-        Check(PluginDiscoveryCategory(futurePlayhub) == categories[1], "Unknown Playhub names use normalized catalog category");
-        Check(PluginBelongsToCategory(futurePlayhub, categories[0]) && PluginBelongsToCategory(futurePlayhub, categories[1]),
+        Check(PluginDiscoveryCategory(futurePlayhub) == categories[2], "Unknown Playhub names use normalized catalog category");
+        Check(PluginBelongsToCategory(futurePlayhub, categories[1]) && PluginBelongsToCategory(futurePlayhub, categories[2]),
             "Unknown Playhub names retain both memberships");
+        futurePlayhub.Keywords = "catalog-added:2026-09-04 shortcuts";
+        Check(PluginCatalogAddedAt(futurePlayhub)?.UtcDateTime == new DateTime(2026, 9, 4), "Catalog addition marker date");
+        Check(!PluginBelongsToCategory(futurePlayhub, categories[0]), "Catalog addition alone must not imply a new release");
+        futurePlayhub.Keywords += " first-release:2026-08-01";
+        Check(PluginBelongsToCategory(futurePlayhub, categories[0]), "Known first releases belong to New category");
         var externalNamesake = new DeckyPluginInfo { Name = "News", IsPlayhubPlugin = false,
             RepositoryName = "external-news", Category = "Controller e hardware", CatalogSource = "outside-store" };
-        Check(PluginDiscoveryCategory(externalNamesake) == categories[5], "External names must not inherit Playhub overrides");
-        Check(!PluginBelongsToCategory(externalNamesake, categories[0]) &&
+        Check(PluginDiscoveryCategory(externalNamesake) == categories[6], "External names must not inherit Playhub overrides");
+        Check(!PluginBelongsToCategory(externalNamesake, categories[1]) &&
             categories.Count(category => PluginBelongsToCategory(externalNamesake, category)) == 1,
             "External plugins belong only to their functional group");
 
         var plugins = Enumerable.Range(0, 12).Select(index => new DeckyPluginInfo {
             Name = "Plugin " + index.ToString("D2"), RepositoryName = "repo-" + index,
-            Category = categories[3], IsPlayhubPlugin = false,
+            Category = categories[4], IsPlayhubPlugin = false,
             CatalogSource = index % 2 == 0 ? "decky-store" : "outside-store",
+            Keywords = "first-release:" + new DateTime(2025, 1, 1).AddDays(index).ToString("yyyy-MM-dd"),
             ReleasePublishedAt = new DateTime(2026, 1, 1).AddDays(index).ToString("yyyy-MM-dd"),
             UpdatedAt = new DateTime(2026, 1, 1).AddDays(11 - index).ToString("yyyy-MM-dd")
         }).ToList();
@@ -143,6 +155,60 @@ $tests = @'
         Check(samples.Count > 1, "New sessions must randomize previews");
 
         var view = new PluginCategoryProbe();
+        var unknown = new DeckyPluginInfo { Name = "A unknown", RepositoryName = "unknown",
+            Keywords = "catalog-added:2099-01-01 first-release:invalid", ReleasePublishedAt = "2099-01-01",
+            UpdatedAt = "2099-01-01" };
+        var news = plugins.Append(unknown).ToList();
+        view._pluginAllSort = "added";
+        Check(view.SortPluginAll(news).Last() == unknown, "Unknown first release must sort last despite recent update/addition");
+        var preview = OrderPluginDiscoveryPreview(categories[0], new PluginDiscoveryCategoryState(), news);
+        Check(preview.Take(4).Select(p => p.RepositoryName).SequenceEqual(new[] { "repo-11", "repo-10", "repo-9", "repo-8" }),
+            "Actual home preview must select the four newest first releases");
+        Check(!preview.Contains(unknown), "Unknown first release must not appear in home New");
+        Check(preview.SequenceEqual(view.SortPluginAll(plugins)), "Home and full New category must agree");
+        Check(OrderPluginDiscoveryPreview(categories[0], new PluginDiscoveryCategoryState(), news.AsEnumerable().Reverse().ToList())
+            .SequenceEqual(preview), "New home order must not depend on shuffle or input order");
+        var externals = new[] { "Tormak9970/TabMaster", "EMERALD0874/SDH-AudioLoader",
+            "bentemple/decky-download-all", "jessebofill/DeckWebBrowser", "DeckThemes/SDH-CssLoader" }
+            .Select(repo => new DeckyPluginInfo { RepositorySlug = repo, RepositoryName = repo,
+                IsPlayhubPlugin = false, CatalogSource = "decky-store" }).ToList();
+        Check(externals.All(IsFeaturedPluginCandidate), "All five requested external projects must be eligible");
+        var cssGithub = new DeckyPluginInfo { RepositorySlug = "DeckThemes/SDH-CssLoader", IsPlayhubPlugin = false,
+            CatalogSource = "outside-store" };
+        Check(!IsFeaturedPluginCandidate(cssGithub), "CSS Loader outside Decky Store must be excluded");
+        Check(!IsFeaturedPluginCandidate(new DeckyPluginInfo { Name = "TabMaster", RepositorySlug = "other/tabmaster",
+            IsPlayhubPlugin = false }), "Namesakes must not enter featured pool");
+        var featuredPool = playhubPlugins.Concat(externals).ToList();
+        var featuredState = new PluginDiscoveryCategoryState();
+        var featured = SelectFeaturedPlugins(featuredState, featuredPool);
+        Check(featured.Count == 10 && featured.Count(p => p.IsPlayhubPlugin) == 5 && externals.All(featured.Contains),
+            "Featured must include five Playhub and all five requested external plugins");
+        Check(SelectFeaturedPlugins(featuredState, featuredPool.AsEnumerable().Reverse().ToList()).SequenceEqual(featured),
+            "Featured must remain stable across renders");
+        Check(SelectFeaturedPlugins(new PluginDiscoveryCategoryState(), externals).Count == 5,
+            "Featured must fill available places when Playhub pool is absent");
+        var featuredSamples = new HashSet<string>();
+        for (var trial = 0; trial < 12; trial++)
+            featuredSamples.Add(string.Join(",", SelectFeaturedPlugins(new PluginDiscoveryCategoryState(), featuredPool).Select(PluginStoreKey)));
+        Check(featuredSamples.Count > 1, "Featured must randomize between sessions");
+        var newest = playhubPlugins.Last();
+        newest.Keywords = "catalog-added:2026-01-01";
+        Check(SelectFeaturedPlugins(featuredState, featuredPool).First() == newest,
+            "Newest meaningfully dated Playhub addition must lead the rotation");
+        newest.Keywords = "catalog-added:invalid";
+        Check(SelectFeaturedPlugins(featuredState, featuredPool).SequenceEqual(featured),
+            "Invalid dates must not change the session shuffle");
+        newest.Keywords = "catalog-added:2999-01-01";
+        Check(SelectFeaturedPlugins(featuredState, featuredPool).SequenceEqual(featured),
+            "Future dates must not gain priority");
+        newest.Keywords = "";
+        foreach (var plugin in playhubPlugins) plugin.Keywords = "catalog-added:2026-09-04";
+        Check(SelectFeaturedPlugins(featuredState, featuredPool).SequenceEqual(featured),
+            "Shared seed dates must preserve the pure mixed session shuffle");
+        newest.Keywords = "catalog-added:2026-09-05";
+        Check(SelectFeaturedPlugins(featuredState, featuredPool).First() == newest,
+            "A genuinely newer addition must retain priority over the shared baseline");
+        foreach (var plugin in playhubPlugins) plugin.Keywords = "";
         Check(view.SortPluginAll(view.FilterPluginAllBySource(plugins)).Count() == 12, "Full category must not be preview-limited");
         foreach (var source in new[] { "decky", "github" })
         {
@@ -162,11 +228,11 @@ $tests = @'
 
         var mixed = plugins.Concat(playhubPlugins).Append(externalNamesake).ToList();
         Check(mixed.Select(PluginStoreKey).Distinct().Count() == mixed.Count, "Shared membership must not duplicate catalog identities");
-        Check(mixed.Count(plugin => PluginBelongsToCategory(plugin, categories[0])) == playhubPlugins.Count,
+        Check(mixed.Count(plugin => PluginBelongsToCategory(plugin, categories[1])) == playhubPlugins.Count,
             "Playhub source group retains all Playhub plugins");
-        Check(categories.Skip(1).Sum(category => mixed.Count(plugin => PluginBelongsToCategory(plugin, category))) == mixed.Count,
+        Check(categories.Skip(2).Sum(category => mixed.Count(plugin => PluginBelongsToCategory(plugin, category))) == mixed.Count,
             "Every fixture appears in exactly one functional category");
-        foreach (var category in categories.Skip(1))
+        foreach (var category in categories.Skip(2))
         {
             var members = mixed.Where(plugin => PluginBelongsToCategory(plugin, category)).ToList();
             foreach (var source in new[] { "all", "playhub", "decky", "github" })
@@ -280,20 +346,43 @@ $code = "#nullable enable`nusing System;`nusing System.Linq;`nusing System.Globa
 Add-Type -TypeDefinition $code
 [PluginCategoryProbe]::Run()
 Write-Output 'PASS pure production functional categories, Playhub multiple membership, preview stability, source filters and sorting'
+$remoteSource = Get-Content -Raw -LiteralPath (Join-Path $app 'Services/RemotePluginCatalogService.cs')
+$remoteCatalog = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot '../../catalog/plugins.json') | ConvertFrom-Json
+Assert-True ($remoteSource.Contains('Keywords = Array.AsReadOnly(p.Keywords.ToArray())')) 'Remote parser must retain keyword markers'
+Assert-True ($service.Contains("Keywords = string.Join(' ', definition.Keywords)")) 'Desktop hydration must retain keyword markers'
+$markerCount = 0
+foreach ($entry in $remoteCatalog.plugins) {
+    foreach ($marker in @($entry.keywords | Where-Object { $_ -like 'first-release:*' })) {
+        $plugin = [Playhub.Models.DeckyPluginInfo]::new()
+        $plugin.Keywords = [string]::Join(' ', [string[]]$entry.keywords)
+        $parsed = [PluginCategoryProbe]::PluginFirstReleasedAt($plugin)
+        Assert-True ($null -ne $parsed -and $parsed.ToString('yyyy-MM-dd') -eq $marker.Substring('first-release:'.Length)) 'First-release marker must survive desktop keyword hydration'
+        $markerCount++
+    }
+}
+Assert-True ($markerCount -gt 0) 'Remote catalog must exercise first-release markers'
+Write-Output "PASS all $markerCount remote first-release markers survive desktop keyword hydration"
 [PluginNavigationProbe]::Run()
 Write-Output 'PASS pure production toolbar visibility, separate cache invalidation and navigation key tests'
 
 Assert-True ($discovery.Contains('orderedPlugins.Take(PluginDiscoveryPreviewCount)')) 'Preview limit must remain home-only'
+Assert-True ($discovery.Contains('OrderPluginDiscoveryPreview(title, state, plugins)')) 'Home must call the tested first-release preview selector'
+$openCategory = Get-ProductionMember $discovery 'private void OpenPluginCategory('
+Assert-True ($openCategory -match 'if \(string.Equals\(category, "Novità", StringComparison.OrdinalIgnoreCase\)\)\s*_pluginAllSort = "added";') 'Opening New must default to first-release descending'
+$featured = Get-ProductionMember $main 'private IReadOnlyList<DeckyPluginInfo> GetFeaturedPlugins('
+Assert-True ($featured.Contains('IsFeaturedPluginCandidate(plugin) && !IsIntegratedGamingModePlugin(plugin)') -and
+    $featured.Contains('SelectFeaturedPlugins(_featuredOrder, candidates)')) 'Actual carousel must use mixed featured selection and exclude integrated Gaming Mode'
 Assert-True ($discovery.Contains('_pluginCategoryFilter = category;') -and $discovery.Contains('_pluginShowAll = true;')) 'Category click must open its complete list'
 $render = Get-ProductionMember $main 'private void RenderPluginCards('
 Assert-True ($render.Contains('SortPluginAll(FilterPluginAllBySource(visibleQuery))')) 'Full category must retain source filtering and sorting'
 Assert-True ($render.Contains('BuildPluginStoreCategory(_pluginCategoryFilter ?? "Tutti i plugin", visible, showLayoutToggle: true)')) 'Full category must render all visible plugins'
 Assert-True ($render.Contains('PluginBelongsToCategory(plugin, _pluginCategoryFilter)')) 'Full categories must include Playhub functional membership'
 Assert-True ($render.Contains('visible.Where(plugin => PluginBelongsToCategory(plugin, category))')) 'Home must use non-exclusive category membership'
+Assert-True ($render -match 'BuildPluginDiscoveryCategory\(\s*category,\s*group\)') 'Home must pass the entire category pool without sampling'
 $homeCategoryList = [regex]::Match($render, '(?s)foreach\s*\(var category in new\[\]\s*\{(?<items>.*?)\}\s*\)')
 Assert-True $homeCategoryList.Success 'Missing explicit home category list'
 $homeCategories = @('[' + $homeCategoryList.Groups['items'].Value + ']' | ConvertFrom-Json)
-Assert-True ($homeCategories.Count -eq 6) 'Home must render all six categories'
+Assert-True ($homeCategories.Count -eq 7) 'Home must render all seven categories'
 for ($index = 0; $index -lt $homeCategories.Count; $index++) {
     Assert-True ([PluginCategoryProbe]::PluginStoreCategoryOrder($homeCategories[$index]) -eq $index) 'Home category order'
 }
@@ -310,6 +399,14 @@ Assert-True ($restore.Contains('_pluginManageQuery = state.ManageQuery;') -and
     $restore.Contains('if (changed) InvalidatePluginAllViews();')) 'History must restore the Manage query and invalidate stale views'
 Assert-True ($restore.Contains('_pluginFeaturedHost.Visibility = state.Mode == "discover"')) 'Restoring Manage must not reveal discovery featured content'
 Write-Output 'PASS installed-only Manage rendering, cache isolation and history restoration contracts'
+
+$searchHandler = [regex]::Match($main,
+    '(?s)_pluginSearchBox\.TextChanged \+= \(_, _\) =>.*?var searchHost = BuildCollapsiblePluginSearch')
+Assert-True $searchHandler.Success 'Missing plugin search text-change handler'
+Assert-True ($searchHandler.Value.Contains('InvalidatePluginAllViews();') -and
+    $searchHandler.Value.Contains('SchedulePluginSearch();')) `
+    'Discovery search must invalidate cached list/grid content before the deferred render'
+Write-Output 'PASS discovery search invalidates cached views before rendering results'
 
 $hero = Get-ProductionMember $page 'private void ConfigurePluginDetailHero('
 $captureScrim = $hero.IndexOf('Equals(child.Tag, "plugin-artwork-scrim")')

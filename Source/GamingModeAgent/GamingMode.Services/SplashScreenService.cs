@@ -49,6 +49,26 @@ public sealed class SplashScreenService : IDisposable
 		{
 			return;
 		}
+		string? logoPath = ResolveLogoPath(settings.LogoPath);
+		ShowCore(() => CreateSplashWindow(logoPath, settings), failSafeCloseMs);
+	}
+
+	public void ShowTransition(ModeKind mode, string? language, GamingSplashSettings? settings = null)
+	{
+		ShowCore(() =>
+		{
+			Window window = CreateSplashWindow(null);
+			window.Left = 0;
+			window.Top = 0;
+			window.Width = SystemParameters.PrimaryScreenWidth;
+			window.Height = SystemParameters.PrimaryScreenHeight;
+			window.Content = ModeTransitionVisual.Create(mode, language, settings);
+			return window;
+		}, 90000);
+	}
+
+	private void ShowCore(Func<Window> createWindow, int failSafeCloseMs)
+	{
 		lock (_sync)
 		{
 			Thread thread = _thread;
@@ -59,14 +79,16 @@ public sealed class SplashScreenService : IDisposable
 			_shownAt = DateTimeOffset.Now;
 		}
 		ManualResetEventSlim ready = new ManualResetEventSlim(initialState: false);
-		string logoPath = ResolveLogoPath(settings.LogoPath);
+		var firstFrameTimer = System.Diagnostics.Stopwatch.StartNew();
 		int failSafeMs = Math.Clamp(failSafeCloseMs, 5000, 300000);
 		Thread thread2 = new Thread((ThreadStart)delegate
 		{
 			try
 			{
 				Dispatcher currentDispatcher = Dispatcher.CurrentDispatcher;
-				Window window = CreateSplashWindow(logoPath);
+				Window window = createWindow();
+				window.ContentRendered += (_, _) =>
+					_logger.Info($"Gaming splash first frame rendered after {firstFrameTimer.ElapsedMilliseconds} ms.");
 				lock (_sync)
 				{
 					_dispatcher = currentDispatcher;
@@ -110,8 +132,8 @@ public sealed class SplashScreenService : IDisposable
 			_thread = thread2;
 		}
 		thread2.Start();
-		ready.Wait(TimeSpan.FromSeconds(3.0));
-		_logger.Info("Gaming splash screen shown.");
+		if (!ready.Wait(TimeSpan.FromSeconds(3.0)))
+			_logger.Info("Gaming splash creation is still pending after 3000 ms.");
 	}
 
 	public async Task HideAsync(int minVisibleMs = 0, bool fade = false, int fadeMs = 450)
@@ -190,21 +212,42 @@ public sealed class SplashScreenService : IDisposable
 		HideAsync().GetAwaiter().GetResult();
 	}
 
-	private static Window CreateSplashWindow(string? logoPath)
+	internal static void ShowPreview(string variant, GamingSplashSettings settings, string? language)
+	{
+		var window = CreateSplashWindow(ResolveLogoPath(settings.LogoPath), settings, interactive: true);
+		window.Left = 0;
+		window.Top = 0;
+		window.Width = SystemParameters.PrimaryScreenWidth;
+		window.Height = SystemParameters.PrimaryScreenHeight;
+		if (variant != "boot")
+			window.Content = ModeTransitionVisual.Create(variant == "desktop" ? ModeKind.Desktop : ModeKind.Gaming, language, settings);
+		if (window.Content is UIElement content) content.IsHitTestVisible = true;
+		window.PreviewKeyDown += (_, e) =>
+		{
+			if (e.Key == System.Windows.Input.Key.Escape) { e.Handled = true; window.Close(); }
+		};
+		window.PreviewMouseDown += (_, e) => { e.Handled = true; window.Close(); };
+		new Application { ShutdownMode = ShutdownMode.OnMainWindowClose }.Run(window);
+	}
+
+	private static Window CreateSplashWindow(string? logoPath, GamingSplashSettings? settings = null, bool interactive = false)
 	{
 		Grid grid = new Grid
 		{
-			Background = Brushes.Black
+			Background = Brushes.Black,
+			ClipToBounds = true
 		};
+		ModeTransitionVisual.AddGlows(grid, SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight, settings);
 		ImageSource imageSource = LoadImage(logoPath);
 		if (imageSource != null)
 		{
 			grid.Children.Add(new Image
 			{
 				Source = imageSource,
+				Effect = ModeTransitionVisual.TextShadow(),
 				Stretch = Stretch.Uniform,
-				Width = Math.Min(460.0, SystemParameters.VirtualScreenWidth * 0.28),
-				Height = 180.0,
+				Width = Math.Min(460.0, SystemParameters.VirtualScreenWidth * 0.28) * Playhub.Shared.SplashLogoScale.ForPath(logoPath),
+				Height = 180.0 * Playhub.Shared.SplashLogoScale.ForPath(logoPath),
 				HorizontalAlignment = HorizontalAlignment.Center,
 				VerticalAlignment = VerticalAlignment.Center
 			});
@@ -214,6 +257,7 @@ public sealed class SplashScreenService : IDisposable
 			grid.Children.Add(new TextBlock
 			{
 				Text = "playhub",
+				Effect = ModeTransitionVisual.TextShadow(),
 				Foreground = Brushes.White,
 				FontSize = 56.0,
 				FontWeight = FontWeights.Bold,
@@ -226,7 +270,7 @@ public sealed class SplashScreenService : IDisposable
 			WindowStyle = WindowStyle.None,
 			ResizeMode = ResizeMode.NoResize,
 			ShowInTaskbar = false,
-			ShowActivated = false,
+			ShowActivated = interactive,
 			Topmost = true,
 			Background = Brushes.Black,
 			Content = grid,
@@ -236,8 +280,19 @@ public sealed class SplashScreenService : IDisposable
 			Height = SystemParameters.VirtualScreenHeight,
 			WindowStartupLocation = WindowStartupLocation.Manual
 		};
+		// Steam may create its fullscreen window after us. Keep the curtain above it
+		// without taking keyboard/controller focus from the destination session.
+		var foregroundTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+		foregroundTimer.Tick += (_, _) =>
+		{
+			nint handle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+			if (handle != 0) SetWindowPos(handle, new IntPtr(-1), 0, 0, 0, 0, 0x13);
+		};
+		window.ContentRendered += (_, _) => foregroundTimer.Start();
+		window.Closed += (_, _) => foregroundTimer.Stop();
 		window.SourceInitialized += delegate
 		{
+			if (interactive) return;
 			try
 			{
 				nint handle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
@@ -256,6 +311,10 @@ public sealed class SplashScreenService : IDisposable
 
 	[DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
 	private static extern nint GetWindowLongPtr(nint hWnd, int nIndex);
+
+	[DllImport("user32.dll")]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	private static extern bool SetWindowPos(nint hWnd, nint insertAfter, int x, int y, int width, int height, uint flags);
 
 	[DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
 	private static extern nint SetWindowLongPtr(nint hWnd, int nIndex, nint dwNewLong);

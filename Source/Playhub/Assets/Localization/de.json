@@ -1,4 +1,20 @@
 {
+  "Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop.": "Öffne sie mit Ctrl + Alt + P, um zwischen Fenstern zu wechseln, Lieblings-Apps zu verwalten und Leistung sowie laufende Prozesse zu prüfen. Auch eine nicht reagierende App kannst du schließen, ohne zum Desktop zurückzukehren.",
+  "Avvio": "Start",
+  "Passaggio alla Desktop Mode": "Wechsel zu Desktop Mode",
+  "Passaggio alla Gaming Mode": "Wechsel zu Gaming Mode",
+  "Provalo ora": "Jetzt ausprobieren",
+  "Premi ESC o fai clic per tornare a Playhub": "Drücke Esc oder klicke, um zu Playhub zurückzukehren",
+  "Colore personalizzato": "Eigene Farbe",
+  "Tonalita": "Farbton",
+  "Saturazione": "Sättigung",
+  "Livello di nero": "Schwarzanteil",
+  "Opacita": "Deckkraft",
+  "Impossibile aprire l'anteprima. Riprova.": "Die Vorschau konnte nicht geöffnet werden. Versuche es erneut.",
+  "Animazione Gaming Mode": "Gaming-Mode-Animation",
+  "All'avvio e durante il cambio modalita.": "Beim Start und beim Wechsel des Modus.",
+  "Attiva animazione": "Animation aktivieren",
+  "Il colore e indipendente dall'accent di Playhub.": "Die Farbe ist unabhängig von der Akzentfarbe von Playhub.",
   "Aggiorna tutto": "Alle aktualisieren",
   "Aggiornamento Playhub": "Playhub-Update",
   "Aggiornamento in corso": "Aktualisierung läuft",
@@ -181,5 +197,10 @@
   "{0} ufficiale di Steam": "{0} von Steam (offiziell)",
   "Inattività prima di nascondere il cursore.": "Dauer der Inaktivität, bevor der Cursor ausgeblendet wird.",
   "Windows ha impedito la scrittura del file shortcuts di Steam. Consenti Playhub in Accesso alle cartelle controllato e riprova. ": "Windows hat das Schreiben der Steam-Verknüpfungsdatei blockiert. Lass Playhub unter „Überwachter Ordnerzugriff“ zu und versuche es erneut. ",
-  "I plugin dello store di Decky sono sviluppati per Linux, a volte potrebbero non funzionare come previsto su Windows.": "Plugins aus dem Decky Store werden für Linux entwickelt und funktionieren unter Windows möglicherweise nicht immer wie erwartet."
+  "I plugin dello store di Decky sono sviluppati per Linux, a volte potrebbero non funzionare come previsto su Windows.": "Plugins aus dem Decky Store werden für Linux entwickelt und funktionieren unter Windows möglicherweise nicht immer wie erwartet.",
+  "Installa Playhub per lo stile classico e Playhub (Big Image Mode) per la modalità Big Image di Steam.": "Installiere Playhub für die klassische Ansicht und Playhub (Big Image Mode) für Steams Big Image-Modus.",
+  "Installa profili": "Profile installieren",
+  "Rimuovi profili": "Profile entfernen",
+  "Profili Playhub installati: Playhub e Playhub (Big Image Mode).": "Profile installiert: Playhub und Playhub (Big Image Mode).",
+  "Profili Playhub rimossi da CSS Loader.": "Playhub-Profile aus CSS Loader entfernt."
 }

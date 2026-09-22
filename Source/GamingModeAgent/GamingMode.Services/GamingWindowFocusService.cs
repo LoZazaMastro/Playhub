@@ -433,11 +433,29 @@ public sealed class GamingWindowFocusService : IDisposable
 			return false;
 		}
 		long num3 = ((IntPtr)GetWindowLongPtr(window, -16)).ToInt64();
+		long exStyle = GetWindowLongPtr(window, GwlExStyle).ToInt64();
+		StringBuilder className = new(128);
+		GetClassName(window, className, className.Capacity);
+		nint owner = GetWindow(window, 4); // GW_OWNER; rendering windows may also have an owner.
+		if (IsAuxiliaryWindow(exStyle, className.ToString(), owner != 0 && !IsWindowEnabled(owner)))
+		{
+			return false;
+		}
 		if ((num3 & 0x40000000) == 0L && (num3 & 0x8000000) == 0L)
 		{
 			return (num3 & 0x10000000) != 0;
 		}
 		return false;
+	}
+
+	internal static bool IsAuxiliaryWindow(long exStyle, string className, bool disabledOwner)
+	{
+		// Do not expand update prompts, modal dialogs or utility windows over a game.
+		// Ownership alone is not enough: emulators can use owned top-level render windows.
+		const long toolWindow = 0x80L;
+		const long noActivate = 0x08000000L;
+		return (exStyle & (WsExDlgModalFrame | toolWindow | noActivate)) != 0
+			|| className == "#32770" || disabledOwner;
 	}
 
 	private static bool TryGetWindowProcess(nint window, out uint processId, out string processName)
@@ -506,6 +524,15 @@ public sealed class GamingWindowFocusService : IDisposable
 
 	[DllImport("user32.dll")]
 	private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, nint lParam);
+
+	[DllImport("user32.dll")]
+	private static extern nint GetWindow(nint window, uint command);
+
+	[DllImport("user32.dll")]
+	private static extern bool IsWindowEnabled(nint window);
+
+	[DllImport("user32.dll", CharSet = CharSet.Unicode)]
+	private static extern int GetClassName(nint window, StringBuilder text, int count);
 
 	[DllImport("user32.dll")]
 	private static extern bool IsWindowVisible(nint hWnd);

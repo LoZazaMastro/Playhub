@@ -9,8 +9,11 @@
 
   <ItemGroup>
 	<Compile Include="Program.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\SteamGameIdentityPolicy.cs" Link="SteamGameIdentityPolicy.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\BackgroundProcessPolicy.cs" Link="BackgroundProcessPolicy.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\ControllerHapticPatterns.cs" Link="ControllerHapticPatterns.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\SteamUiHapticsGate.cs" Link="SteamUiHapticsGate.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\DisplayChangePolicy.cs" Link="DisplayChangePolicy.cs" />
 	<Compile Include="SteamForegroundStub.cs" />
   </ItemGroup>
 </Project>

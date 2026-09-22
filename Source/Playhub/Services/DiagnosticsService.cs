@@ -58,6 +58,7 @@ public sealed class DiagnosticsService
         await AppendSectionAsync(sb, "GAMING MODE AGENT (live)", AppendAgentStatusAsync);
         AppendSection(sb, "STARTUP & SHELL", AppendStartupAndShellInfo);
         AppendSection(sb, "STEAM", AppendSteamInfo);
+        AppendSection(sb, "HANDHELD & GUIDE BUTTON ROUTING (READ ONLY)", AppendHandheldInfo);
         AppendSection(sb, "DECKY LOADER", AppendDeckyInfo);
         AppendSection(sb, "STREAMING (SUNSHINE / APOLLO / VIBEPOLLO / VIBESHINE)", AppendStreamingInfo);
         AppendSection(sb, "POTENTIAL CONFLICTS", AppendConflictInfo);
@@ -65,12 +66,21 @@ public sealed class DiagnosticsService
         AppendSection(sb, "LOG TAILS", AppendLogTails);
 
         sb.AppendLine();
-        sb.AppendLine("=== END OF REPORT ===");
+        sb.AppendLine("Full Decky plugin logs and the cross-component error index follow below.");
 
         var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-        var fileName = "Playhub-Report-" + DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture) + ".txt";
+        var fileName = "Playhub-Report-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture) + ".txt";
         var fullPath = Path.Combine(desktop, fileName);
-        await Task.Run(() => File.WriteAllText(fullPath, sb.ToString(), new UTF8Encoding(false)));
+        await Task.Run(() =>
+        {
+            using var writer = new StreamWriter(fullPath, false, new UTF8Encoding(false));
+            foreach (var line in sb.ToString().Split('\n')) writer.WriteLine(DeckyDiagnostics.Redact(line.TrimEnd('\r')));
+            using var steamKey = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
+            DeckyDiagnostics.Append(writer,
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "homebrew"),
+                steamKey?.GetValue("SteamPath") as string);
+            writer.WriteLine("\n=== END OF REPORT ===");
+        });
         return fullPath;
     }
 
@@ -121,6 +131,27 @@ public sealed class DiagnosticsService
         sb.AppendLine("Primary screen: " + GetSystemMetrics(0) + "x" + GetSystemMetrics(1));
         sb.AppendLine("Virtual screen: " + GetSystemMetrics(78) + "x" + GetSystemMetrics(79) + " (" + GetSystemMetrics(80) + " monitor(s))");
         sb.AppendLine("Session state : shutting down = " + (GetSystemMetrics(0x2000) != 0));
+    }
+
+    private static void AppendHandheldInfo(StringBuilder sb)
+    {
+        using (var bios = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS"))
+        {
+            foreach (var name in new[] { "SystemManufacturer", "SystemProductName", "SystemSKU", "BIOSVersion" })
+                sb.AppendLine(name + " : " + (bios?.GetValue(name) ?? "unknown"));
+        }
+        using (var gameBar = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\GameBar"))
+            sb.AppendLine("UseNexusForGameBarEnabled : " + (gameBar?.GetValue("UseNexusForGameBarEnabled") ?? "not explicitly set"));
+        sb.AppendLine("OEM HID buttons, Xbox Guide and keyboard mappings are separate input paths.");
+        sb.AppendLine("Device enumeration below is historical registry inventory, not proof of connection or working input.");
+        using var hid = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Enum\HID");
+        foreach (var id in hid?.GetSubKeyNames() ?? Array.Empty<string>())
+        {
+            if (id.StartsWith("VID_0B05&", StringComparison.OrdinalIgnoreCase) ||
+                id.StartsWith("VID_045E&", StringComparison.OrdinalIgnoreCase))
+                sb.AppendLine("HID hardware identifier : " + id);
+        }
+        sb.AppendLine("No HID device was opened, remapped or written by this diagnostic.");
     }
 
     private void AppendPlayhubInfo(StringBuilder sb, string settingsJsonPath)

@@ -1,0 +1,44 @@
+.........................................................................................................................................................................................................................ERROR:root:Playhub News unavailable; core controls remain active
+Traceback (most recent call last):
+  File "F:\Playhub\Plugin\Playhub\Source\GamingModeDeckyPlugin\main.py", line 35, in __init__
+    news_spec = importlib.util.spec_from_file_location("playhub_home_news", os.path.join(os.path.dirname(__file__), "quick_settings", "home_news.py"))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python311\Lib\unittest\mock.py", line 1108, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python311\Lib\unittest\mock.py", line 1112, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python311\Lib\unittest\mock.py", line 1167, in _execute_mock_call
+    raise effect
+ImportError: frozen runtime missing module
+ERROR:root:Playhub Daily History unavailable; core controls remain active
+Traceback (most recent call last):
+  File "F:\Playhub\Plugin\Playhub\Source\GamingModeDeckyPlugin\main.py", line 43, in __init__
+    history_spec = importlib.util.spec_from_file_location("playhub_daily_history", os.path.join(os.path.dirname(__file__), "quick_settings", "daily_history.py"))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python311\Lib\unittest\mock.py", line 1108, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python311\Lib\unittest\mock.py", line 1112, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python311\Lib\unittest\mock.py", line 1167, in _execute_mock_call
+    raise effect
+  File "F:\Playhub\Plugin\Playhub\Source\GamingModeDeckyPlugin\main.py", line 35, in __init__
+    news_spec = importlib.util.spec_from_file_location("playhub_home_news", os.path.join(os.path.dirname(__file__), "quick_settings", "home_news.py"))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python311\Lib\unittest\mock.py", line 1108, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python311\Lib\unittest\mock.py", line 1112, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python311\Lib\unittest\mock.py", line 1167, in _execute_mock_call
+    raise effect
+ImportError: frozen runtime missing module
+..............................................................................
+----------------------------------------------------------------------
+Ran 295 tests in 6.119s
+
+OK

@@ -1,0 +1,56 @@
+diff --git a/main.py b/main.py
+--- a/main.py
++++ b/main.py
+@@ -13,3 +13,9 @@
+ from ctypes import wintypes
+ 
++_controller_spec = importlib.util.spec_from_file_location(
++    "playhub_controller_passive", os.path.join(os.path.dirname(__file__), "controller_porting", "passive_diagnostics.py"))
++_controller_passive = importlib.util.module_from_spec(_controller_spec)
++_controller_spec.loader.exec_module(_controller_passive)
++
+ _spec = importlib.util.spec_from_file_location("playhub_quick_settings", os.path.join(os.path.dirname(__file__), "quick_settings", "main.py"))
+@@ -22,3 +28,6 @@
+ class Plugin(QuickSettingsPlugin):
++    async def get_controller_sdl_diagnostics(self):
++        return _controller_passive.passive_diagnostics(_controller_passive.steam_sdl_path())
++
+     def __init__(self):
+         super().__init__()
+diff --git a/src/ControllerSettings.tsx b/src/ControllerSettings.tsx
+--- a/src/ControllerSettings.tsx
++++ b/src/ControllerSettings.tsx
+@@ -1,2 +1,4 @@
+ import { DFL, SP_REACT as React } from "./decky";
++import { call as directDeckyCall } from "@decky/api";
++import { requestControllerDiagnostic, controllerDiagnosticText, controllerDiagnosticCopy, type DiagnosticResult } from "./controllerDiagnostics";
+ import { TbExternalLink, TbDeviceFloppy, TbRotateClockwise, TbArrowBackUp } from "react-icons/tb";
+@@ -7,2 +9,28 @@
+ const { PanelSection, PanelSectionRow, DropdownItem, ButtonItem, Router } = DFL as any;
++function ControllerRuntimeDiagnostics({ locale }: { locale: string }) {
++  const [result, setResult] = React.useState<DiagnosticResult | null>(null);
++  const [pending, setPending] = React.useState(false);
++  const busy = React.useRef(false);
++  const alive = React.useRef(true);
++  React.useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
++  const copy = controllerDiagnosticCopy(locale);
++  return <PanelSection title={copy.title}>
++    <PanelSectionRow><ButtonItem label={copy.check} bottomSeparator="none" disabled={pending}
++      onClick={async () => {
++        if (busy.current || !alive.current) return;
++        busy.current = true; setPending(true); setResult(null);
++        const next = await requestControllerDiagnostic(method => directDeckyCall(method));
++        busy.current = false;
++        if (alive.current) { setResult(next); setPending(false); }
++      }}><TbRotateClockwise title={copy.check} /></ButtonItem></PanelSectionRow>
++    <PanelSectionRow><div role="status" style={{ overflowWrap: "anywhere" }}>
++      {pending ? copy.pending : controllerDiagnosticText(result, locale)}
++    </div></PanelSectionRow>
++  </PanelSection>;
++}
++
+ const actions: ControllerAction[] = ["settings", "test", "sticks", "gyro", "layout"];
+@@ -94,2 +122,2 @@
+-  return <><ControllerProfileEditor locale={locale} /><PanelSection title={copy.ready}>
++  return <><ControllerProfileEditor locale={locale} /><ControllerRuntimeDiagnostics locale={locale} /><PanelSection title={copy.ready}>
+     <PanelSectionRow>

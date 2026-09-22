@@ -19,4 +19,8 @@ public sealed class GamingOverlayShortcut
 	public string Arguments { get; set; } = "";
 
 	public string WorkingDirectory { get; set; } = "";
+
+	// null segue l'impostazione globale; true o false forza il comportamento
+	// per questo gioco o emulatore.
+	public bool? Sdl3NativeControllerEnabled { get; set; }
 }

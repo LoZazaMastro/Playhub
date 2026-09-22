@@ -72,6 +72,8 @@ public sealed partial class MainWindow : Window
     private GamingModeConfig _gamingConfig = GamingModeService.CreateDefaultConfig();
     private bool _loadingSettings;
     private bool _loadingGaming = true; // guardia: nessun auto-save finché la config non è caricata
+    private bool _windowSizePersistenceReady;
+    private bool _windowSizeSavePending;
     private PointerRoutedEventArgs? _lastWheelArgs;
     private AppWindow? _appWindow;
 
@@ -183,6 +185,7 @@ public sealed partial class MainWindow : Window
     private bool _cssLoaderInstallBusy;
     private bool _executableScanInProgress;
     private int _uwpCardColumnCount = 3;
+    private StackPanel? _coverFormatSelectorHost;
     private int _executableCardColumnCount = 3;
     private int _epicCardColumnCount = 3;
     private int _gogCardColumnCount = 3;
@@ -215,6 +218,11 @@ public sealed partial class MainWindow : Window
     private ComboBox _languageCombo = new();
     private ComboBox _backdropCombo = new();
     private ComboBox _startupPageCombo = new();
+    private ToggleSwitch? _pluginRestartPromptsToggle;
+    private ToggleSwitch? _steamUpdateBlockToggle;
+    private ProgressBar? _artworkBar;
+    private ProgressBar? _steamClientBar;
+    private bool _steamUpdateToggleBusy;
     private StackPanel _accentColorPanel = new();
     private readonly List<Button> _accentSwatches = new();
     private readonly List<Button> _welcomeBackdropButtons = new();
@@ -316,6 +324,7 @@ public sealed partial class MainWindow : Window
         SystemBackdrop = new MicaBackdrop();
         Closed += (_, _) => { _playhubUpdateCheckTimer?.Stop(); CancelNavigationRestore(); CancelPluginCardMorph(); ReleaseMediaForShutdown(); };
         SetWindowShape();
+        if (_appWindow is not null) _appWindow.Changed += OnAppWindowChanged;
         // Seed accent brushes BEFORE the navigation is built so its selection
         // indicator and item brushes resolve our instances (and update live).
         ApplyAccentResources(ParseColor(_settings.AccentColor));
@@ -344,6 +353,12 @@ public sealed partial class MainWindow : Window
         {
             Diag.Step("LoadAsync begin");
             _settings = await _settingsService.LoadAsync();
+            ApplySavedWindowSize();
+            _windowSizePersistenceReady = true;
+            // Formato cover (Importa Giochi): normalizza il valore salvato e
+            // allinea il servizio prima di qualsiasi fetch da SteamGridDB.
+            _settings.CoverFormat = global::Playhub.Services.CoverFormat.Normalize(_settings.CoverFormat);
+            _uwpXbox.CoverFormat = _settings.CoverFormat;
             // Default the DeckyLoader plugins folder so the setting is invisible to users.
             if (string.IsNullOrWhiteSpace(_settings.DeckyPluginsPath))
             {
@@ -504,6 +519,43 @@ public sealed partial class MainWindow : Window
         catch
         {
         }
+    }
+
+    private void ApplySavedWindowSize()
+    {
+        if (_appWindow is null || _settings.WindowWidth < 640 || _settings.WindowHeight < 480) return;
+        try
+        {
+            if (_appWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Restored })
+                _appWindow.Resize(new SizeInt32(_settings.WindowWidth, _settings.WindowHeight));
+        }
+        catch { }
+    }
+
+    private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
+    {
+        if (!_windowSizePersistenceReady || !args.DidSizeChange) return;
+        if (sender.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Restored }) return;
+        SaveWindowSizeSoon();
+    }
+
+    private async void SaveWindowSizeSoon()
+    {
+        if (_windowSizeSavePending) return;
+        _windowSizeSavePending = true;
+        try
+        {
+            await Task.Delay(250);
+            if (_appWindow?.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Restored }) return;
+            var size = _appWindow.Size;
+            if (size.Width < 640 || size.Height < 480) return;
+            if (_settings.WindowWidth == size.Width && _settings.WindowHeight == size.Height) return;
+            _settings.WindowWidth = size.Width;
+            _settings.WindowHeight = size.Height;
+            await _settingsService.SaveAsync();
+        }
+        catch { }
+        finally { _windowSizeSavePending = false; }
     }
 
     private void BuildShell()
@@ -732,10 +784,54 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        // I gestori sono registrati con handledEventsToo: arrivano qui anche
+        // quando uno ScrollViewer annidato (es. "Note sui componenti" in
+        // Impostazioni > Informazioni) ha gia' consumato la rotellina. Senza
+        // questo controllo la pagina scorrerebbe insieme al riquadro interno.
+        if (NestedScrollerConsumesWheel(args.OriginalSource as DependencyObject, delta))
+        {
+            args.Handled = true;
+            return;
+        }
+
         CancelNavigationRestore();
         var target = Math.Max(0, _contentScroller.VerticalOffset - delta);
         _contentScroller.ChangeView(null, target, null, disableAnimation: false);
         args.Handled = true;
+    }
+
+    // Risale dall'elemento sorgente fino allo scroller di pagina: se incontra
+    // prima uno ScrollViewer annidato che ha ancora corsa nella direzione della
+    // rotellina, l'evento appartiene a quello (che lo ha gia' gestito da solo)
+    // e la pagina non deve muoversi. Quando l'interno e' a fine corsa il metodo
+    // restituisce false e lo scorrimento passa alla pagina.
+    private bool NestedScrollerConsumesWheel(DependencyObject? node, int delta)
+    {
+        while (node is not null)
+        {
+            if (ReferenceEquals(node, _contentScroller))
+            {
+                return false;
+            }
+
+            if (node is ScrollViewer nested)
+            {
+                if (nested.ScrollableHeight <= 0.5)
+                {
+                    return false;
+                }
+
+                // delta > 0 = rotellina verso l'alto (offset che diminuisce).
+                var remaining = delta > 0
+                    ? nested.VerticalOffset
+                    : nested.ScrollableHeight - nested.VerticalOffset;
+                return remaining > 0.5;
+            }
+
+            node = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(node);
+        }
+
+        return false;
     }
 
     // If the user presses on empty page area (not on an interactive control),
@@ -1662,7 +1758,7 @@ public sealed partial class MainWindow : Window
             _pluginFeaturedHost.Visibility = hasQuery || _pluginShowAll || _pluginCategoryFilter is not null
                 ? Visibility.Collapsed
                 : Visibility.Visible;
-            _pluginCardsDirty = true;
+            InvalidatePluginAllViews();
             SchedulePluginSearch();
         };
         var searchHost = BuildCollapsiblePluginSearch(showAllPlugins);
@@ -2005,24 +2101,7 @@ public sealed partial class MainWindow : Window
         var dashboardCard = Card();
         dashboardCard.Children.Add(IconHeader(((char)0xE80F).ToString(), "Playhub Dashboard",
             "Passa fra giochi e app, controlla il PC e raggiungi gli strumenti essenziali senza lasciare il controller."));
-        AddExplainedToggle(dashboardCard, "Attiva Playhub Dashboard",
-            "Aprila con una doppia pressione del tasto Home del controller oppure con Ctrl + Alt + P.", "dashboardEnabled");
-        var tryDashboard = Button("Prova Playhub Dashboard", async () =>
-        {
-            await SaveGamingConfigAsync();
-            var opened = await _gamingMode.OpenDashboardAsync(_gamingConfig.Safety.ApiPort);
-            SetStatus(opened
-                ? "Apro la Dashboard in Gaming Mode…"
-                : "Non riesco ad aprire la Dashboard. Assicurati che Gaming Mode sia attivo e riprova.",
-                opened ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
-        }, primary: true);
-        tryDashboard.HorizontalAlignment = HorizontalAlignment.Stretch;
-        if (_gamingToggles.TryGetValue("dashboardEnabled", out var dashboardToggle))
-        {
-            tryDashboard.IsEnabled = dashboardToggle.IsOn;
-            dashboardToggle.Toggled += (_, _) => tryDashboard.IsEnabled = dashboardToggle.IsOn;
-        }
-        dashboardCard.Children.Add(tryDashboard);
+        dashboardCard.Children.Add(Body("Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop."));
 
         // ---------- 2. Default mode: two big tiles + one-time switch ----------
         var modeCard = Card();
@@ -2215,6 +2294,7 @@ public sealed partial class MainWindow : Window
         splashGrid.Children.Add(splashPreview);
         splash.Children.Add(splashGrid);
         panel.Children.Add(splash);
+        panel.Children.Add(BuildAnimationCard());
 
         // ---------- Avanzate (just before custom processes) ----------
         panel.Children.Add(advancedCard);
@@ -2819,8 +2899,29 @@ public sealed partial class MainWindow : Window
         var tools = new StackPanel { Spacing = 10 };
         tools.Children.Add(Body("Strumenti per diagnosi e sviluppo."));
         var actions = ActionRow(
-            Button("Avvia servizio", () => { _gamingMode.StartAgent(); SetStatus("Servizio avviato.", InfoBarSeverity.Informational); }),
-            Button("Controlla servizio", async () => SetStatus(await _gamingMode.IsAgentHealthyAsync(_gamingConfig.Safety.ApiPort) ? "Servizio attivo." : "Servizio non raggiungibile.", InfoBarSeverity.Informational)));
+            // "Servizio avviato." era una bugia quando l'eseguibile non c'era:
+            // StartAgent esce in silenzio e l'utente restava a fissare un messaggio
+            // di successo con il servizio spento.
+            Button("Avvia servizio", () =>
+            {
+                if (!_gamingMode.IsInstalled)
+                {
+                    SetStatus("Servizio non installato: manca " + _gamingMode.InstalledExe + ". Usa \"Installa o aggiorna\".", InfoBarSeverity.Error);
+                    return;
+                }
+                _gamingMode.StartAgent();
+                SetStatus("Servizio avviato.", InfoBarSeverity.Informational);
+            }),
+            Button("Controlla servizio", async () =>
+            {
+                var port = _gamingConfig.Safety.ApiPort;
+                if (await _gamingMode.IsAgentHealthyAsync(port))
+                {
+                    SetStatus("Servizio attivo.", InfoBarSeverity.Informational);
+                    return;
+                }
+                SetStatus(await _gamingMode.DescribeAgentAsync(port), InfoBarSeverity.Error);
+            }));
         actions.Orientation = Orientation.Vertical;
         foreach (var action in actions.Children.OfType<Button>())
             action.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -2986,7 +3087,141 @@ public sealed partial class MainWindow : Window
         artwork.Children.Add(ActionRow(Button("Crea account", async () =>
             await Windows.System.Launcher.LaunchUriAsync(new Uri("https://www.steamgriddb.com/register")))));
         panel.Children.Add(artwork);
+
+        // ---------- Formato delle cover ----------
+        var coverFormatCard = Card();
+        coverFormatCard.Children.Add(IconHeader(((char)0xE799).ToString(), "Formato delle cover",
+            "Scegli la forma delle copertine: verticali come su Steam oppure quadrate. La scelta vale sia per la ricerca su SteamGridDB sia per la griglia di importazione."));
+        _coverFormatSelectorHost = new StackPanel { HorizontalAlignment = HorizontalAlignment.Left };
+        _coverFormatSelectorHost.Children.Add(BuildCoverFormatSelector());
+        coverFormatCard.Children.Add(_coverFormatSelectorHost);
+        panel.Children.Add(coverFormatCard);
         return panel;
+    }
+
+    // Selettore a due scelte (una sola attiva) per il formato delle cover.
+    // Stessa estetica del selettore di layout del negozio plugin.
+    private FrameworkElement BuildCoverFormatSelector()
+    {
+        var accent = ParseColor(_settings.AccentColor);
+        var selectedForeground = NeedsLightForeground(accent) ? Colors.White : Colors.Black;
+        var buttons = new Grid { ColumnSpacing = 2 };
+        buttons.ColumnDefinitions.Add(new ColumnDefinition());
+        buttons.ColumnDefinitions.Add(new ColumnDefinition());
+
+        Button FormatButton(string format, double iconWidth, double iconHeight, string label)
+        {
+            var selected = string.Equals(global::Playhub.Services.CoverFormat.Normalize(_settings.CoverFormat), format, StringComparison.Ordinal);
+            var iconBrush = selected
+                ? new SolidColorBrush(selectedForeground)
+                : ResourceBrush("TextFillColorSecondaryBrush", Color.FromArgb(210, 255, 255, 255));
+            var content = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 8,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            // Icona disegnata: la forma stessa della cover (rettangolo alto / quadrato),
+            // cosi' la scelta si legge a colpo d'occhio senza dipendere da un glifo.
+            content.Children.Add(new Border
+            {
+                Width = iconWidth,
+                Height = iconHeight,
+                CornerRadius = new CornerRadius(3),
+                BorderThickness = new Thickness(2),
+                BorderBrush = iconBrush,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            content.Children.Add(LocalizedText(new TextBlock
+            {
+                Text = label,
+                VerticalAlignment = VerticalAlignment.Center
+            }, label));
+
+            var button = new Button
+            {
+                Height = 40,
+                MinWidth = 0,
+                Padding = new Thickness(14, 0, 14, 0),
+                CornerRadius = new CornerRadius(6),
+                BorderThickness = new Thickness(0),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Background = selected
+                    ? new SolidColorBrush(accent)
+                    : new SolidColorBrush(Colors.Transparent),
+                Foreground = selected
+                    ? new SolidColorBrush(selectedForeground)
+                    : ResourceBrush("TextFillColorSecondaryBrush", Color.FromArgb(210, 255, 255, 255)),
+                Content = content
+            };
+            SetLocalizedToolTip(button, label);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, T(label));
+            button.Click += (_, _) =>
+            {
+                if (string.Equals(global::Playhub.Services.CoverFormat.Normalize(_settings.CoverFormat), format, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                _settings.CoverFormat = format;
+                _uwpXbox.CoverFormat = format;
+                RefreshCoverFormatSelector();
+                // Le anteprime gia' scaricate hanno l'altra forma: si svuotano e
+                // si riscaricano nel nuovo formato (cache separata per formato).
+                ReloadCoversForCoverFormat();
+                _ = SaveSettingsSilentlyAsync();
+            };
+            return button;
+        }
+
+        var vertical = FormatButton(global::Playhub.Services.CoverFormat.Vertical, 14, 21, "Verticali");
+        var square = FormatButton(global::Playhub.Services.CoverFormat.Square, 18, 18, "Quadrate");
+        buttons.Children.Add(vertical);
+        Grid.SetColumn(square, 1);
+        buttons.Children.Add(square);
+
+        return new Border
+        {
+            Height = 44,
+            Padding = new Thickness(2),
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1),
+            BorderBrush = ResourceBrush("ControlStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255)),
+            Background = new SolidColorBrush(Color.FromArgb(74, 255, 255, 255)),
+            Child = buttons
+        };
+    }
+
+    private void RefreshCoverFormatSelector()
+    {
+        if (_coverFormatSelectorHost is null)
+        {
+            return;
+        }
+
+        _coverFormatSelectorHost.Children.Clear();
+        _coverFormatSelectorHost.Children.Add(BuildCoverFormatSelector());
+        LocalizeElement(_coverFormatSelectorHost);
+    }
+
+    // Ridisegna le griglie con il nuovo rapporto e rilancia il fetch delle cover.
+    private void ReloadCoversForCoverFormat()
+    {
+        foreach (var game in _uwpGames.Concat(_executableGames).Concat(_epicGames).Concat(_gogGames))
+        {
+            game.SteamGridDbCoverPath = "";
+        }
+
+        RenderUwpGames();
+        RenderExecutableGames();
+        RenderEpicGames();
+        RenderGogGames();
+
+        if (_uwpGames.Count > 0) _ = LoadGameCoversAsync(_uwpGames.ToList(), _uwpGames, RenderUwpGames);
+        if (_executableGames.Count > 0) _ = LoadGameCoversAsync(_executableGames.ToList(), _executableGames, RenderExecutableGames);
+        if (_epicGames.Count > 0) _ = LoadGameCoversAsync(_epicGames.ToList(), _epicGames, RenderEpicGames);
+        if (_gogGames.Count > 0) _ = LoadGameCoversAsync(_gogGames.ToList(), _gogGames, RenderGogGames);
     }
 
     private UIElement BuildPluginRestartCard()
@@ -3018,14 +3253,14 @@ public sealed partial class MainWindow : Window
         var css = Card();
         var cssText = new StackPanel { Spacing = 12, VerticalAlignment = VerticalAlignment.Center };
         cssText.Children.Add(IconHeader(((char)0xE790).ToString(), "Tema Playhub per CSS Loader",
-            "Installa il profilo Playhub e porta lo stesso stile in tutta Big Picture."));
+            "Installa Playhub per lo stile classico e Playhub (Big Image Mode) per la modalità Big Image di Steam."));
         var cssLoaderRow = new Grid { ColumnSpacing = 12 };
         cssLoaderRow.ColumnDefinitions.Add(new ColumnDefinition());
         cssLoaderRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         _cssLoaderStatusText = new TextBlock
         {
             Tag = "noloc",
-            Text = "Controllo CSS Loader…",
+            Text = T("Controllo CSS Loader…"),
             TextWrapping = TextWrapping.Wrap,
             VerticalAlignment = VerticalAlignment.Center
         };
@@ -3052,11 +3287,11 @@ public sealed partial class MainWindow : Window
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
         cssText.Children.Add(_cssLoaderInstallBar);
-        _cssProfileInstallButton = Button("Installa profilo", async () =>
+        _cssProfileInstallButton = Button("Installa profili", async () =>
             SetStatus(await _extra.ApplyCssLoaderProfileAsync(_settings.CssLoaderProfileUrl), InfoBarSeverity.Success), primary: true);
         cssText.Children.Add(ActionRow(
             _cssProfileInstallButton,
-            Button("Rimuovi profilo", async () => SetStatus(await _extra.RemoveCssLoaderProfileAsync(), InfoBarSeverity.Warning))));
+            Button("Rimuovi profili", async () => SetStatus(await _extra.RemoveCssLoaderProfileAsync(), InfoBarSeverity.Warning))));
 
         var cssPreviewPath = System.IO.Path.Combine(System.AppContext.BaseDirectory, "Assets", "Extra", "css-theme-preview.png");
         if (System.IO.File.Exists(cssPreviewPath))
@@ -3088,20 +3323,23 @@ public sealed partial class MainWindow : Window
         panel.Children.Add(css);
         RefreshCssLoaderState();
 
-        var steam = Card();
-        steam.Children.Add(IconHeader(((char)0xE72E).ToString(), "Aggiornamenti di Steam",
-            "Mantieni la versione attuale di Steam. Puoi riattivare gli aggiornamenti in qualsiasi momento."));
-        steam.Children.Add(ActionRow(
-            Button("Blocca aggiornamenti", async () => SetStatus(await _extra.ApplySteamCfgAsync(), InfoBarSeverity.Success)),
-            Button("Rimuovi blocco", async () => SetStatus(await _extra.RemoveSteamCfgAsync(), InfoBarSeverity.Warning))));
-        panel.Children.Add(steam);
-
         var artworkBackup = Card();
         artworkBackup.Children.Add(IconHeader(((char)0xE74E).ToString(), "Backup degli artwork di Steam",
             "Salva o ripristina le immagini della tua libreria Steam."));
+        // La cartella grid di Steam può contenere decine di migliaia di file e diversi
+        // gigabyte: il lavoro sta su un thread di sfondo e mostra a che punto è, altrimenti
+        // la finestra resta bloccata e sembra che il pulsante non faccia nulla.
         artworkBackup.Children.Add(ActionRow(
-            Button("Crea backup", async () => SetStatus(await _extra.BackupSteamArtworkAsync(), InfoBarSeverity.Success)),
-            Button("Ripristina backup", async () => SetStatus(await _extra.RestoreLatestSteamArtworkAsync(), InfoBarSeverity.Warning))));
+            Button("Crea backup", ChooseAndBackupArtworkAsync),
+            Button("Ripristina backup", ChooseAndRestoreArtworkAsync)));
+        _artworkBar = new ProgressBar
+        {
+            Minimum = 0,
+            Maximum = 1,
+            Visibility = Visibility.Collapsed,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        artworkBackup.Children.Add(_artworkBar);
         panel.Children.Add(artworkBackup);
 
         return panel;
@@ -3112,8 +3350,8 @@ public sealed partial class MainWindow : Window
         if (_cssLoaderStatusText is null || _cssLoaderInstallButton is null || _cssLoaderRemoveButton is null) return;
         var status = _cssLoaderInstaller.GetStatus(_settings.DeckyPluginsPath);
         _cssLoaderStatusText.Text = status.Installed
-            ? $"CSS Loader {status.Version} è pronto. Ora puoi applicare il profilo Playhub."
-            : "Installa CSS Loader per usare il profilo Playhub.";
+            ? string.Format(T("CSS Loader {0} è pronto. Ora puoi applicare il profilo Playhub."), status.Version)
+            : T("Installa CSS Loader per usare il profilo Playhub.");
         _cssLoaderInstallButton.Visibility = status.Installed ? Visibility.Collapsed : Visibility.Visible;
         _cssLoaderRemoveButton.Visibility = status.Installed ? Visibility.Visible : Visibility.Collapsed;
         _cssLoaderInstallButton.IsEnabled = !_cssLoaderInstallBusy && !status.Installed;
@@ -3135,7 +3373,7 @@ public sealed partial class MainWindow : Window
             var progress = new Progress<(double Percent, string Status)>(value =>
             {
                 _cssLoaderInstallBar.Value = Math.Clamp(value.Percent, 0, 1);
-                _cssLoaderStatusText.Text = value.Status;
+                _cssLoaderStatusText.Text = T(value.Status);
             });
             var result = await _cssLoaderInstaller.InstallLatestAsync(_settings.DeckyPluginsPath, progress);
             SetStatus(result.Message, result.Success ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
@@ -3205,12 +3443,36 @@ public sealed partial class MainWindow : Window
     {
         var panel = Page("settings", "Impostazioni", "Aspetto, avvio e informazioni di Playhub.");
 
+        // ---------- Lingua ----------
+        // Prima card della pagina: una sola scelta, senza etichetta sopra la tendina
+        // (ripeterebbe il titolo della card).
+        var language = Card();
+        language.Children.Add(IconHeader(((char)0xE909).ToString(), "Lingua",
+            "Scegli la lingua della app di Playhub"));
+        _languageCombo = LanguageCombo();
+        _languageCombo.SelectionChanged += async (_, _) => await ChangeLanguageAsync();
+        var languageRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        languageRow.Children.Add(_languageCombo);
+        languageRow.Children.Add(new TextBlock
+        {
+            Text = "Playhub verrà riavviato",
+            Opacity = 0.68,
+            FontSize = 13,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap
+        });
+        language.Children.Add(languageRow);
+        panel.Children.Add(language);
+
         // ---------- Aspetto ----------
         var appearance = Card();
         appearance.Children.Add(IconHeader(((char)0xE713).ToString(), "Aspetto",
             "Personalizza lo sfondo e il colore di Playhub."));
-        _languageCombo = LanguageCombo();
-        _languageCombo.SelectionChanged += async (_, _) => await ChangeLanguageAsync();
 
         _backdropCombo = ChoiceCombo(BackdropOptions);
         _backdropCombo.SelectionChanged += async (_, _) =>
@@ -3234,22 +3496,7 @@ public sealed partial class MainWindow : Window
         };
 
         _accentColorPanel = BuildAccentPicker();
-        var languageRow = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 12,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        languageRow.Children.Add(_languageCombo);
-        languageRow.Children.Add(new TextBlock
-        {
-            Text = "Playhub verrà riavviato.",
-            Opacity = 0.68,
-            FontSize = 13,
-            VerticalAlignment = VerticalAlignment.Center,
-            TextWrapping = TextWrapping.Wrap
-        });
-        appearance.Children.Add(TwoColumn(Labeled("Lingua", languageRow), Labeled("Sfondo", _backdropCombo)));
+        appearance.Children.Add(Labeled("Sfondo", _backdropCombo));
         appearance.Children.Add(Labeled("Colore principale", _accentColorPanel));
         panel.Children.Add(appearance);
 
@@ -3267,28 +3514,87 @@ public sealed partial class MainWindow : Window
         startup.Children.Add(Labeled("Pagina di avvio", _startupPageCombo));
         panel.Children.Add(startup);
 
-        // ---------- Aggiornamenti Playhub ----------
-        var updates = Card();
-        updates.Children.Add(IconHeader(((char)0xE895).ToString(), "Aggiorna Playhub",
-            "Installa l'ultima versione senza uscire dall'app."));
-        _playhubUpdateButton = Button("Cerca aggiornamenti", CheckPlayhubUpdatesAsync, primary: true);
-        _playhubUpdateBar = new ProgressBar
+        // ---------- Plugin Store ----------
+        var pluginStore = Card();
+        pluginStore.Children.Add(IconHeader(((char)0xE719).ToString(), "Plugin Store",
+            "Scegli se Playhub deve chiederti di riavviare Decky dopo aver installato o aggiornato i plugin."));
+        var restartPromptsToggle = new ToggleSwitch
+        {
+            Header = "Chiedi di riavviare Decky",
+            IsOn = _settings.PluginRestartPromptsEnabled
+        };
+        _pluginRestartPromptsToggle = restartPromptsToggle;
+        ApplyToggleStateText(restartPromptsToggle);
+        restartPromptsToggle.Toggled += async (_, _) =>
+        {
+            if (_loadingSettings) return;
+            _settings.PluginRestartPromptsEnabled = restartPromptsToggle.IsOn;
+            await SaveSettingsSilentlyAsync();
+        };
+        pluginStore.Children.Add(restartPromptsToggle);
+        panel.Children.Add(pluginStore);
+
+        // ---------- Aggiornamenti di Steam ----------
+        // Un interruttore, non due pulsanti: lo stato attuale si legge dalla presenza di
+        // steam.cfg, così la card dice sempre come sta davvero il sistema.
+        var steamUpdates = Card();
+        steamUpdates.Children.Add(IconHeader(((char)0xE72E).ToString(), "Aggiornamenti di Steam",
+            "Mantieni la versione attuale di Steam. Puoi riattivare gli aggiornamenti in qualsiasi momento."));
+        var steamUpdatesToggle = new ToggleSwitch
+        {
+            Header = "Blocca gli aggiornamenti di Steam",
+            IsOn = _extra.IsSteamUpdateBlockApplied()
+        };
+        _steamUpdateBlockToggle = steamUpdatesToggle;
+        ApplySteamUpdateToggleText(steamUpdatesToggle);
+        steamUpdatesToggle.Toggled += async (_, _) =>
+        {
+            if (_loadingSettings || _steamUpdateToggleBusy) return;
+            _steamUpdateToggleBusy = true;
+            try
+            {
+                var message = steamUpdatesToggle.IsOn
+                    ? await _extra.ApplySteamCfgAsync()
+                    : await _extra.RemoveSteamCfgAsync();
+                // L'interruttore non deve mentire: se l'operazione non ha avuto effetto,
+                // torna a mostrare lo stato reale del disco.
+                var applied = _extra.IsSteamUpdateBlockApplied();
+                if (applied != steamUpdatesToggle.IsOn)
+                {
+                    steamUpdatesToggle.IsOn = applied;
+                }
+                SetStatus(T(message), applied == steamUpdatesToggle.IsOn
+                    ? InfoBarSeverity.Success
+                    : InfoBarSeverity.Warning);
+            }
+            catch (Exception ex)
+            {
+                steamUpdatesToggle.IsOn = _extra.IsSteamUpdateBlockApplied();
+                SetStatus(FriendlyError(ex), InfoBarSeverity.Error);
+            }
+            finally
+            {
+                _steamUpdateToggleBusy = false;
+            }
+        };
+        steamUpdates.Children.Add(steamUpdatesToggle);
+        var steamClient = Card();
+        steamClient.Children.Add(IconHeader(((char)0xE896).ToString(), "Backup della versione di Steam",
+            "Mette da parte la versione di Steam che hai adesso, così puoi tornarci se un aggiornamento futuro rompe qualcosa. Salva solo il programma: i giochi, i salvataggi e le tue configurazioni restano dove sono."));
+        steamClient.Children.Add(Body("Al ripristino della propria versione di backup, per prevenire sovrascritture, verrà attivata automaticamente l'opzione Blocca gli aggiornamenti di Steam"));
+        steamClient.Children.Add(ActionRow(
+            Button("Crea backup di Steam", ChooseAndBackupSteamClientAsync),
+            Button("Ripristina versione di Steam", ChooseAndRestoreSteamClientAsync)));
+        _steamClientBar = new ProgressBar
         {
             Minimum = 0,
             Maximum = 1,
             Visibility = Visibility.Collapsed,
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
-        _playhubUpdateStatus = new TextBlock
-        {
-            Tag = "noloc",
-            Style = StyleResource("PlayhubBodyTextStyle"),
-            Visibility = Visibility.Collapsed
-        };
-        updates.Children.Add(ActionRow(_playhubUpdateButton));
-        updates.Children.Add(_playhubUpdateBar);
-        updates.Children.Add(_playhubUpdateStatus);
-        panel.Children.Add(updates);
+        steamClient.Children.Add(_steamClientBar);
+        steamUpdates.Children.Add(steamClient);
+        panel.Children.Add(steamUpdates);
 
         // ---------- Risoluzione problemi ----------
         var repair = Card();
@@ -3336,6 +3642,30 @@ public sealed partial class MainWindow : Window
         diagnostics.Children.Add(_diagnosticsStatusText);
         panel.Children.Add(diagnostics);
 
+        // ---------- Aggiornamenti Playhub ----------
+        var updates = Card();
+        updates.Children.Add(IconHeader(((char)0xE895).ToString(), "Aggiorna Playhub",
+            "Installa gli ultimi aggiornamenti disponibili di Playhub"));
+        _playhubUpdateButton = Button("Cerca aggiornamenti", CheckPlayhubUpdatesAsync, primary: true);
+        _playhubUpdateBar = new ProgressBar
+        {
+            Minimum = 0,
+            Maximum = 1,
+            Visibility = Visibility.Collapsed,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        _playhubUpdateStatus = new TextBlock
+        {
+            Tag = "noloc",
+            Style = StyleResource("PlayhubBodyTextStyle"),
+            Visibility = Visibility.Collapsed
+        };
+        updates.Children.Add(ActionRow(_playhubUpdateButton));
+        updates.Children.Add(_playhubUpdateBar);
+        updates.Children.Add(_playhubUpdateStatus);
+        panel.Children.Add(updates);
+
+
         // ---------- Informazioni ----------
         var about = Card();
         about.Children.Add(IconHeader(((char)0xE946).ToString(), "Informazioni",
@@ -3354,6 +3684,8 @@ public sealed partial class MainWindow : Window
             Content = new ScrollViewer
             {
                 MaxHeight = 280,
+                IsVerticalScrollChainingEnabled = false,
+                IsHorizontalScrollChainingEnabled = false,
                 Content = new TextBlock
                 {
                     Text = ThirdPartyLicensesText,
@@ -4036,6 +4368,9 @@ by Valve.";
         {
             SetStatus($"{T("Aggiornamento non riuscito")}: {string.Join(", ", failures)}", InfoBarSeverity.Warning);
         }
+
+        if (updates.Count > failures.Count)
+            await ShowPluginRestartDialogAsync("Plugin aggiornati.");
     }
 
     private void RenderPluginCards()
@@ -4090,7 +4425,7 @@ by Valve.";
                 if (group.Count == 0) continue;
                 _pluginCards.Children.Add(BuildPluginDiscoveryCategory(
                     category,
-                    group.OrderBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase).ToList()));
+                    group));
             }
         }
 
@@ -4101,13 +4436,14 @@ by Valve.";
     {
         return NormalizePluginStoreCategory(category).ToLowerInvariant() switch
         {
-            "i plugin di playhub" => 0,
-            "personalizzazione e media" => 1,
-            "libreria e giochi" => 2,
-            "social e community" => 3,
-            "strumenti e utilità" => 4,
-            "sistema e hardware" => 5,
-            _ => 6
+            "novità" => 0,
+            "i plugin di playhub" => 1,
+            "personalizzazione e media" => 2,
+            "libreria e giochi" => 3,
+            "social e community" => 4,
+            "strumenti e utilità" => 5,
+            "sistema e hardware" => 6,
+            _ => 7
         };
     }
 
@@ -4235,22 +4571,11 @@ by Valve.";
 
     private IReadOnlyList<DeckyPluginInfo> GetFeaturedPlugins()
     {
-        var playhubPlugins = _plugins
-            .Where(plugin => plugin.IsPlayhubPlugin && !IsIntegratedGamingModePlugin(plugin))
+        var candidates = _plugins
+            .Where(plugin => IsFeaturedPluginCandidate(plugin) && !IsIntegratedGamingModePlugin(plugin))
             .ToList();
-        var orderedKeys = playhubPlugins
-            .OrderBy(plugin => plugin.HasUpdate ? 0 : !plugin.IsInstalled ? 1 : 2)
-            .ThenBy(plugin =>
-            {
-                var index = _featuredPluginKeys.FindIndex(key =>
-                    string.Equals(key, PluginStoreKey(plugin), StringComparison.OrdinalIgnoreCase));
-                return index < 0 ? int.MaxValue : index;
-            })
-            .ThenBy(_ => Random.Shared.Next())
-            .Select(PluginStoreKey)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(5)
-            .ToList();
+        var featured = SelectFeaturedPlugins(_featuredOrder, candidates);
+        var orderedKeys = featured.Select(PluginStoreKey).ToList();
         if (!_featuredPluginKeys.SequenceEqual(orderedKeys, StringComparer.OrdinalIgnoreCase))
         {
             _featuredPluginIndex = 0;
@@ -4259,13 +4584,7 @@ by Valve.";
         _featuredPluginKeys.Clear();
         _featuredPluginKeys.AddRange(orderedKeys);
 
-        return _featuredPluginKeys
-            .Select(key => playhubPlugins.FirstOrDefault(plugin =>
-                string.Equals(PluginStoreKey(plugin), key, StringComparison.OrdinalIgnoreCase)))
-            .Where(plugin => plugin is not null)
-            .Cast<DeckyPluginInfo>()
-            .Take(5)
-            .ToList();
+        return featured;
     }
 
     private static string PluginStoreKey(DeckyPluginInfo plugin)
@@ -4918,7 +5237,7 @@ by Valve.";
         return _pluginAllSort switch
         {
             "added" => plugins
-                .OrderByDescending(plugin => PluginCatalogDate(plugin.ReleasePublishedAt))
+                .OrderByDescending(plugin => PluginFirstReleasedAt(plugin) ?? DateTimeOffset.MinValue)
                 .ThenBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase),
             "updated" => plugins
                 .OrderByDescending(plugin => PluginCatalogDate(
@@ -5602,10 +5921,7 @@ by Valve.";
 
     private static int GetPluginStoreColumnCount(double width)
     {
-        if (width >= 2200) return 6;
-        if (width >= 1760) return 5;
-        if (width >= 1320) return 4;
-        if (width >= 900) return 3;
+        if (width >= 960) return 4;
         if (width >= 600) return 2;
         return 1;
     }
@@ -5617,7 +5933,10 @@ by Valve.";
         bool pageMode = false)
     {
         const double compressedHeight = 188;
-        var expandedAspect = 9.0 / 16.0;
+        // The store uses one stable landscape frame for every plugin. Do not derive
+        // the card height from the first repository image: vertical screenshots
+        // would otherwise make one card taller than all the others.
+        const double expandedAspect = 9.0 / 16.0;
         var expanded = initiallyExpanded;
         Border card = null!; // declared early so ToggleDetails can scroll it into view
 
@@ -5644,14 +5963,6 @@ by Valve.";
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalAlignment = VerticalAlignment.Center
             };
-            void UpdateArtworkAspect()
-            {
-                if (bitmap.PixelWidth > 0 && bitmap.PixelHeight > 0)
-                    expandedAspect = (double)bitmap.PixelHeight / bitmap.PixelWidth;
-                SizeExpandedArtwork();
-            }
-            artwork.ImageOpened += (_, _) => UpdateArtworkAspect();
-            UpdateArtworkAspect();
             banner.Children.Add(artwork);
         }
         else
@@ -6747,6 +7058,7 @@ by Valve.";
 
     private async Task SaveGamingConfigAsync()
     {
+        _gamingConfig.Language = _settings.Language;
         _gamingConfig.DefaultMode = GetComboKey(_defaultModeCombo) ?? "Desktop";
         _gamingConfig.Gaming.SteamPath = EmptyToNull(_steamPathBox.Text);
         _gamingConfig.Gaming.SteamArguments = _steamArgsBox.Text;
@@ -6756,6 +7068,7 @@ by Valve.";
         _gamingConfig.Gaming.AutoHideMouseCursorAfterMs = (int)_mouseDelayBox.Value;
         _gamingConfig.Safety.ApiPort = (int)_apiPortBox.Value;
         _gamingConfig.Gaming.Splash.LogoPath = ResolveSplashLogo();
+        _gamingConfig.Gaming.Splash.AnimationEnabled = _gamingToggles["splashAnimation"].IsOn;
         _gamingConfig.Gaming.Splash.MinVisibleMs = (int)_splashMinBox.Value;
         _gamingConfig.Gaming.Splash.MaxVisibleMs = (int)_splashMaxBox.Value;
         ReadTogglesIntoConfig();
@@ -7353,17 +7666,19 @@ by Valve.";
             coverStage.Children.Add(badge);
         }
 
+        // Rapporto della cover nella griglia: 1.5 (verticale) oppure 1.0 (quadrata).
+        var coverAspect = global::Playhub.Services.CoverFormat.CoverAspectRatio(_settings.CoverFormat);
         var coverFrame = new Border
         {
             CornerRadius = new CornerRadius(9),
-            Height = 360,
+            Height = 240 * coverAspect,
             Child = coverStage
         };
         coverFrame.SizeChanged += (_, args) =>
         {
             if (args.NewSize.Width > 0)
             {
-                var targetHeight = args.NewSize.Width * 1.5;
+                var targetHeight = args.NewSize.Width * coverAspect;
                 if (Math.Abs(coverFrame.Height - targetHeight) > 0.5)
                 {
                     coverFrame.Height = targetHeight;
@@ -7815,7 +8130,7 @@ by Valve.";
                 : T("Nessun artwork disponibile per questa categoria.");
             empty.Visibility = artworks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-            var (previewWidth, previewHeight) = ArtworkPreviewSize(artworkType);
+            var (previewWidth, previewHeight) = ArtworkPreviewSize(artworkType, _settings.CoverFormat);
             foreach (var artwork in artworks)
             {
                 var preview = new StackPanel
@@ -7832,7 +8147,7 @@ by Valve.";
                     Child = new Image
                     {
                         Source = new BitmapImage(new Uri(artwork.PreviewUrl)),
-                        Stretch = artworkType == "cover" ? Stretch.UniformToFill : Stretch.Uniform
+                        Stretch = Stretch.Uniform
                     }
                 });
                 var sizeText = artwork.Width > 0 && artwork.Height > 0
@@ -7923,16 +8238,19 @@ by Valve.";
             InfoBarSeverity.Success);
     }
 
-    private static (double Width, double Height) ArtworkPreviewSize(string artworkType)
+    // La cella della cover segue il formato scelto in "Importa Giochi": con le cover
+    // quadrate una cella verticale ritaglierebbe l'artwork proposto da SteamGridDB.
+    private static (double Width, double Height) ArtworkPreviewSize(string artworkType, string coverFormat)
     {
+        var cover = global::Playhub.Services.CoverFormat.IsSquare(coverFormat) ? (170d, 170d) : (150d, 225d);
         return artworkType switch
         {
-            "cover" => (150, 225),
+            "cover" => cover,
             "banner" => (230, 108),
             "hero" => (230, 129),
             "logo" => (210, 110),
             "icon" => (130, 130),
-            _ => (150, 225)
+            _ => cover
         };
     }
 
@@ -7974,9 +8292,21 @@ by Valve.";
         SelectComboKey(_languageCombo, _settings.Language);
         SelectComboKey(_backdropCombo, NormalizeBackdropKey(_settings.Backdrop));
         SelectComboKey(_startupPageCombo, NormalizeStartupPageKey(_settings.StartupPage));
+        if (_pluginRestartPromptsToggle is not null)
+            _pluginRestartPromptsToggle.IsOn = _settings.PluginRestartPromptsEnabled;
+        // Il blocco degli aggiornamenti non è una preferenza salvata: sta sul disco,
+        // e può essere stato tolto o rimesso fuori da Playhub.
+        if (_steamUpdateBlockToggle is not null)
+        {
+            _steamUpdateBlockToggle.IsOn = _extra.IsSteamUpdateBlockApplied();
+            ApplySteamUpdateToggleText(_steamUpdateBlockToggle);
+        }
         RenderExecutableSources();
         _deckyPluginsBox.Text = _settings.DeckyPluginsPath;
         _xboxSteamGridDbKeyBox.Password = _settings.SteamGridDbApiKey;
+        // Pagina Importa Giochi: il selettore del formato cover e' costruito
+        // prima del caricamento delle impostazioni, qui prende la scelta salvata.
+        RefreshCoverFormatSelector();
         RefreshAccentPicker();
         _loadingSettings = false;
     }
@@ -7993,6 +8323,8 @@ by Valve.";
         _mouseDelayBox.Value = _gamingConfig.Gaming.AutoHideMouseCursorAfterMs;
         _apiPortBox.Value = _gamingConfig.Safety.ApiPort;
         _splashLogoBox.Text = _gamingConfig.Gaming.Splash.LogoPath ?? "";
+        _gamingToggles["splashAnimation"].IsOn = _gamingConfig.Gaming.Splash.AnimationEnabled;
+        _refreshAnimationSettings?.Invoke();
         _splashMinBox.Value = _gamingConfig.Gaming.Splash.MinVisibleMs;
         _splashMaxBox.Value = _gamingConfig.Gaming.Splash.MaxVisibleMs;
         WriteConfigIntoToggles();
@@ -8127,6 +8459,13 @@ by Valve.";
         card.Children.Add(grid);
     }
 
+    /// <summary>L'interruttore dice lo stato, non l'azione: acceso = blocco attivo.</summary>
+    private void ApplySteamUpdateToggleText(ToggleSwitch toggle)
+    {
+        toggle.OnContent = T("Aggiornamenti di Steam bloccati");
+        toggle.OffContent = T("Aggiornamenti di Steam attivi");
+    }
+
     private void ApplyToggleStateText(ToggleSwitch toggle)
     {
         toggle.OnContent = T("Attivato");
@@ -8158,8 +8497,6 @@ by Valve.";
         SetToggle("borderless", _gamingConfig.Gaming.BorderlessFullscreenWindowsInGamingMode);
         _gamingConfig.Gaming.EnableXboxGameBar = _settings.XboxGameBarEnabled;
         SetToggle("xboxGameBar", _settings.XboxGameBarEnabled);
-        SetToggle("dashboardEnabled", _gamingConfig.Gaming.DashboardEnabled);
-        SetToggle("manageAudio", _gamingConfig.Gaming.ManageAudio);
         SetToggle("remoteApi", _gamingConfig.Safety.AllowRemoteApi);
         SetToggle("restartWithoutPrompt", _gamingConfig.Safety.RestartWithoutPrompt);
     }
@@ -8169,6 +8506,13 @@ by Valve.";
         _gamingConfig.Gaming.DeckyRequired = GetToggle("deckyRequired");
         _gamingConfig.Gaming.SunshineRequired = GetToggle("sunshineRequired");
         _gamingConfig.Gaming.CloseExplorerInGamingMode = GetToggle("closeExplorer");
+        // PERMESSO DI CHIUDERE EXPLORER: l'agente lo pretende in AND con il
+        // toggle qui sopra (ModeManager.cs:378) e il suo default e' false,
+        // mentre quello di Playhub e' true. Se il file di configurazione veniva
+        // creato dall'agente, il toggle "Chiudi Explorer" non faceva niente e
+        // non c'era modo di accorgersene: qui il permesso si scrive sempre,
+        // esattamente come lo dichiara CreateDefaultConfig.
+        _gamingConfig.Gaming.AllowExplorerCloseInGamingMode = true;
         // Always restore the desktop in Desktop Mode (no toggle: prevents users
         // getting stuck without Explorer).
         _gamingConfig.Gaming.RestoreExplorerOnDesktop = true;
@@ -8178,8 +8522,7 @@ by Valve.";
         _gamingConfig.Gaming.BorderlessFullscreenWindowsInGamingMode = GetToggle("borderless");
         _gamingConfig.Gaming.EnableXboxGameBar = GetToggle("xboxGameBar");
         _settings.XboxGameBarEnabled = GetToggle("xboxGameBar");
-        _gamingConfig.Gaming.DashboardEnabled = GetToggle("dashboardEnabled");
-        _gamingConfig.Gaming.ManageAudio = GetToggle("manageAudio");
+        _gamingConfig.Gaming.DashboardEnabled = true;
         _gamingConfig.Safety.AllowRemoteApi = GetToggle("remoteApi");
         _gamingConfig.Safety.RestartWithoutPrompt = true;
     }
@@ -8603,16 +8946,18 @@ by Valve.";
         return stack;
     }
 
+    private static readonly string[] AccentPalette =
+    {
+        "#FFCB0F", "#0F6CBD", "#107C10", "#C50F1F", "#8764B8",
+        "#E97A9D", "#7DDCB5", "#73BCEB", "#B79AE8", "#F2A36F"
+    };
+
     private StackPanel BuildAccentPicker(bool welcome = false)
     {
         var panel = new StackPanel { Spacing = 10 };
         StackPanel? row = null;
         var index = 0;
-        foreach (var color in new[]
-        {
-            "#FFCB0F", "#0F6CBD", "#107C10", "#C50F1F", "#8764B8",
-            "#E97A9D", "#7DDCB5", "#73BCEB", "#B79AE8", "#F2A36F"
-        })
+        foreach (var color in AccentPalette)
         {
             if (welcome && index == 10) break;
             if (index++ % 10 == 0)
@@ -8620,22 +8965,7 @@ by Valve.";
                 row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
                 panel.Children.Add(row);
             }
-            var button = new Button
-            {
-                Tag = color,
-                Width = 44,
-                Height = 34,
-                Padding = new Thickness(0),
-                Background = new SolidColorBrush(Colors.Transparent),
-                Content = new Border
-                {
-                    Width = 26,
-                    Height = 18,
-                    Background = new SolidColorBrush(ParseColor(color))
-                }
-            };
-            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, color);
-            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, color);
+            var button = CreateAccentSwatch(color);
             button.Click += async (_, _) =>
             {
                 _settings.AccentColor = color;
@@ -8735,26 +9065,26 @@ by Valve.";
         }
         _playhubUpdateButton.IsEnabled = false;
         _playhubUpdateStatus.Visibility = Visibility.Visible;
-        _playhubUpdateStatus.Text = "Cerco aggiornamenti…";
+        _playhubUpdateStatus.Text = T("Cerco aggiornamenti…");
         try
         {
             var info = await _updateService.CheckAsync(PlayhubUpdatePolicy.Repository(_settings.PlayhubUpdateRepository), GetAppVersion(), PlayhubUpdatePolicy.ReleaseTag);
 
             if (info is null)
             {
-                _playhubUpdateStatus.Text = "Non riesco a contattare GitHub. Riprova tra poco.";
+                _playhubUpdateStatus.Text = T("Non riesco a contattare GitHub. Riprova tra poco.");
                 SetStatus("Non riesco a contattare GitHub per gli aggiornamenti. Riprova tra poco.", InfoBarSeverity.Warning);
                 return;
             }
 
             if (PlayhubUpdatePolicy.ShouldOffer(info))
             {
-                _playhubUpdateStatus.Text = $"Playhub {info.LatestVersion} disponibile";
+                _playhubUpdateStatus.Text = string.Format(T("Playhub {0} disponibile"), info.LatestVersion);
                 ShowPlayhubUpdateDialog(info, force: true);
             }
             else
             {
-                _playhubUpdateStatus.Text = "Playhub è già aggiornato.";
+                _playhubUpdateStatus.Text = T("Playhub è già aggiornato.");
                 SetStatus("Playhub è aggiornato.", InfoBarSeverity.Success);
             }
         }
@@ -8898,6 +9228,138 @@ by Valve.";
     {
         CaptureSupportReminderUsageForSave();
         await _settingsService.SaveAsync();
+    }
+
+    /// <summary>Chiede dove salvare e copia gli artwork lì.</summary>
+    private async Task ChooseAndBackupArtworkAsync()
+    {
+        var destination = await PickArtworkFolderAsync();
+        if (destination is null) return;
+        await RunArtworkOperationAsync("Sto copiando gli artwork di Steam…",
+            progress => _extra.BackupSteamArtworkAsync(destination, progress));
+    }
+
+    /// <summary>Chiede quale backup ripristinare.</summary>
+    private async Task ChooseAndRestoreArtworkAsync()
+    {
+        var source = await PickArtworkFolderAsync();
+        if (source is null) return;
+        await RunArtworkOperationAsync("Sto ripristinando gli artwork di Steam…",
+            progress => _extra.RestoreSteamArtworkAsync(source, progress));
+    }
+
+    /// <summary>Chiede dove salvare e mette da parte la versione di Steam attuale.</summary>
+    private async Task ChooseAndBackupSteamClientAsync()
+    {
+        var destination = await PickArtworkFolderAsync();
+        if (destination is null) return;
+        await RunBackupOperationAsync(_steamClientBar, "Sto copiando la versione di Steam…",
+            progress => _extra.BackupSteamClientAsync(destination, progress));
+    }
+
+    /// <summary>Chiede quale backup ripristinare e conferma prima di sovrascrivere Steam.</summary>
+    private async Task ChooseAndRestoreSteamClientAsync()
+    {
+        var source = await PickArtworkFolderAsync();
+        if (source is null) return;
+
+        // Riscrivere i file del programma non è un'operazione da fare per sbaglio:
+        // si dice prima cosa succede, per intero.
+        var confirm = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Title = T("Ripristinare questa versione di Steam?"),
+            Content = T("Steam verrà chiuso e riportato alla versione di questo backup. La versione attuale viene messa da parte prima di procedere, e gli aggiornamenti di Steam vengono bloccati automaticamente."),
+            PrimaryButtonText = T("Ripristina"),
+            CloseButtonText = T("Annulla"),
+            DefaultButton = ContentDialogButton.Close
+        };
+        ConfigureDialogEntrance(confirm);
+        if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
+
+        await RunBackupOperationAsync(_steamClientBar, "Sto ripristinando la versione di Steam…",
+            progress => _extra.RestoreSteamClientAsync(source, progress));
+
+        // Il ripristino accende il blocco: l'interruttore in Impostazioni deve dirlo.
+        if (_steamUpdateBlockToggle is not null)
+        {
+            _steamUpdateBlockToggle.IsOn = _extra.IsSteamUpdateBlockApplied();
+        }
+    }
+
+    /// <summary>Il selettore cartelle di Windows. null = l'utente ha annullato.</summary>
+    private async Task<string?> PickArtworkFolderAsync()
+    {
+        try
+        {
+            var picker = new Windows.Storage.Pickers.FolderPicker
+            {
+                SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.ComputerFolder,
+                // Con un identificatore è Windows a ricordare l'ultima cartella usata,
+                // così backup e ripristino ripartono da dove si era rimasti.
+                SettingsIdentifier = "PlayhubSteamArtworkBackup"
+            };
+            picker.FileTypeFilter.Add("*");
+            InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(this));
+            var folder = await picker.PickSingleFolderAsync();
+            return string.IsNullOrWhiteSpace(folder?.Path) ? null : folder!.Path;
+        }
+        catch (Exception ex)
+        {
+            SetStatus(FriendlyError(ex), InfoBarSeverity.Error);
+            return null;
+        }
+    }
+
+    private Task RunArtworkOperationAsync(string runningMessage,
+        Func<IProgress<double>, Task<ExtraService.BackupResult>> operation)
+        => RunBackupOperationAsync(_artworkBar, runningMessage, operation);
+
+    /// <summary>Esegue un backup o un ripristino lungo mostrando l'avanzamento.</summary>
+    private async Task RunBackupOperationAsync(ProgressBar? bar, string runningMessage,
+        Func<IProgress<double>, Task<ExtraService.BackupResult>> operation)
+    {
+        SetStatus(T(runningMessage), InfoBarSeverity.Informational);
+        if (bar is not null)
+        {
+            // Finché non arriva il primo dato l'avanzamento è sconosciuto, non zero:
+            // una barra ferma a sinistra sembra un'operazione bloccata.
+            bar.IsIndeterminate = true;
+            bar.Value = 0;
+            bar.Visibility = Visibility.Visible;
+        }
+
+        var lastShown = -1;
+        var progress = new Progress<double>(fraction =>
+        {
+            var value = Math.Clamp(fraction, 0, 1);
+            if (bar is not null)
+            {
+                bar.IsIndeterminate = false;
+                bar.Value = value;
+            }
+            var percent = (int)Math.Round(value * 100);
+            if (percent == lastShown) return;
+            lastShown = percent;
+            SetStatus($"{T(runningMessage)} {percent}%", InfoBarSeverity.Informational);
+        });
+
+        try
+        {
+            var result = await operation(progress);
+            var message = string.IsNullOrEmpty(result.Detail)
+                ? T(result.Message)
+                : $"{T(result.Message)} — {result.Detail}";
+            SetStatus(message, result.Ok ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+        }
+        finally
+        {
+            if (bar is not null)
+            {
+                bar.Visibility = Visibility.Collapsed;
+                bar.IsIndeterminate = false;
+            }
+        }
     }
 
     private void SetStatus(string message, InfoBarSeverity severity)

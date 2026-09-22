@@ -1,0 +1,50 @@
+[
+ {
+  "file": "day-01-02-0.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/23/Spacewar%21-PDP-1-20070512.jpg/1280px-Spacewar%21-PDP-1-20070512.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Spacewar!-PDP-1-20070512.jpg",
+  "credit": "Joi Ito from Inbamura, Japan / CC BY 2.0",
+  "description": "Spacewar! running on the Computer History Museum's PDP-1.",
+  "title": "File:Spacewar!-PDP-1-20070512.jpg"
+ },
+ {
+  "file": "day-01-02-1.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9e/Spacewar-all-Berlin-Museum.jpg/1280px-Spacewar-all-Berlin-Museum.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Spacewar-all-Berlin-Museum.jpg",
+  "credit": "Bsivko / CC BY-SA 4.0",
+  "description": "Whole picture of Spacewar! game in Computerspielemuseum Berlin",
+  "title": "File:Spacewar-all-Berlin-Museum.jpg"
+ },
+ {
+  "file": "day-01-02-2.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/d/d9/Spacewar_screenshot.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Spacewar_screenshot.jpg",
+  "credit": "Kenneth Lu / CC BY 2.0",
+  "description": "Screenshot of a PDP-1 computer running Spacewar",
+  "title": "File:Spacewar screenshot.jpg"
+ },
+ {
+  "file": "day-01-02-3.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Vint_Cerf_playing_Spacewar_on_PDP-1.jpg/1280px-Vint_Cerf_playing_Spacewar_on_PDP-1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Vint_Cerf_playing_Spacewar_on_PDP-1.jpg",
+  "credit": "Joi / CC BY 2.0",
+  "description": "Vint Cerf playing Spacewar on PDP-1",
+  "title": "File:Vint Cerf playing Spacewar on PDP-1.jpg"
+ },
+ {
+  "file": "day-01-02-4.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/88/Spacewar%21_is_alive%21_%288420887916%29.jpg/1280px-Spacewar%21_is_alive%21_%288420887916%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Spacewar!_is_alive!_(8420887916).jpg",
+  "credit": "Jason Eppink / CC BY 2.0",
+  "description": "Screenshot of a computer running Spacewar",
+  "title": "File:Spacewar! is alive! (8420887916).jpg"
+ },
+ {
+  "file": "day-01-02-5.jpg",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Spacewar-gameplay-Berlin-Museum.jpg/1280px-Spacewar-gameplay-Berlin-Museum.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Spacewar-gameplay-Berlin-Museum.jpg",
+  "credit": "Bsivko / CC BY-SA 4.0",
+  "description": "Gameplay demo of Spacewar! game in Computerspielemuseum Berlin",
+  "title": "File:Spacewar-gameplay-Berlin-Museum.jpg"
+ }
+]

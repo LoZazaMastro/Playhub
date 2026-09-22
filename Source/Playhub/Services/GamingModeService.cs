@@ -1,9 +1,12 @@
 using Playhub.Models;
+using Playhub.Shared;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Playhub.Services;
@@ -29,12 +32,55 @@ public sealed class GamingModeService
     public string InstalledExe => Path.Combine(InstallDir, "GamingMode.exe");
     public bool IsInstalled => File.Exists(InstalledExe);
 
+
+    // UN DIALOG "Riprova." NON E' UNA DIAGNOSI.
+    //
+    // Fino a ieri qualunque errore - script assente, file bloccato, permesso
+    // negato, antivirus - diventava la stessa frase, e l'unica traccia della
+    // causa finiva in un file di log che nessuno apre. Da qui in avanti il
+    // messaggio mostrato porta con se' il codice di uscita, la riga di errore
+    // dello script e il percorso su cui l'operazione e' fallita.
+    private static string DescribeScriptFailure(string operation, string script, ProcessResult result)
+    {
+        var detail = LastMeaningfulLine(result.Error);
+        if (string.IsNullOrWhiteSpace(detail)) detail = LastMeaningfulLine(result.Output);
+        if (string.IsNullOrWhiteSpace(detail)) detail = "lo script non ha spiegato l'errore";
+        return $"{operation} non riuscita (codice {result.ExitCode}): {detail} [script: {script}]";
+    }
+
+    private static string LastMeaningfulLine(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        var lines = text.Replace("\r", "").Split('\n');
+        for (var i = lines.Length - 1; i >= 0; i--)
+        {
+            var line = lines[i].Trim();
+            if (line.Length == 0) continue;
+            // Le righe di contorno di PowerShell (posizione, categoria) non
+            // dicono cosa e' andato storto: si cerca la prima riga utile.
+            if (line.StartsWith("+", StringComparison.Ordinal)) continue;
+            if (line.StartsWith("At line:", StringComparison.Ordinal)) continue;
+            if (line.StartsWith("CategoryInfo", StringComparison.Ordinal)) continue;
+            if (line.StartsWith("FullyQualifiedErrorId", StringComparison.Ordinal)) continue;
+            return line.Length > 400 ? line.Substring(0, 400) + "..." : line;
+        }
+        return "";
+    }
+
     public async Task<GamingModeOperationResult> InstallAsync(string deckyPluginsPath)
     {
         var script = Path.Combine(AppPaths.GamingModePackage, "install.ps1");
         if (!File.Exists(script))
         {
-            return new(false, "Mancano alcuni file di Gaming Mode. Reinstalla Playhub e riprova.");
+            Diag.Crash("GamingModeService.InstallAsync", "install.ps1 mancante: " + script);
+            return new(false, "Mancano alcuni file di Gaming Mode: non trovo " + script + ". Reinstalla Playhub e riprova.");
+        }
+
+        var bundledExe = Path.Combine(AppPaths.GamingModePackage, "GamingMode.exe");
+        if (!File.Exists(bundledExe))
+        {
+            Diag.Crash("GamingModeService.InstallAsync", "GamingMode.exe mancante: " + bundledExe);
+            return new(false, "Mancano alcuni file di Gaming Mode: non trovo " + bundledExe + ". Reinstalla Playhub e riprova.");
         }
 
         var companionPath = ResolveDeckyPluginPath(deckyPluginsPath);
@@ -55,11 +101,49 @@ public sealed class GamingModeService
                 RemoveDeckyPlugin(deckyPluginsPath);
             }
 
-            Diag.Crash("GamingModeService.InstallAsync", result.Error + result.Output);
-            return new(false, "Non riesco a installare Gaming Mode. Riprova.");
+            var failure = DescribeScriptFailure("Installazione di Gaming Mode", script, result);
+            Diag.Crash("GamingModeService.InstallAsync", failure + "\n" + result.Error + result.Output);
+            return new(false, failure);
+        }
+
+        // L'INSTALLAZIONE NON E' FINITA FINCHE' IL SERVIZIO NON RISPONDE.
+        //
+        // install.ps1 avvia l'agente e, se non risponde, si limita a scrivere un
+        // avviso ed esce con 0: l'app diceva "Gaming Mode è pronto" e subito dopo
+        // "Servizio non raggiungibile". Qui si controlla davvero.
+        var port = ReadConfiguredApiPort();
+        for (var i = 0; i < 24 && !await IsAgentHealthyAsync(port); i++)
+        {
+            if (i == 12) StartAgent();
+            await Task.Delay(250);
+        }
+
+        if (!await IsAgentHealthyAsync(port))
+        {
+            var warning = $"Gaming Mode è installato in {InstallDir}, ma il servizio non risponde su http://127.0.0.1:{port}/health. Controlla antivirus/firewall e riavvia il PC.";
+            Diag.Crash("GamingModeService.InstallAsync", warning + "\n" + result.Output + result.Error);
+            return new(false, warning);
         }
 
         return new(true, "Gaming Mode è pronto. Riavvia Steam per trovarlo nel menu rapido.");
+    }
+
+    /// <summary>Porta dell'agente come scritta nel config condiviso; 47991 se il file non c'è o non la dice.</summary>
+    public int ReadConfiguredApiPort()
+    {
+        try
+        {
+            if (!File.Exists(ConfigFile)) return 47991;
+            using var document = JsonDocument.Parse(File.ReadAllText(ConfigFile));
+            if (document.RootElement.ValueKind != JsonValueKind.Object) return 47991;
+            if (!document.RootElement.TryGetProperty("safety", out var safety)) return 47991;
+            if (!safety.TryGetProperty("apiPort", out var value)) return 47991;
+            return value.TryGetInt32(out var port) && port is > 0 and < 65536 ? port : 47991;
+        }
+        catch
+        {
+            return 47991;
+        }
     }
 
     public async Task<GamingModeOperationResult> UninstallAsync(string deckyPluginsPath)
@@ -67,7 +151,8 @@ public sealed class GamingModeService
         var script = Path.Combine(AppPaths.GamingModePackage, "uninstall.ps1");
         if (!File.Exists(script))
         {
-            return new(false, "Mancano alcuni file di Gaming Mode. Reinstalla Playhub e riprova.");
+            Diag.Crash("GamingModeService.UninstallAsync", "uninstall.ps1 mancante: " + script);
+            return new(false, "Mancano alcuni file di Gaming Mode: non trovo " + script + ". Reinstalla Playhub e riprova.");
         }
 
         var args = $"-NoProfile -ExecutionPolicy Bypass -File \"{script}\"";
@@ -75,8 +160,9 @@ public sealed class GamingModeService
         if (!result.Success)
         {
             // Keep the Companion available as an exit route until Gaming Mode is gone.
-            Diag.Crash("GamingModeService.UninstallAsync", result.Error + result.Output);
-            return new(false, "Non riesco a rimuovere Gaming Mode. Riprova.");
+            var failure = DescribeScriptFailure("Rimozione di Gaming Mode", script, result);
+            Diag.Crash("GamingModeService.UninstallAsync", failure + "\n" + result.Error + result.Output);
+            return new(false, failure);
         }
 
         var companionResult = RemoveDeckyPlugin(deckyPluginsPath);
@@ -191,6 +277,7 @@ public sealed class GamingModeService
             }
 
             var dest = Path.Combine(root, "gaming-mode");
+            if (FindStandaloneQuickSettings(root) is not null) return true;
             if (!Directory.Exists(dest))
             {
                 return true;
@@ -277,12 +364,21 @@ public sealed class GamingModeService
             Directory.CreateDirectory(deckyPluginsPath);
             var dest = Path.Combine(deckyPluginsPath, "gaming-mode");
             CopyDirectory(DeckyPluginSource, dest);
+            MigrateStandaloneQuickSettings(deckyPluginsPath);
             return new(true, "Gaming Mode è pronto. Riavvia Steam per trovarlo nel menu rapido.");
         }
         catch (Exception ex)
         {
-            Diag.Crash("GamingModeService.InstallDeckyPlugin", ex);
-            return new(false, "Non riesco a installare Gaming Mode. Riprova.");
+            // Il messaggio dice DOVE e PERCHE': senza il percorso e la causa
+            // (file in uso da DeckyLoader, permesso negato, disco pieno) non
+            // c'era modo di sapere cosa riprovare.
+            var where = Path.Combine(
+                string.IsNullOrWhiteSpace(deckyPluginsPath) ? AppPaths.DefaultDeckyPluginsPath : deckyPluginsPath,
+                "gaming-mode");
+            var cause = ex.GetBaseException();
+            var failure = $"Copia del plugin Gaming Mode in {where} non riuscita: {cause.GetType().Name} - {cause.Message}";
+            Diag.Crash("GamingModeService.InstallDeckyPlugin", failure + "\n" + ex);
+            return new(false, failure);
         }
     }
 
@@ -310,8 +406,13 @@ public sealed class GamingModeService
         }
         catch (Exception ex)
         {
-            Diag.Crash("GamingModeService.RemoveDeckyPlugin", ex);
-            return new(false, "Non riesco a rimuovere Gaming Mode. Riprova.");
+            var where = Path.Combine(
+                string.IsNullOrWhiteSpace(deckyPluginsPath) ? AppPaths.DefaultDeckyPluginsPath : deckyPluginsPath,
+                "gaming-mode");
+            var cause = ex.GetBaseException();
+            var failure = $"Rimozione di {where} non riuscita: {cause.GetType().Name} - {cause.Message}. Chiudi Steam e DeckyLoader, poi riprova.";
+            Diag.Crash("GamingModeService.RemoveDeckyPlugin", failure + "\n" + ex);
+            return new(false, failure);
         }
     }
 
@@ -333,7 +434,31 @@ public sealed class GamingModeService
 
         foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
         {
-            File.Copy(file, file.Replace(source, dest), overwrite: true);
+            var target = file.Replace(source, dest);
+            // DeckyLoader tiene aperti i file del plugin mentre gira: la prima
+            // copia falliva e l'intera installazione con lei. Qualche tentativo
+            // basta quasi sempre; se non basta, l'eccezione arriva al chiamante
+            // con il nome del file, non con un "Riprova.".
+            for (var attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    File.Copy(file, target, overwrite: true);
+                    break;
+                }
+                catch (Exception ex) when ((ex is IOException || ex is UnauthorizedAccessException) && attempt < 8)
+                {
+                    Thread.Sleep(150 * attempt);
+                }
+                catch (IOException ex)
+                {
+                    throw new IOException($"{target}: {ex.Message}", ex);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    throw new UnauthorizedAccessException($"{target}: {ex.Message}", ex);
+                }
+            }
         }
     }
 
@@ -376,24 +501,214 @@ public sealed class GamingModeService
         }
     }
 
+    /// <summary>
+    /// Spiega PERCHE' il servizio non risponde, invece di dire soltanto che non
+    /// risponde: eseguibile assente, processo non in esecuzione, oppure l'errore
+    /// vero della chiamata HTTP (porta occupata, firewall, agente bloccato).
+    /// </summary>
+    public async Task<string> DescribeAgentAsync(int port = 47991)
+    {
+        if (!File.Exists(InstalledExe))
+        {
+            return $"Servizio non installato: manca {InstalledExe}. Usa \"Installa o aggiorna\".";
+        }
+
+        var running = false;
+        try { running = Process.GetProcessesByName("GamingMode").Length > 0; } catch { }
+
+        try
+        {
+            using var response = await _http.GetAsync($"http://127.0.0.1:{port}/health");
+            if (response.IsSuccessStatusCode) return "Servizio attivo.";
+            return $"Il servizio risponde con HTTP {(int)response.StatusCode} su http://127.0.0.1:{port}/health.";
+        }
+        catch (Exception ex)
+        {
+            var cause = ex.GetBaseException().Message;
+            var state = running
+                ? "il processo GamingMode è in esecuzione ma non risponde"
+                : "il processo GamingMode non è in esecuzione";
+            var message = $"Servizio non raggiungibile su http://127.0.0.1:{port}/health: {state} ({cause}).";
+            Diag.Crash("GamingModeService.DescribeAgentAsync", message);
+            return message;
+        }
+    }
+
     // Switch IMMEDIATO di modalità tramite l'agente locale, esattamente come fa
     // il plugin DeckyLoader (POST http://127.0.0.1:PORT/mode/<mode>/switch).
-    // È l'agente a salvare la modalità ed eseguire il sign-out + cambio shell.
+    // The agent applies the current-session mode without changing startup preferences.
     public async Task<bool> SwitchModeAsync(string mode, int port = 47991)
     {
         var path = string.Equals(mode, "Gaming", StringComparison.OrdinalIgnoreCase)
             ? "/mode/gaming/switch"
             : "/mode/desktop/switch";
-        return await PostAgentAsync(path, port);
+        // Session transitions include service work and the fullscreen curtain.
+        // The short health-check timeout must not turn a successful switch into an error.
+        try
+        {
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(90) };
+            using var response = await client.PostAsync($"http://127.0.0.1:{port}{path}", null);
+            if (!response.IsSuccessStatusCode) return false;
+            using var result = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            return result.RootElement.TryGetProperty("ok", out var ok) && ok.ValueKind == JsonValueKind.True;
+        }
+        catch (Exception ex)
+        {
+            Diag.Crash("GamingMode.SwitchModeAsync", ex);
+            return false;
+        }
     }
 
-    // Imposta la modalità predefinita tramite l'agente, come il plugin
-    // (POST http://127.0.0.1:PORT/default/<mode>).
+    private static string? FindStandaloneQuickSettings(string pluginsRoot, string pluginName = "Quick Settings")
+    {
+        if (!Directory.Exists(pluginsRoot)) return null;
+        foreach (var directory in Directory.GetDirectories(pluginsRoot))
+        {
+            var manifest = Path.Combine(directory, "plugin.json");
+            if (!File.Exists(manifest)) continue;
+            try
+            {
+                using var json = JsonDocument.Parse(File.ReadAllText(manifest));
+                var data = json.RootElement;
+                if (data.TryGetProperty("name", out var name) && name.GetString() == pluginName &&
+                    data.TryGetProperty("author", out var author) && author.GetString() == "LoZazaMastro") return directory;
+            }
+            catch (JsonException) { }
+        }
+        return null;
+    }
+
+    private static void MigrateStandaloneQuickSettings(string pluginsRoot)
+    {
+        if (FindStandaloneQuickSettings(pluginsRoot) is null && FindStandaloneQuickSettings(pluginsRoot, "Shortcuts") is null) return;
+        DeckyStartupGuard.RunExclusive(() =>
+        {
+            var services = Path.GetFullPath(Path.Combine(pluginsRoot, "..", "services"));
+            using var self = Process.GetCurrentProcess();
+            var sessionId = self.SessionId;
+            string? restartLoader = null;
+            try
+            {
+                // Only the loader belonging to this homebrew installation can own
+                // the old plugin's working directory. Release it before moving files.
+                foreach (var name in new[] { "PluginLoader_noconsole", "PluginLoader" })
+                {
+                    foreach (var process in Process.GetProcessesByName(name))
+                    {
+                        using (process)
+                        {
+                            if (process.HasExited) continue;
+                            if (process.SessionId != sessionId) continue;
+                            string? executable;
+                            try { executable = process.MainModule?.FileName; }
+                            catch (InvalidOperationException) { continue; }
+                            if (executable is null || !string.Equals(Path.GetDirectoryName(Path.GetFullPath(executable)), services, StringComparison.OrdinalIgnoreCase)) continue;
+                            restartLoader ??= executable;
+                            try { process.Kill(entireProcessTree: true); }
+                            catch (InvalidOperationException) { continue; }
+                            if (!process.WaitForExit(10000)) throw new IOException("Decky is still using the Quick Settings directory.");
+                        }
+                    }
+                }
+                var backupStamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff");
+                for (var attempt = 0; ; attempt++)
+                {
+                    try {
+                        ArchiveStandaloneQuickSettings(pluginsRoot, backupStamp);
+                        ArchiveStandaloneQuickSettings(pluginsRoot, backupStamp, "Shortcuts");
+                        break;
+                    }
+                    catch (IOException) when (attempt < 39) { Thread.Sleep(250); }
+                    catch (UnauthorizedAccessException) when (attempt < 39) { Thread.Sleep(250); }
+                }
+                return true;
+            }
+            finally
+            {
+                if (restartLoader is not null && File.Exists(restartLoader) && !AnyDeckyLoaderRunning(services, sessionId))
+                {
+                    using var process = Process.Start(new ProcessStartInfo(restartLoader)
+                    {
+                        WorkingDirectory = services,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        WindowStyle = ProcessWindowStyle.Hidden
+                    });
+                }
+            }
+        });
+    }
+
+    private static bool AnyDeckyLoaderRunning(string services, int sessionId)
+    {
+        var running = false;
+        foreach (var name in new[] { "PluginLoader_noconsole", "PluginLoader" })
+            foreach (var process in Process.GetProcessesByName(name))
+                using (process)
+                    try
+                    {
+                        if (process.HasExited || process.SessionId != sessionId) continue;
+                        var executable = process.MainModule?.FileName;
+                        running |= executable is not null && string.Equals(Path.GetDirectoryName(Path.GetFullPath(executable)), services, StringComparison.OrdinalIgnoreCase);
+                    }
+                    catch (InvalidOperationException) { }
+                    catch (System.ComponentModel.Win32Exception) { running = true; }
+        return running;
+    }
+
+    private static void ArchiveStandaloneQuickSettings(string pluginsRoot, string backupStamp, string pluginName = "Quick Settings")
+    {
+        var root = Path.GetFullPath(pluginsRoot).TrimEnd(Path.DirectorySeparatorChar);
+        var previous = FindStandaloneQuickSettings(root, pluginName);
+        if (previous is null) return;
+        previous = Path.GetFullPath(previous);
+        if (!string.Equals(Path.GetDirectoryName(previous), root, StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Quick Settings migration path is outside the plugin directory.");
+        // Retain a complete rollback copy outside Decky's scan directory. Settings
+        // stay in homebrew/settings and are imported once by the new backend.
+        var backups = Path.Combine(Path.GetDirectoryName(root)!, "playhub-plugin-backups");
+        var target = Path.GetFullPath(Path.Combine(backups, (pluginName == "Shortcuts" ? "shortcuts-" : "quick-settings-") + backupStamp));
+        if (!string.Equals(Path.GetDirectoryName(target), Path.GetFullPath(backups), StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Invalid Quick Settings backup path.");
+        Directory.CreateDirectory(backups);
+        var settingsRoot = Path.Combine(Path.GetDirectoryName(root)!, "settings");
+        var oldSettingsName = pluginName == "Shortcuts" ? "state.json" : "quick-settings-2.3.json";
+        var oldProfiles = Path.Combine(settingsRoot, Path.GetFileName(previous), oldSettingsName);
+        var newProfiles = Path.Combine(settingsRoot, "gaming-mode", pluginName == "Shortcuts" ? "qam-layout.json" : "quick-settings-2.3.json");
+        if (File.Exists(oldProfiles) && !File.Exists(newProfiles))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(newProfiles)!);
+            File.Copy(oldProfiles, newProfiles, overwrite: false);
+        }
+        // An orphaned helper can keep a directory open even after Decky exits.
+        // Preserve every file before retiring the manifest that makes it a plugin.
+        CopyDirectory(previous, target);
+        var manifest = Path.Combine(previous, "plugin.json");
+        File.Move(manifest, Path.Combine(previous, "plugin.json.retired"), overwrite: true);
+        foreach (var process in Process.GetProcessesByName("QuickSettingsAgent"))
+            using (process)
+                try
+                {
+                    var executable = process.MainModule?.FileName;
+                    if (executable is not null && Path.GetFullPath(executable).StartsWith(previous + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    {
+                        process.Kill();
+                        if (!process.WaitForExit(10000))
+                            Diag.Step("Quick Settings manifest retired; its old helper has not exited yet.");
+                    }
+                }
+                catch (InvalidOperationException) { }
+                catch (System.ComponentModel.Win32Exception ex) { Diag.Step("Retired Quick Settings helper: " + ex.Message); }
+        try { Directory.Move(previous, target + "-original"); }
+        catch (IOException ex) { Diag.Step("Quick Settings retired; inactive directory retained: " + ex.Message); }
+        catch (UnauthorizedAccessException ex) { Diag.Step("Quick Settings retired; inactive directory retained: " + ex.Message); }
+        Diag.Step(pluginName + " integrated into Playhub; original retained at " + target);
+    }
+
     public async Task<bool> SetDefaultModeViaAgentAsync(string mode, int port = 47991)
     {
         var path = string.Equals(mode, "Gaming", StringComparison.OrdinalIgnoreCase)
-            ? "/default/gaming"
-            : "/default/desktop";
+            ? "/default/gaming" : "/default/desktop";
         return await PostAgentAsync(path, port);
     }
 
@@ -584,6 +899,11 @@ public sealed class GamingModeService
         if (config.Gaming is null)
         {
             config.Gaming = new GamingOptions();
+            changed = true;
+        }
+        if (!config.Gaming.DashboardEnabled)
+        {
+            config.Gaming.DashboardEnabled = true;
             changed = true;
         }
 

@@ -362,14 +362,14 @@ public sealed partial class MainWindow
 
     private double CompactPrimaryActionWidth(Button button)
     {
-        var label = new TextBlock
+        var idleLabelMeasure = new TextBlock
         {
             Text = T("Aggiorna ora"), FontFamily = button.FontFamily, FontSize = button.FontSize,
             FontWeight = button.FontWeight, FontStyle = button.FontStyle,
             FontStretch = button.FontStretch, CharacterSpacing = button.CharacterSpacing
         };
-        label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        return (216 + label.DesiredSize.Width) / 2;
+        idleLabelMeasure.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        return (216 + idleLabelMeasure.DesiredSize.Width) / 2;
     }
 
     // An explicitly supplied provider is the only route to network translation.

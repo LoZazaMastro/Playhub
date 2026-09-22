@@ -1,0 +1,38 @@
+[
+  {
+    "file": "newyear-hanafuda-1.jpg",
+    "old": [
+      3840,
+      2199
+    ],
+    "new": [
+      6488,
+      3715
+    ],
+    "url": "https://upload.wikimedia.org/wikipedia/commons/0/0c/Hand-painted_hanafuda_-_late_Edo_period.jpg"
+  },
+  {
+    "file": "nintendo-hq.jpg",
+    "old": [
+      960,
+      673
+    ],
+    "new": [
+      1888,
+      1323
+    ],
+    "url": "https://upload.wikimedia.org/wikipedia/commons/d/d1/Nintendo_office.jpg"
+  },
+  {
+    "file": "jul-dec-review-wiki-satoru_iwata-4.png",
+    "old": [
+      960,
+      960
+    ],
+    "new": [
+      2500,
+      2500
+    ],
+    "url": "https://upload.wikimedia.org/wikipedia/commons/1/14/Wii-console.jpg"
+  }
+]

@@ -1,4 +1,20 @@
 {
+  "Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop.": "Ábrela con Ctrl + Alt + P para cambiar de ventana, gestionar tus apps favoritas y consultar el rendimiento y los procesos. También puedes cerrar una app bloqueada sin volver al escritorio.",
+  "Avvio": "Inicio",
+  "Passaggio alla Desktop Mode": "Cambio a Desktop Mode",
+  "Passaggio alla Gaming Mode": "Cambio a Gaming Mode",
+  "Provalo ora": "Pruébalo ahora",
+  "Premi ESC o fai clic per tornare a Playhub": "Pulsa ESC o haz clic para volver a Playhub",
+  "Colore personalizzato": "Color personalizado",
+  "Tonalita": "Tono",
+  "Saturazione": "Saturación",
+  "Livello di nero": "Nivel de negro",
+  "Opacita": "Opacidad",
+  "Impossibile aprire l'anteprima. Riprova.": "No se ha podido abrir la vista previa. Inténtalo de nuevo.",
+  "Animazione Gaming Mode": "Animación de Gaming Mode",
+  "All'avvio e durante il cambio modalita.": "Al iniciar y al cambiar de modo.",
+  "Attiva animazione": "Activar animación",
+  "Il colore e indipendente dall'accent di Playhub.": "El color es independiente del color de acento de Playhub.",
   "Aggiorna tutto": "Actualizar todos",
   "Aggiornamento Playhub": "Actualización de Playhub",
   "Aggiornamento in corso": "Actualización en curso",
@@ -202,5 +218,10 @@
   "Windows ha impedito la scrittura del file shortcuts di Steam. Consenti Playhub in Accesso alle cartelle controllato e riprova. ": "Windows ha bloqueado la escritura del archivo de accesos directos de Steam. Autoriza Playhub en «Acceso controlado a carpetas» e inténtalo de nuevo. ",
   "Windows ha impedito la scrittura del file shortcuts di Steam. Non dipende dal fatto che Steam sia aperto: è la protezione \"Accesso alle cartelle controllato\" di Sicurezza di Windows che blocca questa app (UWPHook funziona perché è già tra le app consentite). Per risolvere: Sicurezza di Windows → Protezione da virus e minacce → Gestisci protezione ransomware → Accesso alle cartelle controllato → Consenti app tramite Accesso alle cartelle controllato → Aggiungi Playhub.exe. Poi riprova.": "Windows ha bloqueado la escritura del archivo de accesos directos de Steam. No se debe a que Steam esté abierto: la protección «Acceso controlado a carpetas» de Seguridad de Windows bloquea esta aplicación (UWPHook funciona porque ya figura entre las aplicaciones permitidas). Para solucionarlo: Seguridad de Windows → Protección contra virus y amenazas → Administrar la protección contra ransomware → Acceso controlado a carpetas → Permitir una aplicación a través del acceso controlado a carpetas → Añade Playhub.exe. Después, inténtalo de nuevo.",
   "autostart impostato e loader avviato": "autoarranque configurado y cargador iniciado",
-  "debug CEF non riuscito": "no se ha podido activar la depuración CEF"
+  "debug CEF non riuscito": "no se ha podido activar la depuración CEF",
+  "Installa Playhub per lo stile classico e Playhub (Big Image Mode) per la modalità Big Image di Steam.": "Instala Playhub para el diseño clásico y Playhub (Big Image Mode) para el modo Big Image de Steam.",
+  "Installa profili": "Instalar perfiles",
+  "Rimuovi profili": "Eliminar perfiles",
+  "Profili Playhub installati: Playhub e Playhub (Big Image Mode).": "Perfiles instalados: Playhub y Playhub (Big Image Mode).",
+  "Profili Playhub rimossi da CSS Loader.": "Perfiles Playhub eliminados de CSS Loader."
 }

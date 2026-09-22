@@ -97,7 +97,7 @@ while ($true) {
 # 4) Ripristina il Desktop nella sessione corrente. L'endpoint applica il modo
 #    senza sign-out e senza riavvio, lasciando invariata la modalita' predefinita.
 try {
-    $response = Invoke-WebRequest -Uri 'http://127.0.0.1:47991/mode/desktop' -Method POST -UseBasicParsing -TimeoutSec 10
+    $response = Invoke-WebRequest -Uri 'http://127.0.0.1:47991/mode/desktop/switch' -Method POST -UseBasicParsing -TimeoutSec 15
     if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 300) {
         Write-Log 'Desktop Mode ripristinata senza riavviare Windows.'
     }

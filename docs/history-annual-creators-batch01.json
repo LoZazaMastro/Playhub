@@ -1,0 +1,137 @@
+[
+  {
+    "id": "uematsu",
+    "kind": "creator",
+    "topic": "Nobuo Uematsu",
+    "related_topic": "Final Fantasy VI",
+    "sources": [
+      "https://en.wikipedia.org/wiki/Nobuo_Uematsu",
+      "https://www.jp.square-enix.com/music/sem/page/ff_pixelremaster_ost/ff6/en/",
+      "https://www.jp.square-enix.com/music/en/lineup/series/FF/",
+      "https://www.square-enix-games.com/en_GB/home/final-fantasy-vi-now-available-steam-mobile"
+    ],
+    "title": {
+      "en": "An orchestra hidden in the cartridge",
+      "it": "Un'orchestra nascosta nella cartuccia",
+      "de": "Ein Orchester im Spielmodul",
+      "es": "Una orquesta dentro del cartucho",
+      "fr": "Un orchestre dans la cartouche",
+      "pt": "Uma orquestra dentro do cartucho",
+      "ru": "Оркестр внутри картриджа",
+      "uk": "Оркестр усередині картриджа",
+      "ja": "カートリッジに隠れた楽団",
+      "ko": "카트리지 속에 숨은 오케스트라",
+      "zh": "藏在卡匣裡的樂團",
+      "hi": "कार्ट्रिज में छिपा ऑर्केस्ट्रा"
+    },
+    "intro": {
+      "en": "Final Fantasy VI moves between a military march, a character's private feeling and an opera performed inside the adventure. Nobuo Uematsu gives this changing scale a musical continuity. His score belongs to a game made by many hands, yet offers a particularly intimate entrance: listen for the moment when a melody makes a small figure on the screen feel larger than its pixels.",
+      "it": "Final Fantasy VI passa da una marcia militare al sentimento privato di un personaggio, fino a un'opera rappresentata dentro l'avventura. Nobuo Uematsu dà continuità musicale a questi cambi di scala. La partitura appartiene a un gioco costruito da molte mani, ma offre un ingresso particolarmente intimo: ascoltare il momento in cui una melodia rende una piccola figura più grande dei suoi pixel.",
+      "de": "Final Fantasy VI wechselt zwischen Militärmarsch, persönlichen Gefühlen und einer Oper innerhalb des Abenteuers. Nobuo Uematsus Musik verbindet diese Maßstäbe. In einem gemeinschaftlich entwickelten Spiel lässt eine Melodie kleine Figuren größer wirken, als ihre wenigen Pixel vermuten lassen.",
+      "es": "Final Fantasy VI pasa de la marcha militar a sentimientos íntimos y una ópera dentro de la aventura. Nobuo Uematsu conecta esas escalas. En un juego creado por muchas personas, una melodía hace que una pequeña figura exceda sus píxeles.",
+      "fr": "Final Fantasy VI passe de la marche militaire aux sentiments intimes et à une représentation d'opéra. Nobuo Uematsu relie ces échelles. Dans ce jeu collectif, une mélodie donne parfois à une petite silhouette une présence dépassant largement ses pixels.",
+      "pt": "Final Fantasy VI passa da marcha militar a sentimentos íntimos e a uma ópera dentro da aventura. Nobuo Uematsu conecta essas escalas. Nesse jogo coletivo, uma melodia faz uma pequena figura parecer maior do que seus poucos pixels sugerem.",
+      "ru": "Final Fantasy VI переходит от военного марша к личным чувствам и опере внутри приключения. Музыка Нобуо Уэмацу соединяет эти масштабы. В игре, созданной многими людьми, мелодия придаёт маленькой фигуре присутствие, которое невозможно измерить количеством пикселей.",
+      "uk": "Final Fantasy VI переходить від військового маршу до особистих почуттів та опери всередині пригоди. Музика Нобуо Уемацу поєднує ці масштаби. У грі, створеній багатьма людьми, мелодія надає маленькій постаті присутність, яку неможливо виміряти кількістю пікселів.",
+      "ja": "Final Fantasy VIは軍隊の行進から個人の感情、冒険の中で上演されるオペラへと移ります。植松伸夫の音楽はその尺度の変化を結びます。多くの人がつくったゲームの中で、一つの旋律が小さな人物を画素数以上の存在へ変える瞬間に耳を澄ませてみましょう。",
+      "ko": "Final Fantasy VI는 군대의 행진에서 인물의 내밀한 감정, 모험 속 오페라로 이동합니다. 우에마쓰 노부오의 음악이 그 크기 변화를 연결합니다. 많은 사람이 만든 게임 안에서 하나의 선율이 작은 인물을 픽셀 이상의 존재로 만드는 순간에 귀 기울여 보세요.",
+      "zh": "Final Fantasy VI從軍隊進行曲走向私人情感，再走入冒險中的歌劇演出。植松伸夫用音樂連接這些尺度。遊戲由許多人共同完成，而旋律提供了一條親密入口：留心小小角色如何在音符中，成為超越像素數量的存在。",
+      "hi": "Final Fantasy VI सैनिक मार्च से निजी भावनाओं और कहानी के भीतर ओपेरा तक जाता है। Nobuo Uematsu का संगीत इन बदलते पैमानों को जोड़ता है। कई हाथों से बने खेल में कोई धुन छोटे पात्र को उसके पिक्सेल से कहीं बड़ा महसूस कराती है।"
+    },
+    "chapters": [
+      {
+        "image_role": "related",
+        "title": {
+          "en": "A cast you can hear",
+          "it": "Un cast da ascoltare",
+          "de": "Ein hörbares Ensemble",
+          "es": "Un reparto que se escucha",
+          "fr": "Une distribution à écouter",
+          "pt": "Um elenco para ouvir",
+          "ru": "Ансамбль, который слышно",
+          "uk": "Ансамбль, який можна почути",
+          "ja": "耳で出会う登場人物たち",
+          "ko": "귀로 만나는 등장인물",
+          "zh": "用耳朵認識群像",
+          "hi": "सुनाई देता पात्र समूह"
+        },
+        "body": {
+          "en": "The soundtrack names themes for Terra, Locke, Celes and other members of its ensemble. These musical identities give a large cast another kind of portrait. A returning phrase can recall a person before the dialogue explains their feelings, letting the listener carry relationships between otherwise separate scenes.",
+          "it": "La colonna sonora dedica temi a Terra, Locke, Celes e altri componenti del gruppo. Queste identità musicali offrono a un cast numeroso un'altra forma di ritratto. Una frase che ritorna può ricordare una persona prima che il dialogo ne spieghi i sentimenti, collegando scene altrimenti separate.",
+          "de": "Die Musik enthält Themen für Terra, Locke, Celes und weitere Figuren. Diese Identitäten bilden zusätzliche Porträts eines großen Ensembles. Eine wiederkehrende Phrase erinnert an einen Menschen, bevor Dialoge seine Gefühle erklären, und verbindet voneinander entfernte Szenen.",
+          "es": "La banda sonora dedica temas a Terra, Locke, Celes y otros personajes. Son retratos musicales de un reparto amplio. Una frase recurrente recuerda a alguien antes de que el diálogo explique sus sentimientos y conecta escenas separadas.",
+          "fr": "La partition réserve des thèmes à Terra, Locke, Celes et d'autres personnages. Ces identités musicales composent un second portrait du groupe. Une phrase récurrente rappelle quelqu'un avant les dialogues et relie des scènes pourtant éloignées.",
+          "pt": "A trilha dedica temas a Terra, Locke, Celes e outros personagens. Essas identidades formam retratos musicais de um elenco amplo. Uma frase recorrente lembra alguém antes que o diálogo explique seus sentimentos e conecta cenas separadas.",
+          "ru": "В партитуре есть темы Терры, Локка, Селес и других персонажей. Музыкальные образы становятся дополнительными портретами большого ансамбля. Повторяющаяся фраза напоминает о человеке раньше диалога и позволяет связывать чувства между далеко отстоящими друг от друга сценами.",
+          "uk": "У партитурі є теми Терри, Локка, Селес та інших персонажів. Музичні образи стають додатковими портретами великого ансамблю. Повторювана фраза нагадує про людину раніше за діалог і дозволяє пов'язувати почуття між віддаленими одна від одної сценами.",
+          "ja": "サウンドトラックにはティナ、ロック、セリスらのテーマがあります。多くの登場人物に、音楽がもう一つの肖像を与えます。戻ってくるフレーズは、台詞で感情が説明される前に誰かを思い出させ、離れた場面の関係を耳の記憶でつなぎます。",
+          "ko": "사운드트랙에는 티나, 로크, 셀리스 등 인물의 테마가 있습니다. 음악적 정체성이 많은 등장인물에게 또 하나의 초상을 줍니다. 되돌아오는 구절은 대사가 감정을 설명하기 전에 누군가를 떠올리게 하며 떨어진 장면들의 관계를 귀의 기억으로 잇습니다.",
+          "zh": "配樂為蒂娜、洛克、莎莉絲等角色安排主題。音樂身分替龐大群像畫出另一種肖像。再次響起的樂句，可能在對白解釋情緒之前喚回一個人，讓聽者把原本分隔的場景與情感連接起來。",
+          "hi": "संगीत में Terra, Locke, Celes और अन्य पात्रों के अपने विषय हैं। ये धुनें बड़े समूह के अतिरिक्त चित्र बनाती हैं। लौटता वाक्य संवाद से पहले किसी की याद दिलाता है और अलग दृश्यों के बीच भावनात्मक संबंध बनाए रखता है।"
+        }
+      },
+      {
+        "image_role": "related",
+        "title": {
+          "en": "When the game raises a curtain",
+          "it": "Quando il gioco alza il sipario",
+          "de": "Wenn das Spiel den Vorhang hebt",
+          "es": "Cuando el juego levanta el telón",
+          "fr": "Quand le jeu lève le rideau",
+          "pt": "Quando o jogo abre a cortina",
+          "ru": "Когда игра поднимает занавес",
+          "uk": "Коли гра піднімає завісу",
+          "ja": "ゲームが幕を上げるとき",
+          "ko": "게임이 막을 올릴 때",
+          "zh": "遊戲拉開舞台帷幕",
+          "hi": "जब खेल पर्दा उठाता है"
+        },
+        "body": {
+          "en": "At the opera house, music is no longer only something accompanying the action: it is the action's setting and subject. The player encounters a performance within a performance. That layered stage lets Final Fantasy VI turn listening into dramatic attention, with the surrounding adventure pressing against the theatre's fragile order.",
+          "it": "Nel teatro d'opera, la musica non accompagna soltanto l'azione: ne diventa ambiente e argomento. Il giocatore incontra una rappresentazione dentro un'altra rappresentazione. Questo palco a più strati trasforma l'ascolto in attenzione drammatica, mentre l'avventura preme contro il fragile ordine dello spettacolo messo in scena.",
+          "de": "Im Opernhaus begleitet Musik nicht bloß das Geschehen: Sie wird dessen Raum und Thema. Eine Aufführung liegt innerhalb einer anderen. Final Fantasy VI macht Zuhören zur dramatischen Aufmerksamkeit, während das Abenteuer die fragile Ordnung des Theaters bedrängt.",
+          "es": "En la ópera, la música es escenario y asunto de la acción, no solo acompañamiento. Una representación contiene otra. Final Fantasy VI convierte escuchar en atención dramática mientras la aventura amenaza el frágil orden del espectáculo teatral.",
+          "fr": "À l'opéra, la musique devient le cadre et le sujet de l'action. Une représentation en contient une autre. Final Fantasy VI transforme l'écoute en attention dramatique, tandis que l'aventure menace l'ordre fragile du spectacle théâtral.",
+          "pt": "Na ópera, a música vira cenário e assunto da ação, além de acompanhamento. Uma apresentação contém outra. Final Fantasy VI transforma ouvir em atenção dramática enquanto a aventura pressiona a ordem frágil do espetáculo encenado no teatro.",
+          "ru": "В оперном театре музыка становится пространством и предметом действия. Представление оказывается внутри другого представления. Final Fantasy VI превращает слушание в драматическое внимание: приключение давит на хрупкий порядок спектакля, который пытаются сохранить стоящие на сцене персонажи.",
+          "uk": "В оперному театрі музика стає простором і предметом дії. Вистава опиняється всередині іншої вистави. Final Fantasy VI перетворює слухання на драматичну увагу: пригода тисне на крихкий порядок спектаклю, який намагаються зберегти персонажі на сцені.",
+          "ja": "オペラ座では音楽は伴奏だけでなく、行動の舞台であり主題です。プレイヤーは演技の中の演技に出会います。この重なる舞台が、聴くことを劇的な注意へ変えます。周囲の冒険は、上演が保とうとする繊細な秩序に迫っています。",
+          "ko": "오페라 극장에서 음악은 반주를 넘어 행동의 무대이자 주제가 됩니다. 플레이어는 공연 안의 공연을 만납니다. 겹쳐진 무대는 듣기를 극적인 주의로 바꾸고, 주변의 모험은 공연이 지키려는 연약한 질서에 압력을 가합니다.",
+          "zh": "歌劇院裡，音樂不只是行動的伴奏，更是環境與主題。玩家遇見演出中的演出。層層舞台把聆聽變成戲劇性的關注；周遭冒險不斷逼近，讓台上試圖維持的脆弱秩序充滿張力。",
+          "hi": "ओपेरा में संगीत सिर्फ साथ नहीं देता; वही कार्रवाई की जगह और विषय बनता है। एक प्रस्तुति के भीतर दूसरी चलती है। सुनना नाटकीय ध्यान बनता है, जबकि बाहर का रोमांच मंच की नाज़ुक व्यवस्था पर दबाव डालता है।"
+        }
+      },
+      {
+        "image_role": "game",
+        "title": {
+          "en": "A score passed between hands",
+          "it": "Una partitura fra molte mani",
+          "de": "Eine Partitur in vielen Händen",
+          "es": "Una partitura entre muchas manos",
+          "fr": "Une partition entre plusieurs mains",
+          "pt": "Uma partitura entre muitas mãos",
+          "ru": "Партитура в разных руках",
+          "uk": "Партитура в різних руках",
+          "ja": "多くの手に渡る楽譜",
+          "ko": "여러 손을 거치는 악보",
+          "zh": "在不同雙手間流轉的樂譜",
+          "hi": "कई हाथों से गुज़रती रचना"
+        },
+        "body": {
+          "en": "The Pixel Remaster credits distinguish Uematsu's composition and supervision from the work of arrangers, performers and recording staff. That distinction is worth preserving. Hearing familiar music through new voices does not erase its origin; it reveals how a score survives by becoming the careful responsibility of other musicians.",
+          "it": "I crediti del Pixel Remaster distinguono composizione e supervisione di Uematsu dal lavoro di arrangiatori, interpreti e tecnici di registrazione. È una distinzione da conservare. Ascoltare musiche familiari attraverso nuove voci non ne cancella l'origine: rivela come una partitura continui a vivere affidandosi alla cura di altri musicisti.",
+          "de": "Die Pixel-Remaster-Credits unterscheiden Uematsus Komposition und Aufsicht von Arrangement, Aufführung und Aufnahme. Diese Trennung zählt. Neue Stimmen löschen den Ursprung nicht aus; sie zeigen, wie vertraute Musik durch die sorgfältige Verantwortung anderer Musiker weiterlebt.",
+          "es": "Los créditos de Pixel Remaster separan composición y supervisión de Uematsu de arreglos, interpretación y grabación. La distinción importa. Las nuevas voces no borran el origen: muestran cómo una partitura sigue viva gracias al cuidado de otros músicos.",
+          "fr": "Les crédits du Pixel Remaster distinguent composition et supervision d'Uematsu des arrangements, interprétations et enregistrements. Cette distinction compte. Les nouvelles voix n'effacent pas l'origine : elles montrent une partition vivant grâce au soin d'autres musiciens.",
+          "pt": "Os créditos do Pixel Remaster distinguem composição e supervisão de Uematsu de arranjo, interpretação e gravação. A diferença importa. Novas vozes não apagam a origem: mostram como uma partitura continua viva pelo cuidado de outros músicos.",
+          "ru": "Титры Pixel Remaster отделяют композицию и руководство Уэмацу от аранжировки, исполнения и записи. Это важное различие. Новые голоса не стирают происхождение знакомой музыки: они показывают, как партитура продолжает жить благодаря бережному труду других музыкантов.",
+          "uk": "Титри Pixel Remaster відокремлюють композицію й керівництво Уемацу від аранжування, виконання та запису. Це важлива різниця. Нові голоси не стирають походження знайомої музики: вони показують, як партитура продовжує жити завдяки дбайливій праці інших музикантів.",
+          "ja": "Pixel Remasterのクレジットは、植松の作曲・監修と、編曲者、演奏者、録音スタッフの仕事を分けています。大切な区別です。新しい声で親しんだ曲を聴くことは原点を消しません。別の音楽家の丁寧な仕事によって楽譜が生き続ける姿を示します。",
+          "ko": "Pixel Remaster의 크레딧은 우에마쓰의 작곡과 감수를 편곡자, 연주자, 녹음진의 작업과 구분합니다. 중요한 구별입니다. 새로운 목소리로 익숙한 곡을 듣는다고 원점이 지워지지는 않습니다. 다른 음악가의 세심한 책임을 통해 악보가 계속 살아가는 모습을 보여줍니다.",
+          "zh": "Pixel Remaster的名單區分植松的作曲與監修，以及編曲、演奏和錄音人員的工作。這份區別值得保留。熟悉音樂換上新聲音並未抹去源頭，反而呈現樂譜如何交付其他音樂家細心照料，繼續活下去。",
+          "hi": "Pixel Remaster के श्रेय Uematsu की रचना और देखरेख को संयोजकों, कलाकारों और रिकॉर्डिंग टीम से अलग रखते हैं। नई आवाज़ें मूल को मिटाती नहीं। वे दिखाती हैं कि दूसरे संगीतकारों की सावधानी से कोई रचना आगे कैसे जीवित रहती है।"
+        }
+      }
+    ]
+  }
+]

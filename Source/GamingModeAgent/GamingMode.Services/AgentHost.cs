@@ -95,23 +95,30 @@ public static class AgentHost
 				logger.Info("Agent is already running.");
 				return;
 			}
-			try
-			{
-				using System.Diagnostics.Process currentProcess = System.Diagnostics.Process.GetCurrentProcess();
-				currentProcess.PriorityClass = System.Diagnostics.ProcessPriorityClass.BelowNormal;
-				logger.Info("Agent process priority lowered to BelowNormal.");
-			}
-			catch
-			{
-			}
 			JsonStore store = new JsonStore(paths, logger);
+			ModeConfig modeConfig = store.LoadConfig();
+			bool flag = args.Any((string arg) => arg.Equals("shell", StringComparison.OrdinalIgnoreCase));
+			bool bootRequested = flag || args.Any((string arg) => arg.Equals("--boot", StringComparison.OrdinalIgnoreCase) || arg.Equals("boot", StringComparison.OrdinalIgnoreCase));
+			bool showSplash = bootRequested && (modeConfig.NextBootMode ?? modeConfig.DefaultMode) == ModeKind.Gaming && !SafeModeGuard.ShouldForceDesktop(paths);
+			int minSplashVisibleMs = Math.Clamp(modeConfig.Gaming.Splash.MinVisibleMs, 0, 120000);
+			int maxSplashVisibleMs = Math.Clamp(modeConfig.Gaming.Splash.MaxVisibleMs, 5000, 120000);
+			using SplashScreenService splashScreen = new SplashScreenService(logger);
+			// Paint the login curtain before constructing any input, audio or dashboard service.
+			if (showSplash)
+			{
+				splashScreen.Show(modeConfig.Gaming.Splash, maxSplashVisibleMs + 15000);
+			}
 			ProcessTools processTools = new ProcessTools(logger);
 			ShellTools shellTools = new ShellTools(logger);
 			CursorAutoHideService cursorAutoHide = new CursorAutoHideService(logger);
 			try
 			{
 				using GamingWindowFocusService windowFocus = new GamingWindowFocusService(logger);
-				using SplashScreenService splashScreen = new SplashScreenService(logger);
+				// Schermo nero con l'audio dopo aver acceso la TV: vedi SteamDisplayRecoveryService.
+				// Parte prima della modalita' di avvio, cosi' la fotografia iniziale dei monitor
+				// e' quella dell'accensione, TV spenta compresa.
+				using SteamDisplayRecoveryService displayRecovery = new SteamDisplayRecoveryService(logger, () => store.LoadState().CurrentMode == ModeKind.Gaming);
+				displayRecovery.Start();
 				using SystemVolumeKeyService volumeKeys = new SystemVolumeKeyService(logger);
 				using OverlayQuickSettingsClient quickSettings = new OverlayQuickSettingsClient();
 				ModeManager manager = new ModeManager(paths, store, processTools, shellTools, cursorAutoHide, windowFocus, volumeKeys, logger);
@@ -123,21 +130,11 @@ public static class AgentHost
 					store,
 					() => windowFocus.IsLaunchCurtainOnScreen,
 					logger);
-				dashboard.Start();
-				ModeConfig modeConfig = store.LoadConfig();
 				string value = (modeConfig.Safety.AllowRemoteApi ? "0.0.0.0" : "127.0.0.1");
 				string url = $"http://{value}:{modeConfig.Safety.ApiPort}";
-				bool flag = args.Any((string arg) => arg.Equals("shell", StringComparison.OrdinalIgnoreCase));
-				if (flag || args.Any((string arg) => arg.Equals("--boot", StringComparison.OrdinalIgnoreCase) || arg.Equals("boot", StringComparison.OrdinalIgnoreCase)))
+				if (bootRequested)
 				{
-					bool showSplash = flag && (modeConfig.NextBootMode ?? modeConfig.DefaultMode) == ModeKind.Gaming && !SafeModeGuard.ShouldForceDesktop(paths);
-					int minSplashVisibleMs = Math.Clamp(modeConfig.Gaming.Splash.MinVisibleMs, 0, 120000);
-					int maxSplashVisibleMs = Math.Clamp(modeConfig.Gaming.Splash.MaxVisibleMs, 5000, 120000);
 					bool waitForSteamFullscreen = false;
-					if (showSplash)
-					{
-						splashScreen.Show(modeConfig.Gaming.Splash, maxSplashVisibleMs + 15000);
-					}
 					try
 					{
 						processTools.CleanupDeckyOrphanedForks();
@@ -179,6 +176,14 @@ public static class AgentHost
 				{
 					processTools.CleanupDeckyOrphanedForks();
 				}
+				try
+				{
+					using System.Diagnostics.Process currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+					currentProcess.PriorityClass = System.Diagnostics.ProcessPriorityClass.BelowNormal;
+					logger.Info("Agent process priority lowered to BelowNormal after startup.");
+				}
+				catch { }
+				dashboard.Start();
 				// Se il PC e' gia' in Gaming Mode ma l'agente e' appena ripartito (e
 				// succede a ogni installa/aggiorna), i servizi vanno riaccesi:
 				// altrimenti il borderless resta spento senza che nulla lo dica.
@@ -216,8 +221,8 @@ public static class AgentHost
 				app.MapGet("/status", (Func<IResult>)(() => Results.Json(manager.GetStatus())));
 				app.MapPost("/mode/gaming", (Func<Task<IResult>>)(async () => Results.Json(await manager.ApplyModeAsync(ModeKind.Gaming, "Applied Gaming Mode"))));
 				app.MapPost("/mode/desktop", (Func<Task<IResult>>)(async () => Results.Json(await manager.ApplyModeAsync(ModeKind.Desktop, "Applied Desktop Mode"))));
-				app.MapPost("/mode/gaming/switch", (Func<IResult>)(() => Results.Json(manager.SwitchToMode(ModeKind.Gaming))));
-				app.MapPost("/mode/desktop/switch", (Func<IResult>)(() => Results.Json(manager.SwitchToMode(ModeKind.Desktop))));
+				app.MapPost("/mode/gaming/switch", (Func<Task<IResult>>)(async () => Results.Json(await manager.SwitchToModeAsync(ModeKind.Gaming))));
+				app.MapPost("/mode/desktop/switch", (Func<Task<IResult>>)(async () => Results.Json(await manager.SwitchToModeAsync(ModeKind.Desktop))));
 				app.MapPost("/mode/gaming/restart", (Func<IResult>)(() => Results.Json(manager.RestartInMode(ModeKind.Gaming))));
 				app.MapPost("/mode/desktop/restart", (Func<IResult>)(() => Results.Json(manager.RestartInMode(ModeKind.Desktop))));
 				app.MapPost("/default/gaming", (Func<IResult>)(() => Results.Json(manager.SetDefaultMode(ModeKind.Gaming))));
@@ -336,6 +341,7 @@ public static class AgentHost
 					return Results.Json(new
 					{
 						open,
+						exitBigPicture = manager.ConsumeDesktopSwitchRequest(),
 						focusRecovery = windowFocus.SteamFocusRecoveryVersion,
 						steamForeground = OverlayWindowTools.IsSteamForeground()
 					});
@@ -391,6 +397,15 @@ public static class AgentHost
 					bool ok = int.TryParse(Field(fields, "level"), out int level)
 						&& await quickSettings.SetVolumeAsync(level, request.HttpContext.RequestAborted);
 					return Results.Json(new { ok });
+				}));
+				app.MapPost("/dash/shortcuts/sdl3", (Func<HttpRequest, Task<IResult>>)(async request =>
+				{
+					var fields = await ReadFieldsAsync(request);
+					string value = Field(fields, "enabled");
+					bool? enabled = string.Equals(value, "null", StringComparison.OrdinalIgnoreCase)
+						? null
+						: bool.TryParse(value, out bool parsed) ? parsed : null;
+					return Results.Json(new ApiResult { Ok = DashboardApi.SetShortcutSdl3(store, Field(fields, "id"), enabled) });
 				}));
 				app.MapPost("/dash/quick/mute", (Func<HttpRequest, Task<IResult>>)(async request =>
 				{
@@ -495,6 +510,7 @@ public static class AgentHost
 					string hotkey = Field(fields, "hotkey");
 					string haptics = Field(fields, "navigationHapticsEnabled");
 					string hapticsIntensity = Field(fields, "navigationHapticsIntensity");
+					string sdl3 = Field(fields, "sdl3NativeControllerEnabled");
 					if (!string.IsNullOrWhiteSpace(keyboard) || !string.IsNullOrWhiteSpace(hotkey))
 					{
 						logger.Info($"Playhub Dashboard shortcut settings: enabled='{keyboard}' hotkey='{hotkey}'.");
@@ -504,7 +520,8 @@ public static class AgentHost
 						bool.TryParse(keyboard, out bool keyboardValue) ? keyboardValue : null,
 						hotkey,
 						bool.TryParse(haptics, out bool hapticsValue) ? hapticsValue : null,
-						int.TryParse(hapticsIntensity, out int intensityValue) ? intensityValue : null);
+						int.TryParse(hapticsIntensity, out int intensityValue) ? intensityValue : null,
+						bool.TryParse(sdl3, out bool sdl3Value) ? sdl3Value : null);
 					// RegisterHotKey lega la combinazione al thread una volta
 					// sola: senza questa riga la nuova resta scritta nella
 					// configurazione e muta fino al riavvio dell'agente.

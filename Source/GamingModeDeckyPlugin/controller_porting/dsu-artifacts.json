@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "scope": "dsu-sensors-only",
+  "license": "MIT",
+  "nativeArtifacts": [],
+  "pipDependencies": [],
+  "packaged": false,
+  "files": ["dsu.py", "dsu_bridge.py", "dsu_test.py", "dsu_bridge_test.py", "dsu-README.md", "dsu-NOTICES.md"],
+  "references": [
+    {"name": "v1993/cemuhook-protocol", "license": "Unlicense", "implementationCopied": false},
+    {"name": "Cemu coordinate semantics", "license": "MPL-2.0", "implementationCopied": false},
+    {"name": "Handheld Companion DSU reference", "license": "CC-BY-NC-SA-4.0 root", "implementationCopied": false}
+  ],
+  "validation": {"udpLoopback": true, "fixtures": "explicit-mock-only", "hardware": false, "emulator": false},
+  "excluded": ["gyro-aim", "remapping", "deadzones", "input-profiles", "rumble", "remote-bind", "driver-install"]
+}

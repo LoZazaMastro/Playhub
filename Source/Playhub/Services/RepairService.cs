@@ -12,7 +12,7 @@ public sealed record RepairReport(int IssuesFixed, int IssuesFound, IReadOnlyLis
 /// <summary>
 /// "Risoluzione problemi": controlla i componenti installati da Playhub
 /// (Gaming Mode, plugin Decky companion, agente, UWPHook, configurazione,
-/// coerenza della shell di avvio) e ripara automaticamente ciò che non va.
+/// collegamento di avvio) solo su richiesta esplicita, preservando le preferenze.
 /// </summary>
 public sealed class RepairService
 {
@@ -32,44 +32,54 @@ public sealed class RepairService
         // ---------- 1) File del pacchetto Playhub ----------
         progress.Report((0.05, "Controllo i file di Playhub…"));
         await Task.Delay(150);
-        if (!Directory.Exists(AppPaths.GamingModePackage) ||
-            !File.Exists(Path.Combine(AppPaths.GamingModePackage, "GamingMode.exe")))
+        var payloadReady = false;
+        try
+        {
+            payloadReady = await Task.Run(() => GamingModeRepairPayload.IsCurrent(
+                AppPaths.GamingModePackage, _gamingMode.InstallDir));
+        }
+        catch
         {
             found++;
             notes.Add("Il pacchetto Gaming Mode incluso in Playhub è incompleto: reinstalla Playhub per ripristinarlo.");
         }
-
-        // ---------- 2) Integrità di Gaming Mode installato ----------
-        progress.Report((0.15, "Controllo i componenti di Gaming Mode…"));
-        var gamingModeBroken = await Task.Run(IsInstalledGamingModeBroken);
-        if (gamingModeBroken)
+        if (!payloadReady && found == 0)
         {
             found++;
             progress.Report((0.25, "Sistemo Gaming Mode…"));
-            if (await Task.Run(ReinstallGamingMode))
+            try
             {
+                // Do not stop an active gaming session or run the standalone installer.
+                await Task.Run(() => GamingModeRepairPayload.Restore(
+                    AppPaths.GamingModePackage, _gamingMode.InstallDir));
+                payloadReady = await Task.Run(() => GamingModeRepairPayload.IsCurrent(
+                    AppPaths.GamingModePackage, _gamingMode.InstallDir));
+                if (!payloadReady) throw new IOException("Verifica del payload non riuscita.");
                 fixedCount++;
                 notes.Add("Gaming Mode è stato reinstallato/aggiornato.");
             }
-            else
+            catch (GamingModeRepairDeferredException)
             {
-                notes.Add("Non sono riuscito a ripristinare Gaming Mode. Riprova o reinstalla Playhub.");
+                notes.Add("Riparazione agente differita: reinstalla Playhub per aggiornare l'agente in uso. La sessione corrente non è stata interrotta.");
+            }
+            catch
+            {
+                notes.Add("Gaming Mode non è stato riparato del tutto: riprova o reinstalla Playhub.");
             }
         }
 
         // ---------- 3) Configurazione di Gaming Mode ----------
         progress.Report((0.40, "Verifico la configurazione di Gaming Mode…"));
+        int? apiPort = null;
         try
         {
-            // LoadConfigAsync ripara da solo config corrotte/troncate (backup o
-            // default) e normalizza i watcher: basta caricare e risalvare.
-            var config = await _gamingMode.LoadConfigAsync();
-            await _gamingMode.SaveConfigAsync(config);
+            // Read only: model round-trips normalize user choices and discard unknown fields.
+            apiPort = GamingModeRepairPayload.ReadApiPort(_gamingMode.ConfigFile);
         }
         catch
         {
             found++;
-            notes.Add("La configurazione di Gaming Mode è danneggiata. Reinstalla Playhub.");
+            notes.Add("La configurazione di Gaming Mode non è leggibile né riparabile.");
         }
 
         // ---------- 4) Plugin Gaming Mode per DeckyLoader ----------
@@ -92,37 +102,49 @@ public sealed class RepairService
         }
 
         // ---------- 5) Agente Gaming Mode ----------
-        progress.Report((0.72, "Controllo il servizio Gaming Mode…"));
-        if (_gamingMode.IsInstalled && !await _gamingMode.IsAgentHealthyAsync())
+        progress.Report((0.72, "Verifico l'agente Gaming Mode…"));
+        if (payloadReady && apiPort.HasValue && !await _gamingMode.IsAgentHealthyAsync(apiPort.Value))
         {
             found++;
-            progress.Report((0.78, "Riavvio il servizio Gaming Mode…"));
+            progress.Report((0.78, "Riavvio l'agente Gaming Mode…"));
             _gamingMode.StartAgent();
             var healthy = false;
             for (var i = 0; i < 20 && !healthy; i++)
             {
                 await Task.Delay(250);
-                healthy = await _gamingMode.IsAgentHealthyAsync();
+                healthy = await _gamingMode.IsAgentHealthyAsync(apiPort.Value);
             }
             if (healthy)
             {
                 fixedCount++;
-                notes.Add("Il servizio Gaming Mode è stato riavviato.");
+                notes.Add("L'agente Gaming Mode è stato riavviato.");
             }
             else
             {
-                notes.Add("Il servizio Gaming Mode non risponde. Prova a riavviare il PC.");
+                notes.Add("L'agente Gaming Mode non risponde: prova a riavviare il PC.");
             }
         }
 
-        // ---------- 6) Coerenza della shell di avvio ----------
+        // ---------- 6) Collegamento di avvio (nessuna modifica alla shell) ----------
         progress.Report((0.86, "Verifico la modalità di avvio…"));
-        var shellNote = await Task.Run(RepairStartupShell);
-        if (shellNote is not null)
+        try
+        {
+            var startup = await Task.Run(() => GamingModeRepairPayload.CheckStartup(_gamingMode.InstalledExe, payloadReady));
+            if (startup != GamingModeStartupRepair.Healthy)
+            {
+                found++;
+                if (startup == GamingModeStartupRepair.Repaired)
+                {
+                    fixedCount++;
+                    notes.Add("Il collegamento di avvio dell'agente è stato riparato. Preferenze e modalità predefinita conservate.");
+                }
+                else notes.Add("Avvio agente non riparato: collegamento assente o personalizzato. Reinstalla Playhub se desideri riattivare l'avvio automatico.");
+            }
+        }
+        catch
         {
             found++;
-            fixedCount++;
-            notes.Add(shellNote);
+            notes.Add("Avvio agente non riparato: collegamento assente o personalizzato. Reinstalla Playhub se desideri riattivare l'avvio automatico.");
         }
 
         // ---------- 7) UWPHook ----------
@@ -147,70 +169,6 @@ public sealed class RepairService
         return new RepairReport(fixedCount, found, notes);
     }
 
-    // Confronta ogni file del pacchetto bundlato con la copia installata in
-    // LocalAppData\GamingMode: file mancanti o di dimensione diversa = da riparare.
-    private bool IsInstalledGamingModeBroken()
-    {
-        try
-        {
-            var package = AppPaths.GamingModePackage;
-            if (!Directory.Exists(package) || !File.Exists(Path.Combine(package, "GamingMode.exe")))
-            {
-                return false; // pacchetto assente: non possiamo confrontare nulla
-            }
-
-            var installDir = _gamingMode.InstallDir;
-            if (!File.Exists(_gamingMode.InstalledExe))
-            {
-                return true;
-            }
-
-            foreach (var file in Directory.GetFiles(package, "*", SearchOption.AllDirectories))
-            {
-                var rel = Path.GetRelativePath(package, file);
-                var installed = Path.Combine(installDir, rel);
-                if (!File.Exists(installed) ||
-                    new FileInfo(installed).Length != new FileInfo(file).Length)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private bool ReinstallGamingMode()
-    {
-        try
-        {
-            var package = AppPaths.GamingModePackage;
-            var script = Path.Combine(package, "install.ps1");
-            if (!File.Exists(script))
-            {
-                return false;
-            }
-
-            using var process = Process.Start(new ProcessStartInfo
-            {
-                FileName = "powershell.exe",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{script}\" -SourceDir \"{package}\"",
-                WorkingDirectory = package,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            });
-            process?.WaitForExit(180000);
-            return !IsInstalledGamingModeBroken();
-        }
-        catch
-        {
-            return false;
-        }
-    }
 
     // Un'unica definizione di "plugin da aggiornare", condivisa con il
     // controllo che gira a ogni avvio dell'app: due copie della stessa logica
@@ -218,62 +176,6 @@ public sealed class RepairService
     private static bool IsDeckyCompanionBroken(string deckyPluginsPath) =>
         GamingModeService.NeedsDeckyPluginUpdate(deckyPluginsPath);
 
-    // La shell di Windows (HKCU Winlogon\Shell) deve rispecchiare la modalità
-    // predefinita: Gaming = agente come shell, Desktop = nessun valore (Explorer).
-    private string? RepairStartupShell()
-    {
-        try
-        {
-            var configFile = _gamingMode.ConfigFile;
-            if (!File.Exists(configFile))
-            {
-                return null;
-            }
-
-            string defaultMode = "";
-            try
-            {
-                using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(configFile));
-                if (doc.RootElement.TryGetProperty("defaultMode", out var mode))
-                {
-                    defaultMode = mode.GetString() ?? "";
-                }
-            }
-            catch
-            {
-                return null;
-            }
-
-            const string winlogon = @"Software\Microsoft\Windows NT\CurrentVersion\Winlogon";
-            using var key = Registry.CurrentUser.CreateSubKey(winlogon);
-            if (key is null)
-            {
-                return null;
-            }
-
-            var shell = key.GetValue("Shell") as string ?? "";
-            var isGamingShell = shell.Contains("GamingMode", StringComparison.OrdinalIgnoreCase);
-
-            if (string.Equals(defaultMode, "Desktop", StringComparison.OrdinalIgnoreCase) && isGamingShell)
-            {
-                key.DeleteValue("Shell", throwOnMissingValue: false);
-                return "L'avvio in modalità Desktop è stato ripristinato.";
-            }
-
-            if (string.Equals(defaultMode, "Gaming", StringComparison.OrdinalIgnoreCase) &&
-                !isGamingShell && File.Exists(_gamingMode.InstalledExe))
-            {
-                key.SetValue("Shell", $"\"{_gamingMode.InstalledExe}\" shell", RegistryValueKind.String);
-                return "L'avvio in modalità Gaming è stato ripristinato.";
-            }
-
-            return null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
 
     private static bool IsUwpHookMissing()
     {

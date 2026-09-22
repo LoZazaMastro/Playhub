@@ -1,0 +1,72 @@
+[
+  {
+    "file": "zelda-nes-exploration.png",
+    "subject": "The Legend of Zelda",
+    "kind": "screenshot",
+    "provider": "Nintendo",
+    "url": "https://www.nintendo.com/eu/media/images/06_screenshots/games_5/virtual_console_wii_u_3/wiiuvc_thelegendofzelda/WiiUVC_TheLegendOfZelda_02.png",
+    "sourceUrl": "https://www.nintendo.com/es-es/Juegos/NES/The-Legend-of-Zelda-796345.html",
+    "credit": "Nintendo",
+    "rights": "Copyright Nintendo. Game screenshot; retained for editorial use.",
+    "width": 1280,
+    "height": 720,
+    "sha256": "c695cdbcf5934905f27c9f77f3223fe26a160952ff758d6615217765f11b5032",
+    "visual_review": "Reviewed: gameplay, landscape, exact named game; no cover."
+  },
+  {
+    "file": "zelda-past-dark-world.png",
+    "subject": "The Legend of Zelda: A Link to the Past",
+    "kind": "screenshot",
+    "provider": "Nintendo",
+    "url": "https://www.nintendo.com/eu/media/images/06_screenshots/games_5/virtual_console_wii_u_3/wiiuvc_thelegendofzeldaalinktothepast/WiiUVC_TheLegendOfZeldaALinkToThePast_08.bmp",
+    "sourceUrl": "https://www.nintendo.com/it-it/Giochi/Super-Nintendo/The-Legend-of-Zelda-A-Link-to-the-Past-841179.html",
+    "credit": "Nintendo",
+    "rights": "Copyright Nintendo. Game screenshot; retained for editorial use.",
+    "width": 1280,
+    "height": 720,
+    "sha256": "12a897cc418e8755fbfd5e3d7349dab6a4ebf3c762ef8c7113d241de1b31374b",
+    "visual_review": "Reviewed: gameplay, landscape, exact named game; no cover."
+  },
+  {
+    "file": "zelda-ocarina-targeting.jpg",
+    "subject": "The Legend of Zelda: Ocarina of Time",
+    "kind": "screenshot",
+    "provider": "Nintendo",
+    "url": "https://www.nintendo.com/eu/media/images/06_screenshots/games_5/virtual_console_wii_u_3/wiiuvc_thelegendofzeldaocarinaoftime/WiiUVC_TheLegendOfZeldaOcarinaOfTime_03.jpg",
+    "sourceUrl": "https://www.nintendo.com/en-gb/Games/Nintendo-64/The-Legend-of-Zelda-Ocarina-of-Time-269536.html",
+    "credit": "Nintendo",
+    "rights": "Copyright Nintendo. Game screenshot; retained for editorial use.",
+    "width": 1280,
+    "height": 720,
+    "sha256": "2f7a1701c77354e599ba3f45a1240479b737c2a0a79d75ab6ece16db4942b547",
+    "visual_review": "Reviewed: gameplay, landscape, exact named game; no cover."
+  },
+  {
+    "file": "zelda-wind-waker-sea.jpg",
+    "subject": "The Legend of Zelda: The Wind Waker",
+    "kind": "screenshot",
+    "provider": "Nintendo",
+    "url": "https://www.nintendo.com/eu/media/images/06_screenshots/games_5/wiiu_7/wiiu_thelegendofzeldathewindwakerhd/WiiU_TheLegendofZelda_TheWindWakerHD_04.jpg",
+    "sourceUrl": "https://www.nintendo.com/en-gb/Games/Wii-U-games/The-Legend-of-Zelda-The-Wind-Waker-HD-765386.html",
+    "credit": "Nintendo",
+    "rights": "Copyright Nintendo. Game screenshot; retained for editorial use.",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "366f9dde8fa63402cfb4b1bd12d8ce6b3554d5031a88fff67d2d4076e16d6f82",
+    "visual_review": "Reviewed: gameplay, landscape, exact named game; no cover."
+  },
+  {
+    "file": "zelda-breath-climbing.jpg",
+    "subject": "The Legend of Zelda: Breath of the Wild",
+    "kind": "screenshot",
+    "provider": "Publisher promotional screenshot",
+    "url": "https://images-fe.ssl-images-amazon.com/images/I/71NRIA6pnqL.jpg",
+    "sourceUrl": "https://gamesoft.bestgamearea.com/gamesoft/901",
+    "credit": "Nintendo",
+    "rights": "Copyright Nintendo. Game screenshot; retained for editorial use.",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "f6c0982da1285d6ebb57bb3cfe651225e91677ba7fcd8940ca015f50ff94723f",
+    "visual_review": "Reviewed: gameplay, landscape, exact named game; no cover."
+  }
+]

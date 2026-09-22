@@ -8,6 +8,7 @@ using Playhub.Models;
 using Playhub.Services;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -60,21 +61,23 @@ public sealed partial class MainWindow
             _pluginDiscoveryCategories.Add(title, state);
         }
 
-        var orderedPlugins = OrderPluginDiscoveryCategory(state, plugins);
+        var orderedPlugins = OrderPluginDiscoveryPreview(title, state, plugins);
         if (string.Equals(title, "I plugin di Playhub", StringComparison.OrdinalIgnoreCase))
         {
             var featuredKeys = GetFeaturedPlugins().Select(PluginStoreKey).ToHashSet(StringComparer.OrdinalIgnoreCase);
             orderedPlugins = orderedPlugins.Where(plugin => !featuredKeys.Contains(PluginStoreKey(plugin))).ToList();
         }
+        var previewCount = Math.Min(PluginDiscoveryPreviewCount, orderedPlugins.Count);
+        if (previewCount > 1 && previewCount % 2 != 0) previewCount--;
         return BuildPluginStoreCategory(title,
-            orderedPlugins.Take(PluginDiscoveryPreviewCount).ToList(), clickableHeading: true);
+            orderedPlugins.Take(previewCount).ToList(), clickableHeading: true);
     }
 
     private static string PluginDiscoveryCategory(DeckyPluginInfo plugin) => plugin.IsPlayhubPlugin
         ? plugin.Name switch
         {
-            "Quick Settings" or "Shortcuts" or "Launch Curtain" or "Playhub Notifications" or "Playhub Surround" or "Weather" => "Strumenti e utilità",
-            "Playhub Artworks" or "Now Playing" or "ThemeDeck" or "TrailerHero" => "Personalizzazione e media",
+            "Quick Settings" or "Shortcuts" or "Playhub Notifications" or "Weather" => "Strumenti e utilità",
+            "Playhub Artworks" or "Launch Curtain" or "Now Playing" or "ThemeDeck" or "TrailerHero" or "Playhub Surround" => "Personalizzazione e media",
             "Playhub Metadata" => "Libreria e giochi",
             "News" => "Social e community",
             "Proton VPN" => "Sistema e hardware",
@@ -83,15 +86,89 @@ public sealed partial class MainWindow
         : NormalizePluginStoreCategory(plugin.Category);
 
     private static bool PluginBelongsToCategory(DeckyPluginInfo plugin, string category) =>
-        string.Equals(category, "I plugin di Playhub", StringComparison.OrdinalIgnoreCase)
+        string.Equals(category, "Novità", StringComparison.OrdinalIgnoreCase)
+            ? IsNewPlugin(plugin)
+            : string.Equals(category, "I plugin di Playhub", StringComparison.OrdinalIgnoreCase)
             ? plugin.IsPlayhubPlugin
             : string.Equals(PluginDiscoveryCategory(plugin), category, StringComparison.OrdinalIgnoreCase);
+
+    private static DateTimeOffset? PluginCatalogAddedAt(DeckyPluginInfo plugin)
+        => PluginKeywordDate(plugin, "catalog-added:");
+
+    private static DateTimeOffset? PluginFirstReleasedAt(DeckyPluginInfo plugin)
+        => PluginKeywordDate(plugin, "first-release:");
+
+    private static bool IsNewPlugin(DeckyPluginInfo plugin)
+    {
+        var first = PluginFirstReleasedAt(plugin);
+        var now = DateTimeOffset.UtcNow;
+        return first is not null && first <= now && first >= now.AddDays(-30);
+    }
+
+    private static List<DeckyPluginInfo> OrderPluginDiscoveryPreview(string title,
+        PluginDiscoveryCategoryState state, IReadOnlyList<DeckyPluginInfo> plugins)
+    {
+        return string.Equals(title, "Novità", StringComparison.OrdinalIgnoreCase)
+            ? plugins.Where(IsNewPlugin)
+                .OrderByDescending(PluginFirstReleasedAt)
+                .ThenBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase).ToList()
+            : OrderPluginDiscoveryCategory(state, plugins);
+    }
+
+    private readonly PluginDiscoveryCategoryState _featuredOrder = new();
+
+    private static bool IsFeaturedPluginCandidate(DeckyPluginInfo plugin) =>
+        plugin.IsPlayhubPlugin || (plugin.RepositorySlug.ToLowerInvariant() switch
+        {
+            "tormak9970/tabmaster" or "emerald0874/sdh-audioloader" or
+                "bentemple/decky-download-all" or "jessebofill/deckwebbrowser" => true,
+            "deckthemes/sdh-cssloader" => string.Equals(plugin.CatalogSource, "decky-store",
+                StringComparison.OrdinalIgnoreCase),
+            _ => false
+        });
+
+    private static List<DeckyPluginInfo> SelectFeaturedPlugins(PluginDiscoveryCategoryState state,
+        IReadOnlyList<DeckyPluginInfo> candidates)
+    {
+        var shuffled = OrderPluginDiscoveryCategory(state, candidates)
+            .DistinctBy(PluginStoreKey, StringComparer.OrdinalIgnoreCase).ToList();
+        var now = DateTimeOffset.UtcNow;
+        var newestAddition = shuffled.Where(plugin => plugin.IsPlayhubPlugin)
+            .Select(PluginCatalogAddedAt)
+            .Where(date => date > DateTimeOffset.MinValue && date <= now).Max();
+        // A shared catalog seed date does not distinguish a new addition.
+        var prioritizeNewest = newestAddition is not null && shuffled.Any(plugin =>
+            plugin.IsPlayhubPlugin && PluginCatalogAddedAt(plugin) != newestAddition);
+        bool IsNewest(DeckyPluginInfo plugin) => plugin.IsPlayhubPlugin &&
+            prioritizeNewest && PluginCatalogAddedAt(plugin) == newestAddition;
+        // Keep every curated external entry; only the Playhub pool is sampled.
+        var selected = shuffled.Where(plugin => plugin.IsPlayhubPlugin)
+            .OrderByDescending(IsNewest).Take(5)
+            .Concat(shuffled.Where(plugin => !plugin.IsPlayhubPlugin).Take(5))
+            .Select(PluginStoreKey).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return shuffled.Where(plugin => selected.Contains(PluginStoreKey(plugin)))
+            .OrderByDescending(IsNewest).ToList();
+    }
+
+    private static DateTimeOffset? PluginKeywordDate(DeckyPluginInfo plugin, string prefix)
+    {
+        foreach (var keyword in plugin.Keywords.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (!keyword.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
+            if (DateTimeOffset.TryParse(keyword[prefix.Length..], CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var addedAt))
+                return addedAt;
+        }
+        return null;
+    }
 
     private void OpenPluginCategory(string category)
     {
         PushPluginStoreHistory();
         CancelPluginSearch();
         _pluginCategoryFilter = category;
+        if (string.Equals(category, "Novità", StringComparison.OrdinalIgnoreCase))
+            _pluginAllSort = "added";
         _pluginShowAll = true;
         _pluginAllSource = "all";
         _suppressPluginSearchRender = true;

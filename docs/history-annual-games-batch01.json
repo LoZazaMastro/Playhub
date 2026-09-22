@@ -1,0 +1,167 @@
+[
+  {
+    "id": "half-life",
+    "kind": "game",
+    "topic": "Half-Life (video game)",
+    "related_topic": "Valve Corporation",
+    "title": {
+      "en": "The workplace after the world breaks",
+      "it": "Il posto di lavoro dopo la fine del mondo",
+      "de": "Der Arbeitsplatz nach dem Weltbruch",
+      "es": "El trabajo después de romperse el mundo",
+      "fr": "Le travail après la rupture du monde",
+      "pt": "O trabalho depois de o mundo se partir",
+      "ru": "Рабочее место после катастрофы",
+      "uk": "Робоче місце після катастрофи",
+      "ja": "世界が壊れた後の職場",
+      "ko": "세계가 무너진 뒤의 일터",
+      "zh": "世界崩壞後的工作場所",
+      "hi": "दुनिया टूटने के बाद का कार्यस्थल"
+    },
+    "intro": {
+      "en": "A research facility has routines before it has monsters: a commute, a locker and colleagues who expect someone to arrive. Valve’s Half-Life makes that ordinary organisation worth noticing before an experiment tears it apart. Following Gordon Freeman through Black Mesa means watching a workplace become an obstacle, a shelter and finally evidence of a disaster larger than any one room.",
+      "it": "Un centro di ricerca ha abitudini prima di avere mostri: un tragitto, un armadietto e colleghi che aspettano un arrivo. Half-Life di Valve rende visibile questa organizzazione ordinaria prima che un esperimento la sconvolga. Seguire Gordon Freeman attraverso Black Mesa significa osservare un luogo di lavoro diventare ostacolo, riparo e infine prova di un disastro più grande di qualsiasi stanza.",
+      "de": "Ein Forschungszentrum kennt zunächst Arbeitswege, Schränke und wartende Kollegen. Valves Half-Life lässt diese Ordnung sichtbar werden, bevor ein Experiment sie zerstört. Mit Gordon Freeman wird Black Mesa vom Arbeitsplatz zum Hindernis, Schutzraum und Zeugnis einer größeren Katastrophe.",
+      "es": "Un centro de investigación tiene trayectos, taquillas y compañeros antes de tener monstruos. Half-Life de Valve muestra esa organización antes de destruirla. Con Gordon Freeman, Black Mesa pasa de lugar de trabajo a obstáculo, refugio y prueba de una catástrofe mayor.",
+      "fr": "Un centre de recherche possède trajets, casiers et collègues avant d’avoir des monstres. Half-Life de Valve montre cette organisation avant de la détruire. Avec Gordon Freeman, Black Mesa devient obstacle, refuge et preuve d’une catastrophe dépassant chaque pièce.",
+      "pt": "Um centro de investigação tem percursos, cacifos e colegas antes de ter monstros. Half-Life da Valve mostra essa organização antes de a destruir. Com Gordon Freeman, Black Mesa passa de local de trabalho a obstáculo, abrigo e vestígio de uma catástrofe maior.",
+      "ru": "Исследовательский центр начинается с дороги на работу, шкафчика и ожидающих коллег. Half-Life от Valve показывает этот порядок до катастрофы. С Гордоном Фрименом Black Mesa превращается из рабочего места в препятствие, укрытие и свидетельство бедствия за пределами одной комнаты.",
+      "uk": "Дослідницький центр починається з дороги на роботу, шафки й колег, що чекають. Half-Life від Valve показує цей порядок до катастрофи. З Ґордоном Фріменом Black Mesa перетворюється з робочого місця на перешкоду, укриття та свідчення лиха поза межами однієї кімнати.",
+      "ja": "研究施設には怪物が現れる前から、通勤路、ロッカー、同僚を待つ人々がいます。ValveのHalf-Lifeは、実験が壊す日常の仕組みを先に見せます。ゴードン・フリーマンと進むブラックメサは、職場から障害物や避難場所へ変わり、一つの部屋を超える災害の証拠になります。",
+      "ko": "연구 시설에는 괴물이 나타나기 전부터 출근길과 사물함, 동료를 기다리는 사람들이 있습니다. Valve의 Half-Life는 실험이 파괴할 일상의 질서를 먼저 보여줍니다. 고든 프리먼과 지나는 블랙 메사는 일터에서 장애물과 피난처로 바뀌고 방 하나보다 큰 재난의 증거가 됩니다.",
+      "zh": "研究設施在有怪物之前，先有通勤路、置物櫃與等待同事的人。Valve的Half-Life先讓日常秩序被看見，再由實驗將它撕裂。跟著高登·弗里曼走過黑色高地，就是看職場化為障礙、庇護，以及超出任何單一房間的災難證據。",
+      "hi": "शोध केंद्र में राक्षसों से पहले दिनचर्या होती है: रास्ता, लॉकर और प्रतीक्षा करते सहकर्मी। Valve का Half-Life प्रयोग से टूटने से पहले यह व्यवस्था दिखाता है। गॉर्डन फ़्रीमैन के साथ Black Mesa कार्यस्थल से बाधा, शरण और बड़े हादसे का प्रमाण बनता है."
+    },
+    "chapters": [
+      {
+        "title": {
+          "en": "The tram is an observation deck",
+          "it": "Il tram è un osservatorio",
+          "de": "Die Bahn als Aussichtsplattform",
+          "es": "El tranvía es un mirador",
+          "fr": "Le tramway comme observatoire",
+          "pt": "O elétrico como observatório",
+          "ru": "Трамвай как наблюдательный пункт",
+          "uk": "Трамвай як спостережний пункт",
+          "ja": "観察台としてのトラム",
+          "ko": "관찰대가 되는 전차",
+          "zh": "電車就是觀景台",
+          "hi": "ट्राम एक अवलोकन मंच"
+        },
+        "body": {
+          "en": "The opening tram journey does not demand a heroic decision. It gives the player time to look through windows, notice machinery and infer the scale of an institution. Movement has already begun, but attention remains free: Black Mesa becomes credible through details that no mission objective requires us to inspect.",
+          "it": "Il viaggio iniziale in tram non pretende una decisione eroica. Lascia il tempo di guardare dai finestrini, notare i macchinari e intuire la scala di un’istituzione. Il movimento è già cominciato, ma l’attenzione resta libera: Black Mesa diventa credibile attraverso dettagli che nessun obiettivo obbliga a esaminare.",
+          "de": "Die erste Bahnfahrt verlangt keine Heldentat. Fenster und Maschinen vermitteln die Größe einer Institution, während der Blick frei bleibt. Glaubwürdig wird Black Mesa durch beiläufige Einzelheiten, die kein Missionsziel ausdrücklich zu untersuchen verlangt.",
+          "es": "El viaje inicial no pide heroísmo. Ventanas y maquinaria revelan la escala institucional mientras la mirada sigue libre. Black Mesa resulta creíble gracias a detalles secundarios que ningún objetivo exige examinar para poder continuar.",
+          "fr": "Le trajet initial ne demande aucun héroïsme. Fenêtres et machines révèlent l’échelle institutionnelle tandis que le regard reste libre. Black Mesa devient crédible par des détails secondaires qu’aucun objectif n’oblige à examiner pour avancer.",
+          "pt": "A viagem inicial não pede heroísmo. Janelas e máquinas revelam a escala institucional enquanto o olhar permanece livre. Black Mesa torna-se credível através de pormenores secundários que nenhum objetivo obriga a examinar para continuar.",
+          "ru": "Первая поездка не требует подвига. Окна и механизмы показывают масштаб учреждения, пока взгляд остаётся свободным. Black Mesa становится убедительной благодаря случайным подробностям, изучать которые не заставляет ни одна цель задания.",
+          "uk": "Перша поїздка не вимагає подвигу. Вікна й механізми показують масштаб установи, поки погляд залишається вільним. Black Mesa стає переконливою завдяки випадковим подробицям, вивчати які не змушує жодна мета завдання.",
+          "ja": "冒頭の乗車は英雄的な判断を求めません。窓や機械を見ながら施設の規模を感じられます。移動は始まっていても視線は自由です。任務に必要のない細部こそが、ブラックメサを実在しそうな場所にしています。",
+          "ko": "첫 승차는 영웅적인 판단을 요구하지 않습니다. 창문과 기계를 보며 시설의 규모를 느낄 수 있습니다. 이동은 시작됐지만 시선은 자유롭습니다. 임무가 살펴보라고 요구하지 않는 세부가 블랙 메사를 믿을 만한 장소로 만듭니다.",
+          "zh": "開場車程不要求英雄式決定。窗外與機械透露設施規模，視線仍能自由停留。黑色高地的可信感，來自沒有任何任務目標強迫我們觀察的細節。",
+          "hi": "शुरुआती यात्रा वीरता नहीं माँगती। खिड़कियाँ और मशीनें संस्था का पैमाना बताती हैं, जबकि नज़र स्वतंत्र रहती है। Black Mesa उन साधारण विवरणों से विश्वसनीय बनता है जिन्हें कोई मिशन देखने को नहीं कहता।"
+        },
+        "image_role": "game"
+      },
+      {
+        "title": {
+          "en": "A tool before an emblem",
+          "it": "Un attrezzo prima di un simbolo",
+          "de": "Ein Werkzeug vor dem Symbol",
+          "es": "Herramienta antes que emblema",
+          "fr": "Un outil avant l’emblème",
+          "pt": "Ferramenta antes de emblema",
+          "ru": "Инструмент прежде символа",
+          "uk": "Інструмент перед символом",
+          "ja": "象徴になる前の道具",
+          "ko": "상징이기 전에 도구",
+          "zh": "成為象徵之前的工具",
+          "hi": "प्रतीक से पहले औज़ार"
+        },
+        "body": {
+          "en": "The crowbar belongs naturally among maintenance passages and wooden crates. It can clear a route as well as strike a threat, connecting combat with the practical work of getting through a damaged building. Its familiarity matters: a recognisable tool becomes extraordinary because of the circumstances in which it must be used.",
+          "it": "Il piede di porco appartiene naturalmente a passaggi di servizio e casse di legno. Libera un percorso oltre a colpire una minaccia, collegando il combattimento al lavoro concreto di attraversare un edificio danneggiato. La familiarità conta: un attrezzo riconoscibile diventa straordinario per le circostanze in cui bisogna usarlo.",
+          "de": "Das Brecheisen passt zwischen Wartungsgänge und Kisten. Es öffnet Wege und bekämpft Gefahren, verbindet also Kampf mit praktischer Arbeit. Ein bekanntes Werkzeug wirkt außergewöhnlich, weil das beschädigte Gebäude seinen Einsatz unter ungewöhnlichen Bedingungen verlangt.",
+          "es": "La palanca pertenece a pasillos de mantenimiento y cajas. Abre caminos y combate amenazas, uniendo lucha y trabajo práctico. La herramienta familiar se vuelve extraordinaria porque el edificio dañado exige utilizarla bajo circunstancias inesperadas.",
+          "fr": "Le pied-de-biche appartient aux couloirs techniques et aux caisses. Il ouvre des chemins et combat des menaces, reliant lutte et travail pratique. L’outil familier devient extraordinaire parce que le bâtiment endommagé impose des circonstances inattendues.",
+          "pt": "O pé-de-cabra pertence aos corredores técnicos e às caixas. Abre caminhos e combate ameaças, ligando luta e trabalho prático. A ferramenta familiar torna-se extraordinária porque o edifício danificado exige utilizá-la em circunstâncias inesperadas.",
+          "ru": "Лом естественен среди служебных коридоров и ящиков. Он расчищает путь и отбивает угрозы, соединяя бой с практической работой. Знакомый инструмент становится необычным из-за обстоятельств, в которых повреждённое здание требует его применять.",
+          "uk": "Лом природний серед службових коридорів і ящиків. Він розчищає шлях і відбиває загрози, поєднуючи бій із практичною роботою. Знайомий інструмент стає незвичайним через обставини, у яких пошкоджена будівля вимагає його застосовувати.",
+          "ja": "バールは整備用の通路や木箱に似合う道具です。敵を打つだけでなく、進路も開きます。壊れた建物を通り抜ける作業と戦闘を結びつけ、見慣れた工具を、使わざるを得ない状況によって特別な物に変えます。",
+          "ko": "쇠지렛대는 정비 통로와 나무 상자에 어울리는 도구입니다. 적을 때리는 동시에 길을 열기도 합니다. 무너진 건물을 통과하는 작업과 전투를 연결하며 익숙한 공구를 사용해야 하는 상황 자체가 특별한 물건으로 바꿉니다.",
+          "zh": "鐵撬本來就屬於維修通道與木箱之間。它既能擊退威脅，也能清出道路，將戰鬥與穿越受損建築的實際工作相連。熟悉工具因不得不使用的情境而變得非凡。",
+          "hi": "क्राउबार रखरखाव के गलियारों और लकड़ी के बक्सों के बीच स्वाभाविक है। वह रास्ता खोलती और खतरा रोकती है। टूटे भवन में आगे बढ़ने का व्यावहारिक काम लड़ाई से जुड़ता है; परिस्थिति परिचित औज़ार को असाधारण बनाती है।"
+        },
+        "image_role": "game"
+      },
+      {
+        "title": {
+          "en": "The rescue that sounds wrong",
+          "it": "Il soccorso dal suono sbagliato",
+          "de": "Die Rettung klingt falsch",
+          "es": "El rescate que suena mal",
+          "fr": "Le secours qui sonne faux",
+          "pt": "O socorro que soa errado",
+          "ru": "Спасение звучит неверно",
+          "uk": "Порятунок звучить неправильно",
+          "ja": "救援の不穏な響き",
+          "ko": "구조의 불길한 소리",
+          "zh": "救援聽來不對勁",
+          "hi": "बचाव की गलत लगती आवाज़"
+        },
+        "body": {
+          "en": "Military radio chatter suggests organisation and purpose, but the arriving soldiers do not restore the laboratory’s lost safety. Human opponents change the shape of an encounter through movement, grenades and coordination. The sound of an organised response becomes unsettling when the player can no longer assume that authority means assistance.",
+          "it": "Le comunicazioni militari suggeriscono organizzazione e obiettivi, ma i soldati in arrivo non restituiscono al laboratorio la sicurezza perduta. Gli avversari umani cambiano gli incontri con movimento, granate e coordinamento. Il suono di una risposta organizzata inquieta quando non si può più presumere che autorità significhi aiuto.",
+          "de": "Militärfunk klingt organisiert, doch Soldaten bringen keine Sicherheit zurück. Bewegung, Granaten und Zusammenspiel verändern Begegnungen. Eine geordnete Reaktion wird beunruhigend, sobald wir nicht mehr voraussetzen können, dass Autorität dem Menschen im Labor helfen will.",
+          "es": "La radio militar sugiere orden, pero los soldados no devuelven seguridad. Movimiento, granadas y coordinación cambian los encuentros. Una respuesta organizada inquieta cuando ya no podemos suponer que la autoridad quiera ayudar a quien sigue dentro.",
+          "fr": "La radio militaire suggère l’ordre, mais les soldats ne rendent pas la sécurité. Déplacements, grenades et coordination modifient les rencontres. Une réponse organisée inquiète lorsque l’autorité ne peut plus être présumée secourable pour les personnes enfermées.",
+          "pt": "A rádio militar sugere ordem, mas os soldados não devolvem segurança. Movimento, granadas e coordenação alteram encontros. Uma resposta organizada inquieta quando já não podemos presumir que a autoridade pretende ajudar quem continua no laboratório.",
+          "ru": "Военная связь обещает порядок, но солдаты не возвращают безопасность. Движение, гранаты и координация меняют столкновения. Организованный ответ становится тревожным, когда уже нельзя предполагать, что власть намерена помочь человеку внутри лаборатории.",
+          "uk": "Військовий зв’язок обіцяє порядок, але солдати не повертають безпеку. Рух, гранати й координація змінюють зіткнення. Організована відповідь стає тривожною, коли вже не можна припускати, що влада збирається допомогти людині всередині лабораторії.",
+          "ja": "軍の無線は秩序を感じさせますが、兵士は安全を取り戻してくれません。移動や手榴弾、連携が対峙の形を変えます。権威が助けを意味するとは限らなくなったとき、組織的な対応の音は不安へ変わります。",
+          "ko": "군 무전은 질서를 느끼게 하지만 병사들은 안전을 되돌려주지 않습니다. 이동과 수류탄, 협력이 교전 형태를 바꿉니다. 권위가 도움을 뜻한다고 더 이상 가정할 수 없을 때 조직적 대응의 소리는 불안으로 바뀝니다.",
+          "zh": "軍事通訊暗示秩序，士兵卻沒有恢復安全。移動、手榴彈與協調改變交鋒方式。當權威不再必然代表援助，組織化反應的聲音就變得令人不安。",
+          "hi": "सैन्य रेडियो व्यवस्था का संकेत देता है, मगर सैनिक सुरक्षा नहीं लौटाते। चाल, ग्रेनेड और समन्वय मुठभेड़ बदलते हैं। संगठित प्रतिक्रिया बेचैन करती है जब अधिकार का अर्थ सहायता मानना संभव नहीं रहता।"
+        },
+        "image_role": "game"
+      },
+      {
+        "title": {
+          "en": "Concrete gives way to the unfamiliar",
+          "it": "Il cemento lascia posto all’ignoto",
+          "de": "Beton weicht dem Unbekannten",
+          "es": "El cemento cede ante lo desconocido",
+          "fr": "Le béton cède à l’inconnu",
+          "pt": "O betão cede ao desconhecido",
+          "ru": "Бетон уступает неизвестному",
+          "uk": "Бетон поступається невідомому",
+          "ja": "コンクリートの先の未知",
+          "ko": "콘크리트 너머의 미지",
+          "zh": "混凝土讓位給未知",
+          "hi": "कंक्रीट के बाद अपरिचित संसार"
+        },
+        "body": {
+          "en": "Xen replaces Black Mesa’s institutional surfaces with floating landforms and unfamiliar organic shapes. The change asks players to reconsider the spatial habits developed inside corridors and service shafts. Leaving the laboratory is not simply an exit into freedom: the journey crosses into a place whose distances must be learned again.",
+          "it": "Xen sostituisce le superfici istituzionali di Black Mesa con terre sospese e forme organiche sconosciute. Il cambiamento chiede di ripensare le abitudini spaziali imparate fra corridoi e condotti. Lasciare il laboratorio non è soltanto uscire verso la libertà: significa entrare in un luogo dalle distanze da imparare nuovamente.",
+          "de": "Xen ersetzt institutionelle Oberflächen durch schwebendes Gelände und fremde organische Formen. Gewohnheiten aus Gängen und Schächten reichen nicht mehr. Das Labor zu verlassen bedeutet keine einfache Befreiung, sondern neue Abstände und Bewegungsräume lernen zu müssen.",
+          "es": "Xen cambia superficies institucionales por terrenos flotantes y formas orgánicas extrañas. Los hábitos de pasillos y conductos dejan de bastar. Salir del laboratorio no equivale simplemente a liberarse: hay que aprender otras distancias y espacios.",
+          "fr": "Xen remplace les surfaces institutionnelles par des terrains flottants et des formes organiques étrangères. Les habitudes des couloirs ne suffisent plus. Quitter le laboratoire ne libère pas simplement : il faut apprendre de nouvelles distances et possibilités.",
+          "pt": "Xen troca superfícies institucionais por terrenos flutuantes e formas orgânicas estranhas. Os hábitos dos corredores deixam de bastar. Sair do laboratório não equivale simplesmente a libertar-se: é preciso aprender outras distâncias e espaços.",
+          "ru": "Xen сменяет поверхности учреждения парящими землями и чужими органическими формами. Привычек коридоров и шахт недостаточно. Покинуть лабораторию не значит просто освободиться: новые расстояния и возможности движения приходится учить заново.",
+          "uk": "Xen змінює поверхні установи ширяючими землями й чужими органічними формами. Звичок коридорів і шахт недостатньо. Покинути лабораторію не означає просто звільнитися: нові відстані та можливості руху доводиться вивчати заново.",
+          "ja": "Xenでは施設の壁面が、浮かぶ地形と見知らぬ有機的な形に変わります。廊下や縦穴で覚えた習慣は通用しません。研究所を出ることは単純な解放ではなく、距離と動き方を学び直す場所への移動です。",
+          "ko": "Xen에서는 시설의 벽면이 떠 있는 지형과 낯선 유기적 형태로 바뀝니다. 복도와 수직 통로에서 익힌 습관만으로는 부족합니다. 연구소를 나오는 것은 단순한 해방이 아니라 거리와 움직임을 다시 배우는 장소로의 이동입니다.",
+          "zh": "Xen以浮空地形與陌生有機形狀，取代研究設施的表面。走廊與管道裡養成的習慣不再足夠。離開實驗室不只是重獲自由，而是進入必須重新學習距離的地方。",
+          "hi": "Xen संस्थागत सतहों को तैरती ज़मीन और अपरिचित जैविक आकृतियों से बदलता है। गलियारों की आदतें पर्याप्त नहीं रहतीं। प्रयोगशाला छोड़ना केवल मुक्ति नहीं; नई दूरियाँ और चलने के तरीके फिर सीखने पड़ते हैं।"
+        },
+        "image_role": "game"
+      }
+    ],
+    "sources": [
+      "https://www.half-life.com/en/halflife/25th",
+      "https://www.half-life.com/en/home/",
+      "https://store.steampowered.com/app/70/HalfLife/"
+    ]
+  }
+]

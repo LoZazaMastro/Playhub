@@ -1,4 +1,20 @@
 {
+  "Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop.": "Ctrl + Alt + P で開くと、ウィンドウの切り替え、お気に入りアプリの管理、パフォーマンスや実行中のプロセスの確認ができます。デスクトップに戻らずに、応答しないアプリを終了することもできます。",
+  "Avvio": "起動",
+  "Passaggio alla Desktop Mode": "デスクトップモードへの切り替え",
+  "Passaggio alla Gaming Mode": "ゲーミングモードへの切り替え",
+  "Provalo ora": "プレビュー",
+  "Premi ESC o fai clic per tornare a Playhub": "ESC キーを押すかクリックすると Playhub に戻ります",
+  "Colore personalizzato": "カスタムカラー",
+  "Tonalita": "色相",
+  "Saturazione": "彩度",
+  "Livello di nero": "黒の量",
+  "Opacita": "不透明度",
+  "Impossibile aprire l'anteprima. Riprova.": "プレビューを開けませんでした。もう一度お試しください。",
+  "Animazione Gaming Mode": "Gaming Mode のアニメーション",
+  "All'avvio e durante il cambio modalita.": "起動時とモード切り替え時に表示します。",
+  "Attiva animazione": "アニメーションを有効にする",
+  "Il colore e indipendente dall'accent di Playhub.": "Playhub のアクセントカラーとは別に色を選べます。",
   "Aggiorna tutto": "すべて更新",
   "Aggiornamento Playhub": "Playhub の更新",
   "Aggiornamento in corso": "更新中",
@@ -185,5 +201,10 @@
   "Avvia ora in Gaming": "今すぐ Gaming Mode に切り替え",
   "Windows ha impedito la scrittura del file shortcuts di Steam. Consenti Playhub in Accesso alle cartelle controllato e riprova. ": "Windows が Steam の shortcuts ファイルへの書き込みをブロックしました。「コントロールされたフォルダー アクセス」で Playhub を許可して再試行してください。 ",
   "Apri lo store di Decky dal Quick Access Menu e scopri altri plugin.": "クイックアクセスメニューから Decky Store を開き、他のプラグインを探せます。",
-  "Inattività prima di nascondere il cursore.": "操作がない状態でカーソルを隠すまでの時間。"
+  "Inattività prima di nascondere il cursore.": "操作がない状態でカーソルを隠すまでの時間。",
+  "Installa Playhub per lo stile classico e Playhub (Big Image Mode) per la modalità Big Image di Steam.": "従来のレイアウトには Playhub、Steam の Big Image モードには Playhub (Big Image Mode) をインストールします。",
+  "Installa profili": "プロファイルをインストール",
+  "Rimuovi profili": "プロファイルを削除",
+  "Profili Playhub installati: Playhub e Playhub (Big Image Mode).": "Playhub と Playhub (Big Image Mode) のプロファイルをインストールしました。",
+  "Profili Playhub rimossi da CSS Loader.": "CSS Loader から Playhub のプロファイルを削除しました。"
 }

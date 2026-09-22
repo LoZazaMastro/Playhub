@@ -1,0 +1,541 @@
+{
+  "days": 365,
+  "unique_subjects": 365,
+  "repeated_subjects": {},
+  "image_failures": [
+    {
+      "date": "2026-01-05",
+      "subject": "Adventure",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-05",
+      "subject": "Adventure",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-07",
+      "subject": "Elite",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-07",
+      "subject": "Elite",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-08",
+      "subject": "Dragon Quest",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-08",
+      "subject": "Dragon Quest",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-09",
+      "subject": "The Oregon Trail",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-09",
+      "subject": "The Oregon Trail",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-10",
+      "subject": "Ultima IV: Quest of the Avatar",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-10",
+      "subject": "Ultima IV: Quest of the Avatar",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-11",
+      "subject": "Metroid",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-11",
+      "subject": "Metroid",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-12",
+      "subject": "Castlevania: Symphony of the Night",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-12",
+      "subject": "Castlevania: Symphony of the Night",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-16",
+      "subject": "Sid Meier’s Civilization",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-16",
+      "subject": "Sid Meier’s Civilization",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-21",
+      "subject": "Gran Turismo",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-21",
+      "subject": "Gran Turismo",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-22",
+      "subject": "WipEout",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-22",
+      "subject": "WipEout",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-23",
+      "subject": "Silent Hill",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-23",
+      "subject": "Silent Hill",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-29",
+      "subject": "Diablo",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-29",
+      "subject": "Diablo",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-30",
+      "subject": "StarCraft",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-30",
+      "subject": "StarCraft",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-31",
+      "subject": "Ultima Online",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-01-31",
+      "subject": "Ultima Online",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-01",
+      "subject": "Space Invaders",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-01",
+      "subject": "Space Invaders",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-03",
+      "subject": "Donkey Kong",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-03",
+      "subject": "Donkey Kong",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-05",
+      "subject": "Defender",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-05",
+      "subject": "Defender",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-06",
+      "subject": "Missile Command",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-06",
+      "subject": "Missile Command",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-07",
+      "subject": "Tempest",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-07",
+      "subject": "Tempest",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-09",
+      "subject": "Gauntlet",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-09",
+      "subject": "Gauntlet",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-10",
+      "subject": "Golden Axe",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-10",
+      "subject": "Golden Axe",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-13",
+      "subject": "Mortal Kombat",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-13",
+      "subject": "Mortal Kombat",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-15",
+      "subject": "Soulcalibur",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-15",
+      "subject": "Soulcalibur",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-17",
+      "subject": "Puyo Puyo",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-17",
+      "subject": "Puyo Puyo",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-18",
+      "subject": "Bomberman",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-18",
+      "subject": "Bomberman",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-19",
+      "subject": "Bubble Bobble",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-19",
+      "subject": "Bubble Bobble",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-20",
+      "subject": "Ghosts ’n Goblins",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-20",
+      "subject": "Ghosts ’n Goblins",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-22",
+      "subject": "Gradius",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-22",
+      "subject": "Gradius",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-23",
+      "subject": "R-Type",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-23",
+      "subject": "R-Type",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-28",
+      "subject": "Space Harrier",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-02-28",
+      "subject": "Space Harrier",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-04-27",
+      "subject": "Eric Barone",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-04-28",
+      "subject": "Team Cherry",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-05-03",
+      "subject": "The Sims",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-05-03",
+      "subject": "The Sims",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-05-04",
+      "subject": "World of Warcraft",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-05-04",
+      "subject": "World of Warcraft",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-08-10",
+      "subject": "L’accessibilità",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-04",
+      "subject": "Super Metroid",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-04",
+      "subject": "Super Metroid",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-05",
+      "subject": "EarthBound",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-08",
+      "subject": "Xenoblade Chronicles",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-08",
+      "subject": "Xenoblade Chronicles",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-11",
+      "subject": "Animal Crossing",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-12",
+      "subject": "Pikmin",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-12",
+      "subject": "Pikmin",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-14",
+      "subject": "Splatoon",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-14",
+      "subject": "Splatoon",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-15",
+      "subject": "Mario Kart",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-15",
+      "subject": "Mario Kart",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-16",
+      "subject": "Super Smash Bros. Melee",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-16",
+      "subject": "Super Smash Bros. Melee",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-18",
+      "subject": "Fire Emblem",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-18",
+      "subject": "Fire Emblem",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-19",
+      "subject": "Advance Wars",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-09-19",
+      "subject": "Advance Wars",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-10-06",
+      "subject": "Fatal Frame",
+      "chapter": 0,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-10-06",
+      "subject": "Fatal Frame",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-11-09",
+      "subject": "Rockstar Games",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    },
+    {
+      "date": "2026-11-28",
+      "subject": "I giochi a scuola",
+      "chapter": 1,
+      "problem": "no matching non-cover image"
+    }
+  ]
+}

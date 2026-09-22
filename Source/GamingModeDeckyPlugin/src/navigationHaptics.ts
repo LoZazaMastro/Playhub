@@ -1,5 +1,6 @@
 import { DFL } from "./decky";
 import { API_BASE } from "./api";
+import { modernHapticIntensity } from "./hapticIntensity";
 
 type HapticAction =
   | "moveUp" | "moveDown" | "moveLeft" | "moveRight"
@@ -38,6 +39,14 @@ const MODERN_HAPTIC_CONTROLLERS = new Set([10, 48]);
 const pending = new Set<number>();
 
 let config: NavigationHapticsConfig = { enabled: false, intensity: 55 };
+let configRevision = 0;
+const configListeners = new Set<() => void>();
+export const getNavigationHapticsConfig = () => config;
+export const getNavigationHapticsRevision = () => configRevision;
+export function subscribeNavigationHaptics(listener: () => void) {
+  configListeners.add(listener);
+  return () => { configListeners.delete(listener); };
+}
 let lastControllerIndex = 0;
 let nextSoundRequestId = 1;
 let nextSoundSerial = 1;
@@ -664,9 +673,19 @@ function modernPulse(index: number, side: number, kind: 1 | 2, scale: number) {
   const input = (window as any).SteamClient?.Input;
   const normalizedShape = Math.min(1, Math.max(0.03, scale));
   const soundShape = 0.18 + normalizedShape * 0.82;
-  const requestedAmplitude = Math.max(0.04, (config.intensity / 12.5) * soundShape);
-  const gain = Math.max(-12, Math.min(16, Math.round(1 + 20 * Math.log10(requestedAmplitude))));
-  input?.TriggerSimpleHapticEvent?.(index, side, kind, 2, gain);
+  const { level, gain, repeatGain } = modernHapticIntensity(config.intensity, soundShape);
+  input?.TriggerSimpleHapticEvent?.(index, side, kind, level, gain);
+  if (repeatGain !== null) {
+    const generation = waveformGeneration;
+    let timer = 0;
+    timer = later(() => {
+      waveformTimers.delete(timer);
+      if (generation === waveformGeneration && config.enabled && steamIsForeground()) {
+        input?.TriggerSimpleHapticEvent?.(index, side, kind, level, repeatGain);
+      }
+    }, 12);
+    waveformTimers.add(timer);
+  }
 }
 
 function browserRumble(index: number, side: number, scale: number, duration = 38): boolean {
@@ -786,10 +805,12 @@ export function playNavigationHaptic(action: HapticAction, controllerIndex?: num
 }
 
 export function configureNavigationHaptics(next: Partial<NavigationHapticsConfig>) {
+  configRevision += 1;
   config = {
     enabled: next.enabled ?? config.enabled,
     intensity: clampIntensity(next.intensity ?? config.intensity),
   };
+  configListeners.forEach((listener) => listener());
   if (!config.enabled) {
     soundRequests.forEach(discardSoundRequest);
     stopActiveHaptics();

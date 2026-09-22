@@ -1,0 +1,1384 @@
+{
+  "total": 153,
+  "updated": 153,
+  "errors": 0,
+  "results": [
+    {
+      "theme": "doom",
+      "file": "jul-dec-review-12-10-extra-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/doom-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/doom-02.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "doom",
+      "file": "jul-dec-review-12-10-extra-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/doom-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/doom-04.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "doom",
+      "file": "jul-dec-review-12-10-extra-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/doom-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/doom-05.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "doom",
+      "file": "jul-dec-review-12-10-extra-9.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/doom-10.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/doom-10.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-07-22-pulseman",
+      "file": "jul-dec-review-07-22-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/pulseman-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/pulseman-02.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-07-22-pulseman",
+      "file": "jul-dec-review-07-22-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/pulseman-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/pulseman-03.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-07-22-pulseman",
+      "file": "jul-dec-review-07-22-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/pulseman-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/pulseman-04.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-07-22-pulseman",
+      "file": "jul-dec-review-07-22-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/pulseman-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/pulseman-05.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-07-23-shinobi-iii-return-of-the-ninja-master",
+      "file": "jul-dec-review-07-23-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/shinobi-3-return-of-the-ninja-master-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/shinobi-3-return-of-the-ninja-master-02.webp",
+      "width": 950,
+      "height": 720
+    },
+    {
+      "theme": "workbook-07-23-shinobi-iii-return-of-the-ninja-master",
+      "file": "jul-dec-review-07-23-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/shinobi-3-return-of-the-ninja-master-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/shinobi-3-return-of-the-ninja-master-03.webp",
+      "width": 950,
+      "height": 720
+    },
+    {
+      "theme": "workbook-07-23-shinobi-iii-return-of-the-ninja-master",
+      "file": "jul-dec-review-07-23-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/shinobi-3-return-of-the-ninja-master-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/shinobi-3-return-of-the-ninja-master-05.webp",
+      "width": 950,
+      "height": 720
+    },
+    {
+      "theme": "workbook-07-23-shinobi-iii-return-of-the-ninja-master",
+      "file": "jul-dec-review-07-23-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/shinobi-3-return-of-the-ninja-master-06.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/shinobi-3-return-of-the-ninja-master-06.webp",
+      "width": 950,
+      "height": 720
+    },
+    {
+      "theme": "workbook-07-24-thunder-force-iv",
+      "file": "jul-dec-review-07-24-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/thunder-force-4-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/thunder-force-4-02.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-07-24-thunder-force-iv",
+      "file": "jul-dec-review-07-24-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/thunder-force-4-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/thunder-force-4-04.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-07-24-thunder-force-iv",
+      "file": "jul-dec-review-07-24-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/thunder-force-4-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/thunder-force-4-05.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-07-24-thunder-force-iv",
+      "file": "jul-dec-review-07-24-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/thunder-force-4-06.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/thunder-force-4-06.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-07-25-koei",
+      "file": "jul-dec-review-work-romance-of-the-three-kingdoms-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/romance-of-the-three-kingdoms-10.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/romance-of-the-three-kingdoms-10.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-07-27-dr-mario",
+      "file": "jul-dec-review-07-27-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/dr-mario-07.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/dr-mario-07.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-07-27-dr-mario",
+      "file": "jul-dec-review-07-27-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/dr-mario-08.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/dr-mario-08.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-07-27-dr-mario",
+      "file": "jul-dec-review-07-27-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/dr-mario-06.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/dr-mario-06.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-07-27-dr-mario",
+      "file": "jul-dec-review-07-27-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/dr-mario-10.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/dr-mario-10.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-07-28-lua",
+      "file": "jul-dec-review-11-23-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/world-of-warcraft-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/world-of-warcraft-04.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-07-29-policenauts",
+      "file": "jul-dec-review-07-29-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/policenauts-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/policenauts-02.webp",
+      "width": 900,
+      "height": 720
+    },
+    {
+      "theme": "workbook-07-29-policenauts",
+      "file": "jul-dec-review-07-29-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/policenauts-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/policenauts-03.webp",
+      "width": 900,
+      "height": 720
+    },
+    {
+      "theme": "workbook-07-29-policenauts",
+      "file": "jul-dec-review-07-29-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/policenauts-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/policenauts-04.webp",
+      "width": 900,
+      "height": 720
+    },
+    {
+      "theme": "workbook-07-29-policenauts",
+      "file": "jul-dec-review-07-29-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/policenauts-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/policenauts-05.webp",
+      "width": 900,
+      "height": 720
+    },
+    {
+      "theme": "workbook-07-31-tecmo",
+      "file": "jul-dec-review-work-ninja-gaiden-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/lynx/ninja-gaiden-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/lynx/ninja-gaiden-02.png",
+      "width": 644,
+      "height": 412
+    },
+    {
+      "theme": "workbook-07-31-tecmo",
+      "file": "jul-dec-review-work-ninja-gaiden-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/lynx/ninja-gaiden-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/lynx/ninja-gaiden-04.png",
+      "width": 644,
+      "height": 412
+    },
+    {
+      "theme": "workbook-08-02-streets-of-rage",
+      "file": "jul-dec-review-08-02-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/streets-of-rage-1-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/streets-of-rage-1-02.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-02-streets-of-rage",
+      "file": "jul-dec-review-08-02-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/streets-of-rage-1-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/streets-of-rage-1-03.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-02-streets-of-rage",
+      "file": "jul-dec-review-08-02-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/streets-of-rage-1-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/streets-of-rage-1-04.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-02-streets-of-rage",
+      "file": "jul-dec-review-08-02-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/streets-of-rage-1-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/streets-of-rage-1-05.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-05-super-mario-world-2-yoshi-s-island",
+      "file": "jul-dec-review-08-05-extra-6.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/snes/yoshis-island-07.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/snes/yoshis-island-07.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-05-super-mario-world-2-yoshi-s-island",
+      "file": "jul-dec-review-08-05-extra-9.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/snes/yoshis-island-10.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/snes/yoshis-island-10.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-05-super-mario-world-2-yoshi-s-island",
+      "file": "jul-dec-review-08-05-extra-11.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/snes/yoshis-island-12.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/snes/yoshis-island-12.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-05-super-mario-world-2-yoshi-s-island",
+      "file": "jul-dec-review-08-05-extra-14.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/snes/yoshis-island-15.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/snes/yoshis-island-15.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-06-metroid",
+      "file": "jul-dec-review-08-06-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/metroid-07.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/metroid-07.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-06-metroid",
+      "file": "jul-dec-review-08-06-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/metroid-08.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/metroid-08.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-06-metroid",
+      "file": "jul-dec-review-08-06-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/metroid-09.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/metroid-09.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-06-metroid",
+      "file": "jul-dec-review-08-06-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/metroid-10.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/metroid-10.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-10-shadow-of-the-ninja",
+      "file": "jul-dec-review-08-10-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/shadow-of-the-ninja-08.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/shadow-of-the-ninja-08.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-10-shadow-of-the-ninja",
+      "file": "jul-dec-review-08-10-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/shadow-of-the-ninja-09.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/shadow-of-the-ninja-09.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-10-shadow-of-the-ninja",
+      "file": "jul-dec-review-08-10-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/shadow-of-the-ninja-11.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/shadow-of-the-ninja-11.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-10-shadow-of-the-ninja",
+      "file": "jul-dec-review-08-10-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/shadow-of-the-ninja-12.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/shadow-of-the-ninja-12.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-13-gyromite",
+      "file": "jul-dec-review-08-13-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/gyromite-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/gyromite-05.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-13-gyromite",
+      "file": "jul-dec-review-08-13-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/gyromite-06.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/gyromite-06.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-13-gyromite",
+      "file": "jul-dec-review-08-13-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/gyromite-07.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/gyromite-07.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-13-gyromite",
+      "file": "jul-dec-review-08-13-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/gyromite-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/gyromite-04.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-08-14-hyrule-warriors",
+      "file": "jul-dec-review-08-14-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/hyrule-warriors-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/hyrule-warriors-02.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-08-14-hyrule-warriors",
+      "file": "jul-dec-review-08-14-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/hyrule-warriors-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/hyrule-warriors-03.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-08-14-hyrule-warriors",
+      "file": "jul-dec-review-08-14-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/hyrule-warriors-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/hyrule-warriors-04.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-08-14-hyrule-warriors",
+      "file": "jul-dec-review-08-14-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/hyrule-warriors-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/hyrule-warriors-05.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-08-15-starflight",
+      "file": "jul-dec-review-08-15-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/starflight-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/starflight-02.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-08-15-starflight",
+      "file": "jul-dec-review-08-15-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/starflight-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/starflight-03.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-08-15-starflight",
+      "file": "jul-dec-review-08-15-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/starflight-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/starflight-05.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-08-15-starflight",
+      "file": "jul-dec-review-08-15-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/starflight-01.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/starflight-01.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-08-30-astral-chain",
+      "file": "jul-dec-review-08-30-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/astral-chain-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/astral-chain-02.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-08-30-astral-chain",
+      "file": "jul-dec-review-08-30-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/astral-chain-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/astral-chain-03.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-08-30-astral-chain",
+      "file": "jul-dec-review-08-30-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/astral-chain-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/astral-chain-04.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-08-30-astral-chain",
+      "file": "jul-dec-review-08-30-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/astral-chain-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/astral-chain-05.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-09-13-super-mario-bros",
+      "file": "jul-dec-review-09-13-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-1-07.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-1-07.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-09-13-super-mario-bros",
+      "file": "jul-dec-review-09-13-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-1-08.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-1-08.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-09-13-super-mario-bros",
+      "file": "jul-dec-review-09-13-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-1-09.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-1-09.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-09-13-super-mario-bros",
+      "file": "jul-dec-review-09-13-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-1-10.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-1-10.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-09-13-super-mario-bros",
+      "file": "jul-dec-review-09-13-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-1-11.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-1-11.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-09-13-super-mario-bros",
+      "file": "jul-dec-review-09-13-retro-5.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-1-06.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-1-06.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-09-13-super-mario-bros",
+      "file": "jul-dec-review-09-13-retro-6.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-1-12.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-1-12.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-10-08-mortal-kombat",
+      "file": "jul-dec-review-10-08-final-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/mortal-kombat-1-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/mortal-kombat-1-02.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-10-08-mortal-kombat",
+      "file": "jul-dec-review-10-08-final-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/mortal-kombat-1-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/mortal-kombat-1-04.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-10-08-mortal-kombat",
+      "file": "jul-dec-review-10-08-final-6.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/mortal-kombat-1-07.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/mortal-kombat-1-07.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-10-22-grand-theft-auto-2",
+      "file": "jul-dec-review-10-22-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/dreamcast/grand-theft-auto-2-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/dreamcast/grand-theft-auto-2-02.png",
+      "width": 750,
+      "height": 500
+    },
+    {
+      "theme": "workbook-10-22-grand-theft-auto-2",
+      "file": "jul-dec-review-10-22-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/dreamcast/grand-theft-auto-2-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/dreamcast/grand-theft-auto-2-03.png",
+      "width": 750,
+      "height": 500
+    },
+    {
+      "theme": "workbook-10-22-grand-theft-auto-2",
+      "file": "jul-dec-review-10-22-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/dreamcast/grand-theft-auto-2-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/dreamcast/grand-theft-auto-2-04.png",
+      "width": 750,
+      "height": 500
+    },
+    {
+      "theme": "workbook-10-22-grand-theft-auto-2",
+      "file": "jul-dec-review-10-22-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/dreamcast/grand-theft-auto-2-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/dreamcast/grand-theft-auto-2-05.png",
+      "width": 750,
+      "height": 500
+    },
+    {
+      "theme": "workbook-10-23-super-mario-bros-3",
+      "file": "jul-dec-review-10-23-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-3-09.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-3-09.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-10-23-super-mario-bros-3",
+      "file": "jul-dec-review-10-23-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-3-10.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-3-10.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-10-23-super-mario-bros-3",
+      "file": "jul-dec-review-10-23-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-3-11.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-3-11.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-10-23-super-mario-bros-3",
+      "file": "jul-dec-review-10-23-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-3-08.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-3-08.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-10-23-super-mario-bros-3",
+      "file": "jul-dec-review-10-23-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-3-12.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-3-12.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-10-23-super-mario-bros-3",
+      "file": "jul-dec-review-10-23-retro-5.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-3-13.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-3-13.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-10-23-super-mario-bros-3",
+      "file": "jul-dec-review-10-23-retro-6.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/super-mario-bros-3-14.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/super-mario-bros-3-14.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-10-31-luigi-s-mansion-3",
+      "file": "jul-dec-review-10-31-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/luigis-mansion-3-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/luigis-mansion-3-02.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-10-31-luigi-s-mansion-3",
+      "file": "jul-dec-review-10-31-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/luigis-mansion-3-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/luigis-mansion-3-03.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-10-31-luigi-s-mansion-3",
+      "file": "jul-dec-review-10-31-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/luigis-mansion-3-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/luigis-mansion-3-04.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-10-31-luigi-s-mansion-3",
+      "file": "jul-dec-review-10-31-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/luigis-mansion-3-01.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/luigis-mansion-3-01.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-23-world-of-warcraft",
+      "file": "jul-dec-review-11-23-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/world-of-warcraft-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/world-of-warcraft-02.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-23-world-of-warcraft",
+      "file": "jul-dec-review-11-23-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/world-of-warcraft-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/world-of-warcraft-03.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-23-world-of-warcraft",
+      "file": "jul-dec-review-11-23-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/world-of-warcraft-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/world-of-warcraft-05.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-23-world-of-warcraft",
+      "file": "jul-dec-review-11-23-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/world-of-warcraft-06.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/world-of-warcraft-06.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-23-world-of-warcraft",
+      "file": "jul-dec-review-11-23-retro-5.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/world-of-warcraft-07.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/world-of-warcraft-07.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-23-world-of-warcraft",
+      "file": "jul-dec-review-11-23-retro-6.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/world-of-warcraft-01.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/world-of-warcraft-01.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-25-hironobu-sakaguchi",
+      "file": "jul-dec-review-work-the-last-story-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/the-last-story-01.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/the-last-story-01.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-24-sonic-the-hedgehog-2",
+      "file": "jul-dec-review-11-24-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/sonic-the-hedgehog-2-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/sonic-the-hedgehog-2-02.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-24-sonic-the-hedgehog-2",
+      "file": "jul-dec-review-11-24-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/sonic-the-hedgehog-2-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/sonic-the-hedgehog-2-03.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-24-sonic-the-hedgehog-2",
+      "file": "jul-dec-review-11-24-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/sonic-the-hedgehog-2-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/sonic-the-hedgehog-2-04.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-24-sonic-the-hedgehog-2",
+      "file": "jul-dec-review-11-24-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/sonic-the-hedgehog-2-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/sonic-the-hedgehog-2-05.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-24-sonic-the-hedgehog-2",
+      "file": "jul-dec-review-11-24-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/sonic-the-hedgehog-2-06.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/sonic-the-hedgehog-2-06.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-24-sonic-the-hedgehog-2",
+      "file": "jul-dec-review-11-24-retro-6.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/sonic-the-hedgehog-2-07.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/sonic-the-hedgehog-2-07.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-24-sonic-the-hedgehog-2",
+      "file": "jul-dec-review-11-24-retro-7.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/genesis/sonic-the-hedgehog-2-08.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/genesis/sonic-the-hedgehog-2-08.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-30-excitebike",
+      "file": "jul-dec-review-11-30-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/excitebike-07.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/excitebike-07.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-30-excitebike",
+      "file": "jul-dec-review-11-30-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/excitebike-08.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/excitebike-08.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-30-excitebike",
+      "file": "jul-dec-review-11-30-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/excitebike-09.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/excitebike-09.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-30-excitebike",
+      "file": "jul-dec-review-11-30-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/excitebike-10.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/excitebike-10.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-12-10-doom",
+      "file": "jul-dec-review-12-10-extra-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/doom-06.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/doom-06.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-12-10-doom",
+      "file": "jul-dec-review-12-10-extra-10.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/doom-11.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/doom-11.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-12-10-doom",
+      "file": "jul-dec-review-12-10-extra-15.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/doom-16.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/doom-16.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-12-11-angry-birds",
+      "file": "jul-dec-review-12-11-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/angry-birds-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/angry-birds-02.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-12-11-angry-birds",
+      "file": "jul-dec-review-12-11-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/angry-birds-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/angry-birds-03.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-12-11-angry-birds",
+      "file": "jul-dec-review-12-11-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/angry-birds-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/angry-birds-04.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-12-11-angry-birds",
+      "file": "jul-dec-review-12-11-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/angry-birds-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/angry-birds-05.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-12-12-yuzo-koshiro",
+      "file": "jul-dec-review-work-streets-of-rage-3-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/streets-of-rage-3-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/streets-of-rage-3-03.webp",
+      "width": 950,
+      "height": 720
+    },
+    {
+      "theme": "workbook-12-26-adventures-of-lolo-3",
+      "file": "jul-dec-review-12-26-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/adventures-of-lolo-3-06.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/adventures-of-lolo-3-06.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-12-26-adventures-of-lolo-3",
+      "file": "jul-dec-review-12-26-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/adventures-of-lolo-3-07.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/adventures-of-lolo-3-07.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-12-26-adventures-of-lolo-3",
+      "file": "jul-dec-review-12-26-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/adventures-of-lolo-3-08.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/adventures-of-lolo-3-08.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-12-26-adventures-of-lolo-3",
+      "file": "jul-dec-review-12-26-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/adventures-of-lolo-3-09.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/adventures-of-lolo-3-09.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-09-28-homeworld",
+      "file": "jul-dec-review-09-28-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/homeworld-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/homeworld-02.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-09-28-homeworld",
+      "file": "jul-dec-review-09-28-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/homeworld-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/homeworld-03.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-09-28-homeworld",
+      "file": "jul-dec-review-09-28-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/homeworld-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/homeworld-04.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-09-28-homeworld",
+      "file": "jul-dec-review-09-28-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/homeworld-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/homeworld-05.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-10-03-forza-motorsport-7",
+      "file": "jul-dec-review-10-03-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/forza-motorsport-7-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/forza-motorsport-7-02.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-10-03-forza-motorsport-7",
+      "file": "jul-dec-review-10-03-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/forza-motorsport-7-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/forza-motorsport-7-03.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-10-03-forza-motorsport-7",
+      "file": "jul-dec-review-10-03-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/forza-motorsport-7-01.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/forza-motorsport-7-01.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-10-03-forza-motorsport-7",
+      "file": "jul-dec-review-10-03-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/forza-motorsport-7-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/forza-motorsport-7-05.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-02-alex-kidd-in-miracle-world",
+      "file": "jul-dec-review-11-02-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/sms/alex-kidd-in-miracle-world-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/sms/alex-kidd-in-miracle-world-02.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-02-alex-kidd-in-miracle-world",
+      "file": "jul-dec-review-11-02-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/sms/alex-kidd-in-miracle-world-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/sms/alex-kidd-in-miracle-world-03.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-02-alex-kidd-in-miracle-world",
+      "file": "jul-dec-review-11-02-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/sms/alex-kidd-in-miracle-world-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/sms/alex-kidd-in-miracle-world-04.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-02-alex-kidd-in-miracle-world",
+      "file": "jul-dec-review-11-02-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/sms/alex-kidd-in-miracle-world-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/sms/alex-kidd-in-miracle-world-05.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-11-07-gears-of-war",
+      "file": "jul-dec-review-11-07-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/gears-of-war-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/gears-of-war-02.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-07-gears-of-war",
+      "file": "jul-dec-review-11-07-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/gears-of-war-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/gears-of-war-03.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-07-gears-of-war",
+      "file": "jul-dec-review-11-07-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/gears-of-war-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/gears-of-war-04.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-07-gears-of-war",
+      "file": "jul-dec-review-11-07-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/gears-of-war-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/gears-of-war-05.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-07-gears-of-war",
+      "file": "jul-dec-review-11-07-retro-4.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/gears-of-war-06.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/gears-of-war-06.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-07-gears-of-war",
+      "file": "jul-dec-review-11-07-retro-5.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/gears-of-war-01.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/gears-of-war-01.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-07-gears-of-war",
+      "file": "jul-dec-review-11-07-retro-6.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc/gears-of-war-07.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc/gears-of-war-07.webp",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-11-26-snatcher",
+      "file": "jul-dec-review-11-26-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc-engine/snatcher-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc-engine/snatcher-02.png",
+      "width": 750,
+      "height": 500
+    },
+    {
+      "theme": "workbook-11-26-snatcher",
+      "file": "jul-dec-review-11-26-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc-engine/snatcher-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc-engine/snatcher-03.png",
+      "width": 750,
+      "height": 500
+    },
+    {
+      "theme": "workbook-11-26-snatcher",
+      "file": "jul-dec-review-11-26-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc-engine/snatcher-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc-engine/snatcher-04.png",
+      "width": 750,
+      "height": 500
+    },
+    {
+      "theme": "workbook-11-26-snatcher",
+      "file": "jul-dec-review-11-26-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/pc-engine/snatcher-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/pc-engine/snatcher-05.png",
+      "width": 750,
+      "height": 500
+    },
+    {
+      "theme": "workbook-11-28-zanac",
+      "file": "jul-dec-review-11-28-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/zanac-08.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/zanac-08.png",
+      "width": 768,
+      "height": 694
+    },
+    {
+      "theme": "workbook-11-28-zanac",
+      "file": "jul-dec-review-11-28-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/zanac-09.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/zanac-09.png",
+      "width": 768,
+      "height": 694
+    },
+    {
+      "theme": "workbook-11-28-zanac",
+      "file": "jul-dec-review-11-28-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/zanac-10.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/zanac-10.png",
+      "width": 768,
+      "height": 694
+    },
+    {
+      "theme": "workbook-11-28-zanac",
+      "file": "jul-dec-review-11-28-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/zanac-11.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/zanac-11.png",
+      "width": 768,
+      "height": 694
+    },
+    {
+      "theme": "workbook-12-20-phantasy-star",
+      "file": "jul-dec-review-12-20-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/sms/phantasy-star-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/sms/phantasy-star-02.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-12-20-phantasy-star",
+      "file": "jul-dec-review-12-20-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/sms/phantasy-star-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/sms/phantasy-star-03.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-12-20-phantasy-star",
+      "file": "jul-dec-review-12-20-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/sms/phantasy-star-04.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/sms/phantasy-star-04.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-12-20-phantasy-star",
+      "file": "jul-dec-review-12-20-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/sms/phantasy-star-05.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/sms/phantasy-star-05.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-12-20-phantasy-star",
+      "file": "jul-dec-review-12-20-retro-5.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/sms/phantasy-star-06.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/sms/phantasy-star-06.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-12-19-kid-icarus",
+      "file": "jul-dec-review-12-19-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/kid-icarus-09.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/kid-icarus-09.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-12-19-kid-icarus",
+      "file": "jul-dec-review-12-19-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/kid-icarus-10.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/kid-icarus-10.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-12-19-kid-icarus",
+      "file": "jul-dec-review-12-19-retro-2.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/kid-icarus-11.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/kid-icarus-11.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-12-19-kid-icarus",
+      "file": "jul-dec-review-12-19-retro-3.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/nes/kid-icarus-12.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/nes/kid-icarus-12.png",
+      "width": 640,
+      "height": 480
+    },
+    {
+      "theme": "workbook-12-21-phantasy-star-online",
+      "file": "jul-dec-review-12-21-retro-0.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/xbox/phantasy-star-online-02.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/xbox/phantasy-star-online-02.png",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "theme": "workbook-12-21-phantasy-star-online",
+      "file": "jul-dec-review-12-21-retro-1.jpg",
+      "oldUrl": "https://gamefabrique.com/screenshots/xbox/phantasy-star-online-03.jpg",
+      "status": "updated",
+      "url": "https://gamefabrique.com/storage/screenshots/xbox/phantasy-star-online-03.png",
+      "width": 1280,
+      "height": 720
+    }
+  ]
+}
