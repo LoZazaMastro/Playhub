@@ -23,6 +23,8 @@ namespace Playhub.Models;
 // qui.
 public sealed class GamingModeConfig
 {
+    // Playhub is the only UI: the agent and its splash follow the app's language.
+    public string? Language { get; set; }
     public string DefaultMode { get; set; } = "Desktop";
     public string? NextBootMode { get; set; }
     public GamingOptions Gaming { get; set; } = new();
@@ -69,6 +71,13 @@ public sealed class GamingOptions
 
 public sealed class SplashOptions
 {
+    public bool AnimationEnabled { get; set; } = true;
+    public string AnimationColor { get; set; } = "#FFCB0F";
+    public double AnimationOpacity { get; set; } = 100;
+    public bool AnimationUseCustomColor { get; set; }
+    public double AnimationCustomHue { get; set; } = 47;
+    public double AnimationCustomSaturation { get; set; } = 94;
+    public double AnimationCustomBlackness { get; set; }
     public bool Enabled { get; set; } = true;
     public string? LogoPath { get; set; }
     public int MinVisibleMs { get; set; } = 1200;

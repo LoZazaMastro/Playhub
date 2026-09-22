@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "delivery": "source-only-not-wired-not-hardware-tested",
+  "sdk": {
+    "repository": "https://github.com/nefarius/ViGEmClient",
+    "revision": "b66d02d57e32cc8595369c53418b843e958649b4",
+    "license": "MIT",
+    "sourceHashes": {
+      "LICENSE": "445b3bccd103d39cab7e9b276dd966d60269cf5c44b4b8a118e48bc4c7c4f0db",
+      "include/ViGEm/Client.h": "a4bf0cc2ba588708218344fecf07b95bc4748b36c27d47f32bcde5d122180a48",
+      "include/ViGEm/Common.h": "766527c639a93f5fc0acfd1c873599f9e4a482e89c809a2192fa4d5c372f37bf"
+    }
+  },
+  "nativeRuntime": {
+    "path": null,
+    "sha256": null,
+    "distributionApproved": false,
+    "bundled": false,
+    "reason": "No audited native ViGEmClient DLL selected; HC managed assembly is not this ABI."
+  },
+  "capabilities": {
+    "xbox360SourceAdapter": true,
+    "liveVirtualOutputVerified": false,
+    "ds4SourceAdapter": true,
+    "authorizedRumbleSourceAdapter": true,
+    "rawMotion": false,
+    "dsu": false,
+    "exclusivePhysicalOwnership": false
+  }
+}

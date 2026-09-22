@@ -1,4 +1,20 @@
 {
+  "Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop.": "Ctrl + Alt + P로 열어 창을 전환하고, 즐겨찾는 앱을 관리하고, 성능과 실행 중인 프로세스를 확인하세요. 데스크톱으로 돌아가지 않고 응답하지 않는 앱을 종료할 수도 있습니다.",
+  "Avvio": "시작",
+  "Passaggio alla Desktop Mode": "데스크톱 모드로 전환",
+  "Passaggio alla Gaming Mode": "게이밍 모드로 전환",
+  "Provalo ora": "미리 보기",
+  "Premi ESC o fai clic per tornare a Playhub": "ESC 키를 누르거나 클릭하면 Playhub로 돌아갑니다",
+  "Colore personalizzato": "사용자 지정 색상",
+  "Tonalita": "색조",
+  "Saturazione": "채도",
+  "Livello di nero": "검정 수준",
+  "Opacita": "불투명도",
+  "Impossibile aprire l'anteprima. Riprova.": "미리 보기를 열 수 없습니다. 다시 시도해 주세요.",
+  "Animazione Gaming Mode": "Gaming Mode 애니메이션",
+  "All'avvio e durante il cambio modalita.": "시작 및 모드 전환 시 표시합니다.",
+  "Attiva animazione": "애니메이션 사용",
+  "Il colore e indipendente dall'accent di Playhub.": "Playhub 강조색과 별도로 색상을 선택합니다.",
   "Aggiorna tutto": "모두 업데이트",
   "Aggiornamento Playhub": "Playhub 업데이트",
   "Aggiornamento in corso": "업데이트 중",
@@ -188,5 +204,10 @@
   "Windows ha impedito la scrittura del file shortcuts di Steam. Consenti Playhub in Accesso alle cartelle controllato e riprova. ": "Windows가 Steam 바로가기 파일 쓰기를 차단했습니다. 제어된 폴더 액세스에서 Playhub를 허용한 뒤 다시 시도하세요. ",
   "Apri lo store di Decky dal Quick Access Menu e scopri altri plugin.": "빠른 액세스 메뉴에서 Decky Store를 열고 더 많은 플러그인을 찾아보세요.",
   "Apri Plugin Store": "플러그인 스토어 열기",
-  "Sto aggiornando i collegamenti e applicando gli artwork mancanti…": "게임 바로가기를 업데이트하고 누락된 아트워크를 적용하는 중…"
+  "Sto aggiornando i collegamenti e applicando gli artwork mancanti…": "게임 바로가기를 업데이트하고 누락된 아트워크를 적용하는 중…",
+  "Installa Playhub per lo stile classico e Playhub (Big Image Mode) per la modalità Big Image di Steam.": "기본 레이아웃용 Playhub와 Steam Big Image 모드용 Playhub (Big Image Mode)를 설치합니다.",
+  "Installa profili": "프로필 설치",
+  "Rimuovi profili": "프로필 제거",
+  "Profili Playhub installati: Playhub e Playhub (Big Image Mode).": "Playhub 및 Playhub (Big Image Mode) 프로필을 설치했습니다.",
+  "Profili Playhub rimossi da CSS Loader.": "CSS Loader에서 Playhub 프로필을 제거했습니다."
 }

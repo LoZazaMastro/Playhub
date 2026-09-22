@@ -108,6 +108,13 @@ public sealed class ProcessTools
 
 	private bool EnsureProcessCore(string? configuredPath, string[] fallbackPaths, string arguments, IReadOnlyDictionary<string, string>? environment, params string[] processNames)
 	{
+		if (processNames.Any(name => name.StartsWith("PluginLoader", StringComparison.OrdinalIgnoreCase)))
+			return Playhub.Shared.DeckyStartupGuard.RunExclusive(() => EnsureProcessUnlocked(configuredPath, fallbackPaths, arguments, environment, processNames));
+		return EnsureProcessUnlocked(configuredPath, fallbackPaths, arguments, environment, processNames);
+	}
+
+	private bool EnsureProcessUnlocked(string? configuredPath, string[] fallbackPaths, string arguments, IReadOnlyDictionary<string, string>? environment, params string[] processNames)
+	{
 		if (GetState(processNames).Running)
 		{
 			return true;
@@ -174,13 +181,17 @@ public sealed class ProcessTools
 				{
 					text3 = Path.GetDirectoryName(text) ?? Environment.CurrentDirectory;
 				}
+				// -WindowStyle Hidden only takes effect after PowerShell starts.
+				// Suppress console creation as well, avoiding the initial flash.
+				bool hiddenConsole = BackgroundProcessPolicy.IsHiddenPowerShell(text, item.Arguments);
 				Process.Start(new ProcessStartInfo
 				{
 					FileName = text,
 					Arguments = Environment.ExpandEnvironmentVariables(item.Arguments ?? ""),
 					WorkingDirectory = text3,
-					UseShellExecute = true,
-					WindowStyle = (item.StartMinimized ? ProcessWindowStyle.Minimized : ProcessWindowStyle.Normal)
+					UseShellExecute = !hiddenConsole,
+					CreateNoWindow = hiddenConsole,
+					WindowStyle = hiddenConsole ? ProcessWindowStyle.Hidden : (item.StartMinimized ? ProcessWindowStyle.Minimized : ProcessWindowStyle.Normal)
 				});
 				num++;
 				_logger.Info("Started custom gaming app " + DisplayName(item) + ".");
@@ -221,7 +232,9 @@ public sealed class ProcessTools
 		{
 			return true;
 		}
-		return EnsureProcess(configuredPath, fallbackPaths, BuildBigPictureArguments(arguments), "steam");
+		// EnsureProcess would report success just because Steam already exists,
+		// even though the request to enter Big Picture failed.
+		return false;
 	}
 
 	// Steam deve partire direttamente in Big Picture. Ci limitiamo a garantire
@@ -244,19 +257,34 @@ public sealed class ProcessTools
 
 	public bool StartExplorer()
 	{
-		if (GetState("explorer").Running)
+		try
+		{
+			int upgraded = Playhub.Shared.DeckyStartupGuard.UpgradeExistingAutostart();
+			if (upgraded > 0) _logger.Info($"Protected {upgraded} Decky startup entry/entries against duplicate launches.");
+		}
+		catch (Exception exception) { _logger.Error("Could not protect Decky autostart.", exception); }
+		if (IsExplorerShellRunning())
 		{
 			return true;
 		}
 		try
 		{
-			Process.Start(new ProcessStartInfo
+			using Process? explorer = Process.Start(new ProcessStartInfo
 			{
-				FileName = "explorer.exe",
+				FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"),
 				UseShellExecute = true
 			});
-			_logger.Info("Explorer started.");
-			return true;
+			for (int attempt = 0; attempt < 40; attempt++)
+			{
+				if (IsExplorerShellRunning())
+				{
+					_logger.Info("Explorer desktop shell is running.");
+					return true;
+				}
+				Thread.Sleep(100);
+			}
+			_logger.Error("Explorer launched but its desktop shell did not become ready.");
+			return false;
 		}
 		catch (Exception exception)
 		{
@@ -637,24 +665,81 @@ public sealed class ProcessTools
 		}
 	}
 
-	public void StopExplorer()
+	private static bool IsExplorerShellRunning()
 	{
-		Process[] processesByName = Process.GetProcessesByName("explorer");
-		foreach (Process process in processesByName)
+		nint shell = GetShellWindow();
+		if (shell == 0) return false;
+		GetWindowThreadProcessId(shell, out uint pid);
+		try
 		{
-			try
+			using Process process = Process.GetProcessById((int)pid);
+			using Process self = Process.GetCurrentProcess();
+			return process.SessionId == self.SessionId &&
+				process.ProcessName.Equals("explorer", StringComparison.OrdinalIgnoreCase);
+		}
+		catch { return false; }
+	}
+
+	public bool StopDeckyForDesktopTransition()
+	{
+		var session = Process.GetCurrentProcess().SessionId;
+		var processes = new[] { "PluginLoader", "PluginLoader_noconsole" }
+			.SelectMany(Process.GetProcessesByName).Where(process => process.SessionId == session).ToArray();
+		if (processes.Length == 0) return false;
+		try
+		{
+			foreach (var process in processes)
 			{
-				process.CloseMainWindow();
-				if (!process.WaitForExit(3000))
+				try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+				catch (InvalidOperationException) { }
+			}
+			foreach (var process in processes)
+			{
+				if (!process.WaitForExit(5000))
+					throw new InvalidOperationException("Decky did not stop; desktop transition cancelled to avoid a duplicate instance.");
+			}
+			return true;
+		}
+		finally { foreach (var process in processes) process.Dispose(); }
+	}
+
+	[DllImport("user32.dll")] private static extern nint GetShellWindow();
+	[DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(nint window, out uint processId);
+
+	public bool StopExplorer()
+	{
+		using Process self = Process.GetCurrentProcess();
+		int sessionId = self.SessionId;
+		// Verify a quiet interval as well as exit: Winlogon can respawn Explorer.
+		// Never alter persistent shell settings or kill another signed-in session.
+		int quietTicks = 0;
+		for (int attempt = 0; attempt < 20; attempt++)
+		{
+			bool found = false;
+			foreach (Process process in Process.GetProcessesByName("explorer"))
+			{
+				using (process)
 				{
-					process.Kill(entireProcessTree: false);
+					try
+					{
+						if (process.SessionId != sessionId || process.HasExited) continue;
+						found = true;
+						if (attempt == 0) process.CloseMainWindow();
+						else process.Kill(entireProcessTree: false);
+					}
+					catch (Exception exception)
+					{
+						found = true;
+						_logger.Error("Failed to stop an Explorer process.", exception);
+					}
 				}
 			}
-			catch (Exception exception)
-			{
-				_logger.Error($"Failed to stop Explorer process {process.Id}.", exception);
-			}
+			quietTicks = found ? 0 : quietTicks + 1;
+			if (quietTicks >= 5) return true;
+			Thread.Sleep(200);
 		}
+		_logger.Error("Explorer did not remain stopped; Gaming Mode cannot confirm the configured shell policy.");
+		return false;
 	}
 
 	private static ServiceQueryState QueryService(string serviceName)

@@ -67,6 +67,7 @@ for ($attempt = 0; $attempt -lt 40; $attempt++) {
 # Anche cosi' puo' capitare che un antivirus stia ancora leggendo i file
 # appena scritti: qualche tentativo, in silenzio, e solo alla fine si parla.
 $copied = $false
+$copyError = $null
 for ($attempt = 0; $attempt -lt 5; $attempt++) {
   try {
     Copy-Item -Path (Join-Path $SourceDir "*") -Destination $InstallDir -Recurse -Force -ErrorAction Stop
@@ -74,12 +75,17 @@ for ($attempt = 0; $attempt -lt 5; $attempt++) {
     break
   }
   catch {
+    # L'eccezione va conservata: senza di essa il messaggio finale indovinava
+    # la causa ("un altro programma tiene i file") anche quando il vero errore
+    # era un disco pieno o un permesso negato.
+    $copyError = $_
     Start-Sleep -Milliseconds 500
   }
 }
 
 if (-not $copied) {
-  Write-Error "Non sono riuscito ad aggiornare Gaming Mode: un altro programma sta tenendo aperti i suoi file. Chiudi Playhub e riprova."
+  $reason = if ($null -ne $copyError) { $copyError.Exception.Message } else { "causa sconosciuta" }
+  Write-Error ("Copia di Gaming Mode da '{0}' a '{1}' non riuscita: {2}" -f $SourceDir, $InstallDir, $reason)
   exit 1
 }
 

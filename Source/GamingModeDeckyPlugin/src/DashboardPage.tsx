@@ -1,5 +1,6 @@
 import { DFL, SP_REACT as React } from "./decky";
 import { createPortal } from "react-dom";
+import { findOverlayWindow, selectOverlay, waitForOverlay, OverlayIdentity } from "./dashboardOverlay";
 import {
   DashboardEnvironment,
   ProcessEntry,
@@ -24,10 +25,17 @@ import {
   releaseDashboardFocus,
   removeShortcut,
   renameShortcut,
+  setShortcutSdl3,
   restartDecky,
   restoreDashboardSourceFocus,
   switchOverlayWindow,
 } from "./api";
+import {
+  applyShortcutOrder,
+  moveShortcutTo,
+  readShortcutOrder,
+  writeShortcutOrder,
+} from "./shortcutOrder";
 import {
   FiActivity,
   FiCpu,
@@ -45,7 +53,7 @@ import {
 import { SiSteam } from "react-icons/si";
 
 const { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } = React;
-const { Focusable, GamepadButton, Navigation, TextField } = DFL as any;
+const { Focusable, GamepadButton, Navigation, TextField, ToggleField } = DFL as any;
 
 export const DASHBOARD_ROUTE = "/playhub-dashboard";
 
@@ -133,6 +141,10 @@ const DASHBOARD_CHROME_SELECTORS = [
 ];
 
 function dashboardDocuments(): Document[] {
+  if (dashboardOverlayGameId) {
+    const target = overlayDocument();
+    return target ? [target] : [];
+  }
   const documents: Document[] = [];
   const addDocument = (candidate: Document | null | undefined) => {
     try {
@@ -162,56 +174,58 @@ function dashboardDocuments(): Document[] {
 }
 
 let dashboardOverlayGameId = "";
+let dashboardOverlayIdentity: OverlayIdentity | null = null;
+let dashboardOverlayGeneration = 0;
+let dashboardOverlayRegistration: { unregister?: () => void } | undefined;
 
 function overlayDocument(): Document | null {
   const store = (DFL as any)?.Router?.WindowStore;
-  const candidates = [
-    ...(Array.isArray(store?.OverlayWindows) ? store.OverlayWindows : []),
-    ...(Array.isArray(store?.SteamUIWindows) ? store.SteamUIWindows : []),
-  ];
-  for (const candidate of candidates) {
-    try {
-      const browserWindow = candidate?.m_BrowserWindow ?? candidate?.BrowserWindow;
-      const targetDocument = browserWindow?.document as Document | undefined;
-      if (!targetDocument?.body || targetDocument === document) continue;
-      const title = `${targetDocument.title ?? ""}`;
-      const location = `${targetDocument.defaultView?.location?.href ?? ""}`;
-      if (/SP Overlay|GamepadUIOverlay|overlay/i.test(`${title} ${location}`)) return targetDocument;
-    } catch {}
-  }
-  return null;
+  const candidate = findOverlayWindow(store?.OverlayWindows, dashboardOverlayIdentity);
+  return (candidate?.BrowserWindow ?? candidate?.m_BrowserWindow)?.document ?? null;
 }
 
 export async function prepareDashboardOverlay(): Promise<boolean> {
+  closeDashboardOverlay();
+  const generation = dashboardOverlayGeneration;
   try {
-    const infos = await (window as any).SteamClient?.Overlay?.GetOverlayBrowserInfo?.();
-    const current = Array.isArray(infos)
-      ? infos.find((info: any) => Number(info?.appID ?? 0) > 0 && Number(info?.unPID ?? 0) > 0 && `${info?.gameID ?? ""}`)
-      : null;
-    dashboardOverlayGameId = current ? `${current.gameID}` : "";
-    if (!dashboardOverlayGameId) return false;
-
-    await (window as any).SteamClient?.Overlay?.SetOverlayState?.(dashboardOverlayGameId, 2);
-    const deadline = performance.now() + 1600;
-    while (performance.now() < deadline) {
-      if (overlayDocument()?.body) return true;
-      await new Promise((resolve) => window.setTimeout(resolve, 40));
-    }
-
-    try { await (window as any).SteamClient?.Overlay?.SetOverlayState?.(dashboardOverlayGameId, 0); } catch {}
-    dashboardOverlayGameId = "";
+    const overlay = (window as any).SteamClient?.Overlay;
+    if (typeof overlay?.SetOverlayState !== "function") return false;
+    const infos = await overlay.GetOverlayBrowserInfo?.();
+    if (generation !== dashboardOverlayGeneration) return false;
+    const current = selectOverlay(infos, Number((DFL as any)?.Router?.MainRunningAppID) || undefined);
+    if (!current) return false;
+    dashboardOverlayIdentity = current;
+    dashboardOverlayGameId = current.gameID;
+    // This is the same native activation signal Quick Settings observes to
+    // suspend its own Lossless Scaling capture. Do not duplicate its ownership.
+    dashboardOverlayRegistration = overlay.RegisterForOverlayActivated?.(
+      (pid: number, appId: number, active: boolean) => {
+        if (generation !== dashboardOverlayGeneration || Number(pid) !== current.unPID ||
+            Number(appId) !== current.appID || active) return;
+        closeDashboardOverlay(false);
+      });
+    await overlay.SetOverlayState(current.gameID, 2);
+    const target = await waitForOverlay(overlayDocument,
+      () => generation !== dashboardOverlayGeneration,
+      () => new Promise((resolve) => window.setTimeout(resolve, 40)));
+    if (target) return true;
+    if (generation === dashboardOverlayGeneration) closeDashboardOverlay();
     return false;
   } catch {
-    dashboardOverlayGameId = "";
+    if (generation === dashboardOverlayGeneration) closeDashboardOverlay();
     return false;
   }
 }
 
-export function closeDashboardOverlay(): void {
+export function closeDashboardOverlay(hide = true): void {
   const gameId = dashboardOverlayGameId;
+  dashboardOverlayGeneration++;
   dashboardOverlayGameId = "";
-  if (!gameId) return;
-  try { (window as any).SteamClient?.Overlay?.SetOverlayState?.(gameId, 0); } catch {}
+  dashboardOverlayIdentity = null;
+  try { dashboardOverlayRegistration?.unregister?.(); } catch {}
+  dashboardOverlayRegistration = undefined;
+  if (!gameId || !hide) return;
+  try { Promise.resolve((window as any).SteamClient?.Overlay?.SetOverlayState?.(gameId, 0)).catch(() => {}); } catch {}
 }
 
 export function markDashboardChrome(): void {
@@ -275,9 +289,11 @@ function activateDashboardSteamContext(): boolean {
       const browserWindow = steamWindow.m_BrowserWindow ?? steamWindow.BrowserWindow;
       if (!browserWindow?.document?.querySelector?.(".ph-dashboard")) continue;
       const context = steamWindow.m_FocusNavContext;
-      try { browserWindow.SteamClient?.Window?.MarkLastFocused?.(); } catch {}
-      try { browserWindow.SteamClient?.Window?.SetKeyFocus?.(true); } catch {}
-      try { browserWindow.focus?.(); } catch {}
+      if (!dashboardOverlayGameId) {
+        try { browserWindow.SteamClient?.Window?.MarkLastFocused?.(); } catch {}
+        try { browserWindow.SteamClient?.Window?.SetKeyFocus?.(true); } catch {}
+        try { browserWindow.focus?.(); } catch {}
+      }
       if (!context?.BIsActive?.()) context?.OnActivate?.(browserWindow);
       steamWindow.FocusApplicationRoot?.();
       return true;
@@ -501,6 +517,9 @@ interface ExtraCopy {
   rename: string;
   save: string;
   options: string;
+  sdl3?: string;
+  moveApp: string;
+  placeApp: string;
   network: string;
   disk: string;
   pid: string;
@@ -509,18 +528,18 @@ interface ExtraCopy {
 }
 
 const EXTRA_COPY: Record<string, ExtraCopy> = {
-  en: { rename: "Rename", save: "Save", options: "App options", network: "Network", disk: "Disk", pid: "PID", threads: "threads", protected: "Protected" },
-  it: { rename: "Rinomina", save: "Salva", options: "Opzioni app", network: "Rete", disk: "Disco", pid: "PID", threads: "thread", protected: "Protetto" },
-  es: { rename: "Renombrar", save: "Guardar", options: "Opciones de la app", network: "Red", disk: "Disco", pid: "PID", threads: "hilos", protected: "Protegido" },
-  fr: { rename: "Renommer", save: "Enregistrer", options: "Options de l'app", network: "Reseau", disk: "Disque", pid: "PID", threads: "threads", protected: "Protege" },
-  de: { rename: "Umbenennen", save: "Speichern", options: "App-Optionen", network: "Netzwerk", disk: "Datentrager", pid: "PID", threads: "Threads", protected: "Geschutzt" },
-  pt: { rename: "Mudar nome", save: "Guardar", options: "Opcoes da app", network: "Rede", disk: "Disco", pid: "PID", threads: "threads", protected: "Protegido" },
-  uk: { rename: "Перейменувати", save: "Зберегти", options: "Параметри програми", network: "Мережа", disk: "Диск", pid: "PID", threads: "потоків", protected: "Захищено" },
-  zh: { rename: "重命名", save: "保存", options: "应用选项", network: "网络", disk: "磁盘", pid: "PID", threads: "线程", protected: "受保护" },
-  ja: { rename: "名前を変更", save: "保存", options: "アプリのオプション", network: "ネットワーク", disk: "ディスク", pid: "PID", threads: "スレッド", protected: "保護対象" },
-  ko: { rename: "이름 바꾸기", save: "저장", options: "앱 옵션", network: "네트워크", disk: "디스크", pid: "PID", threads: "스레드", protected: "보호됨" },
-  hi: { rename: "नाम बदलें", save: "सहेजें", options: "ऐप विकल्प", network: "नेटवर्क", disk: "डिस्क", pid: "PID", threads: "थ्रेड", protected: "सुरक्षित" },
-  ru: { rename: "Переименовать", save: "Сохранить", options: "Параметры приложения", network: "Сеть", disk: "Диск", pid: "PID", threads: "потоков", protected: "Защищено" },
+  en: { rename: "Rename", save: "Save", options: "App options", sdl3: "SDL3 native controller", moveApp: "Move app", placeApp: "Confirm position", network: "Network", disk: "Disk", pid: "PID", threads: "threads", protected: "Protected" },
+  it: { rename: "Rinomina", save: "Salva", options: "Opzioni app", sdl3: "Controller nativo SDL3", moveApp: "Sposta app", placeApp: "Conferma posizione", network: "Rete", disk: "Disco", pid: "PID", threads: "thread", protected: "Protetto" },
+  es: { rename: "Renombrar", save: "Guardar", options: "Opciones de la app", moveApp: "Mover app", placeApp: "Confirmar posición", network: "Red", disk: "Disco", pid: "PID", threads: "hilos", protected: "Protegido" },
+  fr: { rename: "Renommer", save: "Enregistrer", options: "Options de l'app", moveApp: "Déplacer l'app", placeApp: "Confirmer la position", network: "Reseau", disk: "Disque", pid: "PID", threads: "threads", protected: "Protege" },
+  de: { rename: "Umbenennen", save: "Speichern", options: "App-Optionen", moveApp: "App verschieben", placeApp: "Position bestätigen", network: "Netzwerk", disk: "Datentrager", pid: "PID", threads: "Threads", protected: "Geschutzt" },
+  pt: { rename: "Mudar nome", save: "Guardar", options: "Opcoes da app", moveApp: "Mover app", placeApp: "Confirmar posição", network: "Rede", disk: "Disco", pid: "PID", threads: "threads", protected: "Protegido" },
+  uk: { rename: "Перейменувати", save: "Зберегти", options: "Параметри програми", moveApp: "Перемістити застосунок", placeApp: "Підтвердити позицію", network: "Мережа", disk: "Диск", pid: "PID", threads: "потоків", protected: "Захищено" },
+  zh: { rename: "重命名", save: "保存", options: "应用选项", moveApp: "移动应用", placeApp: "确认位置", network: "网络", disk: "磁盘", pid: "PID", threads: "线程", protected: "受保护" },
+  ja: { rename: "名前を変更", save: "保存", options: "アプリのオプション", moveApp: "アプリを移動", placeApp: "位置を確定", network: "ネットワーク", disk: "ディスク", pid: "PID", threads: "スレッド", protected: "保護対象" },
+  ko: { rename: "이름 바꾸기", save: "저장", options: "앱 옵션", moveApp: "앱 이동", placeApp: "위치 확정", network: "네트워크", disk: "디스크", pid: "PID", threads: "스레드", protected: "보호됨" },
+  hi: { rename: "नाम बदलें", save: "सहेजें", options: "ऐप विकल्प", moveApp: "ऐप ले जाएं", placeApp: "स्थान तय करें", network: "नेटवर्क", disk: "डिस्क", pid: "PID", threads: "थ्रेड", protected: "सुरक्षित" },
+  ru: { rename: "Переименовать", save: "Сохранить", options: "Параметры приложения", moveApp: "Переместить приложение", placeApp: "Подтвердить позицию", network: "Сеть", disk: "Диск", pid: "PID", threads: "потоков", protected: "Защищено" },
 };
 
 const STYLE = `
@@ -547,21 +566,25 @@ const STYLE = `
   .ph-clock { justify-self: end; display: flex; align-items: baseline; justify-content: flex-end; gap: 12px; color: rgba(255,255,255,.82); white-space: nowrap; }
   .ph-clock-date { font-size: 16px; font-weight: 520; opacity: .72; }
   .ph-clock-time { font-size: 21px; font-weight: 650; }
-  .ph-main { height: calc(100% - 108px); padding: 10px 54px 82px; overflow: hidden; }
+  .ph-main { height: calc(100% - 108px); padding: 10px 54px var(--ph-footer, 64px); overflow: hidden; }
   .ph-system-focus-bridge { position: absolute; z-index: -1; top: 106px; left: 34%; right: 34%; height: 3px; opacity: .001; overflow: hidden; }
   .ph-page { height: 100%; animation: phPageIn 260ms cubic-bezier(.2,.8,.2,1); }
-  .ph-page-scroll { height: 100%; overflow-y: auto; overflow-x: hidden; padding: 12px 7px 112px; scroll-padding-block: 12px 112px; scrollbar-width: none; }
+  .ph-page-scroll { height: 100%; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 12px 7px 24px; scroll-padding-block: 12px 24px; scrollbar-width: none; }
+  .ph-app-library { display:flex; flex-direction:column; min-height:0; padding:12px 7px 8px; }
+  .ph-app-library .ph-toolbar { flex:none; }
+  .ph-app-grid-viewport { flex:1; min-height:0; overflow:hidden; }
+  .ph-app-library .ph-grid { min-height:0; overflow-y:auto; height:100%; position:relative; align-content:start; padding:14px 12px; scroll-padding:14px 12px; scrollbar-width:none; }
   .ph-page-scroll::-webkit-scrollbar, .ph-window-rail::-webkit-scrollbar { display: none; }
   .ph-section-title { display: flex; align-items: center; gap: 13px; margin: 4px 0 15px 8px; font-size: 27px; font-weight: 720; }
   .ph-section-title svg { width: 26px; height: 26px; opacity: .9; }
-  .ph-switcher-page { height: 100%; }
-  .ph-window-rail { height: 100%; min-width: 0; display: flex; align-items: center; gap: 24px; overflow-x: auto; overflow-y: hidden; padding: 24px 8px 42px; scrollbar-width: none; scroll-padding-inline: 8px; contain: layout paint; }
+  .ph-switcher-page { height: 100%; margin-inline: -54px; width: calc(100% + 108px); }
+  .ph-window-rail { height: 100%; min-width: 0; display: flex; align-items: center; gap: 24px; overflow-x: auto; overflow-y: hidden; padding: 24px 54px 42px; scrollbar-width: none; scroll-padding-inline: 54px; contain: layout paint; }
   .ph-window-rail.ph-single { justify-content: center; }
   .ph-window-card { position: relative; flex: 0 0 clamp(250px, 20vw, 380px); min-width: 0; display: flex; flex-direction: column; color: #fff; border-radius: 30px; transition: flex-basis 260ms cubic-bezier(.2,.82,.2,1), transform 220ms cubic-bezier(.2,.82,.2,1), opacity 170ms ease; animation: phReveal 300ms both; outline: none; transform-origin: center center; }
-  .ph-window-card.ph-edge-clipped:not(.ph-focus):not(:focus) { opacity: 0 !important; pointer-events: none; }
   .ph-window-card.ph-focus, .ph-window-card:focus { flex-basis: clamp(560px, 43vw, 820px); transform: translate3d(0,-7px,0); z-index: 2; }
   .ph-window-title { height: 56px; display: flex; align-items: center; gap: 13px; padding: 0 10px 10px; font-size: 23px; font-weight: 650; text-shadow: 0 2px 12px rgba(0,0,0,.45); }
-  .ph-window-title span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ph-window-title span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size:18px; transition:font-size 260ms cubic-bezier(.2,.82,.2,1); }
+  .ph-window-card.ph-focus .ph-window-title span, .ph-window-card:focus .ph-window-title span { font-size:23px; }
   .ph-app-icon { width: 34px; height: 34px; flex: 0 0 auto; padding: 0; object-fit: contain; background: transparent; box-shadow: none; }
   .ph-window-frame { position: relative; width: 100%; aspect-ratio: 920 / 430; overflow: hidden; border-radius: 29px; clip-path: inset(0 round 29px); background: rgba(10,12,17,.72); border: 1px solid rgba(255,255,255,.2); box-shadow: inset 0 1px rgba(255,255,255,.09), 0 18px 36px rgba(0,0,0,.24); transition: border-color 170ms ease, box-shadow 170ms ease; }
   .ph-window-card.ph-focus .ph-window-frame, .ph-window-card:focus .ph-window-frame { border-color: rgba(255,255,255,.96); box-shadow: 0 0 0 4px rgba(255,255,255,.9), 0 26px 56px rgba(0,0,0,.32), 0 0 38px rgba(230,238,255,.22); }
@@ -569,6 +592,8 @@ const STYLE = `
   .ph-window-placeholder { width: 100%; height: 100%; display: grid; place-items: center; background: linear-gradient(145deg, rgba(255,255,255,.12), rgba(5,8,14,.5)); }
   .ph-window-placeholder img { width: 104px; height: 104px; object-fit: contain; }
   .ph-window-placeholder svg { width: 80px; height: 80px; opacity: .68; }
+  .ph-window-placeholder img,.ph-window-placeholder svg { transform:scale(.5); transition:transform 260ms cubic-bezier(.2,.82,.2,1); }
+  .ph-window-card.ph-focus .ph-window-placeholder img,.ph-window-card:focus .ph-window-placeholder img,.ph-window-card.ph-focus .ph-window-placeholder svg,.ph-window-card:focus .ph-window-placeholder svg { transform:scale(1); }
   .ph-window-meta { position: absolute; right: 17px; bottom: 15px; padding: 7px 11px; border-radius: 14px; color: rgba(255,255,255,.8); font-size: 14px; background: rgba(5,7,11,.62); }
   .ph-live-dot { width: 8px; height: 8px; border-radius: 50%; background: #71e2a5; box-shadow: 0 0 12px rgba(113,226,165,.75); }
   .ph-empty { height: 70%; display: grid; place-items: center; text-align: center; }
@@ -576,9 +601,10 @@ const STYLE = `
   .ph-empty svg { width: 60px; height: 60px; opacity: .7; margin-bottom: 15px; }
   .ph-empty-title { font-size: 30px; font-weight: 720; margin-bottom: 8px; }
   .ph-muted { color: rgba(255,255,255,.62); line-height: 1.42; }
-  .ph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(154px, 1fr)); gap: 18px; padding: 9px 8px 42px; }
+  .ph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(154px, 1fr)); gap: 18px; padding: 9px 8px 18px; }
   .ph-app-tile { height: 176px; padding: 20px 14px 14px; border-radius: 25px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px; color: #fff; background: rgba(12,15,21,.45); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 12px 26px rgba(0,0,0,.14); transition: transform 170ms ease, background 170ms ease, box-shadow 170ms ease; }
   .ph-app-tile.ph-focus, .ph-app-tile:focus { transform: translate3d(0,-5px,0) scale(1.035); background: rgba(245,248,255,.93); color: #12151a; box-shadow: 0 0 0 4px rgba(255,255,255,.9), 0 24px 42px rgba(0,0,0,.26); }
+  .ph-app-tile.ph-moving, .ph-app-tile.ph-moving.ph-focus, .ph-app-tile.ph-moving:focus { transform: translate3d(0,-8px,0) scale(1.055); background: #fff; color: #101318; box-shadow: 0 0 0 5px rgba(255,255,255,.96), 0 30px 54px rgba(0,0,0,.34); animation: none !important; z-index: 3; }
   .ph-app-tile img { width: 72px; height: 72px; object-fit: contain; background: transparent; }
   .ph-app-tile svg { width: 52px; height: 52px; }
   .ph-app-name { width: 100%; min-height: 25px; padding: 1px 2px 3px; text-align: center; font-size: 17px; line-height: 1.24; font-weight: 620; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -615,7 +641,8 @@ const STYLE = `
   .ph-state-dot.ph-online { background: #4dde8d; box-shadow: 0 0 12px rgba(77,222,141,.65); }
   .ph-metric { min-height: 128px; }
   .ph-metric-value { margin-top: 19px; font-size: 33px; font-weight: 710; }
-  .ph-system-stack { height: 100%; display: flex; flex-direction: column; gap: 14px; }
+  .ph-system-page { padding-block:8px; --ph-process-row-height:57px; }
+  .ph-system-stack { height: 100%; min-height:0; display: flex; flex-direction: column; gap: 14px; }
   .ph-metrics-rail { flex: 0 0 158px; display: flex; gap: 13px; padding: 7px 7px 11px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; scroll-snap-type: x mandatory; scroll-padding-inline: 7px; contain: paint; }
   .ph-metrics-rail::-webkit-scrollbar { display: none; }
   .ph-history-card { flex: 0 0 calc((100% - 52px) / 5); height: 140px; padding: 16px 17px 12px; border-radius: 23px; color: #fff; background: rgba(13,16,22,.44); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 12px 28px rgba(0,0,0,.14); scroll-snap-align: start; scroll-snap-stop: always; transition: transform 170ms ease, background 170ms ease, box-shadow 170ms ease; }
@@ -626,11 +653,14 @@ const STYLE = `
   .ph-history-chart polyline { fill: none; stroke: #8ec5ff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 5px rgba(142,197,255,.34)); }
   .ph-history-detail { margin-top: 3px; color: rgba(255,255,255,.49); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ph-system-lower { min-height: 0; flex: 1 1 auto; }
-  .ph-process-panel { min-height: 0; padding: 18px; overflow: visible; }
+  .ph-process-panel { height:100%; min-height: 0; padding: 18px; overflow: hidden; display:flex; flex-direction:column; }
   .ph-process-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 4px 10px; }
-  .ph-process-list { max-height: 292px; padding: 4px; overflow-y: auto; overflow-x: visible; scrollbar-width: none; }
+  .ph-process-heading { flex:none; }
+  .ph-system-page .ph-system-lower { flex:1 1 auto; min-height:0; display:flex; }
+  .ph-system-page .ph-process-panel { flex:1 1 auto; height:100%; }
+  .ph-process-list { flex:1 1 auto; height:auto; min-height:0; padding:4px; overflow-y:auto; overflow-x:hidden; scroll-padding-block:4px; scrollbar-width:none; }
   .ph-process-list::-webkit-scrollbar { display: none; }
-  .ph-process-row { min-height: 57px; margin: 0 1px 3px; padding: 9px 13px; border-radius: 16px; display: grid; grid-template-columns: minmax(160px,1fr) 90px 90px; align-items: center; gap: 12px; color: #fff; }
+  .ph-process-row { height:var(--ph-process-row-height, 57px); min-height:var(--ph-process-row-height, 57px); margin:0 1px 4px; padding:9px 13px; border-radius:16px; display:grid; grid-template-columns:minmax(160px,1fr) 90px 90px; align-items:center; gap:12px; color:#fff; }
   .ph-process-row.ph-focus, .ph-process-row:focus { color: #12151a; background: rgba(248,250,255,.94); box-shadow: 0 0 0 3px rgba(255,255,255,.78); }
   .ph-process-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 620; }
   .ph-process-stat { text-align: right; opacity: .68; }
@@ -654,12 +684,29 @@ const STYLE = `
   @media (max-width: 1180px) {
     .ph-header { grid-template-columns: 170px minmax(560px,1fr) 150px; padding-left: 34px; padding-right: 34px; }
     .ph-main { padding-left: 34px; padding-right: 34px; }
+    .ph-switcher-page { margin-inline:-34px; width:calc(100% + 68px); } .ph-window-rail { padding-inline:34px; scroll-padding-inline:34px; }
     .ph-tab { font-size: 15px; gap: 6px; } .ph-window-card { flex-basis: clamp(230px, 19vw, 320px); } .ph-window-card.ph-focus, .ph-window-card:focus { flex-basis: clamp(520px, 44vw, 690px); }
   }
   @media (max-height: 760px) {
-    .ph-header { height: 92px; padding-top: 22px; } .ph-main { height: calc(100% - 92px); padding-top: 2px; padding-bottom: 82px; }
+    .ph-header { height: 92px; padding-top: 22px; } .ph-main { height: calc(100% - 92px); padding-top: 2px; padding-bottom: var(--ph-footer, 64px); }
     .ph-window-card { flex-basis: clamp(220px, 19vw, 310px); } .ph-window-card.ph-focus, .ph-window-card:focus { flex-basis: clamp(480px, 42vw, 660px); }
     .ph-tile { min-height: 122px; padding: 19px; } .ph-grid { gap: 14px; } .ph-app-tile { height: 150px; }
+    .ph-system-page { --ph-process-row-height:52px; }
+    .ph-system-page .ph-metrics-rail { flex-basis:128px; }
+    .ph-system-page .ph-history-card { height:110px; padding-top:10px; }
+    .ph-system-page .ph-history-chart { height:26px; }
+    .ph-system-page .ph-history-value { font-size:22px; }
+  }
+  @media (max-height: 640px) {
+    .ph-system-page { --ph-process-row-height:40px; }
+    .ph-system-page .ph-system-stack { gap:8px; }
+    .ph-system-page .ph-metrics-rail { flex-basis:104px; }
+    .ph-system-page .ph-history-card { height:86px; padding:6px 12px; }
+    .ph-system-page .ph-history-chart { height:18px; margin-top:2px; }
+    .ph-system-page .ph-history-detail { margin-top:0; }
+    .ph-system-page .ph-process-panel { padding:10px; }
+    .ph-system-page .ph-process-heading { padding-bottom:6px; }
+    .ph-system-page .ph-process-row { padding-block:5px; }
   }
   @media (prefers-reduced-motion: reduce) { .ph-dashboard *, .ph-dashboard::before { animation: none !important; transition-duration: 1ms !important; } }
 `;
@@ -739,7 +786,57 @@ function gridDirectionFromGamepad(button: unknown): GridDirection | null {
   return null;
 }
 
-const gridFocusMoveState = new WeakMap<HTMLElement, { at: number; direction: GridDirection }>();
+const railAnimations = new WeakMap<HTMLElement, number>();
+
+function alignExpandingWindow(item: HTMLElement, rail: HTMLElement) {
+  const previous = railAnimations.get(rail);
+  if (previous) cancelAnimationFrame(previous);
+  const cards = Array.from(rail.querySelectorAll<HTMLElement>(".ph-window-card"));
+  const index = cards.indexOf(item);
+  if (index < 0 || cards.length < 2) return;
+  // Measure final CSS sizes without disturbing the cards currently animating.
+  const probe = document.createElement("div");
+  probe.className = "ph-window-card";
+  probe.style.cssText = "position:absolute;visibility:hidden;transition:none;animation:none;pointer-events:none";
+  rail.appendChild(probe);
+  const measure = () => {
+    probe.style.width = getComputedStyle(probe).flexBasis;
+    return probe.getBoundingClientRect().width;
+  };
+  const collapsed = measure();
+  probe.classList.add("ph-focus");
+  const expanded = measure();
+  probe.remove();
+  const style = getComputedStyle(rail);
+  const padding = parseFloat(style.paddingLeft) || 0;
+  const gap = parseFloat(style.columnGap) || 0;
+  const left = padding + index * (collapsed + gap);
+  const start = rail.scrollLeft;
+  const inset = Math.min(padding, 24);
+  const max = Math.max(0, padding + (parseFloat(style.paddingRight) || 0)
+    + (cards.length - 1) * (collapsed + gap) + expanded - rail.clientWidth);
+  const destination = Math.max(0, Math.min(max,
+    left < start + inset ? left - inset
+      : left + expanded > start + rail.clientWidth - inset
+        ? left + expanded - rail.clientWidth + inset : start));
+  const started = performance.now();
+  const duration = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 260;
+  const curve = (t: number, a: number, b: number) => 3 * (1-t) ** 2 * t * a + 3 * (1-t) * t * t * b + t ** 3;
+  const tick = (now: number) => {
+    if (!rail.isConnected || !item.isConnected) return;
+    const progress = Math.min(1, (now - started) / duration);
+    let low = 0, high = 1;
+    for (let n = 0; n < 14; n++) {
+      const middle = (low + high) / 2;
+      if (curve(middle, .2, .2) < progress) low = middle; else high = middle;
+    }
+    const eased = progress === 1 ? 1 : curve((low + high) / 2, .82, 1);
+    rail.scrollLeft = start + (destination - start) * eased;
+    if (progress < 1) railAnimations.set(rail, requestAnimationFrame(tick));
+    else railAnimations.delete(rail);
+  };
+  railAnimations.set(rail, requestAnimationFrame(tick));
+}
 
 function stopDirectionalEvent(event: any) {
   event?.preventDefault?.();
@@ -748,21 +845,25 @@ function stopDirectionalEvent(event: any) {
   event?.nativeEvent?.stopImmediatePropagation?.();
 }
 
-function moveGridFocus(event: any, direction: GridDirection | null) {
-  if (!direction || typeof document === "undefined") return false;
+function findGridFocusTarget(
+  event: any,
+  direction: GridDirection | null,
+  candidateSelector = "[data-ph-grid-index]",
+): { current: HTMLElement; grid: HTMLElement; target: HTMLElement } | null {
+  if (!direction || typeof document === "undefined") return null;
   const eventTarget = event?.target as HTMLElement | null;
   const activeTarget = (dashboardRoot()?.ownerDocument.activeElement ?? document.activeElement) as HTMLElement | null;
   const current = eventTarget?.closest?.<HTMLElement>("[data-ph-grid-index]")
     ?? activeTarget?.closest?.<HTMLElement>("[data-ph-grid-index]");
   const grid = current?.closest?.<HTMLElement>("[data-ph-focus-grid]");
-  if (!current || !grid) return false;
+  if (!current || !grid) return null;
 
   const currentRect = current.getBoundingClientRect();
   const currentX = currentRect.left + currentRect.width / 2;
   const currentY = currentRect.top + currentRect.height / 2;
   let best: { element: HTMLElement; score: number } | null = null;
 
-  for (const element of Array.from(grid.querySelectorAll<HTMLElement>("[data-ph-grid-index]"))) {
+  for (const element of Array.from(grid.querySelectorAll<HTMLElement>(candidateSelector))) {
     if (element === current) continue;
     const rect = element.getBoundingClientRect();
     const x = rect.left + rect.width / 2;
@@ -780,16 +881,15 @@ function moveGridFocus(event: any, direction: GridDirection | null) {
     if (score < (best?.score ?? Number.POSITIVE_INFINITY)) best = { element, score };
   }
 
-  if (!best) return false;
-  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-  const previousMove = gridFocusMoveState.get(grid);
-  if (previousMove && previousMove.direction === direction && now - previousMove.at < 180) {
-    stopDirectionalEvent(event);
-    return true;
-  }
-  gridFocusMoveState.set(grid, { at: now, direction });
+  return best ? { current, grid, target: best.element } : null;
+}
+
+function moveGridFocus(event: any, direction: GridDirection | null) {
+  const result = findGridFocusTarget(event, direction);
+  if (!result || !direction) return false;
+  const { target } = result;
   stopDirectionalEvent(event);
-  best.element.focus?.();
+  target.focus?.({ preventScroll: true });
   return true;
 }
 
@@ -877,16 +977,6 @@ function AppIcon({ source, fallback: Fallback = FiGrid }: { source?: string; fal
   return source ? <img className="ph-app-icon" src={source} alt="" /> : <Fallback />;
 }
 
-function updateWindowEdgeVisibility(container: HTMLElement) {
-  const bounds = container.getBoundingClientRect();
-  const inset = 7;
-  container.querySelectorAll<HTMLElement>(".ph-window-card").forEach((card) => {
-    const rect = card.getBoundingClientRect();
-    const clipped = rect.left < bounds.left + inset || rect.right > bounds.right - inset;
-    card.classList.toggle("ph-edge-clipped", clipped && card !== container.ownerDocument.activeElement);
-  });
-}
-
 function WindowCard({ entry, artwork, index, copy, onSelect, onAskClose }: {
   entry: WindowEntry; artwork: string; index: number; copy: Copy;
   onSelect: () => void; onAskClose: () => void;
@@ -909,21 +999,7 @@ function WindowCard({ entry, artwork, index, copy, onSelect, onAskClose }: {
         const item = event?.currentTarget as HTMLElement | null;
         const container = item?.closest?.(".ph-window-rail") as HTMLElement | null;
         if (!item || !container) return;
-        item.classList.remove("ph-edge-clipped");
-        const alignFocusedCard = (behavior: ScrollBehavior) => {
-          if (!item.isConnected || !container.isConnected) return;
-          const itemRect = item.getBoundingClientRect();
-          const containerRect = container.getBoundingClientRect();
-          const safeInset = 12;
-          if (itemRect.left < containerRect.left + safeInset) {
-            container.scrollBy({ left: itemRect.left - containerRect.left - safeInset, behavior });
-          } else if (itemRect.right > containerRect.right - safeInset) {
-            container.scrollBy({ left: itemRect.right - containerRect.right + safeInset, behavior });
-          }
-          window.requestAnimationFrame(() => updateWindowEdgeVisibility(container));
-        };
-        window.requestAnimationFrame(() => alignFocusedCard("smooth"));
-        window.setTimeout(() => alignFocusedCard("auto"), 285);
+        alignExpandingWindow(item, container);
       }}
     >
       <div className="ph-window-title">
@@ -1010,26 +1086,6 @@ function TaskSwitcher({ copy, onReady, onSelectWindow }: {
   }, []);
   useEffect(() => { void refresh(); const timer = window.setInterval(() => void refresh(), 3500); return () => window.clearInterval(timer); }, [refresh]);
 
-  useEffect(() => {
-    const container = document.querySelector<HTMLElement>(".ph-window-rail");
-    if (!container) return;
-    let frame = 0;
-    const update = () => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => updateWindowEdgeVisibility(container));
-    };
-    container.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    update();
-    const settled = window.setTimeout(update, 340);
-    return () => {
-      window.clearTimeout(settled);
-      window.cancelAnimationFrame(frame);
-      container.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-    };
-  }, [orderedWindows.map((entry) => entry.handle).join("|")]);
-
   useLayoutEffect(() => {
     if (readySent.current || windows.length === 0) return;
     readySent.current = true;
@@ -1050,7 +1106,7 @@ function TaskSwitcher({ copy, onReady, onSelectWindow }: {
 
   useEffect(() => {
     let alive = true;
-    const candidates = windows.slice(0, 12);
+    const candidates = windows;
     const run = async () => {
       for (let index = 0; index < candidates.length && alive; index += 2) {
         const pair = candidates.slice(index, index + 2);
@@ -1118,26 +1174,144 @@ function TaskSwitcher({ copy, onReady, onSelectWindow }: {
   );
 }
 
-function AppTile({ title, icon, fallback, onPress, onOptions, copy, extra, index = 0 }: {
-  title: string; icon?: string; fallback?: IconType; onPress: () => void; onOptions?: () => void; copy: Copy; extra?: ExtraCopy; index?: number;
+function focusShortcutTile(id: string) {
+  const tile = Array.from(dashboardRoot()?.querySelectorAll<HTMLElement>("[data-shortcut-id]") ?? [])
+    .find((element) => element.dataset.shortcutId === id);
+  tile?.focus?.({ preventScroll: true });
+  tile?.scrollIntoView?.({ behavior: "smooth", block: "nearest", inline: "nearest" });
+}
+
+function shortcutOrderStorage(): Storage | null {
+  try { return window.localStorage; } catch { return null; }
+}
+
+function AppTile({
+  title,
+  icon,
+  fallback,
+  onPress,
+  onOptions,
+  onMoveToggle,
+  onMoveDirection,
+  onCancelMove,
+  moving = false,
+  shortcutId,
+  copy,
+  extra,
+  index = 0,
+}: {
+  title: string;
+  icon?: string;
+  fallback?: IconType;
+  onPress: () => void;
+  onOptions?: () => void;
+  onMoveToggle?: () => void;
+  onMoveDirection?: (event: any, direction: GridDirection | null) => void;
+  onCancelMove?: (event: any) => void;
+  moving?: boolean;
+  shortcutId?: string;
+  copy: Copy;
+  extra?: ExtraCopy;
+  index?: number;
 }) {
   const Fallback = fallback ?? FiGrid;
   return (
     <FocusItem
-      className="ph-app-tile"
+      className={`ph-app-tile ${moving ? "ph-moving" : ""}`}
       data-ph-grid-index={index}
+      data-shortcut-id={shortcutId}
       style={{ animation: "phReveal 260ms both", animationDelay: `${Math.min(index, 14) * 24}ms` }}
-      onPress={onPress}
-      onButtonDown={(event: any) => moveGridFocus(event, gridDirectionFromGamepad(event?.detail?.button))}
-      onSecondaryButton={onOptions ? (event: any) => { stopEvent(event, true); onOptions(); } : undefined}
-      onOKActionDescription={copy.open}
-      onSecondaryActionDescription={onOptions ? extra?.options : undefined}
-      onFocus={(event: any) => event?.currentTarget?.scrollIntoView?.({ behavior: "auto", block: "nearest" })}
+      onPress={moving ? undefined : onPress}
+      onButtonDown={(event: any) => {
+        const direction = gridDirectionFromGamepad(event?.detail?.button);
+        if (moving && onMoveDirection) {
+          onMoveDirection(event, direction);
+          return;
+        }
+        moveGridFocus(event, direction);
+      }}
+      onCancel={moving && onCancelMove ? onCancelMove : undefined}
+      onCancelButton={moving && onCancelMove ? onCancelMove : undefined}
+      onSecondaryButton={onMoveToggle ? (event: any) => { stopEvent(event, true); onMoveToggle(); } : undefined}
+      onOptionsButton={!moving && onOptions ? (event: any) => { stopEvent(event, true); onOptions(); } : undefined}
+      onOKActionDescription={moving ? undefined : copy.open}
+      onCancelActionDescription={moving ? copy.cancel : undefined}
+      onSecondaryActionDescription={onMoveToggle ? (moving ? extra?.placeApp : extra?.moveApp) : undefined}
+      onOptionsActionDescription={!moving && onOptions ? extra?.options : undefined}
+      onFocus={(event: any) => {
+        const item = event?.currentTarget as HTMLElement | undefined;
+        if (item && !revealAppPickerTile(item)) item.scrollIntoView?.({ behavior: "auto", block: "nearest" });
+      }}
     >
       {icon ? <img src={icon} alt="" /> : <Fallback />}
       <div className="ph-app-name">{title}</div>
     </FocusItem>
   );
+}
+
+function revealAppPickerTile(item: HTMLElement): boolean {
+  const grid = item.closest<HTMLElement>(".ph-app-grid-viewport .ph-grid");
+  const view = item.ownerDocument.defaultView;
+  if (!grid || !view) return false;
+  const style = view.getComputedStyle(grid);
+  const top = parseFloat(style.paddingTop) || 0;
+  const bottom = parseFloat(style.paddingBottom) || 0;
+  const gap = parseFloat(style.rowGap) || 0;
+  const stride = item.offsetHeight + gap;
+  if (stride <= 0) return false;
+  const count = Math.max(1, Math.floor((grid.clientHeight - top - bottom + gap) / stride));
+  const row = Math.round((item.offsetTop - top) / stride);
+  const first = Math.round(grid.scrollTop / stride);
+  const next = row < first ? row : row >= first + count ? row - count + 1 : first;
+  grid.scrollTo({ top: Math.max(0, next * stride), behavior: "auto" });
+  return true;
+}
+
+/**
+ * Steam's gamepad footer overlays the page and its height is not exposed as a CSS
+ * variable, so a fixed inset either wastes space or clips the last row. It is measured
+ * instead: the bottom band of the viewport, spanning its width, outside our own page.
+ */
+export function measureSteamFooterInset(root: HTMLElement, fallback = 64): number {
+  const document = root.ownerDocument;
+  const view = document.defaultView;
+  const width = view?.innerWidth ?? 0;
+  const height = view?.innerHeight ?? 0;
+  if (!view || !document.body || !(width > 0 && height > 0)) return fallback;
+  let inset = 0;
+  const queue: Element[] = [document.body];
+  for (let index = 0; index < queue.length && index < 1200; index++) {
+    const node = queue[index];
+    if (node === root || root.contains(node)) continue;
+    for (const child of Array.from(node.children).slice(0, 32)) queue.push(child);
+    if (!node.childElementCount) continue;
+    const style = view.getComputedStyle(node);
+    if (style.position !== "fixed" && style.position !== "absolute") continue;
+    if (style.display === "none" || style.visibility === "hidden") continue;
+    const rect = node.getBoundingClientRect();
+    if (rect.bottom < height - 2 || rect.bottom > height + 2) continue;
+    if (rect.width < width * 0.8 || rect.height < 24 || rect.height > 160) continue;
+    inset = Math.max(inset, Math.round(height - rect.top));
+  }
+  return inset > 0 ? inset : fallback;
+}
+
+function sizeAppPickerGrid(viewport: HTMLElement) {
+  const grid = viewport.querySelector<HTMLElement>(".ph-grid");
+  const tile = grid?.querySelector<HTMLElement>(".ph-app-tile");
+  const view = viewport.ownerDocument.defaultView;
+  if (!grid || !tile || !view) return;
+  const style = view.getComputedStyle(grid);
+  const gap = parseFloat(style.rowGap) || 0;
+  const stride = tile.offsetHeight + gap;
+  if (stride <= 0) return;
+  // The scrollport owns the whole viewport down to the footer. Rounding it down
+  // to whole rows threw away up to one full row of height and left the picker
+  // stuck on two rows; whole-row alignment is a scrolling concern instead and
+  // stays with revealAppPickerTile, which never leaves a focused tile clipped.
+  grid.style.height = `${viewport.clientHeight}px`;
+  const active = viewport.ownerDocument.activeElement as HTMLElement | null;
+  if (active?.classList.contains("ph-app-tile") && grid.contains(active)) revealAppPickerTile(active);
 }
 
 function AppsTab({ copy, extra, onOptions, onLaunch, library, setLibrary }: {
@@ -1151,9 +1325,26 @@ function AppsTab({ copy, extra, onOptions, onLaunch, library, setLibrary }: {
   const [shortcuts, setShortcuts] = useState<ShortcutEntry[]>([]);
   const [programs, setPrograms] = useState<ProgramEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [movingShortcutId, setMovingShortcutId] = useState<string | null>(null);
   const libraryRequest = useRef(0);
+  const originalShortcutOrder = useRef<string[]>([]);
+  const pickerViewport = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    const viewport = pickerViewport.current;
+    const view = viewport?.ownerDocument.defaultView;
+    if (!viewport || !view) return;
+    const resize = () => sizeAppPickerGrid(viewport);
+    resize();
+    const observer = new view.ResizeObserver(resize);
+    observer.observe(viewport);
+    view.addEventListener("resize", resize);
+    return () => { observer.disconnect(); view.removeEventListener("resize", resize); };
+  }, [library, loading, programs.length]);
 
-  const refresh = useCallback(async () => setShortcuts(await listShortcuts()), []);
+  const refresh = useCallback(async () => {
+    const discovered = await listShortcuts();
+    setShortcuts(applyShortcutOrder(discovered, readShortcutOrder(shortcutOrderStorage())));
+  }, []);
   useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => {
     if (!library) {
@@ -1178,23 +1369,49 @@ function AppsTab({ copy, extra, onOptions, onLaunch, library, setLibrary }: {
     setLoading(false);
   };
 
-  const closeLibrary = () => {
-    libraryRequest.current++;
-    setLoading(false);
-    setLibrary(false);
+  const toggleShortcutMove = (shortcutId: string) => {
+    if (!movingShortcutId) {
+      originalShortcutOrder.current = shortcuts.map(({ id }) => id);
+      setMovingShortcutId(shortcutId);
+      window.requestAnimationFrame(() => focusShortcutTile(shortcutId));
+      return;
+    }
+    if (movingShortcutId !== shortcutId) return;
+    writeShortcutOrder(shortcutOrderStorage(), shortcuts);
+    setMovingShortcutId(null);
+    window.requestAnimationFrame(() => focusShortcutTile(shortcutId));
+  };
+
+  const moveShortcut = (event: any, direction: GridDirection | null, shortcutId: string) => {
+    if (!direction || movingShortcutId !== shortcutId) return;
+    const result = findGridFocusTarget(event, direction, "[data-shortcut-id]");
+    stopDirectionalEvent(event);
+    if (!result) return;
+    const targetId = result.target.dataset.shortcutId ?? "";
+    if (!targetId) return;
+    setShortcuts((current) => moveShortcutTo(current, shortcutId, targetId));
+    window.requestAnimationFrame(() => focusShortcutTile(shortcutId));
+  };
+
+  const cancelShortcutMove = (event: any) => {
+    if (!movingShortcutId) return;
+    stopEvent(event, true);
+    const shortcutId = movingShortcutId;
+    setShortcuts((current) => applyShortcutOrder(current, originalShortcutOrder.current));
+    setMovingShortcutId(null);
+    window.requestAnimationFrame(() => focusShortcutTile(shortcutId));
   };
 
   if (library) {
     return (
-      <div className="ph-page ph-page-scroll">
+      <div className="ph-page ph-app-library">
         <div className="ph-toolbar">
           <div className="ph-back"><FiGrid /><span>{copy.appLibrary}</span></div>
-          <FocusItem className="ph-confirm-button" style={{ width: "150px" }} onPress={closeLibrary}>{copy.cancel}</FocusItem>
         </div>
         {loading ? <div className="ph-empty"><div><div className="ph-spinner" /><div>{copy.loadingApps}</div></div></div> : programs.length === 0 ? (
           <div className="ph-empty"><div className="ph-empty-inner"><FiSearch /><div className="ph-empty-title">{copy.noApps}</div></div></div>
         ) : (
-          <FocusGrid className="ph-grid">
+          <div className="ph-app-grid-viewport" ref={pickerViewport}><FocusGrid className="ph-grid">
             {programs.map((program, index) => (
               <AppTile
                 key={`${program.kind}-${program.target}`}
@@ -1205,7 +1422,7 @@ function AppsTab({ copy, extra, onOptions, onLaunch, library, setLibrary }: {
                 onPress={() => void addShortcut(program.target, program.name, program.kind).then(() => { void refresh(); setLibrary(false); })}
               />
             ))}
-          </FocusGrid>
+          </FocusGrid></div>
         )}
       </div>
     );
@@ -1223,8 +1440,13 @@ function AppsTab({ copy, extra, onOptions, onLaunch, library, setLibrary }: {
             copy={copy}
             extra={extra}
             index={index + 1}
+            shortcutId={shortcut.id}
+            moving={movingShortcutId === shortcut.id}
             onPress={() => onLaunch(shortcut)}
             onOptions={() => onOptions(shortcut, refresh)}
+            onMoveToggle={() => toggleShortcutMove(shortcut.id)}
+            onMoveDirection={(event, direction) => moveShortcut(event, direction, shortcut.id)}
+            onCancelMove={cancelShortcutMove}
           />
         ))}
       </FocusGrid>
@@ -1368,7 +1590,7 @@ function SystemTab({ copy, extra, onConfirm }: { copy: Copy; extra: ExtraCopy; o
   }, []);
 
   return (
-    <div className="ph-page ph-page-scroll">
+    <div className="ph-page ph-page-scroll ph-system-page">
       <div className="ph-system-stack">
         <FocusGrid className="ph-metrics-rail" onWheel={(event: any) => { if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) event.currentTarget.scrollLeft += event.deltaY; }}>
           <HistoryMetric index={0} title={copy.cpu} value={`${Math.round(usage?.cpuPercent ?? 0)}%`} detail={`${navigator.hardwareConcurrency || "--"} core`} series={history.cpu ?? []} fixedPeak={100} />
@@ -1505,9 +1727,10 @@ function AppOptionsSheet({ shortcut, copy, extra, onCancel, onRemove, onSave }: 
   extra: ExtraCopy;
   onCancel: () => void;
   onRemove: () => void;
-  onSave: (name: string) => void;
+  onSave: (name: string, sdl3: boolean) => void;
 }) {
   const [name, setName] = useState(shortcut.name);
+  const [sdl3, setSdl3] = useState(shortcut.sdl3NativeControllerEnabled === true);
   useEffect(() => {
     const timer = window.setTimeout(() => focusDashboard(".ph-options-field input"), 50);
     return () => window.clearTimeout(timer);
@@ -1520,10 +1743,11 @@ function AppOptionsSheet({ shortcut, copy, extra, onCancel, onRemove, onSave }: 
         <div className="ph-options-field">
           <TextField value={name} onChange={(event: any) => setName(event.target.value)} style={{ width: "100%", minWidth: 0 }} />
         </div>
+        <ToggleField label={extra.sdl3} description="Avvia questo gioco con il riconoscimento SDL3 nativo." checked={sdl3} onChange={setSdl3} />
         <Focusable className="ph-confirm-actions ph-three" flow-children="horizontal">
           <FocusItem className="ph-confirm-button" onPress={onCancel}>{copy.cancel}</FocusItem>
           <FocusItem className="ph-confirm-button ph-danger" onPress={onRemove}>{copy.remove}</FocusItem>
-          <FocusItem className="ph-confirm-button" onPress={() => { if (name.trim()) onSave(name.trim()); }}>{extra.save}</FocusItem>
+          <FocusItem className="ph-confirm-button" onPress={() => { if (name.trim()) onSave(name.trim(), sdl3); }}>{extra.save}</FocusItem>
         </Focusable>
       </div>
     </Focusable>
@@ -1563,11 +1787,12 @@ function DashboardSurface() {
 
   useEffect(() => {
     logToAgent("pagina Dashboard aperta");
+    const inSteamOverlay = Boolean(dashboardOverlayGameId);
     return () => {
       logToAgent("pagina Dashboard chiusa");
       // A route replacement, a plugin reload or an unexpected React unmount
       // must never leave Steam temporarily topmost above the source window.
-      if (!explicitExit.current) void restoreDashboardSourceFocus();
+      if (!explicitExit.current && !inSteamOverlay) void restoreDashboardSourceFocus();
     };
   }, []);
 
@@ -1581,6 +1806,29 @@ function DashboardSurface() {
   }, []);
 
   const tabs = useMemo<TabId[]>(() => ["switcher", "apps", "system"], []);
+  // Steam's footer overlays the page: reserve exactly its height, never a guessed one.
+  const mainRef = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    const element = mainRef.current;
+    const view = element?.ownerDocument.defaultView;
+    if (!element || !view) return;
+    let frame: number | undefined;
+    const apply = () => {
+      frame = undefined;
+      element.style.setProperty("--ph-footer", `${measureSteamFooterInset(element)}px`);
+    };
+    const schedule = () => { if (frame === undefined) frame = view.requestAnimationFrame(apply); };
+    apply();
+    const Observer = (view as any).ResizeObserver;
+    const observer = Observer ? new Observer(schedule) : null;
+    observer?.observe(element.ownerDocument.documentElement);
+    view.addEventListener("resize", schedule);
+    return () => {
+      if (frame !== undefined) view.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      view.removeEventListener("resize", schedule);
+    };
+  }, [tab]);
 
   const changeTab = (next: TabId) => {
     setConfirm(null);
@@ -1633,6 +1881,7 @@ function DashboardSurface() {
   };
   const leaveDashboard = useCallback((focus: "source" | "steam" | "window" | "app", value = "") => {
     explicitExit.current = true;
+    const inSteamOverlay = Boolean(dashboardOverlayGameId);
     closeDashboardOverlay();
     clearDashboardChrome();
     Navigation?.NavigateBack?.();
@@ -1641,7 +1890,7 @@ function DashboardSurface() {
     // the route transition so the library is never left blurred.
     window.setTimeout(() => Navigation?.CloseSideMenus?.(), 60);
     if (focus === "source") {
-      void restoreDashboardSourceFocus();
+      if (!inSteamOverlay) void restoreDashboardSourceFocus();
     } else if (focus === "steam") {
       void releaseDashboardFocus();
     } else if (focus === "window") {
@@ -1804,7 +2053,7 @@ function DashboardSurface() {
       <style>{STYLE}</style>
       <Header tab={tab} setTab={changeTab} copy={copy} locale={steamLocale} logo={logo} />
       {tab === "system" ? <FocusItem className="ph-system-focus-bridge" onPress={() => {}} onFocus={() => window.requestAnimationFrame(() => focusSystemMetric(0))} /> : null}
-      <main className="ph-main" key={tab}>
+      <main className="ph-main" key={tab} ref={mainRef}>
         {tab === "switcher" ? <TaskSwitcher copy={copy} onReady={focusInitialSwitcher} onSelectWindow={selectWindow} /> : null}
         {tab === "apps" ? <AppsTab copy={copy} extra={extra} onOptions={(shortcut, refresh) => { rememberModalFocus(); setAppOptions({ shortcut, refresh }); }} onLaunch={launchShortcut} library={appsLibrary} setLibrary={setAppsLibrary} /> : null}
         {tab === "system" ? <SystemTab copy={copy} extra={extra} onConfirm={ask} /> : null}
@@ -1829,9 +2078,10 @@ function DashboardSurface() {
             setAppOptions(null);
             ask(copy.confirmRemove, current.shortcut.name, () => void removeShortcut(current.shortcut.id).then(current.refresh));
           }}
-          onSave={(name) => {
+          onSave={(name, sdl3) => {
             const current = appOptions;
-            void renameShortcut(current.shortcut.id, name).then(current.refresh).finally(dismissAppOptions);
+            void Promise.all([renameShortcut(current.shortcut.id, name), setShortcutSdl3(current.shortcut.id, sdl3)])
+              .then(current.refresh).finally(dismissAppOptions);
           }}
         />
       ) : null}
@@ -1840,7 +2090,7 @@ function DashboardSurface() {
 }
 
 export function DashboardPage() {
-  const inOverlay = Boolean(dashboardOverlayGameId);
+  const [inOverlay] = useState(() => Boolean(dashboardOverlayGameId));
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -1855,7 +2105,12 @@ export function DashboardPage() {
         if (!target) {
           target = targetDocument.createElement("div");
           target.id = "ph-dashboard-overlay-root";
-          targetDocument.body.appendChild(target);
+          // The overlay's GamepadMode is its own stacking context (z-index 5).
+          // Keep the dashboard (6500) inside it so Steam's footer (7000) can
+          // remain above the page; a body-level portal covers both otherwise.
+          const host = targetDocument.getElementById("Footer")?.closest(".GamepadMode")
+            ?? targetDocument.querySelector(".GamepadMode") ?? targetDocument.body;
+          host.appendChild(target);
         }
         setPortalTarget(target);
         window.clearInterval(timer);
@@ -1865,7 +2120,6 @@ export function DashboardPage() {
         window.clearInterval(timer);
         closeDashboardOverlay();
         Navigation?.NavigateBack?.();
-        void restoreDashboardSourceFocus();
         logToAgent("overlay Dashboard annullato: browser Steam non disponibile");
       }
     }, 40);
@@ -1880,7 +2134,6 @@ export function DashboardPage() {
       leaving = true;
       closeDashboardOverlay();
       Navigation?.NavigateBack?.();
-      void restoreDashboardSourceFocus();
     };
     const frame = window.requestAnimationFrame(() => {
       const mounted = Boolean(portalTarget.querySelector(".ph-dashboard"));
@@ -1888,7 +2141,8 @@ export function DashboardPage() {
         returnToSource();
         return;
       }
-      try { (window as any).SteamClient?.Overlay?.SetOverlayState?.(dashboardOverlayGameId, 2); } catch {}
+      // Preparation already opened the overlay. Never reopen it here: the
+      // Steam button may have closed it while React was committing the portal.
     });
     const monitor = window.setInterval(() => {
       if (portalTarget.isConnected && dashboardOverlayGameId) return;
@@ -1902,8 +2156,11 @@ export function DashboardPage() {
 
   useEffect(() => () => {
     if (inOverlay) closeDashboardOverlay();
+  }, [inOverlay]);
+
+  useEffect(() => () => {
     try { portalTarget?.remove(); } catch {}
-  }, [inOverlay, portalTarget]);
+  }, [portalTarget]);
 
   if (!inOverlay) return <DashboardSurface />;
   return portalTarget ? createPortal(<DashboardSurface />, portalTarget) : null;

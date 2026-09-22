@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const catalogPath=path.join(root,'quick_settings/history_editorial.json');
+const manifestPath=path.join(root,'quick_settings/history_images.json');
+const catalog=JSON.parse(fs.readFileSync(catalogPath,'utf8'));
+const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
+const content=JSON.parse(fs.readFileSync(path.join(root,'tools/miyamoto-content.json'),'utf8'));
+const theme=catalog.themes.find(t=>t.id==='miyamoto');
+theme.chapters=content.chapters;
+theme.sources=[...new Set([...theme.sources,...content.sources])];
+manifest.miyamoto=[{file:content.hero_image_file,subject:'Shigeru Miyamoto',kind:'portrait'},...content.chapters.map(c=>({file:c.image_file,subject:c.subject,kind:c.subject==='Mario'?'artwork':c.subject==='Shigeru Miyamoto'?'portrait':'photo'}))].map(i=>({...i,provider:'User supplied',rights:'Image supplied by the Playhub project owner'}));
+for(const image of manifest.miyamoto)if(!fs.existsSync(path.join(root,'src/assets/history',image.file)))throw Error(`Missing ${image.file}`);
+fs.writeFileSync(catalogPath,JSON.stringify(catalog,null,1)+'\n');
+fs.writeFileSync(manifestPath,JSON.stringify(manifest,null,1)+'\n');
+console.log('Miyamoto: introductory portrait and five explicitly illustrated chapters.');

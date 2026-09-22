@@ -1,4 +1,20 @@
 {
+  "Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop.": "Abra-a com Ctrl + Alt + P para alternar entre janelas, gerir as suas apps favoritas e consultar o desempenho e os processos em execução. Também pode fechar uma app bloqueada sem voltar ao ambiente de trabalho.",
+  "Avvio": "Arranque",
+  "Passaggio alla Desktop Mode": "Mudança para Desktop Mode",
+  "Passaggio alla Gaming Mode": "Mudança para Gaming Mode",
+  "Provalo ora": "Experimentar agora",
+  "Premi ESC o fai clic per tornare a Playhub": "Prima ESC ou clique para voltar ao Playhub",
+  "Colore personalizzato": "Cor personalizada",
+  "Tonalita": "Matiz",
+  "Saturazione": "Saturação",
+  "Livello di nero": "Nível de preto",
+  "Opacita": "Opacidade",
+  "Impossibile aprire l'anteprima. Riprova.": "Não foi possível abrir a pré-visualização. Tente novamente.",
+  "Animazione Gaming Mode": "Animação do Gaming Mode",
+  "All'avvio e durante il cambio modalita.": "Ao iniciar e ao mudar de modo.",
+  "Attiva animazione": "Ativar animação",
+  "Il colore e indipendente dall'accent di Playhub.": "A cor é independente da cor de destaque do Playhub.",
   "Aggiorna tutto": "Atualizar todos",
   "Aggiornamento Playhub": "Atualização do Playhub",
   "Aggiornamento in corso": "Atualização em andamento",
@@ -197,5 +213,10 @@
   "Apri Plugin Store": "Abrir a loja de plugins",
   "Apri lo store di Decky dal Quick Access Menu e scopri altri plugin.": "Abra a Decky Store pelo menu de acesso rápido e descubra mais plugins.",
   "Windows ha impedito la scrittura del file shortcuts di Steam. Consenti Playhub in Accesso alle cartelle controllato e riprova. ": "O Windows bloqueou a gravação do arquivo de atalhos do Steam. Permita o Playhub no Acesso controlado a pastas e tente novamente. ",
-  "{0} ufficiale di Steam": "{0} oficial do Steam"
+  "{0} ufficiale di Steam": "{0} oficial do Steam",
+  "Installa Playhub per lo stile classico e Playhub (Big Image Mode) per la modalità Big Image di Steam.": "Instala Playhub para o estilo clássico e Playhub (Big Image Mode) para o modo Big Image do Steam.",
+  "Installa profili": "Instalar perfis",
+  "Rimuovi profili": "Remover perfis",
+  "Profili Playhub installati: Playhub e Playhub (Big Image Mode).": "Perfis instalados: Playhub e Playhub (Big Image Mode).",
+  "Profili Playhub rimossi da CSS Loader.": "Perfis Playhub removidos do CSS Loader."
 }

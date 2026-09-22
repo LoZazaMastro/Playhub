@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -8,15 +8,27 @@ namespace Playhub.Services;
 
 public static class AppPaths
 {
+#if PLAYHUB_UI_REVIEW
+    public static string AppDataRoot { get; } = Path.Combine(AppContext.BaseDirectory, "ui-review-data", "roaming");
+    public static string LocalDataRoot { get; } = Path.Combine(AppContext.BaseDirectory, "ui-review-data", "local");
+#else
     public static string AppDataRoot { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Playhub");
 
     public static string LocalDataRoot { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Playhub");
+#endif
 
     public static string SettingsFile => Path.Combine(AppDataRoot, "settings.json");
     public static string DownloadsRoot => Path.Combine(LocalDataRoot, "downloads");
     public static string BackupsRoot => Path.Combine(AppDataRoot, "backups");
+    // Gli artwork di Steam sono decine di migliaia di file e diversi gigabyte: non
+    // possono stare nel profilo roaming, che viene sincronizzato. Qui invece sì.
+    public static string ArtworkBackupsRoot => Path.Combine(LocalDataRoot, "backups", "SteamArtwork");
+    // Copie di sicurezza del client di Steam prese prima di un ripristino.
+    public static string SteamClientBackupsRoot => Path.Combine(LocalDataRoot, "backups", "SteamClient");
+    // Percorso storico: i backup creati dalle versioni precedenti restano leggibili.
+    public static string LegacyArtworkBackupsRoot => Path.Combine(BackupsRoot, "SteamArtwork");
     public static string BundledPluginRoot => Path.Combine(AppContext.BaseDirectory, "Plugins");
     public static string LocalPluginRoot => ExistingDirectory(BundledPluginRoot, Environment.GetEnvironmentVariable("PLAYHUB_PLUGIN_ROOT") ?? "") ?? BundledPluginRoot;
     public static string BundledSteamCfg => Path.Combine(AppContext.BaseDirectory, "Assets", "Extra", "steam.cfg");

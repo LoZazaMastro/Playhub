@@ -236,7 +236,7 @@ public static class SteamFullscreenDetector
 		return best;
 	}
 
-	private static bool IsForegroundSteam()
+	internal static bool IsForegroundSteam()
 	{
 		nint foreground = GetForegroundWindow();
 		if (foreground == 0)

@@ -26,6 +26,14 @@ public sealed class ModeManager
 	private readonly SystemVolumeKeyService _volumeKeys;
 
 	private readonly FileLogger _logger;
+	private readonly SemaphoreSlim _modeSwitch = new(1, 1);
+	private long _desktopSwitchRequested;
+	public bool ConsumeDesktopSwitchRequest()
+	{
+		long requested = Interlocked.Exchange(ref _desktopSwitchRequested, 0);
+		return requested != 0 && Environment.TickCount64 - requested <= 4000 &&
+			_store.LoadState().CurrentMode == ModeKind.Desktop;
+	}
 
 	public ModeManager(AppPaths paths, JsonStore store, ProcessTools processTools, ShellTools shellTools, CursorAutoHideService cursorAutoHide, GamingWindowFocusService windowFocus, SystemVolumeKeyService volumeKeys, FileLogger logger)
 	{
@@ -95,7 +103,7 @@ public sealed class ModeManager
 		}
 	}
 
-	public Task<ApiResult> ApplyModeAsync(ModeKind mode, string action, bool interactive = true, bool restoreStartupApps = true, bool updateShell = true)
+	public Task<ApiResult> ApplyModeAsync(ModeKind mode, string action, bool interactive = true, bool restoreStartupApps = true, bool updateShell = false)
 	{
 		ModeConfig config = _store.LoadConfig();
 		ModeState modeState = _store.LoadState();
@@ -186,9 +194,40 @@ public sealed class ModeManager
 		}
 	}
 
-	public ApiResult SwitchToMode(ModeKind mode)
+	public async Task<ApiResult> SwitchToModeAsync(ModeKind mode)
 	{
-		return RestartInMode(mode);
+		if (!await _modeSwitch.WaitAsync(0))
+			return ApiResult.Failure("A mode switch is already in progress.", GetStatus());
+		try
+		{
+			using SplashScreenService transition = new(_logger);
+			try
+			{
+				// A session switch must not touch DefaultMode, NextBootMode or Winlogon.
+				Interlocked.Exchange(ref _desktopSwitchRequested, 0);
+				var transitionConfig = _store.LoadConfig();
+				transition.ShowTransition(mode, transitionConfig.Language, transitionConfig.Gaming.Splash);
+				ApiResult result = await Task.Run(() => ApplyModeAsync(mode, $"Switched to {mode} Mode", updateShell: false));
+				if (result.Ok && mode == ModeKind.Desktop)
+				{
+					Interlocked.Exchange(ref _desktopSwitchRequested, Environment.TickCount64);
+					// Let the 500 ms frontend poll request Big Picture exit while the
+					// curtain is still up. Consumption is not an exit acknowledgement.
+					for (int attempt = 0; attempt < 24 && Interlocked.Read(ref _desktopSwitchRequested) != 0; attempt++)
+						await Task.Delay(50);
+					if (Interlocked.Read(ref _desktopSwitchRequested) == 0)
+						await Task.Delay(150);
+					else
+						_logger.Info("Desktop is ready; Steam has not yet consumed the Big Picture exit request.");
+				}
+				return result;
+			}
+			finally
+			{
+				await transition.HideAsync(minVisibleMs: 700, fade: true, fadeMs: 300);
+			}
+		}
+		finally { _modeSwitch.Release(); }
 	}
 
 	public async Task<ApiResult> RestartSteamAsync()
@@ -345,8 +384,6 @@ public sealed class ModeManager
 		_windowFocus.Start(config.Gaming.BorderlessFullscreenWindowsInGamingMode);
 		if (config.Gaming.CloseExplorerInGamingMode && !config.Gaming.AllowExplorerCloseInGamingMode)
 		{
-			config.Gaming.CloseExplorerInGamingMode = false;
-			_store.SaveConfig(config);
 			messages.Add("Desktop shell hiding was ignored because the advanced safety flag is disabled.");
 		}
 		if (config.Gaming.AutoHideMouseCursorInGamingMode)
@@ -370,11 +407,6 @@ public sealed class ModeManager
 		{
 			messages.Add($"Started {num} custom gaming app(s).");
 		}
-		if (flag)
-		{
-			_processTools.StopExplorer();
-			messages.Add("Desktop shell was stopped for Gaming Mode.");
-		}
 		if (config.Gaming.SunshineRequired)
 		{
 			bool flag2 = _processTools.EnsureProcess(config.Gaming.SunshinePath, _processTools.GetSunshineFallbackPaths(), "", "sunshine", "apollo", "vibepollo", "vibeshine");
@@ -393,15 +425,25 @@ public sealed class ModeManager
 		}
 		bool flag4 = _processTools.LaunchOrFocusSteamGamepad(config.Gaming.SteamPath, _processTools.GetSteamFallbackPaths(), config.Gaming.SteamArguments);
 		messages.Add(flag4 ? "Steam is running in gamepad mode." : "Steam was not found. Configure SteamPath in config.json if needed.");
-		if (flag && !flag4)
+		if (!flag4)
 		{
-			_processTools.StartExplorer();
-			messages.Add("Desktop shell was restored because Steam did not start.");
+			if (flag) _processTools.StartExplorer();
+			throw new InvalidOperationException("Steam could not be opened; Gaming Mode was not applied.");
+		}
+		if (flag)
+		{
+			if (!_processTools.StopExplorer())
+				throw new InvalidOperationException("Explorer did not remain closed; Gaming Mode was not applied.");
+			messages.Add("Desktop shell was stopped for Gaming Mode.");
 		}
 	}
 
 	private void ApplyDesktopMode(ModeConfig config, ICollection<string> messages, bool interactive, bool restoreStartupApps)
 	{
+		bool restoreDecky = _store.LoadState().CurrentMode == ModeKind.Gaming &&
+			_processTools.StopDeckyForDesktopTransition();
+		try
+		{
 		_volumeKeys.Stop();
 		_windowFocus.Stop();
 		_cursorAutoHide.Stop();
@@ -410,11 +452,19 @@ public sealed class ModeManager
 		{
 			bool flag = _processTools.StartExplorer();
 			messages.Add(flag ? "Explorer is running." : "Explorer could not be started.");
+			if (!flag) throw new InvalidOperationException("Explorer could not be restored.");
 		}
 		if (restoreStartupApps && config.Gaming.RestoreStartupAppsOnDesktop)
 		{
 			int num = _processTools.RunUserStartupApps();
 			messages.Add((num > 0) ? $"Restored {num} startup item(s)." : "No startup items needed restoring.");
+		}
+		}
+		finally
+		{
+			if (restoreDecky)
+				_processTools.EnsureProcessWithEnvironment(config.Gaming.DeckyPath, _processTools.GetDeckyFallbackPaths(), "",
+					_processTools.BuildDeckyPluginHelperEnvironment(), "PluginLoader", "PluginLoader_noconsole");
 		}
 	}
 }

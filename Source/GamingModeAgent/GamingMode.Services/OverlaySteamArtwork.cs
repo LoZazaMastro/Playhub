@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -50,6 +51,9 @@ public static class OverlaySteamArtworkResolver
 
 	public static OverlaySteamArtwork? Resolve(OverlayWindowInfo window)
 	{
+		// Steam's UI may display a game's page, but is never that game.
+		if (SteamGameIdentityPolicy.IsSteamClient(window.ProcessName)
+			|| SteamGameIdentityPolicy.IsSteamClient(window.Path)) return null;
 		try
 		{
 			string steamPath = FindSteamPath();
@@ -305,18 +309,31 @@ public static class OverlaySteamArtworkResolver
 
 	private static ActiveSteamGame? FindActiveGame(string steamPath, int windowProcessId)
 	{
+		try
+		{
+			using Process windowProcess = Process.GetProcessById(windowProcessId);
+			if (SteamGameIdentityPolicy.IsSteamClient(windowProcess.ProcessName)) return null;
+		}
+		catch { return null; }
 		string path = Path.Combine(steamPath, "logs", "gameprocess_log.txt");
 		if (!File.Exists(path)) return null;
 		string tail = ReadTail(path, 768 * 1024);
 		Dictionary<int, ActiveSteamGame> active = new();
 		foreach (string line in tail.Split('\n'))
 		{
+			if (line.Contains("Client version:", StringComparison.Ordinal))
+			{
+				active.Clear();
+				continue;
+			}
 			Match added = ProcessAdded.Match(line);
 			if (added.Success
 				&& ulong.TryParse(added.Groups["app"].Value, out ulong gameId)
 				&& int.TryParse(added.Groups["pid"].Value, out int processId))
 			{
-				active[processId] = new ActiveSteamGame(gameId, processId);
+				if (line.Length >= 21 && DateTime.TryParseExact(line.Substring(1, 19), "yyyy-MM-dd HH:mm:ss",
+					CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime trackedAt))
+					active[processId] = new ActiveSteamGame(gameId, processId, trackedAt);
 				continue;
 			}
 			Match removed = ProcessRemoved.Match(line);
@@ -326,29 +343,25 @@ public static class OverlaySteamArtworkResolver
 			}
 		}
 
-		foreach (int stale in active.Keys.Where(pid => !ProcessExists(pid)).ToArray()) active.Remove(stale);
+		foreach (int stale in active.Values.Where(game => !IsCurrentTrackedProcess(game)).Select(game => game.ProcessId).ToArray()) active.Remove(stale);
 		if (active.TryGetValue(windowProcessId, out ActiveSteamGame? direct)) return direct;
 
 		Dictionary<int, int> parents = SnapshotParents();
-		// Una finestra puo' appartenere a un processo figlio del launcher tracciato
-		// da Steam (o viceversa). Si accettano soltanto relazioni antenato/discendente
-		// reali: condividere steam.exe come antenato non e' sufficiente e non puo'
-		// quindi attribuire la grafica del gioco ad altre finestre.
+		// Accept the tracked process or its children, never its parent launcher
+		// (Steam, Explorer, or another application that started the game).
 		return active.Values.LastOrDefault(game =>
-			IsAncestor(game.ProcessId, windowProcessId, parents)
-			|| IsAncestor(windowProcessId, game.ProcessId, parents));
+			SteamGameIdentityPolicy.IsTrackedWindow(game.ProcessId, windowProcessId, parents));
 	}
 
-	private static bool IsAncestor(int ancestor, int processId, IReadOnlyDictionary<int, int> parents)
+	private static bool IsCurrentTrackedProcess(ActiveSteamGame game)
 	{
-		int current = processId;
-		for (int depth = 0; depth < 16 && parents.TryGetValue(current, out int parent) && parent > 0; depth++)
+		try
 		{
-			if (parent == ancestor) return true;
-			if (parent == current) break;
-			current = parent;
+			using Process process = Process.GetProcessById(game.ProcessId);
+			return !process.HasExited && !SteamGameIdentityPolicy.IsSteamClient(process.ProcessName)
+				&& SteamGameIdentityPolicy.IsCurrentProcess(process.StartTime, game.TrackedAt);
 		}
-		return false;
+		catch { return false; }
 	}
 
 	private static OverlaySteamArtwork BuildArtwork(string steamPath, string assetId, string? gameId, string title)
@@ -513,7 +526,7 @@ public static class OverlaySteamArtworkResolver
 		return Encoding.UTF8.GetString(bytes, 0, read);
 	}
 
-	private sealed record ActiveSteamGame(ulong GameId, int ProcessId);
+	private sealed record ActiveSteamGame(ulong GameId, int ProcessId, DateTime TrackedAt);
 
 	private static class ProcessParent
 	{

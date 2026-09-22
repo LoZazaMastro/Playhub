@@ -1,4 +1,20 @@
 {
+  "Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop.": "Open it with Ctrl + Alt + P to switch windows, manage your favorite apps, and check performance and running processes. You can also close an unresponsive app without returning to the desktop.",
+  "Avvio": "Startup",
+  "Passaggio alla Desktop Mode": "Switching to Desktop Mode",
+  "Passaggio alla Gaming Mode": "Switching to Gaming Mode",
+  "Provalo ora": "Try it now",
+  "Premi ESC o fai clic per tornare a Playhub": "Press ESC or click to return to Playhub",
+  "Colore personalizzato": "Custom color",
+  "Tonalita": "Hue",
+  "Saturazione": "Saturation",
+  "Livello di nero": "Black level",
+  "Opacita": "Opacity",
+  "Impossibile aprire l'anteprima. Riprova.": "Couldn't open the preview. Please try again.",
+  "Animazione Gaming Mode": "Gaming Mode animation",
+  "All'avvio e durante il cambio modalita.": "At startup and when switching modes.",
+  "Attiva animazione": "Enable animation",
+  "Il colore e indipendente dall'accent di Playhub.": "Choose a color independently of Playhub's accent.",
   "Aggiorna tutto": "Update all",
   "Aggiornamento Playhub": "Playhub update",
   "Aggiornamento in corso": "Update in progress",
@@ -204,5 +220,10 @@
   "Sto aggiornando i collegamenti e applicando gli artwork mancanti…": "Updating shortcuts and applying missing artwork…",
   "Tempo minimo per cui la schermata resta visibile, anche se il gioco è già pronto.": "Minimum time the splash screen stays visible, even if the game is already ready.",
   "Windows ha impedito la scrittura del file shortcuts di Steam. Consenti Playhub in Accesso alle cartelle controllato e riprova. ": "Windows prevented Playhub from writing to Steam's shortcuts file. Allow Playhub through Controlled folder access and try again. ",
-  "Windows ha impedito la scrittura del file shortcuts di Steam. Non dipende dal fatto che Steam sia aperto: è la protezione \"Accesso alle cartelle controllato\" di Sicurezza di Windows che blocca questa app (UWPHook funziona perché è già tra le app consentite). Per risolvere: Sicurezza di Windows → Protezione da virus e minacce → Gestisci protezione ransomware → Accesso alle cartelle controllato → Consenti app tramite Accesso alle cartelle controllato → Aggiungi Playhub.exe. Poi riprova.": "Windows prevented Playhub from writing to Steam's shortcuts file. This is not because Steam is open: Controlled folder access in Windows Security is blocking this app (UWPHook works because it is already allowed). To fix this: Windows Security → Virus & threat protection → Manage ransomware protection → Controlled folder access → Allow an app through Controlled folder access → Add Playhub.exe. Then try again."
+  "Windows ha impedito la scrittura del file shortcuts di Steam. Non dipende dal fatto che Steam sia aperto: è la protezione \"Accesso alle cartelle controllato\" di Sicurezza di Windows che blocca questa app (UWPHook funziona perché è già tra le app consentite). Per risolvere: Sicurezza di Windows → Protezione da virus e minacce → Gestisci protezione ransomware → Accesso alle cartelle controllato → Consenti app tramite Accesso alle cartelle controllato → Aggiungi Playhub.exe. Poi riprova.": "Windows prevented Playhub from writing to Steam's shortcuts file. This is not because Steam is open: Controlled folder access in Windows Security is blocking this app (UWPHook works because it is already allowed). To fix this: Windows Security → Virus & threat protection → Manage ransomware protection → Controlled folder access → Allow an app through Controlled folder access → Add Playhub.exe. Then try again.",
+  "Installa Playhub per lo stile classico e Playhub (Big Image Mode) per la modalità Big Image di Steam.": "Install Playhub for the classic layout and Playhub (Big Image Mode) for Steam’s Big Image mode.",
+  "Installa profili": "Install profiles",
+  "Rimuovi profili": "Remove profiles",
+  "Profili Playhub installati: Playhub e Playhub (Big Image Mode).": "Playhub profiles installed: Playhub and Playhub (Big Image Mode).",
+  "Profili Playhub rimossi da CSS Loader.": "Playhub profiles removed from CSS Loader."
 }

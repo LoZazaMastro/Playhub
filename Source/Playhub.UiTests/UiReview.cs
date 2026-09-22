@@ -1307,14 +1307,15 @@ public sealed partial class MainWindow
                 var plugin = new DeckyPluginInfo { Name = Path.GetFileNameWithoutExtension(file), CoverImage = file };
                 var frame = BuildFeaturedPluginFrame(plugin);
                 host.Children.Add(frame);
-                var image = ReviewDescendants(frame).OfType<Image>().FirstOrDefault(item => item.Parent is Grid);
-                check(image is not null && await ReviewWaitUntilAsync(() => image.Source is BitmapImage { PixelWidth: > 0 } &&
-                    image.ActualWidth > 100 && image.ActualHeight > 100),
+                var stage = (frame as Border)?.Child as Grid;
+                check(stage is not null && await ReviewWaitUntilAsync(() => stage.Background is ImageBrush
+                    { ImageSource: BitmapImage { PixelWidth: > 0 } } && stage.ActualWidth > 100 && stage.ActualHeight > 100),
                     "featured slide loads and displays its actual cover: " + plugin.Name);
                 await ReviewCaptureAsync(frame, Path.Combine(output, "featured-artwork-" + Array.IndexOf(files, file) + ".png"));
                 host.Children.Remove(frame);
                 host.Children.Add(frame);
-                check(await ReviewWaitUntilAsync(() => image?.IsLoaded == true && image.Source is BitmapImage { PixelWidth: > 0 }),
+                check(await ReviewWaitUntilAsync(() => stage?.IsLoaded == true && stage.Background is ImageBrush
+                    { ImageSource: BitmapImage { PixelWidth: > 0 } }),
                     "cached featured slide keeps its cover after navigation: " + plugin.Name);
                 host.Children.Clear();
             }

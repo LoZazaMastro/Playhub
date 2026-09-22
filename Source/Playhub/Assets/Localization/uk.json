@@ -1,4 +1,20 @@
 {
+  "Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop.": "Відкрийте її за допомогою Ctrl + Alt + P, щоб перемикатися між вікнами, керувати улюбленими застосунками та переглядати показники продуктивності й запущені процеси. Тут також можна закрити завислий застосунок, не повертаючись на робочий стіл.",
+  "Avvio": "Запуск",
+  "Passaggio alla Desktop Mode": "Перехід до Desktop Mode",
+  "Passaggio alla Gaming Mode": "Перехід до Gaming Mode",
+  "Provalo ora": "Спробувати",
+  "Premi ESC o fai clic per tornare a Playhub": "Натисніть ESC або клацніть, щоб повернутися до Playhub",
+  "Colore personalizzato": "Власний колір",
+  "Tonalita": "Відтінок",
+  "Saturazione": "Насиченість",
+  "Livello di nero": "Рівень чорного",
+  "Opacita": "Непрозорість",
+  "Impossibile aprire l'anteprima. Riprova.": "Не вдалося відкрити попередній перегляд. Спробуйте ще раз.",
+  "Animazione Gaming Mode": "Анімація Gaming Mode",
+  "All'avvio e durante il cambio modalita.": "Під час запуску та перемикання режимів.",
+  "Attiva animazione": "Увімкнути анімацію",
+  "Il colore e indipendente dall'accent di Playhub.": "Колір не залежить від акцентного кольору Playhub.",
   "Aggiorna tutto": "Оновити всі",
   "Aggiornamento Playhub": "Оновлення Playhub",
   "Aggiornamento in corso": "Триває оновлення",
@@ -206,5 +222,10 @@
   "Se qualcosa non funziona come ti aspetti, crea un report diagnostico. Raccoglie le informazioni utili a capire il problema e lo salva sul desktop, pronto da allegare alla tua segnalazione.": "Якщо щось працює не так, як очікується, створи діагностичний звіт. Він міститиме інформацію для з’ясування проблеми й буде збережений на робочому столі, готовий до додавання до твого звернення.",
   "Inattività prima di nascondere il cursore.": "Час бездіяльності перед приховуванням курсора.",
   "Ho aggiunto {0} giochi a Steam. Riavvia Steam per vederli.": "Додано ігор у Steam: {0}. Перезапусти Steam, щоб їх побачити.",
-  "Ho trovato {0} giochi. {1} sono già in libreria.": "Знайдено ігор: {0}. Уже в бібліотеці: {1}."
+  "Ho trovato {0} giochi. {1} sono già in libreria.": "Знайдено ігор: {0}. Уже в бібліотеці: {1}.",
+  "Installa Playhub per lo stile classico e Playhub (Big Image Mode) per la modalità Big Image di Steam.": "Установіть Playhub для класичного оформлення та Playhub (Big Image Mode) для режиму Big Image у Steam.",
+  "Installa profili": "Установити профілі",
+  "Rimuovi profili": "Видалити профілі",
+  "Profili Playhub installati: Playhub e Playhub (Big Image Mode).": "Установлено профілі Playhub і Playhub (Big Image Mode).",
+  "Profili Playhub rimossi da CSS Loader.": "Профілі Playhub видалено з CSS Loader."
 }

@@ -61,6 +61,7 @@ public partial class MainWindow : Window
             BtnLangNext.Visibility = Visibility.Collapsed;
             BtnCancel.Visibility = Visibility.Collapsed;
             BtnPrimary.Visibility = Visibility.Collapsed;
+            // Aggiornamento automatico: nessuna domanda, nessuna scelta ripetuta.
             ContentRendered += StartAutomaticUpdate;
         }
 
@@ -78,6 +79,7 @@ public partial class MainWindow : Window
         BtnDone.Click += (_, _) => Finish();
         BtnLangNext.Click += (_, _) => ContinueFromLanguage();
         BtnAccept.Click += (_, _) => AcceptAgreement();
+        BtnMergeNext.Click += (_, _) => ContinueFromMerge();
         BtnDecline.Click += (_, _) => Close();
 
         ApplyLanguage();
@@ -98,17 +100,27 @@ public partial class MainWindow : Window
 
     private void AcceptAgreement()
     {
-        // Accettati i termini, si prosegue con la schermata di installazione.
         PanelAgreement.Visibility = Visibility.Collapsed;
-        PanelReady.Visibility = Visibility.Visible;
+        PanelMerge.Visibility = Visibility.Visible;
         BtnDecline.Visibility = Visibility.Collapsed;
         BtnAccept.Visibility = Visibility.Collapsed;
         BtnCancel.Visibility = Visibility.Visible;
+        BtnMergeNext.Visibility = Visibility.Visible;
+    }
+
+    private void ContinueFromMerge()
+    {
+        PanelMerge.Visibility = Visibility.Collapsed;
+        PanelReady.Visibility = Visibility.Visible;
+        BtnMergeNext.Visibility = Visibility.Collapsed;
         BtnPrimary.Visibility = Visibility.Visible;
     }
 
     private void ApplyLanguage()
     {
+        MergeTitle.Text = Loc.T("MergeTitle");
+        MergeBody.Text = Loc.T("MergeBody");
+        BtnMergeNext.Content = Loc.T("Continue");
         VersionText.Text = Loc.T("Version") + " " + Installer.AppVersion;
 
         AgreeTitle.Text = Loc.T("AgreeTitle");
@@ -184,7 +196,7 @@ public partial class MainWindow : Window
         var progress = new Progress<(double Percent, string Status)>(p =>
         {
             Prog.Value = p.Percent;
-            StatusText.Text = p.Status;
+            StatusText.Text = $"{p.Status} {Math.Clamp(p.Percent, 0, 1):0%}";
         });
 
         try
@@ -236,6 +248,8 @@ public partial class MainWindow : Window
         PanelDone.Visibility = Visibility.Collapsed;
         PanelProgress.Visibility = Visibility.Visible;
         ProgressTitle.Text = _mode == SetupMode.Install ? Loc.T("Installing") : Loc.T("Uninstalling");
+        Prog.Value = 0;
+        StatusText.Text = "0%";
         BtnLangNext.Visibility = Visibility.Collapsed;
         BtnCancel.Visibility = Visibility.Collapsed;
         BtnPrimary.Visibility = Visibility.Collapsed;

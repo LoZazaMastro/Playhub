@@ -1,0 +1,137 @@
+{
+  "status": "editorial backlog, not applied; source pages identified, final prose and image rights require checking",
+  "snapshot_date": "2026-09-11",
+  "rules": [
+    "One main subject per annual day. Expanding an existing subject does not create another scheduled article.",
+    "Counts exclude connections and interludes; current_cards includes intro plus explicit chapters.",
+    "Use at least seven different horizontal images for an intro and six chapters. No cover in a narrative card unless its design is the actual subject.",
+    "Each chapter names its own subject in the kicker and explains its relation to the featured game.",
+    "Source links are primary evidence or primary-source research entry points. Do not treat an unverified release day as a fact."
+  ],
+  "items": [
+    {
+      "id": "sonic", "subject": "Sonic the Hedgehog", "current_chapters": 2, "current_cards": 3,
+      "date": "06-23", "year": 1991, "occasion": "North American Genesis release", "date_status": "verified official Sega",
+      "collision": "Super Mario 64 shares 06-23 in current anniversaries; the main selector chooses Sonic first. Do not silently omit Mario 64 or repeat Sonic on another day.",
+      "sources": ["https://sonic.sega.jp/SonicChannel/gametitle/SonicTheHedgehog.html", "https://sonic.sega.jp/SonicChannelOld/topics/pastevent/001/002.html"],
+      "chapters": [
+        {"subject":"Sonic the Hedgehog","title":"La velocità ha una silhouette","angle":"Design of the readable blue character; distinguish Naoto Ohshima's character design from Naka's programming and Yasuhara's level work.","image":"Horizontal original character design sheet, not an existing Naka portrait or cover."},
+        {"subject":"Green Hill Zone","title":"Il terreno prende la rincorsa","angle":"Slopes and loops as a geography of momentum, using actual first-game terrain.","image":"Wide authentic Green Hill gameplay at a loop, no reuse of hero."},
+        {"subject":"Gli anelli di Sonic","title":"Un errore che si può rincorrere","angle":"The scattered rings make damage visible and recoverable; explain mechanic without equating rings to invulnerability.","image":"Original-game damage moment with rings scattering, distinct stage."},
+        {"subject":"Masato Nakamura","title":"Un paesaggio che si riconosce a orecchio","angle":"Composer's direct interview about score creation, with clear relationship to Sonic 1991.","image":"Verified horizontal portrait or studio photograph of Nakamura, not anonymous concert photo."},
+        {"subject":"Labyrinth Zone","title":"Quando correre non basta","angle":"Water, air and constrained routes challenge the game's apparent promise of constant speed.","image":"Labyrinth Zone underwater gameplay, first game only."},
+        {"subject":"Sonic e Sega","title":"Una mascotte cambia il tono","angle":"The game as Sega's identity; avoid retelling Naka biography or reviewing every sequel.","image":"Archival horizontal Genesis demonstration or official period promotional scene, no box cover."}
+      ]
+    },
+    {
+      "id":"earth", "subject":"Final Fantasy VII", "current_chapters":2, "current_cards":3,
+      "date":"04-22", "occasion":"Earth Day, existing thematic slot", "date_status":"observance, not the game's release",
+      "sources":["https://www.jp.square-enix.com/ffvii_remake/about/index.html", "https://www.square-enix-games.com/en_GB/home/digging-deep-into-the-world-of-ffvii-remake", "https://www.square-enix.com/ffvii/en-us/games/remake/"],
+      "source_limit":"These official pages connect original staff and remake; obtain original-game development testimony before treating remake details as 1997 facts.",
+      "chapters":[
+        {"subject":"Midgar in Final Fantasy VII","title":"Una città che consuma il pianeta","angle":"The reactor city and environmental premise explain why this game appears on Earth Day.","image":"Original 1997 Midgar reactor/environment, not remake labelled as original."},
+        {"subject":"Cloud e il gruppo","title":"Una storia che non appartiene a uno solo","angle":"Relationships and shifting understanding; avoid unmarked major plot spoilers.","image":"Original-game party interaction, distinct from hero."},
+        {"subject":"La Materia","title":"Il potere si può combinare","angle":"How equipment and linked Materia let the player construct roles.","image":"Readable original Materia interface, horizontal without cropping UI."},
+        {"subject":"Gli scenari di Final Fantasy VII","title":"Fra fondale e poligono","angle":"Pre-rendered environments, real-time characters and cinematic transitions, tied to original-game evidence.","image":"Authentic original fixed-camera background with visible character."},
+        {"subject":"Nobuo Uematsu","title":"La memoria prende la forma di un tema","angle":"Musical identities of places and people; use a direct interview before asserting compositional intent.","image":"Distinct verified Uematsu portrait or original-score recording photo."},
+        {"subject":"Final Fantasy VII Remake","title":"Ritornare non significa ripetere","angle":"Explicitly label the later work and compare how memory of Midgar is reinterpreted.","image":"Official Remake Midgar gameplay, labelled with its own game name."}
+      ]
+    },
+    {
+      "id":"pacman", "subject":"Pac-Man", "current_chapters":2, "current_cards":3,
+      "date":null, "current_schedule":"Catalog theme exists but is not selected by current calendar/anniversaries; Ms. Pac-Man on 02-04 is a different game.",
+      "proposed_date":"05-22", "year":1980, "occasion":"First public location test; official birthday", "date_status":"verified official Bandai Namco; do not label as commercial release",
+      "replaces_current":"Celeste feature on 05-22", "replaces_after_calendar_replacements":"The diorama cultural essay on 05-22", "replacement_rule":"Replace one feature only. Do not create another Celeste or Pac-Man entry.",
+      "sources":["https://www.pacman.com/en/history/", "https://www.bandainamcoent.co.jp/pdfs/HP_No66-004_PAC-MAN%E2%80%99s%20Birthday%20%E2%80%93%20May%2022%2040th%20Anniversary%20Commemoration%20to%20be%20Held%20Worldwide%21.pdf"],
+      "chapters":[
+        {"subject":"Pac-Man","title":"Una bocca basta a raccontare un'azione","angle":"Readable eating action; do not turn a familiar pizza anecdote into the whole design story.","image":"Original arcade maze with Pac-Man eating, not a cover."},
+        {"subject":"Il labirinto di Pac-Man","title":"La strada torna su se stessa","angle":"Tunnels, junctions and revisited routes make one screen dynamic.","image":"Different original maze state highlighting a tunnel through real gameplay."},
+        {"subject":"I fantasmi di Pac-Man","title":"Quattro presenze, una sola pressione","angle":"Distinct enemy behaviours; require developer or technical primary documentation for exact algorithms.","image":"Original gameplay showing all four ghosts distinctly."},
+        {"subject":"Le energizer","title":"Per un momento cambia chi insegue","angle":"Power pellets reverse roles and turn fear into opportunity.","image":"Blue-ghost phase, different frame from previous maze images."},
+        {"subject":"Toru Iwatani","title":"Allargare il pubblico della sala giochi","angle":"Creator's intention and team context; avoid duplicating the separate April creator article.","image":"Verified horizontal Iwatani with the arcade machine, not a game screenshot labelled as portrait."},
+        {"subject":"Pac-Man fuori dal cabinato","title":"Il labirinto entra nella cultura pop","angle":"Official history of the character's cultural reach with dated examples.","image":"Archival licensed period merchandise/display, identifiable and not a modern unrelated mascot."}
+      ]
+    },
+    {
+      "id":"tetris", "subject":"Tetris", "current_chapters":2, "current_cards":3,
+      "date":"06-06", "year":1984, "occasion":"Officially celebrated creation anniversary", "date_status":"verify official anniversary wording; not a retail launch",
+      "sources":["https://tetris.com/news/the-history-of-tetris", "https://play.tetris.com/corporate-bios"],
+      "chapters":[
+        {"subject":"Alexey Pajitnov e Tetris","title":"Togliere pezzi per trovare una regola","angle":"Puzzle origin and early computing, from official creator history.","image":"Verified early Pajitnov or Electronika computer image, no stock modern PC."},
+        {"subject":"I tetramini","title":"Sette forme per infinite decisioni","angle":"Recognition, rotation and placement; keep original game's mechanics separate from later standards.","image":"Clean original game state displaying several piece types."},
+        {"subject":"Le linee di Tetris","title":"Il lavoro scompare quando riesce","angle":"Completed rows vanish; editorial reading of order under pressure.","image":"Different authentic line-clear moment."},
+        {"subject":"Tetris e Game Boy","title":"Una partita trova una tasca","angle":"1989 Nintendo licensing and portable distribution, clearly later than creation.","image":"Real Game Boy displaying Tetris, not its cover."},
+        {"subject":"Henk Rogers","title":"Il viaggio dei diritti","angle":"Actual licensing story from primary corporate biography; distinguish fact from film dramatization.","image":"Verified Rogers portrait or historical meeting photograph."},
+        {"subject":"Le partite competitive di Tetris","title":"Leggere prima che il pezzo arrivi","angle":"Player skill and competition; source a named official event before numerical records.","image":"Verified horizontal competition stage or authentic competitive gameplay, no reuse of original board."}
+      ]
+    },
+    {
+      "id":"streetfighter", "subject":"Street Fighter II", "current_chapters":2, "current_cards":3,
+      "date":"02-12", "current_schedule":"days table feature, separate from unused catalog theme", "date_status":"only 1991 confirmed by official sources checked; do not invent exact release day",
+      "sources":["https://game.capcom.com/cfn/sfv/column/132595?lang=en", "https://captown.capcom.com/en/classic_games/23", "https://www.capcom.co.jp/ir/english/feature/2017_sf30th.html"],
+      "chapters":[
+        {"subject":"Il cast di Street Fighter II","title":"Scegliere qualcuno significa scegliere un ritmo","angle":"Character differences and playable roster; name the original World Warrior edition.","image":"Original arcade character selection, no Super Turbo additions."},
+        {"subject":"Ryu e la distanza","title":"Lo spazio fra due corpi","angle":"Ranges, timing and threat as a conversation.","image":"Authentic Ryu match at mid-range with visible spacing."},
+        {"subject":"Le combo di Street Fighter II","title":"Quando un colpo ne chiama un altro","angle":"Use developer interview for origins; avoid repeating unverified accident folklore.","image":"Different real combo sequence frame, clear edition."},
+        {"subject":"Il cabinato a due giocatori","title":"Il prossimo avversario è accanto a te","angle":"Local challenger culture and physical proximity.","image":"Archival two-player arcade scene with identified Street Fighter II cabinet."},
+        {"subject":"Yoko Shimomura e Isao Abe","title":"Ogni arena ha un suono","angle":"Correct team credits and theme identities, primary evidence before intent claims.","image":"Verified composers or official original soundtrack production image."},
+        {"subject":"Le revisioni di Street Fighter II","title":"Una formula continua a cambiare","angle":"Clearly identify Champion Edition and later revisions; do not conflate first release mechanics.","image":"Different officially identified later-edition gameplay screen."}
+      ]
+    },
+    {
+      "id":"metalgear", "subject":"Metal Gear Solid", "current_chapters":2, "current_cards":3,
+      "date":"09-03", "year":1998, "occasion":"Japanese PlayStation release", "date_status":"existing verified anniversary; official archive confirms 1998",
+      "sources":["https://www.konami.com/mg/archive/mgs/introduction.html", "https://www.konami.com/mg/archive/mgs/about_mgs/index.html"],
+      "chapters":[
+        {"subject":"Shadow Moses","title":"Entrare senza appartenere","angle":"Opening infiltration, space and surveillance rather than Kojima biography.","image":"Original PS1 heliport infiltration, no remake or cover."},
+        {"subject":"Il radar di Metal Gear Solid","title":"Guardare se stessi dall'alto","angle":"Spatial awareness, alert and risk; verify original mechanic details.","image":"Original gameplay with readable radar and guard cone."},
+        {"subject":"Il Codec","title":"Una voce cambia il significato della stanza","angle":"Remote conversations as dramatic and practical devices.","image":"Distinct original Codec frame with named speakers."},
+        {"subject":"Psycho Mantis","title":"Il gioco si accorge del salotto","angle":"Controller and memory-card interaction; spoiler warning policy before final prose.","image":"Original boss arena, not repeated boss cover art."},
+        {"subject":"Yōji Shinkawa","title":"L'inchiostro dietro il poligono","angle":"Character art and identifiable production drawings; distinct from author's other articles.","image":"Verified horizontal Shinkawa concept sheet for MGS1998, proper subject credit."},
+        {"subject":"Metal Gear Solid e la regia","title":"Il controllo incontra la scena","angle":"Transitions between play and cinematics; connect to subsequent language without retelling Kojima's life.","image":"Original cinematic frame different from all gameplay cards."}
+      ]
+    },
+    {
+      "id":"mario64", "subject":"Super Mario 64", "current_chapters":2, "current_cards":3,
+      "date":"06-23", "year":1996, "occasion":"Japanese Nintendo 64 release", "date_status":"official Nintendo software list",
+      "collision":"Sonic's 1991 release occupies the same date and wins the main selector. A regional alternative (North America 09-29-1996) must be verified in a primary source before replacing the current RimWorld feature on 09-29. Do not change date yet.",
+      "sources":["https://www.nintendo.co.jp/n01/n64/software/1996.html", "https://www.nintendo.com/us/whatsnew/wahoo-see-the-platforming-history-of-super-mario-and-even-get-a-few-fun-facts/"],
+      "chapters":[
+        {"subject":"Il cortile di Super Mario 64","title":"Prima della missione, il corpo","angle":"Practice outside the castle; do not reuse Miyamoto article paragraph or image.","image":"Distinct original N64 courtyard action shot."},
+        {"subject":"Lakitu e la telecamera","title":"Anche lo sguardo deve imparare","angle":"Camera framing and navigation; honest about limitations.","image":"Original camera demonstration frame with Lakitu or relevant UI."},
+        {"subject":"Il castello di Peach","title":"Una casa per mondi impossibili","angle":"Hub, paintings and progressive access.","image":"Original interior hall, not courtyard again."},
+        {"subject":"Bob-omb Battlefield","title":"Tornare nello stesso luogo con un'altra domanda","angle":"Mission structure and revisiting spaces.","image":"Original mountain scene with a named mission context."},
+        {"subject":"Nuoto e movimento","title":"Il terreno smette di essere l'unica regola","angle":"Different movement modes within 3D space.","image":"Original underwater stage frame, distinct palette and scenery."},
+        {"subject":"L'eredità di Super Mario 64","title":"Un mondo da abitare con la levetta","angle":"The control vocabulary carried forward; use documented comparisons rather than first-ever claims.","image":"Official N64 controller with game running in background, different from Nintendo64 hardware article."}
+      ]
+    },
+    {
+      "id":"halo", "subject":"Halo: Combat Evolved", "current_chapters":0, "current_cards":0,
+      "current_schedule":"Absent from catalog and day table", "proposed_date":"11-15", "year":2001, "region":"NA", "occasion":"Original Xbox release",
+      "date_status":"verified official Halo anniversary page", "replaces_current":"Devolver Digital feature on 11-15", "collision_check":"No event, anniversary or calendar observance on 11-15 in the inspected catalog; topic absent. Replace feature, do not append a second story.",
+      "sources":["https://www.halowaypoint.com/news/celebrating-20-years-of-halo", "https://www.halowaypoint.com/news/halo-2-twentieth-anniversary", "https://download.microsoft.com/download/f/9/9/f99ab8f0-5191-4edd-b312-7a9b9e4784fa/halo2_covenant_mnl_us-en.pdf"],
+      "chapters":[
+        {"subject":"Halo: Combat Evolved su Xbox","title":"Uno sparatutto trova il salotto","angle":"Console controls and first-person play; never claim it was the first console FPS.","image":"Original CE gameplay with original Xbox controller in a separate verified production photograph if available."},
+        {"subject":"Il combattimento di Halo","title":"Un incontro, molte risposte","angle":"Weapons, grenades and melee form a flexible loop; get developer commentary before quoting '30 seconds of fun'.","image":"Original CE encounter with visible grenade/melee tactical context."},
+        {"subject":"Le arene e i Covenant","title":"Nemici che cambiano il problema","angle":"Encounter variation and readable enemy roles; verify AI details through developer material.","image":"Original CE arena with distinct Covenant types, not later-series units."},
+        {"subject":"Da Halo LAN a Halo 2 Xbox Live","title":"Il cavo attraversa la stanza, poi il mondo","angle":"CE supports local split-screen/System Link; Xbox Live's major Halo step is Halo 2 in 2004. State this distinction explicitly.","image":"Archival CE LAN setup or clearly labelled Halo2 online lobby, not claiming CE2001 Xbox Live."},
+        {"subject":"Martin O'Donnell e Michael Salvatori","title":"Un canto prima dello sparo","angle":"Original score's choral identity and credited composers; seek direct production interview for composition intent.","image":"Verified recording session/composer photograph or original opening ring vista, no generic orchestra."},
+        {"subject":"L'anello di Halo","title":"Un orizzonte che ritorna sopra di noi","angle":"World silhouette and legacy of the first game's encounters; avoid full-series biography.","image":"Distinct original CE landscape where the ring is visible overhead."}
+      ]
+    },
+    {
+      "id":"the-last-of-us", "subject":"The Last of Us", "current_chapters":0, "current_cards":0,
+      "current_schedule":"Absent from catalog and day table", "proposed_date":"06-14", "year":2013, "region":"WORLD", "occasion":"Original PlayStation 3 release",
+      "date_status":"verified developer announcement and Sony launch release", "replaces_current":"Immersive sim feature on 06-14", "collision_check":"No event, anniversary or calendar observance on 06-14 in the inspected catalog; topic absent. Replace feature, do not append a second story.",
+      "sources":["https://www.naughtydog.com/blog/the_last_of_us_development_series_episode_2_wasteland_beautiful", "https://www.prnewswire.com/news-releases/award-winning-developer-naughty-dog-launches-new-ip-the-last-of-us-exclusively-for-playstation3-211525641.html", "https://www.naughtydog.com/blog/cinematic_process_in_the_last_of_us_gamescom_2012", "https://blog.es.playstation.com/2013/05/17/la-msica-de-the-last-of-us/"],
+      "chapters":[
+        {"subject":"Joel ed Ellie","title":"La distanza fra due persone","angle":"Relationship emerging through shared travel and small exchanges, not a plot synopsis.","image":"Original-game Joel/Ellie interaction, horizontal scene with both faces visible."},
+        {"subject":"Troy Baker e Ashley Johnson","title":"La scena comincia prima del poligono","angle":"Performance capture and animation teamwork from Naughty Dog's cinematic-process material.","image":"Verified horizontal performance session photograph naming both actors, not television cast."},
+        {"subject":"La violenza in The Last of Us","title":"Ogni gesto lascia un peso","angle":"Scarcity, aftermath and player involvement; avoid celebrating gore or reducing themes to combat statistics.","image":"Non-graphic original-game aftermath/environmental tension, no explicit gore needed."},
+        {"subject":"Gli ambienti di The Last of Us","title":"La bellezza dopo l'abbandono","angle":"Naughty Dog's Wasteland Beautiful production account: nature and human traces.","image":"Original PS3/Remastered location with vegetation reclaiming architecture; identify version."},
+        {"subject":"Gustavo Santaolalla","title":"Poche corde, molto spazio","angle":"Official music interview and restrained instrumentation; do not reuse Koji Kondo/Uematsu images or generic guitar player.","image":"Verified Santaolalla studio/instrument portrait in landscape composition."},
+        {"subject":"L'eredità di The Last of Us","title":"Una storia che cambia mezzo","angle":"Later editions/adaptation as explicit later works; keep 2013 game identity clear and avoid duplicating Naughty Dog company article.","image":"Distinct official later-work production image explicitly captioned, or original game's quiet final-travel scene without major spoiler."}
+      ]
+    }
+  ]
+}

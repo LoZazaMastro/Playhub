@@ -1,0 +1,284 @@
+{
+ "images": {
+  "editorial-akihabara": [
+   {
+    "file": "editorial-akihabara-2.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0c/Akihabara_Night.jpg/1280px-Akihabara_Night.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Akihabara_Night.jpg",
+    "credit": "ElHeineken / CC BY 4.0",
+    "subject": "Akihabara",
+    "kind": "photo",
+    "rights": "ElHeineken / CC BY 4.0"
+   },
+   {
+    "file": "editorial-akihabara-4.jpg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/0/07/Akihabara_station_south_street%2C_1995%2C_%28by_Danny_Choo%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Akihabara_station_south_street,_1995,_(by_Danny_Choo).jpg",
+    "credit": "Danny Choo from Tokyo, Japan / CC BY-SA 2.0",
+    "subject": "Akihabara",
+    "kind": "photo",
+    "rights": "Danny Choo from Tokyo, Japan / CC BY-SA 2.0"
+   }
+  ],
+  "editorial-archaeogaming": [
+   {
+    "file": "editorial-archaeogaming-0.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/15/Atari_E.T._Dig-_Alamogordo%2C_New_Mexico_%2814036097792%29.jpg/1280px-Atari_E.T._Dig-_Alamogordo%2C_New_Mexico_%2814036097792%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atari_E.T._Dig-_Alamogordo,_New_Mexico_(14036097792).jpg",
+    "credit": "taylorhatmaker / CC BY 2.0",
+    "subject": "Archaeogaming",
+    "kind": "photo",
+    "rights": "taylorhatmaker / CC BY 2.0"
+   },
+   {
+    "file": "editorial-archaeogaming-1.jpg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/9/96/ET%21_%2814027894224%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:ET!_(14027894224).jpg",
+    "credit": "Jason from The Wasteland / CC BY 2.0",
+    "subject": "Archaeogaming",
+    "kind": "photo",
+    "rights": "Jason from The Wasteland / CC BY 2.0"
+   }
+  ],
+  "editorial-brutalism": [
+   {
+    "file": "editorial-brutalism-2.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Brutalist_architecture_of_UMass_Dartmouth.jpg/1280px-Brutalist_architecture_of_UMass_Dartmouth.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Brutalist_architecture_of_UMass_Dartmouth.jpg",
+    "credit": "Kenneth C. Zirkel / CC BY-SA 4.0",
+    "subject": "Architettura brutalista",
+    "kind": "photo",
+    "rights": "Kenneth C. Zirkel / CC BY-SA 4.0"
+   },
+   {
+    "file": "editorial-brutalism-4.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/Brutalist_architecture%2C_Ashford%2C_Kent.jpg/1280px-Brutalist_architecture%2C_Ashford%2C_Kent.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Brutalist_architecture,_Ashford,_Kent.jpg",
+    "credit": "JOHN K  THORNE / CC0",
+    "subject": "Architettura brutalista",
+    "kind": "photo",
+    "rights": "JOHN K  THORNE / CC0"
+   }
+  ],
+  "editorial-cdrom": [
+   {
+    "file": "editorial-cdrom-0.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/95/ASUS_CD-ROM_CD-S520-A4_20080821.jpg/1280px-ASUS_CD-ROM_CD-S520-A4_20080821.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:ASUS_CD-ROM_CD-S520-A4_20080821.jpg",
+    "credit": "Asim18 / CC BY 3.0",
+    "subject": "CD-ROM",
+    "kind": "photo",
+    "rights": "Asim18 / CC BY 3.0"
+   },
+   {
+    "file": "editorial-cdrom-2.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/Cd_rom_drive_with_door_open.jpg/1280px-Cd_rom_drive_with_door_open.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cd_rom_drive_with_door_open.jpg",
+    "credit": "Leon Brooks / Public domain",
+    "subject": "CD-ROM",
+    "kind": "photo",
+    "rights": "Leon Brooks / Public domain"
+   }
+  ],
+  "editorial-cosplay": [
+   {
+    "file": "editorial-cosplay-2.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Video_Game_Character_Cosplay_Impa%2C_Zelda%2C_Link_SWS.jpg/1280px-Video_Game_Character_Cosplay_Impa%2C_Zelda%2C_Link_SWS.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Video_Game_Character_Cosplay_Impa,_Zelda,_Link_SWS.jpg",
+    "credit": "Rhona-Mae Arca / CC BY 2.0",
+    "subject": "Cosplay videoludico",
+    "kind": "photo",
+    "rights": "Rhona-Mae Arca / CC BY 2.0"
+   },
+   {
+    "file": "editorial-cosplay-3.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/37/Video_Game_Cosplay_Contest_Amy_Rose_Cosplayer_at_Dragon_Con_2023.jpg/1280px-Video_Game_Cosplay_Contest_Amy_Rose_Cosplayer_at_Dragon_Con_2023.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Video_Game_Cosplay_Contest_Amy_Rose_Cosplayer_at_Dragon_Con_2023.jpg",
+    "credit": "John Manard / CC BY-SA 2.0",
+    "subject": "Cosplay videoludico",
+    "kind": "photo",
+    "rights": "John Manard / CC BY-SA 2.0"
+   }
+  ],
+  "editorial-cyberpunk": [
+   {
+    "file": "editorial-cyberpunk-0.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/Cyberpunk_city_%284065413356%29.jpg/1280px-Cyberpunk_city_%284065413356%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cyberpunk_city_(4065413356).jpg",
+    "credit": "▓▒░ TORLEY ░▒▓ from torley.com / CC BY-SA 2.0",
+    "subject": "Cyberpunk",
+    "kind": "artwork",
+    "rights": "▓▒░ TORLEY ░▒▓ from torley.com / CC BY-SA 2.0"
+   },
+   {
+    "file": "editorial-cyberpunk-2.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/62/Cyberpunk_City.jpg/1280px-Cyberpunk_City.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cyberpunk_City.jpg",
+    "credit": "Missingnokz / CC BY-SA 4.0",
+    "subject": "Cyberpunk",
+    "kind": "artwork",
+    "rights": "Missingnokz / CC BY-SA 4.0"
+   }
+  ],
+  "editorial-diorama": [
+   {
+    "file": "editorial-diorama-1.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Penang_Ferry_Museum_diorama_05.jpg/1280px-Penang_Ferry_Museum_diorama_05.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Penang_Ferry_Museum_diorama_05.jpg",
+    "credit": "LEE 003 / CC BY 4.0",
+    "subject": "Diorami",
+    "kind": "photo",
+    "rights": "LEE 003 / CC BY 4.0"
+   },
+   {
+    "file": "editorial-diorama-2.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e7/Penang_Ferry_Museum_diorama_13.jpg/1280px-Penang_Ferry_Museum_diorama_13.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Penang_Ferry_Museum_diorama_13.jpg",
+    "credit": "LEE 003 / CC BY 4.0",
+    "subject": "Diorami",
+    "kind": "photo",
+    "rights": "LEE 003 / CC BY 4.0"
+   }
+  ],
+  "editorial-inkwash": [
+   {
+    "file": "editorial-inkwash-0.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Qian_Du_-_Ink_Landscape_%281805%29.jpg/1280px-Qian_Du_-_Ink_Landscape_%281805%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Qian_Du_-_Ink_Landscape_(1805).jpg",
+    "credit": "Qian Du / Public domain",
+    "subject": "Pittura a inchiostro",
+    "kind": "artwork",
+    "rights": "Qian Du / Public domain"
+   },
+   {
+    "file": "editorial-inkwash-2.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/Detail_of_landscape_by_Wu_Pin_%28Wu_Bin%29%2C_ink_and_color_on_paper%2C_1610.JPG/1280px-Detail_of_landscape_by_Wu_Pin_%28Wu_Bin%29%2C_ink_and_color_on_paper%2C_1610.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Detail_of_landscape_by_Wu_Pin_(Wu_Bin),_ink_and_color_on_paper,_1610.JPG",
+    "credit": "Wu Pin (Wu Bin) / Public domain",
+    "subject": "Pittura a inchiostro",
+    "kind": "artwork",
+    "rights": "Wu Pin (Wu Bin) / Public domain"
+   }
+  ],
+  "editorial-logo": [
+   {
+    "file": "editorial-logo-0.jpg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/f/f1/LibreLogo_Turtle_graphics.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:LibreLogo_Turtle_graphics.png",
+    "credit": "LibreLogo developers / GPL",
+    "subject": "Logo",
+    "kind": "photo",
+    "rights": "LibreLogo developers / GPL"
+   },
+   {
+    "file": "editorial-logo-2.jpg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/e/e9/TurtleGraphics1.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:TurtleGraphics1.png",
+    "credit": "Vadim Rumyantsev / Public domain",
+    "subject": "Logo",
+    "kind": "photo",
+    "rights": "Vadim Rumyantsev / Public domain"
+   }
+  ],
+  "editorial-pinball": [
+   {
+    "file": "editorial-pinball-0.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/Pinball-DoctorWho-Playfield-Tardis.jpg/1280px-Pinball-DoctorWho-Playfield-Tardis.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Pinball-DoctorWho-Playfield-Tardis.jpg",
+    "credit": "Clark Mills (clark@kiwi.gen.nz) / CC BY-SA 3.0",
+    "subject": "Flipper",
+    "kind": "photo",
+    "rights": "Clark Mills (clark@kiwi.gen.nz) / CC BY-SA 3.0"
+   },
+   {
+    "file": "editorial-pinball-1.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/Playfield_of_Star_Wars%E2%80%93Themed_Pinball_Machine.jpg/1280px-Playfield_of_Star_Wars%E2%80%93Themed_Pinball_Machine.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Playfield_of_Star_Wars%E2%80%93Themed_Pinball_Machine.jpg",
+    "credit": "Tessa Bury / CC BY 4.0",
+    "subject": "Flipper",
+    "kind": "photo",
+    "rights": "Tessa Bury / CC BY 4.0"
+   }
+  ],
+  "editorial-underwater-sound": [
+   {
+    "file": "editorial-underwater-sound-0.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cb/Hydrophone_arrays_on_the_USNS_Kane.jpg/1280px-Hydrophone_arrays_on_the_USNS_Kane.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hydrophone_arrays_on_the_USNS_Kane.jpg",
+    "credit": "Credit Line: AIP Emilio Segrè Visual Archives, Gift of Bill Woodward, USNS Kane Collection / CC0",
+    "subject": "Acustica subacquea",
+    "kind": "photo",
+    "rights": "Credit Line: AIP Emilio Segrè Visual Archives, Gift of Bill Woodward, USNS Kane Collection / CC0"
+   },
+   {
+    "file": "editorial-underwater-sound-2.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/%D0%A1%D1%85%D0%B5%D0%BC%D0%B0_%D0%BA_%D1%81%D1%82%D0%B0%D1%82%D1%8C%D0%B5_%C2%AB%D0%93%D0%B8%D0%B4%D1%80%D0%BE%D1%84%D0%BE%D0%BD%C2%BB._%D0%92%D0%BE%D0%B5%D0%BD%D0%BD%D0%B0%D1%8F_%D1%8D%D0%BD%D1%86%D0%B8%D0%BA%D0%BB%D0%BE%D0%BF%D0%B5%D0%B4%D0%B8%D1%8F_%D0%A1%D1%8B%D1%82%D0%B8%D0%BD%D0%B0_%28%D0%A1%D0%B0%D0%BD%D0%BA%D1%82-%D0%9F%D0%B5%D1%82%D0%B5%D1%80%D0%B1%D1%83%D1%80%D0%B3%2C_1911-1915%29.jpg/1280px-%D0%A1%D1%85%D0%B5%D0%BC%D0%B0_%D0%BA_%D1%81%D1%82%D0%B0%D1%82%D1%8C%D0%B5_%C2%AB%D0%93%D0%B8%D0%B4%D1%80%D0%BE%D1%84%D0%BE%D0%BD%C2%BB._%D0%92%D0%BE%D0%B5%D0%BD%D0%BD%D0%B0%D1%8F_%D1%8D%D0%BD%D1%86%D0%B8%D0%BA%D0%BB%D0%BE%D0%BF%D0%B5%D0%B4%D0%B8%D1%8F_%D0%A1%D1%8B%D1%82%D0%B8%D0%BD%D0%B0_%28%D0%A1%D0%B0%D0%BD%D0%BA%D1%82-%D0%9F%D0%B5%D1%82%D0%B5%D1%80%D0%B1%D1%83%D1%80%D0%B3%2C_1911-1915%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:%D0%A1%D1%85%D0%B5%D0%BC%D0%B0_%D0%BA_%D1%81%D1%82%D0%B0%D1%82%D1%8C%D0%B5_%C2%AB%D0%93%D0%B8%D0%B4%D1%80%D0%BE%D1%84%D0%BE%D0%BD%C2%BB._%D0%92%D0%BE%D0%B5%D0%BD%D0%BD%D0%B0%D1%8F_%D1%8D%D0%BD%D1%86%D0%B8%D0%BA%D0%BB%D0%BE%D0%BF%D0%B5%D0%B4%D0%B8%D1%8F_%D0%A1%D1%8B%D1%82%D0%B8%D0%BD%D0%B0_(%D0%A1%D0%B0%D0%BD%D0%BA%D1%82-%D0%9F%D0%B5%D1%82%D0%B5%D1%80%D0%B1%D1%83%D1%80%D0%B3,_1911-1915).jpg",
+    "credit": "«Военная энциклопедия» Ивана Дмитриевича Сытина. (Санкт-Петербург; 1912 год). / Public domain",
+    "subject": "Acustica subacquea",
+    "kind": "photo",
+    "rights": "«Военная энциклопедия» Ивана Дмитриевича Сытина. (Санкт-Петербург; 1912 год). / Public domain"
+   }
+  ],
+  "editorial-heraldry": [
+   {
+    "file": "editorial-heraldry-1.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Heraldic_Stained_glass_window%2C_St_Wilfreds_church%2C_Honington_%28geograph_4894811%29.jpg/1280px-Heraldic_Stained_glass_window%2C_St_Wilfreds_church%2C_Honington_%28geograph_4894811%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Heraldic_Stained_glass_window,_St_Wilfreds_church,_Honington_(geograph_4894811).jpg",
+    "credit": "Julian P Guffogg / CC BY-SA 2.0",
+    "subject": "Araldica e mondi fantastici",
+    "kind": "photo",
+    "rights": "Julian P Guffogg / CC BY-SA 2.0"
+   },
+   {
+    "file": "editorial-heraldry-2.jpg",
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/Heraldic_stained_glass_window%2C_All_Saints_church%2C_Laughton_%28geograph_4484310%29.jpg/1280px-Heraldic_stained_glass_window%2C_All_Saints_church%2C_Laughton_%28geograph_4484310%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Heraldic_stained_glass_window,_All_Saints_church,_Laughton_(geograph_4484310).jpg",
+    "credit": "Julian P Guffogg / CC BY-SA 2.0",
+    "subject": "Araldica e mondi fantastici",
+    "kind": "photo",
+    "rights": "Julian P Guffogg / CC BY-SA 2.0"
+   }
+  ],
+  "editorial-lego": [
+   {
+    "file": "editorial-lego-0.jpg",
+    "subject": "Videogiochi LEGO",
+    "kind": "screenshot",
+    "url": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/32440/ss_1e91605a63b3d38ea9abe6a930be751420b91eb9.1920x1080.jpg?t=1604517910",
+    "sourceUrl": "https://store.steampowered.com/app/32440/",
+    "credit": "Game imagery: respective publisher and rights holders.",
+    "rights": "Game imagery: respective publisher and rights holders."
+   },
+   {
+    "file": "editorial-lego-1.jpg",
+    "subject": "Videogiochi LEGO",
+    "kind": "screenshot",
+    "url": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/32440/ss_13732fbdccb28f1af1c3e6f4843fd88528594e2f.1920x1080.jpg?t=1604517910",
+    "sourceUrl": "https://store.steampowered.com/app/32440/",
+    "credit": "Game imagery: respective publisher and rights holders.",
+    "rights": "Game imagery: respective publisher and rights holders."
+   }
+  ],
+  "editorial-manuals": [
+   {
+    "file": "editorial-manuals-0.jpg",
+    "subject": "Manuali dei videogiochi",
+    "kind": "photo",
+    "url": "https://quuxplusone.github.io/blog/images/2025-04-19-vecchitto-tetris-2.jpg",
+    "sourceUrl": "https://quuxplusone.github.io/blog/2025/04/19/tetromino-names/",
+    "credit": "Nintendo / photograph or scan via linked source",
+    "rights": "Copyright of respective rights holders; editorial reference"
+   },
+   {
+    "file": "editorial-manuals-1.jpg",
+    "subject": "Manuali dei videogiochi",
+    "kind": "photo",
+    "url": "https://coregamingnh.com/cdn/shop/files/IMG_8784_68e5168f-6f39-458c-be68-702887a2f2e7.jpg?v=1728508040&width=1080",
+    "sourceUrl": "https://coregamingnh.com/products/super-mario-bros-2-nes-nintendo-entertainment-system-manual-only-du10924",
+    "credit": "Nintendo / photograph or scan via linked source",
+    "rights": "Copyright of respective rights holders; editorial reference"
+   }
+  ]
+ }
+}

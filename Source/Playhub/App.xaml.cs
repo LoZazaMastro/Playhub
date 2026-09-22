@@ -5,6 +5,7 @@ using Playhub.Services;
 using System;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace Playhub;
 
@@ -102,12 +103,19 @@ public partial class App : Application
 
     private static async Task<bool> TryHandleCommandLineLaunch(string? arguments)
     {
-        if (string.IsNullOrWhiteSpace(arguments))
+        // Unpackaged WinUI can leave LaunchActivatedEventArgs.Arguments empty.
+        var parsed = string.IsNullOrWhiteSpace(arguments)
+            ? Environment.GetCommandLineArgs().Skip(1).ToList()
+            : CommandLine.Parse(arguments);
+        if (parsed.Count > 0 && string.Equals(parsed[0], "diagnostics-report", StringComparison.OrdinalIgnoreCase))
         {
-            return false;
+            if (parsed.Count == 2 && Guid.TryParseExact(parsed[1], "N", out var requestId))
+            {
+                try { await SupportReportCommand.RunAsync(requestId); }
+                catch (Exception error) { Diag.Crash("Diagnostic command receipt", error); }
+            }
+            return true;
         }
-
-        var parsed = CommandLine.Parse(arguments);
         if (parsed.Count >= 3 && string.Equals(parsed[0], "uwp-launch", StringComparison.OrdinalIgnoreCase))
         {
             var extraArgs = parsed.Count > 3 ? string.Join(' ', parsed.GetRange(3, parsed.Count - 3)) : string.Empty;

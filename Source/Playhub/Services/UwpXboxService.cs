@@ -178,6 +178,10 @@ public sealed class UwpXboxService
         }
     }
 
+    // Formato cover scelto in "Importa Giochi" (CoverFormat.Vertical / .Square).
+    // Impostato da MainWindow quando si carica o si cambia l'impostazione.
+    public string CoverFormat { get; set; } = global::Playhub.Services.CoverFormat.Vertical;
+
     public async Task PopulateSteamGridDbCoversAsync(IEnumerable<UwpGameEntry> games, string steamGridDbApiKey)
     {
         if (string.IsNullOrWhiteSpace(steamGridDbApiKey))
@@ -185,7 +189,7 @@ public sealed class UwpXboxService
             return;
         }
 
-        var cacheDirectory = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb", "covers");
+        var cacheDirectory = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb", global::Playhub.Services.CoverFormat.CoverCacheFolder(CoverFormat));
         Directory.CreateDirectory(cacheDirectory);
         using var gate = new SemaphoreSlim(4);
         using var metadataGate = new SemaphoreSlim(4);
@@ -418,7 +422,7 @@ public sealed class UwpXboxService
             return false;
         }
 
-        var cacheDirectory = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb", "covers");
+        var cacheDirectory = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb", global::Playhub.Services.CoverFormat.CoverCacheFolder(CoverFormat));
         Directory.CreateDirectory(cacheDirectory);
         var cacheKey = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(game.Aumid)))
             .Substring(0, 24)
@@ -461,14 +465,15 @@ public sealed class UwpXboxService
         }
 
         game.SteamGridDbGameId = gameId.Value;
+        var coverDimensions = global::Playhub.Services.CoverFormat.GridDimensions(CoverFormat);
         var endpoint = NormalizeArtworkType(artworkType) switch
         {
-            "cover" => $"grids/game/{gameId}?dimensions=600x900,342x482,660x930",
+            "cover" => $"grids/game/{gameId}?dimensions={coverDimensions}",
             "banner" => $"grids/game/{gameId}?dimensions=460x215,920x430",
             "hero" => $"heroes/game/{gameId}",
             "logo" => $"logos/game/{gameId}",
             "icon" => $"icons/game/{gameId}",
-            _ => $"grids/game/{gameId}?dimensions=600x900,342x482,660x930"
+            _ => $"grids/game/{gameId}?dimensions={coverDimensions}"
         };
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "https://www.steamgriddb.com/api/v2/" + endpoint);
@@ -1107,7 +1112,8 @@ public sealed class UwpXboxService
             return null;
         }
 
-        var gridsUrl = $"https://www.steamgriddb.com/api/v2/grids/game/{gameId}?dimensions=600x900,342x482,660x930";
+        var gridsDimensions = global::Playhub.Services.CoverFormat.GridDimensions(CoverFormat);
+        var gridsUrl = $"https://www.steamgriddb.com/api/v2/grids/game/{gameId}?dimensions={gridsDimensions}";
         using var gridsRequest = new HttpRequestMessage(HttpMethod.Get, gridsUrl);
         gridsRequest.Headers.Add("Authorization", $"Bearer {apiKey}");
         using var gridsResponse = await _http.SendAsync(gridsRequest);

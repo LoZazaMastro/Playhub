@@ -379,6 +379,7 @@ public sealed partial class MainWindow
         var operation = new PluginInstallOperation { Plugin = plugin, Updating = plugin.IsInstalled };
         _pluginInstallOperations.Add(key, operation);
         _pluginInstallErrors.Remove(key);
+        string? restartPromptTitle = null;
         try
         {
             PublishPluginInstallProgress(key, operation);
@@ -405,7 +406,8 @@ public sealed partial class MainWindow
             PublishPluginInstallProgress(key, operation);
             if (!bulkOperation)
                 await CommitPluginInstallStateAsync(plugin);
-            return true;
+            if (!bulkOperation)
+                restartPromptTitle = operation.Updating ? "Plugin aggiornato." : "Il plugin è stato installato.";
         }
         catch (Exception ex)
         {
@@ -419,6 +421,64 @@ public sealed partial class MainWindow
             operation.AcceptingProgress = false;
             _pluginInstallOperations.Remove(key);
             PublishPluginInstallProgress(key, operation.Installed ? operation : null);
+        }
+
+        if (restartPromptTitle is not null)
+            await ShowPluginRestartDialogAsync(restartPromptTitle);
+        return true;
+    }
+
+    private async Task ShowPluginRestartDialogAsync(string title)
+    {
+        if (!_settings.PluginRestartPromptsEnabled)
+            return;
+
+        try
+        {
+            var dontAskAgain = new CheckBox
+            {
+                Content = T("Non chiedermelo più"),
+                Margin = new Thickness(0, 12, 0, 0)
+            };
+            var content = new StackPanel { Spacing = 4 };
+            content.Children.Add(new TextBlock
+            {
+                Text = T("Vuoi riavviare Decky ora?"),
+                TextWrapping = TextWrapping.Wrap
+            });
+            content.Children.Add(dontAskAgain);
+            var dialog = new ContentDialog
+            {
+                Title = T(title),
+                Content = content,
+                PrimaryButtonText = T("Ok"),
+                CloseButtonText = T("Più tardi"),
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = Content.XamlRoot
+            };
+            ConfigureDialogEntrance(dialog);
+            var result = await dialog.ShowAsync();
+            if (dontAskAgain.IsChecked == true)
+            {
+                _settings.PluginRestartPromptsEnabled = false;
+                if (_pluginRestartPromptsToggle is not null)
+                {
+                    _loadingSettings = true;
+                    _pluginRestartPromptsToggle.IsOn = false;
+                    _loadingSettings = false;
+                }
+                await SaveSettingsSilentlyAsync();
+            }
+            if (result != ContentDialogResult.Primary)
+                return;
+
+            var success = await _deckyInstaller.RestartWithSteamAsync(_steam);
+            if (!success)
+                SetStatus("Non riesco a riavviare DeckyLoader e Steam. Riprova.", InfoBarSeverity.Warning);
+        }
+        catch (Exception ex)
+        {
+            Diag.Crash("Plugin install restart prompt", ex);
         }
     }
 

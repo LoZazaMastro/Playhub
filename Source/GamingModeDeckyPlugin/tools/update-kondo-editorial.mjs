@@ -1,0 +1,26 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const catalogPath=path.join(root,'quick_settings/history_editorial.json');
+const manifestPath=path.join(root,'quick_settings/history_images.json');
+const catalog=JSON.parse(fs.readFileSync(catalogPath,'utf8'));
+const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
+const content=JSON.parse(fs.readFileSync(path.join(root,'tools/kondo-content.json'),'utf8'));
+const theme=catalog.themes.find(t=>t.id==='kondo');
+const existing=theme.chapters.filter(c=>!['kondo-early.png','kondo-piano.png','mario-1.jpg','kondo-mario-rhythm.jpg'].includes(c.image_file));
+if(existing.length!==2) throw Error('Expected the two existing Zelda chapters');
+existing.forEach((chapter,index)=>{
+ chapter.subject='The Legend of Zelda: Ocarina of Time';
+ chapter.kicker=Object.fromEntries(Object.keys(chapter.title).map(lang=>[lang,'THE LEGEND OF ZELDA: OCARINA OF TIME']));
+ chapter.image_role='game';
+ chapter.image_file=index===1?'kondo-ocarina-playing.jpg':'kondo-0.jpg';
+});
+content.chapters[1].image_file='kondo-mario-rhythm.jpg';
+theme.chapters=[content.chapters[0],content.chapters[1],...existing,content.chapters[2]];
+theme.sources=[...new Set([...theme.sources,...content.sources])];
+manifest.kondo=manifest.kondo.filter(i=>i.file!=='mario-1.jpg');
+manifest.kondo.sort((a,b)=>Number(b.file==='kondo-intro.png')-Number(a.file==='kondo-intro.png'));
+fs.writeFileSync(catalogPath,JSON.stringify(catalog,null,1)+'\n');
+fs.writeFileSync(manifestPath,JSON.stringify(manifest,null,1)+'\n');
+console.log('Kondo: introductory portrait and five explicitly illustrated chapters.');

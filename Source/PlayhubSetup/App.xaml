@@ -15,15 +15,20 @@
     <SolidColorBrush x:Key="SurfaceStroke" Color="#2A2D30"/>
     <SolidColorBrush x:Key="TrackColor" Color="#33000000"/>
 
+    <Style x:Key="InstallerButton" TargetType="Button">
+      <Setter Property="Width" Value="160"/>
+      <Setter Property="Height" Value="40"/>
+      <Setter Property="Padding" Value="16,0"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
     <!-- ====== Pulsante primario (accent giallo, testo scuro) ====== -->
-    <Style x:Key="PrimaryButton" TargetType="Button">
+    <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource InstallerButton}">
       <Setter Property="Background" Value="{StaticResource Accent}"/>
       <Setter Property="Foreground" Value="#1A1A1A"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="FontSize" Value="14"/>
-      <Setter Property="Height" Value="40"/>
-      <Setter Property="MinWidth" Value="132"/>
-      <Setter Property="Padding" Value="20,0"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Template">
         <Setter.Value>
@@ -48,13 +53,10 @@
     </Style>
 
     <!-- ====== Pulsante secondario (ghost) ====== -->
-    <Style x:Key="GhostButton" TargetType="Button">
+    <Style x:Key="GhostButton" TargetType="Button" BasedOn="{StaticResource InstallerButton}">
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
       <Setter Property="FontSize" Value="14"/>
-      <Setter Property="Height" Value="40"/>
-      <Setter Property="MinWidth" Value="110"/>
-      <Setter Property="Padding" Value="18,0"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Template">
         <Setter.Value>

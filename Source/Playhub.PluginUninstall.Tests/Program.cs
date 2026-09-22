@@ -16,6 +16,12 @@ namespace Playhub
         private readonly ObservableCollection<DeckyPluginInfo> _plugins = new();
         private readonly FakePluginService _pluginService = new();
         private readonly Settings _settings = new();
+        private readonly FakeDeckyInstaller _deckyInstaller = new();
+        private readonly object _steam = new();
+        private readonly FrameworkElement Content = new();
+        private ToggleSwitch? _pluginRestartPromptsToggle;
+        private bool _loadingSettings;
+        private int _settingsSaves;
         private bool _pluginBulkUpdateRunning;
         private bool _pluginCardsDirty;
         private bool _pluginManagementDirty;
@@ -24,7 +30,20 @@ namespace Playhub
         private string? _pluginPagePluginKey;
         private int _viewInvalidations, _featuredInvalidations, _renders, _detailsRefreshes, _detailsCloses;
         private static int _forbiddenStoreUiCalls;
-        private sealed class Settings { public string DeckyPluginsPath => "fake-plugins"; }
+        private sealed class Settings
+        {
+            public string DeckyPluginsPath => "fake-plugins";
+            public bool PluginRestartPromptsEnabled { get; set; }
+        }
+        private sealed class FakeDeckyInstaller
+        {
+            public int RestartCalls { get; private set; }
+            public Task<bool> RestartWithSteamAsync(object steam)
+            {
+                RestartCalls++;
+                return Task.FromResult(true);
+            }
+        }
         private static IDisposable BeginNotificationContext(string context) => new Scope();
         private sealed class Scope : IDisposable { public void Dispose() { } }
         private static string T(string text) => text;
@@ -49,6 +68,12 @@ namespace Playhub
             throw new InvalidOperationException("Store status popups are forbidden.");
         }
         private static string FriendlyError(Exception exception) => exception.Message;
+        private static void ConfigureDialogEntrance(ContentDialog dialog) { }
+        private Task SaveSettingsSilentlyAsync()
+        {
+            _settingsSaves++;
+            return Task.CompletedTask;
+        }
         private static void MarkPluginInstalled(DeckyPluginInfo plugin)
         {
             plugin.IsInstalled = true;
@@ -102,10 +127,11 @@ namespace Playhub
             await GuardsAsync();
             await LocalOnlyAndConcurrentAsync();
             await ReinstallVersionAsync();
+            await RestartPromptsAsync();
             await IntegratedGamingModeGuardsAsync();
             WeakSubscriptions();
             Check(_forbiddenStoreUiCalls == 0, "Store action attempted a confirmation or status popup.");
-            Console.WriteLine("PASS all 9 uninstall lifecycle suites (fake controls, no real processes/services; temporary fixture I/O only)");
+            Console.WriteLine("PASS all 10 plugin lifecycle suites (fake controls, no real processes/services; temporary fixture I/O only)");
         }
 
         private static async Task TemporaryDirectoryRemovalAsync()
@@ -473,6 +499,46 @@ namespace Playhub
                 cached.Version == "3.2.1" && cached.InstalledFolder == "fake-plugins/new-folder",
                 "Cached uninstall view retained old installed version/folder after reinstall.");
             Console.WriteLine("PASS fresh installed version/folder reaches cached uninstall views after reinstall");
+        }
+
+        private static async Task RestartPromptsAsync()
+        {
+            ContentDialog.Reset();
+            var window = new MainWindow();
+            window._settings.PluginRestartPromptsEnabled = true;
+            window._pluginService.Install = _ => Task.CompletedTask;
+
+            var fresh = Plugin("fresh");
+            DeckyPluginService.MarkPluginUninstalled(fresh);
+            Check(await window.InstallPluginWithProgressAsync(fresh), "Fresh install failed in restart-prompt fixture.");
+            var installDialog = ContentDialog.LastShown ?? throw new Exception("Fresh install did not show the restart prompt.");
+            Check(ContentDialog.ShowCount == 1 && Equals(installDialog.Title, "Il plugin è stato installato.") &&
+                installDialog.PrimaryButtonText == "Ok" && installDialog.CloseButtonText == "Più tardi" &&
+                window._deckyInstaller.RestartCalls == 0, "Fresh-install restart prompt content or default action is wrong.");
+
+            ContentDialog.NextResult = ContentDialogResult.Primary;
+            var update = Plugin("update");
+            Check(await window.InstallPluginWithProgressAsync(update), "Single update failed in restart-prompt fixture.");
+            Check(ContentDialog.ShowCount == 2 && Equals(ContentDialog.LastShown?.Title, "Plugin aggiornato.") &&
+                window._deckyInstaller.RestartCalls == 1, "Single-update prompt did not restart Decky after OK.");
+
+            ContentDialog.NextResult = ContentDialogResult.None;
+            ContentDialog.CheckDontAskAgain = true;
+            var suppress = Plugin("suppress");
+            Check(await window.InstallPluginWithProgressAsync(suppress), "Suppression fixture update failed.");
+            Check(!window._settings.PluginRestartPromptsEnabled && window._settingsSaves == 1,
+                "Don't-ask-again did not persist restart-prompt suppression.");
+
+            ContentDialog.CheckDontAskAgain = false;
+            var hidden = Plugin("hidden");
+            Check(await window.InstallPluginWithProgressAsync(hidden) && ContentDialog.ShowCount == 3,
+                "Suppressed restart prompt was shown again.");
+
+            window._settings.PluginRestartPromptsEnabled = true;
+            var bulk = Plugin("bulk");
+            Check(await window.InstallPluginWithProgressAsync(bulk, bulkOperation: true) && ContentDialog.ShowCount == 3,
+                "Bulk update showed a per-plugin restart prompt.");
+            Console.WriteLine("PASS install/update restart prompts, OK restart, persisted suppression, and bulk de-duplication");
         }
 
         private static async Task IntegratedGamingModeGuardsAsync()

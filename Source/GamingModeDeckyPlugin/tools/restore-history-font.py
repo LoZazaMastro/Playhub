@@ -1,0 +1,2 @@
+from pathlib import Path
+p=Path('src/DailyHistory.tsx');s=p.read_text(encoding='utf8');s=s.replace('font:clamp(24px,2.6vw,36px) Georgia,serif','font-family:inherit;font-size:clamp(24px,2.6vw,36px);font-weight:300').replace('font:clamp(36px,4.5vw,66px)/1.06 Georgia,serif','font-family:inherit;font-size:clamp(32px,3.7vw,52px);line-height:1.12;font-weight:400').replace('font:clamp(26px,3vw,38px)/1.14 Georgia,serif','font-family:inherit;font-size:clamp(26px,3vw,38px);line-height:1.14;font-weight:400');p.write_text(s,encoding='utf8')

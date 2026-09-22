@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -26,7 +26,7 @@ public sealed record InstallOptions(
 public static class Installer
 {
     public const string AppName = "Playhub";
-    public const string AppVersion = "1.3.1";
+    public const string AppVersion = "2.0.0";
     public const string Publisher = "Andrea Sgarro (LoZazaMastro)";
     public const string AppExeName = "Playhub.exe";
     public const string UninstallerName = "unins-playhub.exe";
@@ -209,7 +209,7 @@ public static class Installer
                     File.Move(Path.Combine(staged, item.Relative), item.Target);
                 }
                 done++;
-                progress.Report((0.05 + 0.83 * done / total, Loc.T("CopyingFiles") + " " + done + "/" + total));
+                progress.Report((0.05 + 0.83 * done / total, Loc.T("CopyingFiles")));
             }
         }
         catch (Exception installError)
@@ -254,7 +254,7 @@ public static class Installer
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
             File.Copy(file, target, overwrite: true);
             done++;
-            progress.Report((0.05 + 0.83 * done / total, Loc.T("CopyingFiles") + " " + done + "/" + total));
+            progress.Report((0.05 + 0.83 * done / total, Loc.T("CopyingFiles")));
         }
     }
 

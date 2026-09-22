@@ -117,6 +117,18 @@ Note: the bundled UWPHook.exe also embeds its own open-source dependencies
 licenses (MIT / Apache-2.0) are documented in the UWPHook repository.
 
 -------------------------------------------------------------------------------
+PawnIO  -  https://pawnio.eu  -  https://github.com/namazso/PawnIO.Setup
+   Not included in Playhub. Playhub does NOT bundle, redistribute or modify the
+   PawnIO driver: on explicit user request it downloads the official signed
+   installer from its pinned release URL, verifies the SHA-256 digest and the
+   Authenticode signature, and runs it in front of the user, who completes the
+   installation and accepts the Windows driver prompt.
+   Once installed, Playhub talks to the driver only through DeviceIoControl on
+   its published device interface: a process boundary, not linking.
+   PawnIO is licensed GPL-2.0-or-later (its modules LGPL-2.1) and is Copyright
+   its authors (namazso and contributors).
+
+-------------------------------------------------------------------------------
 TRADEMARKS
 
 Steam, the Steam Controller and related logos and images are trademarks of
@@ -126,3 +138,11 @@ All trademarks, logos and product images referenced or displayed in Playhub are
 the property of their respective owners and are used solely for identification
 (nominative) purposes. Playhub is an independent project and is not affiliated
 with, sponsored by, or endorsed by Valve or any other trademark holder.
+
+Playhub Decky QAM integration
+Copyright (C) 2026 LoZazaMastro.
+The separately distributed Decky plugin includes the Shortcuts settings renderer
+and icon catalog under GPL-3.0-only. See GamingModeDeckyPlugin/gaming-mode/LICENSE-Shortcuts.
+Tabler icon artwork retains its MIT license and notice in src/qamIcons.ts.
+Corresponding source: https://github.com/LoZazaMastro/Playhub
+Local source: Source/GamingModeDeckyPlugin (including src/qamIcons.ts and src/QamShortcutsView.tsx).

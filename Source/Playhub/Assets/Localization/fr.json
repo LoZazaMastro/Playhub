@@ -1,4 +1,20 @@
 {
+  "Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop.": "Ouvrez-la avec Ctrl + Alt + P pour changer de fenêtre, gérer vos applications favorites et consulter les performances et les processus. Vous pouvez aussi fermer une application bloquée sans revenir au bureau.",
+  "Avvio": "Démarrage",
+  "Passaggio alla Desktop Mode": "Passage en Desktop Mode",
+  "Passaggio alla Gaming Mode": "Passage en Gaming Mode",
+  "Provalo ora": "Essayer",
+  "Premi ESC o fai clic per tornare a Playhub": "Appuyez sur Échap ou cliquez pour revenir à Playhub",
+  "Colore personalizzato": "Couleur personnalisée",
+  "Tonalita": "Teinte",
+  "Saturazione": "Saturation",
+  "Livello di nero": "Niveau de noir",
+  "Opacita": "Opacité",
+  "Impossibile aprire l'anteprima. Riprova.": "Impossible d'ouvrir l'aperçu. Réessayez.",
+  "Animazione Gaming Mode": "Animation Gaming Mode",
+  "All'avvio e durante il cambio modalita.": "Au démarrage et lors des changements de mode.",
+  "Attiva animazione": "Activer l'animation",
+  "Il colore e indipendente dall'accent di Playhub.": "Choisissez une couleur indépendante de l'accent de Playhub.",
   "Aggiorna tutto": "Tout mettre à jour",
   "Aggiornamento Playhub": "Mise à jour de Playhub",
   "Aggiornamento in corso": "Mise à jour en cours",
@@ -203,5 +219,10 @@
   "{0} ufficiale di Steam": "{0} — visuel officiel de Steam",
   "Pausa prima di aprire Steam, per dare tempo a DeckyLoader di caricarsi.": "Pause avant l’ouverture de Steam pour laisser à DeckyLoader le temps de se charger.",
   "Rete locale, per chi vuole il controllo completo.": "Réseau local, pour un contrôle complet.",
-  "Novità disponibili {0}": "Nouveautés disponibles — {0}"
+  "Novità disponibili {0}": "Nouveautés disponibles — {0}",
+  "Installa Playhub per lo stile classico e Playhub (Big Image Mode) per la modalità Big Image di Steam.": "Installez Playhub pour la présentation classique et Playhub (Big Image Mode) pour le mode Big Image de Steam.",
+  "Installa profili": "Installer les profils",
+  "Rimuovi profili": "Supprimer les profils",
+  "Profili Playhub installati: Playhub e Playhub (Big Image Mode).": "Profils installés : Playhub et Playhub (Big Image Mode).",
+  "Profili Playhub rimossi da CSS Loader.": "Profils Playhub supprimés de CSS Loader."
 }

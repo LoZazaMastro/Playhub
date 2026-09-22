@@ -1,4 +1,20 @@
 {
+  "Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop.": "Ctrl + Alt + P से इसे खोलें और विंडो बदलें, पसंदीदा ऐप्स व्यवस्थित करें तथा परफ़ॉर्मेंस और चल रही प्रक्रियाएँ देखें। डेस्कटॉप पर लौटे बिना अटके हुए ऐप को भी बंद कर सकते हैं।",
+  "Avvio": "शुरुआत",
+  "Passaggio alla Desktop Mode": "Desktop Mode में बदलाव",
+  "Passaggio alla Gaming Mode": "Gaming Mode में बदलाव",
+  "Provalo ora": "अभी आज़माएँ",
+  "Premi ESC o fai clic per tornare a Playhub": "Playhub पर लौटने के लिए ESC दबाएँ या क्लिक करें",
+  "Colore personalizzato": "पसंदीदा रंग",
+  "Tonalita": "रंगत",
+  "Saturazione": "संतृप्ति",
+  "Livello di nero": "कालेपन का स्तर",
+  "Opacita": "अपारदर्शिता",
+  "Impossibile aprire l'anteprima. Riprova.": "प्रीव्यू नहीं खुल सका। फिर से कोशिश करें।",
+  "Animazione Gaming Mode": "Gaming Mode ऐनिमेशन",
+  "All'avvio e durante il cambio modalita.": "शुरू करते समय और मोड बदलते समय।",
+  "Attiva animazione": "ऐनिमेशन चालू करें",
+  "Il colore e indipendente dall'accent di Playhub.": "Playhub के एक्सेंट रंग से अलग रंग चुनें।",
   "Aggiorna tutto": "सभी अपडेट करें",
   "Aggiornamento Playhub": "Playhub अपडेट",
   "Aggiornamento in corso": "अपडेट हो रहा है",
@@ -186,5 +202,10 @@
   "Se Playhub ti è utile e vuoi aiutare il progetto a continuare a crescere, una donazione è sempre apprezzata. Nessun contenuto è bloccato: è semplicemente un modo gentile per sostenere il lavoro che c'è dietro.": "अगर Playhub आपके काम आता है और आप इस प्रोजेक्ट को आगे बढ़ाने में मदद करना चाहते हैं, तो दान का हमेशा स्वागत है। किसी भी सामग्री तक पहुँच रोकी नहीं गई है: यह बस इसके पीछे की मेहनत में सहयोग देने का एक तरीका है।",
   "Inattività prima di nascondere il cursore.": "कर्सर छिपाने से पहले निष्क्रियता की अवधि।",
   "Windows ha impedito la scrittura del file shortcuts di Steam. Consenti Playhub in Accesso alle cartelle controllato e riprova. ": "Windows ने Steam की शॉर्टकट फ़ाइल में लिखने से रोक दिया। “नियंत्रित फ़ोल्डर ऐक्सेस” में Playhub को अनुमति दें और फिर कोशिश करें। ",
-  "Windows ha impedito la scrittura del file shortcuts di Steam. Non dipende dal fatto che Steam sia aperto: è la protezione \"Accesso alle cartelle controllato\" di Sicurezza di Windows che blocca questa app (UWPHook funziona perché è già tra le app consentite). Per risolvere: Sicurezza di Windows → Protezione da virus e minacce → Gestisci protezione ransomware → Accesso alle cartelle controllato → Consenti app tramite Accesso alle cartelle controllato → Aggiungi Playhub.exe. Poi riprova.": "Windows ने Steam की शॉर्टकट फ़ाइल में लिखने से रोक दिया। इसकी वजह Steam का खुला होना नहीं है: Windows सुरक्षा की “नियंत्रित फ़ोल्डर ऐक्सेस” सुविधा इस ऐप को ब्लॉक कर रही है (UWPHook काम करता है क्योंकि उसे पहले से अनुमति मिली हुई है)। इसे ठीक करने के लिए: Windows सुरक्षा → वायरस और ख़तरों से सुरक्षा → रैंसमवेयर से सुरक्षा प्रबंधित करें → नियंत्रित फ़ोल्डर ऐक्सेस → नियंत्रित फ़ोल्डर ऐक्सेस के ज़रिए ऐप को अनुमति दें → Playhub.exe जोड़ें। फिर कोशिश करें।"
+  "Windows ha impedito la scrittura del file shortcuts di Steam. Non dipende dal fatto che Steam sia aperto: è la protezione \"Accesso alle cartelle controllato\" di Sicurezza di Windows che blocca questa app (UWPHook funziona perché è già tra le app consentite). Per risolvere: Sicurezza di Windows → Protezione da virus e minacce → Gestisci protezione ransomware → Accesso alle cartelle controllato → Consenti app tramite Accesso alle cartelle controllato → Aggiungi Playhub.exe. Poi riprova.": "Windows ने Steam की शॉर्टकट फ़ाइल में लिखने से रोक दिया। इसकी वजह Steam का खुला होना नहीं है: Windows सुरक्षा की “नियंत्रित फ़ोल्डर ऐक्सेस” सुविधा इस ऐप को ब्लॉक कर रही है (UWPHook काम करता है क्योंकि उसे पहले से अनुमति मिली हुई है)। इसे ठीक करने के लिए: Windows सुरक्षा → वायरस और ख़तरों से सुरक्षा → रैंसमवेयर से सुरक्षा प्रबंधित करें → नियंत्रित फ़ोल्डर ऐक्सेस → नियंत्रित फ़ोल्डर ऐक्सेस के ज़रिए ऐप को अनुमति दें → Playhub.exe जोड़ें। फिर कोशिश करें।",
+  "Installa Playhub per lo stile classico e Playhub (Big Image Mode) per la modalità Big Image di Steam.": "क्लासिक रूप के लिए Playhub और Steam के Big Image मोड के लिए Playhub (Big Image Mode) इंस्टॉल करें।",
+  "Installa profili": "प्रोफ़ाइल इंस्टॉल करें",
+  "Rimuovi profili": "प्रोफ़ाइल हटाएँ",
+  "Profili Playhub installati: Playhub e Playhub (Big Image Mode).": "Playhub और Playhub (Big Image Mode) प्रोफ़ाइल इंस्टॉल हो गई हैं।",
+  "Profili Playhub rimossi da CSS Loader.": "CSS Loader से Playhub प्रोफ़ाइल हटा दी गई हैं।"
 }

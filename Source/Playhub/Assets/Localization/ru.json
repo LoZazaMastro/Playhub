@@ -1,4 +1,20 @@
 {
+  "Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop.": "Откройте её сочетанием Ctrl + Alt + P, чтобы переключаться между окнами, управлять избранными приложениями и следить за производительностью и процессами. Здесь можно закрыть зависшее приложение, не возвращаясь на рабочий стол.",
+  "Avvio": "Запуск",
+  "Passaggio alla Desktop Mode": "Переход в Desktop Mode",
+  "Passaggio alla Gaming Mode": "Переход в Gaming Mode",
+  "Provalo ora": "Попробовать",
+  "Premi ESC o fai clic per tornare a Playhub": "Нажмите ESC или щёлкните, чтобы вернуться в Playhub",
+  "Colore personalizzato": "Свой цвет",
+  "Tonalita": "Оттенок",
+  "Saturazione": "Насыщенность",
+  "Livello di nero": "Уровень чёрного",
+  "Opacita": "Непрозрачность",
+  "Impossibile aprire l'anteprima. Riprova.": "Не удалось открыть предпросмотр. Попробуйте ещё раз.",
+  "Animazione Gaming Mode": "Анимация Gaming Mode",
+  "All'avvio e durante il cambio modalita.": "При запуске и переключении режимов.",
+  "Attiva animazione": "Включить анимацию",
+  "Il colore e indipendente dall'accent di Playhub.": "Цвет не зависит от акцентного цвета Playhub.",
   "Aggiorna tutto": "Обновить все",
   "Aggiornamento Playhub": "Обновление Playhub",
   "Aggiornamento in corso": "Идёт обновление",
@@ -194,5 +210,10 @@
   "{0} ufficiale di Steam": "Официальное изображение Steam: {0}",
   "Windows ha impedito la scrittura del file shortcuts di Steam. Consenti Playhub in Accesso alle cartelle controllato e riprova. ": "Windows заблокировала запись файла ярлыков Steam. Разреши Playhub в разделе «Контролируемый доступ к папкам» и попробуй снова. ",
   "Apri lo store di Decky dal Quick Access Menu e scopri altri plugin.": "Открой магазин Decky через меню быстрого доступа и найди другие плагины.",
-  "Se Playhub ti è utile e vuoi aiutare il progetto a continuare a crescere, una donazione è sempre apprezzata. Nessun contenuto è bloccato: è semplicemente un modo gentile per sostenere il lavoro che c'è dietro.": "Если Playhub тебе полезен и ты хочешь помочь проекту развиваться, пожертвование всегда будет принято с благодарностью. Весь контент доступен без оплаты: это просто способ поддержать работу над проектом."
+  "Se Playhub ti è utile e vuoi aiutare il progetto a continuare a crescere, una donazione è sempre apprezzata. Nessun contenuto è bloccato: è semplicemente un modo gentile per sostenere il lavoro che c'è dietro.": "Если Playhub тебе полезен и ты хочешь помочь проекту развиваться, пожертвование всегда будет принято с благодарностью. Весь контент доступен без оплаты: это просто способ поддержать работу над проектом.",
+  "Installa Playhub per lo stile classico e Playhub (Big Image Mode) per la modalità Big Image di Steam.": "Установите Playhub для классического оформления и Playhub (Big Image Mode) для режима Big Image в Steam.",
+  "Installa profili": "Установить профили",
+  "Rimuovi profili": "Удалить профили",
+  "Profili Playhub installati: Playhub e Playhub (Big Image Mode).": "Установлены профили Playhub и Playhub (Big Image Mode).",
+  "Profili Playhub rimossi da CSS Loader.": "Профили Playhub удалены из CSS Loader."
 }

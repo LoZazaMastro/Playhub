@@ -439,12 +439,12 @@ public static class OverlayAppLauncher
 		}
 	}
 
-	public static bool Launch(GamingOverlayShortcut shortcut)
+	public static bool Launch(GamingOverlayShortcut shortcut, bool globalSdl3 = false)
 	{
-		return TryLaunch(shortcut, out _);
+		return TryLaunch(shortcut, out _, globalSdl3);
 	}
 
-	public static Task<(bool Ok, int ProcessId)> LaunchAsync(GamingOverlayShortcut shortcut)
+	public static Task<(bool Ok, int ProcessId)> LaunchAsync(GamingOverlayShortcut shortcut, bool globalSdl3 = false)
 	{
 		TaskCompletionSource<(bool Ok, int ProcessId)> completion = new(
 			TaskCreationOptions.RunContinuationsAsynchronously);
@@ -456,7 +456,7 @@ public static class OverlayAppLauncher
 				{
 					EnsureExplorerForPackagedApp();
 				}
-				bool ok = TryLaunch(shortcut, out int processId);
+				bool ok = TryLaunch(shortcut, out int processId, globalSdl3);
 				completion.TrySetResult((ok, processId));
 			}
 			catch (Exception exception)
@@ -499,21 +499,28 @@ public static class OverlayAppLauncher
 		}
 	}
 
-	public static bool TryLaunch(GamingOverlayShortcut shortcut, out int processId)
+	public static bool TryLaunch(GamingOverlayShortcut shortcut, out int processId, bool globalSdl3 = false)
 	{
 		processId = 0;
 		if (shortcut.Kind == GamingOverlayShortcutKind.DesktopProgram)
 		{
 			if (!File.Exists(shortcut.Target)) return false;
-			Process? process = Process.Start(new ProcessStartInfo
+			bool sdl3 = shortcut.Sdl3NativeControllerEnabled ?? globalSdl3;
+			ProcessStartInfo startInfo = new()
 			{
 				FileName = shortcut.Target,
 				Arguments = shortcut.Arguments ?? "",
 				WorkingDirectory = Directory.Exists(shortcut.WorkingDirectory)
 					? shortcut.WorkingDirectory
 					: Path.GetDirectoryName(shortcut.Target) ?? Environment.CurrentDirectory,
-				UseShellExecute = true
-			});
+				UseShellExecute = !sdl3
+			};
+			if (sdl3)
+			{
+				startInfo.Environment["SDL_JOYSTICK_HIDAPI_STEAM"] = "1";
+				startInfo.Environment["SDL_JOYSTICK_HIDAPI"] = "1";
+			}
+			Process? process = Process.Start(startInfo);
 			processId = process?.Id ?? 0;
 			return true;
 		}

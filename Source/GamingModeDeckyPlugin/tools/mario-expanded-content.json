@@ -1,0 +1,416 @@
+{
+ "status": "Applied: seven distinct local narrative images, twelve locales, explicit subjects and kickers.",
+ "theme": {
+  "id": "mario",
+  "kind": "game",
+  "topic": "Super Mario Bros.",
+  "subject": "Super Mario Bros.",
+  "title": {
+   "it": "Il mondo impara a saltare",
+   "en": "The world learns to jump",
+   "de": "Die Welt lernt springen",
+   "es": "El mundo aprende a saltar.",
+   "fr": "Le monde apprend à sauter",
+   "pt": "O mundo aprende a pular",
+   "ru": "Мир учится прыгать",
+   "uk": "Світ вчиться стрибати",
+   "ja": "世界はジャンプすることを学ぶ",
+   "ko": "세상은 점프하는 법을 배운다",
+   "zh": "世界學會跳躍",
+   "hi": "दुनिया कूदना सीखती है"
+  },
+  "intro": {
+   "it": "Mario parte dal margine sinistro e davanti a lui c'è spazio. Quel vuoto è già un invito: muoversi, incontrare qualcosa, provare una risposta. Super Mario Bros. costruisce un'avventura con una manciata di gesti che diventano sempre più ricchi nelle mani di chi gioca. Nel 1985 Nintendo non consegna soltanto una strada da percorrere: mette a punto un modo di insegnare attraverso il piacere del movimento.",
+   "en": "Mario starts at the left edge, with open space ahead. That emptiness is already an invitation: move, encounter something, try a response. Super Mario Bros. builds an adventure from a handful of gestures that grow richer in the player's hands. In 1985 Nintendo offered more than a road to travel: it refined a way of teaching through the pleasure of movement.",
+   "de": "Mario beginnt am linken Rand, mit freiem Raum vor ihm. Diese Leere ist bereits eine Einladung: Bewegen Sie sich, begegnen Sie etwas, versuchen Sie eine Antwort. Super Mario Bros. baut ein Abenteuer aus einer Handvoll Gesten auf, die in den Händen des Spielers immer reicher werden. Im Jahr 1985 bot Nintendo mehr als nur einen Weg zum Reisen: Es verfeinerte eine Art des Unterrichtens durch die Freude an der Bewegung.",
+   "es": "Mario comienza en el borde izquierdo, con un espacio abierto delante. Ese vacío ya es una invitación: muévete, encuentra algo, intenta una respuesta. Super Mario Bros. construye una aventura a partir de un puñado de gestos que se enriquecen en las manos del jugador. En 1985 Nintendo ofreció más que un camino por recorrer: perfeccionó una forma de enseñar a través del placer del movimiento.",
+   "fr": "Mario commence par le bord gauche, avec un espace ouvert devant. Ce vide est déjà une invitation : bouger, rencontrer quelque chose, tenter une réponse. Super Mario Bros. construit une aventure à partir d'une poignée de gestes qui s'enrichissent entre les mains du joueur. En 1985, Nintendo proposait plus qu'un simple chemin à parcourir : elle affine une manière d'enseigner par le plaisir du mouvement.",
+   "pt": "Mario começa pela margem esquerda, com espaço aberto à frente. Esse vazio já é um convite: mova-se, encontre algo, tente uma resposta. Super Mario Bros. constrói uma aventura a partir de um punhado de gestos que ficam mais ricos nas mãos do jogador. Em 1985, a Nintendo ofereceu mais do que um caminho a percorrer: refinou uma forma de ensinar através do prazer do movimento.",
+   "ru": "Марио начинает с левого края, впереди открытое пространство. Эта пустота уже является приглашением: двигайтесь, столкнитесь с чем-то, попытайтесь ответить. Super Mario Bros. создает приключение из нескольких жестов, которые становятся богаче в руках игрока. В 1985 году Nintendo предложила больше, чем просто дорогу для путешествий: она усовершенствовала способ обучения через удовольствие от движения.",
+   "uk": "Маріо починає з лівого краю, з відкритим простором попереду. Ця порожнеча вже є запрошенням: рухайся, зустрінь щось, спробуй відповісти. Super Mario Bros. будує пригоду з кількох жестів, які стають багатшими в руках гравця. У 1985 році Nintendo запропонувала більше, ніж шлях для подорожей: вона вдосконалила спосіб навчання через задоволення від руху.",
+   "ja": "マリオは左端からスタートし、前方には空きスペースがあります。その空虚さはすでに招待状です。動き、何かに出会い、応答してみてください。スーパー マリオ ブラザーズは、プレイヤーの手の中でより豊かになる、いくつかのジェスチャーから冒険を構築します。 1985 年、任天堂は単に移動するための道以上のものを提供しました。それは、動きの楽しさを通じた教育方法を洗練させました。",
+   "ko": "마리오는 앞쪽에 열린 공간이 있는 왼쪽 가장자리에서 시작합니다. 그 공허함은 이미 초대입니다. 움직이고, 무언가를 만나고, 응답해 보세요. Super Mario Bros.는 플레이어의 손에서 더욱 풍부해지는 몇 가지 제스처를 통해 모험을 구축합니다. 1985년에 Nintendo는 여행으로 가는 길 이상의 것을 제공했습니다. 즉, 이동의 즐거움을 통해 가르치는 방법을 개선했습니다.",
+   "zh": "馬裡奧從左邊開始，前面有空地。那種空虛已經是一種邀請：移動、遇見某些事、嘗試回應。 《超級瑪利歐兄弟》透過一些手勢建構了一場冒險，這些手勢在玩家的手中變得更加豐富。 1985 年，任天堂提供的不僅僅是一條旅行之路：它透過運動的樂趣完善了一種教學方式。",
+   "hi": "मारियो बाएँ किनारे से शुरू करता है, आगे खुली जगह है। वह ख़ालीपन पहले से ही एक निमंत्रण है: आगे बढ़ें, किसी चीज़ का सामना करें, प्रतिक्रिया का प्रयास करें। सुपर मारियो ब्रदर्स मुट्ठी भर इशारों से एक साहसिक कार्य का निर्माण करता है जो खिलाड़ी के हाथों में समृद्ध होता जाता है। 1985 में निंटेंडो ने यात्रा के लिए सड़क से कहीं अधिक की पेशकश की: इसने आंदोलन के आनंद के माध्यम से शिक्षण के तरीके को परिष्कृत किया।"
+  },
+  "chapters": [
+   {
+    "subject": "Super Mario Bros.",
+    "image_role": "game",
+    "image_file": "mario-visual-forms.jpg",
+    "kicker": {
+     "it": "SUPER MARIO BROS. · IL CORPO VISIBILE",
+     "en": "SUPER MARIO BROS. · THE VISIBLE BODY",
+     "de": "SUPER MARIO BROS. · DER SICHTBARE KÖRPER",
+     "es": "SUPER MARIO HERMANOS. · EL CUERPO VISIBLE",
+     "fr": "SUPER MARIO BROS. · LE CORPS VISIBLE",
+     "pt": "SUPER MÁRIO BROS. · O CORPO VISÍVEL",
+     "ru": "СУПЕР МАРИО БРАТЬЯ. · ВИДИМОЕ ТЕЛО",
+     "uk": "SUPER MARIO BROS. · ВИДИМЕ ТІЛО",
+     "ja": "スーパーマリオブラザーズ· 目に見える身体",
+     "ko": "슈퍼 마리오 브라더스. · 보이는 몸",
+     "zh": "超級瑪利歐兄弟。 · 可見的身體",
+     "hi": "सुपर मारियो ब्रदर्स। · दृश्यमान शरीर"
+    },
+    "title": {
+     "it": "Basta una sagoma per sapere come stiamo",
+     "en": "A silhouette tells us how we are doing",
+     "de": "Eine Silhouette zeigt uns, wie es uns geht",
+     "es": "Una silueta nos indica cómo vamos",
+     "fr": "Une silhouette nous dit comment nous allons",
+     "pt": "Uma silhueta nos diz como estamos",
+     "ru": "Силуэт расскажет нам, как у нас дела",
+     "uk": "Силует говорить нам, як у нас справи",
+     "ja": "シルエットが私たちの調子を教えてくれる",
+     "ko": "실루엣은 우리가 어떻게 지내고 있는지 알려준다.",
+     "zh": "剪影告訴我們我們在做什麼",
+     "hi": "एक सिल्हूट हमें बताता है कि हम कैसा कर रहे हैं"
+    },
+    "body": {
+     "it": "Piccolo, Super, capace di lanciare fuoco: il corpo di Mario rende visibili possibilità diverse. La trasformazione cambia il rapporto con i mattoni e con il pericolo, mentre forme e colori ci aiutano a leggerla nel mezzo della corsa. Qui il disegno del personaggio è anche un'interfaccia. Non occorre cercare un indicatore lontano: una parte dello stato del gioco si trova proprio dove stiamo già guardando.",
+     "en": "Small, Super, able to throw fire: Mario's body makes different possibilities visible. Transformation changes his relationship with bricks and danger, while shape and colour help us read it during a run. Character design is also an interface here. There is no need to look for a distant indicator: part of the game's state is right where we are already looking.",
+     "de": "Klein, super, feuerfähig: Marios Körper macht verschiedene Möglichkeiten sichtbar. Die Transformation verändert sein Verhältnis zu Ziegeln und Gefahren, während Form und Farbe uns dabei helfen, es während eines Laufs zu erkennen. Auch hier ist das Charakterdesign eine Schnittstelle. Es besteht keine Notwendigkeit, nach einem entfernten Indikator zu suchen: Ein Teil des Spielzustands befindet sich genau dort, wo wir bereits suchen.",
+     "es": "Pequeño, súper, capaz de lanzar fuego: el cuerpo de Mario hace visibles diferentes posibilidades. La transformación cambia su relación con los ladrillos y el peligro, mientras que la forma y el color nos ayudan a leerlo durante una carrera. El diseño de personajes también es una interfaz aquí. No hace falta buscar un indicador lejano: parte del estado del juego está justo donde ya estamos mirando.",
+     "fr": "Petit, Super, capable de lancer du feu : le corps de Mario rend visibles différentes possibilités. La transformation modifie son rapport aux briques et au danger, tandis que la forme et la couleur nous aident à le lire lors d'une course. La conception des personnages est également ici une interface. Il n'est pas nécessaire de chercher un indicateur lointain : une partie de l'état du jeu se trouve exactement là où nous regardons déjà.",
+     "pt": "Pequeno, Super, capaz de lançar fogo: o corpo de Mario torna visíveis diferentes possibilidades. A transformação muda sua relação com os tijolos e o perigo, enquanto a forma e a cor nos ajudam a lê-la durante a corrida. O design de personagens também é uma interface aqui. Não há necessidade de procurar um indicador distante: parte do estado do jogo está exatamente onde já estamos olhando.",
+     "ru": "Маленький, супер, способный метать огонь: тело Марио делает видимыми различные возможности. Трансформация меняет его отношение к кирпичикам и опасности, а форма и цвет помогают нам читать его во время бега. Дизайн персонажей здесь также является интерфейсом. Не нужно искать отдаленный индикатор: часть состояния игры находится именно там, где мы уже ищем.",
+     "uk": "Маленький, супер, здатний кидати вогонь: тіло Маріо робить видимими різні можливості. Трансформація змінює його стосунки з цеглою та небезпекою, тоді як форма та колір допомагають нам прочитати це під час бігу. Дизайн персонажів тут також є інтерфейсом. Немає необхідності шукати віддалений індикатор: частина стану гри знаходиться саме там, де ми вже шукаємо.",
+     "ja": "小さい、スーパー、火を放つことができる：マリオの体はさまざまな可能性を可視化します。変身はレンガや危険との関係を変えますが、形と色はランニング中にそれを読み取るのに役立ちます。キャラクターデザインもここではインターフェースです。遠くの指標を探す必要はありません。ゲームの状態の一部は、すでに見ているところにあります。",
+     "ko": "작음, 슈퍼, 불을 던질 수 있음: 마리오의 몸은 다양한 가능성을 보여줍니다. 변신은 벽돌과 위험과의 관계를 변화시키며, 모양과 색상은 달리는 동안 우리가 그것을 읽는 데 도움이 됩니다. 여기서는 캐릭터 디자인도 인터페이스입니다. 먼 곳에서 지표를 찾을 필요가 없습니다. 게임 상태의 일부가 우리가 이미 보고 있는 바로 그 위치에 있습니다.",
+     "zh": "小，超級，能夠發射火焰：馬裡奧的身體讓不同的可能性可見。轉變改變了他與磚塊和危險的關係，而形狀和顏色幫助我們在跑步時閱讀它。角色設計在這裡也是一個介面。無需尋找遙遠的指示器：遊戲狀態的一部分就在我們已經在尋找的地方。",
+     "hi": "छोटा, सुपर, आग फेंकने में सक्षम: मारियो का शरीर विभिन्न संभावनाओं को दृश्यमान बनाता है। परिवर्तन ईंटों और खतरे के साथ उसके रिश्ते को बदल देता है, जबकि आकार और रंग हमें दौड़ के दौरान इसे पढ़ने में मदद करते हैं। कैरेक्टर डिज़ाइन भी यहां एक इंटरफ़ेस है। दूर के संकेतक की तलाश करने की कोई आवश्यकता नहीं है: खेल की स्थिति का हिस्सा वहीं है जहां हम पहले से ही देख रहे हैं।"
+    },
+    "sources": [
+     "https://iwataasks.nintendo.com/interviews/wii/nsmb/0/1/",
+     "https://iwataasks.nintendo.com/interviews/wii/mario25th/4/0/"
+    ]
+   },
+   {
+    "subject": "Super Mario Bros.",
+    "image_role": "game",
+    "image_file": "mario-world-1-1-learning.jpg",
+    "kicker": {
+     "it": "SUPER MARIO BROS. · MONDO 1-1",
+     "en": "SUPER MARIO BROS. · WORLD 1-1",
+     "de": "SUPER MARIO BROS. · WELT 1-1",
+     "es": "SUPER MARIO HERMANOS. · MUNDIAL 1-1",
+     "fr": "SUPER MARIO BROS. · MONDE 1-1",
+     "pt": "SUPER MÁRIO BROS. · MUNDO 1-1",
+     "ru": "СУПЕР МАРИО БРАТЬЯ. · МИР 1-1",
+     "uk": "SUPER MARIO BROS. · СВІТ 1-1",
+     "ja": "スーパーマリオブラザーズ・ワールド 1-1",
+     "ko": "슈퍼 마리오 브라더스. · 세계 1-1",
+     "zh": "超級瑪利歐兄弟。 · 世界1-1",
+     "hi": "सुपर मारियो ब्रदर्स। · विश्व 1-1"
+    },
+    "title": {
+     "it": "Il primo Goomba fa la prima domanda",
+     "en": "The first Goomba asks the first question",
+     "de": "Der erste Goomba stellt die erste Frage",
+     "es": "El primer Goomba hace la primera pregunta.",
+     "fr": "Le premier Goomba pose la première question",
+     "pt": "O primeiro Goomba faz a primeira pergunta",
+     "ru": "Первый Гумба задает первый вопрос",
+     "uk": "Перший Гумба задає перше запитання",
+     "ja": "最初のクリボーが最初の質問をする",
+     "ko": "첫 번째 Goomba가 첫 번째 질문을 합니다.",
+     "zh": "第一個 Goomba 問第一個問題",
+     "hi": "पहला गोम्बा पहला प्रश्न पूछता है"
+    },
+    "body": {
+     "it": "Un nemico arriva verso Mario e obbliga a reagire. Poco sopra, un blocco con un punto interrogativo attira lo sguardo. Saltare per evitare il Goomba può diventare il modo di scoprire che il soffitto risponde. Il Mondo 1-1 avvicina incontri e possibilità con una precisione discreta: il giocatore impara facendo, e conserva la sensazione di aver capito da solo. La lezione è dentro il terreno, non sospesa sopra di esso.",
+     "en": "An enemy approaches Mario and demands a response. Just above, a question-mark block draws the eye. Jumping to avoid the Goomba can reveal that the ceiling responds. World 1-1 places encounters and possibilities close together with quiet precision: players learn by acting and keep the feeling of having understood for themselves. The lesson is inside the terrain, not suspended above it.",
+     "de": "Ein Feind nähert sich Mario und fordert eine Reaktion. Direkt darüber zieht ein Fragezeichenblock die Aufmerksamkeit auf sich. Ein Sprung, um dem Goomba auszuweichen, kann zeigen, dass die Decke reagiert. Welt 1-1 ordnet Begegnungen und Möglichkeiten mit ruhiger Präzision nah beieinander: Spieler lernen durch Handeln und behalten das Gefühl, es selbst verstanden zu haben. Der Unterricht findet innerhalb des Geländes statt, nicht darüber schwebend.",
+     "es": "Un enemigo se acerca a Mario y exige una respuesta. Justo arriba, un bloque con un signo de interrogación llama la atención. Saltar para evitar el Goomba puede revelar que el techo responde. El mundo 1-1 acerca encuentros y posibilidades con silenciosa precisión: los jugadores aprenden actuando y mantienen la sensación de haberlo comprendido por sí mismos. La lección está dentro del terreno, no suspendida sobre él.",
+     "fr": "Un ennemi s'approche de Mario et exige une réponse. Juste au-dessus, un bloc point d’interrogation attire le regard. Sauter pour éviter le Goomba peut révéler que le plafond réagit. Le Monde 1-1 rapproche les rencontres et les possibles avec une précision tranquille : les joueurs apprennent en agissant et gardent le sentiment d'avoir compris par eux-mêmes. La leçon se déroule à l’intérieur du terrain et non suspendue au-dessus.",
+     "pt": "Um inimigo se aproxima de Mario e exige uma resposta. Logo acima, um bloco de ponto de interrogação chama a atenção. Pular para evitar o Goomba pode revelar que o teto responde. O Mundo 1-1 coloca encontros e possibilidades próximos com uma precisão silenciosa: os jogadores aprendem agindo e mantêm a sensação de terem compreendido por si próprios. A lição está dentro do terreno, não suspensa acima dele.",
+     "ru": "Враг приближается к Марио и требует ответа. Чуть выше блок с вопросительным знаком привлекает внимание. Прыжок, чтобы избежать Гумбы, может обнаружить, что потолок реагирует. В Мире 1-1 встречи и возможности расположены близко друг к другу с тихой точностью: игроки учатся, действуя, и сохраняют ощущение того, что все поняли сами. Урок находится внутри местности, а не подвешен над ней.",
+     "uk": "Ворог підходить до Маріо і вимагає відповіді. Трохи вище привертає увагу блок із знаком питання. Стрибок, щоб уникнути Goomba, може виявити, що стеля реагує. Світ 1-1 розміщує зустрічі та можливості з тихою точністю: гравці вчаться, діючи, і зберігають відчуття, що зрозуміли самі. Урок відбувається всередині місцевості, а не підвішується над нею.",
+     "ja": "敵がマリオに近づき、応答を要求します。すぐ上にある疑問符ブロックが目を引きます。クリボーを避けるためにジャンプすると、天井が反応することがわかります。ワールド 1-1 では、出会いと可能性が静かに正確に接近します。プレイヤーは行動することで学び、自分で理解したという感覚を保ちます。レッスンは地形の内側にあり、地形の上に吊り下げられているわけではありません。",
+     "ko": "적군이 마리오에게 다가와 대응을 요구합니다. 바로 위에는 물음표 블록이 눈길을 끕니다. Goomba를 피하기 위해 점프하면 천장이 반응하는 것을 알 수 있습니다. 월드 1-1에서는 만남과 가능성이 조용하고 정밀하게 밀접하게 연결되어 있습니다. 플레이어는 행동을 통해 배우고 스스로 이해했다는 느낌을 유지합니다. 레슨은 지형 내부에 있는 것이지 지형 위에 매달린 것이 아닙니다.",
+     "zh": "敵人接近馬裡奧並要求回應。就在上面，一個問號塊吸引了人們的注意。跳躍以避免 Goomba 可以顯示天花板的反應。 World 1-1 將遭遇和可能性以安靜的精確性緊密結合在一起：玩家透過行動來學習，並保持自己理解的感覺。課程位於地形內部，而不是懸掛在地形上方。",
+     "hi": "एक दुश्मन मारियो के पास आता है और जवाब मांगता है। ठीक ऊपर, एक प्रश्न-चिह्न खंड ध्यान खींचता है। गोम्बा से बचने के लिए कूदने से पता चल सकता है कि छत प्रतिक्रिया कर रही है। विश्व 1-1 में मुठभेड़ों और संभावनाओं को शांत परिशुद्धता के साथ एक साथ रखा जाता है: खिलाड़ी अभिनय करके सीखते हैं और खुद को समझने की भावना रखते हैं। पाठ भूभाग के अंदर है, उसके ऊपर लटका हुआ नहीं है।"
+    },
+    "sources": [
+     "https://www.nintendo.com/pt-pt/Iwata-Pergunta/Iwata-pergunta-New-Super-Mario-Bros-Wii/Iwata-pergunta-New-Super-Mario-Bros-Wii-Parte-2/4-Ajustar-o-mapa-num-ciclo-diario/4-Ajustar-o-mapa-num-ciclo-diario-233027.html"
+    ]
+   },
+   {
+    "subject": "Super Mario Bros.",
+    "image_role": "game",
+    "image_file": "mario-jump-gap.png",
+    "kicker": {
+     "it": "SUPER MARIO BROS. · SALTO E INERZIA",
+     "en": "SUPER MARIO BROS. · JUMP AND MOMENTUM",
+     "de": "SUPER MARIO BROS. · SPRINGEN UND SCHWUNG",
+     "es": "SUPER MARIO HERMANOS. · SALTO Y IMPULSO",
+     "fr": "SUPER MARIO BROS. · SAUT ET ÉLAN",
+     "pt": "SUPER MÁRIO BROS. · SALTO E MOMENTO",
+     "ru": "СУПЕР МАРИО БРАТЬЯ. · Прыжок и импульс",
+     "uk": "SUPER MARIO BROS. · СТРИБОК І МОМЕНТ",
+     "ja": "スーパーマリオブラザーズ· ジャンプと勢い",
+     "ko": "슈퍼 마리오 브라더스. · 점프와 추진력",
+     "zh": "超級瑪利歐兄弟。 · 跳躍和動量",
+     "hi": "सुपर मारियो ब्रदर्स। · छलांग और गति"
+    },
+    "title": {
+     "it": "Un salto non è una risposta già scritta",
+     "en": "A jump is not a predetermined answer",
+     "de": "Ein Sprung ist keine vorgegebene Antwort",
+     "es": "Un salto no es una respuesta predeterminada",
+     "fr": "Un saut n'est pas une réponse prédéterminée",
+     "pt": "Um salto não é uma resposta predeterminada",
+     "ru": "Прыжок – это не заранее определенный ответ",
+     "uk": "Стрибок не є заздалегідь визначеною відповіддю",
+     "ja": "ジャンプはあらかじめ決められた答えではない",
+     "ko": "점프는 미리 정해진 답이 아니다",
+     "zh": "跳躍並不是預先決定的答案",
+     "hi": "छलांग कोई पूर्वनिर्धारित उत्तर नहीं है"
+    },
+    "body": {
+     "it": "La rincorsa e il tempo della pressione contano. Mario non si limita a passare da una casella all'altra: accelera, attraversa un arco, atterra con un'intenzione ancora da correggere. È questo margine di controllo a rendere personale un gesto ripetuto migliaia di volte. Lo stesso vuoto può essere superato con prudenza o slancio. Il livello propone una distanza; sono le mani a darle un ritmo.",
+     "en": "The run-up and the duration of a press matter. Mario does more than move between squares: he accelerates, follows an arc and lands with an intention still open to correction. That margin of control makes a gesture repeated thousands of times feel personal. The same gap can be crossed cautiously or boldly. The level proposes a distance; the hands give it a rhythm.",
+     "de": "Der Vorlauf und die Dauer einer Pressearbeit sind wichtig. Mario bewegt sich nicht nur zwischen den Feldern: Er beschleunigt, folgt einem Bogen und landet mit einer Absicht, die noch korrigiert werden kann. Durch diesen Kontrollspielraum fühlt sich eine tausendfach wiederholte Geste persönlich an. Die gleiche Kluft kann vorsichtig oder mutig überwunden werden. Die Ebene schlägt eine Distanz vor; Die Hände geben ihm einen Rhythmus.",
+     "es": "El período previo y la duración de una prensa son importantes. Mario hace más que moverse entre casillas: acelera, sigue un arco y aterriza con una intención aún abierta a corrección. Ese margen de control hace que un gesto repetido miles de veces parezca personal. La misma brecha se puede salvar con cautela o audacia. El nivel propone una distancia; las manos le dan ritmo.",
+     "fr": "Le déroulement et la durée d'une presse comptent. Mario fait plus que se déplacer entre les cases : il accélère, suit un arc de cercle et atterrit avec une intention encore sujette à correction. Cette marge de contrôle rend un geste répété des milliers de fois personnel. Le même écart peut être franchi avec prudence ou audace. Le niveau propose une distance ; les mains lui donnent un rythme.",
+     "pt": "A preparação e a duração de um assunto de imprensa. Mario faz mais do que se movimentar entre quadrados: acelera, segue um arco e pousa com uma intenção ainda aberta à correção. Essa margem de controle faz com que um gesto repetido milhares de vezes pareça pessoal. A mesma lacuna pode ser atravessada com cautela ou ousadia. O nível propõe uma distância; as mãos dão um ritmo.",
+     "ru": "Подготовка и продолжительность пресс-релиза имеют значение. Марио не просто перемещается между квадратами: он ускоряется, следует по дуге и приземляется с намерением, которое все еще можно исправить. Благодаря такому запасу контроля жест, повторенный тысячи раз, кажется личным. Эту же пропасть можно преодолеть осторожно или смело. Уровень предполагает расстояние; руки задают ритм.",
+     "uk": "Мають значення розбіг і тривалість преси. Маріо робить більше, ніж рухається між квадратами: він прискорюється, йде по дузі та приземляється з наміром, який все ще може бути виправлений. Ця межа контролю робить жест, повторений тисячі разів, особистим. Ту саму прогалину можна подолати обережно або сміливо. Рівень пропонує відстань; руки дають йому ритм.",
+     "ja": "報道の準備と期間は重要です。マリオは正方形の間を移動するだけではありません。彼は加速し、弧を描き、修正の余地のある意図を持って着地します。この制御の余地により、何千回も繰り返されるジェスチャーが個人的なものに感じられます。同じギャップを慎重に越えることも、大胆に越えることもできます。レベルは距離を提案します。手はリズムを与えます。",
+     "ko": "언론 보도의 준비 과정과 기간이 중요합니다. Mario는 사각형 사이를 이동하는 것 이상의 작업을 수행합니다. 그는 가속하고 원호를 따라가며 수정 가능한 의도를 갖고 착지합니다. 이러한 통제 한계는 수천 번 반복되는 제스처를 개인적인 느낌으로 만듭니다. 같은 간격은 조심스럽게 또는 대담하게 넘을 수 있습니다. 레벨은 거리를 제안합니다. 손이 리듬을 줍니다.",
+     "zh": "新聞發布會的準備和持續時間很重要。馬裡奧不僅在方塊之間移動：他加速，沿著弧線著陸，其意圖仍然有待糾正。這種控制幅度讓重複數千次的手勢變得個人化。同樣的差距可以謹慎或大膽地跨越。水平建議距離；雙手賦予它節奏。",
+     "hi": "किसी प्रेस का रन-अप और उसकी अवधि मायने रखती है। मारियो वर्गों के बीच चलने से कहीं अधिक करता है: वह गति बढ़ाता है, एक चाप का अनुसरण करता है और सुधार के लिए अभी भी खुले इरादे के साथ उतरता है। नियंत्रण का वह मार्जिन हजारों बार दोहराए गए इशारे को व्यक्तिगत महसूस कराता है। उसी अंतर को सावधानी से या साहसपूर्वक पार किया जा सकता है। स्तर एक दूरी प्रस्तावित करता है; हाथ इसे लय देते हैं।"
+    },
+    "sources": [
+     "https://iwataasks.nintendo.com/interviews/wii/mario25th/4/3/",
+     "https://www.nintendo.com/en-gb/News/2016/November/Nintendo-Classic-Mini-NES-special-interview-Volume-3-Super-Mario-Bros-1157085.html"
+    ]
+   },
+   {
+    "subject": "Super Mario Bros.",
+    "image_role": "document",
+    "image_file": "mario-level-planning-sheet.png",
+    "kicker": {
+     "it": "SUPER MARIO BROS. · I FOGLI DEL LIVELLO",
+     "en": "SUPER MARIO BROS. · LEVEL PLANNING SHEETS",
+     "de": "SUPER MARIO BROS. · LEVEL-PLANUNGSBLÄTTER",
+     "es": "SUPER MARIO HERMANOS. · HOJAS DE PLANIFICACIÓN DE NIVEL",
+     "fr": "SUPER MARIO BROS. · FICHES DE PLANIFICATION DE NIVEAU",
+     "pt": "SUPER MÁRIO BROS. · FOLHAS DE PLANEJAMENTO DE NÍVEL",
+     "ru": "СУПЕР МАРИО БРАТЬЯ. · ПЛАНИРОВАНИЕ УРОВНЯ",
+     "uk": "SUPER MARIO BROS. · ЛИСТИ РІВНЕВОГО ПЛАНУВАННЯ",
+     "ja": "スーパーマリオブラザーズ· レベルプランニングシート",
+     "ko": "슈퍼 마리오 브라더스. · 레벨 계획 시트",
+     "zh": "超級瑪利歐兄弟。 · 水平規劃表",
+     "hi": "सुपर मारियो ब्रदर्स। · लेवल प्लानिंग शीट"
+    },
+    "title": {
+     "it": "Prima del paesaggio c'era un quadretto",
+     "en": "Before the landscape came a square",
+     "de": "Vor der Landschaft war ein Kästchen",
+     "es": "Antes del paisaje, una casilla",
+     "fr": "Avant le paysage, un carreau de papier",
+     "pt": "Antes da paisagem, um quadradinho",
+     "ru": "До пейзажа была клетка на бумаге",
+     "uk": "До краєвиду була клітинка на папері",
+     "ja": "風景の始まりは方眼の一マス",
+     "ko": "풍경은 모눈 한 칸에서 시작됐다",
+     "zh": "風景始於方格紙上的一格",
+     "hi": "दृश्य से पहले कागज़ पर एक खाना था"
+    },
+    "body": {
+     "it": "Le tavole su carta quadrettata conservano il mondo prima che si metta in movimento. Terreno, tubi e ostacoli occupano posizioni che devono diventare istruzioni per il programma. Guardarle permette di vedere il livello come una composizione modificabile, fatta di misure e ripensamenti. Il disegno non basta a stabilire se una sequenza funziona: serve provarla. Fra il foglio e il controller il progetto incontra finalmente il tempo del giocatore.",
+     "en": "Graph-paper plans preserve the world before it starts moving. Ground, pipes and obstacles occupy positions that must become instructions for the program. They reveal a level as an editable composition of measurements and revisions. A drawing cannot establish whether a sequence works: it has to be played. Between the paper and the controller, the design finally meets the player's sense of time.",
+     "de": "Millimeterpapierpläne bewahren die Welt, bevor sie sich in Bewegung setzt. Boden, Rohre und Hindernisse nehmen Positionen ein, die zu Anweisungen für das Programm werden müssen. Sie offenbaren eine Ebene als editierbare Zusammenstellung von Messungen und Revisionen. Ob eine Sequenz funktioniert, kann eine Zeichnung nicht feststellen: Sie muss abgespielt werden. Zwischen Papier und Controller trifft das Design endlich das Zeitgefühl des Spielers.",
+     "es": "Los planes de papel cuadriculado preservan el mundo antes de que comience a moverse. Suelo, tuberías y obstáculos ocupan posiciones que deben convertirse en instrucciones del programa. Revelan un nivel como una composición editable de mediciones y revisiones. Un dibujo no puede determinar si una secuencia funciona: hay que reproducirla. Entre el papel y el mando, el diseño finalmente se adapta al sentido del tiempo del jugador.",
+     "fr": "Les plans sur papier millimétré préservent le monde avant qu’il ne commence à bouger. Le sol, les tuyaux et les obstacles occupent des positions qui doivent devenir des instructions pour le programme. Ils révèlent un niveau comme une composition modifiable de mesures et de révisions. Un dessin ne peut pas établir si une séquence fonctionne : il faut la jouer. Entre le papier et la manette, le design répond enfin à la notion du temps du joueur.",
+     "pt": "Planos de papel quadriculado preservam o mundo antes que ele comece a se mover. Solo, tubulações e obstáculos ocupam posições que devem se tornar instruções do programa. Eles revelam um nível como uma composição editável de medições e revisões. Um sorteio não pode estabelecer se uma sequência funciona: ela tem que ser jogada. Entre o papel e o controlador, o design finalmente atende à noção de tempo do jogador.",
+     "ru": "Планы на миллиметровой бумаге сохраняют мир до того, как он начнет двигаться. Земля, трубы и препятствия занимают позиции, которые должны стать инструкциями для программы. Они раскрывают уровень как редактируемую композицию измерений и ревизий. Рисунок не может определить, работает ли последовательность: его нужно воспроизвести. Между бумагой и контроллером дизайн наконец-то соответствует чувству времени игрока.",
+     "uk": "Плани на міліметровому папері зберігають світ до того, як він почне рухатися. Земля, труби та перешкоди займають позиції, які повинні стати інструкціями для програми. Вони розкривають рівень як редаговану композицію вимірювань і переглядів. Малюнок не може визначити, чи працює послідовність: її потрібно відтворити. Крім паперу та контролера, дизайн нарешті відповідає відчуттям часу гравця.",
+     "ja": "方眼紙の計画は、世界が動き始める前に保存します。地面、パイプ、障害物は、プログラムの指示となるべき位置を占めています。これらは、測定とリビジョンの編集可能な構成としてレベルを明らかにします。描画ではシーケンスが機能するかどうかを確認することはできません。シーケンスは再生される必要があります。紙とコントローラーの間で、最終的にプレイヤーの時間感覚に合わせたデザインが完成しました。",
+     "ko": "그래프 용지 계획은 세상이 움직이기 전에 세상을 보존합니다. 지면, 파이프 및 장애물은 프로그램의 지침이 되어야 하는 위치를 차지합니다. 편집 가능한 측정 및 개정 구성으로 레벨을 표시합니다. 드로잉은 시퀀스가 ​​작동하는지 여부를 확인할 수 없습니다. 시퀀스는 재생되어야 합니다. 종이와 컨트롤러 사이에서 디자인은 마침내 플레이어의 시간 감각을 충족시킵니다.",
+     "zh": "方格紙計劃在世界開始移動之前就保護了它。地面、管道和障礙物佔據的位置必須成為程式的指令。它們將等級顯示為測量和修訂的可編輯組合。繪圖無法確定序列是否有效：它必須被播放。在紙張和控制器之間，設計最終滿足了玩家的時間感。",
+     "hi": "ग्राफ़-पेपर योजनाएँ दुनिया के चलने से पहले उसे सुरक्षित रखती हैं। ज़मीन, पाइप और बाधाएँ ऐसे स्थान रखती हैं जो कार्यक्रम के लिए निर्देश बनने चाहिए। वे माप और संशोधनों की संपादन योग्य संरचना के रूप में एक स्तर को प्रकट करते हैं। एक चित्र यह स्थापित नहीं कर सकता कि कोई अनुक्रम काम करता है या नहीं: इसे चलाना होगा। कागज और नियंत्रक के बीच, डिज़ाइन अंततः खिलाड़ी के समय की समझ से मेल खाता है।"
+    },
+    "sources": [
+     "https://www.nintendo.co.jp/wiiu/amaj/booklet/SuperMarioMakerBooklet.pdf",
+     "https://www.nintendo.com/us/whatsnew/wahoo-see-the-platforming-history-of-super-mario-and-even-get-a-few-fun-facts/"
+    ]
+   },
+   {
+    "subject": "Koji Kondo",
+    "image_role": "document",
+    "image_file": "mario-kondo-score.png",
+    "kicker": {
+     "it": "KOJI KONDO · IL RITMO DI SUPER MARIO BROS.",
+     "en": "KOJI KONDO · THE RHYTHM OF SUPER MARIO BROS.",
+     "de": "KOJI KONDO · DER RHYTHMUS VON SUPER MARIO BROS.",
+     "es": "KOJI KONDO · EL RITMO DE SUPER MARIO BROS.",
+     "fr": "KOJI KONDO · LE RYTHME DE SUPER MARIO BROS.",
+     "pt": "KOJI KONDO · O RITMO DE SUPER MARIO BROS.",
+     "ru": "КОДЗИ КОНДО · РИТМ SUPER MARIO BROS.",
+     "uk": "KOJI KONDO · РИТМ SUPER MARIO BROS.",
+     "ja": "近藤浩治・THE RHYTHM OF SUPER MARIO BROS.",
+     "ko": "콘도 코지 · 슈퍼 마리오 브라더스의 리듬.",
+     "zh": "近藤浩司·超級瑪利歐兄弟的節奏",
+     "hi": "कोजी कोंडो · सुपर मारियो ब्रदर्स की लय।"
+    },
+    "title": {
+     "it": "La musica deve saper correre",
+     "en": "The music has to know how to run",
+     "de": "Die Musik muss wissen, wie sie läuft",
+     "es": "La música tiene que saber correr.",
+     "fr": "La musique doit savoir courir",
+     "pt": "A música tem que saber correr",
+     "ru": "Музыка должна знать, как бежать",
+     "uk": "Музика повинна вміти бігати",
+     "ja": "音楽は走り方を知らなければならない",
+     "ko": "음악은 어떻게 흘러갈지 알아야 한다",
+     "zh": "音樂必須懂得如何奔跑",
+     "hi": "संगीत को यह जानना होगा कि कैसे चलना है"
+    },
+    "body": {
+     "it": "Koji Kondo racconta che un primo brano, ispirato al cielo e al verde dello scenario, non seguiva bene il ritmo di Mario. Il punto non era soltanto descrivere un luogo piacevole: bisognava accompagnare un corpo che corre e salta. Da questo rapporto nasce il carattere della musica. La melodia si ricorda anche perché sembra conoscere le nostre mani, lasciando che l'azione e l'ascolto appartengano alla stessa esperienza.",
+     "en": "Koji Kondo recalled that an early piece inspired by the scenery's sky and greenery did not match Mario's rhythm. The task was more than describing a pleasant place: it had to accompany a body running and jumping. The music's character emerges from that relationship. Its melody is memorable partly because it seems to understand our hands, allowing action and listening to belong to the same experience.",
+     "de": "Koji Kondo erinnerte sich, dass ein frühes Stück, das vom Himmel und dem Grün der Landschaft inspiriert war, nicht zu Marios Rhythmus passte. Die Aufgabe bestand nicht nur darin, einen angenehmen Ort zu beschreiben: Sie musste einen Körper beim Laufen und Springen begleiten. Der Charakter der Musik ergibt sich aus dieser Beziehung. Seine Melodie ist unter anderem deshalb einprägsam, weil sie unsere Hände zu verstehen scheint, sodass Handlung und Zuhören zu derselben Erfahrung gehören.",
+     "es": "Koji Kondo recordó que una de las primeras piezas inspiradas en el cielo y el verdor del paisaje no coincidía con el ritmo de Mario. La tarea era más que describir un lugar agradable: debía acompañar a un cuerpo corriendo y saltando. El carácter de la música surge de esa relación. Su melodía es memorable en parte porque parece entender nuestras manos, permitiendo que la acción y la escucha pertenezcan a la misma experiencia.",
+     "fr": "Koji Kondo a rappelé qu'une première pièce inspirée par le ciel et la verdure du paysage ne correspondait pas au rythme de Mario. La tâche ne se limitait pas à décrire un lieu agréable : elle devait accompagner un corps courant et sautant. Le caractère de la musique émerge de cette relation. Sa mélodie est mémorable en partie parce qu'elle semble comprendre nos mains, permettant à l'action et à l'écoute d'appartenir à la même expérience.",
+     "pt": "Koji Kondo lembrou que uma peça inicial inspirada no céu e na vegetação do cenário não combinava com o ritmo de Mario. A tarefa era mais do que descrever um local agradável: tinha que acompanhar um corpo correndo e pulando. O caráter da música emerge dessa relação. A sua melodia é memorável em parte porque parece compreender as nossas mãos, permitindo que a acção e a escuta pertençam à mesma experiência.",
+     "ru": "Кодзи Кондо вспоминал, что ранняя пьеса, вдохновленная небом и зеленью, не соответствовала ритму Марио. Задача заключалась не только в описании приятного места: оно должно было сопровождать тело, бегущее и прыгающее. Характер музыки возникает из этих отношений. Его мелодия запоминается отчасти потому, что она, кажется, понимает наши руки, позволяя действию и слушанию принадлежать к одному и тому же опыту.",
+     "uk": "Кодзі Кондо згадав, що ранній твір, натхненний пейзажем неба та зелені, не відповідав ритму Маріо. Завдання полягало не лише в описі приємного місця: воно мало супроводжувати тіло, яке біжить і стрибає. З цього зв’язку виникає характер музики. Його мелодія запам’ятовується частково тому, що він, здається, розуміє наші руки, дозволяючи дії та слуханню належати до одного досвіду.",
+     "ja": "近藤浩治は、空と緑の風景にインスピレーションを得た初期の作品がマリオのリズムと合わなかったと回想した。この課題は、楽しい場所を説明するだけではなく、体が走ったり飛び跳ねたりする動作を伴わなければなりませんでした。音楽の性格はその関係性から現れます。そのメロディーが記憶に残るのは、それが私たちの手を理解しているようで、動作とリスニングが同じ体験に属することを可能にするからでもあります。",
+     "ko": "콘도 코지(Koji Kondo)는 풍경의 하늘과 녹지에서 영감을 받은 초기 작품이 마리오의 리듬과 일치하지 않는다고 회상했습니다. 이 작업은 즐거운 장소를 묘사하는 것 이상이었습니다. 달리고 점프하는 신체를 동반해야 했습니다. 음악의 성격은 그 관계에서 나타난다. 그 멜로디는 부분적으로 우리의 손을 이해하고 행동과 듣는 것이 동일한 경험에 속하도록 허용하는 것처럼 보이기 때문에 기억에 남습니다.",
+     "zh": "近藤浩司回憶說，早期作品的靈感來自於天空和綠色植物的風景，與馬裡奧的節奏不符。這項任務不僅僅是描述一個令人愉快的地方：它必須伴隨著身體的奔跑和跳躍。音樂的性格就是從這種關係中顯現出來的。它的旋律令人難忘，部分原因是它似乎理解我們的雙手，讓行動和聆聽屬於同一個體驗。",
+     "hi": "कोजी कोंडो ने याद किया कि दृश्यों के आकाश और हरियाली से प्रेरित एक प्रारंभिक टुकड़ा मारियो की लय से मेल नहीं खाता था। कार्य एक सुखद स्थान का वर्णन करने से कहीं अधिक था: इसमें शरीर को दौड़ना और कूदना शामिल था। संगीत का चरित्र उस रिश्ते से उभरता है। इसकी धुन आंशिक रूप से यादगार है क्योंकि यह हमारे हाथों को समझती है, कार्रवाई और सुनने को एक ही अनुभव की अनुमति देती है।"
+    },
+    "sources": [
+     "https://www.nintendo.com/en-gb/Iwata-Asks/Super-Mario-Bros-25th-Anniversary/Vol-5-Original-Super-Mario-Developers/5-To-Save-Memory/5-To-Save-Memory-212974.html"
+    ]
+   },
+   {
+    "subject": "Super Mario Maker",
+    "image_role": "game",
+    "image_file": "mario-maker-legacy.png",
+    "kicker": {
+     "it": "SUPER MARIO MAKER · L'EREDITÀ DEL PRIMO MONDO",
+     "en": "SUPER MARIO MAKER · THE FIRST WORLD'S LEGACY",
+     "de": "SUPER MARIO MAKER · DAS VERMÄCHTNIS DER ERSTEN WELT",
+     "es": "SUPER MARIO MAKER · EL LEGADO DEL PRIMER MUNDO",
+     "fr": "SUPER MARIO MAKER · L'HÉRITAGE DU PREMIER MONDE",
+     "pt": "SUPER MARIO MAKER · O LEGADO DO PRIMEIRO MUNDO",
+     "ru": "SUPER MARIO MAKER · ПЕРВОЕ МИРОВОЕ НАСЛЕДИЕ",
+     "uk": "Творець SUPER MARIO · ПЕРШИЙ У СВІТІ СПАДОК",
+     "ja": "スーパーマリオメーカー・最初の世界の遺産",
+     "ko": "슈퍼 마리오 메이커 · 세계 최초의 유산",
+     "zh": "《超級瑪利歐製造者》·第一世界的遺產",
+     "hi": "सुपर मारियो मेकर · विश्व की पहली विरासत"
+    },
+    "title": {
+     "it": "Quando la grammatica passa di mano",
+     "en": "When the grammar changes hands",
+     "de": "Wenn die Grammatik den Besitzer wechselt",
+     "es": "Cuando la gramática cambia de manos",
+     "fr": "Quand la grammaire change de mains",
+     "pt": "Quando a gramática muda de mãos",
+     "ru": "Когда грамматика переходит из рук в руки",
+     "uk": "Коли граматика переходить з рук в руки",
+     "ja": "遊びの文法がプレイヤーの手に渡るとき",
+     "ko": "놀이의 문법이 플레이어의 손으로 넘어갈 때",
+     "zh": "當語法易手時",
+     "hi": "जब व्याकरण हाथ बदलता है"
+    },
+    "body": {
+     "it": "Con Super Mario Maker, blocchi, nemici e spazi vuoti diventano materiali che il pubblico può combinare. Il legame con il gioco del 1985 è concreto: quelle figure portano con sé aspettative costruite giocando. Mettere un ostacolo non significa solo riempire una schermata; significa chiedere qualcosa a un'altra persona. L'eredità di Super Mario Bros. si vede anche qui, quando chi aveva imparato a leggere un livello comincia a scriverne uno.",
+     "en": "In Super Mario Maker, blocks, enemies and empty spaces become materials players can combine. The connection with the 1985 game is tangible: those figures carry expectations learned through play. Placing an obstacle means asking something of another person. Super Mario Bros.' legacy is visible when someone who learned to read a level starts writing one.",
+     "de": "In Super Mario Maker werden Blöcke, Feinde und leere Räume zu Materialien, die Spieler kombinieren können. Der Zusammenhang mit dem Spiel von 1985 ist greifbar: Diese Figuren tragen spielerisch erlernte Erwartungen in sich. Ein Hindernis zu platzieren bedeutet, etwas von einer anderen Person zu verlangen. Super Mario Bros.' Das Vermächtnis wird sichtbar, wenn jemand, der das Lesen eines Levels gelernt hat, anfängt, eines zu schreiben.",
+     "es": "En Super Mario Maker, los bloques, los enemigos y los espacios vacíos se convierten en materiales que los jugadores pueden combinar. La conexión con el juego de 1985 es tangible: esas cifras conllevan expectativas aprendidas a través del juego. Poner un obstáculo significa pedir algo a otra persona. Súper Mario Bros.' El legado es visible cuando alguien que aprendió a leer un nivel comienza a escribirlo.",
+     "fr": "Dans Super Mario Maker, les blocs, les ennemis et les espaces vides deviennent des matériaux que les joueurs peuvent combiner. Le lien avec le jeu de 1985 est tangible : ces personnages portent des attentes apprises par le jeu. Placer un obstacle, c'est demander quelque chose à une autre personne. Super Mario Bros.' L'héritage est visible lorsqu'une personne qui a appris à lire un niveau commence à en écrire un.",
+     "pt": "Em Super Mario Maker, blocos, inimigos e espaços vazios tornam-se materiais que os jogadores podem combinar. A ligação com o jogo de 1985 é tangível: esses números carregam expectativas aprendidas através do jogo. Colocar um obstáculo significa pedir algo a outra pessoa. Super Mário Bros.' o legado é visível quando alguém que aprendeu a ler um nível começa a escrevê-lo.",
+     "ru": "В Super Mario Maker блоки, враги и пустые пространства становятся материалами, которые игроки могут комбинировать. Связь с игрой 1985 года вполне ощутима: эти цифры отражают ожидания, полученные в ходе игры. Ставить препятствие – значит просить что-то у другого человека. Супер Братья Марио». Наследие становится видимым, когда кто-то, кто научился читать уровень, начинает его писать.",
+     "uk": "У Super Mario Maker блоки, вороги та порожні місця стають матеріалами, які гравці можуть комбінувати. Зв’язок із грою 1985 року відчутний: ці фігури несуть очікування, отримані під час гри. Поставляти перешкоду означає просити щось іншу людину. Super Mario Bros. Спадок видно, коли хтось, хто навчився читати рівень, починає його писати.",
+     "ja": "『スーパーマリオメーカー』では、ブロック、敵、空きスペースが素材となり、プレイヤーが組み合わせることができます。 1985 年のゲームとの関連性は明白です。これらの数字には、プレイを通じて学んだ期待が込められています。障害物を置くということは、他人に何かを求めるということです。スーパーマリオブラザーズ』レベルを読むことを学んだ人がレベルを書き始めると、レガシーが目に見えます。",
+     "ko": "슈퍼 마리오 메이커에서는 블록, 적, 빈 공간이 플레이어가 결합할 수 있는 재료가 됩니다. 1985년 게임과의 연관성은 명백합니다. 이러한 수치는 플레이를 통해 배운 기대치를 담고 있습니다. 장애물을 놓는다는 것은 다른 사람에게 무언가를 묻는 것을 의미합니다. 슈퍼 마리오 브라더스' 레벨을 읽는 법을 배운 사람이 레벨을 쓰기 시작할 때 유산이 눈에 띕니다.",
+     "zh": "在《超級瑪利歐製造》中，方塊、敵人和空曠的空間成為玩家可以組合的材料。與 1985 年遊戲的聯繫是有形的：這些數字承載著透過遊戲學到的期望。設置障礙意味著向另一個人詢問某事。超級瑪利歐兄弟」當學會閱讀某個層次的人開始編寫一個層次時，遺產就可見一斑。",
+     "hi": "सुपर मारियो मेकर में, ब्लॉक, दुश्मन और खाली स्थान ऐसी सामग्री बन जाते हैं जिन्हें खिलाड़ी जोड़ सकते हैं। 1985 के खेल के साथ संबंध स्पष्ट है: ये आंकड़े खेल के माध्यम से सीखी गई अपेक्षाओं को दर्शाते हैं। बाधा डालने का अर्थ है दूसरे व्यक्ति से कुछ माँगना। सुपर मारियो ब्रदर्स' विरासत तब दिखाई देती है जब कोई व्यक्ति जिसने एक स्तर को पढ़ना सीख लिया है वह एक स्तर को लिखना शुरू कर देता है।"
+    },
+    "sources": [
+     "https://www.nintendo.co.jp/wiiu/amaj/booklet/SuperMarioMakerBooklet.pdf"
+    ]
+   }
+  ],
+  "sources": [
+   "https://iwataasks.nintendo.com/interviews/wii/nsmb/0/1/",
+   "https://iwataasks.nintendo.com/interviews/wii/mario25th/4/0/",
+   "https://iwataasks.nintendo.com/interviews/wii/mario25th/4/3/",
+   "https://www.nintendo.com/en-gb/News/2016/November/Nintendo-Classic-Mini-NES-special-interview-Volume-3-Super-Mario-Bros-1157085.html",
+   "https://www.nintendo.co.jp/wiiu/amaj/booklet/SuperMarioMakerBooklet.pdf",
+   "https://www.nintendo.com/en-gb/Iwata-Asks/Super-Mario-Bros-25th-Anniversary/Vol-5-Original-Super-Mario-Developers/5-To-Save-Memory/5-To-Save-Memory-212974.html"
+  ]
+ },
+ "image_plan": [
+  {
+   "slot": "intro",
+   "file": "mario-0.jpg",
+   "subject": "Super Mario Bros.",
+   "brief": "Horizontal authentic gameplay shot with Mario running in an open surface stage; not the first Goomba scene used in chapter 2; no cover."
+  },
+  {
+   "slot": "visual-design",
+   "file": "mario-visual-forms.jpg",
+   "subject": "Super Mario Bros.",
+   "brief": "Horizontal original-game screenshots showing Small/Super/Fire Mario, or one authentic frame after power-up. Do not reuse mario-design.png from Miyamoto. Keep original pixels crisp; do not fabricate sprites.",
+   "source": "https://iwataasks.nintendo.com/interviews/wii/mario25th/4/0/"
+  },
+  {
+   "slot": "world-1-1",
+   "file": "mario-world-1-1-learning.jpg",
+   "subject": "Super Mario Bros.",
+   "brief": "Original World 1-1 frame containing first Goomba and question-mark block; horizontal uncropped gameplay; different from intro."
+  },
+  {
+   "slot": "jump",
+   "file": "mario-jump-gap.png",
+   "subject": "Super Mario Bros.",
+   "brief": "Original World 1-1 gameplay: Mario mid-jump between two pipes, distinct from the first Goomba scene."
+  },
+  {
+   "slot": "paper",
+   "file": "mario-level-planning-sheet.png",
+   "subject": "Super Mario Bros.",
+   "brief": "Landscape BG PLANNING SHEET from official booklet. Extract a complete horizontal planning panel without cropping annotations or using the Mario sprite-design page.",
+   "source": "https://www.nintendo.co.jp/wiiu/amaj/booklet/SuperMarioMakerBooklet.pdf"
+  },
+  {
+   "slot": "music",
+   "file": "mario-kondo-score.png",
+   "subject": "Koji Kondo",
+   "brief": "Original Koji Kondo signed score reproduced on page 3 of the official Super Mario Maker booklet; complete left page.",
+   "source": "https://www.nintendo.com/en-gb/Iwata-Asks/Super-Mario-Bros-25th-Anniversary/Vol-5-Original-Super-Mario-Developers/5-To-Save-Memory/5-To-Save-Memory-212974.html"
+  },
+  {
+   "slot": "legacy",
+   "file": "mario-maker-legacy.png",
+   "subject": "Super Mario Maker",
+   "brief": "Official booklet page 8: stylus assembling blocks and a mushroom on graph paper, illustrating handing design tools to players.",
+   "source": "https://www.nintendo.co.jp/wiiu/amaj/booklet/SuperMarioMakerBooklet.pdf"
+  }
+ ],
+ "translation_review": {
+  "method": "Italian and English original prose; other locales machine translated with targeted editorial correction",
+  "locales": [
+   "it",
+   "en",
+   "de",
+   "es",
+   "fr",
+   "pt",
+   "ru",
+   "uk",
+   "ja",
+   "ko",
+   "zh",
+   "hi"
+  ],
+  "native_review": "not performed"
+ }
+}

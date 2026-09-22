@@ -64,7 +64,8 @@ public static class DashboardApi
 		string Name,
 		string Kind,
 		string Target,
-		string IconBase64);
+		string IconBase64,
+		bool? Sdl3NativeControllerEnabled);
 
 	// Kind: "ssd", "hdd" oppure "" quando il dispositivo non risponde.
 	public sealed record DiskEntry(string Name, double BytesPerSecond, string Kind);
@@ -194,7 +195,7 @@ public static class DashboardApi
 			entries.Add(new WindowEntry(
 				window.Handle.ToString(),
 				window.ProcessId,
-				artwork?.DisplayName ?? window.Title,
+				SteamGameIdentityPolicy.IsSteamClient(window.ProcessName) ? "Steam" : artwork?.DisplayName ?? window.Title,
 				window.ProcessName,
 				window.IsMinimized,
 				window.Handle == foreground,
@@ -315,7 +316,8 @@ public static class DashboardApi
 				shortcut.Name,
 				shortcut.Kind.ToString(),
 				shortcut.Target,
-				EncodeIcon(icon)));
+				EncodeIcon(icon),
+				shortcut.Sdl3NativeControllerEnabled));
 		}
 		return entries;
 	}
@@ -328,7 +330,7 @@ public static class DashboardApi
 		// L'attivazione di una app dello Store puo' restare appesa a lungo: qui
 		// siamo su un thread del servizio web, non sull'interfaccia di nessuno,
 		// quindi non blocca niente.
-		return OverlayAppLauncher.Launch(shortcut);
+		return OverlayAppLauncher.Launch(shortcut, store.LoadConfig().Gaming.Sdl3NativeControllerEnabled);
 	}
 
 	public static async Task<bool> LaunchShortcutAndActivateAsync(JsonStore store, string id, FileLogger logger, CancellationToken cancellationToken)
@@ -339,7 +341,7 @@ public static class DashboardApi
 
 		HashSet<string> previousHandles = ListWindows().Select(window => window.Handle).ToHashSet(StringComparer.OrdinalIgnoreCase);
 		logger.Info($"Playhub Dashboard launch '{shortcut.Name}' ({shortcut.Kind}) started.");
-		Task<(bool Ok, int ProcessId)> launchTask = OverlayAppLauncher.LaunchAsync(shortcut);
+		Task<(bool Ok, int ProcessId)> launchTask = OverlayAppLauncher.LaunchAsync(shortcut, store.LoadConfig().Gaming.Sdl3NativeControllerEnabled);
 		Task launchTimeout = Task.Delay(TimeSpan.FromSeconds(6), cancellationToken);
 		Task completed = await Task.WhenAny(launchTask, launchTimeout);
 		if (completed != launchTask)
@@ -417,6 +419,17 @@ public static class DashboardApi
 		return true;
 	}
 
+	public static bool SetShortcutSdl3(JsonStore store, string id, bool? enabled)
+	{
+		ModeConfig config = store.LoadConfig();
+		GamingOverlayShortcut? shortcut = config.Gaming.DashboardShortcuts
+			.FirstOrDefault(item => string.Equals(item.Id, id, StringComparison.OrdinalIgnoreCase));
+		if (shortcut is null) return false;
+		shortcut.Sdl3NativeControllerEnabled = enabled;
+		store.SaveConfig(config);
+		return true;
+	}
+
 	// ---------- IMPOSTAZIONI DELLA DASHBOARD ----------
 
 	public sealed record DashboardSettings(
@@ -424,7 +437,8 @@ public static class DashboardApi
 		string Hotkey,
 		string DefaultMode,
 		bool NavigationHapticsEnabled,
-		int NavigationHapticsIntensity);
+		int NavigationHapticsIntensity,
+		bool Sdl3NativeControllerEnabled);
 
 	public static DashboardSettings ReadSettings(JsonStore store)
 	{
@@ -434,7 +448,8 @@ public static class DashboardApi
 			config.Gaming.DashboardHotkey,
 			config.DefaultMode.ToString(),
 			config.Gaming.NavigationHapticsEnabled,
-			Math.Clamp(config.Gaming.NavigationHapticsIntensity, 5, 100));
+			Math.Clamp(config.Gaming.NavigationHapticsIntensity, 5, 100),
+			config.Gaming.Sdl3NativeControllerEnabled);
 	}
 
 	// I campi assenti non vengono toccati: il plugin manda solo quello che
@@ -444,13 +459,15 @@ public static class DashboardApi
 		bool? keyboardEnabled,
 		string? hotkey,
 		bool? navigationHapticsEnabled = null,
-		int? navigationHapticsIntensity = null)
+		int? navigationHapticsIntensity = null,
+		bool? sdl3NativeControllerEnabled = null)
 	{
 		ModeConfig config = store.LoadConfig();
 		if (keyboardEnabled.HasValue) config.Gaming.DashboardKeyboardShortcutEnabled = keyboardEnabled.Value;
 		if (!string.IsNullOrWhiteSpace(hotkey)) config.Gaming.DashboardHotkey = hotkey.Trim();
 		if (navigationHapticsEnabled.HasValue) config.Gaming.NavigationHapticsEnabled = navigationHapticsEnabled.Value;
 		if (navigationHapticsIntensity.HasValue) config.Gaming.NavigationHapticsIntensity = Math.Clamp(navigationHapticsIntensity.Value, 5, 100);
+		if (sdl3NativeControllerEnabled.HasValue) config.Gaming.Sdl3NativeControllerEnabled = sdl3NativeControllerEnabled.Value;
 		store.SaveConfig(config);
 		return ReadSettings(store);
 	}

@@ -85,6 +85,16 @@ Playhub uses open-source components including UWPHook, VDFParser, and SharpSteam
 
 Playhub is released under the [MIT](LICENSE) license.
 
+## Media, image sources, and trademarks
+
+Playhub may display third-party screenshots, game artwork, box art, photographs, logos, characters, and other editorial media. These materials are not claimed as original Playhub content: copyright, trademark, and other rights remain with their respective owners.
+
+Where available, the editorial data keeps the source page or source URL associated with an image. These references are provided for attribution and verification and may point to official publisher or developer pages, press materials, archival collections, Wikimedia Commons, or other publicly accessible sources. Source availability, licensing terms, and permissions can change over time, so each image must be evaluated under the terms that apply to its original source before it is redistributed or reused.
+
+Playhub is an independent project. The inclusion of a third-party image, logo, or product name does not imply sponsorship, endorsement, partnership, or ownership by Playhub. Third-party media should not be extracted from Playhub and redistributed as a standalone image collection, and commercial or promotional reuse requires permission from the relevant rights holder unless an applicable licence or legal exception allows it.
+
+If you are a rights holder and believe that an image is incorrectly attributed, lacks a required credit, or should not be included, please open an issue in this repository with the affected file or source URL and the requested correction or removal. This notice describes the project's handling of media; it is not legal advice and does not create a blanket licence for any third-party material.
+
 <div align="center">
 
 Created by **Andrea Sgarro — [LoZazaMastro](https://github.com/LoZazaMastro)**.

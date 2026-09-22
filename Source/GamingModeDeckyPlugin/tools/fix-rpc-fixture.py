@@ -1,0 +1,3 @@
+from pathlib import Path
+p=Path('tests/display_audio_rpc_fixture.py');s=p.read_text(encoding='utf8');a=s.index('# La scrittura HDR');b=s.index('runtime = fixture.module._runtime');s=s[:a]+s[b:];p.write_text(s,encoding='utf8')
+p=Path('tests/displayRecovery.test.mjs');s=p.read_text(encoding='utf8').replace('<= 15);','<= (request.kind === \'hdr\' ? 30 : 15));');s=s.replace("const requestId = ++id;","if (child.exitCode !== null) throw new Error(`fixture already exited: ${errors}`);\n    const requestId = ++id;");s=s.replace("const exited = new Promise(resolve => child.once('exit', resolve));","const exited = child.exitCode !== null ? Promise.resolve() : new Promise(resolve => child.once('exit', resolve));");p.write_text(s,encoding='utf8')

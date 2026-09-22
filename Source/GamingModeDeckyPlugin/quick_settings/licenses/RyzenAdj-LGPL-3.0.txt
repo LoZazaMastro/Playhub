@@ -1,0 +1,37 @@
+RyzenAdj (libryzenadj.dll)
+==========================
+
+Earlier packages bundled `bin/libryzenadj.dll`, built from RyzenAdj. The current
+Playhub runtime does not ship this binary. The attribution and historical
+source information below are retained for provenance and earlier distributions.
+
+    Copyright (c) Jiaxun Yang and the RyzenAdj contributors
+    Project: https://github.com/FlyGoat/RyzenAdj
+    License: GNU Lesser General Public License, version 3.0 or later
+             (LGPL-3.0-or-later)
+
+How it was used in earlier packages
+--------------
+`libryzenadj.dll` was a separate, dynamically loaded shared library. Earlier
+Quick Settings versions loaded it via ctypes and called its public C API.
+The current Playhub runtime excludes it and disables that legacy loading path.
+
+Written offer of corresponding source (LGPL-3.0 / GPL-3.0 sec. 6)
+----------------------------------------------------------------
+The historical source information for the previously bundled `libryzenadj.dll`, including
+the build scripts used to produce it, is publicly available at:
+
+    https://github.com/FlyGoat/RyzenAdj
+
+For a specific build, see the matching tag/commit in that repository.
+
+License texts
+-------------
+The LGPL-3.0 consists of the additional permissions of the LGPL applied on top
+of the GNU GPL-3.0. The full GPL-3.0 text is included in this folder as
+`GPL-3.0.txt`. The LGPL-3.0 additional-permissions text is available at:
+
+    https://www.gnu.org/licenses/lgpl-3.0.txt
+
+Earlier packages allowed replacement of the bundled library with a build from
+the source above. Adding that DLL does not re-enable the current legacy path.

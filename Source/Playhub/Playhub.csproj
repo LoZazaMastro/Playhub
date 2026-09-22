@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
@@ -14,9 +14,10 @@
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.3.1</Version>
+    <Version>2.0.0</Version>
     <DebugType>none</DebugType>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <DefaultItemExcludes>$(DefaultItemExcludes);dist_publish\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PlayhubUiReview)' == 'true'">
@@ -30,11 +31,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/DeckyStartupGuard.cs" Link="DeckyStartupGuard.cs" />
+    <Compile Include="../Shared/SplashLogoScale.cs" Link="SplashLogoScale.cs" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250205002" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\**\*.*">
+    <Compile Remove="MainWindow.PawnIo.cs;Services/PawnIoService.cs;Services/PawnIoInstallService.cs" />
+    <Compile Remove="Assets\GamingModeDeckyPlugin\**\*.cs" />
+    <Content Include="Assets\**\*.*" Exclude="Assets\GamingModeDeckyPlugin\**\cpu_power\**;Assets\**\__pycache__\**;Assets\**\*.pyc">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\..\catalog\plugins.json" Link="Assets\PluginCatalog\store-catalog.json">

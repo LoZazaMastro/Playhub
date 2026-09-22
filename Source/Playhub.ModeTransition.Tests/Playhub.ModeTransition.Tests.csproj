@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/DeckyStartupGuard.cs" Link="DeckyStartupGuard.cs" />
+    <Compile Include="../Shared/SplashLogoScale.cs" Link="SplashLogoScale.cs" />
+    <Compile Include="../Playhub/Models/GamingModeConfig.cs" Link="GamingModeConfig.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/ReactiveCircleBackground.cs" Link="ReactiveCircleBackground.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Models/GamingSplashSettings.cs" Link="GamingSplashSettings.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/ModeTransitionVisual.cs" Link="ModeTransitionVisual.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Models/ModeKind.cs" Link="ModeKind.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Models/ModeConfig.cs" Link="ModeConfig.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Models/GamingSettings.cs" Link="GamingSettings.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Models/SafetySettings.cs" Link="SafetySettings.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Models/GamingStartupApp.cs" Link="GamingStartupApp.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Models/GamingOverlayShortcut.cs" Link="GamingOverlayShortcut.cs" />
+  </ItemGroup>
+</Project>

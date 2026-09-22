@@ -5,7 +5,7 @@ namespace Microsoft.UI.Xaml
     public enum HorizontalAlignment { Center }
     public enum VerticalAlignment { Center }
     public enum GridUnitType { Star }
-    public enum TextWrapping { NoWrap }
+    public enum TextWrapping { NoWrap, Wrap }
     public enum TextTrimming { CharacterEllipsis }
     public enum TextAlignment { Center, Left }
     public record Thickness(double Left, double Top, double Right, double Bottom);
@@ -35,6 +35,7 @@ namespace Microsoft.UI.Xaml
     }
     public class FrameworkElement : UIElement
     {
+        public object? XamlRoot { get; set; } = new();
         public double Width { get; set; }
         public double Height { get; set; }
         public double MinWidth { get; set; }
@@ -111,6 +112,53 @@ namespace Microsoft.UI.Xaml.Controls
         public TextWrapping TextWrapping { get; set; }
         public TextTrimming TextTrimming { get; set; }
         public TextAlignment TextAlignment { get; set; }
+    }
+    public sealed class CheckBox : Control
+    {
+        public object? Content { get; set; }
+        public bool? IsChecked { get; set; }
+        public Thickness Margin { get; set; } = new(0, 0, 0, 0);
+    }
+    public sealed class ToggleSwitch : Control
+    {
+        public bool IsOn { get; set; }
+    }
+    public sealed class StackPanel : FrameworkElement
+    {
+        public double Spacing { get; set; }
+        public List<UIElement> Children { get; } = new();
+    }
+    public enum ContentDialogButton { None, Primary }
+    public enum ContentDialogResult { None, Primary }
+    public sealed class ContentDialog
+    {
+        public static ContentDialog? LastShown { get; private set; }
+        public static ContentDialogResult NextResult { get; set; }
+        public static bool CheckDontAskAgain { get; set; }
+        public static int ShowCount { get; private set; }
+        public object? Title { get; set; }
+        public object? Content { get; set; }
+        public string PrimaryButtonText { get; set; } = "";
+        public string CloseButtonText { get; set; } = "";
+        public ContentDialogButton DefaultButton { get; set; }
+        public object? XamlRoot { get; set; }
+
+        public Task<ContentDialogResult> ShowAsync()
+        {
+            LastShown = this;
+            ShowCount++;
+            if (CheckDontAskAgain && Content is StackPanel panel)
+                foreach (var checkBox in panel.Children.OfType<CheckBox>()) checkBox.IsChecked = true;
+            return Task.FromResult(NextResult);
+        }
+
+        public static void Reset()
+        {
+            LastShown = null;
+            NextResult = ContentDialogResult.None;
+            CheckDontAskAgain = false;
+            ShowCount = 0;
+        }
     }
     public sealed class ProgressRing : Control
     {
