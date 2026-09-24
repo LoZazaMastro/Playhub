@@ -95,6 +95,14 @@ Playhub is an independent project. The inclusion of a third-party image, logo, o
 
 If you are a rights holder and believe that an image is incorrectly attributed, lacks a required credit, or should not be included, please open an issue in this repository with the affected file or source URL and the requested correction or removal. This notice describes the project's handling of media; it is not legal advice and does not create a blanket licence for any third-party material.
 
+## Community and support
+
+Playhub is built on people working together and on the freedom of ideas and words; it condemns every form of hate, bullying or discrimination based on the supremacy of a platform, an operating system or a game console. Respect for people comes first, and behaviour that goes against it will not be tolerated.
+
+Playhub and its creator ZazaMastro are not responsible for any content, message, post or publication coming from the community.
+
+Please do not ask the Decky team for support on Windows: it is not officially supported there. Decky and Playhub are two separate things, so please use the [Playhub subreddit](https://www.reddit.com/r/PlayhubGaming/) for questions or help. From our side you will always get a hand, whatever your platform, and with the greatest respect for people.
+
 <div align="center">
 
 Created by **Andrea Sgarro — [LoZazaMastro](https://github.com/LoZazaMastro)**.
