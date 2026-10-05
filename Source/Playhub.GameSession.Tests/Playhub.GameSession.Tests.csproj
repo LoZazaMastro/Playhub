@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <StartupObject>SessionTests</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/UwpSessionIdentity.cs" Link="UwpSessionIdentity.cs" />
+    <Compile Include="..\Playhub.GameSession\*.cs" Link="%(Filename)%(Extension)" />
+    <Compile Include="..\GamingModeAgent\GamingMode.Services\XboxShellBroker.cs" Link="XboxShellBroker.cs" />
+  </ItemGroup>
+</Project>

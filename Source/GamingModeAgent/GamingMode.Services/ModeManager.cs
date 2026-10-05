@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -28,6 +28,8 @@ public sealed class ModeManager
 	private readonly FileLogger _logger;
 	private readonly SemaphoreSlim _modeSwitch = new(1, 1);
 	private long _desktopSwitchRequested;
+	public event Action? ModeTransitionStarted;
+	public event Action<bool>? ModeTransitionCompleted;
 	public bool ConsumeDesktopSwitchRequest()
 	{
 		long requested = Interlocked.Exchange(ref _desktopSwitchRequested, 0);
@@ -110,6 +112,7 @@ public sealed class ModeManager
 		List<string> messages = new List<string>();
 		try
 		{
+			ModeTransitionStarted?.Invoke();
 			if (updateShell)
 			{
 				_shellTools.SetShellForMode(mode);
@@ -139,6 +142,7 @@ public sealed class ModeManager
 			ModeStatus status2 = GetStatus(messages);
 			return Task.FromResult(ApiResult.Failure(ex.Message, status2));
 		}
+		finally { ModeTransitionCompleted?.Invoke(_store.LoadState().CurrentMode == ModeKind.Gaming); }
 	}
 
 	public ApiResult SetDefaultMode(ModeKind mode)
@@ -200,7 +204,11 @@ public sealed class ModeManager
 			return ApiResult.Failure("A mode switch is already in progress.", GetStatus());
 		try
 		{
-			using SplashScreenService transition = new(_logger);
+			// Una richiesta duplicata non deve riaprire l'animazione o rilanciare processi.
+            var currentState = _store.LoadState();
+            if (currentState.CurrentMode == mode && currentState.LastAppliedAt.HasValue && string.IsNullOrEmpty(currentState.LastError) && (mode != ModeKind.Desktop || ProcessTools.IsExplorerShellRunning()))
+                return ApiResult.Success($"Already in {mode} Mode.", GetStatus());
+            using SplashScreenService transition = new(_logger);
 			try
 			{
 				// A session switch must not touch DefaultMode, NextBootMode or Winlogon.
@@ -309,10 +317,13 @@ public sealed class ModeManager
 		modeStatus.LastAppliedAt = modeState.LastAppliedAt;
 		modeStatus.LastAction = modeState.LastAction;
 		modeStatus.LastError = modeState.LastError;
-		modeStatus.Steam = _processTools.GetState("steam");
-		modeStatus.Decky = _processTools.GetState("PluginLoader", "PluginLoader_noconsole");
-		modeStatus.Sunshine = _processTools.GetState("sunshine", "apollo", "vibepollo", "vibeshine");
-		modeStatus.Explorer = _processTools.GetState("explorer");
+		ProcessState[] processes = ModeStatusProcessSnapshot.Capture(Process.GetProcesses,
+			process => process.Id, process => process.ProcessName,
+			process => process.MainModule?.FileName, process => process.Dispose());
+		modeStatus.Steam = processes[0];
+		modeStatus.Decky = processes[1];
+		modeStatus.Sunshine = processes[2];
+		modeStatus.Explorer = processes[3];
 		modeStatus.MouseCursorAutoHide = _cursorAutoHide.Running;
 		modeStatus.MouseCursorHidden = _cursorAutoHide.CursorHidden;
 		modeStatus.SplashLogoPath = modeConfig.Gaming.Splash.LogoPath;
@@ -401,6 +412,13 @@ public sealed class ModeManager
 			int value = _processTools.EnsureInputCompatibilityServices();
 			messages.Add($"DirectInput compatibility checked ({value} service(s) ready).");
 		}
+		if (config.Gaming.EnsureHandheldVendorCompatibilityInGamingMode)
+		{
+			// Handheld ASUS: senza i servizi di Armoury Crate restano fuori uso i tasti
+			// dedicati, il controller interno e le luci. Chi non li ha non vede differenza.
+			int vendor = _processTools.EnsureHandheldVendorCompatibilityServices();
+			if (vendor > 0) messages.Add($"Handheld vendor compatibility checked ({vendor} service(s) ready).");
+		}
 		_processTools.EnsureDeckyPluginHelperCompatibilityServices();
 		int num = _processTools.StartCustomGamingApps(config.Gaming.CustomStartupApps);
 		if (num > 0)
@@ -440,15 +458,21 @@ public sealed class ModeManager
 
 	private void ApplyDesktopMode(ModeConfig config, ICollection<string> messages, bool interactive, bool restoreStartupApps)
 	{
-		bool restoreDecky = _store.LoadState().CurrentMode == ModeKind.Gaming &&
-			_processTools.StopDeckyForDesktopTransition();
+		bool restoreDecky = false;
+		// Il ritorno al desktop non dipende dalla salute di un plugin opzionale.
+		try
+		{
+			restoreDecky = _store.LoadState().CurrentMode == ModeKind.Gaming &&
+				_processTools.StopDeckyForDesktopTransition();
+		}
+		catch (Exception error) { _logger.Error("Decky cleanup failed; continuing Desktop recovery.", error); }
 		try
 		{
 		_volumeKeys.Stop();
 		_windowFocus.Stop();
 		_cursorAutoHide.Stop();
 		messages.Add("Mouse cursor was restored.");
-		if (config.Gaming.RestoreExplorerOnDesktop)
+		if (config.Gaming.RestoreExplorerOnDesktop || !ProcessTools.IsExplorerShellRunning())
 		{
 			bool flag = _processTools.StartExplorer();
 			messages.Add(flag ? "Explorer is running." : "Explorer could not be started.");
@@ -463,8 +487,63 @@ public sealed class ModeManager
 		finally
 		{
 			if (restoreDecky)
-				_processTools.EnsureProcessWithEnvironment(config.Gaming.DeckyPath, _processTools.GetDeckyFallbackPaths(), "",
-					_processTools.BuildDeckyPluginHelperEnvironment(), "PluginLoader", "PluginLoader_noconsole");
+			{
+				try { _processTools.EnsureProcessWithEnvironment(config.Gaming.DeckyPath, _processTools.GetDeckyFallbackPaths(), "",
+					_processTools.BuildDeckyPluginHelperEnvironment(), "PluginLoader", "PluginLoader_noconsole"); }
+				catch (Exception error) { _logger.Error("Desktop restored; Decky restart failed.", error); }
+			}
+		}
+	}
+}
+
+internal static class ModeStatusProcessSnapshot
+{
+	private static readonly string[][] Aliases =
+	{
+		new[] { "steam" }, new[] { "PluginLoader", "PluginLoader_noconsole" },
+		new[] { "sunshine", "apollo", "vibepollo", "vibeshine" }, new[] { "explorer" }
+	};
+
+	// One enumeration per status response. Keep handles alive only while reading
+	// the selected paths, then release every process, including unrelated ones.
+	internal static ProcessState[] Capture<TProcess>(Func<TProcess[]> enumerate,
+		Func<TProcess, int> readId, Func<TProcess, string> readName,
+		Func<TProcess, string?> readPath, Action<TProcess> dispose)
+	{
+		TProcess[] snapshot = enumerate();
+		try
+		{
+			var selected = new List<(TProcess Process, int Id, string Name)>();
+			foreach (TProcess process in snapshot)
+			{
+				try
+				{
+					string name = readName(process);
+					if (Aliases.Any(group => group.Contains(name, StringComparer.OrdinalIgnoreCase)))
+						selected.Add((process, readId(process), name));
+				}
+				catch { } // A process can exit between enumeration and identity reads.
+			}
+			return Aliases.Select(group =>
+			{
+				var matches = group.SelectMany(alias => selected.Where(process =>
+					process.Name.Equals(alias, StringComparison.OrdinalIgnoreCase))).DistinctBy(process => process.Id).ToArray();
+				string? path = null;
+				foreach (var process in matches)
+				{
+					try { path = readPath(process.Process); } catch { path = null; }
+					if (!string.IsNullOrWhiteSpace(path)) break;
+				}
+				return new ProcessState { Running = matches.Length != 0,
+					ProcessIds = matches.Select(process => process.Id).Order().ToArray(), Path = path };
+			}).ToArray();
+		}
+		finally
+		{
+			foreach (TProcess process in snapshot)
+			{
+				try { dispose(process); } catch { }
+			}
 		}
 	}
 }

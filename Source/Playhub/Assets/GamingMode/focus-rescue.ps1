@@ -24,6 +24,30 @@
 
 $ErrorActionPreference = 'SilentlyContinue'
 
+function Test-GamingModeOptOut {
+    return Test-Path -LiteralPath (Join-Path $env:APPDATA 'GamingMode\disabled-by-user')
+}
+if (Test-GamingModeOptOut) { return }
+
+# Local\ scopes the mutex to this Windows session; the SID separates users.
+function Enter-GamingModeHelper([string]$Role) {
+    $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    $mutex = [Threading.Mutex]::new($false, ('Local\Playhub.GamingMode.' + $Role + '.' + $sid))
+    try {
+        $owned = $false
+        try { $owned = $mutex.WaitOne(0) }
+        catch [Threading.AbandonedMutexException] { $owned = $true }
+        if ($owned) { return $mutex }
+    }
+    catch { $mutex.Dispose(); throw }
+    $mutex.Dispose()
+    return $null
+}
+
+$helperMutex = Enter-GamingModeHelper 'FocusRescue'
+if ($null -eq $helperMutex) { return }
+try {
+
 $logPath = Join-Path $env:APPDATA 'GamingMode\playhub-focus.log'
 $port = 47992
 
@@ -324,6 +348,10 @@ function Send-Response($stream, [int]$code, [string]$body) {
     $stream.Flush()
 }
 
+function Wait-FocusRequest($Listener) {
+    return $Listener.Server.Poll(1000000, [System.Net.Sockets.SelectMode]::SelectRead) -and $Listener.Pending()
+}
+
 $steamSeen = $false
 $steamGoneSince = $null
 $lastSteamCheck = Get-Date
@@ -332,6 +360,7 @@ while ($true) {
     # Watchdog: quando Steam sparisce (cambio modalita' in corso) esci con lui.
     if (((Get-Date) - $lastSteamCheck).TotalSeconds -ge 5) {
         $lastSteamCheck = Get-Date
+        if (Test-GamingModeOptOut) { Write-Log 'Gaming Mode removed: focus helper stopped.'; break }
         $steam = Get-Process steam -ErrorAction SilentlyContinue
         if ($steam) {
             $steamSeen = $true
@@ -346,9 +375,15 @@ while ($true) {
         }
     }
 
-    if (-not $listener.Pending()) {
-        Start-Sleep -Milliseconds 50
-        continue
+    # Poll blocks in the OS and wakes immediately for a new connection.
+    # Its one-second cap keeps the existing shutdown/opt-out watchdog bounded.
+    try {
+        if (-not (Wait-FocusRequest $listener)) { continue }
+    }
+    catch [ObjectDisposedException] { break }
+    catch [System.Net.Sockets.SocketException] {
+        Write-Log "Listener stopped: $_"
+        break
     }
 
     $client = $null
@@ -410,3 +445,9 @@ while ($true) {
 
 $listener.Stop()
 Write-Log '--- Focus Rescue terminato ---'
+
+}
+finally {
+    if ($null -ne $listener) { $listener.Stop() }
+    try { $helperMutex.ReleaseMutex() } finally { $helperMutex.Dispose() }
+}

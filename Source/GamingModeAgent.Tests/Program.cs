@@ -1,4 +1,6 @@
 using GamingMode.Services;
+using System.Diagnostics;
+using System.Reflection;
 
 var tests = new (string Name, Action Run)[]
 {
@@ -17,7 +19,19 @@ var tests = new (string Name, Action Run)[]
 	("Display: resolution change never triggers recovery", TestDisplayModeOnly),
 	("Display: recovery decision", TestDisplayRecoveryDecision),
 	("Display: black screen sampling", TestDisplayBlackSampling),
-	("Display: Chromium process roles", TestDisplayProcessRoles)
+	("Display: Chromium process roles", TestDisplayProcessRoles),
+	("Foreground cache bounds identity reads and disposes expired handles", TestForegroundCacheExpiry),
+	("Foreground cache invalidates on PID changes and no foreground", TestForegroundCacheChanges),
+	("Foreground cache rejects a dead handle even when PID is reused", TestForegroundCacheReuse),
+	("Foreground identity queries the exact native process", TestNativeForegroundIdentity),
+	("Empty Steam sessions do not inspect candidate processes", TestEmptySessionAvoidsProcessReads),
+	("New Steam sessions are detected after an idle cache", TestSessionAfterIdle),
+	("Active Steam sessions still exclude Steam client windows", TestActiveSessionExcludesSteam),
+	("Fullscreen windows receive no style or resize writes", TestFullscreenIsUntouched),
+	("Windowed games use physical monitor bounds and can recover again", TestPhysicalFullscreenRecovery),
+	("Physical coordinates fail closed and restore after exceptions", TestPhysicalScopeFailure),
+	("Native DPI scope restores the calling thread context", TestNativeDpiScope),
+	("External overlay hosts never become fullscreen game windows", TestOverlayHostExclusion)
 };
 
 var failures = new List<string>();
@@ -205,7 +219,228 @@ static void Equal<T>(T expected, T actual)
 	}
 }
 
+static void TestForegroundCacheExpiry()
+{
+	long now = 1000;
+	var identities = new List<FakeForegroundIdentity>();
+	var cache = new ForegroundProcessIdentityCache(pid => { var value = new FakeForegroundIdentity("steamwebhelper"); identities.Add(value); return value; }, () => now);
+	for (int i = 0; i < 25; i++) { Equal("steamwebhelper", cache.Read(1)); now += 10; }
+	Equal(1, identities.Count);
+	Equal("steamwebhelper", cache.Read(1));
+	Equal(2, identities.Count);
+	Equal(1, identities[0].Disposals);
+	cache.Read(0);
+	Equal(1, identities[1].Disposals);
+}
+
+static void TestForegroundCacheChanges()
+{
+	var opened = new List<int>();
+	var identities = new List<FakeForegroundIdentity>();
+	var cache = new ForegroundProcessIdentityCache(pid => { opened.Add(pid); var identity = new FakeForegroundIdentity(pid == 10 ? "steam" : "game"); identities.Add(identity); return identity; }, () => 0);
+	Equal("steam", cache.Read(10));
+	Equal("game", cache.Read(20));
+	Equal(1, identities[0].Disposals);
+	Equal<string?>(null, cache.Read(0));
+	Equal(1, identities[1].Disposals);
+	Equal("steam", cache.Read(10));
+	True(opened.SequenceEqual(new[] { 10, 20, 10 }));
+}
+
+static void TestForegroundCacheReuse()
+{
+	var first = new FakeForegroundIdentity("steam");
+	var replacement = new FakeForegroundIdentity("game");
+	int opens = 0;
+	var cache = new ForegroundProcessIdentityCache(pid => ++opens == 1 ? first : replacement, () => 0);
+	Equal("steam", cache.Read(10));
+	first.IsAlive = false;
+	Equal("game", cache.Read(10));
+	Equal(2, opens);
+	Equal(1, first.Disposals);
+	var unavailable = new ForegroundProcessIdentityCache(pid => null, () => 0);
+	Equal<string?>(null, unavailable.Read(1));
+	var alreadyExited = new FakeForegroundIdentity("steam") { IsAlive = false };
+	var exitedCache = new ForegroundProcessIdentityCache(pid => alreadyExited, () => 0);
+	Equal<string?>(null, exitedCache.Read(1));
+	Equal(1, alreadyExited.Disposals);
+}
+
+static void TestNativeForegroundIdentity()
+{
+	using Process current = Process.GetCurrentProcess();
+	using IForegroundProcessIdentity? identity = NativeForegroundProcessIdentity.Open(current.Id);
+	True(identity is not null && identity.IsAlive);
+	Equal(current.ProcessName.ToLowerInvariant(), identity!.Name.ToLowerInvariant());
+	Equal<IForegroundProcessIdentity?>(null, NativeForegroundProcessIdentity.Open(int.MaxValue));
+}
+
+static object? ReadActiveSession(string root, int pid, Func<int, string?> readName)
+{
+	MethodInfo method = typeof(OverlaySteamArtworkResolver).GetMethod("FindActiveGame", BindingFlags.Static | BindingFlags.NonPublic)!;
+	return method.Invoke(null, new object?[] { root, pid, readName });
+}
+
+static string MakeSteamFixture()
+{
+	string root = Path.Combine(Path.GetTempPath(), "Playhub-native-perf-" + Guid.NewGuid().ToString("N"));
+	Directory.CreateDirectory(Path.Combine(root, "logs"));
+	return root;
+}
+
+static void DeleteSteamFixture(string root)
+{
+	string expectedPrefix = Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar + "Playhub-native-perf-";
+	if (!Path.GetFullPath(root).StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("Invalid fixture cleanup path");
+	Directory.Delete(root, true);
+}
+
+static void TestEmptySessionAvoidsProcessReads()
+{
+	string root = MakeSteamFixture();
+	try
+	{
+		int reads = 0;
+		Func<int, string?> readName = pid => { reads++; throw new InvalidOperationException("Idle must not inspect processes"); };
+		Equal<object?>(null, ReadActiveSession(root, int.MaxValue, readName)); // Missing log.
+		File.WriteAllText(Path.Combine(root, "logs", "gameprocess_log.txt"), "Client version: fixture\n");
+		for (int i = 0; i < 50; i++) Equal<object?>(null, ReadActiveSession(root, i + 1, readName));
+		Equal(0, reads);
+	}
+	finally { DeleteSteamFixture(root); }
+}
+
+static void WriteTrackedFixture(string root)
+{
+	using Process current = Process.GetCurrentProcess();
+	File.WriteAllText(Path.Combine(root, "logs", "gameprocess_log.txt"), $"[{current.StartTime:yyyy-MM-dd HH:mm:ss}] AppID 123 adding PID {current.Id}\n");
+}
+
+static void TestSessionAfterIdle()
+{
+	string root = MakeSteamFixture();
+	try
+	{
+		using Process current = Process.GetCurrentProcess();
+		int reads = 0;
+		Func<int, string?> readName = pid => { reads++; return "testgame"; };
+		File.WriteAllText(Path.Combine(root, "logs", "gameprocess_log.txt"), "Client version: fixture\n");
+		Equal<object?>(null, ReadActiveSession(root, current.Id, readName));
+		Equal(0, reads);
+		WriteTrackedFixture(root);
+		Thread.Sleep(550); // Production log stat cache is bounded to 500 ms.
+		True(ReadActiveSession(root, current.Id, readName) is not null);
+		Equal(1, reads);
+	}
+	finally { DeleteSteamFixture(root); }
+}
+
+static void TestActiveSessionExcludesSteam()
+{
+	string root = MakeSteamFixture();
+	try
+	{
+		WriteTrackedFixture(root);
+		using Process current = Process.GetCurrentProcess();
+		int reads = 0;
+		Equal<object?>(null, ReadActiveSession(root, current.Id, pid => { reads++; return "steamwebhelper"; }));
+		Equal(1, reads);
+	}
+	finally { DeleteSteamFixture(root); }
+}
+
 static void True(bool condition)
 {
 	if (!condition) throw new InvalidOperationException("Condition was false.");
+}
+
+static void TestOverlayHostExclusion()
+{
+	foreach (string name in new[] { "GlosSITarget", "glossitarget.exe", @"F:\proof\GlosSITarget.exe" })
+		True(FullscreenWindowGeometry.IsOverlayHostProcess(name));
+	foreach (string? name in new[] { "Cuphead", "Cuphead.exe", "DOOM64_x64", "GlosSITargetGame", "steamwebhelper", "", null })
+		Equal(false, FullscreenWindowGeometry.IsOverlayHostProcess(name));
+}
+
+static void TestFullscreenIsUntouched()
+{
+	int reads = 0, writes = 0, restores = 0;
+	bool physical = false;
+	var screen = new PhysicalWindowRect(0, 0, 3840, 2160);
+	for (int i = 0; i < 25; i++)
+	{
+		Equal(false, FullscreenWindowGeometry.Apply(() =>
+		{
+			True(physical); reads++;
+			return new FullscreenWindowBounds(screen, screen);
+		}, _ => writes++, () => { physical = true; return new ActionScope(() => { physical = false; restores++; }); }));
+	}
+	Equal(25, reads); Equal(0, writes); Equal(25, restores); Equal(false, physical);
+	True(new PhysicalWindowRect(-3840, 0, 0, 2160).Matches(new(-3839, 0, 0, 2160)));
+	Equal(false, new PhysicalWindowRect(-3840, 0, 0, 2160).Matches(screen));
+}
+
+static void TestPhysicalFullscreenRecovery()
+{
+	var monitor = new PhysicalWindowRect(-3840, 0, 0, 2160);
+	var window = new PhysicalWindowRect(-3600, 200, -1600, 1400);
+	int writes = 0;
+	bool physical = false;
+	bool Apply() => FullscreenWindowGeometry.Apply(() =>
+	{
+		True(physical);
+		return new FullscreenWindowBounds(window, monitor);
+	}, bounds => { True(physical); Equal(monitor, bounds.Monitor); window = bounds.Monitor; writes++; },
+		() => { physical = true; return new ActionScope(() => physical = false); });
+	Equal(true, Apply()); Equal(false, Apply()); Equal(1, writes); Equal(false, physical);
+	window = new PhysicalWindowRect(-3500, 300, -1700, 1300); // Same styles, game returns to windowed mode.
+	Equal(true, Apply()); Equal(2, writes);
+}
+
+static void TestPhysicalScopeFailure()
+{
+	int reads = 0, writes = 0, restores = 0;
+	Equal(false, FullscreenWindowGeometry.Apply(() => { reads++; return null; }, _ => writes++, () => null));
+	Equal(0, reads); Equal(0, writes);
+	Equal(false, FullscreenWindowGeometry.Apply(() => null, _ => writes++, () => new ActionScope(() => restores++)));
+	Equal(1, restores);
+	try
+	{
+		FullscreenWindowGeometry.Apply(() => new FullscreenWindowBounds(new(10, 10, 600, 400), new(0, 0, 3840, 2160)),
+			_ => throw new InvalidOperationException("fixture"), () => new ActionScope(() => restores++));
+		throw new Exception("Expected resize exception");
+	}
+	catch (InvalidOperationException exception) when (exception.Message == "fixture") { }
+	Equal(2, restores);
+}
+
+static void TestNativeDpiScope()
+{
+	nint original = DpiTestNative.GetThreadDpiAwarenessContext();
+	using (IDisposable? scope = PhysicalDpiScope.Enter())
+	{
+		True(scope != null);
+		Equal(2, DpiTestNative.GetAwarenessFromDpiAwarenessContext(DpiTestNative.GetThreadDpiAwarenessContext()));
+	}
+	True(DpiTestNative.AreDpiAwarenessContextsEqual(original, DpiTestNative.GetThreadDpiAwarenessContext()));
+}
+
+sealed class ActionScope(Action restore) : IDisposable
+{
+	public void Dispose() => restore();
+}
+
+static class DpiTestNative
+{
+	[System.Runtime.InteropServices.DllImport("user32.dll")] internal static extern nint GetThreadDpiAwarenessContext();
+	[System.Runtime.InteropServices.DllImport("user32.dll")] internal static extern int GetAwarenessFromDpiAwarenessContext(nint context);
+	[System.Runtime.InteropServices.DllImport("user32.dll")] internal static extern bool AreDpiAwarenessContextsEqual(nint first, nint second);
+}
+
+sealed class FakeForegroundIdentity(string name) : IForegroundProcessIdentity
+{
+	public string Name { get; } = name;
+	public bool IsAlive { get; set; } = true;
+	public int Disposals { get; private set; }
+	public void Dispose() => Disposals++;
 }

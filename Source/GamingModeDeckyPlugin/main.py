@@ -19,6 +19,10 @@ import urllib.parse
 import urllib.request
 from ctypes import wintypes
 
+_ipc_spec = importlib.util.spec_from_file_location("playhub_decky_ipc_health", os.path.join(os.path.dirname(__file__), "decky_ipc_health.py"))
+_ipc_module = importlib.util.module_from_spec(_ipc_spec)
+_ipc_spec.loader.exec_module(_ipc_module)
+
 _spec = importlib.util.spec_from_file_location("playhub_quick_settings", os.path.join(os.path.dirname(__file__), "quick_settings", "main.py"))
 _runtime = importlib.util.module_from_spec(_spec)
 sys.modules[_spec.name] = _runtime
@@ -40,8 +44,39 @@ _TOPBAR_CLOCK_SELECTORS = ["#header ._1HhLUvHH6BZLIOyOE80TVh", "._1HhLUvHH6BZLIO
 
 
 class Plugin(QuickSettingsPlugin):
+    def _request_uwp_gamebar(self, request):
+        if (not isinstance(request, dict) or type(request.get("appId")) is not int
+                or not 0 < request["appId"] <= 0xffffffff
+                or type(request.get("pressed")) is not bool
+                or not isinstance(request.get("requestId"), str)
+                or not 1 <= len(request["requestId"]) <= 160):
+            return {"ok": False}
+        try:
+            token_path = os.path.join(os.environ["APPDATA"], "GamingMode", "xbox-shell-token")
+            with open(token_path, "r", encoding="utf-8") as token_file:
+                token = token_file.read(513).strip()
+            if not token or len(token) > 512:
+                return {"ok": False}
+            payload = json.dumps({key: request[key] for key in ("appId", "requestId", "pressed")}).encode("utf-8")
+            message = urllib.request.Request("http://127.0.0.1:47991/session/uwp/gamebar", data=payload,
+                headers={"Content-Type": "application/json", "X-Playhub-Shell-Token": token}, method="POST")
+            with urllib.request.urlopen(message, timeout=0.8) as response:
+                result = json.loads(response.read(4096))
+            return {"ok": isinstance(result, dict) and result.get("ok") is True}
+        except (OSError, ValueError, KeyError):
+            return {"ok": False}
+
+    async def request_uwp_gamebar(self, request):
+        return await asyncio.get_running_loop().run_in_executor(None, self._request_uwp_gamebar, request)
+
     def __init__(self):
         super().__init__()
+        import decky
+        self._decky_ipc_health = None
+        if all(getattr(decky, key, None) for key in ("DECKY_PLUGIN_DIR", "DECKY_PLUGIN_LOG_DIR", "DECKY_PLUGIN_RUNTIME_DIR")):
+            self._decky_ipc_health = _ipc_module.DeckyIpcHealth(
+                os.path.dirname(decky.DECKY_PLUGIN_DIR),
+                os.path.dirname(decky.DECKY_PLUGIN_LOG_DIR), decky.DECKY_PLUGIN_RUNTIME_DIR)
         # News is optional: its failure must never take down device controls.
         self._home_news = None
         try:
@@ -88,6 +123,16 @@ class Plugin(QuickSettingsPlugin):
     async def get_daily_history_settings(self):
         if self._daily_history is None: raise RuntimeError("Daily history unavailable")
         return await asyncio.to_thread(self._daily_history.settings)
+
+    async def get_decky_ipc_failures(self):
+        if self._decky_ipc_health is None:
+            return []
+        return await asyncio.to_thread(self._decky_ipc_health.failures)
+
+    async def claim_decky_ipc_recovery(self, folder, session, log):
+        if self._decky_ipc_health is None:
+            return {"ok": False}
+        return await asyncio.to_thread(self._decky_ipc_health.claim, folder, session, log)
 
     async def get_qam_preferences(self):
         return await asyncio.to_thread(self._qam_preferences.get)
@@ -572,6 +617,7 @@ class Plugin(QuickSettingsPlugin):
         if self._topbar_date_task:
             self._topbar_date_task.cancel()
             self._topbar_date_task = None
+        await asyncio.to_thread(self._inject_topbar_date, False, "auto", False)
         await super()._unload()
         logging.getLogger(__name__).info("Playhub backend unloaded pid=%s", os.getpid())
 
@@ -822,20 +868,70 @@ $result | ConvertTo-Json -Compress
         cfg = json.dumps({"enabled": bool(enabled), "format": date_format or "auto", "moveLeft": bool(move_left),
                           "badge": _TOPBAR_DATE_BADGE_ID, "style": _TOPBAR_DATE_STYLE_ID,
                           "selectors": _TOPBAR_CLOCK_SELECTORS}, ensure_ascii=False)
-        return ("(function(){var C=" + cfg + ";function remove(){var n=document.getElementById(C.badge);if(n)n.remove();var s=document.getElementById(C.style);if(s)s.remove();}"
-                "var roots=Array.prototype.slice.call(document.querySelectorAll('#header,._1E_SL1bTibeQ3PQRBZoS_-,[class*=GamepadHeader],[class*=HeaderStatus],[class*=TopBar]'));"
-                "function inside(n){for(var i=0;i<roots.length;i++)if(roots[i]===n||roots[i].contains(n))return true;return false;}var clock=null;"
-                "for(var i=0;i<C.selectors.length;i++){var q=document.querySelector(C.selectors[i]);if(q&&inside(q)){clock=q;break;}}"
-                "if(!clock){for(var r=0;r<roots.length&&!clock;r++){var ns=roots[r].querySelectorAll('div,span');for(var j=0;j<ns.length;j++){if(/^\\d{1,2}:\\d{2}(\\s|$)/.test((ns[j].textContent||'').trim())){clock=ns[j];break;}}}}"
-                "if(!clock){remove();return;}clock.toggleAttribute('data-playhub-clock-left',C.moveLeft);var ps=document.getElementById('playhub-clock-position-style');if(!ps){ps=document.createElement('style');ps.id='playhub-clock-position-style';document.head.appendChild(ps);}ps.textContent='[data-playhub-clock-left]{order:-2!important;}';if(!C.enabled){remove();return;}var d=new Date(),pad=function(v){return String(v).padStart(2,'0')},value;"
-                "if(C.format==='iso')value=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());else{var o={};"
-                "if(C.format==='dd_mm_yyyy')o={day:'2-digit',month:'2-digit',year:'numeric'};else if(C.format==='dd_mm_yy')o={day:'2-digit',month:'2-digit',year:'2-digit'};"
-                "else if(C.format==='yyyy_mm_dd')o={year:'numeric',month:'2-digit',day:'2-digit'};else if(C.format==='dd_month_yyyy')o={day:'numeric',month:'long',year:'numeric'};"
-                "else if(C.format==='weekday_dd_month')o={weekday:'long',day:'numeric',month:'long'};else if(C.format==='weekday_short_dd_month')o={weekday:'short',day:'numeric',month:'short'};"
-                "else if(C.format==='month_dd_yyyy')o={month:'long',day:'numeric',year:'numeric'};else if(C.format==='month_short_dd_yyyy')o={month:'short',day:'numeric',year:'numeric'};else o={weekday:'short',day:'numeric',month:'short'};"
-                "try{value=new Intl.DateTimeFormat(navigator.language||undefined,o).formatToParts(d).map(function(p){return p.type==='weekday'||p.type==='month'?p.value.charAt(0).toLocaleUpperCase(navigator.language)+p.value.slice(1):p.value;}).join('');}catch(e){value=d.toLocaleDateString();}}"
-                "var s=document.getElementById(C.style);if(!s){s=document.createElement('style');s.id=C.style;document.head.appendChild(s);}s.textContent='#'+C.badge+'{display:inline-flex;align-items:center;margin-left:.55em;opacity:.9;white-space:nowrap;font:inherit;line-height:inherit;color:#fff;pointer-events:none;vertical-align:baseline;align-self:baseline;}#'+C.badge+':has(+#decky-weather-topbar-badge){margin-right:.34em;}';"
-                "var b=document.getElementById(C.badge);if(!b){b=document.createElement('span');b.id=C.badge;b.setAttribute('aria-hidden','true');}b.textContent=value;if(b.parentNode!==clock)clock.appendChild(b);var first=clock.firstElementChild;if(first!==b)clock.insertBefore(b,first);})();")
+        return "(function(C){" + r"""
+const key = '__playhubTopbarDateRuntime';
+if (window[key]) { window[key].update(C); return; }
+let config = C, badge = null, previousClock = null, queued = null, stopped = false;
+function ownText(node) { return Array.from(node.childNodes).filter(child => child.nodeType === 3).map(child => child.textContent || '').join(' ').trim(); }
+function findClock() {
+  for (const selector of config.selectors) { const clock = document.querySelector(selector); if (clock) return clock; }
+  const header = document.querySelector('#header') || document.querySelector('.BasicUIHeader_Header_1E_SL');
+  if (!header) return null;
+  return Array.from(header.querySelectorAll('div,span,button,time')).find(node => /^\d{1,2}:\d{2}(?:\s|$)/.test(ownText(node))) || null;
+}
+function text() {
+  const d = new Date(), pad = n => String(n).padStart(2, '0');
+  if (config.format === 'iso') return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+  const formats = {
+    dd_mm_yyyy: {day:'2-digit',month:'2-digit',year:'numeric'}, dd_mm_yy: {day:'2-digit',month:'2-digit',year:'2-digit'},
+    yyyy_mm_dd: {year:'numeric',month:'2-digit',day:'2-digit'}, dd_month_yyyy: {day:'numeric',month:'long',year:'numeric'},
+    weekday_dd_month: {weekday:'long',day:'numeric',month:'long'}, weekday_short_dd_month: {weekday:'short',day:'numeric',month:'short'},
+    month_dd_yyyy: {month:'long',day:'numeric',year:'numeric'}, month_short_dd_yyyy: {month:'short',day:'numeric',year:'numeric'}
+  };
+  try { return new Intl.DateTimeFormat(navigator.language || undefined, formats[config.format] || formats.weekday_short_dd_month).formatToParts(d).map(p => p.type === 'weekday' || p.type === 'month' ? p.value.charAt(0).toLocaleUpperCase(navigator.language)+p.value.slice(1) : p.value).join(''); }
+  catch { return d.toLocaleDateString(); }
+}
+function ensure() {
+  if (stopped) return;
+  const clock = findClock();
+  // Navigation can temporarily remove the header; retain our badge until the new clock mounts.
+  if (!clock) return;
+  if (previousClock && previousClock !== clock) previousClock.removeAttribute('data-playhub-clock-left');
+  previousClock = clock;
+  if (clock.hasAttribute('data-playhub-clock-left') !== config.moveLeft) clock.toggleAttribute('data-playhub-clock-left', config.moveLeft);
+  let style = document.getElementById(config.style);
+  if (!style) {
+    style = document.createElement('style'); style.id = config.style;
+    style.textContent = '[data-playhub-clock-left]{order:-2!important;}#'+config.badge+'{display:inline-flex;align-items:baseline;margin-left:.55em;opacity:.9;white-space:nowrap;font:inherit;line-height:inherit;color:inherit;pointer-events:none;vertical-align:baseline;align-self:baseline;}#'+config.badge+':has(+#decky-weather-topbar-badge){margin-right:.34em;}';
+    document.head.appendChild(style);
+  }
+  // Steam creates the QuickAccess BrowserView header only on AppRunning.
+  // Its compact clock stays intact; the actual Steam overlay retains the date.
+  const inGameQamHeader = /^QuickAccess(?:_|$)/.test(document.title || '');
+  if (!config.enabled || inGameQamHeader) { (badge || document.getElementById(config.badge))?.remove(); return; }
+  badge = badge || document.getElementById(config.badge) || document.createElement('span');
+  if (!badge.id) { badge.id = config.badge; badge.setAttribute('aria-hidden','true'); }
+  const value = text(); if (badge.textContent !== value) badge.textContent = value;
+  // The weather badge follows the date; unchanged nodes are never removed/recreated.
+  const weather = clock.querySelector('#decky-weather-topbar-badge');
+  if (badge.parentNode !== clock || weather && badge.nextSibling !== weather) clock.insertBefore(badge, weather || null);
+}
+function queue() { if (stopped || queued !== null) return; queued = window.setTimeout(() => { queued = null; ensure(); }, 60); }
+const observer = new MutationObserver(queue);
+const interval = window.setInterval(ensure, 60000);
+function cleanup() {
+  stopped = true; observer.disconnect(); window.clearInterval(interval); if (queued !== null) window.clearTimeout(queued);
+  document.removeEventListener('visibilitychange', queue, true); window.removeEventListener('focus', queue, true);
+  (badge || document.getElementById(config.badge))?.remove(); document.getElementById(config.style)?.remove();
+  previousClock?.removeAttribute('data-playhub-clock-left');
+  delete window[key];
+}
+window[key] = { update(next) { config = next; if (!next.enabled && !next.moveLeft) cleanup(); else ensure(); }, cleanup };
+if (!config.enabled && !config.moveLeft) { cleanup(); return; }
+observer.observe(document.documentElement, {childList:true,subtree:true});
+document.addEventListener('visibilitychange', queue, true); window.addEventListener('focus', queue, true);
+ensure();
+""" + "})(" + cfg + ");"
 
     def _steam_browser_targets_for_date(self):
         try:
@@ -879,4 +975,4 @@ $result | ConvertTo-Json -Compress
                 await asyncio.to_thread(self._inject_topbar_date, prefs.get("topbarDateEnabled", True), prefs.get("topbarDateFormat", "auto"), prefs.get("topbarClockLeft", False))
             except Exception:
                 logging.exception("Playhub topbar date refresh failed")
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(15)

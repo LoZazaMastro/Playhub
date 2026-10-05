@@ -38,7 +38,7 @@ test("Explorer autostart and agent launches share a Decky startup lock", () => {
   assert.match(processes, /DeckyStartupGuard.RunExclusive\(\(\) => EnsureProcessUnlocked/);
   assert.match(installer, /SetValue\("DeckyLoader", Playhub.Shared.DeckyStartupGuard.CreateCommand\(loader\)\)/);
   assert.match(guard, /Get-Process -Name PluginLoader,PluginLoader_noconsole/);
-  assert.equal(guard.split("Local\\Playhub.Decky.Start.").length - 1, 2);
+  assert.equal(guard.split("Global\\Playhub.Decky.Start").length - 1, 2);
   assert.ok(guard.indexOf("$mutex.WaitOne") < guard.indexOf("Get-Process -Name"));
   assert.ok(guard.indexOf("Get-Process -Name") < guard.indexOf("[Diagnostics.Process]::Start"));
 });
@@ -51,7 +51,7 @@ test("desktop transition stops Decky before Explorer and only ensures one replac
   const processes = read("../../GamingModeAgent/GamingMode.Services/ProcessTools.cs");
   assert.match(processes, /process.SessionId == session/);
   assert.match(processes, /WaitForExit\(5000\)/);
-  assert.match(processes, /if \(GetState\(processNames\).Running\)[\s\S]*return true/);
+  assert.match(processes, /if \(decky\) return Playhub.Shared.DeckyStartupGuard.StartOrReuse\(processStartInfo, _logger.Info\)/);
 });
 
 test("mode confirmation asks a localized question with Ok and Cancel", () => {
@@ -68,7 +68,9 @@ test("live mode transition reuses configured mode application without changing l
   assert.match(method, /_modeSwitch.WaitAsync\(0\)/);
   assert.match(method, /finally \{ _modeSwitch.Release\(\)/);
   assert.match(manager, /CloseExplorerInGamingMode && config.Gaming.AllowExplorerCloseInGamingMode/);
-  assert.match(manager, /if \(config.Gaming.RestoreExplorerOnDesktop\)/);
+  // Desktop recovery is mandatory when the shell is missing, even if the preference is off.
+  assert.match(manager, /if \(config\.Gaming\.RestoreExplorerOnDesktop \|\| !ProcessTools\.IsExplorerShellRunning\(\)\)/);
+  assert.match(manager, /bool flag = _processTools\.StartExplorer\(\);[\s\S]*?if \(!flag\) throw new InvalidOperationException\("Explorer could not be restored\."\)/);
 });
 
 test("QAM and power menu switch commands use translated live labels and never restart", () => {

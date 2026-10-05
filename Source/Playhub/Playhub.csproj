@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="ApplicationMediaTools.props" />
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
@@ -14,15 +15,23 @@
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>2.0.0</Version>
+    <Version>2.1.0</Version>
+    <PlayhubEmulation Condition="'$(PlayhubEmulation)' == ''">false</PlayhubEmulation>
     <DebugType>none</DebugType>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);dist_publish\**</DefaultItemExcludes>
+    <DefineConstants>$(DefineConstants);PLAYHUB_NATIVE_INTEGRATIONS</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PlayhubUiReview)' == 'true'">
     <DefineConstants>$(DefineConstants);PLAYHUB_UI_REVIEW</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(PlayhubEmulation)' == 'true'">
+    <DefineConstants>$(DefineConstants);PLAYHUB_EMULATION</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(PlayhubEmulation)' != 'true'">
+    <Compile Remove="Emulation\**\*.cs;MainWindow.Emulation.cs;MainWindow.Emulation*Review.cs" />
+  </ItemGroup>
   <PropertyGroup Condition="'$(PlayhubUpdatePreview)' == 'true'">
     <DefineConstants>$(DefineConstants);PLAYHUB_UPDATE_PREVIEW</DefineConstants>
   </PropertyGroup>
@@ -31,13 +40,28 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../PerfectArtwork/*.cs" Link="Integrations/%(Filename)%(Extension)" />
     <Compile Include="../Shared/DeckyStartupGuard.cs" Link="DeckyStartupGuard.cs" />
+    <Compile Include="../Shared/GamingModeInstallationPolicy.cs" Link="GamingModeInstallationPolicy.cs" />
+    <Compile Include="../Shared/EditorialPhotoMigration.cs" Link="EditorialPhotoMigration.cs" />
     <Compile Include="../Shared/SplashLogoScale.cs" Link="SplashLogoScale.cs" />
+    <!-- The import page shares only plugin contracts, never the emulation host. -->
+    <Compile Include="../ApplicationIntegrations/Native/SteamPluginBridge.cs" Link="Importing/SteamPluginBridge.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/GameIntegrationEditorService.cs" Link="Importing/GameIntegrationEditorService.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/PostImportIntegrationService.cs" Link="Importing/PostImportIntegrationService.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/PerfectArtworkState.cs" Link="Importing/PerfectArtworkState.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/PerfectHeroService.cs" Link="Importing/PerfectHeroService.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/PluginConsumerDelivery.cs" Link="Importing/PluginConsumerDelivery.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/ApplicationIntegrationCoordinator.cs" Link="Importing/ApplicationIntegrationCoordinator.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/NativeMetadataService.cs" Link="Importing/NativeMetadataService.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/GameTitleRefetchFactory.cs" Link="Importing/GameTitleRefetchFactory.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/ApplicationImageCache.cs" Link="Importing/ApplicationImageCache.cs" />
+    <Compile Include="../ApplicationIntegrations/*.cs" Link="Integrations/%(Filename)%(Extension)" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250205002" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="MainWindow.PawnIo.cs;Services/PawnIoService.cs;Services/PawnIoInstallService.cs" />
+<Compile Remove="MainWindow.PawnIo.cs;Services/PawnIoService.cs;Services/PawnIoInstallService.cs" />
     <Compile Remove="Assets\GamingModeDeckyPlugin\**\*.cs" />
     <Content Include="Assets\**\*.*" Exclude="Assets\GamingModeDeckyPlugin\**\cpu_power\**;Assets\**\__pycache__\**;Assets\**\*.pyc">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -56,4 +80,32 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <Target Name="ExcludeEmulationAssets" BeforeTargets="AssignTargetPaths" Condition="'$(PlayhubEmulation)' != 'true'">
+    <ItemGroup><Content Remove="Assets\Emulation\**\*.*;Assets\Emulators\**\*.*" /></ItemGroup>
+  </Target>
+  <ItemGroup>
+    <Compile Include="..\Playhub.GameSession\UwpShortcutArguments.cs" Link="Services\UwpShortcutArguments.cs" />
+    <Content Include="..\Playhub.XboxSession\**\*.cs;..\Playhub.XboxSession\**\*.csproj;..\Playhub.XboxSession\**\LICENSE;..\Playhub.XboxSession\**\NOTICE.md;..\Playhub.XboxSession\**\BUILD.md;..\Playhub.XboxSession\**\MIT-LICENSE"
+             Exclude="..\Playhub.XboxSession\bin\**;..\Playhub.XboxSession\obj\**">
+      <Link>XboxSession\source\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+  <Target Name="BuildGameSession" BeforeTargets="PrepareForBuild">
+    <MSBuild Projects="..\Playhub.GameSession\Playhub.GameSession.csproj" Targets="Restore;Publish"
+             RemoveProperties="PublishDir;PublishUrl"
+             Properties="Configuration=$(Configuration);Platform=AnyCPU;RuntimeIdentifier=win-x64;SelfContained=true" />
+    <ItemGroup>
+      <Content Include="..\Playhub.GameSession\bin\$(Configuration)\net8.0-windows\win-x64\publish\Playhub.GameSession.exe" Link="Playhub.GameSession.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+  <Target Name="BuildXboxSession" BeforeTargets="PrepareForBuild">
+    <MSBuild Projects="..\Playhub.XboxSession\Playhub.XboxSession.csproj" Targets="Restore;Publish"
+             RemoveProperties="PublishDir;PublishUrl"
+             Properties="Configuration=$(Configuration);Platform=AnyCPU;RuntimeIdentifier=win-x64;SelfContained=true" />
+    <ItemGroup>
+      <Content Include="..\Playhub.XboxSession\bin\$(Configuration)\net8.0-windows\win-x64\publish\Playhub.XboxSession.exe" Link="Playhub.XboxSession.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
 </Project>

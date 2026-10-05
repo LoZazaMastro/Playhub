@@ -63,6 +63,8 @@ public sealed class GamingWindowFocusService : IDisposable
 
 	private readonly FileLogger _logger;
 
+	private readonly Func<int, bool> _isSteamGame;
+
 	private readonly object _sync = new object();
 
 	private readonly ConcurrentDictionary<nint, AppliedWindowState> _appliedWindows = new ConcurrentDictionary<nint, AppliedWindowState>();
@@ -78,6 +80,10 @@ public sealed class GamingWindowFocusService : IDisposable
 	private int _steamFocusRecoveryGeneration;
 
 	private nint _lastForegroundSteamGameWindow;
+
+	private readonly ConcurrentDictionary<nint, uint> _gameWindows = new();
+	private readonly HashSet<nint> _pendingLaunchFocus = new();
+	private bool _initialScan;
 
 	/// <summary>
 	/// True mentre a schermo c'e' una schermata di avvio di Launch Curtain.
@@ -145,9 +151,13 @@ public sealed class GamingWindowFocusService : IDisposable
 		}
 	}
 
-	public GamingWindowFocusService(FileLogger logger)
+	public GamingWindowFocusService(FileLogger logger) : this(logger, pid => OverlaySteamArtworkResolver.IsSteamGameProcess(pid)
+		|| UwpSteamSessionAssociation.IsTrackedGame(pid)) { }
+
+	internal GamingWindowFocusService(FileLogger logger, Func<int, bool> isSteamGame)
 	{
 		_logger = logger;
+		_isSteamGame = isSteamGame;
 	}
 
 	public void Start(bool applyBorderlessFullscreen = true)
@@ -159,7 +169,9 @@ public sealed class GamingWindowFocusService : IDisposable
 			if (worker == null || worker.IsCompleted)
 			{
 				_cancellation = new CancellationTokenSource();
-				_worker = Task.Run(() => RunAsync(_cancellation.Token));
+				_initialScan = true;
+				var token = _cancellation.Token;
+				_worker = Task.Run(() => RunAsync(token));
 				_logger.Info("Gaming window focus service started.");
 			}
 		}
@@ -176,6 +188,7 @@ public sealed class GamingWindowFocusService : IDisposable
 			_cancellation = null;
 			_worker = null;
 			_appliedWindows.Clear();
+			_gameWindows.Clear();
 			ProcessNameCache.Clear();
 			_launchCurtainPriorityActive = false;
 			_lastForegroundSteamGameWindow = 0;
@@ -206,21 +219,28 @@ public sealed class GamingWindowFocusService : IDisposable
 
 	private async Task RunAsync(CancellationToken cancellationToken)
 	{
-		while (!cancellationToken.IsCancellationRequested)
+		using var changes = new SemaphoreSlim(0, 1);
+		using var observer = new WindowLifecycleObserver(() =>
 		{
-			try
+			try { if (changes.CurrentCount == 0) changes.Release(); }
+			catch (SemaphoreFullException) { }
+			catch (ObjectDisposedException) { }
+		});
+		try
+		{
+			while (!cancellationToken.IsCancellationRequested)
 			{
-				await Task.Delay(ApplyToCandidateWindows() ? 50 : 500, cancellationToken);
-			}
-			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-			{
-				break;
-			}
-			catch (Exception exception)
-			{
-				_logger.Error("Failed to apply borderless fullscreen to game windows.", exception);
+				try { ApplyToCandidateWindows(); }
+				catch (Exception exception) { _logger.Error("Could not reconcile game windows.", exception); }
+				// Events handle launches/closures immediately; the slow fallback covers
+				// a late Steam tracking-log update or an unavailable accessibility hook.
+				await changes.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+				await Task.Delay(150, cancellationToken); // coalesce one window's create/show/foreground burst
+				while (changes.Wait(0)) { }
 			}
 		}
+		catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+		finally { _pendingLaunchFocus.Clear(); }
 	}
 
 	private bool ApplyToCandidateWindows()
@@ -255,44 +275,68 @@ public sealed class GamingWindowFocusService : IDisposable
 			// momento c'e' una schermata di avvio a video, e stare fermo.
 			_logger.Info(flag ? "Launch Curtain priority mode active." : "Launch Curtain priority mode released.");
 		}
-		if (!flag && _applyBorderlessFullscreen)
+		var processIdentity = new Dictionary<uint, bool>();
+		foreach (nint window in readOnlyList)
 		{
-			foreach (nint item4 in readOnlyList)
+			try
 			{
-				try
-				{
-					ApplyToWindow(item4);
-				}
-				catch (Exception exception)
-				{
-					_logger.Error($"Failed to apply borderless fullscreen to window {item4}.", exception);
-				}
+				if (!IsCandidateWindow(window, out uint processId, out string processName)) continue;
+				if (!processIdentity.TryGetValue(processId, out bool isGame))
+					processIdentity[processId] = isGame = _isSteamGame((int)processId);
+				if (!isGame) continue;
+				bool firstSeen = _gameWindows.TryAdd(window, processId);
+				if (firstSeen && !_initialScan && (flag || OverlayWindowTools.IsSteamForeground()))
+					_pendingLaunchFocus.Add(window);
+				if (!flag && _applyBorderlessFullscreen) ApplyToWindow(window);
 			}
+			catch (Exception exception) { _logger.Error($"Could not track game window {window}.", exception); }
+		}
+		_initialScan = false;
+		if (!flag && _pendingLaunchFocus.Count > 0)
+		{
+			// One foreground handoff on launch. Never force a game back over an
+			// overlay or over an application the user deliberately switched to.
+			if (OverlayWindowTools.IsSteamForeground())
+			{
+				nint candidate = readOnlyList.FirstOrDefault(window => _pendingLaunchFocus.Contains(window)
+					&& _gameWindows.ContainsKey(window) && IsWindowVisible(window) && !IsIconic(window));
+				if (candidate != 0) OverlayWindowTools.Activate(candidate);
+			}
+			_pendingLaunchFocus.Clear();
 		}
 		nint foregroundWindow = GetForegroundWindow();
-		if (foregroundWindow != 0 &&
-			_appliedWindows.TryGetValue(foregroundWindow, out AppliedWindowState foregroundState) &&
-			foregroundState.IsSteamGame)
+		if (_gameWindows.ContainsKey(foregroundWindow)) _lastForegroundSteamGameWindow = foregroundWindow;
+		// Hidden UWP frames can survive process exit; an iconic window, however,
+		// is only minimized and must not be treated as a finished game.
+		nint[] removed = _gameWindows.Keys.Where(window => !seen.Contains(window)
+			|| !IsWindowVisible(window) || IsCloaked(window)).ToArray();
+		bool removedForegroundSteamGame = _lastForegroundSteamGameWindow != 0 && removed.Contains(_lastForegroundSteamGameWindow);
+		foreach (nint window in removed)
 		{
-			_lastForegroundSteamGameWindow = foregroundWindow;
+			_gameWindows.TryRemove(window, out _);
+			_appliedWindows.TryRemove(window, out _);
+			_pendingLaunchFocus.Remove(window);
 		}
-		nint[] array = _appliedWindows.Keys.Where((nint window) => !seen.Contains(window)).ToArray();
-		bool removedForegroundSteamGame = _lastForegroundSteamGameWindow != 0 &&
-			array.Contains(_lastForegroundSteamGameWindow);
-		foreach (nint key in array)
-		{
-			_appliedWindows.TryRemove(key, out var _);
-		}
-		bool anotherSteamGameWindowExists = _appliedWindows.Values.Any((AppliedWindowState state) => state.IsSteamGame);
-		if (removedForegroundSteamGame)
-		{
-			_lastForegroundSteamGameWindow = 0;
-		}
-		if (!flag && removedForegroundSteamGame && !anotherSteamGameWindowExists)
-		{
-			QueueSteamFocusRecovery();
-		}
+		if (removedForegroundSteamGame) _lastForegroundSteamGameWindow = 0;
+		if (!flag && removedForegroundSteamGame && _gameWindows.IsEmpty) QueueSteamFocusRecovery();
+
 		return flag;
+	}
+
+	public bool TryGetQamGameProcess(nint window, out uint processId)
+	{
+		processId = 0;
+		return _gameWindows.TryGetValue(window, out uint tracked) && TryGetWindowProcess(window, out processId, out _)
+			&& processId == tracked && IsWindowVisible(window) && !IsCloaked(window);
+	}
+
+	public bool TryGetQamSource(out nint window, out uint processId)
+	{
+		window = GetForegroundWindow();
+		if (TryGetQamGameProcess(window, out processId)) return true;
+		if (!OverlayWindowTools.IsSteamForeground()) { window = 0; return false; }
+		window = _lastForegroundSteamGameWindow;
+		return TryGetQamGameProcess(window, out processId);
 	}
 
 	private void QueueSteamFocusRecovery()
@@ -310,7 +354,8 @@ public sealed class GamingWindowFocusService : IDisposable
 				for (int attempt = 1; attempt <= 3; attempt++)
 				{
 					if (generation != Volatile.Read(ref _steamFocusRecoveryGeneration)
-						|| token.IsCancellationRequested || _launchCurtainPriorityActive)
+						|| token.IsCancellationRequested || _launchCurtainPriorityActive || !_gameWindows.IsEmpty
+						|| !CanRecoverSteamFocus())
 					{
 						return;
 					}
@@ -338,7 +383,9 @@ public sealed class GamingWindowFocusService : IDisposable
 	{
 		try
 		{
-			SetWindowPos(window, HwndTopMost, 0, 0, 0, 0, 595u);
+			// La curtain puo' essersi nascosta dopo l'enumerazione: niente SWP_SHOWWINDOW,
+			// altrimenti il riordino rende di nuovo visibile la copertura nera.
+			SetWindowPos(window, HwndTopMost, 0, 0, 0, 0, 531u);
 		}
 		catch (Exception exception)
 		{
@@ -349,7 +396,7 @@ public sealed class GamingWindowFocusService : IDisposable
 	private static bool TryGetLaunchCurtainWindow(nint window, out LaunchCurtainWindow launchCurtainWindow)
 	{
 		launchCurtainWindow = default(LaunchCurtainWindow);
-		if (window == 0 || !IsWindowVisible(window) || IsIconic(window))
+		if (window == 0 || !IsWindowVisible(window) || IsIconic(window) || IsCloaked(window))
 		{
 			return false;
 		}
@@ -377,35 +424,42 @@ public sealed class GamingWindowFocusService : IDisposable
 
 	private void ApplyToWindow(nint window)
 	{
-		if (!IsCandidateWindow(window, out uint processId, out string processName))
+		if (!_gameWindows.ContainsKey(window) || !IsCandidateWindow(window, out uint processId, out string processName))
 		{
 			return;
 		}
-		nint hMonitor = MonitorFromWindow(window, 2u);
-		MonitorInfo lpmi = MonitorInfo.Create();
-		if (GetMonitorInfo(hMonitor, ref lpmi))
+		FullscreenWindowGeometry.Apply(() =>
+		{
+			nint hMonitor = MonitorFromWindow(window, 2u);
+			MonitorInfo lpmi = MonitorInfo.Create();
+			if (!GetMonitorInfo(hMonitor, ref lpmi) || !GetWindowRect(window, out Rect current)) return null;
+			Rect monitor = lpmi.rcMonitor;
+			return new FullscreenWindowBounds(
+				new PhysicalWindowRect(current.Left, current.Top, current.Right, current.Bottom),
+				new PhysicalWindowRect(monitor.Left, monitor.Top, monitor.Right, monitor.Bottom));
+		}, bounds =>
 		{
 			long num = ((IntPtr)GetWindowLongPtr(window, -16)).ToInt64() & -13565953;
 			long num2 = ((IntPtr)GetWindowLongPtr(window, -20)).ToInt64() & -131586;
-			Rect rcMonitor = lpmi.rcMonitor;
-			bool isSteamGame = OverlaySteamArtworkResolver.IsSteamGameProcess((int)processId);
+			PhysicalWindowRect monitor = bounds.Monitor;
+			Rect rcMonitor = new() { Left = monitor.Left, Top = monitor.Top, Right = monitor.Right, Bottom = monitor.Bottom };
+			bool isSteamGame = _gameWindows.ContainsKey(window);
 			AppliedWindowState appliedWindowState = new AppliedWindowState(rcMonitor, num, num2, isSteamGame);
-			if (!_appliedWindows.TryGetValue(window, out var value) || !value.Equals(appliedWindowState))
-			{
-				SetWindowLongPtr(window, -16, new IntPtr(num));
-				SetWindowLongPtr(window, -20, new IntPtr(num2));
-				SetWindowPos(window, HwndTop, rcMonitor.Left, rcMonitor.Top, rcMonitor.Right - rcMonitor.Left, rcMonitor.Bottom - rcMonitor.Top, 628u);
-				_appliedWindows[window] = appliedWindowState;
-				_logger.Info($"Applied borderless fullscreen to {processName} ({processId}).");
-			}
-		}
+			// A window that has returned to windowed mode needs recovery even if its styles
+			// match an earlier application. Actual physical bounds are the authority.
+			SetWindowLongPtr(window, -16, new IntPtr(num));
+			SetWindowLongPtr(window, -20, new IntPtr(num2));
+			SetWindowPos(window, HwndTop, rcMonitor.Left, rcMonitor.Top, rcMonitor.Right - rcMonitor.Left, rcMonitor.Bottom - rcMonitor.Top, 628u);
+			_appliedWindows[window] = appliedWindowState;
+			_logger.Info($"Applied borderless fullscreen to {processName} ({processId}).");
+		});
 	}
 
 	private static bool IsCandidateWindow(nint window, out uint processId, out string processName)
 	{
 		processId = 0u;
 		processName = "";
-		if (window == 0 || !IsWindowVisible(window) || IsIconic(window))
+		if (window == 0 || !IsWindowVisible(window) || IsIconic(window) || IsCloaked(window))
 		{
 			return false;
 		}
@@ -428,7 +482,8 @@ public sealed class GamingWindowFocusService : IDisposable
 		{
 			return false;
 		}
-		if (IgnoredProcesses.Contains(processName))
+		if (SteamGameIdentityPolicy.IsSteamClient(processName) || SteamGameIdentityPolicy.IsXboxLaunchHelper(processName)
+			|| FullscreenWindowGeometry.IsOverlayHostProcess(processName) || IgnoredProcesses.Contains(processName))
 		{
 			return false;
 		}
@@ -462,7 +517,7 @@ public sealed class GamingWindowFocusService : IDisposable
 	{
 		processId = 0u;
 		processName = "";
-		GetWindowThreadProcessId(window, out processId);
+		processId = (uint)OverlayWindowTools.WindowProcessId(window);
 		if (processId == 0)
 		{
 			return false;
@@ -496,15 +551,27 @@ public sealed class GamingWindowFocusService : IDisposable
 		return true;
 	}
 
+	private static bool IsCloaked(nint window)
+		=> DwmGetWindowAttribute(window, 14, out int cloaked, sizeof(int)) == 0 && cloaked != 0;
+
+	private static bool CanRecoverSteamFocus()
+	{
+		nint foreground = GetForegroundWindow();
+		if (foreground == 0 || !IsWindowVisible(foreground) || IsCloaked(foreground)) return true;
+		if (OverlayWindowTools.IsSteamForeground()) return true;
+		StringBuilder className = new(128);
+		GetClassName(foreground, className, className.Capacity);
+		return className.ToString() is "Progman" or "WorkerW" or "Shell_TrayWnd";
+	}
+
+	[DllImport("dwmapi.dll")]
+	private static extern int DwmGetWindowAttribute(nint window, int attribute, out int value, int size);
+	[DllImport("user32.dll")]
+	private static extern bool EnumChildWindows(nint window, EnumWindowsProc callback, nint parameter);
+
 	private static IReadOnlyList<nint> EnumerateWindows()
 	{
-		List<nint> windows = new List<nint>();
-		EnumWindows(delegate(nint window, nint _)
-		{
-			windows.Add(window);
-			return true;
-		}, 0);
-		return windows;
+		return OverlayWindowTools.EnumerateTopLevelHandles();
 	}
 
 	private static string GetWindowTitle(nint window)

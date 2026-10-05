@@ -30,7 +30,7 @@ for (const locale of locales) test(`${locale}: actual mode buttons retain litera
   const React = { createElement: (type, props, ...children) => typeof type === 'function'
     ? type(props) : { type, props: props ?? {}, children: children.flat() } };
   const { tree } = execute(`${helper.getText(ast)}\nexport const tree=(${actions.getText(ast)});`, {
-    React, Focusable: 'div', DialogButton: 'button', busy: false, local: strings[locale],
+    React, Focusable: 'div', DialogButton: 'button', busy: false, status: {}, local: strings[locale],
   });
   const labels = tree.children.map(button => button.children.find(child => child.props?.className === 'ph-mode-action-label'));
   assert.deepEqual(Array.from(labels[0].children, child => child.children.join('')), ['Gaming', 'Mode']);

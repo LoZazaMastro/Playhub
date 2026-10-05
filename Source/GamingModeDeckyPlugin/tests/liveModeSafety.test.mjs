@@ -10,7 +10,10 @@ const section = (text, start, end) => text.slice(text.indexOf(start), text.index
 test("legacy session endpoints and safety recovery preserve the next login mode", () => {
   assert.match(manager, /ApplyModeAsync\([^\n]*bool updateShell = false\)/);
   const safety = readFileSync(new URL("../../Playhub/Assets/GamingMode/desktop-safety.ps1", import.meta.url), "utf8");
-  assert.match(safety, /47991\/mode\/desktop\/switch/);
+  assert.match(safety, /\$port = 47991/);
+  assert.match(safety, /config\.safety\.apiPort/);
+  assert.match(safety, /\$baseUri\/mode\/desktop\/switch" -Method POST/);
+  assert.doesNotMatch(safety, /\/mode\/desktop\/restart|SetShellForMode|SaveConfig|Set-ItemProperty/);
   const boot = section(manager, "public async Task ApplyBootModeAsync", "public void ResumeGamingServices");
   assert.match(boot, /_shellTools.SetShellForMode\(modeKind\)/);
 });

@@ -95,9 +95,9 @@ await Test("four Decky strings and adjacent controls translate in all 11 non-Ita
 {
     string[] keys =
     [
-        "Scegli una versione di DeckyLoader",
+        "Scegli una versione di Decky",
         "Usa questa opzione solo se ti serve una versione precisa.",
-        "DeckyLoader con console",
+        "Decky con console",
         "Mostra una finestra con il registro in tempo reale. Utile per diagnosi e sviluppo.",
         "Installa questa versione", "Installa la versione con console", "Scegli una versione"
     ];
@@ -109,6 +109,21 @@ await Test("four Decky strings and adjacent controls translate in all 11 non-Ita
         Require(LocalizationService.Translate(language.Key.ToUpperInvariant() + "-XX", key) == result, "Regional alias differs");
         Require(LocalizationService.Translate("it", key) == key, "Italian source changed");
     }
+    return Task.CompletedTask;
+});
+
+await Test("optional install/remove actions use locale keys in all 12 languages", () =>
+{
+    foreach (var language in LocalizationService.Languages)
+    {
+        foreach (var key in new[] { "GamingMode.Optional.Install", "GamingMode.Optional.Remove" })
+        {
+            using var locale = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Assets", "Localization", language.Key + ".json")));
+            var expected = locale.RootElement.GetProperty(key).GetString();
+            Require(LocalizationService.Translate(language.Key, key) == expected, "Wrong optional action translation: " + language.Key + " " + key);
+        }
+    }
+    Require(LocalizationService.Translate("it", "GamingMode.Optional.Remove") == "Rimuovi Gaming Mode", "Italian action became English");
     return Task.CompletedTask;
 });
 

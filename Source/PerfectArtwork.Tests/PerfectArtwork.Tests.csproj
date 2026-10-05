@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <UseWindowsForms>true</UseWindowsForms>
+    <DefineConstants Condition="'$(PerfectNative)' != 'false'">$(DefineConstants);PLAYHUB_NATIVE_INTEGRATIONS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="../PerfectArtwork/*.cs" />
+    <Compile Include="../ApplicationIntegrations/ApplicationIntegrationDataStore.cs" />
+  </ItemGroup>
+</Project>

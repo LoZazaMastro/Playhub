@@ -64,6 +64,33 @@ public sealed class ProcessTools
 		("BTAGService", "Bluetooth Audio Gateway Service")
 	};
 
+	// SERVIZI DEI PRODUTTORI DI HANDHELD.
+	//
+	// Su una handheld ASUS (ROG Ally e simili) i tasti dedicati, il controller
+	// interno, i LED e il controllo hardware passano da Armoury Crate. Se quei
+	// servizi non girano, in Gaming Mode il dispositivo perde pezzi.
+	//
+	// Qui stanno solo i servizi che servono a giocare: controllo hardware, input,
+	// tasti e luci. Aggiornatori, telemetria e servizi di collegamento al telefono
+	// restano fuori: non devono partire da soli mentre si gioca.
+	//
+	// Un servizio assente viene semplicemente saltato: la lista vale per chi ha
+	// quel software, e non cambia niente per tutti gli altri.
+	private static readonly (string Name, string Label)[] HandheldVendorCompatibilityServices = new(string, string)[11]
+	{
+		("ArmouryCrateControlInterface", "Armoury Crate Control Interface"),
+		("ArmouryCrateService", "Armoury Crate Service"),
+		("AsusAppService", "ASUS App Service"),
+		("ASUSOptimization", "ASUS Optimization"),
+		("AsHidService", "ASUS HID Service"),
+		("ASUSSwitch", "ASUS Switch"),
+		("ASUSSystemAnalysis", "ASUS System Analysis"),
+		("ASUSSystemDiagnosis", "ASUS System Diagnosis"),
+		("AsusCertService", "ASUS Certificate Service"),
+		("LightingService", "ASUS Aura Lighting Service"),
+		("ROG Live Service", "ROG Live Service")
+	};
+
 	private static readonly (string Name, string Label)[] DeckyPluginHelperCompatibilityServices = new(string, string)[10]
 	{
 		("Dnscache", "DNS Client"),
@@ -115,7 +142,8 @@ public sealed class ProcessTools
 
 	private bool EnsureProcessUnlocked(string? configuredPath, string[] fallbackPaths, string arguments, IReadOnlyDictionary<string, string>? environment, params string[] processNames)
 	{
-		if (GetState(processNames).Running)
+		bool decky = processNames.Any(name => name.StartsWith("PluginLoader", StringComparison.OrdinalIgnoreCase));
+		if (!decky && GetState(processNames).Running)
 		{
 			return true;
 		}
@@ -141,6 +169,7 @@ public sealed class ProcessTools
 					processStartInfo.Environment[item.Key] = item.Value;
 				}
 			}
+			if (decky) return Playhub.Shared.DeckyStartupGuard.StartOrReuse(processStartInfo, _logger.Info);
 			Process.Start(processStartInfo);
 			_logger.Info(("Started " + text + " " + arguments).Trim());
 			return true;
@@ -210,16 +239,17 @@ public sealed class ProcessTools
 
 	public int CleanupDeckyOrphanedForks()
 	{
-		if (!GetState("PluginLoader", "PluginLoader_noconsole").Running)
+		try
 		{
+			int count = DeckyOrphanCleanup.Cleanup(GetDeckyFallbackPaths());
+			if (count > 0) _logger.Info($"Cleaned {count} orphaned Decky multiprocessing process(es).");
+			return count;
+		}
+		catch (Exception exception)
+		{
+			_logger.Info("Decky orphan cleanup skipped unreadable process metadata: " + exception.Message);
 			return 0;
 		}
-		int num = RunPowerShellInteger("$items = @(Get-CimInstance Win32_Process -Filter \"Name='PluginLoader_noconsole.exe' OR Name='PluginLoader.exe'\" -ErrorAction SilentlyContinue)\nif ($items.Count -eq 0) {\n  [Console]::Out.WriteLine('0')\n  exit 0\n}\n\n$ids = @{}\nforeach ($item in $items) {\n  $ids[[int]$item.ProcessId] = $true\n}\n\n$count = 0\nforeach ($item in $items) {\n  $commandLine = [string]$item.CommandLine\n  if ($commandLine -notlike '*--multiprocessing-fork*') {\n    continue\n  }\n\n  $parentId = [int]$item.ParentProcessId\n  $parentIsPluginLoader = $ids.ContainsKey($parentId)\n  if (-not $parentIsPluginLoader) {\n    $parent = Get-Process -Id $parentId -ErrorAction SilentlyContinue\n    if ($null -ne $parent -and $parent.ProcessName -like 'PluginLoader*') {\n      $parentIsPluginLoader = $true\n    }\n  }\n\n  if ($parentIsPluginLoader) {\n    continue\n  }\n\n  Stop-Process -Id ([int]$item.ProcessId) -Force -ErrorAction SilentlyContinue\n  $count++\n}\n\n[Console]::Out.WriteLine($count)", "Decky orphan fork cleanup");
-		if (num > 0)
-		{
-			_logger.Info($"Cleaned {num} orphaned Decky multiprocessing process(es).");
-		}
-		return num;
 	}
 
 	public bool LaunchOrFocusSteamGamepad(string? configuredPath, string[] fallbackPaths, string arguments)
@@ -347,6 +377,11 @@ public sealed class ProcessTools
 			_logger.Error("Failed to open URI " + uri + ".", exception);
 			return false;
 		}
+	}
+
+	public int EnsureHandheldVendorCompatibilityServices()
+	{
+		return EnsureServices(HandheldVendorCompatibilityServices, "handheld vendor compatibility");
 	}
 
 	public int EnsureInputCompatibilityServices()
@@ -665,7 +700,7 @@ public sealed class ProcessTools
 		}
 	}
 
-	private static bool IsExplorerShellRunning()
+	internal static bool IsExplorerShellRunning()
 	{
 		nint shell = GetShellWindow();
 		if (shell == 0) return false;

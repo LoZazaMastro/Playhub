@@ -18,6 +18,7 @@
     <Compile Include="..\Playhub\Services\LocalizationService.cs" Link="LocalizationService.cs" />
     <Compile Include="..\Playhub\Services\AppPaths.cs" Link="AppPaths.cs" />
     <Compile Include="..\Playhub\Services\SingleInstanceService.cs" Link="SingleInstanceService.cs" />
+    <Compile Include="..\Playhub\Services\SingleInstanceRedirect.cs" Link="SingleInstanceRedirect.cs" />
     <Content Include="..\Playhub\MainWindow*.cs" Link="Source\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\Playhub\Assets\Localization\*.json" Link="Assets\Localization\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\Playhub\Services\LocalizationService.cs" Link="Source\LocalizationService.cs" CopyToOutputDirectory="PreserveNewest" />

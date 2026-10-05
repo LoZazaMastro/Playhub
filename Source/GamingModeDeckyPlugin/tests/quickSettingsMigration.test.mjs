@@ -13,7 +13,8 @@ test('standalone migration serializes loader shutdown, bounded archive retries a
   assert.match(migration, /attempt < 39/);
   assert.match(migration, /Thread\.Sleep\(250\)/);
   assert.match(migration, /finally[\s\S]*!AnyDeckyLoaderRunning\(services, sessionId\)/);
-  assert.equal((migration.match(/Process\.Start\(/g) ?? []).length, 1);
+  assert.equal((migration.match(/DeckyStartupGuard\.StartOrReuse\(/g) ?? []).length, 1);
+  assert.doesNotMatch(migration, /Process\.Start\(/);
 });
 
 test('migration retains the old plugin outside Decky scanning and never overwrites user profiles', () => {

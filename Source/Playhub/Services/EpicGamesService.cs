@@ -97,6 +97,7 @@ public sealed class EpicGamesService
                 IsLocalExecutable = true,
                 LocalExecutablePath = exePath,
                 Executable = exePath,
+                SourceLaunchArguments = GetString(root, "LaunchCommand"),
                 FileSize = size
             };
         }

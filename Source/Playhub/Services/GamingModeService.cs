@@ -30,7 +30,7 @@ public sealed class GamingModeService
     public string InstallDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GamingMode");
     public string ConfigFile => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GamingMode", "config.json");
     public string InstalledExe => Path.Combine(InstallDir, "GamingMode.exe");
-    public bool IsInstalled => File.Exists(InstalledExe);
+    public bool IsInstalled => GamingModeInstallationPolicy.ShouldMaintainInstallation(InstalledExe, GamingModeInstallationPolicy.DisabledMarker);
 
 
     // UN DIALOG "Riprova." NON E' UNA DIAGNOSI.
@@ -125,7 +125,7 @@ public sealed class GamingModeService
             return new(false, warning);
         }
 
-        return new(true, "Gaming Mode è pronto. Riavvia Steam per trovarlo nel menu rapido.");
+        return new(true, "GamingMode.Optional.Ready");
     }
 
     /// <summary>Porta dell'agente come scritta nel config condiviso; 47991 se il file non c'è o non la dice.</summary>
@@ -155,6 +155,9 @@ public sealed class GamingModeService
             return new(false, "Mancano alcuni file di Gaming Mode: non trovo " + script + ". Reinstalla Playhub e riprova.");
         }
 
+        // Persist the decision before touching processes. Even a partially failed
+        // removal must not be silently undone by startup repair or an app update.
+        GamingModeInstallationPolicy.Disable(GamingModeInstallationPolicy.DisabledMarker);
         var args = $"-NoProfile -ExecutionPolicy Bypass -File \"{script}\"";
         var result = await ProcessService.RunAsync("powershell.exe", args, AppPaths.GamingModePackage);
         if (!result.Success)
@@ -165,10 +168,10 @@ public sealed class GamingModeService
             return new(false, failure);
         }
 
-        var companionResult = RemoveDeckyPlugin(deckyPluginsPath);
-        return companionResult.Success
-            ? new(true, "Gaming Mode è stato rimosso.")
-            : new(false, companionResult.Message);
+        // The Decky plugin also owns Playhub's library, store and quick settings.
+        // It remains usable without the optional Gaming Mode background agent.
+        // In particular, do not delete its running QuickSettingsAgent.exe.
+        return new(true, "GamingMode.Optional.Removed");
     }
 
     private static string DeckyPluginSource =>
@@ -195,7 +198,7 @@ public sealed class GamingModeService
         {
             var bundled = Path.Combine(AppPaths.GamingModePackage, "GamingMode.exe");
             if (!File.Exists(bundled)) return false;   // pacchetto assente: non si tocca niente
-            if (!File.Exists(InstalledExe)) return true;
+            if (!IsInstalled) return false;
 
             var source = new FileInfo(bundled);
             var installed = new FileInfo(InstalledExe);
@@ -364,6 +367,7 @@ public sealed class GamingModeService
             Directory.CreateDirectory(deckyPluginsPath);
             var dest = Path.Combine(deckyPluginsPath, "gaming-mode");
             CopyDirectory(DeckyPluginSource, dest);
+            Playhub.Shared.EditorialPhotoMigration.PrunePlugin(AppContext.BaseDirectory, dest);
             MigrateStandaloneQuickSettings(deckyPluginsPath);
             return new(true, "Gaming Mode è pronto. Riavvia Steam per trovarlo nel menu rapido.");
         }
@@ -402,7 +406,7 @@ public sealed class GamingModeService
                 Directory.Delete(dest, recursive: true);
             }
 
-            return new(true, "Plugin Gaming Mode rimosso da DeckyLoader.");
+            return new(true, "Plugin Gaming Mode rimosso da Decky.");
         }
         catch (Exception ex)
         {
@@ -410,7 +414,7 @@ public sealed class GamingModeService
                 string.IsNullOrWhiteSpace(deckyPluginsPath) ? AppPaths.DefaultDeckyPluginsPath : deckyPluginsPath,
                 "gaming-mode");
             var cause = ex.GetBaseException();
-            var failure = $"Rimozione di {where} non riuscita: {cause.GetType().Name} - {cause.Message}. Chiudi Steam e DeckyLoader, poi riprova.";
+            var failure = $"Rimozione di {where} non riuscita: {cause.GetType().Name} - {cause.Message}. Chiudi Steam e Decky, poi riprova.";
             Diag.Crash("GamingModeService.RemoveDeckyPlugin", failure + "\n" + ex);
             return new(false, failure);
         }
@@ -443,7 +447,7 @@ public sealed class GamingModeService
             {
                 try
                 {
-                    File.Copy(file, target, overwrite: true);
+                    BundledExecutableCopy.Copy(file, target);
                     break;
                 }
                 catch (Exception ex) when ((ex is IOException || ex is UnauthorizedAccessException) && attempt < 8)
@@ -464,25 +468,15 @@ public sealed class GamingModeService
 
     public void OpenCompanion()
     {
-        if (File.Exists(InstalledExe))
+        if (IsInstalled)
         {
             ProcessService.StartDetached(InstalledExe, workingDirectory: InstallDir);
-        }
-        else
-        {
-            // Fallback: avvia l'eseguibile del Gaming Mode dal pacchetto bundle.
-            // (Niente più Setup.exe: era un installer standalone ridondante.)
-            var bundled = Path.Combine(AppPaths.GamingModePackage, "GamingMode.exe");
-            if (File.Exists(bundled))
-            {
-                ProcessService.StartDetached(bundled, workingDirectory: AppPaths.GamingModePackage);
-            }
         }
     }
 
     public void StartAgent()
     {
-        if (File.Exists(InstalledExe))
+        if (IsInstalled)
         {
             ProcessService.StartDetached(InstalledExe, "agent", InstallDir, hidden: true);
         }
@@ -627,7 +621,7 @@ public sealed class GamingModeService
             {
                 if (restartLoader is not null && File.Exists(restartLoader) && !AnyDeckyLoaderRunning(services, sessionId))
                 {
-                    using var process = Process.Start(new ProcessStartInfo(restartLoader)
+                    DeckyStartupGuard.StartOrReuse(new ProcessStartInfo(restartLoader)
                     {
                         WorkingDirectory = services,
                         UseShellExecute = false,

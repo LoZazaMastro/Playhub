@@ -43,3 +43,10 @@ desktop.ini
 # ===== File pesanti (oltre 100 MB: GitHub li rifiuta) =====
 /Playhub-Decky-*.zip
 Source/GamingModeAgent/publish_verified_*/
+
+# Private work and generated diagnostics
+/.local/
+/HANDOVER*
+**/__pycache__/
+*.pyc
+*.pyo

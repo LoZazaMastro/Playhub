@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32;
 
 namespace GamingMode.Services;
 
@@ -25,7 +26,8 @@ namespace GamingMode.Services;
 // chiude, la sessione e i giochi non vengono toccati.
 public sealed class SteamDisplayRecoveryService : IDisposable
 {
-	private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(1500);
+	private static readonly TimeSpan IdleFallbackInterval = TimeSpan.FromSeconds(30);
+	private static readonly TimeSpan PendingInterval = TimeSpan.FromMilliseconds(1500);
 	private static readonly TimeSpan SettleTime = TimeSpan.FromMilliseconds(2500);
 	private static readonly TimeSpan PendingLifetime = TimeSpan.FromMinutes(10);
 	private static readonly TimeSpan MinimumGap = TimeSpan.FromSeconds(20);
@@ -40,6 +42,10 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 	private readonly object _sync = new();
 	private CancellationTokenSource? _cancellation;
 	private Task? _worker;
+	private readonly BackgroundWorkSignal _changes = new();
+	private bool _eventsSubscribed;
+	private long _snapshotCount;
+	internal long SnapshotCount => Interlocked.Read(ref _snapshotCount);
 
 	public SteamDisplayRecoveryService(FileLogger logger, Func<bool> isGamingMode)
 	{
@@ -54,6 +60,18 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 			if (_worker != null && !_worker.IsCompleted) return;
 			_cancellation = new CancellationTokenSource();
 			CancellationToken token = _cancellation.Token;
+			try
+			{
+				SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
+				SystemEvents.PowerModeChanged += OnPowerModeChanged;
+				_eventsSubscribed = true;
+			}
+			catch (Exception exception)
+			{
+				SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
+				SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+				_logger.Error("Display notifications unavailable; using bounded fallback.", exception);
+			}
 			_worker = Task.Run(() => RunAsync(token));
 		}
 	}
@@ -67,6 +85,12 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 			cancellation = _cancellation;
 			worker = _worker;
 			_cancellation = null;
+			if (_eventsSubscribed)
+			{
+				SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
+				SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+				_eventsSubscribed = false;
+			}
 			_worker = null;
 		}
 		if (cancellation == null) return;
@@ -86,8 +110,15 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 
 	public void Dispose() => Stop();
 
+	private void OnDisplaySettingsChanged(object? sender, EventArgs args) => _changes.Notify();
+	private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs args)
+	{
+		if (args.Mode == PowerModes.Resume) _changes.Notify();
+	}
+
 	private async Task RunAsync(CancellationToken token)
 	{
+		Interlocked.Increment(ref _snapshotCount);
 		DisplaySnapshot baseline = Capture() ?? DisplaySnapshot.Empty;
 		_logger.Info("Display watch started: " + baseline.Describe() + ".");
 		DisplaySnapshot? candidate = null;
@@ -101,7 +132,8 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 		{
 			try
 			{
-				await Task.Delay(PollInterval, token);
+				await _changes.WaitAsync(candidate is not null || pending != DisplayChangeKind.None
+					? PendingInterval : IdleFallbackInterval, token);
 			}
 			catch (OperationCanceledException)
 			{
@@ -110,6 +142,7 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 
 			try
 			{
+				Interlocked.Increment(ref _snapshotCount);
 				DisplaySnapshot? current = Capture();
 				if (current == null) continue;
 				DateTime now = DateTime.UtcNow;

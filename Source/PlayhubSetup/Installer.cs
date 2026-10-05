@@ -26,7 +26,7 @@ public sealed record InstallOptions(
 public static class Installer
 {
     public const string AppName = "Playhub";
-    public const string AppVersion = "2.0.0";
+    public const string AppVersion = "2.1.0";
     public const string Publisher = "Andrea Sgarro (LoZazaMastro)";
     public const string AppExeName = "Playhub.exe";
     public const string UninstallerName = "unins-playhub.exe";
@@ -57,11 +57,13 @@ public static class Installer
             Directory.CreateDirectory(options.InstallDir);
 
             ExtractPayload(options.InstallDir, progress);
+            Playhub.Shared.EditorialPhotoMigration.Prune(options.InstallDir, message => Debug.WriteLine(message));
 
             progress.Report((0.87, Loc.T("InstallingUWPHook")));
             InstallUWPHookSilently(options.InstallDir);
 
             progress.Report((0.89, Loc.T("InstallingGamingMode")));
+            PreserveChainFreeOptIn();
             InstallOrUpdateGamingModeSilently(options.InstallDir);
 
             var exePath = Path.Combine(options.InstallDir, AppExeName);
@@ -83,6 +85,21 @@ public static class Installer
 
             progress.Report((1.0, Loc.T("DoneTitle")));
         });
+    }
+
+    private static void PreserveChainFreeOptIn()
+    {
+        // Nessuna migrazione automatica finche' il backend non copre le API reali.
+        // CreateNew preserva anche un opt-in scritto contemporaneamente dall'utente.
+        string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GamingMode");
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, "chain-free-engine.json");
+        try
+        {
+            using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write);
+            JsonSerializer.Serialize(stream, new { enabled = false });
+        }
+        catch (IOException) when (File.Exists(path)) { }
     }
 
     // Marcatore in coda all'exe self-extracting: [payload][Int64 lunghezza]["PLHB"].
@@ -445,14 +462,31 @@ public static class Installer
     // equivalente al suo uninstaller originale.
     private static void RemoveGamingMode()
     {
+        Playhub.Shared.GamingModeInstallationPolicy.Disable(Playhub.Shared.GamingModeInstallationPolicy.DisabledMarker);
+        var installation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GamingMode");
         try
         {
             foreach (var p in Process.GetProcessesByName("GamingMode"))
             {
-                try { p.Kill(); p.WaitForExit(2000); } catch { }
+                using (p)
+                    try
+                    {
+                        if (p.SessionId != Process.GetCurrentProcess().SessionId ||
+                            !Playhub.Shared.GamingModeInstallationPolicy.OwnsExecutable(p.MainModule?.FileName, installation)) continue;
+                        p.Kill(); p.WaitForExit(10000);
+                    }
+                    catch { }
             }
         }
         catch { }
+
+        // An optional component must not remain the Windows shell after removal.
+        using (var winlogon = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows NT\CurrentVersion\Winlogon", writable: true))
+        {
+            var shell = winlogon?.GetValue("Shell") as string;
+            if (shell?.Contains(Path.Combine(installation, "GamingMode.exe"), StringComparison.OrdinalIgnoreCase) == true)
+                winlogon!.DeleteValue("Shell", throwOnMissingValue: false);
+        }
 
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -529,6 +563,10 @@ public static class Installer
     {
         try
         {
+            var existingExe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "GamingMode", "GamingMode.exe");
+            if (!Playhub.Shared.GamingModeInstallationPolicy.ShouldMaintainInstallation(existingExe,
+                Playhub.Shared.GamingModeInstallationPolicy.DisabledMarker)) return;
             var packageDir = Path.Combine(installDir, "Plugins", "Gaming Mode", "gaming-mode-win-x64");
             var packageExe = Path.Combine(packageDir, "GamingMode.exe");
             var script = Path.Combine(packageDir, "install.ps1");

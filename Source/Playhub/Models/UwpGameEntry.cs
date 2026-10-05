@@ -1,4 +1,4 @@
-﻿namespace Playhub.Models;
+namespace Playhub.Models;
 
 public sealed class UwpGameEntry
 {
@@ -10,6 +10,7 @@ public sealed class UwpGameEntry
     public string PackageFamilyName { get; set; } = "";
     public bool IsLocalExecutable { get; set; }
     public string LocalExecutablePath { get; set; } = "";
+    public string SourceLaunchArguments { get; set; } = "";
     public string Publisher { get; set; } = "";
     public long FileSize { get; set; }
     public bool InSteamLibrary { get; set; }
@@ -27,4 +28,7 @@ public sealed class UwpGameEntry
     /// </summary>
     public int SteamAppId { get; set; }
     public bool SteamGridDbArtworkDisabled { get; set; }
+    // A scraper preference must never replace Steam's actual artwork or a user's choice.
+    public Dictionary<string, string?> ArtworkChoices { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public HashSet<string> SteamArtworkTypes { get; } = new(StringComparer.OrdinalIgnoreCase);
 }

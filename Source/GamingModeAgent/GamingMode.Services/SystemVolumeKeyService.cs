@@ -19,7 +19,26 @@ public sealed class SystemVolumeKeyService : IDisposable
 	// intercettati qui) sia quando lo cambia chiunque altro: manopola sulle
 	// cuffie, mixer di un gioco, Quick Settings. Per il secondo caso serve un
 	// sorvegliante, perche' nessuno ci avvisa.
-	public event Action<SystemVolumeSnapshot>? VolumeChanged;
+	private Action<SystemVolumeSnapshot>? _volumeChanged;
+	public event Action<SystemVolumeSnapshot>? VolumeChanged
+	{
+		add
+		{
+			lock (_sync)
+			{
+				_volumeChanged += value;
+				if (_thread is { IsAlive: true }) StartVolumeWatcher();
+			}
+		}
+		remove
+		{
+			lock (_sync)
+			{
+				_volumeChanged -= value;
+				if (_volumeChanged is null) StopVolumeWatcher();
+			}
+		}
+	}
 	private delegate nint HookProc(int nCode, nint wParam, nint lParam);
 
 	private readonly struct KeyboardHookStruct
@@ -371,9 +390,10 @@ public sealed class SystemVolumeKeyService : IDisposable
 
 	private void PublishVolumeChanged()
 	{
+		if (_volumeChanged is null) return;
 		SystemVolumeSnapshot snapshot = SystemVolume.GetSnapshot();
 		RememberPublished(snapshot);
-		VolumeChanged?.Invoke(snapshot);
+		_volumeChanged?.Invoke(snapshot);
 	}
 
 	// SORVEGLIANZA DEL VOLUME DI SISTEMA.
@@ -383,9 +403,9 @@ public sealed class SystemVolumeKeyService : IDisposable
 	// Settings, tasti di una tastiera che non passano dal nostro gancio. In
 	// quei casi nessuno ci avvisa e l'indicatore non comparirebbe.
 	//
-	// Il volume si legge quattro volte al secondo: e' una proprieta' COM, costa
-	// pochissimo, e risolvendo l'endpoint a ogni giro segue da sola il cambio
-	// di dispositivo predefinito.
+	// Only an active native volume indicator needs observation. The current
+	// Steam dashboard uses Quick Settings; no subscriber means no polling,
+	// no endpoint activation and no watcher thread.
 	private Thread? _watcherThread;
 	private CancellationTokenSource? _watcherCancellation;
 	private int _lastPublishedLevel = -1;
@@ -399,7 +419,7 @@ public sealed class SystemVolumeKeyService : IDisposable
 
 	private void StartVolumeWatcher()
 	{
-		if (_watcherThread is { IsAlive: true }) return;
+		if (_volumeChanged is null || _watcherThread is { IsAlive: true }) return;
 		_watcherCancellation = new CancellationTokenSource();
 		CancellationToken token = _watcherCancellation.Token;
 		_watcherThread = new Thread(() => WatchVolume(token))
@@ -435,17 +455,17 @@ public sealed class SystemVolumeKeyService : IDisposable
 		{
 			try
 			{
-				Thread.Sleep(250);
+				if (token.WaitHandle.WaitOne(250)) return;
 				if (token.IsCancellationRequested) return;
 				SystemVolumeSnapshot snapshot = SystemVolume.GetSnapshot();
 				if (!snapshot.Available) continue;
 				if (snapshot.Level == _lastPublishedLevel && snapshot.Muted == _lastPublishedMuted) continue;
 				RememberPublished(snapshot);
-				VolumeChanged?.Invoke(snapshot);
+				_volumeChanged?.Invoke(snapshot);
 			}
 			catch
 			{
-				Thread.Sleep(1500);
+				if (token.WaitHandle.WaitOne(1500)) return;
 			}
 		}
 	}

@@ -105,6 +105,48 @@ test("projection bridge retries late QAM module once, unpatches idempotently, an
   const fresh = exports.installDeckyTabProjection(); assert.equal(installs, 4); fresh.stop();
 });
 
+test("successful module discovery is cached through 100 pending mount retries and reset on reload", () => {
+  const exports = {}; let root, module, searches = 0, installs = 0, removals = 0;
+  const original = function QuickAccessMenuBrowserView() {};
+  const renderer = { type: original };
+  const actualPatcher = {};
+  const patcherCode = ts.transpileModule(readFileSync(new URL("../node_modules/@decky/ui/dist/utils/patcher.js", import.meta.url), "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  vm.runInNewContext(patcherCode, { exports: actualPatcher });
+  const DFL = {
+    findModuleByExport: predicate => { searches++; return module && Object.values(module).some(predicate) ? module : undefined; },
+    getReactRoot: () => root,
+    findInReactTree: (node, predicate) => node && predicate(node) ? node : undefined,
+    createReactTreePatcher: () => () => {},
+    afterPatch: (object, field, handler) => {
+      installs++; const patch = actualPatcher.afterPatch(object, field, handler);
+      return { unpatch() { removals++; patch.unpatch(); } };
+    },
+  };
+  vm.runInNewContext(compile("deckyHostProjection.tsx"), { exports, document: { getElementById: () => ({}) },
+    require: name => name === "./decky" ? { DFL, SP_REACT: {} } : { canShareDeckyTabProjection: () => true } });
+  const bridge = exports.installDeckyTabProjection();
+  assert.equal(searches, 1, "missing module remains retryable");
+  module = { renderer }; bridge.reconcile();
+  assert.equal(searches, 2); assert.equal(installs, 1);
+  assert.notEqual(renderer.type, original, "real Decky patch replaces renderer function identity");
+  assert.equal(renderer.type.toString(), original.toString(), "actual Decky patch retains original source discovery text");
+  for (let i = 0; i < 100; i++) bridge.reconcile();
+  assert.equal(searches, 2, "pending QAM mount performs no repeated webpack scans");
+  root = { elementType: renderer, type: original, alternate: { type: original } };
+  bridge.reconcile();
+  assert.equal(root.type, renderer.type); assert.equal(root.alternate.type, renderer.type);
+  for (let i = 0; i < 100; i++) bridge.reconcile();
+  assert.equal(searches, 2); assert.equal(installs, 1);
+  bridge.stop(); bridge.stop();
+  assert.equal(root.type, original); assert.equal(root.alternate.type, original);
+  assert.equal(renderer.type, original); assert.equal(removals, 1);
+  const fresh = exports.installDeckyTabProjection();
+  assert.equal(searches, 3, "fresh installation discovers independently");
+  assert.equal(installs, 2); fresh.stop(); assert.equal(removals, 2);
+});
+
 test("installed Steam tab consumer mounts subscription through retained QAM fiber and actual DFL tree patcher", async (t) => {
   const steam = readFileSync(process.env.PLAYHUB_STEAM_QAM_SOURCE || "C:/Program Files (x86)/Steam/steamui/chunk~2dcc5aaf7.js", "utf8");
   const start = steam.indexOf("function at(e){let{tabs:");

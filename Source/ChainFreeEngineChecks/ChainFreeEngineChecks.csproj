@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><EnableNETAnalyzers>false</EnableNETAnalyzers>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The production file is compiled unchanged; only the process boundary is replaced. -->
+    <Compile Include="../GamingModeAgent/GamingMode.Services/ChainFreeEngineService.cs" Link="ChainFreeEngineService.cs" />
+  </ItemGroup>
+</Project>

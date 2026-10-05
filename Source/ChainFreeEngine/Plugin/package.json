@@ -1,0 +1,8 @@
+{
+  "name": "playhub-standalone-isolated-trial",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {"build": "node build.mjs"},
+  "description": "Isolated original Playhub preference surface; not a complete standalone port"
+}

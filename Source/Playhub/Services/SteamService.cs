@@ -86,33 +86,30 @@ public sealed class SteamService
 
     public async Task RestartSteamAsync()
     {
-        var steam = Process.GetProcessesByName("steam").FirstOrDefault();
-        if (steam is null)
+        string? executable = null;
+        var processes = Process.GetProcessesByName("steam");
+        try
+        {
+            foreach (var process in processes)
+            {
+                try { executable = process.MainModule?.FileName; } catch { }
+                if (!string.IsNullOrWhiteSpace(executable)) break;
+            }
+        }
+        finally { foreach (var process in processes) process.Dispose(); }
+        if (string.IsNullOrWhiteSpace(executable))
         {
             var folder = GetSteamFolder();
-            var exe = folder is null ? null : Path.Combine(folder, "steam.exe");
-            if (exe is not null && File.Exists(exe))
-            {
-                ProcessService.StartDetached(exe);
-            }
-            return;
+            executable = folder is null ? null : Path.Combine(folder, "steam.exe");
         }
-
-        var steamExe = steam.MainModule?.FileName;
-        if (string.IsNullOrWhiteSpace(steamExe))
+        static bool Running()
         {
-            return;
+            var current = Process.GetProcessesByName("steam");
+            try { return current.Length > 0; }
+            finally { foreach (var process in current) process.Dispose(); }
         }
-
-        ProcessService.StartDetached(steamExe, "-exitsteam", hidden: true);
-        for (var i = 0; i < 16; i++)
-        {
-            await Task.Delay(500);
-            if (!Process.GetProcessesByName("steam").Any())
-            {
-                ProcessService.StartDetached(steamExe);
-                return;
-            }
-        }
+        await RestartSequence.SteamAsync(executable, File.Exists, Running,
+            path => ProcessService.StartDetached(path, "-exitsteam", hidden: true),
+            path => ProcessService.StartDetached(path), milliseconds => Task.Delay(milliseconds));
     }
 }

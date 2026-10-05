@@ -5,10 +5,10 @@ using System.Runtime.Versioning;
 
 [assembly: AssemblyCompany("GamingMode")]
 [assembly: AssemblyConfiguration("Release")]
-[assembly: AssemblyFileVersion("2.0.0.0")]
-[assembly: AssemblyInformationalVersion("2.0.0")]
+[assembly: AssemblyFileVersion("2.1.0.0")]
+[assembly: AssemblyInformationalVersion("2.1.0")]
 [assembly: AssemblyProduct("GamingMode")]
 [assembly: AssemblyTitle("GamingMode")]
 [assembly: TargetPlatform("Windows10.0.19041.0")]
 [assembly: SupportedOSPlatform("Windows10.0.19041.0")]
-[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyVersion("2.1.0.0")]

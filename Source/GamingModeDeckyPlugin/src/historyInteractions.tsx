@@ -1,5 +1,6 @@
 import { DFL, SP_REACT as React } from './decky';
 import { createOnboardingNativeAdapter } from './onboardingNative';
+import { useHistoryPhoto } from './useHistoryPhoto';
 
 const copy: Record<string, string[]> = {
   it: ['Premi', 'per approfondire', 'per richiudere', 'Visualizza immagine', 'Chiudi'],
@@ -34,6 +35,7 @@ export function HistoryConfirmHint({locale, expanded}: {locale: string; expanded
 }
 
 function FullscreenImage({url, subject, locale, closeModal}: {url: string; subject: string; locale: string; closeModal?: () => void}) {
+  const photo = useHistoryPhoto(url);
   const {ModalRoot, Focusable} = DFL as any;
   const close = (event?: any) => { event?.preventDefault?.(); event?.stopPropagation?.(); closeModal?.(); };
   return <ModalRoot closeModal={closeModal} onCancel={close} style={{width:'100vw',maxWidth:'100vw',height:'100vh',padding:0,background:'#000'}}>
@@ -45,7 +47,7 @@ function FullscreenImage({url, subject, locale, closeModal}: {url: string; subje
     `}</style>
     <Focusable autoFocus className="ph-history-fullscreen" flow-children="column" onCancel={close} onCancelButton={close}
       style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
-      <img src={url} alt={subject} style={{width:'100%',height:'100%',objectFit:'contain'}} />
+      {photo ? <img src={photo} alt={subject} style={{width:'100%',height:'100%',objectFit:'contain'}} /> : <span>{subject}</span>}
     </Focusable>
   </ModalRoot>;
 }

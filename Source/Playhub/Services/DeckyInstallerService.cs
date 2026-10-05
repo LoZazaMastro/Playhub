@@ -1,4 +1,4 @@
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using Playhub.Models;
 using System;
 using System.Collections.Generic;
@@ -97,24 +97,24 @@ public sealed class DeckyInstallerService
         var bytes = await TryDownloadAsync(LatestZipUrl);
         if (bytes is null)
         {
-            throw new InvalidOperationException("Non riesco a scaricare DeckyLoader. Controlla la connessione e riprova.");
+            throw new InvalidOperationException("Non riesco a scaricare Decky. Controlla la connessione e riprova.");
         }
 
         if (bytes.Length < 500_000)
         {
-            throw new InvalidDataException("Il download di DeckyLoader sembra incompleto. Riprova.");
+            throw new InvalidDataException("Il download di Decky sembra incompleto. Riprova.");
         }
 
         var servicesDir = ServicesDir;
         var comparison = await Task.Run(() => DeckyArtifactComparison.Compare(bytes, servicesDir));
         if (comparison == DeckyArtifactMatch.Invalid)
         {
-            throw new InvalidDataException("Il download di DeckyLoader sembra incompleto. Riprova.");
+            throw new InvalidDataException("Il download di Decky sembra incompleto. Riprova.");
         }
 
         if (comparison == DeckyArtifactMatch.Identical)
         {
-            return "La versione installata di DeckyLoader è già la più recente.";
+            return "La versione installata di Decky è già la più recente.";
         }
 
         return await InstallFromBytesAsync(bytes, "ultima versione");
@@ -143,7 +143,7 @@ public sealed class DeckyInstallerService
         var bytes = await TryDownloadAsync(url);
         if (bytes is null)
         {
-            return "Non riesco a scaricare DeckyLoader. Controlla la connessione e riprova.";
+            throw new InvalidOperationException("Non riesco a scaricare Decky. Controlla la connessione e riprova.");
         }
 
         return await InstallFromBytesAsync(bytes, label, console);
@@ -153,27 +153,32 @@ public sealed class DeckyInstallerService
     {
         if (zipBytes.Length < 500_000)
         {
-            return "Il download di DeckyLoader sembra incompleto. Riprova.";
+            throw new InvalidDataException("Il download di Decky sembra incompleto. Riprova.");
         }
 
-        KillLoaders();
-
         var servicesDir = ServicesDir;
+        if (DeckyArtifactComparison.Compare(zipBytes, servicesDir) == DeckyArtifactMatch.Invalid)
+            throw new InvalidDataException("Il download di Decky sembra incompleto. Riprova.");
         Directory.CreateDirectory(servicesDir);
 
         Directory.CreateDirectory(AppPaths.DownloadsRoot);
         var zipPath = Path.Combine(AppPaths.DownloadsRoot, "PluginLoaderWin.zip");
         await File.WriteAllBytesAsync(zipPath, zipBytes);
 
+        return Playhub.Shared.DeckyStartupGuard.RunExclusive(() =>
+        {
+        KillLoaders();
         ZipFile.ExtractToDirectory(zipPath, servicesDir, overwriteFiles: true);
         try { File.Delete(zipPath); } catch { }
 
         var notes = new List<string>();
         notes.Add(EnableSteamCefDebugging() ? "debug CEF attivato" : "debug CEF non riuscito");
-        notes.Add(SetupAutostartAndLaunch(console) ? "autostart impostato e loader avviato" : "autostart non riuscito");
+        bool started = SetupAutostartAndLaunch(console);
         RemoveLegacyDesktopShortcut();
 
-        return "DeckyLoader è pronto. Riavvia Steam per attivarlo.";
+        if (!started) throw new InvalidOperationException("Decky è installato, ma non è stato avviato. " + _startupError);
+        return "Decky è pronto. Riavvia Steam per attivarlo.";
+        });
     }
 
     public Task<string> RemoveAsync()
@@ -206,34 +211,16 @@ public sealed class DeckyInstallerService
         if (Directory.Exists(ServicesDir))
         {
             try { Directory.Delete(ServicesDir, recursive: true); } catch { }
-            return Task.FromResult("DeckyLoader è stato rimosso. I plugin installati restano al loro posto.");
+            return Task.FromResult("Decky è stato rimosso. I plugin installati restano al loro posto.");
         }
 
-        return Task.FromResult("DeckyLoader non era installato. I collegamenti rimasti sono stati rimossi.");
+        return Task.FromResult("Decky non era installato. I collegamenti rimasti sono stati rimossi.");
     }
 
-    public async Task<bool> RestartWithSteamAsync(SteamService steam)
-    {
-        if (!IsInstalled())
-        {
-            return false;
-        }
-
-        KillLoaders();
-        await steam.RestartSteamAsync();
-
-        for (var attempt = 0; attempt < 30; attempt++)
-        {
-            if (Process.GetProcessesByName("steam").Length > 0)
-            {
-                await Task.Delay(1200);
-                return SetupAutostartAndLaunch();
-            }
-            await Task.Delay(500);
-        }
-
-        return false;
-    }
+    public Task<bool> RestartWithSteamAsync(SteamService steam) =>
+        RestartSequence.SteamAndDeckyAsync(IsInstalled(), KillLoaders, steam.RestartSteamAsync,
+            () => SetupAutostartAndLaunch(), milliseconds => Task.Delay(milliseconds),
+            error => _startupError = error.Message);
 
     private async Task<byte[]?> TryDownloadAsync(string url)
     {
@@ -288,8 +275,10 @@ public sealed class DeckyInstallerService
         }
     }
 
+    private string _startupError = "";
     private bool SetupAutostartAndLaunch(bool console = false)
     {
+        _startupError = "";
         try
         {
             var loader = Path.Combine(ServicesDir, console ? "PluginLoader.exe" : "PluginLoader_noconsole.exe");
@@ -299,6 +288,7 @@ public sealed class DeckyInstallerService
                 loader = Path.Combine(ServicesDir, console ? "PluginLoader_noconsole.exe" : "PluginLoader.exe");
                 if (!File.Exists(loader))
                 {
+                    _startupError = "Non trovo PluginLoader nei file di Decky. Reinstalla Decky.";
                     return false;
                 }
             }
@@ -312,26 +302,16 @@ public sealed class DeckyInstallerService
                 run?.SetValue("DeckyLoader", Playhub.Shared.DeckyStartupGuard.CreateCommand(loader));
             }
 
-            Playhub.Shared.DeckyStartupGuard.RunExclusive(() =>
-            {
-                foreach (var name in new[] { "PluginLoader", "PluginLoader_noconsole" })
-                {
-                    var running = Process.GetProcessesByName(name);
-                    foreach (var process in running) process.Dispose();
-                    if (running.Length > 0) return true;
-                }
-                using var started = Process.Start(new ProcessStartInfo
+            return Playhub.Shared.DeckyStartupGuard.StartOrReuse(new ProcessStartInfo
                 {
                     FileName = loader,
                     WorkingDirectory = ServicesDir,
                     UseShellExecute = true
                 });
-                return started != null;
-            });
-            return true;
         }
-        catch
+        catch (Exception error)
         {
+            _startupError = error.Message;
             return false;
         }
     }
@@ -341,8 +321,6 @@ public sealed class DeckyInstallerService
     // Startup-folder shortcuts named after Decky/PluginLoader.
     private void CleanExistingAutostart()
     {
-        KillLoaders();
-
         try
         {
             using var run = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", writable: true);
@@ -386,7 +364,17 @@ public sealed class DeckyInstallerService
         {
             foreach (var process in Process.GetProcessesByName(name))
             {
-                try { process.Kill(entireProcessTree: true); } catch { }
+                using (process)
+                {
+                    try
+                    {
+                        string? executable = process.MainModule?.FileName;
+                        if (executable is null || !string.Equals(Path.GetDirectoryName(Path.GetFullPath(executable)), Path.GetFullPath(ServicesDir), StringComparison.OrdinalIgnoreCase)) continue;
+                        process.Kill(entireProcessTree: true);
+                        if (!process.WaitForExit(10000)) throw new IOException("Decky is still closing. Try again after it has stopped.");
+                    }
+                    catch (InvalidOperationException) { }
+                }
             }
         }
     }

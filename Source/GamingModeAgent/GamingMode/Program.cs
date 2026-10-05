@@ -27,6 +27,20 @@ internal static class Program
 		}
 		catch (Exception ex)
 		{
+			// Se l'agente e' la shell di Windows, un errore d'avvio non deve
+			// lasciare l'utente senza desktop e senza una via di recupero.
+			if (Array.Exists(args, argument => argument.Equals("shell", StringComparison.OrdinalIgnoreCase)))
+			{
+				try
+				{
+					System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+					{
+						FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"),
+						UseShellExecute = true
+					})?.Dispose();
+				}
+				catch { }
+			}
 			try
 			{
 				AppPaths appPaths = AppPaths.Create();
@@ -55,6 +69,22 @@ internal static class Program
 		AppPaths appPaths = AppPaths.Create();
 		Directory.CreateDirectory(appPaths.ConfigDirectory);
 		FileLogger logger = new FileLogger(appPaths.LogPath);
+
+		// An old startup entry or an old caller cannot re-enable an optional component.
+		if (File.Exists(Path.Combine(appPaths.ConfigDirectory, "disabled-by-user")))
+		{
+			logger.Info("Gaming Mode is disabled by the user; startup skipped.");
+			if (Array.Exists(args, a => a.Equals("shell", StringComparison.OrdinalIgnoreCase)))
+			{
+				new ShellTools(logger).RestoreExplorerShell();
+				System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+				{
+					FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"),
+					UseShellExecute = true
+				})?.Dispose();
+			}
+			return 0;
+		}
 
 		// QUALE ESEGUIBILE STA GIRANDO.
 		//

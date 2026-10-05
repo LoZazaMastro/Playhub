@@ -32,6 +32,8 @@ public sealed class GamingSettings
 
 	public bool EnsureSunshineCompatibilityInGamingMode { get; set; } = true;
 
+	public bool EnsureHandheldVendorCompatibilityInGamingMode { get; set; } = true;
+
 	public bool AutoHideMouseCursorInGamingMode { get; set; } = true;
 
 	// Playhub owns this value; this fallback only applies to a config written before the

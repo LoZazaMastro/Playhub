@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -215,6 +216,56 @@ public static class DashboardApi
 
 	public static bool CloseWindow(string handle)
 		=> TryParseHandle(handle, out nint value) && OverlayWindowTools.RequestClose(value);
+
+	public sealed record WindowCloseResult(bool Ok, bool Closed, bool Pending, string Reason);
+
+	public static async Task<WindowCloseResult> CloseWindowAsync(string handle, int expectedProcessId = 0)
+	{
+		if (!TryParseHandle(handle, out nint window) || window == 0)
+			return new(false, false, false, "invalidWindow");
+		int processId = OverlayWindowTools.WindowProcessId(window);
+		int ownerProcessId = OverlayWindowTools.WindowOwnerProcessId(window);
+		if (ownerProcessId == 0)
+			return expectedProcessId > 0 && ProcessHasExited(expectedProcessId) != true
+				? new(true, false, true, "applicationPending")
+				: new(true, true, false, "alreadyClosed");
+		if (processId == 0)
+			return new(false, false, false, "windowChanged");
+		if (expectedProcessId > 0 && processId != expectedProcessId)
+			return new(false, false, false, "windowChanged");
+		using var owner = OverlayWindowTools.ProcessLease.TryOpen(ownerProcessId);
+		using var application = OverlayWindowTools.ProcessLease.TryOpen(processId);
+		if (owner?.Alive != true || application?.Alive != true || OverlayWindowTools.WindowOwnerProcessId(window) != ownerProcessId
+			|| OverlayWindowTools.WindowProcessId(window) != processId)
+			return new(false, false, false, "windowChanged");
+		if (!OverlayWindowTools.RequestClose(window))
+			return new(false, false, false, "closeRequestRejected");
+		// A posted WM_CLOSE is only a request. The application may need to save,
+		// display a confirmation or reject it; leave its card until closure is real.
+		for (int attempt = 0; attempt < 15; attempt++)
+		{
+			await Task.Delay(100);
+			int currentOwner = OverlayWindowTools.WindowOwnerProcessId(window);
+			if (currentOwner == 0)
+				return new(true, true, false, "closed");
+			if (currentOwner != ownerProcessId || !owner.Alive)
+				return new(false, false, false, "windowChanged");
+			if (OverlayWindowTools.WindowProcessId(window) != processId && application.Exited)
+				return new(true, true, false, "closed");
+		}
+		return new(true, false, true, "applicationPending");
+	}
+
+	private static bool? ProcessHasExited(int processId)
+	{
+		try
+		{
+			using Process process = Process.GetProcessById(processId);
+			return process.HasExited;
+		}
+		catch (ArgumentException) { return true; }
+		catch { return null; }
+	}
 
 	// A real window preview is requested separately from the window list. This
 	// keeps opening the Dashboard cheap and lets the frontend refresh only the

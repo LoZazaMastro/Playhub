@@ -57,16 +57,16 @@ public sealed partial class PluginCatalogService
     private static readonly IReadOnlyDictionary<string, string> PlayhubCatalogVersions =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Playhub-Artworks"] = "1.0.0",
-            ["Playhub-Metadata"] = "1.8.0",
-            ["ThemeDeck-Windows"] = "3.3.2",
-            ["Launch-Curtain"] = "2.5.1",
-            ["TrailerHero"] = "1.5.0",
-            ["Now-Playing"] = "2.5.0",
+            ["Playhub-Artworks"] = "1.1.9",
+            ["Playhub-Metadata"] = "1.8.3",
+            ["ThemeDeck-Windows"] = "3.3.7",
+            ["Launch-Curtain"] = "2.5.6",
+            ["TrailerHero"] = "1.7.2",
+            ["Now-Playing"] = "2.5.2",
             ["Playhub-Surround"] = "1.2.1",
             ["Quick-Settings"] = "2.3.1",
             ["Shortcuts"] = "1.2.0",
-            ["Playhub-Notifications"] = "1.3.0",
+            ["Playhub-Notifications"] = "1.3.1",
             ["News"] = "1.0.0",
             ["Weather"] = "2.1.0",
             ["Proton-VPN"] = "1.0.0"
@@ -1489,6 +1489,7 @@ public sealed partial class PluginCatalogService
     private static string ReadInstalledVersion(string folder, string repositoryName)
     {
         var markerPath = Path.Combine(folder, InstalledReleaseMarker);
+        if (!File.Exists(markerPath)) markerPath = Path.Combine(folder, "release-info.json");
         if (File.Exists(markerPath))
         {
             try

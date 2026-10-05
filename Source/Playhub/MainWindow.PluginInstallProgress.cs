@@ -474,7 +474,7 @@ public sealed partial class MainWindow
 
             var success = await _deckyInstaller.RestartWithSteamAsync(_steam);
             if (!success)
-                SetStatus("Non riesco a riavviare DeckyLoader e Steam. Riprova.", InfoBarSeverity.Warning);
+                SetStatus("Non riesco a riavviare Decky e Steam. Riprova.", InfoBarSeverity.Warning);
         }
         catch (Exception ex)
         {

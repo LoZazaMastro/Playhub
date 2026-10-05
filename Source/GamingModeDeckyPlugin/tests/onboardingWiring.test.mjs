@@ -196,7 +196,7 @@ test("plugin init/mount/unload and ControlCenter anchors/replay are wired withou
   const dismount = index.match(/onDismount\(\)\s*\{[\s\S]*?\n    \}/);
   assert.ok(dismount, "index.tsx must declare onDismount");
   const calls = [];
-  const names = ["uninstallCircles", "disposeDisplayConfirmation", "uninstallOnboarding", "uninstallDeckyHost", "uninstallQuickSettings", "uninstallHomeNews", "clearDashboardChrome", "stopOpenRequestWatcher", "uninstallNavigationHaptics", "uninstallPowerMenuPatch", "uninstallPlayhubQam"];
+  const names = ["stopDeckyIpcRecovery", "uninstallCircles", "disposeDisplayConfirmation", "uninstallOnboarding", "uninstallDeckyHost", "uninstallQuickSettings", "uninstallControlledQamFocus", "uninstallHomeNews", "clearDashboardChrome", "stopOpenRequestWatcher", "uninstallNavigationHaptics", "uninstallPowerMenuPatch", "uninstallPlayhubQam"];
   const scope = Object.fromEntries(names.map(name => [name, () => { calls.push(name); if (name === "uninstallCircles") throw Error("fixture teardown failure"); }]));
   vm.runInNewContext(`({${dismount[0]}}).onDismount()`, { ...scope, steamFocusRecovery: { uninstall() {} }, routerHook: { removeRoute() {} }, DASHBOARD_ROUTE: "/dashboard", PLUGIN_STORE_ROUTE: "/store", console: { warn() {} } });
   assert.equal(calls.filter(name => name === "uninstallOnboarding").length, 1);

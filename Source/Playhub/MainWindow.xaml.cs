@@ -1,4 +1,4 @@
-﻿using Microsoft.UI;
+using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
@@ -186,6 +186,7 @@ public sealed partial class MainWindow : Window
     private bool _executableScanInProgress;
     private int _uwpCardColumnCount = 3;
     private StackPanel? _coverFormatSelectorHost;
+    private StackPanel? _localArtworkAssetsHost;
     private int _executableCardColumnCount = 3;
     private int _epicCardColumnCount = 3;
     private int _gogCardColumnCount = 3;
@@ -288,7 +289,7 @@ public sealed partial class MainWindow : Window
 
     private static readonly ComboOption[] StartupPageOptions =
     {
-        new("decky", "DeckyLoader"),
+        new("decky", "Decky"),
         new("plugins", "Plugin Store"),
         new("gaming", "Gaming Mode"),
         new("xbox", "Importa Giochi"),
@@ -322,7 +323,7 @@ public sealed partial class MainWindow : Window
         Title = "Playhub";
         ExtendsContentIntoTitleBar = true;
         SystemBackdrop = new MicaBackdrop();
-        Closed += (_, _) => { _playhubUpdateCheckTimer?.Stop(); CancelNavigationRestore(); CancelPluginCardMorph(); ReleaseMediaForShutdown(); };
+        Closed += (_, _) => { _playhubUpdateCheckTimer?.Stop(); CancelNavigationRestore(); CancelPluginCardMorph(); ReleaseMediaForShutdown(); CloseEmulationHost(); };
         SetWindowShape();
         if (_appWindow is not null) _appWindow.Changed += OnAppWindowChanged;
         // Seed accent brushes BEFORE the navigation is built so its selection
@@ -586,6 +587,10 @@ public sealed partial class MainWindow : Window
         navigation.MenuItems.Add(NavItem("Big Picture Styler", "styler", ((char)0xE771).ToString()));
         navigation.MenuItems.Add(NavItem("Impostazioni", "settings", Symbol.Setting));
         navigation.MenuItems.Add(NavItem("Supporto", "support", VectorIcon(KoFiIconPath)));
+        // Emulazione: si inserisce da se' subito sotto "Importa Giochi".
+#if PLAYHUB_EMULATION
+        Playhub.Emulation.NativeIntegration.EmulationNavigationFactory.InsertAfterImportGames(navigation, NavItem);
+#endif
         navigation.SelectionChanged += (_, args) =>
         {
             if (args.SelectedItem is NavigationViewItem item && item.Tag is string tag)
@@ -900,6 +905,7 @@ public sealed partial class MainWindow : Window
 
     private void ShowPage(string tag, bool preserveMorph = false)
     {
+        PrepareEmulationPage(tag);
         var changed = _currentPageTag != tag;
         if (changed)
         {
@@ -1040,10 +1046,10 @@ public sealed partial class MainWindow : Window
         var slides = new (string Asset, string Title, string Body, bool ShowColor)[]
         {
             ("welcome-onboarding.png", "Benvenuto in Playhub", "Il tuo PC da gioco, con l'anima di una console.", false),
-            ("decky-installation-onboarding.png", "Installare Decky è semplice, come dovrebbe essere", "Playhub ti guida passo dopo passo e installa DeckyLoader in modo semplice.", false),
+            ("decky-installation-onboarding.png", "Installare Decky è semplice, come dovrebbe essere", "Playhub ti guida passo dopo passo e installa Decky in modo semplice.", false),
             ("plugin-store-grid-v2.png", "I migliori plugin sono tutti qui", "Scopri, installa, aggiorna, e disinstalla i plugin di Playhub, quelli del Decky Store e i progetti indipendenti pubblicati su GitHub.", false),
             ("gaming-mode-page-header.png", "Il tuo PC è la migliore console mai creata", "Con Playhub Gaming Mode puoi scegliere se avviare il PC in Desktop Mode, la classica esperienza Windows, oppure in Gaming Mode: un'esperienza da console che ottimizza i processi del PC, esclude i processi non necessari per giocare e mette Steam Big Picture al centro di tutto, così puoi dimenticare mouse e tastiera.", false),
-            ("import-games-onboarding.png", "Tutti i tuoi giochi, una sola libreria", "Scansiona i giochi di Xbox, Epic e GOG, oppure le tue cartelle, e aggiungili a Steam con il nome e gli artwork corretti.", false),
+            ("import-games-onboarding.png", "Tutti i tuoi giochi, una sola libreria", BuildFeatures.EmulationEnabled ? "Scansiona i giochi PC di Xbox, Epic e GOG, oppure le tue cartelle locali, e aggiungili a Steam con nome e artwork corretti. Inoltre, se possiedi una collezione di ROM puoi scansionarla, organizzarla e Playhub penserà a scaricare e configurare tutti gli emulatori necessari, aggiungendo i tuoi giochi alla tua libreria, con metadata, artwork, trailer, temi musicali e schermata di avvio." : "Scansiona i giochi PC di Xbox, Epic e GOG, oppure le tue cartelle locali, e aggiungili a Steam con nome e artwork corretti.", false),
             ("choose-color-onboarding.png", "Scegli il tuo stile", "Scegli un colore per la tua app Playhub.", true),
             ("final-onboarding.png", "È il momento di giocare come mai prima d'ora", "Scopri, prova, personalizza, gioca e divertiti. Questo è lo spirito di Playhub.", false)
         };
@@ -1459,25 +1465,25 @@ public sealed partial class MainWindow : Window
         panel.Children.Add(BuildDeckyStep(
             "",
             "Steam",
-            "DeckyLoader funziona dentro Steam: serve che Steam sia installato sul PC.",
+            "Decky funziona dentro Steam: serve che Steam sia installato sul PC.",
             _steamButton,
             out _steamTile, out _steamGlyph, out _steamStatus));
 
         panel.Children.Add(BuildDeckyStep(
             "",
             "Modalità sviluppatore di Windows",
-            "Si attiva una volta sola: permette a DeckyLoader di installare i plugin.",
+            "Si attiva una volta sola: permette a Decky di installare i plugin.",
             Button("Apri impostazioni", async () => { await _deckyInstaller.OpenDeveloperSettingsAsync(); }),
             out _devTile, out _devGlyph, out _devStatus));
 
         _installButton = DeckyOperationButton(_deckyInstaller.IsInstalled() ? "Aggiorna" : "Installa", InstallLatestDeckyBuildAsync, primary: true);
         panel.Children.Add(BuildDeckyStep(
             "",
-            "Installa DeckyLoader",
-            "Scarico e configuro l'ultima versione di DeckyLoader.",
+            "Installa Decky",
+            "Scarico e configuro l'ultima versione di Decky.",
             ActionRow(
                 _installButton,
-                DeckyOperationButton("Rimuovi", async () => { SetStatus(await Task.Run(() => _deckyInstaller.RemoveAsync()), InfoBarSeverity.Warning); await RefreshDeckyStateAsync(); })),
+                DeckyOperationButton("Rimuovi", async () => { SetStatus(await Task.Run(() => _deckyInstaller.RemoveAsync()), InfoBarSeverity.Warning); await RefreshDeckyStateAsync(); }, repairOnFailure: false)),
             out _installTile, out _installGlyph, out _installStatus));
 
         var bigPicture = BuildBigPictureTutorialCard();
@@ -1497,7 +1503,7 @@ public sealed partial class MainWindow : Window
         panel.Children.Add(quickAccess);
 
         var update = Card();
-        update.Children.Add(IconHeader(((char)0xE896).ToString(), "Scegli una versione di DeckyLoader",
+        update.Children.Add(IconHeader(((char)0xE896).ToString(), "Scegli una versione di Decky",
             "Usa questa opzione solo se ti serve una versione precisa."));
         _deckyBuildCombo = new ComboBox { PlaceholderText = "Scegli una versione", HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 4, 0, 0) };
         update.Children.Add(_deckyBuildCombo);
@@ -1506,10 +1512,16 @@ public sealed partial class MainWindow : Window
 
         // Variante avanzata: DeckyLoader con console visibile (log in tempo reale).
         var consoleCard = Card();
-        consoleCard.Children.Add(IconHeader(((char)0xE756).ToString(), "DeckyLoader con console",
+        consoleCard.Children.Add(IconHeader(((char)0xE756).ToString(), "Decky con console",
             "Mostra una finestra con il registro in tempo reale. Utile per diagnosi e sviluppo."));
         consoleCard.Children.Add(ActionRow(DeckyOperationButton("Installa la versione con console", async () => { SetStatus(await _deckyInstaller.InstallLatestConsoleAsync(), InfoBarSeverity.Success); await RefreshDeckyStateAsync(); })));
         panel.Children.Add(consoleCard);
+
+        var deckyHelp = Card();
+        deckyHelp.Children.Add(IconHeader(((char)0xE897).ToString(), "Problemi con Decky?",
+            "Trova i passi per risolvere un'installazione o un avvio interrotto, oppure reinstalla Decky."));
+        deckyHelp.Children.Add(ActionRow(Button("Apri la guida", async () => await ShowDeckyRepairDialogAsync())));
+        panel.Children.Add(deckyHelp);
 
         return panel;
     }
@@ -2046,43 +2058,6 @@ public sealed partial class MainWindow : Window
         // Backing value for the default mode (driven by the two tiles below).
         _defaultModeCombo = ChoiceCombo(ModeOptions);
 
-        // ---------- 1. What it is + install ----------
-        var manage = Card();
-        var installHeading = new Grid { ColumnSpacing = 10 };
-        installHeading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        installHeading.ColumnDefinitions.Add(new ColumnDefinition());
-        installHeading.Children.Add(new FontIcon
-        {
-            Glyph = ((char)0xE896).ToString(), FontSize = 18, VerticalAlignment = VerticalAlignment.Center,
-            Foreground = ResourceBrush("AccentFillColorDefaultBrush", ParseColor(_settings.AccentColor))
-        });
-        var installTitle = new TextBlock
-        {
-            Text = "Installa Gaming Mode", Style = StyleResource("PlayhubSectionTitleStyle"),
-            TextWrapping = TextWrapping.Wrap
-        };
-        Grid.SetColumn(installTitle, 1);
-        installHeading.Children.Add(installTitle);
-        var installHeader = new StackPanel { Spacing = 8 };
-        installHeader.Children.Add(installHeading);
-        installHeader.Children.Add(Body("Installa Gaming Mode e il plugin per DeckyLoader."));
-        manage.Children.Add(installHeader);
-        var installActions = ActionRow(
-            Button("Installa o aggiorna", async () =>
-            {
-                var result = await _gamingMode.InstallAsync(_settings.DeckyPluginsPath);
-                SetStatus(result.Message, result.Success ? InfoBarSeverity.Success : InfoBarSeverity.Error);
-            }, primary: true),
-            Button("Disinstalla", async () =>
-            {
-                var result = await _gamingMode.UninstallAsync(_settings.DeckyPluginsPath);
-                SetStatus(result.Message, result.Success ? InfoBarSeverity.Warning : InfoBarSeverity.Error);
-            }));
-        installActions.Orientation = Orientation.Vertical;
-        foreach (var action in installActions.Children.OfType<Button>())
-            action.HorizontalAlignment = HorizontalAlignment.Stretch;
-        manage.Children.Add(installActions);
-        manage.Children.Add(AdvancedGamingTools());
         var quickAccess = BuildQuickAccessTutorialCard(
             "gaming",
             "Apri il plugin Gaming Mode",
@@ -2091,17 +2066,13 @@ public sealed partial class MainWindow : Window
             warning: "Se il menu rapido non risponde, chiudi Steam per tornare al desktop. Puoi anche tenere premuto Shift durante l'accesso a Windows.",
             videoFile: "Gaming-Mode-Plugin.mp4",
             compact: true);
-        manage.Root.VerticalAlignment = VerticalAlignment.Stretch;
-        quickAccess.Root.VerticalAlignment = VerticalAlignment.Stretch;
-        var gamingTopCards = CardsRow(manage, quickAccess);
-        gamingTopCards.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-        gamingTopCards.ColumnDefinitions[1].Width = new GridLength(3, GridUnitType.Star);
-        panel.Children.Add(gamingTopCards);
+        panel.Children.Add(quickAccess.Root);
 
         var dashboardCard = Card();
         dashboardCard.Children.Add(IconHeader(((char)0xE80F).ToString(), "Playhub Dashboard",
             "Passa fra giochi e app, controlla il PC e raggiungi gli strumenti essenziali senza lasciare il controller."));
         dashboardCard.Children.Add(Body("Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop."));
+        dashboardCard.Children.Add(BuildDashboardIllustration());
 
         // ---------- 2. Default mode: two big tiles + one-time switch ----------
         var modeCard = Card();
@@ -2169,7 +2140,7 @@ public sealed partial class MainWindow : Window
         // Shared fields (placed into the concept cards below).
         _steamPathBox = TextBox("Cartella di Steam");
         _steamArgsBox = TextBox("Opzioni di avvio di Steam");
-        _deckyPathBox = TextBox("Eseguibile di DeckyLoader");
+        _deckyPathBox = TextBox("Eseguibile di Decky");
         _sunshinePathBox = TextBox("Cartella dello strumento di streaming");
         _delaySteamBox = Number("Attesa prima di Steam (ms)", 0, 60000);
         _mouseDelayBox = Number("Nascondi il cursore dopo (ms)", 0, 30000);
@@ -2179,7 +2150,7 @@ public sealed partial class MainWindow : Window
         var startCard = Card();
         startCard.Children.Add(IconHeader(((char)0xE945).ToString(), "Avvio",
             "Scegli cosa deve essere pronto prima di Big Picture."));
-        AddExplainedToggle(startCard, "Avvia DeckyLoader prima di Steam",
+        AddExplainedToggle(startCard, "Avvia Decky prima di Steam",
             "Rende disponibili i plugin appena si apre la libreria.", "deckyRequired");
         AddExplainedToggle(startCard, "Avvia lo streaming",
             "Avvia l'host scelto quando entri in Gaming Mode, così puoi collegarti subito da un altro dispositivo.", "sunshineRequired");
@@ -2187,8 +2158,8 @@ public sealed partial class MainWindow : Window
         var advancedStart = new StackPanel { Spacing = 12 };
         advancedStart.Children.Add(TwoColumn(Labeled("Cartella di Steam", BrowseRow(_steamPathBox, folder: true)), Labeled("Opzioni di avvio di Steam", _steamArgsBox)));
         advancedStart.Children.Add(TwoColumn(
-            Labeled("Eseguibile di DeckyLoader", BrowseRow(_deckyPathBox, folder: false, exts: new[] { ".exe" })),
-            NumberWithHint(_delaySteamBox, "Pausa prima di aprire Steam, per dare tempo a DeckyLoader di caricarsi.")));
+            Labeled("Eseguibile di Decky", BrowseRow(_deckyPathBox, folder: false, exts: new[] { ".exe" })),
+            NumberWithHint(_delaySteamBox, "Pausa prima di aprire Steam, per dare tempo a Decky di caricarsi.")));
         startCard.Children.Add(new Expander
         {
             Header = "Impostazioni avanzate",
@@ -2329,6 +2300,10 @@ public sealed partial class MainWindow : Window
 
         UpdateModeTiles();
         UpdateLogoPreview();
+        var serviceCard = Card();
+        serviceCard.Children.Add(AdvancedGamingTools());
+        panel.Children.Add(serviceCard.Root);
+        AddOptionalGamingControls(panel);
         return panel;
     }
 
@@ -2897,7 +2872,7 @@ public sealed partial class MainWindow : Window
     private Expander AdvancedGamingTools()
     {
         var tools = new StackPanel { Spacing = 10 };
-        tools.Children.Add(Body("Strumenti per diagnosi e sviluppo."));
+        tools.Children.Add(Body("Controlla lo stato del servizio Gaming Mode e avvialo se necessario."));
         var actions = ActionRow(
             // "Servizio avviato." era una bugia quando l'eseguibile non c'era:
             // StartAgent esce in silenzio e l'utente restava a fissare un messaggio
@@ -2906,7 +2881,7 @@ public sealed partial class MainWindow : Window
             {
                 if (!_gamingMode.IsInstalled)
                 {
-                    SetStatus("Servizio non installato: manca " + _gamingMode.InstalledExe + ". Usa \"Installa o aggiorna\".", InfoBarSeverity.Error);
+                    SetStatus(T("GamingMode.Optional.AgentRequired"), InfoBarSeverity.Warning);
                     return;
                 }
                 _gamingMode.StartAgent();
@@ -2943,7 +2918,7 @@ public sealed partial class MainWindow : Window
         var import = Card();
         _uwpChevron = AddCollapsibleHeader(import, ImageHeader("Xbox.png", "Importa giochi Xbox e Microsoft Store",
             "Trova i giochi Xbox, Game Pass e Microsoft Store installati e aggiungili a Steam."), () => _uwpGamesPanel);
-        import.Children.Add(ActionRow(
+        import.Children.Add(ImportActionRow(
             Button("Scansiona", async () => await ScanUwpGamesAsync()),
             Button("Importa in Steam", async () => await ExportUwpGamesAsync(), primary: true),
             Button("Ricollega giochi", async () => await RelinkUwpGamesAsync()),
@@ -2971,7 +2946,7 @@ public sealed partial class MainWindow : Window
         var epicImport = Card();
         _epicChevron = AddCollapsibleHeader(epicImport, ImageHeader("Epic.png", "Importa giochi da Epic Games Store",
             "Trova i giochi installati con Epic Games Launcher e aggiungili a Steam."), () => _epicGamesPanel);
-        epicImport.Children.Add(ActionRow(
+        epicImport.Children.Add(ImportActionRow(
             Button("Scansiona", async () => await ScanEpicGamesAsync()),
             Button("Importa in Steam", async () => await ExportEpicGamesAsync(), primary: true),
             Button("Riavvia Steam", async () => { await _steam.RestartSteamAsync(); SetStatus("Steam riavviato.", InfoBarSeverity.Success); })));
@@ -2997,7 +2972,7 @@ public sealed partial class MainWindow : Window
         var gogImport = Card();
         _gogChevron = AddCollapsibleHeader(gogImport, ImageHeader("Gog.png", "Importa giochi da GOG",
             "Trova i giochi GOG installati con Galaxy o da un installer offline e aggiungili a Steam."), () => _gogGamesPanel);
-        gogImport.Children.Add(ActionRow(
+        gogImport.Children.Add(ImportActionRow(
             Button("Scansiona", async () => await ScanGogGamesAsync()),
             Button("Importa in Steam", async () => await ExportGogGamesAsync(), primary: true),
             Button("Riavvia Steam", async () => { await _steam.RestartSteamAsync(); SetStatus("Steam riavviato.", InfoBarSeverity.Success); })));
@@ -3022,7 +2997,7 @@ public sealed partial class MainWindow : Window
         var executableImport = Card();
         _executableChevron = AddCollapsibleHeader(executableImport, IconHeader(((char)0xE8B7).ToString(), "Aggiungi giochi e app dal PC",
             "Scegli una cartella o un file .exe. Playhub trova i giochi nelle sottocartelle e li prepara per Steam."), () => _executableGamesPanel);
-        executableImport.Children.Add(ActionRow(
+        executableImport.Children.Add(ImportActionRow(
             Button("Aggiungi cartella", async () => await ChooseExecutableFolderAsync()),
             Button("Aggiungi file", async () => await ChooseExecutableFileAsync()),
             Button("Scansiona", async () => await ScanExecutableGamesAsync()),
@@ -3099,6 +3074,29 @@ public sealed partial class MainWindow : Window
         return panel;
     }
 
+    private void RenderLocalArtworkAssets()
+    {
+        if (_localArtworkAssetsHost is null) return;
+        _localArtworkAssetsHost.Children.Clear();
+        foreach (var (id, label) in new[] { ("cover", "Copertina"), ("banner", "Banner"), ("hero", "Sfondo"), ("logo", "Logo"), ("icon", "Icona") })
+        {
+            _settings.LocalArtworkAssets.TryGetValue(id, out var path);
+            var preview = new Border { Width = 170, Height = 86, CornerRadius = new CornerRadius(6), Background = ResourceBrush("ControlFillColorSecondaryBrush", Color.FromArgb(255, 42, 42, 46)) };
+            if (!string.IsNullOrWhiteSpace(path) && File.Exists(path)) preview.Child = new Image { Source = new BitmapImage(new Uri(path)), Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
+            else preview.Child = new TextBlock { Text = "Non selezionato", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Opacity = .65 };
+            var browse = Button("Sfoglia", async () => { var picked = await PickFileAsync(new[] { ".png", ".jpg", ".jpeg", ".webp", ".bmp" }); if (!string.IsNullOrWhiteSpace(picked)) { _settings.LocalArtworkAssets[id] = picked; await SaveSettingsSilentlyAsync(); RenderLocalArtworkAssets(); } });
+            var remove = Button("Rimuovi", async () => { _settings.LocalArtworkAssets.Remove(id); await SaveSettingsSilentlyAsync(); RenderLocalArtworkAssets(); });
+            remove.IsEnabled = !string.IsNullOrWhiteSpace(path);
+            var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+            actions.Children.Add(browse); actions.Children.Add(remove);
+            var row = new Grid { ColumnSpacing = 14, Margin = new Thickness(0, 4, 0, 4) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.Children.Add(preview); Grid.SetColumn(preview, 0);
+            var copy = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center }; copy.Children.Add(new TextBlock { Text = label, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold }); copy.Children.Add(new TextBlock { Text = string.IsNullOrWhiteSpace(path) ? "Scegli un asset locale" : path, Opacity = .68, TextTrimming = TextTrimming.CharacterEllipsis });
+            row.Children.Add(copy); Grid.SetColumn(copy, 1); row.Children.Add(actions); Grid.SetColumn(actions, 2); _localArtworkAssetsHost.Children.Add(row);
+        }
+    }
+
     // Selettore a due scelte (una sola attiva) per il formato delle cover.
     // Stessa estetica del selettore di layout del negozio plugin.
     private FrameworkElement BuildCoverFormatSelector()
@@ -3133,11 +3131,12 @@ public sealed partial class MainWindow : Window
                 BorderBrush = iconBrush,
                 VerticalAlignment = VerticalAlignment.Center
             });
-            content.Children.Add(LocalizedText(new TextBlock
+            var formatText = LocalizedText(new TextBlock
             {
                 Text = label,
                 VerticalAlignment = VerticalAlignment.Center
-            }, label));
+            }, label);
+            content.Children.Add(formatText);
 
             var button = new Button
             {
@@ -3156,7 +3155,9 @@ public sealed partial class MainWindow : Window
                 Content = content
             };
             SetLocalizedToolTip(button, label);
-            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, T(label));
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, formatText.Text);
+            formatText.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) =>
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, formatText.Text));
             button.Click += (_, _) =>
             {
                 if (string.Equals(global::Playhub.Services.CoverFormat.Normalize(_settings.CoverFormat), format, StringComparison.Ordinal))
@@ -3210,7 +3211,7 @@ public sealed partial class MainWindow : Window
     {
         foreach (var game in _uwpGames.Concat(_executableGames).Concat(_epicGames).Concat(_gogGames))
         {
-            game.SteamGridDbCoverPath = "";
+            ImportedArtworkSelection.ClearAutomatic(game, "cover");
         }
 
         RenderUwpGames();
@@ -3233,14 +3234,14 @@ public sealed partial class MainWindow : Window
         card.Children.Add(IconHeader(
             ((char)0xE7B8).ToString(),
             "Applica le modifiche",
-            "Riavvia Steam e DeckyLoader per rendere subito disponibili i plugin."));
+            "Riavvia Steam e Decky per rendere subito disponibili i plugin."));
         card.Children.Add(ActionRow(Button("Riavvia ora", async () =>
         {
             var success = await _deckyInstaller.RestartWithSteamAsync(_steam);
             SetStatus(
                 success
-                    ? "DeckyLoader e Steam sono stati riavviati."
-                    : "Non riesco a riavviare DeckyLoader e Steam. Riprova.",
+                    ? "Decky e Steam sono stati riavviati."
+                    : "Non riesco a riavviare Decky e Steam. Riprova.",
                 success ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
         }, primary: true)));
         return card;
@@ -3486,7 +3487,7 @@ public sealed partial class MainWindow : Window
             await SaveSettingsSilentlyAsync();
         };
 
-        _deckyPluginsBox = TextBox("Cartella plugin DeckyLoader");
+        _deckyPluginsBox = TextBox("Cartella plugin Decky");
         _deckyPluginsBox.TextChanged += async (_, _) =>
         {
             if (_loadingSettings) return;
@@ -3599,7 +3600,7 @@ public sealed partial class MainWindow : Window
         // ---------- Risoluzione problemi ----------
         var repair = Card();
         repair.Children.Add(IconHeader(((char)0xE90F).ToString(), "Risoluzione problemi",
-            "Controlla Gaming Mode, DeckyLoader e l'importazione dei giochi e ripristina ciò che non funziona."));
+            "Controlla Gaming Mode, Decky e l'importazione dei giochi e ripristina ciò che non funziona."));
         _repairButton = Button("Controlla e ripara", RunRepairAsync, primary: true);
         _repairBar = new ProgressBar
         {
@@ -3641,6 +3642,17 @@ public sealed partial class MainWindow : Window
         diagnostics.Children.Add(ActionRow(_diagnosticsButton));
         diagnostics.Children.Add(_diagnosticsStatusText);
         panel.Children.Add(diagnostics);
+
+        var restartSteamDecky = Card();
+        restartSteamDecky.Children.Add(IconHeader(((char)0xE777).ToString(), "Riavvia Steam e Decky",
+            "Ricarica Steam e i plugin di Decky se un menu non risponde o un plugin non compare."));
+        restartSteamDecky.Children.Add(ActionRow(Button("Riavvia Steam e Decky", async () =>
+        {
+            var success = await _deckyInstaller.RestartWithSteamAsync(_steam);
+            SetStatus(success ? "Steam e Decky sono stati riavviati." : "Riavvio non completato. Controlla che Steam e Decky siano installati e riprova.",
+                success ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+        }, primary: true)));
+        panel.Children.Add(restartSteamDecky);
 
         // ---------- Aggiornamenti Playhub ----------
         var updates = Card();
@@ -7028,7 +7040,8 @@ by Valve.";
 
     // Sicurezza: se un gioco Xbox aveva acceso "apri Game Bar dal controller" e
     // qualcosa è andato storto lasciandola accesa, la rispegniamo all'avvio di
-    // Playhub quando nessun gioco Xbox (UWPHook) è in esecuzione. Solo se la
+    // Playhub quando nessun helper UWPHook/GameSession/XboxSession è attivo.
+    // Durante una sessione il watcher gestisce il ritorno allo stato normale. Solo se la
     // feature è attiva: se l'utente l'ha disattivata NON tocchiamo la sua scelta.
     private void ResetXboxGameBarIfStuck()
     {
@@ -7039,9 +7052,9 @@ by Valve.";
                 return;
             }
 
-            if (Process.GetProcessesByName("UWPHook").Length > 0)
+            if (XboxGameBarStartupPolicy.HasActiveLaunchHelper())
             {
-                return; // un gioco Xbox è in corso: non toccare l'impostazione.
+                return; // Un helper di avvio è attivo: non cambiare l'impostazione.
             }
 
             using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
@@ -7132,19 +7145,23 @@ by Valve.";
 
     private async Task ExportUwpGamesAsync()
     {
+        var preparedGames = _uwpGames.Where(game => game.Selected).ToList();
         var result = await _uwpXbox.ExportSelectedToSteamAsync(_uwpGames, _settings.SteamGridDbApiKey);
         _uwpXbox.RefreshLibraryState(_uwpGames);
+        System.Text.Json.Nodes.JsonArray deliveryOutcomes = new();
         if (result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase))
         {
+            deliveryOutcomes = await DeliverPreparedImportedGamesAsync(preparedGames);
             foreach (var game in _uwpGames.Where(game => game.InSteamLibrary))
             {
                 game.Selected = false;
             }
         }
         RenderUwpGames();
-        SetStatus(result, result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
+        SetStatus(T(result), result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
             ? InfoBarSeverity.Success
             : InfoBarSeverity.Warning);
+        ShowPreparedIntegrationDeliveryWarning(deliveryOutcomes);
     }
 
     private async Task RelinkUwpGamesAsync()
@@ -7313,19 +7330,23 @@ by Valve.";
 
     private async Task ExportExecutableGamesAsync()
     {
+        var preparedGames = _executableGames.Where(game => game.Selected).ToList();
         var result = await _uwpXbox.ExportSelectedToSteamAsync(_executableGames, _settings.SteamGridDbApiKey);
         _uwpXbox.RefreshLibraryState(_executableGames);
+        System.Text.Json.Nodes.JsonArray deliveryOutcomes = new();
         if (result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase))
         {
+            deliveryOutcomes = await DeliverPreparedImportedGamesAsync(preparedGames);
             foreach (var game in _executableGames.Where(game => game.InSteamLibrary))
             {
                 game.Selected = false;
             }
         }
         RenderExecutableGames();
-        SetStatus(result, result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
+        SetStatus(T(result), result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
             ? InfoBarSeverity.Success
             : InfoBarSeverity.Warning);
+        ShowPreparedIntegrationDeliveryWarning(deliveryOutcomes);
     }
 
     private void RenderExecutableSources()
@@ -7442,11 +7463,7 @@ by Valve.";
 
     private static void ClearSteamGridDbArtwork(UwpGameEntry game)
     {
-        game.SteamGridDbCoverPath = "";
-        game.SteamGridDbBannerPath = "";
-        game.SteamGridDbHeroPath = "";
-        game.SteamGridDbLogoPath = "";
-        game.SteamGridDbIconPath = "";
+        foreach (var type in ImportedArtworkSelection.Types) ImportedArtworkSelection.ClearAutomatic(game, type);
     }
 
     private static void RemoveSteamGridDbPreferenceKey<T>(Dictionary<string, T> dictionary, string key)
@@ -7493,10 +7510,13 @@ by Valve.";
 
     private async Task ExportEpicGamesAsync()
     {
+        var preparedGames = _epicGames.Where(game => game.Selected).ToList();
         var result = await _uwpXbox.ExportSelectedToSteamAsync(_epicGames, _settings.SteamGridDbApiKey);
         _uwpXbox.RefreshLibraryState(_epicGames);
+        System.Text.Json.Nodes.JsonArray deliveryOutcomes = new();
         if (result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase))
         {
+            deliveryOutcomes = await DeliverPreparedImportedGamesAsync(preparedGames);
             foreach (var game in _epicGames.Where(game => game.InSteamLibrary))
             {
                 game.Selected = false;
@@ -7504,9 +7524,10 @@ by Valve.";
         }
 
         RenderEpicGames();
-        SetStatus(result, result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
+        SetStatus(T(result), result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
             ? InfoBarSeverity.Success
             : InfoBarSeverity.Warning);
+        ShowPreparedIntegrationDeliveryWarning(deliveryOutcomes);
     }
 
     private async Task ScanGogGamesAsync()
@@ -7529,10 +7550,13 @@ by Valve.";
 
     private async Task ExportGogGamesAsync()
     {
+        var preparedGames = _gogGames.Where(game => game.Selected).ToList();
         var result = await _uwpXbox.ExportSelectedToSteamAsync(_gogGames, _settings.SteamGridDbApiKey);
         _uwpXbox.RefreshLibraryState(_gogGames);
+        System.Text.Json.Nodes.JsonArray deliveryOutcomes = new();
         if (result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase))
         {
+            deliveryOutcomes = await DeliverPreparedImportedGamesAsync(preparedGames);
             foreach (var game in _gogGames.Where(game => game.InSteamLibrary))
             {
                 game.Selected = false;
@@ -7540,9 +7564,10 @@ by Valve.";
         }
 
         RenderGogGames();
-        SetStatus(result, result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
+        SetStatus(T(result), result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
             ? InfoBarSeverity.Success
             : InfoBarSeverity.Warning);
+        ShowPreparedIntegrationDeliveryWarning(deliveryOutcomes);
     }
 
     private void RenderGameCollection(IReadOnlyList<UwpGameEntry> games, StackPanel panel)
@@ -7611,11 +7636,11 @@ by Valve.";
             Background = new SolidColorBrush(Color.FromArgb(255, 48, 48, 52))
         };
 
-        if (!game.SteamGridDbArtworkDisabled && File.Exists(game.SteamGridDbCoverPath))
+        if (File.Exists(game.SteamGridDbCoverPath))
         {
             coverStage.Children.Add(new Image
             {
-                Source = new BitmapImage(new Uri(game.SteamGridDbCoverPath)),
+                Source = new BitmapImage { CreateOptions = BitmapCreateOptions.IgnoreImageCache, UriSource = new Uri(game.SteamGridDbCoverPath) },
                 Stretch = Stretch.UniformToFill,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalAlignment = VerticalAlignment.Stretch
@@ -7698,19 +7723,36 @@ by Valve.";
         content.Children.Add(pathText);
         content.Children.Add(CreateUwpNameEditor(game));
         var actions = new Grid { ColumnSpacing = 8 };
-        actions.ColumnDefinitions.Add(new ColumnDefinition());
-        actions.ColumnDefinitions.Add(new ColumnDefinition());
-        var artworkButton = Button("Artwork", async () => await ShowUwpArtworkDialogAsync(game));
-        artworkButton.HorizontalAlignment = HorizontalAlignment.Stretch;
-        artworkButton.MinWidth = 0;
-        artworkButton.IsEnabled = !game.SteamGridDbArtworkDisabled;
+        for (var column = 0; column < 3; column++)
+            actions.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var artworkButton = Button("Artwork", async () => await ShowImportedGameArtworkAsync(game));
+        ConfigureCardAction(artworkButton, "Artwork");
         actions.Children.Add(artworkButton);
         var refetchButton = Button("Cerca di nuovo", async () => await ShowSteamGridDbRefetchDialogAsync(game));
-        refetchButton.HorizontalAlignment = HorizontalAlignment.Stretch;
-        refetchButton.MinWidth = 0;
+        ConfigureCardAction(refetchButton, "Cerca di nuovo");
         Grid.SetColumn(refetchButton, 1);
         actions.Children.Add(refetchButton);
+        var infoButton = Button("Info", async () => await ShowImportedGameInfoAsync(game));
+        ConfigureCardAction(infoButton, "Info");
+        Grid.SetColumn(infoButton, 2);
+        actions.Children.Add(infoButton);
         content.Children.Add(actions);
+
+        void ConfigureCardAction(Button button, string label)
+        {
+            button.HorizontalAlignment = HorizontalAlignment.Stretch;
+            button.VerticalAlignment = VerticalAlignment.Stretch;
+            button.MinWidth = 0;
+            button.FontSize = 14;
+            button.Padding = new Thickness(8, 6, 8, 6);
+            var text = LocalizedText(new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Center }, label);
+            button.Content = text;
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, text.Text);
+            text.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) =>
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, text.Text));
+            SetLocalizedToolTip(button, label);
+        }
 
         return new Border
         {
@@ -7728,6 +7770,8 @@ by Valve.";
         var editor = new TextBox
         {
             Text = game.Name,
+            Height = 40,
+            TextWrapping = TextWrapping.NoWrap,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
         };
@@ -7756,227 +7800,9 @@ by Valve.";
 
     private async Task ShowSteamGridDbRefetchDialogAsync(UwpGameEntry game)
     {
-        if (string.IsNullOrWhiteSpace(_settings.SteamGridDbApiKey))
-        {
-            SetStatus("Inserisci prima la chiave API SteamGridDB nella sezione Artwork dei giochi.", InfoBarSeverity.Warning);
-            return;
-        }
-
-        var searchBox = new TextBox
-        {
-            Text = game.Name,
-            PlaceholderText = T("Cerca titolo"),
-            HorizontalAlignment = HorizontalAlignment.Stretch
-        };
-        var searchButton = Button(T("Cerca"), () => { });
-        var removeButton = Button(T("Rimuovi risultato"), () => { });
-        searchButton.MinWidth = 0;
-        removeButton.MinWidth = 0;
-        var removeRow = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right
-        };
-        removeRow.Children.Add(removeButton);
-        var searchRow = new Grid { ColumnSpacing = 8 };
-        searchRow.ColumnDefinitions.Add(new ColumnDefinition());
-        searchRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        searchRow.Children.Add(searchBox);
-        Grid.SetColumn(searchButton, 1);
-        searchRow.Children.Add(searchButton);
-
-        var header = new Grid { ColumnSpacing = 12, Margin = new Thickness(12, 4, 12, 0) };
-        header.ColumnDefinitions.Add(new ColumnDefinition());
-        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
-        header.Children.Add(new TextBlock { Text = T("Titolo"), FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-        var yearHeader = new TextBlock
-        {
-            Text = T("Anno"),
-            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            HorizontalAlignment = HorizontalAlignment.Center
-        };
-        Grid.SetColumn(yearHeader, 1);
-        header.Children.Add(yearHeader);
-
-        var results = new ListView
-        {
-            SelectionMode = ListViewSelectionMode.Single,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            VerticalAlignment = VerticalAlignment.Stretch
-        };
-        ScrollViewer.SetVerticalScrollBarVisibility(results, ScrollBarVisibility.Hidden);
-        ScrollViewer.SetHorizontalScrollBarVisibility(results, ScrollBarVisibility.Disabled);
-        var loading = new ProgressRing
-        {
-            Width = 40,
-            Height = 40,
-            IsActive = false,
-            Visibility = Visibility.Collapsed,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        var empty = new TextBlock
-        {
-            Text = T("Nessun risultato trovato."),
-            Opacity = 0.68,
-            Visibility = Visibility.Collapsed,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        var resultStage = new Grid { MinHeight = 300 };
-        resultStage.Children.Add(results);
-        resultStage.Children.Add(empty);
-        resultStage.Children.Add(loading);
-
-        var content = new Grid { RowSpacing = 10, Width = 640, Height = 480 };
-        content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        content.RowDefinitions.Add(new RowDefinition());
-        content.Children.Add(removeRow);
-        Grid.SetRow(searchRow, 1);
-        content.Children.Add(searchRow);
-        Grid.SetRow(header, 2);
-        content.Children.Add(header);
-        Grid.SetRow(resultStage, 3);
-        content.Children.Add(resultStage);
-
-        var dialog = new ContentDialog
-        {
-            Title = string.Format(T("Cerca di nuovo — {0}"), game.Name),
-            Content = content,
-            PrimaryButtonText = T("Usa risultato"),
-            CloseButtonText = T("Chiudi"),
-            IsPrimaryButtonEnabled = false,
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = Content.XamlRoot
-        };
-        dialog.Resources["ContentDialogMinWidth"] = 720d;
-        dialog.Resources["ContentDialogMaxWidth"] = 720d;
-
-        var removeRequested = false;
-        var loadVersion = 0;
-        async Task LoadResultsAsync()
-        {
-            var version = ++loadVersion;
-            results.Items.Clear();
-            dialog.IsPrimaryButtonEnabled = false;
-            empty.Visibility = Visibility.Collapsed;
-            loading.Visibility = Visibility.Visible;
-            loading.IsActive = true;
-            IReadOnlyList<SteamGridGameOption> options;
-            try
-            {
-                options = await _uwpXbox.SearchSteamGridDbGamesAsync(searchBox.Text, _settings.SteamGridDbApiKey);
-            }
-            catch
-            {
-                options = Array.Empty<SteamGridGameOption>();
-            }
-
-            if (version != loadVersion)
-            {
-                return;
-            }
-
-            loading.IsActive = false;
-            loading.Visibility = Visibility.Collapsed;
-            empty.Visibility = options.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            foreach (var option in options)
-            {
-                var row = new Grid { ColumnSpacing = 12, Padding = new Thickness(4, 8, 4, 8) };
-                row.ColumnDefinitions.Add(new ColumnDefinition());
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
-                row.Children.Add(new TextBlock
-                {
-                    Text = option.Name,
-                    TextTrimming = TextTrimming.CharacterEllipsis,
-                    VerticalAlignment = VerticalAlignment.Center
-                });
-                var year = new TextBlock
-                {
-                    Text = option.ReleaseYear?.ToString() ?? "-",
-                    Opacity = option.ReleaseYear.HasValue ? 1 : 0.5,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center
-                };
-                Grid.SetColumn(year, 1);
-                row.Children.Add(year);
-                results.Items.Add(new ListViewItem
-                {
-                    Content = row,
-                    Tag = option,
-                    HorizontalContentAlignment = HorizontalAlignment.Stretch
-                });
-            }
-        }
-
-        results.SelectionChanged += (_, _) =>
-            dialog.IsPrimaryButtonEnabled = (results.SelectedItem as ListViewItem)?.Tag is SteamGridGameOption;
-        searchButton.Click += async (_, _) => await LoadResultsAsync();
-        searchBox.KeyDown += async (_, args) =>
-        {
-            if (args.Key == Windows.System.VirtualKey.Enter)
-            {
-                await LoadResultsAsync();
-            }
-        };
-        removeButton.Click += (_, _) =>
-        {
-            removeRequested = true;
-            dialog.Hide();
-        };
-        dialog.Opened += async (_, _) => await LoadResultsAsync();
-
-        ConfigureDialogEntrance(dialog);
-        var result = await dialog.ShowAsync();
-        if (removeRequested)
-        {
-            RemoveSteamGridDbPreferenceKey(_settings.SteamGridDbGameOverrides, game.Aumid);
-            RemoveSteamGridDbPreferenceKey(_settings.SteamGridDbTitleOverrides, game.Aumid);
-            _settings.SteamGridDbArtworkDisabled.RemoveAll(value =>
-                string.Equals(value, game.Aumid, StringComparison.OrdinalIgnoreCase));
-            _settings.SteamGridDbArtworkDisabled.Add(game.Aumid);
-            game.SteamGridDbArtworkDisabled = true;
-            game.SteamGridDbGameId = 0;
-            ClearSteamGridDbArtwork(game);
-            await SaveSettingsSilentlyAsync();
-            await _uwpXbox.PopulateApplicationIconsAsync(new[] { game });
-            RenderUwpGames();
-            RenderExecutableGames();
-            RenderEpicGames();
-            RenderGogGames();
-            SetStatus("Risultato rimosso. Il gioco resterà senza artwork.", InfoBarSeverity.Success);
-            return;
-        }
-
-        if (result != ContentDialogResult.Primary ||
-            (results.SelectedItem as ListViewItem)?.Tag is not SteamGridGameOption selected)
-        {
-            return;
-        }
-
-        RemoveSteamGridDbPreferenceKey(_settings.SteamGridDbGameOverrides, game.Aumid);
-        RemoveSteamGridDbPreferenceKey(_settings.SteamGridDbTitleOverrides, game.Aumid);
-        _settings.SteamGridDbGameOverrides[game.Aumid] = selected.Id;
-        _settings.SteamGridDbTitleOverrides[game.Aumid] = selected.Name;
-        _settings.SteamGridDbArtworkDisabled.RemoveAll(value =>
-            string.Equals(value, game.Aumid, StringComparison.OrdinalIgnoreCase));
-        game.Name = selected.Name;
-        game.SteamGridDbGameId = selected.Id;
-        game.SteamGridDbArtworkDisabled = false;
-        ClearSteamGridDbArtwork(game);
-        await SaveSettingsSilentlyAsync();
-        var coverLoaded = await _uwpXbox.RefreshSteamGridDbCoverAsync(game, _settings.SteamGridDbApiKey);
-        RenderUwpGames();
-        RenderExecutableGames();
-        RenderEpicGames();
-        RenderGogGames();
-        SetStatus(
-            coverLoaded
-                ? string.Format(T("Risultato aggiornato: {0}."), selected.Name)
-                : string.Format(T("Risultato aggiornato: {0}. Nessuna copertina disponibile."), selected.Name),
-            coverLoaded ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+        try { await ShowGameTitleRefetchDialogAsync(game); }
+        catch (OperationCanceledException) { }
+        catch (Exception error) { SetStatus(error.Message,InfoBarSeverity.Error); }
     }
 
     private async Task ShowUwpArtworkDialogAsync(UwpGameEntry game)
@@ -8006,6 +7832,7 @@ by Valve.";
                 Tag = category.Type
             });
         }
+        selector.Items.Add(new SelectorBarItem { Text = "Riepilogo", Icon = new SymbolIcon(Symbol.List), Tag = "summary" });
         selector.SelectedItem = selector.Items[0];
 
         var artworkGrid = new GridView
@@ -8071,6 +7898,27 @@ by Valve.";
         dialog.Resources["ContentDialogMaxWidth"] = 1100d;
 
         var selectedArtworks = new Dictionary<string, SteamGridArtworkOption>(StringComparer.OrdinalIgnoreCase);
+        // Start from the files Steam is really using. Cached Playhub paths are
+        // only a fallback for artwork that has been selected but not applied
+        // to Steam yet.
+        foreach (var current in _uwpXbox.ReadCurrentSteamArtwork(game))
+        {
+            selectedArtworks[current.Key] = new SteamGridArtworkOption(current.Value, current.Value, 0, 0);
+        }
+        foreach (var cached in new[]
+        {
+            (Type: "cover", Path: game.SteamGridDbCoverPath),
+            (Type: "banner", Path: game.SteamGridDbBannerPath),
+            (Type: "hero", Path: game.SteamGridDbHeroPath),
+            (Type: "logo", Path: game.SteamGridDbLogoPath),
+            (Type: "icon", Path: game.SteamGridDbIconPath)
+        })
+        {
+            if (!selectedArtworks.ContainsKey(cached.Type) && !string.IsNullOrWhiteSpace(cached.Path) && File.Exists(cached.Path))
+            {
+                selectedArtworks[cached.Type] = new SteamGridArtworkOption(cached.Path, cached.Path, 0, 0);
+            }
+        }
         var activeArtworkType = "cover";
         var showOfficial = false;
 
@@ -8093,6 +7941,47 @@ by Valve.";
         }
         var suppressSelectionChanged = false;
         var loadVersion = 0;
+
+        Task RenderSummaryAsync()
+        {
+            suppressSelectionChanged = true;
+            artworkGrid.Items.Clear(); artworkGrid.SelectedItem = null;
+            suppressSelectionChanged = false;
+            foreach (var category in categories)
+            {
+                selectedArtworks.TryGetValue(category.Type, out var selected);
+                var row = new Grid { ColumnSpacing = 14, Padding = new Thickness(10) };
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                var preview = new Border { Width = 180, Height = 96, CornerRadius = new CornerRadius(8), Background = new SolidColorBrush(Color.FromArgb(255, 42, 42, 46)) };
+                BitmapImage? previewImage = null;
+                if (selected is not null)
+                {
+                    if (File.Exists(selected.Url))
+                    {
+                        previewImage = new BitmapImage(new Uri(selected.Url));
+                    }
+                    else if (Uri.TryCreate(selected.PreviewUrl, UriKind.Absolute, out var previewUri))
+                    {
+                        previewImage = new BitmapImage(previewUri);
+                    }
+                }
+                preview.Child = previewImage is not null
+                    ? new Image { Source = previewImage, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch }
+                    : new TextBlock { Text = "Non selezionato", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Opacity = .65 };
+                row.Children.Add(preview); Grid.SetColumn(preview, 0);
+                var name = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
+                name.Children.Add(new TextBlock { Text = category.Text, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+                name.Children.Add(new TextBlock { Text = selected?.Url ?? "Nessun asset selezionato", Opacity = .68, TextTrimming = TextTrimming.CharacterEllipsis });
+                row.Children.Add(name); Grid.SetColumn(name, 1);
+                var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+                var browse = Button("Sfoglia", async () => { var path = await PickFileAsync(new[] { ".png", ".jpg", ".jpeg", ".webp", ".bmp" }); if (!string.IsNullOrWhiteSpace(path)) { selectedArtworks[category.Type] = new SteamGridArtworkOption(path, path, 0, 0); await RenderSummaryAsync(); dialog.IsPrimaryButtonEnabled = selectedArtworks.Count > 0; } });
+                var remove = Button("Rimuovi", async () => { selectedArtworks.Remove(category.Type); await RenderSummaryAsync(); dialog.IsPrimaryButtonEnabled = selectedArtworks.Count > 0; });
+                remove.IsEnabled = selected is not null; actions.Children.Add(browse); actions.Children.Add(remove);
+                row.Children.Add(actions); Grid.SetColumn(actions, 2);
+                artworkGrid.Items.Add(new GridViewItem { Content = row, Padding = new Thickness(0) });
+            }
+            return Task.CompletedTask;
+        }
 
         async Task LoadCategoryAsync(string artworkType)
         {
@@ -8203,6 +8092,7 @@ by Valve.";
         {
             if (selector.SelectedItem?.Tag is string artworkType)
             {
+                if (artworkType == "summary") { await RenderSummaryAsync(); return; }
                 showOfficial = false;
                 activeArtworkType = artworkType;
                 UpdateSourceButton();
@@ -8277,13 +8167,7 @@ by Valve.";
     }
 
     private static int GetUwpCardColumnCount(double availableWidth)
-    {
-        if (availableWidth >= 820) return 4;
-        if (availableWidth >= 650) return 4;
-        if (availableWidth >= 480) return 3;
-        if (availableWidth >= 320) return 2;
-        return 1;
-    }
+        => Playhub.Importing.GameCardLayout.ColumnCount(availableWidth);
 
     private void PopulateSettingsControls()
     {
@@ -8664,6 +8548,16 @@ by Valve.";
         {
             row.Children.Add(child);
         }
+        return row;
+    }
+
+    private static FrameworkElement ImportActionRow(params UIElement[] children)
+    {
+        var row = new global::Playhub.Importing.AdaptiveImportToolbar
+        {
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        foreach (var child in children) row.Children.Add(child);
         return row;
     }
 
@@ -9431,10 +9325,11 @@ by Valve.";
     private string TranslateMessage(string message)
     {
         if (message.StartsWith("Ho aggiunto ", StringComparison.Ordinal) &&
-            message.Contains(" giochi a Steam.", StringComparison.Ordinal))
+            (message.Contains(" giochi a Steam.", StringComparison.Ordinal) ||
+             message.Contains(" giochi alla libreria Steam.", StringComparison.Ordinal)))
         {
             var countText = message["Ho aggiunto ".Length..].Split(' ', 2)[0];
-            return string.Format(T("Ho aggiunto {0} giochi a Steam. Riavvia Steam per vederli."), countText);
+            return string.Format(T("Ho aggiunto {0} giochi alla libreria Steam."), countText);
         }
 
         const string blockedPrefix = "Windows ha impedito la scrittura del file shortcuts di Steam. Non dipende dal fatto che Steam sia aperto: è la protezione \"Accesso alle cartelle controllato\" di Sicurezza di Windows che blocca questa app (UWPHook funziona perché è già tra le app consentite). Per risolvere: Sicurezza di Windows → Protezione da virus e minacce → Gestisci protezione ransomware → Accesso alle cartelle controllato → Consenti app tramite Accesso alle cartelle controllato → Aggiungi Playhub.exe. Poi riprova.";
@@ -9458,11 +9353,11 @@ by Valve.";
             return string.Format(T("Non trovo i file installabili per {0}."), pluginName);
         }
 
-        // Messaggio di installazione DeckyLoader composto a runtime: "DeckyLoader
+        // Messaggio di installazione DeckyLoader composto a runtime: "Decky
         // installato ({label}): {nota, nota}. Chiudi e riapri Steam...". Va tradotto
         // a pezzi (template + etichetta + singole note).
-        const string deckyInstalledPrefix = "DeckyLoader installato (";
-        const string deckyInstalledTail = ". Chiudi e riapri Steam per attivare DeckyLoader.";
+        const string deckyInstalledPrefix = "Decky installato (";
+        const string deckyInstalledTail = ". Chiudi e riapri Steam per attivare Decky.";
         if (message.StartsWith(deckyInstalledPrefix, StringComparison.Ordinal) &&
             message.EndsWith(deckyInstalledTail, StringComparison.Ordinal))
         {
@@ -9473,7 +9368,7 @@ by Valve.";
                 var notesPart = message[(labelEnd + 3)..^deckyInstalledTail.Length];
                 var notes = notesPart.Split(", ", StringSplitOptions.None).Select(n => T(n));
                 return string.Format(
-                    T("DeckyLoader installato ({0}): {1}. Chiudi e riapri Steam per attivare DeckyLoader."),
+                    T("Decky installato ({0}): {1}. Chiudi e riapri Steam per attivare Decky."),
                     T(label), string.Join(", ", notes));
             }
         }
@@ -9494,6 +9389,7 @@ by Valve.";
 
     private void ApplyLanguage()
     {
+        RefreshEmulationLabels();
         _loadingSettings = true;
         RefreshLanguageCombo(_languageCombo, _settings.Language);
         RefreshChoiceCombo(_backdropCombo, NormalizeBackdropKey(_settings.Backdrop));

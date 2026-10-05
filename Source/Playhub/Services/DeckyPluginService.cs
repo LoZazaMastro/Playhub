@@ -47,13 +47,17 @@ public sealed class DeckyPluginService
                 : Path.Combine(deckyPluginsPath, plugin.FolderName);
         });
         var source = plugin.SourceFolder;
+        var bundled = FindBundledPayload(plugin);
 
         var release = await Task.Run(() =>
             string.Equals(plugin.CatalogSource, "decky-store", StringComparison.OrdinalIgnoreCase)
                 ? ResolveLatestDeckyStoreReleaseAsync(plugin)
                 : ResolveLatestReleaseAsync(plugin.RepositorySlug, plugin.ReleaseAssetName));
         var releaseZipUrl = release?.ZipUrl ?? plugin.CatalogReleaseZipUrl ?? plugin.ReleaseZipUrl;
-        if (release is not null)
+        var preferBundled = bundled is not null && (release is null ||
+            ShouldUseBundledVersion(bundled.Version, release.Version));
+        if (preferBundled) releaseZipUrl = null;
+        if (release is not null && !preferBundled)
         {
             plugin.ReleaseZipUrl = releaseZipUrl;
             plugin.CatalogReleaseZipUrl = releaseZipUrl;
@@ -95,13 +99,15 @@ public sealed class DeckyPluginService
                 progress?.Report(new PluginInstallProgress(PluginInstallPhase.Extracting));
                 source = ExtractPluginZip(releaseZip);
             }
-            else if (!Directory.Exists(source) && plugin.InstallerZip is not null)
+            else if (bundled is not null)
             {
-                progress?.Report(new PluginInstallProgress(PluginInstallPhase.Extracting));
-                source = ExtractPluginZip(plugin.InstallerZip);
+                if (bundled.IsZip) progress?.Report(new PluginInstallProgress(PluginInstallPhase.Extracting));
+                source = bundled.IsZip ? ExtractPluginZip(bundled.Path) : bundled.Path;
+                // Offline fallback must describe the bytes actually installed.
+                plugin.Version = bundled.Version;
             }
 
-            var pluginRoot = FindPluginRoot(source);
+            var pluginRoot = string.IsNullOrWhiteSpace(releaseZip) ? FindInstallableBundledRoot(source) : FindPluginRoot(source);
             if (pluginRoot is null)
             {
                 throw new DirectoryNotFoundException($"Non trovo i file installabili per {plugin.Name}.");
@@ -576,6 +582,78 @@ $pluginProcesses | ForEach-Object {
         return pluginJson is null ? null : Path.GetDirectoryName(pluginJson);
     }
 
+    private static bool IsInstallablePluginRoot(string root) =>
+        File.Exists(Path.Combine(root, "plugin.json")) && File.Exists(Path.Combine(root, "dist", "index.js"));
+
+    private static string? FindInstallableBundledRoot(string? root)
+    {
+        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) return null;
+        if (IsInstallablePluginRoot(root)) return root;
+        return Directory.EnumerateFiles(root, "plugin.json", SearchOption.AllDirectories)
+            .Select(Path.GetDirectoryName).FirstOrDefault(path => path is not null && IsInstallablePluginRoot(path));
+    }
+
+    internal sealed record BundledPayload(string Path, string Version, bool IsZip);
+
+    internal static BundledPayload? FindBundledPayload(DeckyPluginInfo plugin)
+    {
+        // Read release archives directly; a nearby manifest is not proof of an installable payload.
+        if (!string.IsNullOrWhiteSpace(plugin.InstallerZip) && File.Exists(plugin.InstallerZip))
+        {
+            try
+            {
+                using var archive = ZipFile.OpenRead(plugin.InstallerZip);
+                var entries = archive.Entries.ToDictionary(e => e.FullName.Replace('\\', '/'), StringComparer.OrdinalIgnoreCase);
+                foreach (var manifest in entries.Keys.Where(p => p.EndsWith("plugin.json", StringComparison.OrdinalIgnoreCase)))
+                {
+                    var prefix = manifest[..^"plugin.json".Length];
+                    if (!entries.ContainsKey(prefix + "dist/index.js")) continue;
+                    foreach (var name in new[] { "package.json", "plugin.json" })
+                    {
+                        if (!entries.TryGetValue(prefix + name, out var entry)) continue;
+                        using var input = entry.Open();
+                        var version = ReadPayloadVersion(input);
+                        if (!string.IsNullOrWhiteSpace(version)) return new(plugin.InstallerZip, version, true);
+                    }
+                }
+            }
+            catch (Exception error) when (error is IOException or InvalidDataException or JsonException or ArgumentException or UnauthorizedAccessException) { }
+        }
+        var source = FindInstallableBundledRoot(plugin.SourceFolder);
+        if (source is null) return null;
+        foreach (var name in new[] { "package.json", "plugin.json" })
+        {
+            var path = Path.Combine(source, name);
+            if (!File.Exists(path)) continue;
+            try
+            {
+                using var input = File.OpenRead(path);
+                var version = ReadPayloadVersion(input);
+                if (!string.IsNullOrWhiteSpace(version)) return new(source, version, false);
+            }
+            catch (Exception error) when (error is IOException or JsonException) { }
+        }
+        return null;
+    }
+
+    private static string? ReadPayloadVersion(Stream input)
+    {
+        using var json = JsonDocument.Parse(input);
+        return json.RootElement.TryGetProperty("version", out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString() : null;
+    }
+
+    internal static bool ShouldUseBundledVersion(string bundled, string remote)
+    {
+        static bool Parse(string value, out Version? version) =>
+            Version.TryParse(value.TrimStart('v', 'V').Split('-', '+')[0], out version);
+        if (!Parse(bundled, out var localVersion) || !Parse(remote, out var remoteVersion)) return false;
+        if (localVersion != remoteVersion) return localVersion > remoteVersion;
+        var localPre = bundled.Split('+')[0].Split('-', 2).Skip(1).FirstOrDefault();
+        var remotePre = remote.Split('+')[0].Split('-', 2).Skip(1).FirstOrDefault();
+        return localPre is null || (remotePre is not null && string.Equals(localPre, remotePre, StringComparison.Ordinal));
+    }
+
     private static HttpClient CreateHttpClient()
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
@@ -597,7 +675,7 @@ $pluginProcesses | ForEach-Object {
             var relative = Path.GetRelativePath(source, file);
             var target = Path.Combine(destination, relative);
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            File.Copy(file, target, overwrite: true);
+            BundledExecutableCopy.Copy(file, target);
         }
     }
 

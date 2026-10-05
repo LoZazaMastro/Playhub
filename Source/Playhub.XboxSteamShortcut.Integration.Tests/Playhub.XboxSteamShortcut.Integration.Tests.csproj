@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows10.0.19041.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="../Playhub.GameSession/UwpShortcutArguments.cs" />
+    <Compile Include="../Playhub/Vendor/VDFParser/**/*.cs" />
+    <Compile Include="../Playhub/Models/UwpGameEntry.cs" />
+    <Compile Include="../Playhub/Services/ImportedArtworkSelection.cs" />
+    <Compile Include="../ApplicationIntegrations/ApplicationIntegrationDataStore.cs" />
+    <Compile Include="../Playhub/Importing/ImportedShortcutIdentity.cs" />
+    <Compile Include="../Playhub/Services/ProcessService.cs;../Playhub/Services/SteamLibraryEditSession.cs;../Playhub/Services/UwpXboxService.cs;../Playhub/Services/XboxSteamShortcut.cs;../Playhub/Services/UwpHookSteamManager.cs;../Playhub/Services/CoverFormat.cs;../Playhub/Services/CommandLine.cs;../Playhub/Services/AppPaths.cs;../Playhub/Services/Diag.cs;../Playhub/Services/EpicGamesService.cs;../Playhub/Services/GogService.cs" />
+  </ItemGroup>
+</Project>

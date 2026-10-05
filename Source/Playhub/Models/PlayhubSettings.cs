@@ -21,6 +21,8 @@ public sealed class PlayhubSettings
     public Dictionary<string, int> SteamGridDbGameOverrides { get; set; } = new();
     public Dictionary<string, string> SteamGridDbTitleOverrides { get; set; } = new();
     public List<string> SteamGridDbArtworkDisabled { get; set; } = new();
+    public Dictionary<string, string> LocalArtworkAssets { get; set; } = new();
+    public List<string> ImportIntegrations { get; set; } = new();
     // Formato delle cover nella pagina Importa Giochi: "vertical" (default,
     // comportamento storico) oppure "square" per i grid quadrati di SteamGridDB.
     public string CoverFormat { get; set; } = "vertical";

@@ -59,6 +59,14 @@ original notices and dependency licenses. See [third-party notices](THIRD-PARTY-
 Thanks to Juan Diego MaLó (Hooandee) for his work on custom QAM tabs, and to
 [Tabler](https://tabler.io/icons) for the icons.
 
+## Community and support
+
+Playhub is built on people working together and on the freedom of ideas and words; it condemns every form of hate, bullying or discrimination based on the supremacy of a platform, an operating system or a game console. Respect for people comes first, and behaviour that goes against it will not be tolerated.
+
+Playhub and its creator ZazaMastro are not responsible for any message, post or publication coming from the community.
+
+Please do not ask the Decky team for support on Windows: it is not officially supported there. Decky and Playhub are two separate things, so please use the [Playhub subreddit](https://www.reddit.com/r/PlayhubGaming/) for questions or help. From our side you will always get a hand, whatever your platform, and with the greatest respect for people.
+
 <div align="center">
 
 Created and maintained by **[LoZazaMastro](https://github.com/LoZazaMastro)**.

@@ -25,7 +25,12 @@ set ASSETS=..\Playhub\Assets\GamingModeDeckyPlugin\gaming-mode
 
 echo ===== BUILD PLUGIN %DATE% %TIME% ===== > "%LOG%" 2>&1
 
-rem ---------- npm disponibile? ----------
+rem Le dipendenze gia' presenti richiedono Node, non un npm globale.
+set "NODE_EXE="
+for /f "delims=" %%N in ('where node.exe 2^>nul') do if not defined NODE_EXE set "NODE_EXE=%%N"
+if not defined NODE_EXE goto :no_npm
+if exist "node_modules\.bin\tsc.cmd" if exist "node_modules\.bin\rollup.cmd" goto :deps_ready
+rem ---------- npm disponibile per installare le dipendenze? ----------
 where npm >nul 2>&1
 if errorlevel 1 goto :no_npm
 
@@ -42,14 +47,14 @@ if errorlevel 1 (
 echo   - Dipendenze del plugin disponibili.
 
 echo   - Controllo i tipi...
-call "%~dp0node_modules\.bin\tsc.cmd" --noEmit >> "%LOG%" 2>&1
+"%NODE_EXE%" "%~dp0node_modules\typescript\bin\tsc" --noEmit >> "%LOG%" 2>&1
 if errorlevel 1 (
     echo   ! Il plugin non compila: errori di tipo. Dettagli in "%~dp0%LOG%"
     exit /b 1
 )
 
 echo   - Compilo il bundle...
-call "%~dp0node_modules\.bin\rollup.cmd" -c >> "%LOG%" 2>&1
+"%NODE_EXE%" "%~dp0node_modules\rollup\dist\bin\rollup" -c >> "%LOG%" 2>&1
 if errorlevel 1 (
     echo   ! rollup non riuscito. Dettagli in "%~dp0%LOG%"
     exit /b 1
@@ -74,6 +79,7 @@ copy /y "plugin.json"   "%ASSETS%\plugin.json"   >> "%LOG%" 2>&1
 copy /y "package.json"  "%ASSETS%\package.json"  >> "%LOG%" 2>&1
 copy /y "LICENSE-Shortcuts" "%ASSETS%\LICENSE-Shortcuts" >> "%LOG%" 2>&1
 copy /y "main.py" "%ASSETS%\main.py" >> "%LOG%" 2>&1
+copy /y "decky_ipc_health.py" "%ASSETS%\decky_ipc_health.py" >> "%LOG%" 2>&1
 if not exist "%ASSETS%\screensaver" mkdir "%ASSETS%\screensaver"
 copy /y "screensaver\index.html" "%ASSETS%\screensaver\index.html" >> "%LOG%" 2>&1
 copy /y "screensaver\main.js" "%ASSETS%\screensaver\main.js" >> "%LOG%" 2>&1
@@ -115,13 +121,25 @@ if not exist "%ASSETS%\dist\index.js" (
     exit /b 1
 )
 
+rem  plugin.json e package.json non vengono compilati dentro il bundle: Rollup
+rem  ne prende solo il campo "name" (la prima riga di dist\index.js e'
+rem  const manifest = {"name":"..."}). Vengono copiati tali e quali, percio' un
+rem  cambio di versione non rende vecchio il bundle: si copiano e basta, e piu'
+rem  sotto si verifica che il nome sia ancora quello dentro il bundle.
+copy /y "plugin.json"   "%ASSETS%\plugin.json"   >> "%LOG%" 2>&1
+if errorlevel 1 exit /b 1
+copy /y "package.json"  "%ASSETS%\package.json"  >> "%LOG%" 2>&1
+if errorlevel 1 exit /b 1
+
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ErrorActionPreference='Stop';" ^
   "$b=Get-Item '%ASSETS%\dist\index.js';" ^
+  "$name=(Get-Content -Raw -LiteralPath 'plugin.json' | ConvertFrom-Json).name;" ^
+  "$head=Get-Content -LiteralPath $b.FullName -TotalCount 1; if ($head -notmatch [regex]::Escape($name)) { exit 1 };" ^
   "$bytecode=Get-ChildItem -LiteralPath '%ASSETS%' -Recurse -File | Where-Object { $_.Extension -in @('.pyc','.pyo') }; if ($bytecode) { exit 1 };" ^
-  "$helpers=Get-ChildItem -Path 'screensaver\index.html','screensaver\main.js','LICENSE-Shortcuts','main.py','THIRD-PARTY-NOTICES.md','quick_settings\history_images.json','quick_settings\history_editorial.json','quick_settings\history_days.json','quick_settings\history_imported.json','quick_settings\*.py','quick_settings\LICENSE','quick_settings\NOTICE','quick_settings\LEGAL.md','quick_settings\THIRD-PARTY-NOTICES.md','quick_settings\licenses\*.txt','quick_settings\helper\*.ps1','quick_settings\bin\QuickSettingsAgent.exe','quick_settings\amd\adlx_helper.exe','quick_settings\amd\ADLXCSharpBind.dll','quick_settings\amd\LICENSES.txt','quick_settings\amd\build_amd.bat' -File -ErrorAction Stop;" ^
+  "$helpers=Get-ChildItem -Path 'screensaver\index.html','screensaver\main.js','LICENSE-Shortcuts','main.py','decky_ipc_health.py','THIRD-PARTY-NOTICES.md','quick_settings\history_images.json','quick_settings\history_editorial.json','quick_settings\history_days.json','quick_settings\history_imported.json','quick_settings\*.py','quick_settings\LICENSE','quick_settings\NOTICE','quick_settings\LEGAL.md','quick_settings\THIRD-PARTY-NOTICES.md','quick_settings\licenses\*.txt','quick_settings\helper\*.ps1','quick_settings\bin\QuickSettingsAgent.exe','quick_settings\amd\adlx_helper.exe','quick_settings\amd\ADLXCSharpBind.dll','quick_settings\amd\LICENSES.txt','quick_settings\amd\build_amd.bat' -File -ErrorAction Stop;" ^
   "foreach ($file in $helpers) { $relative=$file.FullName.Substring((Get-Location).Path.Length+1); $target=Join-Path '%ASSETS%' $relative; if (-not (Test-Path -LiteralPath $target -PathType Leaf)) { exit 1 }; if ((Get-FileHash -LiteralPath $file.FullName).Hash -cne (Get-FileHash -LiteralPath $target).Hash) { exit 1 } };" ^
-  "$s=Get-ChildItem -Path 'src','assets','screensaver','quick_settings','main.py','package.json','plugin.json','rollup.config.js','tsconfig.json' -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -notin @('.pyc','.pyo') -and $_.FullName -notmatch '[\\/]__pycache__[\\/]' };" ^
+  "$s=Get-ChildItem -Path 'src','assets','screensaver','quick_settings','main.py','decky_ipc_health.py','rollup.config.js','tsconfig.json' -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -notin @('.pyc','.pyo') -and $_.FullName -notmatch '[\\/]__pycache__[\\/]' };" ^
   "$newest=($s | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1);" ^
   "if ($newest -and $newest.LastWriteTimeUtc -gt $b.LastWriteTimeUtc) { exit 1 } else { exit 0 }" >> "%LOG%" 2>&1
 if errorlevel 1 (

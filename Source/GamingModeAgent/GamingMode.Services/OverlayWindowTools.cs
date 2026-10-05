@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -101,10 +101,18 @@ public static class OverlayWindowTools
 	private static extern bool GetWindowPlacement(nint window, ref WindowPlacement placement);
 
 	public static IReadOnlyList<OverlayWindowInfo> Enumerate()
+		=> Enumerate(HasPackageIdentity);
+
+	internal static IReadOnlyList<OverlayWindowInfo> Enumerate(Func<uint, bool> hasPackageIdentity)
+		=> Enumerate(hasPackageIdentity, true);
+
+	internal static IReadOnlyList<OverlayWindowInfo> Enumerate(Func<uint, bool> hasPackageIdentity, bool useDesktopEnumeration)
 	{
 		List<OverlayWindowInfo> windows = new();
-		EnumWindows(delegate(nint window, nint _)
+		HashSet<nint> visited = new();
+		bool Visit(nint window, nint _)
 		{
+			if (!visited.Add(window)) return true;
 			if (window == 0 || !IsWindowVisible(window) || GetWindow(window, GwOwner) != 0)
 			{
 				return true;
@@ -132,7 +140,7 @@ public static class OverlayWindowTools
 			// misurata sulla posizione che avrebbe da ripristinata, altrimenti
 			// sparisce dall'elenco (ed e' proprio il caso della Big Picture
 			// mentre la Dashboard e' aperta).
-			if (string.IsNullOrWhiteSpace(title) || !GetEffectiveBounds(window, out Rect rect)
+			if (!GetEffectiveBounds(window, out Rect rect)
 				|| rect.Right - rect.Left < 180 || rect.Bottom - rect.Top < 100)
 			{
 				return true;
@@ -144,6 +152,8 @@ public static class OverlayWindowTools
 			// accanto a quella giusta. Il processo vero e' quello della finestra
 			// interna, che sta dentro la cornice.
 			uint hosted = FindHostedProcess(window, processId);
+			bool untitled = string.IsNullOrWhiteSpace(title);
+			if (untitled && (hosted == 0 || !HasHostedCoreWindow(window, hosted) || !hasPackageIdentity(hosted))) return true;
 			if (hosted != 0) processId = hosted;
 			if (processId == 0 || processId == Environment.ProcessId)
 			{
@@ -159,6 +169,11 @@ public static class OverlayWindowTools
 				}
 				string path = "";
 				try { path = process.MainModule?.FileName ?? ""; } catch { }
+				if (untitled)
+				{
+					title = GetHostedTitle(window, hosted);
+					if (string.IsNullOrWhiteSpace(title)) title = processName;
+				}
 				windows.Add(new OverlayWindowInfo(
 					window,
 					(int)processId,
@@ -172,11 +187,26 @@ public static class OverlayWindowTools
 			{
 			}
 			return true;
-		}, 0);
+		}
+		foreach (nint handle in EnumerateTopLevelHandles(useDesktopEnumeration)) Visit(handle, 0);
 		return windows
 			.OrderByDescending(item => item.Handle == GetForegroundWindow())
 			.ThenBy(item => item.Title, StringComparer.CurrentCultureIgnoreCase)
 			.ToArray();
+	}
+
+	internal static IReadOnlyList<nint> EnumerateTopLevelHandles(bool desktop = true)
+	{
+		var handles = new HashSet<nint>();
+		if (desktop) EnumWindows((window, _) => { handles.Add(window); return true; }, 0);
+		nint frame = 0;
+		for (int count = 0; count < 64; count++)
+		{
+			frame = FindWindowEx(0, frame, "ApplicationFrameWindow", null);
+			if (frame == 0) break;
+			handles.Add(frame);
+		}
+		return handles.ToArray();
 	}
 
 	// La finestra e' viva ma non viene disegnata? Allora per l'utente non esiste.
@@ -203,17 +233,22 @@ public static class OverlayWindowTools
 			string className = GetClassNameOf(frame);
 			if (!string.Equals(className, "ApplicationFrameWindow", StringComparison.Ordinal)) return 0;
 			uint found = 0;
-			EnumChildWindows(frame, delegate(nint child, nint _)
+			uint core = 0;
+			bool ambiguous = false;
+			foreach (nint child in HostedWindows(frame))
 			{
 				GetWindowThreadProcessId(child, out uint childProcess);
 				if (childProcess != 0 && childProcess != frameProcessId)
 				{
-					found = childProcess;
-					return false;
+					if (found == 0) found = childProcess;
+					if (GetClassNameOf(child) == "Windows.UI.Core.CoreWindow")
+					{
+						if (core != 0 && core != childProcess) ambiguous = true;
+						core = childProcess;
+					}
 				}
-				return true;
-			}, 0);
-			return found;
+			}
+			return ambiguous ? 0 : core == 0 ? found : core;
 		}
 		catch
 		{
@@ -241,8 +276,32 @@ public static class OverlayWindowTools
 	[DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
 	private static extern nint GetWindowLongPtr(nint window, int index);
 
+	[DllImport("user32.dll", CharSet = CharSet.Unicode)]
+	private static extern nint FindWindowEx(nint parent, nint after, string? className, string? title);
+
+	private static IReadOnlyList<nint> HostedWindows(nint frame)
+	{
+		List<nint> windows = new();
+		HashSet<nint> visited = new();
+		Queue<nint> parents = new();
+		parents.Enqueue(frame);
+		while (parents.Count > 0 && visited.Count < 128)
+		{
+			nint parent = parents.Dequeue();
+			nint child = 0;
+			while (visited.Count < 128)
+			{
+				child = FindWindowEx(parent, child, null, null);
+				if (child == 0 || !visited.Add(child)) break;
+				if (!IsWindow(child) || GetAncestor(child, 2) != frame) continue;
+				windows.Add(child);
+				parents.Enqueue(child);
+			}
+		}
+		return visited.Count >= 128 ? Array.Empty<nint>() : windows;
+	}
 	[DllImport("user32.dll")]
-	private static extern bool EnumChildWindows(nint parent, EnumWindowsProc callback, nint parameter);
+	private static extern nint GetAncestor(nint window, uint flags);
 
 	[DllImport("user32.dll", CharSet = CharSet.Unicode)]
 	private static extern int GetClassName(nint window, StringBuilder text, int count);
@@ -325,6 +384,94 @@ public static class OverlayWindowTools
 	{
 		return window != 0 && IsWindow(window) && PostMessage(window, WmClose, 0, 0);
 	}
+
+	private static string GetHostedTitle(nint frame, uint processId)
+	{
+		string title = "";
+		foreach (nint child in HostedWindows(frame))
+		{
+			GetWindowThreadProcessId(child, out uint owner);
+			if (owner != processId || GetClassNameOf(child) != "Windows.UI.Core.CoreWindow") continue;
+			title = GetTitle(child);
+			if (!string.IsNullOrWhiteSpace(title)) break;
+		}
+		return title;
+	}
+
+	private static bool HasHostedCoreWindow(nint frame, uint processId)
+	{
+		foreach (nint child in HostedWindows(frame))
+		{
+			GetWindowThreadProcessId(child, out uint owner);
+			if (owner == processId && IsWindowVisible(child) && GetClassNameOf(child) == "Windows.UI.Core.CoreWindow") return true;
+		}
+		return false;
+	}
+
+	private static bool HasPackageIdentity(uint processId)
+	{
+		nint process = OpenProcess(0x1000, false, processId);
+		if (process == 0) return false;
+		try
+		{
+			uint length = 512;
+			StringBuilder family = new((int)length);
+			return GetPackageFamilyName(process, ref length, family) == 0 && family.Length > 0;
+		}
+		finally { CloseHandle(process); }
+	}
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	private static extern nint OpenProcess(uint access, bool inherit, uint processId);
+	[DllImport("kernel32.dll")]
+	private static extern bool CloseHandle(nint handle);
+	[DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+	private static extern int GetPackageFamilyName(nint process, ref uint length, StringBuilder family);
+
+	internal sealed class ProcessLease : IDisposable
+	{
+		private readonly Microsoft.Win32.SafeHandles.SafeFileHandle _handle;
+		internal long CreatedAt { get; }
+		private ProcessLease(nint handle, long created)
+		{
+			_handle = new(handle, true);
+			CreatedAt = created;
+		}
+		internal bool Alive => WaitForSingleObject(_handle, 0) == 258
+			&& GetProcessTimes(_handle, out long created, out _, out _, out _) && created == CreatedAt;
+		internal bool Exited => WaitForSingleObject(_handle, 0) == 0;
+		internal static ProcessLease? TryOpen(int processId)
+		{
+			nint handle = OpenProcess(0x00101000, false, unchecked((uint)processId));
+			if (handle == 0) return null;
+			using var temporary = new Microsoft.Win32.SafeHandles.SafeFileHandle(handle, false);
+			if (GetProcessTimes(temporary, out long created, out _, out _, out _)) return new(handle, created);
+			CloseHandle(handle);
+			return null;
+		}
+		public void Dispose() => _handle.Dispose();
+		[DllImport("kernel32.dll")] private static extern uint WaitForSingleObject(Microsoft.Win32.SafeHandles.SafeFileHandle handle, uint milliseconds);
+		[DllImport("kernel32.dll", SetLastError = true)] private static extern bool GetProcessTimes(Microsoft.Win32.SafeHandles.SafeFileHandle handle,
+			out long creation, out long exit, out long kernel, out long user);
+	}
+
+	public static int WindowProcessId(nint window)
+	{
+		if (window == 0 || !IsWindow(window)) return 0;
+		GetWindowThreadProcessId(window, out uint owner);
+		uint hosted = FindHostedProcess(window, owner);
+		return checked((int)(hosted == 0 ? owner : hosted));
+	}
+
+	public static int WindowOwnerProcessId(nint window)
+	{
+		if (window == 0 || !IsWindow(window)) return 0;
+		GetWindowThreadProcessId(window, out uint owner);
+		return checked((int)owner);
+	}
+
+	public static bool HasVisibleWindow(nint window)
+		=> window != 0 && IsWindow(window) && IsWindowVisible(window) && !IsCloaked(window);
 
 	// I collegamenti (.lnk) vanno risolti al programma a cui puntano: l'icona di
 	// un collegamento porta con se' la freccetta di sistema, e non e' quella che
@@ -501,6 +648,14 @@ public static class OverlayWindowTools
 		return best;
 	}
 
+	internal static bool IsVisibleOverlaySurface(nint window) =>
+		IsUsableWindow(window) && IsWindowVisible(window) && !IsIconic(window) && !IsCloaked(window)
+		&& GetWindowRect(window, out Rect rect) && rect.Right - rect.Left > 1 && rect.Bottom - rect.Top > 1;
+
+	internal static bool IsVisibleGameSurface(nint window) =>
+		IsUsableWindow(window) && IsWindowVisible(window) && !IsIconic(window) && !IsCloaked(window)
+		&& GetWindowRect(window, out Rect rect) && rect.Right - rect.Left >= 220 && rect.Bottom - rect.Top >= 120;
+
 	public static bool IsUsableWindow(nint window)
 	{
 		try { return window != 0 && IsWindow(window) && !IsHungAppWindow(window); }
@@ -545,19 +700,20 @@ public static class OverlayWindowTools
 		try
 		{
 			nint foreground = GetForegroundWindow();
-			if (foreground == 0) return false;
+			if (foreground == 0) { ForegroundIdentity.Read(0); return false; }
 			GetWindowThreadProcessId(foreground, out uint processId);
-			if (processId == 0) return false;
-			using System.Diagnostics.Process process = System.Diagnostics.Process.GetProcessById((int)processId);
-			string name = process.ProcessName;
-			return name.Equals("steam", StringComparison.OrdinalIgnoreCase)
-				|| name.Equals("steamwebhelper", StringComparison.OrdinalIgnoreCase);
+			string? name = ForegroundIdentity.Read((int)processId);
+			return string.Equals(name, "steam", StringComparison.OrdinalIgnoreCase)
+				|| string.Equals(name, "steamwebhelper", StringComparison.OrdinalIgnoreCase);
 		}
 		catch
 		{
 			return false;
 		}
 	}
+
+	private static readonly ForegroundProcessIdentityCache ForegroundIdentity = new(
+		NativeForegroundProcessIdentity.Open, () => Environment.TickCount64);
 
 	public static bool ActivateSteam(out string report)
 	{

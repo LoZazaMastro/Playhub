@@ -13,16 +13,16 @@ public sealed partial class MainWindow
     private readonly List<Button> _deckyOperationButtons = new();
     private bool _deckyOperationRunning;
 
-    private Button DeckyOperationButton(string label, Func<Task> operation, bool primary = false)
+    private Button DeckyOperationButton(string label, Func<Task> operation, bool primary = false, bool repairOnFailure = true)
     {
         Button? button = null;
-        button = Button(label, () => RunDeckyOperationAsync(button!, operation), primary);
+        button = Button(label, () => RunDeckyOperationAsync(button!, operation, repairOnFailure), primary);
         _localizationKeys.AddOrUpdate(button, label);
         _deckyOperationButtons.Add(button);
         return button;
     }
 
-    private async Task RunDeckyOperationAsync(Button button, Func<Task> operation)
+    private async Task RunDeckyOperationAsync(Button button, Func<Task> operation, bool repairOnFailure = true)
     {
         if (_deckyOperationRunning) return;
         using var context = BeginNotificationContext("decky");
@@ -42,6 +42,11 @@ public sealed partial class MainWindow
             _deckyBuildCombo.IsEnabled = false;
             button.Content = spinner;
             await operation();
+        }
+        catch (Exception error)
+        {
+            SetStatus(error.Message, InfoBarSeverity.Error);
+            if (repairOnFailure) await ShowDeckyRepairDialogAsync(error.Message);
         }
         finally
         {

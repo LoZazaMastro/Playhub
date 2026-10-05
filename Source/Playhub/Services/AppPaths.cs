@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -9,8 +9,8 @@ namespace Playhub.Services;
 public static class AppPaths
 {
 #if PLAYHUB_UI_REVIEW
-    public static string AppDataRoot { get; } = Path.Combine(AppContext.BaseDirectory, "ui-review-data", "roaming");
-    public static string LocalDataRoot { get; } = Path.Combine(AppContext.BaseDirectory, "ui-review-data", "local");
+    public static string AppDataRoot { get; } = Path.Combine(AppContext.BaseDirectory, "ui-review-data", Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_SESSION") ?? "default", "roaming");
+    public static string LocalDataRoot { get; } = Path.Combine(AppContext.BaseDirectory, "ui-review-data", Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_SESSION") ?? "default", "local");
 #else
     public static string AppDataRoot { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Playhub");

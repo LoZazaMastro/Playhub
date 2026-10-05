@@ -1,5 +1,7 @@
 import { DFL, SP_REACT as React } from "./decky";
 import { createPortal } from "react-dom";
+import { createDashboardExit, consumeDashboardCancel } from "./dashboardExit";
+import { windowCloseCopy } from "./windowCloseCopy";
 import { findOverlayWindow, selectOverlay, waitForOverlay, OverlayIdentity } from "./dashboardOverlay";
 import {
   DashboardEnvironment,
@@ -56,6 +58,17 @@ const { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } = R
 const { Focusable, GamepadButton, Navigation, TextField, ToggleField } = DFL as any;
 
 export const DASHBOARD_ROUTE = "/playhub-dashboard";
+
+const dashboardExit = createDashboardExit({
+  hideOverlay: () => { closeDashboardOverlay(); clearDashboardChrome(); },
+  back: () => Navigation?.NavigateBack?.(),
+  library: () => Navigation?.NavigateToLibraryTab?.(),
+  closeMenus: () => Navigation?.CloseSideMenus?.(),
+  isPresent: () => dashboardDocuments().some((doc) => Boolean(doc.querySelector(".ph-dashboard, #ph-dashboard-overlay-root"))),
+  schedule: (callback, delay) => window.setTimeout(callback, delay),
+});
+
+export function resetDashboardExit() { dashboardExit.reset(); }
 
 const STEAM_LOCALE_ALIASES: Record<string, string> = {
   english: "en", en: "en",
@@ -517,7 +530,8 @@ interface ExtraCopy {
   rename: string;
   save: string;
   options: string;
-  sdl3?: string;
+  sdl3: string;
+  sdl3Description: string;
   moveApp: string;
   placeApp: string;
   network: string;
@@ -528,18 +542,18 @@ interface ExtraCopy {
 }
 
 const EXTRA_COPY: Record<string, ExtraCopy> = {
-  en: { rename: "Rename", save: "Save", options: "App options", sdl3: "SDL3 native controller", moveApp: "Move app", placeApp: "Confirm position", network: "Network", disk: "Disk", pid: "PID", threads: "threads", protected: "Protected" },
-  it: { rename: "Rinomina", save: "Salva", options: "Opzioni app", sdl3: "Controller nativo SDL3", moveApp: "Sposta app", placeApp: "Conferma posizione", network: "Rete", disk: "Disco", pid: "PID", threads: "thread", protected: "Protetto" },
-  es: { rename: "Renombrar", save: "Guardar", options: "Opciones de la app", moveApp: "Mover app", placeApp: "Confirmar posición", network: "Red", disk: "Disco", pid: "PID", threads: "hilos", protected: "Protegido" },
-  fr: { rename: "Renommer", save: "Enregistrer", options: "Options de l'app", moveApp: "Déplacer l'app", placeApp: "Confirmer la position", network: "Reseau", disk: "Disque", pid: "PID", threads: "threads", protected: "Protege" },
-  de: { rename: "Umbenennen", save: "Speichern", options: "App-Optionen", moveApp: "App verschieben", placeApp: "Position bestätigen", network: "Netzwerk", disk: "Datentrager", pid: "PID", threads: "Threads", protected: "Geschutzt" },
-  pt: { rename: "Mudar nome", save: "Guardar", options: "Opcoes da app", moveApp: "Mover app", placeApp: "Confirmar posição", network: "Rede", disk: "Disco", pid: "PID", threads: "threads", protected: "Protegido" },
-  uk: { rename: "Перейменувати", save: "Зберегти", options: "Параметри програми", moveApp: "Перемістити застосунок", placeApp: "Підтвердити позицію", network: "Мережа", disk: "Диск", pid: "PID", threads: "потоків", protected: "Захищено" },
-  zh: { rename: "重命名", save: "保存", options: "应用选项", moveApp: "移动应用", placeApp: "确认位置", network: "网络", disk: "磁盘", pid: "PID", threads: "线程", protected: "受保护" },
-  ja: { rename: "名前を変更", save: "保存", options: "アプリのオプション", moveApp: "アプリを移動", placeApp: "位置を確定", network: "ネットワーク", disk: "ディスク", pid: "PID", threads: "スレッド", protected: "保護対象" },
-  ko: { rename: "이름 바꾸기", save: "저장", options: "앱 옵션", moveApp: "앱 이동", placeApp: "위치 확정", network: "네트워크", disk: "디스크", pid: "PID", threads: "스레드", protected: "보호됨" },
-  hi: { rename: "नाम बदलें", save: "सहेजें", options: "ऐप विकल्प", moveApp: "ऐप ले जाएं", placeApp: "स्थान तय करें", network: "नेटवर्क", disk: "डिस्क", pid: "PID", threads: "थ्रेड", protected: "सुरक्षित" },
-  ru: { rename: "Переименовать", save: "Сохранить", options: "Параметры приложения", moveApp: "Переместить приложение", placeApp: "Подтвердить позицию", network: "Сеть", disk: "Диск", pid: "PID", threads: "потоков", protected: "Защищено" },
+  en: { sdl3: "SDL3 native controller", sdl3Description: "Launch this game with native SDL3 controller detection.", rename: "Rename", save: "Save", options: "App options", moveApp: "Move app", placeApp: "Confirm position", network: "Network", disk: "Disk", pid: "PID", threads: "threads", protected: "Protected" },
+  it: { sdl3: "Controller nativo SDL3", sdl3Description: "Avvia questo gioco con il riconoscimento nativo dei controller SDL3.", rename: "Rinomina", save: "Salva", options: "Opzioni app", moveApp: "Sposta app", placeApp: "Conferma posizione", network: "Rete", disk: "Disco", pid: "PID", threads: "thread", protected: "Protetto" },
+  es: { sdl3: "Mando nativo SDL3", sdl3Description: "Inicia este juego con la detección nativa de mandos SDL3.", rename: "Renombrar", save: "Guardar", options: "Opciones de la app", moveApp: "Mover app", placeApp: "Confirmar posición", network: "Red", disk: "Disco", pid: "PID", threads: "hilos", protected: "Protegido" },
+  fr: { sdl3: "Manette native SDL3", sdl3Description: "Lance ce jeu avec la détection native des manettes SDL3.", rename: "Renommer", save: "Enregistrer", options: "Options de l'app", moveApp: "Déplacer l'app", placeApp: "Confirmer la position", network: "Reseau", disk: "Disque", pid: "PID", threads: "threads", protected: "Protege" },
+  de: { sdl3: "Nativer SDL3-Controller", sdl3Description: "Starte dieses Spiel mit nativer SDL3-Controllererkennung.", rename: "Umbenennen", save: "Speichern", options: "App-Optionen", moveApp: "App verschieben", placeApp: "Position bestätigen", network: "Netzwerk", disk: "Datentrager", pid: "PID", threads: "Threads", protected: "Geschutzt" },
+  pt: { sdl3: "Comando nativo SDL3", sdl3Description: "Inicia este jogo com a deteção nativa de comandos SDL3.", rename: "Mudar nome", save: "Guardar", options: "Opcoes da app", moveApp: "Mover app", placeApp: "Confirmar posição", network: "Rede", disk: "Disco", pid: "PID", threads: "threads", protected: "Protegido" },
+  uk: { sdl3: "Нативний контролер SDL3", sdl3Description: "Запускати цю гру з нативним розпізнаванням контролерів SDL3.", rename: "Перейменувати", save: "Зберегти", options: "Параметри програми", moveApp: "Перемістити застосунок", placeApp: "Підтвердити позицію", network: "Мережа", disk: "Диск", pid: "PID", threads: "потоків", protected: "Захищено" },
+  zh: { sdl3: "SDL3 原生控制器", sdl3Description: "启动此游戏时使用 SDL3 原生控制器识别。", rename: "重命名", save: "保存", options: "应用选项", moveApp: "移动应用", placeApp: "确认位置", network: "网络", disk: "磁盘", pid: "PID", threads: "线程", protected: "受保护" },
+  ja: { sdl3: "SDL3 ネイティブコントローラー", sdl3Description: "SDL3 のネイティブコントローラー認識でこのゲームを起動します。", rename: "名前を変更", save: "保存", options: "アプリのオプション", moveApp: "アプリを移動", placeApp: "位置を確定", network: "ネットワーク", disk: "ディスク", pid: "PID", threads: "スレッド", protected: "保護対象" },
+  ko: { sdl3: "SDL3 기본 컨트롤러", sdl3Description: "SDL3 기본 컨트롤러 인식을 사용해 이 게임을 실행합니다.", rename: "이름 바꾸기", save: "저장", options: "앱 옵션", moveApp: "앱 이동", placeApp: "위치 확정", network: "네트워크", disk: "디스크", pid: "PID", threads: "스레드", protected: "보호됨" },
+  hi: { sdl3: "SDL3 नेटिव कंट्रोलर", sdl3Description: "इस गेम को SDL3 की मूल कंट्रोलर पहचान सुविधा के साथ शुरू करें।", rename: "नाम बदलें", save: "सहेजें", options: "ऐप विकल्प", moveApp: "ऐप ले जाएं", placeApp: "स्थान तय करें", network: "नेटवर्क", disk: "डिस्क", pid: "PID", threads: "थ्रेड", protected: "सुरक्षित" },
+  ru: { sdl3: "Нативный контроллер SDL3", sdl3Description: "Запускать эту игру с нативным распознаванием контроллеров SDL3.", rename: "Переименовать", save: "Сохранить", options: "Параметры приложения", moveApp: "Переместить приложение", placeApp: "Подтвердить позицию", network: "Сеть", disk: "Диск", pid: "PID", threads: "потоков", protected: "Защищено" },
 };
 
 const STYLE = `
@@ -577,7 +591,8 @@ const STYLE = `
   .ph-page-scroll::-webkit-scrollbar, .ph-window-rail::-webkit-scrollbar { display: none; }
   .ph-section-title { display: flex; align-items: center; gap: 13px; margin: 4px 0 15px 8px; font-size: 27px; font-weight: 720; }
   .ph-section-title svg { width: 26px; height: 26px; opacity: .9; }
-  .ph-switcher-page { height: 100%; margin-inline: -54px; width: calc(100% + 108px); }
+  .ph-switcher-page { position:relative; height: 100%; margin-inline: -54px; width: calc(100% + 108px); }
+  .ph-window-notice { position:absolute; top:8px; left:54px; right:54px; z-index:5; padding:12px 18px; border-radius:10px; background:#202832; border:1px solid #526174; font-size:16px; line-height:1.4; box-shadow:0 4px 18px #0006; }
   .ph-window-rail { height: 100%; min-width: 0; display: flex; align-items: center; gap: 24px; overflow-x: auto; overflow-y: hidden; padding: 24px 54px 42px; scrollbar-width: none; scroll-padding-inline: 54px; contain: layout paint; }
   .ph-window-rail.ph-single { justify-content: center; }
   .ph-window-card { position: relative; flex: 0 0 clamp(250px, 20vw, 380px); min-width: 0; display: flex; flex-direction: column; color: #fff; border-radius: 30px; transition: flex-basis 260ms cubic-bezier(.2,.82,.2,1), transform 220ms cubic-bezier(.2,.82,.2,1), opacity 170ms ease; animation: phReveal 300ms both; outline: none; transform-origin: center center; }
@@ -1062,6 +1077,8 @@ function TaskSwitcher({ copy, onReady, onSelectWindow }: {
 }) {
   const [windows, setWindows] = useState<WindowEntry[]>(cachedSwitcherWindows);
   const [artwork, setArtwork] = useState<Record<string, string>>(cachedSwitcherArtwork);
+  const [closeNotice, setCloseNotice] = useState<{ handle: string; text: string } | null>(null);
+  const closingHandles = useRef(new Set<string>());
   const rail = useRef<any>(null);
   const readySent = useRef(false);
   const focusedPrimaryHandle = useRef("");
@@ -1084,7 +1101,10 @@ function TaskSwitcher({ copy, onReady, onSelectWindow }: {
       return unchanged ? current : latest;
     });
   }, []);
-  useEffect(() => { void refresh(); const timer = window.setInterval(() => void refresh(), 3500); return () => window.clearInterval(timer); }, [refresh]);
+  useEffect(() => { const poll = () => { void refresh().catch(() => {}); }; poll(); const timer = window.setInterval(poll, 3500); return () => window.clearInterval(timer); }, [refresh]);
+  useEffect(() => {
+    if (closeNotice && !windows.some((entry) => entry.handle === closeNotice.handle)) setCloseNotice(null);
+  }, [windows, closeNotice]);
 
   useLayoutEffect(() => {
     if (readySent.current || windows.length === 0) return;
@@ -1122,7 +1142,7 @@ function TaskSwitcher({ copy, onReady, onSelectWindow }: {
         }));
       }
     };
-    void run();
+    void run().catch(() => {});
     return () => { alive = false; };
   }, [windows.map((entry) => `${entry.handle}:${entry.heroPath}:${entry.bannerPath}`).join("|")]);
 
@@ -1137,22 +1157,39 @@ function TaskSwitcher({ copy, onReady, onSelectWindow }: {
   }, [windows.map((entry) => entry.handle).join("|")]);
 
   const closeEntry = useCallback(async (entry: WindowEntry, index: number) => {
+    if (closingHandles.current.has(entry.handle)) return;
+    closingHandles.current.add(entry.handle);
+    setCloseNotice(null);
     const ordered = sortSwitcherWindows(windows);
     const fallbackHandle = ordered[index + 1]?.handle ?? ordered[index - 1]?.handle ?? "";
-    await closeWindow(entry.handle);
-    window.setTimeout(async () => {
-      await refresh();
+    const message = windowCloseCopy(detectSteamLocale());
+    try {
+      const result = await closeWindow(entry.handle, entry.processId);
+      if (!result?.ok || result.pending || !result.closed) {
+        setCloseNotice({ handle: entry.handle, text: `${entry.title}: ${result?.pending ? message.pending : message.failed}` });
+        return;
+      }
+      // The native reply confirms the window is gone. Remove only this card,
+      // then refresh; a delayed listing must not keep a successfully closed app.
+      setWindows((current) => current.filter((candidate) => candidate.handle !== entry.handle));
+      cachedSwitcherWindows = cachedSwitcherWindows.filter((candidate) => candidate.handle !== entry.handle);
+      await refresh().catch(() => {});
       window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
         activateDashboardSteamContext();
         const selector = fallbackHandle ? `[data-window-card-handle="${fallbackHandle}"]` : "";
         if ((selector && focusDashboard(selector)) || ensureDashboardFocus()) return;
         onReady();
       }));
-    }, 220);
+    } catch {
+      setCloseNotice({ handle: entry.handle, text: `${entry.title}: ${message.failed}` });
+    } finally {
+      closingHandles.current.delete(entry.handle);
+    }
   }, [windows, refresh, onReady]);
 
   return (
     <div className="ph-page ph-switcher-page">
+      {closeNotice ? <div className="ph-window-notice" role="status" aria-live="polite">{closeNotice.text}</div> : null}
       {windows.length === 0 ? (
         <div className="ph-empty"><div className="ph-empty-inner"><FiMonitor /><div className="ph-empty-title">{copy.noWindows}</div><div className="ph-muted">{copy.noWindowsBody}</div></div></div>
       ) : (
@@ -1743,7 +1780,7 @@ function AppOptionsSheet({ shortcut, copy, extra, onCancel, onRemove, onSave }: 
         <div className="ph-options-field">
           <TextField value={name} onChange={(event: any) => setName(event.target.value)} style={{ width: "100%", minWidth: 0 }} />
         </div>
-        <ToggleField label={extra.sdl3} description="Avvia questo gioco con il riconoscimento SDL3 nativo." checked={sdl3} onChange={setSdl3} />
+        <ToggleField label={extra.sdl3} description={extra.sdl3Description} checked={sdl3} onChange={setSdl3} />
         <Focusable className="ph-confirm-actions ph-three" flow-children="horizontal">
           <FocusItem className="ph-confirm-button" onPress={onCancel}>{copy.cancel}</FocusItem>
           <FocusItem className="ph-confirm-button ph-danger" onPress={onRemove}>{copy.remove}</FocusItem>
@@ -1762,7 +1799,8 @@ function DashboardSurface() {
   const [confirm, setConfirm] = useState<{ title: string; name: string; action: () => void } | null>(null);
   const [appOptions, setAppOptions] = useState<{ shortcut: ShortcutEntry; refresh: () => Promise<void> } | null>(null);
   const root = useRef<any>(null);
-  const lastCancelAt = useRef(0);
+  const lastCancelAt = useRef(-Infinity);
+  const cancelHeld = useRef(false);
   const modalReturnFocus = useRef<HTMLElement | null>(null);
   const explicitExit = useRef(false);
   const [steamLocale, setSteamLocale] = useState(detectSteamLocale);
@@ -1880,15 +1918,10 @@ function DashboardSurface() {
     setConfirm({ title, name, action });
   };
   const leaveDashboard = useCallback((focus: "source" | "steam" | "window" | "app", value = "") => {
+    if (explicitExit.current) return;
     explicitExit.current = true;
     const inSteamOverlay = Boolean(dashboardOverlayGameId);
-    closeDashboardOverlay();
-    clearDashboardChrome();
-    Navigation?.NavigateBack?.();
-    // Steam can leave its empty side-menu backdrop mounted when a custom
-    // route returns directly to the library. Remove that native layer after
-    // the route transition so the library is never left blurred.
-    window.setTimeout(() => Navigation?.CloseSideMenus?.(), 60);
+    dashboardExit.leave();
     if (focus === "source") {
       if (!inSteamOverlay) void restoreDashboardSourceFocus();
     } else if (focus === "steam") {
@@ -1912,9 +1945,8 @@ function DashboardSurface() {
     // Steam can dispatch the same physical B press through both onCancel and
     // onCancelButton. Keep one deliberate action per press so nested views do
     // not collapse all the way out of the Dashboard.
-    if (now - lastCancelAt.current < 420) return true;
+    if (!consumeDashboardCancel(event, now, lastCancelAt.current, cancelHeld.current)) return true;
     lastCancelAt.current = now;
-    stopEvent(event, true);
     if (appOptions) { dismissAppOptions(); return true; }
     if (confirm) { dismissConfirm(); return true; }
     if (tab === "apps" && appsLibrary) { setAppsLibrary(false); return true; }
@@ -1988,6 +2020,11 @@ function DashboardSurface() {
       noFocusRing
       onButtonDown={(event: any) => {
         const button = Number(event?.detail?.button);
+        if (button === (GamepadButton?.CANCEL ?? 2)) {
+          cancelDashboard(event);
+          cancelHeld.current = true;
+          return;
+        }
         const active = currentDashboardFocus();
         if (button === GamepadButton?.DIR_UP && active?.classList.contains("ph-tab")) {
           stopDirectionalEvent(event);
@@ -2044,6 +2081,11 @@ function DashboardSurface() {
       }}
       onButtonUp={(event: any) => {
         const button = Number(event?.detail?.button);
+        if (button === (GamepadButton?.CANCEL ?? 2)) {
+          cancelHeld.current = false;
+          stopEvent(event, true);
+          return;
+        }
         if (button === 5 || button === 6) stopEvent(event, true);
       }}
       onCancel={cancelDashboard}
@@ -2118,8 +2160,7 @@ export function DashboardPage() {
       }
       if (performance.now() - startedAt >= 1100) {
         window.clearInterval(timer);
-        closeDashboardOverlay();
-        Navigation?.NavigateBack?.();
+        dashboardExit.leave();
         logToAgent("overlay Dashboard annullato: browser Steam non disponibile");
       }
     }, 40);
@@ -2132,8 +2173,7 @@ export function DashboardPage() {
     const returnToSource = () => {
       if (leaving) return;
       leaving = true;
-      closeDashboardOverlay();
-      Navigation?.NavigateBack?.();
+      dashboardExit.leave();
     };
     const frame = window.requestAnimationFrame(() => {
       const mounted = Boolean(portalTarget.querySelector(".ph-dashboard"));

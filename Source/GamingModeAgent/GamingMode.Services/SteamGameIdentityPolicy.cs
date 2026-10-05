@@ -15,6 +15,15 @@ internal static class SteamGameIdentityPolicy
 			|| name.Equals("GameOverlayUI", StringComparison.OrdinalIgnoreCase);
 	}
 
+	public static bool IsXboxLaunchHelper(string? processName)
+	{
+		string name = Path.GetFileNameWithoutExtension(processName ?? "");
+		return name.Equals("gamingservicesui", StringComparison.OrdinalIgnoreCase)
+			|| name.Equals("gamingservices", StringComparison.OrdinalIgnoreCase)
+			|| name.Equals("gamingservicesnet", StringComparison.OrdinalIgnoreCase)
+			|| name.Equals("gamelaunchhelper", StringComparison.OrdinalIgnoreCase);
+	}
+
 	// Tracking is logged after process creation, to second precision. A newer
 	// process with the same PID cannot inherit an earlier game's identity.
 	public static bool IsCurrentProcess(DateTime processStarted, DateTime trackedAt)

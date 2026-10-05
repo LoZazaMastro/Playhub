@@ -146,3 +146,15 @@ and icon catalog under GPL-3.0-only. See GamingModeDeckyPlugin/gaming-mode/LICEN
 Tabler icon artwork retains its MIT license and notice in src/qamIcons.ts.
 Corresponding source: https://github.com/LoZazaMastro/Playhub
 Local source: Source/GamingModeDeckyPlugin (including src/qamIcons.ts and src/QamShortcutsView.tsx).
+
+Playhub Xbox Session
+The separate Playhub.XboxSession.exe launcher includes the WSGM full-trust packaged
+game handoff route under GPL-3.0-only, from commit 1329813f673af665433f618db178ceeea081afbc.
+Copyright 2026 Andrea Sgarro and the WSGM contributors. No warranty.
+The complete license, notices, modifications and corresponding buildable source
+are included in XboxSession/source. See its LICENSE, NOTICE.md and BUILD.md.
+Repository source: Source/Playhub.XboxSession.
+Upstream: https://github.com/KillerPixelCrew/WSGM
+Normal Xbox imports use Playhub.GameSession and original Windows activation.
+This helper's renderer handoff requires the explicit --gdk-experimental command.
+The GPL code is not linked into the MIT application.

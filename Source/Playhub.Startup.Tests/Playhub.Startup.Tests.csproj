@@ -12,5 +12,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250205002" />
     <Compile Include="..\Playhub\Services\SingleInstanceService.cs" Link="SingleInstanceService.cs" />
+    <Compile Include="..\Playhub\Services\SingleInstanceRedirect.cs" Link="SingleInstanceRedirect.cs" />
+    <Compile Include="..\Playhub\Services\BundledExecutableCopy.cs" Link="BundledExecutableCopy.cs" />
   </ItemGroup>
 </Project>

@@ -38,6 +38,8 @@ New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 # Qui si aspetta di poter davvero scrivere sul file prima di provarci.
 Get-Process -Name "GamingMode" -ErrorAction SilentlyContinue | ForEach-Object {
   try {
+    if ($_.SessionId -ne [Diagnostics.Process]::GetCurrentProcess().SessionId) { return }
+    if (-not [string]::Equals([IO.Path]::GetFullPath($_.Path), [IO.Path]::Combine($InstallDir, 'GamingMode.exe'), [StringComparison]::OrdinalIgnoreCase)) { return }
     if (-not $_.CloseMainWindow()) {
       $_.Kill()
     }
@@ -119,6 +121,9 @@ if (-not $NoStartupTask) {
   $Startup.Save()
 }
 
+# Only this explicit installer re-enables a component removed by its owner.
+$DisabledMarker = Join-Path $env:APPDATA 'GamingMode\disabled-by-user'
+if (Test-Path -LiteralPath $DisabledMarker) { Remove-Item -LiteralPath $DisabledMarker -Force }
 Start-Process -FilePath $Exe -ArgumentList "agent" -WindowStyle Hidden -WorkingDirectory $InstallDir
 $AgentReady = $false
 for ($i = 0; $i -lt 20; $i++) {

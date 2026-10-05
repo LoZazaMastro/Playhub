@@ -1,0 +1,10 @@
+import { createRequire } from 'node:module';
+import { pathToFileURL, fileURLToPath } from 'node:url';
+import path from 'node:path';
+const source = process.env.PLAYHUB_PLUGIN_SOURCE || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../GamingModeDeckyPlugin');
+const require = createRequire(path.join(source, 'package.json'));
+const { rollup } = await import(pathToFileURL(require.resolve('rollup')));
+const { default: config } = await import('./rollup.config.mjs');
+const bundle = await rollup(config);
+await bundle.write(config.output);
+await bundle.close();

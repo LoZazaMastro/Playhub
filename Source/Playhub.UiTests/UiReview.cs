@@ -27,6 +27,27 @@ public sealed partial class MainWindow
 {
     internal async Task RunUiReviewAsync()
     {
+        if (Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_NORMAL") == "1")
+        {
+            _settings.Language = "it";
+            ApplyTheme(); ApplyLanguage();
+            return;
+        }
+        if (Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_DECKY_REPAIR") == "1")
+        {
+            _settings.Language = "it";
+            ApplyTheme(); ApplyLanguage();
+            await ShowDeckyRepairDialogAsync();
+            return;
+        }
+#if PLAYHUB_EMULATION
+        if (Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_EMULATION_INTERACTIVE") == "1")
+        {
+            _settings.Language = "it";
+            ApplyTheme(); ApplyLanguage(); RequestEmulationRoute("overview");
+            return;
+        }
+#endif
         var output = Path.Combine(AppContext.BaseDirectory, "ui-review");
         Directory.CreateDirectory(output);
         var results = new List<string>();
@@ -53,6 +74,13 @@ public sealed partial class MainWindow
             _settings.AccentColor = "#FFCB0F";
             ApplyTheme();
             ApplyLanguage();
+#if PLAYHUB_EMULATION
+            if (Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_EMULATION_ONLY") == "1")
+            {
+                await ReviewEmulationPagesAsync(output, Check);
+                return;
+            }
+#endif
             if (Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_UPDATE_SCROLL_ONLY") == "1")
             {
                 await ReviewNativeUpdateScrollAsync(output, Check);

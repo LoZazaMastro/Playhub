@@ -1,0 +1,13 @@
+Playhub autonomous media tools
+
+Playhub invokes these programs as separate processes. No plugin backend, installed plugin tool, PATH lookup or automatic tool update is used. All tools and private interpreter dependencies are checked against runtime-manifest.json before starting a job.
+
+The yt-dlp.exe file is Playhub's original MIT Windows launcher, not the upstream PyInstaller executable. Its source and MIT license are in Sources. It starts only the adjacent private Python interpreter with the adjacent official zipimport yt-dlp.pyz. yt-dlp and yt-dlp-ejs are Unlicense; the embedded JavaScript dependencies meriyah and astring are ISC and MIT. Their complete attribution and terms are in YTDLP-EJS-DEPENDENCIES-LICENSE.txt and the original source archives. Remote JS components are disabled; the packaged Node runtime executes the bundled solver when needed.
+
+The private CPython 3.14.8 Windows embedded distribution is unchanged except python314._pth, which restricts import paths to its stdlib, its own directory and ../yt-dlp.pyz. Site import is disabled. Python/LICENSE.txt includes the PSF license and bundled third-party terms. The matching complete Python source archive is included.
+
+Node.js 24.21.0 is the official Windows x64 executable. NODE-LICENSE.txt contains MIT and bundled third-party terms; Sources contains the matching complete official source archive.
+
+FFmpeg and ffprobe 8.1.1 are locally compiled minimal LGPL 2.1-or-later builds with GPL, nonfree, version3, autodetection and network disabled. FFMPEG-LICENSE.txt supplies LGPL 2.1. Sources contains the matching complete upstream source archive, exact configuration, original build scripts and portable rebuild scripts. No proprietary application objects are linked into these executables. Users may rebuild and replace them; update the adjacent local runtime inventory hashes after replacement so the integrity guard accepts their rebuilt tools. The binaries use the GCC runtime exception; GCC-COPYING3.txt, GCC-COPYING.RUNTIME.txt and GCC-COPYING.LIB.txt provide those terms. MINGW-COPYING.txt, MINGW-RUNTIME-LICENSE.txt and MINGW-LICENSE.txt include the MinGW CRT public-domain, permissive and ZPL attribution used by locally compiled Windows programs.
+
+These tools decode and encode only during explicit requests. No polling, background downloads or automatic updates are started by this package.

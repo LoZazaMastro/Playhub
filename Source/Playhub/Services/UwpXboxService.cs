@@ -1,4 +1,4 @@
-﻿using Playhub.Models;
+using Playhub.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,19 +14,15 @@ using VDFParser.Models;
 
 namespace Playhub.Services;
 
-public sealed record SteamGridArtworkOption(string Url, string PreviewUrl, int Width, int Height);
+public sealed record SteamGridArtworkOption(string Url, string PreviewUrl, int Width, int Height,
+    string? Provider = null, string? AuthorName = null, string? AuthorSteamId = null);
 public sealed record SteamGridGameOption(int Id, string Name, int? ReleaseYear, bool Verified);
 
 /// <summary>
 /// Imports UWP / Xbox Game Pass games into Steam.
 ///
-/// This uses the EXACT engine of UWPHook: shortcuts.vdf is read and written with
-/// the original VDFParser library (vendored under Vendor/VDFParser), the exported
-/// shortcut points at UWPHook.exe with launch options "{aumid} {executable}", and
-/// the Steam grid app id is crc32(exe + name) | 0x80000000 - byte-for-byte the
-/// same as UWPHook. The previous hand-rolled binary writer produced a malformed
-/// file (missing terminator) which is what caused the missing games and the
-/// "LoadLibrary failed with error 87" overlay error.
+/// Uses UWPHook's VDFParser and retains existing Steam identities. GameSession
+/// prepares the desktop shell before Xbox activation and tracks game lifetime.
 /// </summary>
 public sealed class UwpXboxService
 {
@@ -132,6 +128,46 @@ public sealed class UwpXboxService
             .ToList();
     }
 
+    /// <summary>Reads the real shortcut ID using the exporter's identity predicate; ambiguity never picks another game.</summary>
+    public uint? TryGetSteamShortcutAppId(UwpGameEntry game)
+    {
+        var steamFolder = UwpHookSteamManager.GetSteamFolder();
+        if (steamFolder is null) return null;
+        try
+        {
+            return global::Playhub.Importing.ImportedShortcutIdentity.Resolve(
+                UwpHookSteamManager.GetUsers(steamFolder).Select(UwpHookSteamManager.ReadShortcuts), entry => MatchesGame(entry, game));
+        }
+        catch (IOException) { return null; }
+        catch (UnauthorizedAccessException) { return null; }
+    }
+
+    /// <summary>Reads exact matching profile locations; never authorizes a different shortcut or writes Steam state.</summary>
+    public IReadOnlyList<string> TryGetSteamGridDirectories(UwpGameEntry game)
+    {
+        var steamFolder = UwpHookSteamManager.GetSteamFolder();
+        if (steamFolder is null) return Array.Empty<string>();
+        try
+        {
+            var profiles = UwpHookSteamManager.GetUsers(steamFolder).Select(user => (User:user,Entries:UwpHookSteamManager.ReadShortcuts(user))).ToArray();
+            var id = global::Playhub.Importing.ImportedShortcutIdentity.Resolve(profiles.Select(profile=>profile.Entries),entry=>MatchesGame(entry,game));
+            if (id is not > 0) return Array.Empty<string>();
+            var paths = new List<string>();
+            foreach(var profile in profiles)
+            {
+                if (!Path.GetFileName(profile.User).All(char.IsAsciiDigit)) continue;
+                var matches = profile.Entries.Where(entry=>MatchesGame(entry,game)).ToArray();
+                if(matches.Length != 1 || unchecked((uint)matches[0].appid) != id.Value) continue;
+                var grid = Path.Combine(profile.User,"config","grid");
+                global::Playhub.Integrations.ApplicationIntegrationDataStore.GuardPath(grid);
+                paths.Add(Path.GetFullPath(grid));
+            }
+            return paths;
+        }
+        catch(IOException) { return Array.Empty<string>(); }
+        catch(UnauthorizedAccessException) { return Array.Empty<string>(); }
+    }
+
     public void RefreshLibraryState(IEnumerable<UwpGameEntry> games)
     {
         var gameList = games.ToList();
@@ -169,12 +205,116 @@ public sealed class UwpXboxService
                 game.InSteamLibrary = true;
                 var gridDirectory = Path.Combine(user, "config", "grid");
                 var unsignedAppId = unchecked((uint)shortcut.appid);
-                var existingCover = FindExistingImage(gridDirectory, unsignedAppId + "p");
-                if (!string.IsNullOrWhiteSpace(existingCover))
+                var actual = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                AddSteamArtwork(actual, "cover", FindExistingImage(gridDirectory, unsignedAppId + "p"));
+                AddSteamArtwork(actual, "banner", FindExistingImage(gridDirectory, unsignedAppId.ToString()));
+                AddSteamArtwork(actual, "hero", FindExistingImage(gridDirectory, unsignedAppId + "_hero"));
+                AddSteamArtwork(actual, "logo", FindExistingImage(gridDirectory, unsignedAppId + "_logo"));
+                if (File.Exists(shortcut.Icon)) actual["icon"] = shortcut.Icon;
+                ImportedArtworkSelection.RefreshSteam(game, actual);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reads the artwork that Steam is actually using for a shortcut. This is
+    /// deliberately sourced from Steam's grid directory rather than from the
+    /// Playhub cache, so the artwork summary reflects the files Steam ROM
+    /// Manager and Steam itself will render.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> ReadCurrentSteamArtwork(UwpGameEntry game)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var steamFolder = UwpHookSteamManager.GetSteamFolder();
+        if (steamFolder is null)
+        {
+            return result;
+        }
+
+        foreach (var user in UwpHookSteamManager.GetUsers(steamFolder))
+        {
+            VDFEntry[] shortcuts;
+            try
+            {
+                shortcuts = UwpHookSteamManager.ReadShortcuts(user);
+            }
+            catch
+            {
+                continue;
+            }
+
+            var shortcut = shortcuts.FirstOrDefault(entry => MatchesGame(entry, game));
+            if (shortcut is null)
+            {
+                continue;
+            }
+
+            var grid = Path.Combine(user, "config", "grid");
+            var appId = unchecked((uint)shortcut.appid);
+            AddSteamArtwork(result, "cover", FindExistingImage(grid, appId + "p"));
+            AddSteamArtwork(result, "banner", FindExistingImage(grid, appId.ToString()));
+            AddSteamArtwork(result, "hero", FindExistingImage(grid, appId + "_hero"));
+            AddSteamArtwork(result, "logo", FindExistingImage(grid, appId + "_logo"));
+            if (!string.IsNullOrWhiteSpace(shortcut.Icon) && File.Exists(shortcut.Icon))
+            {
+                result["icon"] = shortcut.Icon;
+            }
+            return result;
+        }
+
+        return result;
+    }
+
+    public IReadOnlyDictionary<string, string> ReadSelectedArtwork(UwpGameEntry game)
+        => ImportedArtworkSelection.Current(game, ReadCurrentSteamArtwork(game));
+
+    public async Task RemoveArtworkAsync(UwpGameEntry game, string artworkType, CancellationToken ct = default)
+    {
+        var type = NormalizeArtworkType(artworkType);
+        ct.ThrowIfCancellationRequested();
+        var steam = UwpHookSteamManager.GetSteamFolder();
+        if (steam is not null)
+        {
+            var users = UwpHookSteamManager.GetUsers(steam);
+            var profiles = users.ToDictionary(user => user, UwpHookSteamManager.ReadShortcuts);
+            if (XboxSteamShortcut.HasAmbiguousMatches(profiles.Values, entry => MatchesGame(entry, game)))
+                throw new IOException("The game's Steam shortcut identity is ambiguous.");
+            if (type == "icon" && profiles.Values.Any(entries => entries.Any(entry => MatchesGame(entry, game))))
+            {
+                await SteamLibraryEditSession.RunAsync(() =>
                 {
-                    game.SteamGridDbCoverPath = existingCover;
+                    ct.ThrowIfCancellationRequested();
+                    foreach (var user in users)
+                    {
+                        var entries = UwpHookSteamManager.ReadShortcuts(user);
+                        var match = entries.SingleOrDefault(entry => MatchesGame(entry, game));
+                        if (match is null) continue;
+                        // Clear this shortcut's reference, never delete a shared/local source icon.
+                        match.Icon = "";
+                        UwpHookSteamManager.WriteShortcuts(entries, Path.Combine(user, "config", "shortcuts.vdf"));
+                    }
+                    return Task.FromResult(true);
+                });
+            }
+            else if (type != "icon")
+            {
+                foreach (var profile in profiles)
+                {
+                    var match = profile.Value.SingleOrDefault(entry => MatchesGame(entry, game));
+                    if (match is null) continue;
+                    ImportedArtworkSelection.RemoveExactFiles(Path.Combine(profile.Key, "config", "grid"), unchecked((uint)match.appid), type,
+                        Path.Combine(AppPaths.LocalDataRoot, "backups", "removed-artwork", Guid.NewGuid().ToString("N")), ct);
                 }
             }
+        }
+        ImportedArtworkSelection.Choose(game, type, null);
+    }
+
+    private static void AddSteamArtwork(IDictionary<string, string> result, string type, string? path)
+    {
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            result[type] = path;
         }
     }
 
@@ -195,7 +335,7 @@ public sealed class UwpXboxService
         using var metadataGate = new SemaphoreSlim(4);
         var tasks = games.Select(async game =>
         {
-            if (game.SteamGridDbArtworkDisabled)
+            if (game.SteamGridDbArtworkDisabled || game.ArtworkChoices.ContainsKey("cover"))
             {
                 return;
             }
@@ -442,6 +582,7 @@ public sealed class UwpXboxService
         }
 
         game.SteamGridDbCoverPath = downloaded;
+        ImportedArtworkSelection.Choose(game, "cover", downloaded);
         ApplyArtworkToExistingSteamShortcuts(game, "cover", downloaded);
         return true;
     }
@@ -503,7 +644,9 @@ public sealed class UwpXboxService
                     : 0;
                 return string.IsNullOrWhiteSpace(url)
                     ? null
-                    : new SteamGridArtworkOption(url, string.IsNullOrWhiteSpace(preview) ? url : preview!, width, height);
+                    : new SteamGridArtworkOption(url, string.IsNullOrWhiteSpace(preview) ? url : preview!, width, height,"steamgriddb",
+                        item.TryGetProperty("author",out var author)&&author.ValueKind==JsonValueKind.Object&&author.TryGetProperty("name",out var authorName)&&authorName.ValueKind==JsonValueKind.String?authorName.GetString():null,
+                        item.TryGetProperty("author",out var authorId)&&authorId.ValueKind==JsonValueKind.Object&&authorId.TryGetProperty("steam64",out var authorSteamId)?authorSteamId.ToString():null);
             })
             .Where(option => option is not null)
             .Cast<SteamGridArtworkOption>()
@@ -679,16 +822,43 @@ public sealed class UwpXboxService
         var cacheDirectory = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb", "selected", cacheKey);
         Directory.CreateDirectory(cacheDirectory);
 
-        var imageUri = new Uri(artwork.Url);
-        var extension = NormalizeImageExtension(Path.GetExtension(imageUri.AbsolutePath));
+        var local = File.Exists(artwork.Url);
+        var imageUri = local ? null : new Uri(artwork.Url);
+        var extension = NormalizeImageExtension(Path.GetExtension(local ? artwork.Url : imageUri!.AbsolutePath));
         var destination = Path.Combine(cacheDirectory, normalizedType + extension);
-        var bytes = await _http.GetByteArrayAsync(imageUri);
-        await File.WriteAllBytesAsync(destination, bytes);
+        if (local) File.Copy(artwork.Url, destination, true);
+        else await File.WriteAllBytesAsync(destination, await _http.GetByteArrayAsync(imageUri!));
         SetSelectedArtworkPath(game, normalizedType, destination);
+        ImportedArtworkSelection.Choose(game, normalizedType, destination);
         return ApplyArtworkToExistingSteamShortcuts(game, normalizedType, destination);
     }
 
     public async Task<string> ExportSelectedToSteamAsync(IEnumerable<UwpGameEntry> games, string steamGridDbApiKey = "")
+    {
+        var selected = games.Where(game => game.Selected).ToList();
+        if (selected.Count == 0) return "Seleziona almeno un gioco da importare.";
+        if (selected.Any(game => game.ArtworkChoices.Values.Any(path => path is not null && !File.Exists(path))))
+            return "L'artwork scelto non è più disponibile. Scegli un altro file prima di importare.";
+        foreach (var game in selected)
+        {
+            foreach (var artwork in ReadCurrentSteamArtwork(game))
+            {
+                if (game.ArtworkChoices.ContainsKey(artwork.Key)) continue;
+                var chosen = GetSelectedArtworkPath(game, artwork.Key);
+                if (string.IsNullOrWhiteSpace(chosen) || !File.Exists(chosen))
+                    SetSelectedArtworkPath(game, artwork.Key, artwork.Value);
+            }
+        }
+        // Network work precedes the short exclusive write phase.
+        if (!string.IsNullOrWhiteSpace(steamGridDbApiKey))
+        {
+            await PopulateSteamGridDbCoversAsync(selected, steamGridDbApiKey);
+            await PopulateMissingSteamGridDbArtworkAsync(selected, steamGridDbApiKey);
+        }
+        return await SteamLibraryEditSession.RunAsync(() => ExportWhileSteamClosedAsync(selected));
+    }
+
+    private async Task<string> ExportWhileSteamClosedAsync(IEnumerable<UwpGameEntry> games, string steamGridDbApiKey = "")
     {
         var selected = games.Where(g => g.Selected).ToList();
         if (selected.Count == 0)
@@ -713,17 +883,31 @@ public sealed class UwpXboxService
             return "Non trovo alcun profilo Steam su questo PC.";
         }
 
+        var profiles = new Dictionary<string, VDFEntry[]>();
+        try
+        {
+            foreach (var user in users) profiles[user] = UwpHookSteamManager.ReadShortcuts(user);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return "Sicurezza di Windows impedisce a Playhub di leggere la libreria Steam.";
+        }
+        foreach (var game in selected)
+        {
+            if (XboxSteamShortcut.HasAmbiguousMatches(profiles.Values, entry => MatchesGame(entry, game)))
+                return $"Il gioco {game.Name} ha collegamenti Steam duplicati o identità diverse tra i profili. Risolvi il conflitto prima di importarlo.";
+        }
+
         string? uwpHookExe = null;
         if (selected.Any(game => !game.IsLocalExecutable))
         {
             uwpHookExe = ResolveUwpHookLauncher();
-            if (uwpHookExe is null)
-            {
-                return "Non trovo il componente UWPHook integrato. Reinstalla Playhub e riprova.";
-            }
         }
 
         var uwpHookDir = uwpHookExe is null ? "" : Path.GetDirectoryName(uwpHookExe) ?? AppContext.BaseDirectory;
+        var sessionExe = Path.Combine(AppContext.BaseDirectory, "Playhub.GameSession.exe");
+        if (!File.Exists(sessionExe))
+            return "Non trovo il componente di avvio Playhub.GameSession. Ripristina l'installazione di Playhub e riprova.";
         var backupRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Briano", "UWPHook", "backups");
         Directory.CreateDirectory(backupRoot);
 
@@ -756,7 +940,7 @@ public sealed class UwpXboxService
             VDFEntry[] shortcuts;
             try
             {
-                shortcuts = UwpHookSteamManager.ReadShortcuts(user);
+                shortcuts = profiles[user];
             }
             catch (UnauthorizedAccessException)
             {
@@ -766,38 +950,29 @@ public sealed class UwpXboxService
 
             foreach (var game in selected)
             {
-                var targetExe = GetTargetExecutable(game, uwpHookExe);
+                var targetExe = GetTargetExecutable(game, uwpHookExe ?? sessionExe);
                 var targetDirectory = game.IsLocalExecutable
                     ? QuotePath(Path.GetDirectoryName(game.LocalExecutablePath) ?? "")
                     : uwpHookDir;
-                var appId = unchecked((int)Crc32.SteamGridAppId(game.Name, targetExe));
+                var appId = XboxSteamShortcut.ResolveAppId(profiles.Values, entry => MatchesGame(entry, game),
+                    unchecked((int)Crc32.SteamGridAppId(game.Name, targetExe)));
                 var icon = !string.IsNullOrWhiteSpace(game.SteamGridDbIconPath) && File.Exists(game.SteamGridDbIconPath)
                     ? game.SteamGridDbIconPath
                     : game.IsLocalExecutable ? game.LocalExecutablePath : TryPersistIcon(game);
 
-                var entry = new VDFEntry
-                {
-                    appid = appId,
-                    AppName = game.Name,
-                    Exe = targetExe,
-                    StartDir = targetDirectory,
-                    Icon = icon,
-                    ShortcutPath = "",
-                    LaunchOptions = game.IsLocalExecutable ? "" : game.Aumid + " " + game.Executable,
-                    IsHidden = 0,
-                    AllowDesktopConfig = 1,
-                    AllowOverlay = 1,
-                    OpenVR = 0,
-                    Devkit = 0,
-                    DevkitGameID = "",
-                    LastPlayTime = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                    Tags = new[] { game.IsLocalExecutable ? "Playhub" : "Xbox" }
-                };
-
-                var existingIndex = Array.FindIndex(shortcuts, s =>
-                    MatchesGame(s, game) ||
-                    (string.Equals(s.AppName, game.Name, StringComparison.OrdinalIgnoreCase) &&
-                     PathsEqual(s.Exe, targetExe)));
+                var existingIndex = Array.FindIndex(shortcuts, s => MatchesGame(s, game));
+                var existing = existingIndex >= 0 ? shortcuts[existingIndex] : null;
+                // Keep the shortcut identity (and its artwork/collections) when
+                // changing the launcher. Steam must keep tracking our session
+                // even if a game's bootstrapper exits or registers another AppID.
+                var oldArguments = existing?.LaunchOptions ?? game.SourceLaunchArguments;
+                var alreadyTracked = existing is not null && IsSessionShortcut(existing);
+                var launchOptions = game.IsLocalExecutable
+                        ? alreadyTracked ? oldArguments : "--game " + targetExe + (oldArguments.Length > 0 ? " " + oldArguments : "")
+                        : global::Playhub.GameSession.UwpShortcutArguments.Build(game.Aumid, game.Executable, existing?.LaunchOptions ?? game.SourceLaunchArguments);
+                var entry = XboxSteamShortcut.Create(existing, appId, game.Name, sessionExe,
+                    game.IsLocalExecutable ? targetDirectory : QuotePath(AppContext.BaseDirectory),
+                    icon, launchOptions, game.IsLocalExecutable, (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
                 if (existingIndex >= 0)
                 {
@@ -824,7 +999,8 @@ public sealed class UwpXboxService
 
             foreach (var game in selected)
             {
-                ApplySelectedArtworkForUser(game, user, Crc32.SteamGridAppId(game.Name, GetTargetExecutable(game, uwpHookExe)));
+                var imported = shortcuts.First(s => MatchesGame(s, game));
+                ApplySelectedArtworkForUser(game, user, unchecked((uint)imported.appid));
             }
         }
 
@@ -834,7 +1010,7 @@ public sealed class UwpXboxService
             return "Sicurezza di Windows impedisce a Playhub di aggiornare la libreria. Consenti Playhub in “Accesso alle cartelle controllato”, poi riprova.";
         }
 
-        return $"Ho aggiunto {selected.Count} giochi a Steam. Riavvia Steam per vederli.";
+        return $"Ho aggiunto {selected.Count} giochi alla libreria Steam.";
     }
 
     private static string TryPersistIcon(UwpGameEntry game)
@@ -866,13 +1042,19 @@ public sealed class UwpXboxService
     {
         if (game.IsLocalExecutable)
         {
-            return PathsEqual(entry.Exe, game.LocalExecutablePath);
+            if (PathsEqual(entry.Exe, game.LocalExecutablePath)) return true;
+            if (!IsSessionShortcut(entry)) return false;
+            var arguments = CommandLine.Parse(entry.LaunchOptions ?? "");
+            return arguments.Count >= 2 && arguments[0] == "--game" &&
+                   PathsEqual(arguments[1], game.LocalExecutablePath);
         }
 
-        var launchOptions = entry.LaunchOptions ?? "";
-        return string.Equals(launchOptions, game.Aumid, StringComparison.OrdinalIgnoreCase) ||
-               launchOptions.StartsWith(game.Aumid + " ", StringComparison.OrdinalIgnoreCase);
+        return global::Playhub.GameSession.UwpShortcutArguments.Matches(entry.LaunchOptions ?? "", game.Aumid);
     }
+
+    private static bool IsSessionShortcut(VDFEntry entry) =>
+        string.Equals(Path.GetFileName((entry.Exe ?? "").Trim().Trim('"')),
+            "Playhub.GameSession.exe", StringComparison.OrdinalIgnoreCase);
 
     private static string GetTargetExecutable(UwpGameEntry game, string? uwpHookExe)
     {
@@ -1034,11 +1216,7 @@ public sealed class UwpXboxService
 
     private static void ApplySelectedArtworkForUser(UwpGameEntry game, string userPath, uint appId)
     {
-        if (game.SteamGridDbArtworkDisabled)
-        {
-            return;
-        }
-
+        if (game.SteamGridDbArtworkDisabled && game.ArtworkChoices.Count == 0) return;
         foreach (var selection in new[]
         {
             (Type: "cover", Path: game.SteamGridDbCoverPath),
@@ -1047,9 +1225,19 @@ public sealed class UwpXboxService
             (Type: "logo", Path: game.SteamGridDbLogoPath)
         })
         {
+            if (game.SteamGridDbArtworkDisabled && !game.ArtworkChoices.ContainsKey(selection.Type)) continue;
+            if (game.ArtworkChoices.TryGetValue(selection.Type, out var explicitPath))
+            {
+                if (explicitPath is null)
+                    ImportedArtworkSelection.RemoveExactFiles(Path.Combine(userPath, "config", "grid"), appId, selection.Type,
+                        Path.Combine(userPath, "config", "playhub-artwork-backups", Guid.NewGuid().ToString("N")), default);
+                else if (File.Exists(explicitPath)) CopyArtworkToGrid(userPath, appId, selection.Type, explicitPath);
+                else throw new FileNotFoundException("The selected artwork is no longer available.", explicitPath);
+                continue;
+            }
             if (!string.IsNullOrWhiteSpace(selection.Path) && File.Exists(selection.Path))
             {
-                CopyArtworkToGrid(userPath, appId, selection.Type, selection.Path);
+                XboxSteamShortcut.ApplyArtworkIfMissing(userPath, appId, selection.Type, selection.Path, CopyArtworkToGrid);
             }
         }
     }
@@ -1057,30 +1245,8 @@ public sealed class UwpXboxService
     private static void CopyArtworkToGrid(string userPath, uint appId, string artworkType, string sourcePath)
     {
         var gridDirectory = Path.Combine(userPath, "config", "grid");
-        Directory.CreateDirectory(gridDirectory);
-        var baseName = NormalizeArtworkType(artworkType) switch
-        {
-            "banner" => appId.ToString(),
-            "hero" => appId + "_hero",
-            "logo" => appId + "_logo",
-            _ => appId + "p"
-        };
-
-        foreach (var extension in new[] { ".png", ".jpg", ".jpeg", ".webp" })
-        {
-            var oldPath = Path.Combine(gridDirectory, baseName + extension);
-            if (!string.Equals(oldPath, sourcePath, StringComparison.OrdinalIgnoreCase) && File.Exists(oldPath))
-            {
-                try { File.Delete(oldPath); } catch { }
-            }
-        }
-
-        var destination = Path.Combine(gridDirectory, baseName + NormalizeImageExtension(Path.GetExtension(sourcePath)));
-        if (string.Equals(Path.GetFullPath(sourcePath), Path.GetFullPath(destination), StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-        File.Copy(sourcePath, destination, overwrite: true);
+        ImportedArtworkSelection.ReplaceExactFile(gridDirectory, appId, NormalizeArtworkType(artworkType), sourcePath,
+            Path.Combine(userPath, "config", "playhub-artwork-backups", Guid.NewGuid().ToString("N")), default);
     }
 
     private static string? FindExistingImage(string directory, string fileNameWithoutExtension)
@@ -1260,6 +1426,7 @@ public sealed class UwpXboxService
                 {
                     try
                     {
+                        if (game.ArtworkChoices.ContainsKey(artworkType)) continue;
                         var currentPath = GetSelectedArtworkPath(game, artworkType);
                         if (!string.IsNullOrWhiteSpace(currentPath) && File.Exists(currentPath))
                         {

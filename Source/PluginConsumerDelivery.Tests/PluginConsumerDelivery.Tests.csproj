@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../ApplicationIntegrations/Native/PluginConsumerDelivery.cs" Link="PluginConsumerDelivery.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/GameIntegrationEditorService.cs" Link="GameIntegrationEditorService.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/SteamPluginBridge.cs" Link="SteamPluginBridge.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/ApplicationIntegrationCoordinator.cs" Link="ApplicationIntegrationCoordinator.cs" />
+    <Compile Include="../ApplicationIntegrations/ApplicationIntegrationDataStore.cs" Link="ApplicationIntegrationDataStore.cs" />
+    <Compile Include="../ApplicationIntegrations/ApplicationMediaAcquisition.cs" Link="ApplicationMediaAcquisition.cs" />
+    <Compile Include="../ApplicationIntegrations/ApplicationToolRunner.cs" Link="ApplicationToolRunner.cs" />
+  <Compile Include="../Playhub/Importing/PreparedIntegrationDelivery.cs" Link="PreparedIntegrationDelivery.cs" /></ItemGroup>
+</Project>

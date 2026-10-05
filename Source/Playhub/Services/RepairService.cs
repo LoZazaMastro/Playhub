@@ -28,6 +28,7 @@ public sealed class RepairService
         var notes = new List<string>();
         var found = 0;
         var fixedCount = 0;
+        var agentInstalled = _gamingMode.IsInstalled;
 
         // ---------- 1) File del pacchetto Playhub ----------
         progress.Report((0.05, "Controllo i file di Playhub…"));
@@ -35,15 +36,16 @@ public sealed class RepairService
         var payloadReady = false;
         try
         {
-            payloadReady = await Task.Run(() => GamingModeRepairPayload.IsCurrent(
-                AppPaths.GamingModePackage, _gamingMode.InstallDir));
+            if (agentInstalled)
+                payloadReady = await Task.Run(() => GamingModeRepairPayload.IsCurrent(
+                    AppPaths.GamingModePackage, _gamingMode.InstallDir));
         }
         catch
         {
             found++;
             notes.Add("Il pacchetto Gaming Mode incluso in Playhub è incompleto: reinstalla Playhub per ripristinarlo.");
         }
-        if (!payloadReady && found == 0)
+        if (agentInstalled && !payloadReady && found == 0)
         {
             found++;
             progress.Report((0.25, "Sistemo Gaming Mode…"));
@@ -74,7 +76,7 @@ public sealed class RepairService
         try
         {
             // Read only: model round-trips normalize user choices and discard unknown fields.
-            apiPort = GamingModeRepairPayload.ReadApiPort(_gamingMode.ConfigFile);
+            if (agentInstalled) apiPort = GamingModeRepairPayload.ReadApiPort(_gamingMode.ConfigFile);
         }
         catch
         {
@@ -129,7 +131,9 @@ public sealed class RepairService
         progress.Report((0.86, "Verifico la modalità di avvio…"));
         try
         {
-            var startup = await Task.Run(() => GamingModeRepairPayload.CheckStartup(_gamingMode.InstalledExe, payloadReady));
+            var startup = agentInstalled
+                ? await Task.Run(() => GamingModeRepairPayload.CheckStartup(_gamingMode.InstalledExe, payloadReady))
+                : GamingModeStartupRepair.Healthy;
             if (startup != GamingModeStartupRepair.Healthy)
             {
                 found++;

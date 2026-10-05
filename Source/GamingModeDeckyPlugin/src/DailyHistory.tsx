@@ -2,6 +2,7 @@ import { SP_REACT as React, DFL } from './decky';
 import { HistoryConfirmHint, historyActionCopy, openHistoryImage } from './historyInteractions';
 import { call } from './controlBackend';
 import { historyImages } from './historyImages';
+import { useHistoryPhoto } from './useHistoryPhoto';
 import { orderHistoryImages, historyHeadingCover } from './historyMedia';
 const { Focusable, DialogButton, Navigation } = DFL as any;
 const labels: Record<string,string[]> = {
@@ -84,6 +85,7 @@ function Block({story,chapter,index,locale}:{story:Story;chapter?:Chapter;index:
  const [failed,setFailed]=React.useState<string[]>([]);
  const ordered=orderHistoryImages(all,chapter,index,story.editorial.chapters,{image_file:story.editorial.intro_image_file,image_role:story.editorial.intro_image_role});
  const media=ordered.find(image=>!failed.includes(image.url));
+ const photo=useHistoryPhoto(media?.url);
  const lang=locale.split(/[-_]/)[0];
  const occasion=story.occasion?.kind==='birth'?(birth[lang]??birth.en):story.occasion?.kind==='foundation'?(foundation[lang]??foundation.en):'';
  const title=chapter?.title??story.editorial.title;
@@ -91,9 +93,9 @@ function Block({story,chapter,index,locale}:{story:Story;chapter?:Chapter;index:
  const lastActivation=React.useRef(0);
  const cardRef=React.useRef<HTMLDivElement>(null);
  const open=()=>{const now=Date.now();if(now-lastActivation.current<350)return;lastActivation.current=now;if(!media)return;openHistoryImage(media.url,media.subject,locale,cardRef.current?.ownerDocument.defaultView??window);};
- return <Focusable ref={cardRef} className={`ph-history-card ${index%2?'reverse':''} ${media?'':'no-image'}`} role={media?'button':'article'} aria-label={title} focusable={true} onOKActionDescription={media?historyActionCopy(locale)[3]:undefined} onActivate={open} onClick={open}>
+ return <Focusable ref={cardRef} className={`ph-history-card ${index%2?'reverse':''} ${photo?'':'no-image'}`} role={photo?'button':'article'} aria-label={title} focusable={true} onOKActionDescription={photo?historyActionCopy(locale)[3]:undefined} onActivate={photo?open:undefined} onClick={photo?open:undefined}>
  <div className="ph-history-copy"><div className="ph-history-eyebrow">{chapter?<span className="ph-history-subject">{chapter.subject||story.article.title}</span>:story.relationship??(occasion?`${occasion} · ${story.article.title}`:story.article.title)}</div>{renderTitle()}<p>{chapter?.body??story.editorial.intro}</p>{!chapter&&story.year&&<div className="ph-history-year">{story.year}</div>}</div>
- {media&&<div className="ph-history-image"><img className="ph-history-image-bg" src={media.url} alt="" aria-hidden={true} role="presentation"/><img className="ph-history-image-fg" src={media.url} alt={media.subject} onError={()=>setFailed(previous=>[...previous,media.url])}/></div>}
+ {media&&photo&&<div className="ph-history-image"><img className="ph-history-image-bg" src={photo} alt="" aria-hidden={true} role="presentation"/><img className="ph-history-image-fg" src={photo} alt={media.subject} onError={()=>setFailed(previous=>[...previous,media.url])}/></div>}
  </Focusable>;
 }
 const expandedRelatedStories=new Set<string>();
@@ -103,13 +105,14 @@ function RelatedStory({story,locale}:{story:Story;locale:string}) {
  const lastActivation=React.useRef(0);
  const all=historyImages[story.editorial.media_id??story.editorial.id]??[];
  const media=orderHistoryImages(all,undefined,0,story.editorial.chapters,{image_file:story.editorial.intro_image_file,image_role:story.editorial.intro_image_role})[0];
+ const photo=useHistoryPhoto(media?.url);
  const toggle=()=>{const now=Date.now();if(now-lastActivation.current<350)return;lastActivation.current=now;setExpanded(value=>{if(value)expandedRelatedStories.delete(storyKey);else expandedRelatedStories.add(storyKey);return !value;});};
  return <div className="ph-history-related">
   <Focusable className="ph-history-card ph-history-related-summary" role="button" aria-expanded={expanded} focusable={true}
     onActivate={toggle} onClick={toggle} onOKActionDescription={historyActionCopy(locale)[expanded?2:1]}>
    <div className="ph-history-copy"><div className="ph-history-eyebrow">{story.relationship??words(locale)[4]}</div>
     <h3>{story.article.title}</h3><HistoryConfirmHint locale={locale} expanded={expanded}/></div>
-   {media&&<div className="ph-history-image"><img className="ph-history-image-fg" src={media.url} alt={media.subject}/></div>}
+   {media&&photo&&<div className="ph-history-image"><img className="ph-history-image-fg" src={photo} alt={media.subject}/></div>}
   </Focusable>
   {expanded&&<div className="ph-history-related-content"><Block story={story} index={0} locale={locale}/>
    {story.editorial.chapters?.map((chapter,index)=><React.Fragment key={index}>

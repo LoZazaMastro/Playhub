@@ -1,0 +1,14 @@
+{
+  "//": "Copy to %APPDATA%\\GamingMode\\chain-free-engine.json to let the agent start Playhub Chain Free Engine with the gaming session. Remove the file, or set enabled to false, to switch it off.",
+  "enabled": true,
+  "executable": "C:\\Program Files\\Playhub\\ChainFreeEngine\\Playhub.ChainFreeEngine.exe",
+  "arguments": [
+    "--workspace", "C:\\Program Files\\Playhub\\ChainFreeEngine",
+    "--bundle", "C:\\Program Files\\Playhub\\ChainFreeEngine\\Renderer\\playhub-standalone.js",
+    "--plugin-root", "C:\\Users\\<you>\\homebrew\\plugins\\gaming-mode",
+    "--settings-dir", "C:\\Users\\<you>\\homebrew\\settings\\gaming-mode",
+    "--python", "C:\\Program Files\\Playhub\\Python\\python.exe",
+    "--plugin-build", "C:\\Users\\<you>\\homebrew\\plugins\\gaming-mode\\dist",
+    "--allow-installed-plugin"
+  ]
+}

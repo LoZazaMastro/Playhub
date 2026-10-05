@@ -8,6 +8,7 @@
 // Nota: il plugin Gaming Mode gia' parlava con l'agente in questo modo. Non si
 // introduce niente di nuovo, si allarga quello che c'era.
 
+import { agentAvailability } from "./agentAvailability";
 export const API_BASE = "http://127.0.0.1:47991";
 
 // L'helper che salva il primo piano quando l'overlay di Steam si apre sopra un
@@ -42,6 +43,7 @@ export function releaseDashboardFocus() { return focusHelper("release"); }
 // nessuno. Scrivendo di qua, tutto finisce nello stesso file in ordine di
 // tempo, e un guasto si legge invece di supporlo.
 export function logToAgent(message: string) {
+  if (!agentAvailability.canRequest()) return;
   try {
     fetch(`${API_BASE}/dash/log`, {
       method: "POST",
@@ -157,14 +159,21 @@ export interface LearnState {
 // bloccata - e' esattamente l'errore che ha bloccato la vecchia Dashboard per
 // quattordici secondi.
 async function request<T>(path: string, init?: RequestInit, timeoutMs = 4000): Promise<T | null> {
+  // An explicit click must be able to recover immediately after a transient
+  // outage. Only passive polling shares the cooldown.
+  if ((!init?.method || init.method === "GET") && !agentAvailability.canRequest()) return null;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(`${API_BASE}${path}`, { ...init, signal: controller.signal });
     if (!response.ok) return null;
-    return (await response.json()) as T;
+    const result = (await response.json()) as T;
+    agentAvailability.available();
+    return result;
   } catch (error) {
-    console.warn(`Playhub Dashboard: ${path} non ha risposto`, error);
+    // A slow image, process list or picker is not evidence the whole agent
+    // vanished. In particular it must not suppress Close for thirty seconds.
+    if (!controller.signal.aborted && error instanceof TypeError) agentAvailability.unavailable();
     return null;
   } finally {
     clearTimeout(timer);
@@ -238,8 +247,8 @@ export function activateWindow(handle: string) {
   return post("/dash/windows/activate", { handle });
 }
 
-export function closeWindow(handle: string) {
-  return post("/dash/windows/close", { handle });
+export function closeWindow(handle: string, processId?: number) {
+  return post<{ ok: boolean; closed: boolean; pending: boolean; reason: string }>("/dash/windows/close", { handle, processId });
 }
 
 export async function loadWindowPreview(handle: string, width = 720, height = 405): Promise<string> {

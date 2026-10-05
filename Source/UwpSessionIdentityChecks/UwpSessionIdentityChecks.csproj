@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><StartupObject>IdentityChecks</StartupObject></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Playhub.GameSession/*.cs" Link="Helper/%(Filename)%(Extension)" />
+    <Compile Include="../Shared/UwpSessionIdentity.cs" Link="UwpSessionIdentity.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/XboxShellBroker.cs" Link="XboxShellBroker.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/UwpSteamSessionAssociation.cs" Link="UwpSteamSessionAssociation.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/GameBarGuideService.cs" Link="GameBarGuideService.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/SteamGameIdentityPolicy.cs" Link="SteamGameIdentityPolicy.cs" />
+  </ItemGroup>
+</Project>

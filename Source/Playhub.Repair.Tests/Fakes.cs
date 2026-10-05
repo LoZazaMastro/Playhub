@@ -3,6 +3,7 @@ namespace Playhub.Services;
 // Compile the production orchestrator without WinUI or launching external components.
 public sealed class GamingModeService
 {
+    public bool IsInstalled => throw new NotSupportedException();
     public string InstallDir => throw new NotSupportedException();
     public string InstalledExe => throw new NotSupportedException();
     public string ConfigFile => throw new NotSupportedException();

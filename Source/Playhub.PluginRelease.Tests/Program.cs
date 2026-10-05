@@ -18,7 +18,8 @@ internal static class Program
             ("Equal version with v prefix does not produce an update", EqualVersion),
             ("New markdown notes replace cached installed-release notes", NewMarkdownNotes),
             ("One Decky catalog request supplies authoritative versions and hashes", DeckyVersions),
-            ("Offline refresh and a new service retain persisted metadata", OfflineCache)
+            ("Offline refresh and a new service retain persisted metadata", OfflineCache),
+            ("ZIP-only bundled release-info supplies current offline version", BundledReleaseInfo)
         };
         var failures = 0;
         foreach (var test in tests)
@@ -46,6 +47,25 @@ internal static class Program
         Check(fixture.Handler.Requests.Count == 1, "GitHub refresh should use one fixture request.");
         Check(Directory.EnumerateFiles(Path.Combine(fixture.CacheRoot, "cache", "plugin-releases"), "*.json").Any(),
             "Refresh did not persist release metadata.");
+    }
+
+    private static async Task BundledReleaseInfo()
+    {
+        using var fixture = new Fixture();
+        var root = Directory.GetParent(fixture.CacheRoot)!.FullName;
+        var bundled = Path.Combine(root, "bundled");
+        var folder = Path.Combine(bundled, "Metadata");
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "release-info.json"), "{\"version\":\"1.8.3\"}");
+        var archive = Path.Combine(folder, "Playhub-Metadata_1.8.3_Installer.zip");
+        File.WriteAllText(archive, "catalog fixture; archive byte validation has separate tests");
+        var entries = new[] { new RemotePluginCatalogEntry { Name = "Playhub Metadata", InstallFolder = "Playhub Metadata",
+            Repository = "LoZazaMastro/Playhub-Metadata", Version = "1.8.0", CatalogSource = "playhub", CatalogStatus = "playhub" } };
+        var plugin = (await fixture.Service.LoadAsync(bundled, Path.Combine(root, "installed"),
+            new RemotePluginCatalog { Plugins = entries })).Single();
+        Check(plugin.Version == "1.8.3" && plugin.InstallerZip == archive && !plugin.IsInstalled,
+            "Bundled provenance did not hydrate the current ZIP-only release.");
+        Check(fixture.Handler.Requests.IsEmpty, "Bundled release hydration must remain offline.");
     }
 
     private static async Task EqualVersion()

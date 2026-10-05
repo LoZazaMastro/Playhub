@@ -22,6 +22,17 @@ public partial class App : Application
         // light mode can materialize light card brushes that remain in place
         // even after the window itself is switched to dark mode.
         Diag.Step("App ctor begin");
+#if PLAYHUB_UI_REVIEW
+        // Capture the originating managed error before DispatcherQueue converts
+        // a callback failure into a native fail-fast. Private review builds only.
+        int invalidArgumentDiagnostics = 0;
+        AppDomain.CurrentDomain.FirstChanceException += (_, e) =>
+        {
+            if ((e.Exception.HResult == unchecked((int)0x80070057) || e.Exception.HResult == unchecked((int)0x80004002) || e.Exception is InvalidCastException) &&
+                System.Threading.Interlocked.Increment(ref invalidArgumentDiagnostics) <= 12)
+                Diag.Crash("Review first-chance UI interop", e.Exception);
+        };
+#endif
         // Handler globali: catturano le eccezioni gestite da QUALUNQUE thread (non
         // solo il thread UI) e i Task non osservati. I crash NATIVI non sono
         // intercettabili da .NET: per quelli servono i breadcrumb di Diag.Step.
@@ -46,6 +57,7 @@ public partial class App : Application
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
+        Diag.Step("App launch begin");
         if (_launchStarted)
         {
             ActivateMainWindow();
@@ -60,14 +72,14 @@ public partial class App : Application
 
         var dispatcher = DispatcherQueue.GetForCurrentThread();
 #if PLAYHUB_UI_REVIEW
-        const string instanceKey = "Playhub.UiReview";
+        var instanceKey = "Playhub.UiReview." + (Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_SESSION") ?? "default");
 #else
         const string instanceKey = "Playhub.MainWindow";
 #endif
         try
         {
             if (!await _singleInstance.RegisterAsync(instanceKey, (_, _) =>
-                dispatcher.TryEnqueue(ActivateMainWindow)))
+                dispatcher.TryEnqueue(ActivateMainWindow), Diag.Step))
             {
                 Exit();
                 return;
@@ -80,9 +92,26 @@ public partial class App : Application
             return;
         }
 
-        _window = new MainWindow();
-        _window.Closed += (_, _) => _singleInstance.Dispose();
-        _window.Activate();
+        try
+        {
+            Diag.Step("Main-window startup begin");
+            _window = new MainWindow();
+            _window.Closed += (_, _) =>
+            {
+                _window = null;
+                try { _singleInstance.Dispose(); }
+                finally { Exit(); }
+            };
+            _window.Activate();
+            Diag.Step("Main-window startup complete");
+        }
+        catch (Exception error)
+        {
+            Diag.Crash("Main-window startup", error);
+            try { _singleInstance.Dispose(); }
+            finally { Exit(); }
+            return;
+        }
 #if PLAYHUB_UI_REVIEW
         await ((MainWindow)_window).RunUiReviewAsync();
 #endif

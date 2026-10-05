@@ -104,6 +104,7 @@ public sealed class GogService
                 IsLocalExecutable = true,
                 LocalExecutablePath = exePath,
                 Executable = exePath,
+                SourceLaunchArguments = key.GetValue("launchParam") as string ?? "",
                 FileSize = size
             };
         }

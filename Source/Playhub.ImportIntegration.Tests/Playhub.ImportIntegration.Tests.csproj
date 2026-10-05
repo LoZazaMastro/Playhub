@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows10.0.19041.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><DefineConstants>$(DefineConstants);PLAYHUB_NATIVE_INTEGRATIONS</DefineConstants></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Playhub/Importing/*.cs" Exclude="../Playhub/Importing/LaunchCurtainVisualEditor.cs" Link="Importing/%(Filename)%(Extension)" />
+    <Compile Include="../Playhub/Services/LocalizationService.cs" Link="LocalizationService.cs" />
+    <Content Include="../Playhub/Assets/Localization/*.json" Link="Assets/Localization/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../Playhub/Services/XboxGameBarStartupPolicy.cs" Link="XboxGameBarStartupPolicy.cs" />
+    <Compile Include="../Playhub/Vendor/VDFParser/**/*.cs" Link="VDFParser/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../ApplicationIntegrations/Native/PostImportIntegrationService.cs" Link="PostImportIntegrationService.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/GameIntegrationEditorService.cs" Link="GameIntegrationEditorService.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/SteamPluginBridge.cs" Link="SteamPluginBridge.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/PerfectHeroService.cs" Link="PerfectHeroService.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/PluginConsumerDelivery.cs" Link="PluginConsumerDelivery.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/ApplicationIntegrationCoordinator.cs" Link="ApplicationIntegrationCoordinator.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/ApplicationImageCache.cs" Link="ApplicationImageCache.cs" />
+    <Compile Include="../ApplicationIntegrations/*.cs" Link="Integrations/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

@@ -1,10 +1,13 @@
 import { installCirclesScreensaver } from "./circlesScreensaver";
+import { pollStatus } from "./statusPoll";
+import { agentAvailability } from "./agentAvailability";
+import { optionalAgentCopy } from "./optionalAgentLocale";
 import { disposeDisplayConfirmation } from "./quickSettings";
 import { initializeQamPreferences } from "./QamSettings";
 import { installHomeNews, notifyHomeNewsLanguageChanged } from "./HomeNews";
 import { definePlugin, routerHook, toaster, DFL, SP_REACT as React } from "./decky";
 import { captureDashboardSourceFocus, consumeOpenRequest, logToAgent, readEnvironment, readSettings, writeSettings, API_BASE, requestDashboardSteamFocus, restoreDashboardSourceFocus } from "./api";
-import { DashboardPage, DASHBOARD_ROUTE, clearDashboardChrome, focusDashboardSurface, markDashboardChrome, preloadDashboardWindows, prepareDashboardOverlay } from "./DashboardPage";
+import { DashboardPage, DASHBOARD_ROUTE, clearDashboardChrome, focusDashboardSurface, markDashboardChrome, preloadDashboardWindows, prepareDashboardOverlay, resetDashboardExit } from "./DashboardPage";
 import { configureNavigationHaptics, installNavigationHaptics, getNavigationHapticsConfig, getNavigationHapticsRevision, subscribeNavigationHaptics } from "./navigationHaptics";
 import { installPowerMenuPatch } from "./powerMenuPatch";
 import { initPlayhubQam } from "./qam";
@@ -21,6 +24,8 @@ import { initDeckyHost } from "./deckyHost";
 import { call as controlCall } from "./controlBackend";
 import { installPlayhubOnboarding, refreshOnboardingLocale } from "./onboardingIntegration";
 import { installQuickSettings } from "./quickSettings";
+import { installDeckyIpcRecovery, type IpcFailure } from "./deckyIpcRecovery";
+import { installControlledQamFocus } from "./controlledQamIntegration";
 
 const { useState, useEffect, useMemo } = React;
 let hapticSettingsWrite = Promise.resolve();
@@ -335,12 +340,17 @@ interface AgentResult {
   status?: AgentStatus;
 }
 
-async function getStatus(): Promise<AgentStatus> {
-  const response = await fetch(`${API_BASE}/status`);
-  if (!response.ok) {
-    throw new Error(`${t().agentReturned} ${response.status}`);
+async function getStatus(signal?: AbortSignal): Promise<AgentStatus> {
+  try {
+    const response = await fetch(`${API_BASE}/status`, { signal });
+    if (!response.ok) throw new Error(`${t().agentReturned} ${response.status}`);
+    const status = await response.json();
+    agentAvailability.available();
+    return status;
+  } catch (error) {
+    agentAvailability.unavailable();
+    throw error;
   }
-  return await response.json();
 }
 
 async function post(path: string): Promise<AgentResult> {
@@ -390,7 +400,11 @@ async function openDashboard(reason = "richiesta") {
   const environmentRequest = readEnvironment();
   const dashboardWindowsReady = preloadDashboardWindows();
   const environment = await environmentRequest;
-  if (!environment?.enabled) return;
+  if (!environment?.enabled) {
+    toaster.toast({ title: "Gaming Mode", body: optionalAgentCopy(currentLocale).AgentRequired });
+    return;
+  }
+  resetDashboardExit();
   void captureDashboardSourceFocus();
   const [useSteamOverlay] = await Promise.all([prepareDashboardOverlay(), dashboardWindowsReady]);
   if (useSteamOverlay) {
@@ -550,6 +564,7 @@ function startOpenRequestWatcher(onFocusRecovery: () => void): () => void {
 function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
   const [locale, setLocale] = useState(currentLocale);
   const local = strings[locale] ?? strings.en;
+  const optional = optionalAgentCopy(locale);
   const [status, setStatus] = useState<AgentStatus | undefined>();
   const [busy, setBusy] = useState(false);
   const [dashboardEnabled, setDashboardEnabled] = useState(true);
@@ -566,16 +581,13 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
   const refresh = async () => {
     try {
       setStatus(await getStatus());
-    } catch (error) {
+    } catch {
       setStatus(undefined);
-      toaster.toast({
-        title: "Playhub",
-        body: error instanceof Error ? error.message : local.notConnected,
-      });
     }
   };
 
   const run = async (path: string, title: string) => {
+    if (!status) return;
     setBusy(true);
     try {
       const result = await post(path);
@@ -608,7 +620,7 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
       refreshOnboardingLocale();
       if (alive) setLocale(value);
     });
-    refresh();
+    const stopStatus = pollStatus(getStatus, setStatus);
     void readEnvironment().then((environment) => setDashboardEnabled(environment?.enabled !== false));
     const hapticRevision = getNavigationHapticsRevision();
     void hapticSettingsWrite.catch(() => {}).then(() => readSettings()).then((settings) => {
@@ -617,16 +629,22 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
       const intensity = Math.max(5, Math.min(100, Number(settings.navigationHapticsIntensity) || 55));
       configureNavigationHaptics({ enabled, intensity });
     });
-    const timer = window.setInterval(refresh, 5000);
-    return () => { alive = false; window.clearInterval(timer); };
+    return () => { alive = false; stopStatus(); };
   }, []);
 
   return (
     <ControlCenter locale={locale} origin={origin} homeTitle={local.controlCentre} session={<>
+      {!status && <PanelSection><PanelSectionRow>
+        <div role="status" style={{ margin: "8px 0 16px", padding: "16px", borderRadius: 10,
+          background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.12)" }}>
+          <div style={{ fontSize: 16, fontWeight: 650, marginBottom: 8 }}>{optional.Title}</div>
+          <div style={{ fontSize: 13, lineHeight: 1.5, opacity: .8 }}>{optional.AgentRequired}</div>
+        </div>
+      </PanelSectionRow></PanelSection>}
       <PanelSection>
         <PanelSectionRow>
           <ButtonItem
-            disabled={!dashboardEnabled}
+            disabled={!dashboardEnabled || !status}
             bottomSeparator="none"
             layout="below"
             onClick={() => openDashboard()}
@@ -687,11 +705,11 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
             .ph-mode-action-label{display:grid;grid-template-rows:repeat(2,1.2em);width:100%;text-align:center;font-size:13px;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
           `}</style>
           <Focusable className="ph-mode-actions" flow-children="row">
-            <DialogButton className="ph-mode-action" disabled={busy} onClick={() => confirmModeSwitch("gaming", () => { void run("/mode/gaming/switch", local.gamingMode); })}>
+            <DialogButton className="ph-mode-action" disabled={busy || !status} onClick={() => confirmModeSwitch("gaming", () => { void run("/mode/gaming/switch", local.gamingMode); })}>
               <span className="ph-mode-action-icons" aria-hidden="true">{'\uE7FC'}</span>
               <ModeButtonLabel mode="gaming" />
             </DialogButton>
-            <DialogButton className="ph-mode-action" disabled={busy} onClick={() => confirmModeSwitch("desktop", () => { void run("/mode/desktop/switch", local.desktopMode); })}>
+            <DialogButton className="ph-mode-action" disabled={busy || !status} onClick={() => confirmModeSwitch("desktop", () => { void run("/mode/desktop/switch", local.desktopMode); })}>
               <span className="ph-mode-action-icons" aria-hidden="true"><span>{'\uE765'}</span><span style={{fontSize:24}}>{'\uE962'}</span></span>
               <ModeButtonLabel mode="desktop" />
             </DialogButton>
@@ -701,7 +719,7 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
           <DropdownItem
             label={local.defaultStartup}
             bottomSeparator="none"
-            disabled={busy}
+            disabled={busy || !status}
             rgOptions={defaultOptions}
             selectedOption={status?.defaultMode ?? "Desktop"}
             onChange={setDefault}
@@ -760,10 +778,23 @@ const EWindowBringToFront_AndForceOS = 1;
 // ---------------------------------------------------------------------------
 
 export default definePlugin(() => {
+  const stopDeckyIpcRecovery = installDeckyIpcRecovery({
+    scan: () => controlCall<[], IpcFailure[]>("get_decky_ipc_failures"),
+    claim: failure => controlCall<[string, string, string], { ok: boolean; name?: string }>("claim_decky_ipc_recovery", failure.folder, failure.session, failure.log),
+    reload: name => {
+      const bridge = (window as any).DeckyBackend;
+      if (typeof bridge?.call !== "function") return Promise.reject(new Error("Decky reload bridge unavailable"));
+      return bridge.call("loader/reload_plugin", name);
+    },
+    schedule: (callback, delay) => window.setTimeout(callback, delay),
+    cancel: timer => window.clearTimeout(timer as number),
+    warn: error => console.warn("[Playhub] Decky IPC startup recovery unavailable", error),
+  });
   const uninstallCircles = installCirclesScreensaver(() => currentLocale);
   const uninstallOnboarding = installPlayhubOnboarding(() => currentLocale);
   const uninstallDeckyHost = initDeckyHost(() => controlCall<[], { deckyHostEnabled?: boolean }>("get_panel_preferences"));
   const uninstallQuickSettings = installQuickSettings();
+  const uninstallControlledQamFocus = installControlledQamFocus();
   void initializeQamPreferences().catch(error=>console.warn('[Playhub QAM] Preferences unavailable',error));
   let uninstallHomeNews = () => {};
   try { uninstallHomeNews = installHomeNews(() => currentLocale); }
@@ -807,8 +838,9 @@ export default definePlugin(() => {
     icon: <PlayhubIcon />,
     onDismount() {
       const cleanups = [
+        stopDeckyIpcRecovery,
         uninstallCircles, disposeDisplayConfirmation, uninstallOnboarding,
-        uninstallDeckyHost, uninstallQuickSettings, uninstallHomeNews,
+        uninstallDeckyHost, uninstallQuickSettings, uninstallControlledQamFocus, uninstallHomeNews,
         clearDashboardChrome, () => steamFocusRecovery.uninstall(),
         stopOpenRequestWatcher, uninstallNavigationHaptics,
         uninstallPowerMenuPatch, uninstallPlayhubQam,

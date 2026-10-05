@@ -16,7 +16,7 @@ async function run(router, overlayReady) {
   const calls = [];
   const context = {
     Router: router, logToAgent: () => {}, readEnvironment: async () => ({ enabled: true }),
-    preloadDashboardWindows: async () => {}, captureDashboardSourceFocus: () => {},
+    preloadDashboardWindows: async () => {}, captureDashboardSourceFocus: () => {}, resetDashboardExit: () => {},
     prepareDashboardOverlay: async () => overlayReady,
     requestDashboardSteamFocus: async () => calls.push("os-focus"),
     restoreDashboardSourceFocus: () => calls.push("os-restore"),

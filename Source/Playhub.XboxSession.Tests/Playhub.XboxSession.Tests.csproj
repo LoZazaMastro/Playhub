@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><StartupObject>XboxChecks</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Playhub.XboxSession\**\*.cs" Exclude="..\Playhub.XboxSession\bin\**;..\Playhub.XboxSession\obj\**" Link="XboxSession\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\Playhub.GameSession\XboxSessionClient.cs" Link="XboxSessionClient.cs" />
+  </ItemGroup>
+</Project>

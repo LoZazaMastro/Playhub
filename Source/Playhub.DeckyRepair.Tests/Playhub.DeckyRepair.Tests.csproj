@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows10.0.19041.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs;SteamStub.cs" />
+    <Compile Include="../Playhub/Services/DeckyInstallerService.cs;../Playhub/Services/DeckyArtifactComparison.cs;../Playhub/Services/AppPaths.cs;../Playhub/Services/RestartSequence.cs;../Playhub/Models/DeckyBuildRun.cs;../Shared/DeckyStartupGuard.cs" />
+  </ItemGroup>
+</Project>

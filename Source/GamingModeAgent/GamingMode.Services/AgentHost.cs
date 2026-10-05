@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +17,15 @@ namespace GamingMode.Services;
 
 public static class AgentHost
 {
+	internal static void MapCurrentModeEndpoint(WebApplication app, JsonStore store)
+	{
+		app.MapGet("/mode/current", (Func<IResult>)(() => Results.Json(new
+		{
+			agentRunning = true,
+			currentMode = store.LoadState().CurrentMode
+		})));
+	}
+
 	// Le POST del plugin arrivano con un corpo JSON oppure con la querystring:
 	// si accettano entrambe, cosi' chi chiama non deve adeguarsi a noi.
 	// IL CORPO DELLA RICHIESTA SI LEGGE UNA VOLTA SOLA.
@@ -85,6 +94,27 @@ public static class AgentHost
 	private static string Field(IReadOnlyDictionary<string, string> fields, string name)
 		=> fields.TryGetValue(name, out string? value) ? value : "";
 
+	// Lo Steam in esecuzione, se c'e'. Il motore si aggancia al suo renderer: senza
+	// Steam non ha niente a cui agganciarsi, e a ogni Steam nuovo va riavviato.
+	private static int? SteamProcessId()
+	{
+		using var current = System.Diagnostics.Process.GetCurrentProcess();
+		System.Diagnostics.Process[] processes = System.Diagnostics.Process.GetProcessesByName("steam");
+		try
+		{
+			var ids = new List<int>();
+			foreach (var process in processes)
+			{
+				try { if (process.SessionId == current.SessionId && !process.HasExited) ids.Add(process.Id); }
+				catch (InvalidOperationException) { /* Processo terminato durante la lettura. */ }
+			}
+			return ids.Count == 0 ? null : ids.Min();
+		}
+		finally { foreach (var process in processes) process.Dispose(); }
+		// Gli altri errori arrivano al watcher: un'enumerazione fallita non prova
+		// che Steam sia chiuso e non deve spegnere un motore funzionante.
+	}
+
 	public static async Task RunAsync(AppPaths paths, FileLogger logger, string[] args)
 	{
 		bool createdNew;
@@ -119,9 +149,17 @@ public static class AgentHost
 				// e' quella dell'accensione, TV spenta compresa.
 				using SteamDisplayRecoveryService displayRecovery = new SteamDisplayRecoveryService(logger, () => store.LoadState().CurrentMode == ModeKind.Gaming);
 				displayRecovery.Start();
+				// Chain Free Engine is suspended for this release: Decky remains the host.
+				// Do not create its watcher, even for an existing opt-in descriptor.
+				// Keep the descriptor and engine sources intact for a future release.
 				using SystemVolumeKeyService volumeKeys = new SystemVolumeKeyService(logger);
 				using OverlayQuickSettingsClient quickSettings = new OverlayQuickSettingsClient();
 				ModeManager manager = new ModeManager(paths, store, processTools, shellTools, cursorAutoHide, windowFocus, volumeKeys, logger);
+				using WindowsQamFocusAdapter qamWindows = new(windowFocus, modeConfig.Gaming.SteamPath);
+				using ControlledQamFocusService qamFocus = new(qamWindows, store.LoadState().CurrentMode == ModeKind.Gaming);
+				qamWindows.Changed += qamFocus.WindowChanged;
+				manager.ModeTransitionStarted += qamFocus.ModeChanging;
+				manager.ModeTransitionCompleted += qamFocus.ModeCompleted;
 				using ControllerHapticsService controllerHaptics = new ControllerHapticsService(logger);
 				// La Playhub Dashboard e' una schermata del plugin di Steam. Qui
 				// resta solo cio' che il plugin non puo' fare da dentro Steam: la
@@ -203,6 +241,15 @@ public static class AgentHost
 				});
 				webApplicationBuilder.WebHost.UseUrls(url);
 				WebApplication app = webApplicationBuilder.Build();
+				XboxShellBroker xboxShell = new(paths.ConfigDirectory, ProcessTools.IsExplorerShellRunning, () =>
+				{
+					using var explorer = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+						Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"))
+					{
+						UseShellExecute = false, CreateNoWindow = true, WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+					}) ?? throw new InvalidOperationException("Unable to start the Windows desktop shell.");
+					logger.Info("Xbox shell preparation requested by the game-session helper.");
+				});
 				app.Use(async delegate(HttpContext context, Func<Task> next)
 				{
 					context.Response.Headers["Access-Control-Allow-Origin"] = "*";
@@ -218,7 +265,45 @@ public static class AgentHost
 					}
 				});
 				app.MapGet("/health", (Func<IResult>)(() => Results.Text("ok")));
+				app.MapPost("/xbox/shell/ensure", (Func<HttpContext, IResult>)((HttpContext context) =>
+				{
+					return xboxShell.RequestShell(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString())
+						? Results.Json(new { ok = true }) : Results.StatusCode(401);
+				}));
+				var gameBarGuide = new GameBarGuideService(WindowsXboxGameBar.ToggleVerified, () => Environment.TickCount64);
+				app.MapPost("/session/uwp/gamebar", (Func<HttpContext, Task<IResult>>)(async context =>
+				{
+					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString())) return Results.StatusCode(401);
+					var fields = await ReadFieldsAsync(context.Request);
+					uint.TryParse(Field(fields, "appId"), out uint appId);
+					if (!bool.TryParse(Field(fields, "pressed"), out bool pressed)) return Results.StatusCode(400);
+					return Results.Json(gameBarGuide.Handle(Field(fields, "requestId"), appId, pressed));
+				}));
+				app.MapGet("/session/uwp", (Func<HttpContext, IResult>)(context =>
+				{
+					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString())) return Results.StatusCode(401);
+					uint.TryParse(context.Request.Query["appId"], out uint appId);
+					var identities = UwpSteamSessionAssociation.FindForApp(appId);
+					var handles = identities.Count == 0 ? Array.Empty<nint>() : OverlayWindowTools.EnumerateTopLevelHandles();
+					return Results.Json(new { appId, sessions = identities.Select(identity => new {
+						identity.GamePid, identity.GameBirth, identity.WrapperPid, identity.WrapperBirth,
+						identity.PackageFamily, identity.Aumid, identity.Executable,
+						windows = handles.Where(h => OverlayWindowTools.IsVisibleGameSurface(h) && OverlayWindowTools.WindowProcessId(h) == identity.GamePid)
+							.Select(h => new { hwnd = h.ToString(), pid = identity.GamePid, process = Path.GetFileName(identity.Executable), title = Path.GetFileNameWithoutExtension(identity.Executable) })
+					}) });
+				}));
 				app.MapGet("/status", (Func<IResult>)(() => Results.Json(manager.GetStatus())));
+				app.MapPost("/qam/focus/acquire", (Func<HttpRequest, Task<IResult>>)(async request =>
+				{
+					var fields = await ReadFieldsAsync(request);
+					uint.TryParse(Field(fields, "appId"), out uint appId);
+					return Results.Json(qamFocus.Acquire(Field(fields, "requestId"), appId));
+				}));
+				app.MapPost("/qam/focus/close", (Func<HttpRequest, Task<IResult>>)(async request =>
+					Results.Json(qamFocus.Close(Field(await ReadFieldsAsync(request), "requestId")))));
+				app.MapPost("/qam/focus/release", (Func<HttpRequest, Task<IResult>>)(async request =>
+					Results.Json(qamFocus.Release(Field(await ReadFieldsAsync(request), "requestId")))));
+				MapCurrentModeEndpoint(app, store);
 				app.MapPost("/mode/gaming", (Func<Task<IResult>>)(async () => Results.Json(await manager.ApplyModeAsync(ModeKind.Gaming, "Applied Gaming Mode"))));
 				app.MapPost("/mode/desktop", (Func<Task<IResult>>)(async () => Results.Json(await manager.ApplyModeAsync(ModeKind.Desktop, "Applied Desktop Mode"))));
 				app.MapPost("/mode/gaming/switch", (Func<Task<IResult>>)(async () => Results.Json(await manager.SwitchToModeAsync(ModeKind.Gaming))));
@@ -367,7 +452,11 @@ public static class AgentHost
 				app.MapPost("/dash/windows/activate", (Func<HttpRequest, Task<IResult>>)(async request =>
 					Results.Json(new ApiResult { Ok = DashboardApi.ActivateWindow(Field(await ReadFieldsAsync(request), "handle")) })));
 				app.MapPost("/dash/windows/close", (Func<HttpRequest, Task<IResult>>)(async request =>
-					Results.Json(new ApiResult { Ok = DashboardApi.CloseWindow(Field(await ReadFieldsAsync(request), "handle")) })));
+				{
+					var fields = await ReadFieldsAsync(request);
+					int.TryParse(Field(fields, "processId"), out int processId);
+					return Results.Json(await DashboardApi.CloseWindowAsync(Field(fields, "handle"), processId));
+				}));
 				app.MapGet("/dash/shortcuts", (Func<IResult>)(() => Results.Json(DashboardApi.ListShortcuts(store))));
 				app.MapPost("/dash/shortcuts/launch", (Func<HttpRequest, Task<IResult>>)(async request =>
 				{
@@ -569,6 +658,7 @@ public static class AgentHost
 					logger.Info("Agent stopped.");
 				});
 				app.Lifetime.ApplicationStopping.Register(dashboard.Stop);
+				app.Lifetime.ApplicationStopping.Register(qamFocus.ModeChanging);
 				app.Lifetime.ApplicationStopping.Register(cursorAutoHide.Stop);
 				app.Lifetime.ApplicationStopping.Register(windowFocus.Stop);
 				app.Lifetime.ApplicationStopping.Register(volumeKeys.Stop);
@@ -587,21 +677,8 @@ public static class AgentHost
 						logger.Error("Safety watchdog crashed.", exception3);
 					}
 				});
-				// Prepara l'elenco delle app dopo che l'agente ha finito il lavoro
-				// critico di avvio. La scansione usa un solo thread STA a priorita'
-				// bassa e popola la cache senza rallentare Steam o il primo accesso
-				// alla Dashboard.
-				_ = Task.Run(async () =>
-				{
-					try
-					{
-						await Task.Delay(TimeSpan.FromSeconds(4), app.Lifetime.ApplicationStopping);
-						DashboardApi.PrewarmPrograms();
-					}
-					catch (OperationCanceledException)
-					{
-					}
-				});
+				// Installed-program discovery starts when the user opens Add app.
+				// Do not enumerate applications on every Windows login.
 				try
 				{
 					logger.Info("Agent listening on " + url + ".");

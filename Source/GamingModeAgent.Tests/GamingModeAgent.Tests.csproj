@@ -15,5 +15,8 @@
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\SteamUiHapticsGate.cs" Link="SteamUiHapticsGate.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\DisplayChangePolicy.cs" Link="DisplayChangePolicy.cs" />
 	<Compile Include="SteamForegroundStub.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\ForegroundProcessIdentity.cs" Link="ForegroundProcessIdentity.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\FullscreenWindowGeometry.cs" Link="FullscreenWindowGeometry.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\OverlaySteamArtwork.cs" Link="OverlaySteamArtwork.cs" />
   </ItemGroup>
 </Project>

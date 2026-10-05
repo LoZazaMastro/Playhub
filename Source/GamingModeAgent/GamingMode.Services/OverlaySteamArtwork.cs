@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -307,17 +307,76 @@ public static class OverlaySteamArtworkResolver
 		return separator > 0 ? value[..separator] : value;
 	}
 
-	private static ActiveSteamGame? FindActiveGame(string steamPath, int windowProcessId)
+	private static readonly object ActiveSync = new();
+	private static readonly Dictionary<int, ActiveSteamGame> ActiveGames = new();
+	private static Dictionary<int, int> _activeParents = new();
+	private static string? _activeLogPath;
+	private static long _activeLogLength = -1;
+	private static DateTime _activeLogModified;
+	private static long _activeCheckedAt = long.MinValue;
+	private static long _parentsCheckedAt = long.MinValue;
+
+	private static ActiveSteamGame? FindActiveGame(string steamPath, int windowProcessId, Func<int, string?>? readProcessName = null)
 	{
-		try
+		lock (ActiveSync)
 		{
-			using Process windowProcess = Process.GetProcessById(windowProcessId);
-			if (SteamGameIdentityPolicy.IsSteamClient(windowProcess.ProcessName)) return null;
+			long now = Environment.TickCount64;
+			string path = Path.Combine(steamPath, "logs", "gameprocess_log.txt");
+			bool differentPath = !string.Equals(_activeLogPath, path, StringComparison.OrdinalIgnoreCase);
+			if (differentPath || _activeCheckedAt == long.MinValue || now - _activeCheckedAt >= 500)
+			{
+				_activeCheckedAt = now;
+				var info = new FileInfo(path);
+				if (!info.Exists)
+				{
+					ActiveGames.Clear();
+					_activeLogPath = null;
+					return null;
+				}
+				if (differentPath || info.Length != _activeLogLength || info.LastWriteTimeUtc != _activeLogModified)
+				{
+					// One shared parse for the window batch; unchanged logs are never reparsed.
+					Dictionary<int, ActiveSteamGame> parsed = ParseActiveGames(ReadTail(path, 768 * 1024));
+					ActiveGames.Clear();
+					foreach (var entry in parsed) ActiveGames[entry.Key] = entry.Value;
+					_activeLogPath = path;
+					_activeLogLength = info.Length;
+					_activeLogModified = info.LastWriteTimeUtc;
+					_parentsCheckedAt = long.MinValue;
+				}
+				foreach (int stale in ActiveGames.Values.Where(game => !IsCurrentTrackedProcess(game)).Select(game => game.ProcessId).ToArray())
+					ActiveGames.Remove(stale);
+			}
+			// Desktop idle must not enumerate every system process for every window.
+			if (ActiveGames.Count == 0) return null;
+			try
+			{
+				string? name;
+				if (readProcessName is not null) name = readProcessName(windowProcessId);
+				else
+				{
+					using Process windowProcess = Process.GetProcessById(windowProcessId);
+					name = windowProcess.ProcessName;
+				}
+				if (name is null || SteamGameIdentityPolicy.IsSteamClient(name) || SteamGameIdentityPolicy.IsXboxLaunchHelper(name)) return null;
+			}
+			catch { return null; }
+			if (ActiveGames.TryGetValue(windowProcessId, out ActiveSteamGame? direct))
+				return IsCurrentTrackedProcess(direct) ? direct : null;
+			if (_parentsCheckedAt == long.MinValue || now - _parentsCheckedAt >= 1000)
+			{
+				_activeParents = SnapshotParents();
+				_parentsCheckedAt = now;
+			}
+			ActiveSteamGame? match = ActiveGames.Values.LastOrDefault(game =>
+				SteamGameIdentityPolicy.IsTrackedWindow(game.ProcessId, windowProcessId, _activeParents));
+			return match is not null && IsCurrentTrackedProcess(match)
+				&& IsCurrentTrackedChild(match.ProcessId, windowProcessId) ? match : null;
 		}
-		catch { return null; }
-		string path = Path.Combine(steamPath, "logs", "gameprocess_log.txt");
-		if (!File.Exists(path)) return null;
-		string tail = ReadTail(path, 768 * 1024);
+	}
+
+	private static Dictionary<int, ActiveSteamGame> ParseActiveGames(string tail)
+	{
 		Dictionary<int, ActiveSteamGame> active = new();
 		foreach (string line in tail.Split('\n'))
 		{
@@ -337,20 +396,26 @@ public static class OverlaySteamArtworkResolver
 				continue;
 			}
 			Match removed = ProcessRemoved.Match(line);
-			if (removed.Success && int.TryParse(removed.Groups["pid"].Value, out processId))
-			{
-				active.Remove(processId);
-			}
+			if (removed.Success && int.TryParse(removed.Groups["pid"].Value, out processId)) active.Remove(processId);
 		}
-
-		foreach (int stale in active.Values.Where(game => !IsCurrentTrackedProcess(game)).Select(game => game.ProcessId).ToArray()) active.Remove(stale);
-		if (active.TryGetValue(windowProcessId, out ActiveSteamGame? direct)) return direct;
-
-		Dictionary<int, int> parents = SnapshotParents();
-		// Accept the tracked process or its children, never its parent launcher
-		// (Steam, Explorer, or another application that started the game).
-		return active.Values.LastOrDefault(game =>
-			SteamGameIdentityPolicy.IsTrackedWindow(game.ProcessId, windowProcessId, parents));
+		return active;
+	}
+	// Cached process trees are only candidates. Recheck the matched chain to avoid
+	// granting a newly recycled child PID the previous process's game identity.
+	private static bool IsCurrentTrackedChild(int trackedId, int processId)
+	{
+		var seen = new HashSet<int>();
+		for (int depth = 0; depth < 16 && processId > 0 && seen.Add(processId); depth++)
+		{
+			if (processId == trackedId) return true;
+			try
+			{
+				using Process process = Process.GetProcessById(processId);
+				processId = ProcessParent.Read(process.Handle);
+			}
+			catch { return false; }
+		}
+		return false;
 	}
 
 	private static bool IsCurrentTrackedProcess(ActiveSteamGame game)

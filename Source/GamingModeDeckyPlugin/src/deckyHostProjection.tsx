@@ -99,16 +99,20 @@ export function installDeckyTabProjection(onConflict?: () => void) {
   const attached = new Map<any, { previous: any; installed: any }>();
   let stopped = false;
   let component = DeckyTabProjection;
+  let rendererModule: any;
   const reconcile = () => {
     if (stopped || (patches.size > 0 && pendingAttachments.size === 0)) return;
     try {
-      const module = DFL.findModuleByExport((value: any) => value?.type?.toString?.()?.includes("QuickAccessMenuBrowserView"));
-      if (!module) return;
+      // Discovery belongs to this installation, not every pending fiber retry.
+      // Keep the exact export while the QAM waits to mount; a fresh installation
+      // resolves its own module after teardown or reload.
+      rendererModule ??= DFL.findModuleByExport((value: any) => value?.type?.toString?.()?.includes("QuickAccessMenuBrowserView"));
+      if (!rendererModule) return;
       const rootElement = document.getElementById("root");
       const root = rootElement && DFL.getReactRoot(rootElement);
       const retained = root && DFL.findInReactTree(root, (node: any) => node?.type?.[PROJECTION_COMPONENT] === true);
       if (retained) component = retained.type;
-      for (const renderer of Object.values(module) as any[]) {
+      for (const renderer of Object.values(rendererModule) as any[]) {
         if (!/QuickAccessMenuBrowserView|QuickAccessMenuEmbedded/.test(renderer?.type?.toString?.() ?? "")) continue;
         if (patches.has(renderer)) continue;
         const handler = DFL.createReactTreePatcher([
@@ -165,5 +169,6 @@ export function installDeckyTabProjection(onConflict?: () => void) {
     previousTypes.clear();
     handlers.clear();
     patches.clear();
+    rendererModule = undefined;
   } };
 }

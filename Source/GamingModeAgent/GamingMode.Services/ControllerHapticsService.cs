@@ -6,7 +6,6 @@ namespace GamingMode.Services;
 
 public sealed class ControllerHapticsService : IDisposable
 {
-	private readonly SdlControllerHaptics _sdl;
 	private readonly SteamUiHapticsGate _uiGate = new();
 	private readonly ConcurrentDictionary<string, int> _pulseGenerations = new(StringComparer.Ordinal);
 	private readonly ConcurrentDictionary<string, Gamepad> _gamepads = new(StringComparer.Ordinal);
@@ -16,16 +15,11 @@ public sealed class ControllerHapticsService : IDisposable
 
 	public ControllerHapticsService(FileLogger logger)
 	{
+		// Steam owns controller input. Do not initialize SDL/HIDAPI or enumerate
+		// Windows controllers at agent startup. Targeted Windows rumble is opened
+		// only for an explicit haptic request while Steam's UI is foreground.
 		_logger = logger;
-		_sdl = new SdlControllerHaptics(logger);
-		Gamepad.GamepadAdded += OnGamepadAdded;
-		Gamepad.GamepadRemoved += OnGamepadRemoved;
-		RawGameController.RawGameControllerAdded += OnRawControllerAdded;
-		RawGameController.RawGameControllerRemoved += OnRawControllerRemoved;
-		foreach (Gamepad gamepad in Gamepad.Gamepads) CacheGamepad(gamepad);
-		foreach (RawGameController raw in RawGameController.RawGameControllers) CacheRawController(raw);
 	}
-
 	public ControllerHapticResult PlayPattern(
 		int steamControllerIndex,
 		int vendorId,
@@ -46,11 +40,6 @@ public sealed class ControllerHapticsService : IDisposable
 		IReadOnlyList<ControllerHapticStep> pattern = ControllerHapticPatterns.ForAction(action, side);
 		try
 		{
-			if (_sdl.PlayPattern(vendor, product, strength, pattern, _uiGate.CanPlay))
-			{
-				return new(true, "steam-sdl-pattern", DescribeConnection(vendor, product));
-			}
-			if (!TryEnterSteamUi(out blocked)) return blocked!;
 
 			ControllerHapticStep first = pattern[0];
 			return PulseWindows(
@@ -87,12 +76,6 @@ public sealed class ControllerHapticsService : IDisposable
 		int duration = Math.Clamp(durationMs, 8, 250);
 		try
 		{
-			ControllerHapticStep[] pattern = [new(side, 1, duration, 0)];
-			if (_sdl.PlayPattern(vendor, product, strength, pattern, _uiGate.CanPlay))
-			{
-				return new(true, "steam-sdl", DescribeConnection(vendor, product));
-			}
-			if (!TryEnterSteamUi(out blocked)) return blocked!;
 			return PulseWindows(vendor, product, side, strength, duration);
 		}
 		catch (Exception exception)
@@ -113,8 +96,7 @@ public sealed class ControllerHapticsService : IDisposable
 
 		ushort vendor = (ushort)vendorId;
 		ushort product = (ushort)productId;
-		bool stopped = _sdl.Stop(vendor, product);
-		foreach (Gamepad gamepad in Gamepad.Gamepads) CacheGamepad(gamepad);
+		bool stopped = false;
 		foreach ((string identity, Gamepad gamepad) in _gamepads)
 		{
 			try
@@ -127,8 +109,6 @@ public sealed class ControllerHapticsService : IDisposable
 			}
 			catch { }
 		}
-
-		foreach (RawGameController raw in RawGameController.RawGameControllers) CacheRawController(raw);
 		foreach (RawGameController raw in _rawControllers.Values)
 		{
 			if (!Matches(raw, vendor, product)) continue;
@@ -156,18 +136,9 @@ public sealed class ControllerHapticsService : IDisposable
 			blocked = null;
 			return true;
 		}
-
-		_sdl.Stop();
 		StopWindows();
 		blocked = new(true, "steam-ui-only", state.ToString());
 		return false;
-	}
-
-	private static string? DescribeConnection(ushort vendor, ushort product)
-	{
-		return vendor == 0x054c && product is 0x0ce6 or 0x0df2
-			? "DualSense (basic rumble)"
-			: null;
 	}
 
 	private bool TryAcceptRequest(long requestId)
@@ -188,8 +159,9 @@ public sealed class ControllerHapticsService : IDisposable
 		double strength,
 		int duration)
 	{
-		foreach (Gamepad gamepad in Gamepad.Gamepads) CacheGamepad(gamepad);
-		var gamepads = _gamepads.Values
+		_gamepads.Clear();
+		_rawControllers.Clear();
+		var gamepads = Gamepad.Gamepads
 			.Select(gamepad => new { Gamepad = gamepad, Raw = RawGameController.FromGameController(gamepad) })
 			.Where(item => item.Raw is not null && Matches(item.Raw, vendor, product))
 			.ToArray();
@@ -199,14 +171,13 @@ public sealed class ControllerHapticsService : IDisposable
 		{
 			var selected = gamepads[0];
 			string identity = selected.Raw!.NonRoamableId;
+			_gamepads[identity] = selected.Gamepad;
 			(double left, double right) = Motors(side, strength);
 			selected.Gamepad.Vibration = new GamepadVibration(left, right, 0, 0);
 			ScheduleGamepadStop(selected.Gamepad, identity, duration);
 			return new(true, "windows-gamepad", selected.Raw.DisplayName);
 		}
-
-		foreach (RawGameController raw in RawGameController.RawGameControllers) CacheRawController(raw);
-		var rawControllers = _rawControllers.Values
+		var rawControllers = RawGameController.RawGameControllers
 			.Where(raw => Matches(raw, vendor, product) && raw.SimpleHapticsControllers.Count > 0)
 			.ToArray();
 
@@ -214,6 +185,7 @@ public sealed class ControllerHapticsService : IDisposable
 		if (rawControllers.Length == 0) return new(false, "unsupported-by-windows");
 
 		RawGameController rawController = rawControllers[0];
+		_rawControllers[rawController.NonRoamableId] = rawController;
 		bool sent = false;
 		foreach (SimpleHapticsController haptics in rawController.SimpleHapticsControllers)
 		{
@@ -226,8 +198,8 @@ public sealed class ControllerHapticsService : IDisposable
 			else
 			{
 				haptics.SendHapticFeedback(feedback, strength);
-				ScheduleSimpleHapticsStop(haptics, rawController.NonRoamableId, duration);
 			}
+			ScheduleSimpleHapticsStop(haptics, rawController.NonRoamableId, duration);
 			sent = true;
 		}
 
@@ -257,41 +229,6 @@ public sealed class ControllerHapticsService : IDisposable
 		_ => (strength, strength)
 	};
 
-	private void OnGamepadAdded(object? sender, Gamepad gamepad) => CacheGamepad(gamepad);
-
-	private void OnGamepadRemoved(object? sender, Gamepad gamepad)
-	{
-		try
-		{
-			RawGameController? raw = RawGameController.FromGameController(gamepad);
-			if (raw is not null) _gamepads.TryRemove(raw.NonRoamableId, out _);
-		}
-		catch { }
-	}
-
-	private void OnRawControllerAdded(object? sender, RawGameController raw) => CacheRawController(raw);
-
-	private void OnRawControllerRemoved(object? sender, RawGameController raw)
-	{
-		_rawControllers.TryRemove(raw.NonRoamableId, out _);
-	}
-
-	private void CacheGamepad(Gamepad gamepad)
-	{
-		try
-		{
-			RawGameController? raw = RawGameController.FromGameController(gamepad);
-			if (raw is not null) _gamepads[raw.NonRoamableId] = gamepad;
-		}
-		catch { }
-	}
-
-	private void CacheRawController(RawGameController raw)
-	{
-		try { _rawControllers[raw.NonRoamableId] = raw; }
-		catch { }
-	}
-
 	private static SimpleHapticsControllerFeedback? PreferredFeedback(SimpleHapticsController controller)
 	{
 		ushort[] preference =
@@ -319,6 +256,7 @@ public sealed class ControllerHapticsService : IDisposable
 			{
 				try { gamepad.Vibration = new GamepadVibration(0, 0, 0, 0); }
 				catch { }
+				_gamepads.TryRemove(identity, out _);
 			}
 		});
 	}
@@ -334,6 +272,7 @@ public sealed class ControllerHapticsService : IDisposable
 			{
 				try { controller.StopFeedback(); }
 				catch { }
+				_rawControllers.TryRemove(identity, out _);
 			}
 		});
 	}
@@ -351,12 +290,12 @@ public sealed class ControllerHapticsService : IDisposable
 
 	private void StopWindows()
 	{
-		foreach (Gamepad gamepad in Gamepad.Gamepads)
+		foreach (Gamepad gamepad in _gamepads.Values)
 		{
 			try { gamepad.Vibration = new GamepadVibration(0, 0, 0, 0); }
 			catch { }
 		}
-		foreach (RawGameController raw in RawGameController.RawGameControllers)
+		foreach (RawGameController raw in _rawControllers.Values)
 		{
 			foreach (SimpleHapticsController haptics in raw.SimpleHapticsControllers)
 			{
@@ -369,11 +308,6 @@ public sealed class ControllerHapticsService : IDisposable
 	public void Dispose()
 	{
 		Stop();
-		_sdl.Dispose();
-		Gamepad.GamepadAdded -= OnGamepadAdded;
-		Gamepad.GamepadRemoved -= OnGamepadRemoved;
-		RawGameController.RawGameControllerAdded -= OnRawControllerAdded;
-		RawGameController.RawGameControllerRemoved -= OnRawControllerRemoved;
 	}
 }
 
