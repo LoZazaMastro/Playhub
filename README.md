@@ -101,7 +101,7 @@ Playhub is built on people working together and on the freedom of ideas and word
 
 Playhub and its creator ZazaMastro are not responsible for any content, message, post or publication coming from the community.
 
-> **Decky Loader on Windows has NO OFFICIAL SUPPORT from the Decky Loader team. All support requests for Windows will be ignored by that team. Contact Playhub support for the Windows integration.**
+> **Decky Loader on Windows has NO OFFICIAL SUPPORT from the Decky Loader team. All support requests for Windows will be ignored by that team.**
 
 Please do not ask the Decky team for support on Windows: it is not officially supported there. Decky and Playhub are two separate things, so please use the [Playhub subreddit](https://www.reddit.com/r/PlayhubGaming/) for questions or help. From our side you will always get a hand, whatever your platform, and with the greatest respect for people.
 
