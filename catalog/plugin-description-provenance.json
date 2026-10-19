@@ -1,0 +1,337 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-19T19:50:26Z",
+  "catalogRevision": 11,
+  "policy": "External descriptions preserve the publisher text and original language. No translation or editorial rewrite.",
+  "sources": [
+    {
+      "repository": "zomars/audio-output-switcher",
+      "sourceUrl": "https://raw.githubusercontent.com/zomars/audio-output-switcher/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "635db4e216914394c8fa069fc5122905abb4e9ffb3e0c7af3591e3f602c3593b",
+      "descriptionSha256": "46eb169e86b982b234e76c65c697f9e7085cdda12358f63a5a097eddaffd512f"
+    },
+    {
+      "repository": "beallio/protondb-decky",
+      "sourceUrl": "https://raw.githubusercontent.com/beallio/protondb-decky/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "54024ae74d61e270b4bab7d6bd08ca45653cb9c757d835f0be75f638c47cafbb",
+      "descriptionSha256": "24f02915e31759518d341a61da4fb9ad6c62031b52402940b45bd8b17dbbfa9c"
+    },
+    {
+      "repository": "SpookyJoshua/Deck-Mic-Toggle",
+      "sourceUrl": "https://raw.githubusercontent.com/SpookyJoshua/Deck-Mic-Toggle/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "2dece8e6f0d8fdba406d4dabc3b0a1504b5e2f2ff2904c88c03d6a8dfb7ab6ef",
+      "descriptionSha256": "323a1775906950c548597a5fc1a7ba1e30b9f1f0fb7a0bd058baeebcfa2af50b"
+    },
+    {
+      "repository": "ilukezippo/CheatDeck2",
+      "sourceUrl": "https://raw.githubusercontent.com/ilukezippo/CheatDeck2/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "3b7ab8e13392af7c9a89778f1fa696632dbb186b9eb94f7a757fabc812c060f6",
+      "descriptionSha256": "4b649866ec68af2fd6dcf915d973bc6ae0c9b6300e3cff360964041291010363"
+    },
+    {
+      "repository": "zarif98/DeckySales",
+      "sourceUrl": "https://raw.githubusercontent.com/zarif98/DeckySales/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "38a544fe7b2a9778aa78773c5cb25d26aca6f00c1c67e0d2b646f6bd9b9643eb",
+      "descriptionSha256": "c2dbff89d21b0289b06636d258f45dbe2cbfaee50e59f98a39f78d3b810c64a7"
+    },
+    {
+      "repository": "nicholasyoannou/decky-ssh-switch",
+      "sourceUrl": "https://raw.githubusercontent.com/nicholasyoannou/decky-ssh-switch/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "eccce7c188ce88f55d763257f00f6ebef852533ac8d0a6c580b7d4cfbb34ef27",
+      "descriptionSha256": "e989974441222204efb5580ccbca2c87142e6256ccc316317acc806987a7c2c6"
+    },
+    {
+      "repository": "rusagent/SpeechToDeck",
+      "sourceUrl": "https://raw.githubusercontent.com/rusagent/SpeechToDeck/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "e672bfef2525f45afe95acc15507bcaa9a7e05042ed615ce1d0cdd274d577e3f",
+      "descriptionSha256": "b06b3948506c12e9de914c3a603058d79d402e710dca13c974aeb581f94131a4"
+    },
+    {
+      "repository": "spmzt/decky-ipv6",
+      "sourceUrl": "https://raw.githubusercontent.com/spmzt/decky-ipv6/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "8f32358523e76f8af11993e388cad3e5f4b4bb9c5fee4e43b860cf8101d44f24",
+      "descriptionSha256": "a73ef279a1bbcdaf98187d35374375e7727ce12857cf3b3817fefe91e6fce0e6"
+    },
+    {
+      "repository": "joemossjr16/Decky-WiFi-BandLock",
+      "sourceUrl": "https://raw.githubusercontent.com/joemossjr16/Decky-WiFi-BandLock/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "bbb77db7a10ff8b388fa7d154bdb63d6c81153ea5ae4c222e550fd8152d78ce4",
+      "descriptionSha256": "4b682afc247edd9e69de8f9cd869b449dab54cd8ca91d5aaf0b6ea87aa158889"
+    },
+    {
+      "repository": "elyarim/deckamine",
+      "sourceUrl": "https://raw.githubusercontent.com/elyarim/deckamine/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "a9416ccc86ee5fe705482dbd84ba44dcc2917177ae4b7f76b347ec19d59d025f",
+      "descriptionSha256": "f395e098f3595259c40db5aa1db69182b110612a04e343c8ca29e1d77d3a5bb5"
+    },
+    {
+      "repository": "joeatethebeans/OutputManager",
+      "sourceUrl": "https://raw.githubusercontent.com/joeatethebeans/OutputManager/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "84fcd0103eddb597f83bf6df7c96f1bb7aaaf551998d4fb619b1b29f1330c387",
+      "descriptionSha256": "6fc7a76d03ca22970d4200fbc58798c8bdd056bd02ea5834f0d83202c750d328"
+    },
+    {
+      "repository": "olivervbk/decky-macro",
+      "sourceUrl": "https://raw.githubusercontent.com/olivervbk/decky-macro/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "0ee6f7fbcbb4a89112ea2e86bbe485ce0b10e479896217135b63e53dc716d221",
+      "descriptionSha256": "3b0b053e561016306b47743ec50673b7d8f64bc916d36d9c50e93f0cdc6191a2"
+    },
+    {
+      "repository": "D1zg/clearly-recent",
+      "sourceUrl": "https://raw.githubusercontent.com/D1zg/clearly-recent/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "09a9bb0ccd81af73a4c283a06f1fca74804867a0c30985d6d3112e27176a544e",
+      "descriptionSha256": "306ae3e4e37ed2aed9d50c1f842bf197cc6d9951cc317fd0afdd0feac5b243a8"
+    },
+    {
+      "repository": "revenpl/decky-gpu-picker",
+      "sourceUrl": "https://raw.githubusercontent.com/revenpl/decky-gpu-picker/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "a683b4674b3915be12950373cd5ae22896e0d5b55109ec5b89b036d915a82dcc",
+      "descriptionSha256": "12c9f2a29ca6a283da62d1bb309bce403e652b0cfc84c33b791d927a96a8c88d"
+    },
+    {
+      "repository": "nanwangjkl/decky-time-changer",
+      "sourceUrl": "https://raw.githubusercontent.com/nanwangjkl/decky-time-changer/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "ba9677e78649025321311a0b83d6148cd66aa31ba8620f33e0469a4ab0e4a72b",
+      "descriptionSha256": "9824ce35e08fb39617e0cb68306c8a253f8d9902aea0cda390d389dd8f78fe02"
+    },
+    {
+      "repository": "justjoseorg/SpoutRemotePlay",
+      "sourceUrl": "https://raw.githubusercontent.com/justjoseorg/SpoutRemotePlay/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "3ba36955b243d83e47926a21ed5ad178c0c5f0405994eaf1b7088b1b15249fe2",
+      "descriptionSha256": "7f3b7adff594e187bf3f22ce4e1972cb5fac54711cf9c6149c3090321a327e46"
+    },
+    {
+      "repository": "moi952/decky-quick-tab",
+      "sourceUrl": "https://raw.githubusercontent.com/moi952/decky-quick-tab/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "7d5a8fbf7291349467c24604988e54c411f9bee74e5b0f632a663c25a1348fe6",
+      "descriptionSha256": "dc72434d32e02080fcb27bd2274ebb93b5cc49619b8a625c0f2f773d9ca3149c"
+    },
+    {
+      "repository": "goooroooX/CE-Decky",
+      "sourceUrl": "https://raw.githubusercontent.com/goooroooX/CE-Decky/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "91cd40a849adbf78a16ff9b129b6937a2db0b85dfed6019738221f15cde7d973",
+      "descriptionSha256": "617834c403c314ed2cae7e234801725eea3396aeb47fa17b4eeab08c5a2bfcb4"
+    },
+    {
+      "repository": "Alyenax/GabeCubeAura",
+      "sourceUrl": "https://raw.githubusercontent.com/Alyenax/GabeCubeAura/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "9ad753743b4ead8e648df71f35242e89fc81b2c247f5f81d028bf2facd37bd37",
+      "descriptionSha256": "7fe8862a5b480b7d0507186576561099057d60e84419b23c3ebb3badee976749"
+    },
+    {
+      "repository": "jmedina21/deck-as-controller",
+      "sourceUrl": "https://raw.githubusercontent.com/jmedina21/deck-as-controller/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "761e73521fcad161b46e2e1d483f95074d739383f3bec0129f38d8dd31d36af0",
+      "descriptionSha256": "bc3b209d44fee3032dc4b587c4800a456c368f9917a1fc18930edc6704952f6f"
+    },
+    {
+      "repository": "justinca92/spindeck",
+      "sourceUrl": "https://raw.githubusercontent.com/justinca92/spindeck/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "fab37fc7f07f2be757902f5732867616f124176b590dfcfe0ed10ab2483110df",
+      "descriptionSha256": "6ced43ebf3d4536c3d5e3e38349dadc43259550cf0c07bbc7d7a02f7ff983bde"
+    },
+    {
+      "repository": "michpalm/game-glance",
+      "sourceUrl": "https://raw.githubusercontent.com/michpalm/game-glance/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "47238079991016a4722d88231cfe008834e0b4c9284f6e802051345956205369",
+      "descriptionSha256": "be0ec946d3ef9de59ac87a14c122a9c74f5e1f556b82f6a9012b57abd49b9855"
+    },
+    {
+      "repository": "michpalm/ambideck",
+      "sourceUrl": "https://raw.githubusercontent.com/michpalm/ambideck/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "a4957cf19d06827a566a06cb532a7611bf9745ffa6a1c7e5fadf31a004b7f0cd",
+      "descriptionSha256": "2ab37b6db71c4fe8a96e54aa0cf38d1bb817bf50e324a00164e5a4b32c29748a"
+    },
+    {
+      "repository": "beallio/SDH-CssLoader",
+      "sourceUrl": "https://raw.githubusercontent.com/beallio/SDH-CssLoader/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "6e93df827732fa13e958cdbbee16d1252ed804a5e41e40c87d82321d1f09275d",
+      "descriptionSha256": "b01a107841d9c9a8075090735c2acc6d20bbb6d4c196a9516f7455612049cec4"
+    },
+    {
+      "repository": "Rayekkk/LegionGo2Companion",
+      "sourceUrl": "https://raw.githubusercontent.com/Rayekkk/LegionGo2Companion/HEAD/README.md",
+      "field": "README.md line 12",
+      "sourceSha256": "e65dbf294948bcaa7cedb7bd87d6fa646290e64ace0d99d3d90f50d1220b7bc7",
+      "descriptionSha256": "69ed6d2eacdc6671e2e1b02f44c2f21a35f810f675e675cbf01fe2e2fdea2aef"
+    },
+    {
+      "repository": "Rayekkk/SpotiDeck",
+      "sourceUrl": "https://raw.githubusercontent.com/Rayekkk/SpotiDeck/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "cd2572981a7dd2f7b592421b04bbaac3db4d9321d032f6548ee670c1cf91138c",
+      "descriptionSha256": "71b429f5e93c734d64e0273eeeceb8711542f676d20885b7fb5be924b0172825"
+    },
+    {
+      "repository": "Rayekkk/DeckyEQ",
+      "sourceUrl": "https://raw.githubusercontent.com/Rayekkk/DeckyEQ/HEAD/README.md",
+      "field": "README.md line 10",
+      "sourceSha256": "8e60564d824d50f279485fd8eb184e8c2c44349635b6ebf739e3642d46bbbeae",
+      "descriptionSha256": "6226896c62a742e83226862d8f998c90826906ea09e1e407e0a57ab88ef5f47b"
+    },
+    {
+      "repository": "Jaccident/DeckyClocker",
+      "sourceUrl": "https://raw.githubusercontent.com/Jaccident/DeckyClocker/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "768637e494c3610d4dd6652b0a3e82761737016bebb1b64a5902420c85b26937",
+      "descriptionSha256": "c135ad5c15208f75ab2d8462aa6881cb912f6f5a56c957f0c28334de703fbe57"
+    },
+    {
+      "repository": "nukeador/deckyup",
+      "sourceUrl": "https://raw.githubusercontent.com/nukeador/deckyup/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "b30b6214a72228672aff7f663987a8a596c3d65510f5c954b9a1f08ec92fb449",
+      "descriptionSha256": "c9a2e926f7029126f5bbb26d131d673336824b1865f9782ccd54cd250673615c"
+    },
+    {
+      "repository": "acestronautical/decky-protonvpn",
+      "sourceUrl": "https://raw.githubusercontent.com/acestronautical/decky-protonvpn/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "800465033f4aeed11908a2fb9e45f28f855f49a259691a60e9a805a483aedc89",
+      "descriptionSha256": "29ac957dd308d2509035c8e1762418debd6bdf2d78f2febc701668314453e388"
+    },
+    {
+      "repository": "otisabiburada/decky-video-pip",
+      "sourceUrl": "https://raw.githubusercontent.com/otisabiburada/decky-video-pip/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "da6378f6aa78859ba68bfcc70b7be9c11628dea2545ba01a18d30723567beda4",
+      "descriptionSha256": "624d5167633f9d05a0a9efb619569d38c8eb10d4fb3a636eb47d1be19dfe7dc7"
+    },
+    {
+      "repository": "JediRhymeTrix/decky-bluetooth-order",
+      "sourceUrl": "https://raw.githubusercontent.com/JediRhymeTrix/decky-bluetooth-order/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "7ffb9297f8a92fcc7f4d19803989bd5c587813521043ed4e18957e543f40ebbd",
+      "descriptionSha256": "9b7665410e580001cbcc513387a6c0b6105bc5d2ed985407fb1e6c88bbdaa4af"
+    },
+    {
+      "repository": "filesfor/decky-capture",
+      "sourceUrl": "https://raw.githubusercontent.com/filesfor/decky-capture/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "3a94fbeb9479a2a187b134c87200f2e12dd0e026ba59f1798660281a607bb3a2",
+      "descriptionSha256": "32092784125a6b2ca928ce10cb81306f06a9d859f2af536947e140ff779129b1"
+    },
+    {
+      "repository": "filesfor/decky-display",
+      "sourceUrl": "https://raw.githubusercontent.com/filesfor/decky-display/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "8d25ba2e4b3fc840eaf9e42e9c6d7ce064973e56b1079e4ef3dd2a27c799dee0",
+      "descriptionSha256": "45f5c0e87f66d893f5e618ee3e29cc922750cea5a48758db63ed7339089b2f2a"
+    },
+    {
+      "repository": "18798aa12/DeckyMods",
+      "sourceUrl": "https://raw.githubusercontent.com/18798aa12/DeckyMods/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "26290124d1eff1742538ee7578c7016710f8889030f320ce6a73644a8983246c",
+      "descriptionSha256": "e1492d5dd89270849b1a3f536b2cf1308263df28256d9d4008cebb00c6607cec"
+    },
+    {
+      "repository": "MWGIH/DeckyMultiFrameGen",
+      "sourceUrl": "https://raw.githubusercontent.com/MWGIH/DeckyMultiFrameGen/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "1303ee086cf8b5cf1694af5ce4771f140f41e0a0097d8e6fe748b20a1d287732",
+      "descriptionSha256": "709b9c1a73b094aa2d956b25a3d9fae84a992a19431670bc46af8bb321c28855"
+    },
+    {
+      "repository": "Josemolivaresc/decky-nothing-ear",
+      "sourceUrl": "https://raw.githubusercontent.com/Josemolivaresc/decky-nothing-ear/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "cd4a455e3aade902e607e52599fbd1ccd955f6c4d71c8f4f0420ce48c024371f",
+      "descriptionSha256": "fe20236b497d846f6c1eeffd0359f406df191899db461ca0915fd0793ed25b71"
+    },
+    {
+      "repository": "ohxiaoguang/decky-external-storage-guard",
+      "sourceUrl": "https://raw.githubusercontent.com/ohxiaoguang/decky-external-storage-guard/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "72a41d5341eb6d0657dae955439fb47e98f9a09d3ef1d7cb1b65f02c9e89b2fd",
+      "descriptionSha256": "1fd28fd3ffc7ec0bb0f2a7d03665c42a125ef9e768f7d90ed1080ff2abd4e50d"
+    },
+    {
+      "repository": "Kowalski-coder/SAM-for-Decky-Loader",
+      "sourceUrl": "https://raw.githubusercontent.com/Kowalski-coder/SAM-for-Decky-Loader/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "3648ffc02c41c268ccc2342fd3c6d1614ef4646a7c336c508b933a3823c08738",
+      "descriptionSha256": "3f4ce0d0d3ad9a3bb865ac00ff73d7ca9cda52fcedc89bfaabcc1e03bb79c8df"
+    },
+    {
+      "repository": "supercleans/Upscaler-Decky",
+      "sourceUrl": "https://raw.githubusercontent.com/supercleans/Upscaler-Decky/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "a426c017d71890ef6c51c44afd7d597c74d1cd1f70324a858fa2079c0660c61f",
+      "descriptionSha256": "708efd516779e045523f8b13d3fb78944815064df33692bf7e59856242342208"
+    },
+    {
+      "repository": "18798aa12/DeckyProxy",
+      "sourceUrl": "https://raw.githubusercontent.com/18798aa12/DeckyProxy/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "4211e5bf39285eddb26397bea4efa1cae63936fa9ef65abca431a8618e56cd40",
+      "descriptionSha256": "60ad5f01f8bc0798351fe23c31aba8a3058a02f229714b3c33dc75f7e8a90261"
+    },
+    {
+      "repository": "db452/DeckyWhatsapp",
+      "sourceUrl": "https://raw.githubusercontent.com/db452/DeckyWhatsapp/HEAD/decky-plugin/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "f1bf39c51a4c739a3292d3776fd70523c20c21c98753b7aecb8531706c4165ef",
+      "descriptionSha256": "64903ef248d13f023439bf5dcbedd17d8a61f2a5a1b12a688a95fab34b0ff15d"
+    },
+    {
+      "repository": "otisabiburada/finally-3d-game-cases-plugin",
+      "sourceUrl": "https://raw.githubusercontent.com/otisabiburada/finally-3d-game-cases-plugin/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "330065b877984553949ad67d2a35b0119e42faf9011551ec47ed0ef93c724b49",
+      "descriptionSha256": "cc6f81ec9df643df3760707e55dc7840c0fad1805426b506b26881c7ab3707e8"
+    },
+    {
+      "repository": "otisabiburada/finally-screenshot-sound",
+      "sourceUrl": "https://raw.githubusercontent.com/otisabiburada/finally-screenshot-sound/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "85443e9d689bf9b16420ca54d91f7c38b075b123365e2122b3a07dcb1076e8d9",
+      "descriptionSha256": "cb2094b3436cdeca0509a029d43794cfe89fea7b2c5ce6a29fcf777cd3cc0bf4"
+    },
+    {
+      "repository": "otisabiburada/steamder",
+      "sourceUrl": "https://raw.githubusercontent.com/otisabiburada/steamder/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "49201ea7e544f1aaaeea68ec96ad422205bb3946da91ceaf4d78f0a78564dca3",
+      "descriptionSha256": "224849405bebe70e8557900d620d71bdc9b1153ee6e12086d83d44a9daf1af17"
+    },
+    {
+      "repository": "otisabiburada/finally-game-picks",
+      "sourceUrl": "https://raw.githubusercontent.com/otisabiburada/finally-game-picks/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "652bbafbcc478797886bfc1d02836ac0702dd7ec233839a9fe96fb52d46573b3",
+      "descriptionSha256": "eacd6de828050048acc36076406545151d0af5032cb1950bce2ab6e7ac1468bd"
+    },
+    {
+      "repository": "otisabiburada/finally-game-replay-recorder",
+      "sourceUrl": "https://raw.githubusercontent.com/otisabiburada/finally-game-replay-recorder/HEAD/plugin.json",
+      "field": "publish.description",
+      "sourceSha256": "e4c27c5a2949d5e8c151980934cb62b7cb226061abedfd9b850754ecf8816500",
+      "descriptionSha256": "bb7517c9f86c3f0f80315e715dce5b0287cef88aba4583ecf6844c549890ec56"
+    }
+  ]
+}

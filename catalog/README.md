@@ -17,6 +17,14 @@ catalogRevision with every publication. Names, descriptions, categories,
 versions, exact release ZIP URLs, compatible covers, aliases and keywords are
 editable. Add repository records without updating the application.
 
+For external plugins, preserve the developer's original description and language.
+Use `publish.description` from their `plugin.json`, or their own introductory
+README text when that field is absent. Spreadsheet summaries are discovery notes,
+not replacement store descriptions. Do not translate or rewrite publisher copy
+to match Playhub's interface language. README detail content also stays original.
+`plugin-description-provenance.json` records the sources and text hashes for the
+47 workbook additions corrected in revision 11, including non-English originals.
+
 `firstPublishedAt` is the original Decky Store creation timestamp or the first
 published GitHub release. `updatedAt` is the latest upstream release/update.
 Both are ISO 8601 UTC timestamps with time preserved; neither is the date a
