@@ -22,8 +22,9 @@ published GitHub release. `updatedAt` is the latest upstream release/update.
 Both are ISO 8601 UTC timestamps with time preserved; neither is the date a
 record was added to Playhub. Missing dates sort last. Both date sort modes run
 from newest to oldest. Home's News collection selects at most 44 distinct
-projects by their latest publication/update, including older projects with new
-updates. Its first four cards preview the collection above Playhub's plugins.
+projects by their first upstream publication. Updating an older plugin never
+moves it into News. Its first four cards preview the collection above Playhub's
+plugins; opening News starts with the publication-date order.
 
 Repository identity, host, install folder, source and official Decky ID cannot
 be reassigned over an existing record. External releases must be versioned ZIPs
@@ -128,6 +129,10 @@ Completed batches publish partial results. Atom tags are compared with the
 receipt; the exact release HTML is fetched on a changed tag or a legacy cache
 without a precise date. Failed or malformed responses preserve known dates.
 It makes no GitHub REST calls for date discovery and does not block Home rendering.
+Cache-write failure cannot make the same source loop indefinitely: in-memory
+attempt receipts also bound each scan. The open detail page keeps its enriched
+content and visual tree; catalog replacements are deferred until returning to
+browsing, including loads that were already running when the detail was opened.
 
 Maintainer backfill (ordinary Python, no packages or token required):
 
