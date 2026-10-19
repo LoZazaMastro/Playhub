@@ -1,0 +1,518 @@
+{
+  "sourceWorkbook": "Decky_plugins_fuori_store_catalogo_aggiornato_2026-10-19.xlsx",
+  "asOf": "2026-10-19",
+  "catalogRevision": 8,
+  "added": [
+    {
+      "repository": "zomars/audio-output-switcher",
+      "sheet": "Catalogo_verificato",
+      "row": "A60",
+      "version": "1.3.1",
+      "releaseUrl": "https://github.com/zomars/audio-output-switcher/releases/download/v1.3.1/audio-output-switcher.zip",
+      "installFolder": "Audio Output Switcher"
+    },
+    {
+      "repository": "beallio/protondb-decky",
+      "sheet": "Nuovi_plugin_2026-09-04",
+      "row": "A15",
+      "version": "1.3.3+beallio.2",
+      "releaseUrl": "https://github.com/beallio/protondb-decky/releases/download/v1.3.3+beallio.2/protondb-decky.zip",
+      "installFolder": "ProtonDB Badges"
+    },
+    {
+      "repository": "SpookyJoshua/Deck-Mic-Toggle",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A9",
+      "version": "latest",
+      "releaseUrl": "https://github.com/SpookyJoshua/Deck-Mic-Toggle/releases/download/latest/DeckMicToggle-main.zip",
+      "installFolder": "Deck Mic Toggle"
+    },
+    {
+      "repository": "ilukezippo/CheatDeck2",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A11",
+      "version": "1.0.1",
+      "releaseUrl": "https://github.com/ilukezippo/CheatDeck2/releases/download/v1.0.1/CheatDeck2.zip",
+      "installFolder": "CheatDeck 2"
+    },
+    {
+      "repository": "zarif98/DeckySales",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A12",
+      "version": "1.2.5",
+      "releaseUrl": "https://github.com/zarif98/DeckySales/releases/download/v1.2.5/deckysales-v1.2.5.zip",
+      "installFolder": "DeckySales"
+    },
+    {
+      "repository": "nicholasyoannou/decky-ssh-switch",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A13",
+      "version": "0.2.2",
+      "releaseUrl": "https://github.com/nicholasyoannou/decky-ssh-switch/releases/download/v0.2.2/ssh-switch-0.2.2.zip",
+      "installFolder": "SSH Switch"
+    },
+    {
+      "repository": "rusagent/SpeechToDeck",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A14",
+      "version": "0.4.0",
+      "releaseUrl": "https://github.com/rusagent/SpeechToDeck/releases/download/v0.4.0/SpeechToDeck.zip",
+      "installFolder": "SpeechToDeck"
+    },
+    {
+      "repository": "spmzt/decky-ipv6",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A15",
+      "version": "0.1.2",
+      "releaseUrl": "https://github.com/spmzt/decky-ipv6/releases/download/v0.1.2/IPv6.Enabler.Plugin.zip",
+      "installFolder": "IPv6 Enabler Plugin"
+    },
+    {
+      "repository": "joemossjr16/Decky-WiFi-BandLock",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A16",
+      "version": "1.0.0",
+      "releaseUrl": "https://github.com/joemossjr16/Decky-WiFi-BandLock/releases/download/v1.0.0/WiFi-BandLock.zip",
+      "installFolder": "WiFi BandLock"
+    },
+    {
+      "repository": "elyarim/deckamine",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A17",
+      "version": "1.0.1",
+      "releaseUrl": "https://github.com/elyarim/Deckamine/releases/download/v1.0.1/deckamine.zip",
+      "installFolder": "Deckamine"
+    },
+    {
+      "repository": "joeatethebeans/OutputManager",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A18",
+      "version": "1.4.0",
+      "releaseUrl": "https://github.com/joeatethebeans/OutputManager/releases/download/v1.4.0/Output.Manager-1.4.0.zip",
+      "installFolder": "Output Manager"
+    },
+    {
+      "repository": "olivervbk/decky-macro",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A19",
+      "version": "1.1.0",
+      "releaseUrl": "https://github.com/olivervbk/decky-macro/releases/download/v1.1.0/decky-macro-v1.1.0.zip",
+      "installFolder": "Decky Macro"
+    },
+    {
+      "repository": "D1zg/clearly-recent",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A20",
+      "version": "1.0.0",
+      "releaseUrl": "https://github.com/D1zg/clearly-recent/releases/download/v1.0.0/clearly-recent-1.0.0.zip",
+      "installFolder": "Clearly Recent"
+    },
+    {
+      "repository": "revenpl/decky-gpu-picker",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A21",
+      "version": "0.2.1",
+      "releaseUrl": "https://github.com/revenpl/decky-gpu-picker/releases/download/v0.2.1/decky-gpu-picker.zip",
+      "installFolder": "GPU Picker"
+    },
+    {
+      "repository": "nanwangjkl/decky-time-changer",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A22",
+      "version": "0.1.13",
+      "releaseUrl": "https://github.com/nanwangjkl/decky-time-changer/releases/download/v0.1.13/decky-time-changer-v0.1.13.zip",
+      "installFolder": "Time Changer"
+    },
+    {
+      "repository": "justjoseorg/SpoutRemotePlay",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A23",
+      "version": "0.5.7",
+      "releaseUrl": "https://github.com/justjoseorg/SpoutRemotePlay/releases/download/v0.5.7/SpoutRemotePlay-v0.5.7.zip",
+      "installFolder": "SpoutRemotePlay"
+    },
+    {
+      "repository": "moi952/decky-quick-tab",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A25",
+      "version": "0.1.0",
+      "releaseUrl": "https://github.com/moi952/decky-quick-tab/releases/download/v0.1.0/decky-quick-tab-v0.1.0.zip",
+      "installFolder": "Quick Tab"
+    },
+    {
+      "repository": "goooroooX/CE-Decky",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A26",
+      "version": "0.9.29",
+      "releaseUrl": "https://github.com/goooroooX/CE-Decky/releases/download/v0.9.29/CE-Decky-v0.9.29.zip",
+      "installFolder": "CE Decky"
+    },
+    {
+      "repository": "Alyenax/GabeCubeAura",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A27",
+      "version": "1.4.0",
+      "releaseUrl": "https://github.com/Alyenax/GabeCubeAura/releases/download/v1.4.0/GabeCubeAura-v1.4.0.zip",
+      "installFolder": "GabeCubeAura"
+    },
+    {
+      "repository": "jmedina21/deck-as-controller",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A28",
+      "version": "0.6.2",
+      "releaseUrl": "https://github.com/jmedina21/deck-as-controller/releases/download/v0.6.2/deck-as-controller.zip",
+      "installFolder": "Deck as Controller"
+    },
+    {
+      "repository": "justinca92/spindeck",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A29",
+      "version": "1.4.1",
+      "releaseUrl": "https://github.com/justinca92/spindeck/releases/download/v1.4.1/spindeck-1.4.1.zip",
+      "installFolder": "Spindeck"
+    },
+    {
+      "repository": "michpalm/game-glance",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A30",
+      "version": "3.4.0",
+      "releaseUrl": "https://github.com/michpalm/game-glance/releases/download/v3.4.0/game-glance.zip",
+      "installFolder": "Game Glance"
+    },
+    {
+      "repository": "michpalm/ambideck",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A31",
+      "version": "1.2.0",
+      "releaseUrl": "https://github.com/michpalm/ambideck/releases/download/v1.2.0/ambideck.zip",
+      "installFolder": "Ambideck"
+    },
+    {
+      "repository": "beallio/SDH-CssLoader",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A32",
+      "version": "2.1.4",
+      "releaseUrl": "https://github.com/beallio/SDH-CssLoader/releases/download/v2.1.4/SDH-CssLoader-2.1.4.zip",
+      "installFolder": "CSS Loader"
+    },
+    {
+      "repository": "Rayekkk/LegionGo2Companion",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A33",
+      "version": "2.2.0",
+      "releaseUrl": "https://github.com/Rayekkk/LegionGo2Companion/releases/download/2.2.0/LegionGo2Companion-2.2.0.zip",
+      "installFolder": "Legion Go 2 Companion"
+    },
+    {
+      "repository": "Rayekkk/SpotiDeck",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A34",
+      "version": "1.1.1",
+      "releaseUrl": "https://github.com/Rayekkk/SpotiDeck/releases/download/1.1.1/SpotiDeck-1.1.1.zip",
+      "installFolder": "SpotiDeck"
+    },
+    {
+      "repository": "Rayekkk/DeckyEQ",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A35",
+      "version": "1.0.0",
+      "releaseUrl": "https://github.com/Rayekkk/DeckyEQ/releases/download/1.0.0/DeckyEQ-1.0.0.zip",
+      "installFolder": "DeckyEQ"
+    },
+    {
+      "repository": "Jaccident/DeckyClocker",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A9",
+      "version": "1.0.0-rc3",
+      "releaseUrl": "https://github.com/Jaccident/DeckyClocker/releases/download/v1.0.0-rc3/DeckyClocker.v1.0.0-rc3-release.zip",
+      "installFolder": "DeckyClocker"
+    },
+    {
+      "repository": "nukeador/deckyup",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A10",
+      "version": "0.2.6",
+      "releaseUrl": "https://github.com/nukeador/deckyup/releases/download/v0.2.6/Decky-Direct-Updater.zip",
+      "installFolder": "Decky Direct Updater"
+    },
+    {
+      "repository": "acestronautical/decky-protonvpn",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A11",
+      "version": "0.1.0",
+      "releaseUrl": "https://github.com/acestronautical/decky-protonvpn/releases/download/v0.1.0/decky-protonvpn-v0.1.0.zip",
+      "installFolder": "Proton VPN Unofficial"
+    },
+    {
+      "repository": "otisabiburada/decky-video-pip",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A12",
+      "version": "0.6.0",
+      "releaseUrl": "https://github.com/otisabiburada/decky-video-pip/releases/download/0.6.0/video-pip-v0.6.0.zip",
+      "installFolder": "YouTube PiP"
+    },
+    {
+      "repository": "JediRhymeTrix/decky-bluetooth-order",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A13",
+      "version": "0.1.0",
+      "releaseUrl": "https://github.com/JediRhymeTrix/decky-bluetooth-order/releases/download/v0.1.0/bluetooth-order.zip",
+      "installFolder": "Bluetooth Order"
+    },
+    {
+      "repository": "filesfor/decky-capture",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A14",
+      "version": "0.1.0",
+      "releaseUrl": "https://github.com/filesfor/decky-capture/releases/download/v0.1.0/decky-capture.zip",
+      "installFolder": "Deck as Capture Card"
+    },
+    {
+      "repository": "filesfor/decky-display",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A15",
+      "version": "0.1.0",
+      "releaseUrl": "https://github.com/filesfor/decky-display/releases/download/v0.1.0/decky-display.zip",
+      "installFolder": "Deck as Display"
+    },
+    {
+      "repository": "18798aa12/DeckyMods",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A16",
+      "version": "0.2.14",
+      "releaseUrl": "https://github.com/18798aa12/DeckyMods/releases/download/v0.2.14/DeckyMods-v0.2.14.zip",
+      "installFolder": "DeckyMods"
+    },
+    {
+      "repository": "MWGIH/DeckyMultiFrameGen",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A17",
+      "version": "0.6.1",
+      "releaseUrl": "https://github.com/MWGIH/DeckyMultiFrameGen/releases/download/v0.6.1/Decky-MultiFrameGen.zip",
+      "installFolder": "Decky MultiFrameGen"
+    },
+    {
+      "repository": "Josemolivaresc/decky-nothing-ear",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A18",
+      "version": "0.3.2",
+      "releaseUrl": "https://github.com/Josemolivaresc/decky-nothing-ear/releases/download/v0.3.2/nothing-ear-deck.zip",
+      "installFolder": "Nothing Ear"
+    },
+    {
+      "repository": "ohxiaoguang/decky-external-storage-guard",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A19",
+      "version": "0.5.5",
+      "releaseUrl": "https://github.com/ohxiaoguang/decky-external-storage-guard/releases/download/v0.5.5/External-Storage-Guard.zip",
+      "installFolder": "External Storage Guard"
+    },
+    {
+      "repository": "Kowalski-coder/SAM-for-Decky-Loader",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A20",
+      "version": "1.0.0",
+      "releaseUrl": "https://github.com/Kowalski-coder/SAM-for-Decky-Loader/releases/download/v1.0.0/SAM.zip",
+      "installFolder": "SAM"
+    },
+    {
+      "repository": "supercleans/Upscaler-Decky",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A21",
+      "version": "0.1.29",
+      "releaseUrl": "https://github.com/supercleans/Upscaler-Decky/releases/download/v0.1.29/Upscaler-Decky-0.1.29.zip",
+      "installFolder": "Upscaler Decky"
+    },
+    {
+      "repository": "18798aa12/DeckyProxy",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A22",
+      "version": "0.2.3",
+      "releaseUrl": "https://github.com/18798aa12/DeckyProxy/releases/download/v0.2.3/DeckyProxy-0.2.3.zip",
+      "installFolder": "DeckyProxy"
+    },
+    {
+      "repository": "db452/DeckyWhatsapp",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A23",
+      "version": "1.1.0",
+      "releaseUrl": "https://github.com/db452/DeckyWhatsapp/releases/download/v1.1.0/decky-whatsapp-decky-plugin-v1.1.0.zip",
+      "installFolder": "Decky WhatsApp"
+    },
+    {
+      "repository": "otisabiburada/finally-3d-game-cases-plugin",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A24",
+      "version": "1.11.1",
+      "releaseUrl": "https://github.com/otisabiburada/finally-3d-game-cases-plugin/releases/download/1.11.1/Finally-3D-Game-Cases-v1.11.1.zip",
+      "installFolder": "Finally 3D Game Cases"
+    },
+    {
+      "repository": "otisabiburada/finally-screenshot-sound",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A25",
+      "version": "1.0.1",
+      "releaseUrl": "https://github.com/otisabiburada/finally-screenshot-sound/releases/download/1.0.1/Finally-Screenshot-Sound-v1.0.1.zip",
+      "installFolder": "Finally Screenshot Sound"
+    },
+    {
+      "repository": "otisabiburada/steamder",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A26",
+      "version": "1.4.3",
+      "releaseUrl": "https://github.com/otisabiburada/steamder/releases/download/1.4.3/Steamder-v1.4.3.zip",
+      "installFolder": "Steamder"
+    },
+    {
+      "repository": "otisabiburada/finally-game-picks",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A27",
+      "version": "1.3.5",
+      "releaseUrl": "https://github.com/otisabiburada/finally-game-picks/releases/download/1.3.5/Game-Picks-v1.3.5.zip",
+      "installFolder": "Game Picks"
+    },
+    {
+      "repository": "otisabiburada/finally-game-replay-recorder",
+      "sheet": "Aggiornamento_2026-10-19",
+      "row": "A28",
+      "version": "1.12.0",
+      "releaseUrl": "https://github.com/otisabiburada/finally-game-replay-recorder/releases/download/1.12.0/Finally.Game.Recorder.1.12.0.zip",
+      "installFolder": "Finally Game Recorder"
+    }
+  ],
+  "deferred": [
+    {
+      "repository": "allmazz/decky-volume-mixer",
+      "sheet": "Catalogo_verificato",
+      "row": "A47",
+      "reason": "no versioned release"
+    },
+    {
+      "repository": "Yhangzzz12/decklingo",
+      "sheet": "Catalogo_verificato",
+      "row": "A48",
+      "reason": "no versioned release"
+    },
+    {
+      "repository": "allmazz/decky-desktop-apps",
+      "sheet": "Catalogo_verificato",
+      "row": "A49",
+      "reason": "no versioned release"
+    },
+    {
+      "repository": "heynedim/easy-ssh",
+      "sheet": "Catalogo_verificato",
+      "row": "A51",
+      "reason": "no versioned release"
+    },
+    {
+      "repository": "binaryj/squad-up",
+      "sheet": "Catalogo_verificato",
+      "row": "A52",
+      "reason": "no versioned release"
+    },
+    {
+      "repository": "Phill544/Pixel-Buddy",
+      "sheet": "Catalogo_verificato",
+      "row": "A53",
+      "reason": "no versioned release"
+    },
+    {
+      "repository": "DozeLabs/decky-torrent",
+      "sheet": "Catalogo_verificato",
+      "row": "A56",
+      "reason": "no versioned release"
+    },
+    {
+      "repository": "luisfound/backlog-manager-plugin",
+      "sheet": "Catalogo_verificato",
+      "row": "A58",
+      "reason": "no versioned release"
+    },
+    {
+      "repository": "nileshchakraborty/restart-to-windows",
+      "sheet": "Catalogo_verificato",
+      "row": "A62",
+      "reason": "no versioned release"
+    },
+    {
+      "repository": "SteelSavant/deck-ds",
+      "sheet": "Catalogo_verificato",
+      "row": "A84",
+      "reason": "no versioned release"
+    },
+    {
+      "repository": "ArcadaLabs-Jason/WifiOptimizer",
+      "sheet": "Catalogo_verificato",
+      "row": "A85",
+      "reason": "no release ZIP"
+    },
+    {
+      "repository": "aarron-lee/DeckyPlumber",
+      "sheet": "Catalogo_verificato",
+      "row": "A89",
+      "reason": "no release ZIP"
+    },
+    {
+      "repository": "danielcopper/decky-romm-sync",
+      "sheet": "Catalogo_verificato",
+      "row": "A93",
+      "reason": "HTTP Error 404: Not Found"
+    },
+    {
+      "repository": "SpiderNic96/dimensions-toypad-aio",
+      "sheet": "Nuovi_plugin_2026-09-04",
+      "row": "A6",
+      "reason": "HTTP Error 404: Not Found"
+    },
+    {
+      "repository": "beallio/hltb-for-deck",
+      "sheet": "Nuovi_plugin_2026-09-04",
+      "row": "A7",
+      "reason": "no release ZIP"
+    },
+    {
+      "repository": "Bvaughan7/prefixpug",
+      "sheet": "Nuovi_plugin_2026-09-04",
+      "row": "A8",
+      "reason": "HTTP Error 404: Not Found"
+    },
+    {
+      "repository": "movacx/bc250-control-center",
+      "sheet": "Nuovi_plugin_2026-09-04",
+      "row": "A20",
+      "reason": "no release ZIP"
+    },
+    {
+      "repository": "locoholy/decky-decktorrent",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A10",
+      "reason": "no release ZIP"
+    },
+    {
+      "repository": "gamma/steamclip-decky",
+      "sheet": "Aggiornamento_2026-10-12",
+      "row": "A24",
+      "reason": "no versioned release"
+    }
+  ],
+  "removed": [
+    "jayool/LumaDeck"
+  ],
+  "excluded": [
+    "Radar sheets: unverified leads",
+    "HARd/varta-decky: existing exclusion",
+    "LoZazaMastro/Playhub#GamingModeDeckyPlugin: integrated functionality",
+    "unom/punktfunk/clients/decky: unsupported external forge"
+  ],
+  "counts": {
+    "total": 243,
+    "bySource": {
+      "playhub": 13,
+      "decky-store": 108,
+      "outside-store": 122
+    },
+    "added": 47,
+    "deferred": 19
+  }
+}

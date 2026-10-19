@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "verifiedAt": "2026-09-11",
+  "verifiedAt": "2026-10-19",
   "officialDeckyCatalogUrl": "https://plugins.deckbrew.xyz/plugins",
   "plugins": [
     {
@@ -49,7 +49,7 @@
       "author": "LoZazaMastro",
       "repository": "LoZazaMastro/Launch-Curtain",
       "repositoryUrl": "https://github.com/LoZazaMastro/Launch-Curtain",
-      "version": "2.5.6",
+      "version": "2.5.7",
       "releaseAssetName": "",
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
@@ -125,7 +125,7 @@
       "author": "LoZazaMastro",
       "repository": "LoZazaMastro/Playhub-Metadata",
       "repositoryUrl": "https://github.com/LoZazaMastro/Playhub-Metadata",
-      "version": "1.8.3",
+      "version": "1.8.4",
       "releaseAssetName": "",
       "catalogReleaseUrl": "",
       "releasePublishedAt": "",
@@ -6310,39 +6310,6 @@
     },
     {
       "active": true,
-      "name": "LumaDeck",
-      "installFolder": "LumaDeck",
-      "author": "jayool",
-      "repository": "jayool/LumaDeck",
-      "repositoryUrl": "https://github.com/jayool/LumaDeck",
-      "version": "0.7.5",
-      "releaseAssetName": "LumaDeck.zip",
-      "catalogReleaseUrl": "https://github.com/jayool/LumaDeck/releases/download/v0.7.5/LumaDeck.zip",
-      "releasePublishedAt": "2026-08-31T18:57:32Z",
-      "category": "Libreria e giochi",
-      "shortDescription": "Manage Steam manifests and downloads through lumalinux and SLSsteam from a Decky interface.",
-      "longDescription": "LumaDeck is a separately maintained DeckTools fork that integrates lumalinux and SLSsteam workflows into Gaming Mode for Steam manifest and download management.",
-      "coverUrl": "https://opengraph.githubassets.com/1/jayool/LumaDeck",
-      "keywords": [
-        "steam",
-        "manifests",
-        "downloads",
-        "library",
-        "lumalinux",
-        "catalog-added:2026-09-04"
-      ],
-      "aliases": [
-        "Luma Deck",
-        "LumaDeck",
-        "jayool/LumaDeck"
-      ],
-      "catalogStatus": "github",
-      "compatibility": "Designed for stable SteamOS and requires elevated permissions. Use only with accounts and content you lawfully own.",
-      "catalogSource": "outside-store",
-      "catalogPluginId": 0
-    },
-    {
-      "active": true,
       "name": "CheevoDeck",
       "installFolder": "CheevoDeck",
       "author": "FAILINATOR5000",
@@ -6375,7 +6342,1279 @@
       "compatibility": "Requires SteamOS, Decky Loader, and a RetroAchievements account with an API key. The plugin manifest requests root access.",
       "catalogSource": "outside-store",
       "catalogPluginId": 0
+    },
+    {
+      "active": true,
+      "name": "Audio Output Switcher",
+      "installFolder": "Audio Output Switcher",
+      "author": "zomars",
+      "repository": "zomars/audio-output-switcher",
+      "repositoryUrl": "https://github.com/zomars/audio-output-switcher",
+      "version": "1.3.1",
+      "releaseAssetName": "audio-output-switcher.zip",
+      "catalogReleaseUrl": "https://github.com/zomars/audio-output-switcher/releases/download/v1.3.1/audio-output-switcher.zip",
+      "releasePublishedAt": "",
+      "category": "Audio",
+      "shortDescription": "Cambia l'uscita audio predefinita e può usare una scorciatoia controller.",
+      "longDescription": "Cambia l'uscita audio predefinita e può usare una scorciatoia controller.",
+      "coverUrl": "https://opengraph.githubassets.com/1/zomars/audio-output-switcher",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; verificare requisiti; ",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Audio Output Switcher",
+        "zomars/audio-output-switcher"
+      ]
+    },
+    {
+      "active": true,
+      "name": "ProtonDB Badges — beallio fork",
+      "installFolder": "ProtonDB Badges",
+      "author": "Schelstraete Bart",
+      "repository": "beallio/protondb-decky",
+      "repositoryUrl": "https://github.com/beallio/protondb-decky",
+      "version": "1.3.3+beallio.2",
+      "releaseAssetName": "protondb-decky.zip",
+      "catalogReleaseUrl": "https://github.com/beallio/protondb-decky/releases/download/v1.3.3+beallio.2/protondb-decky.zip",
+      "releasePublishedAt": "",
+      "category": "Compatibilità / ProtonDB",
+      "shortDescription": "Mostra badge ProtonDB interattivi nelle pagine dei giochi tramite un fork mantenuto separatamente.",
+      "longDescription": "Mostra badge ProtonDB interattivi nelle pagine dei giochi tramite un fork mantenuto separatamente.",
+      "coverUrl": "https://opengraph.githubassets.com/1/beallio/protondb-decky",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Fork della versione ufficiale: confrontare differenze e percorso di aggiornamento.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "ProtonDB Badges — beallio fork",
+        "ProtonDB Badges",
+        "beallio/protondb-decky"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Deck Mic Toggle",
+      "installFolder": "Deck Mic Toggle",
+      "author": "Josh",
+      "repository": "SpookyJoshua/Deck-Mic-Toggle",
+      "repositoryUrl": "https://github.com/SpookyJoshua/Deck-Mic-Toggle",
+      "version": "latest",
+      "releaseAssetName": "DeckMicToggle-main.zip",
+      "catalogReleaseUrl": "https://github.com/SpookyJoshua/Deck-Mic-Toggle/releases/download/latest/DeckMicToggle-main.zip",
+      "releasePublishedAt": "",
+      "category": "Audio / microfono",
+      "shortDescription": "Muta o riattiva il microfono interno dello Steam Deck direttamente dal QAM.",
+      "longDescription": "Muta o riattiva il microfono interno dello Steam Deck direttamente dal QAM.",
+      "coverUrl": "https://opengraph.githubassets.com/1/SpookyJoshua/Deck-Mic-Toggle",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Agisce solo sul mute PipeWire/PulseAudio; verificare il corretto rilevamento del microfono interno.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Deck Mic Toggle",
+        "SpookyJoshua/Deck-Mic-Toggle"
+      ]
+    },
+    {
+      "active": true,
+      "name": "CheatDeck 2",
+      "installFolder": "CheatDeck 2",
+      "author": "ilukezippo",
+      "repository": "ilukezippo/CheatDeck2",
+      "repositoryUrl": "https://github.com/ilukezippo/CheatDeck2",
+      "version": "1.0.1",
+      "releaseAssetName": "CheatDeck2.zip",
+      "catalogReleaseUrl": "https://github.com/ilukezippo/CheatDeck2/releases/download/v1.0.1/CheatDeck2.zip",
+      "releasePublishedAt": "",
+      "category": "Trainer / launch options",
+      "shortDescription": "Fork di CheatDeck con ricerca, download e configurazione automatica dei trainer FLiNG.",
+      "longDescription": "Fork di CheatDeck con ricerca, download e configurazione automatica dei trainer FLiNG.",
+      "coverUrl": "https://opengraph.githubassets.com/1/ilukezippo/CheatDeck2",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Scarica ed esegue programmi sidecar; verificare provenienza, hash e compatibilità con anti-cheat.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "CheatDeck 2",
+        "ilukezippo/CheatDeck2"
+      ]
+    },
+    {
+      "active": true,
+      "name": "DeckySales",
+      "installFolder": "DeckySales",
+      "author": "zarif98",
+      "repository": "zarif98/DeckySales",
+      "repositoryUrl": "https://github.com/zarif98/DeckySales",
+      "version": "1.2.5",
+      "releaseAssetName": "deckysales-v1.2.5.zip",
+      "catalogReleaseUrl": "https://github.com/zarif98/DeckySales/releases/download/v1.2.5/deckysales-v1.2.5.zip",
+      "releasePublishedAt": "",
+      "category": "Prezzi / offerte",
+      "shortDescription": "Confronta Steam con circa 30 negozi, converte valute e invia avvisi per la wishlist.",
+      "longDescription": "Confronta Steam con circa 30 negozi, converte valute e invia avvisi per la wishlist.",
+      "coverUrl": "https://opengraph.githubassets.com/1/zarif98/DeckySales",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Dipende dall'API IsThereAnyDeal e da dati di wishlist/prezzi; controllare limiti e privacy.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "DeckySales",
+        "zarif98/DeckySales"
+      ]
+    },
+    {
+      "active": true,
+      "name": "SSH Switch",
+      "installFolder": "SSH Switch",
+      "author": "nicholasyoannou",
+      "repository": "nicholasyoannou/decky-ssh-switch",
+      "repositoryUrl": "https://github.com/nicholasyoannou/decky-ssh-switch",
+      "version": "0.2.2",
+      "releaseAssetName": "ssh-switch-0.2.2.zip",
+      "catalogReleaseUrl": "https://github.com/nicholasyoannou/decky-ssh-switch/releases/download/v0.2.2/ssh-switch-0.2.2.zip",
+      "releasePublishedAt": "",
+      "category": "Rete / SSH",
+      "shortDescription": "Gestisce SSH, avvio al boot, password dell'account e dettagli di connessione dal QAM.",
+      "longDescription": "Gestisce SSH, avvio al boot, password dell'account e dettagli di connessione dal QAM.",
+      "coverUrl": "https://opengraph.githubassets.com/1/nicholasyoannou/decky-ssh-switch",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Espone accesso remoto e può modificare la password dell'account; usare credenziali robuste.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "SSH Switch",
+        "nicholasyoannou/decky-ssh-switch"
+      ]
+    },
+    {
+      "active": true,
+      "name": "SpeechToDeck",
+      "installFolder": "SpeechToDeck",
+      "author": "rusagent",
+      "repository": "rusagent/SpeechToDeck",
+      "repositoryUrl": "https://github.com/rusagent/SpeechToDeck",
+      "version": "0.4.0",
+      "releaseAssetName": "SpeechToDeck.zip",
+      "catalogReleaseUrl": "https://github.com/rusagent/SpeechToDeck/releases/download/v0.4.0/SpeechToDeck.zip",
+      "releasePublishedAt": "",
+      "category": "Accessibilità / dettatura",
+      "shortDescription": "Dovrebbe aggiungere dettatura locale basata su Whisper e copiare il testo negli appunti.",
+      "longDescription": "Dovrebbe aggiungere dettatura locale basata su Whisper e copiare il testo negli appunti.",
+      "coverUrl": "https://opengraph.githubassets.com/1/rusagent/SpeechToDeck",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Usa microfono e un runtime Voxtype precompilato dinamicamente linkato.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "SpeechToDeck",
+        "rusagent/SpeechToDeck"
+      ]
+    },
+    {
+      "active": true,
+      "name": "IPv6 Enabler Plugin",
+      "installFolder": "IPv6 Enabler Plugin",
+      "author": "Seyed Pouria Mousavizadeh Tehrani",
+      "repository": "spmzt/decky-ipv6",
+      "repositoryUrl": "https://github.com/spmzt/decky-ipv6",
+      "version": "0.1.2",
+      "releaseAssetName": "IPv6.Enabler.Plugin.zip",
+      "catalogReleaseUrl": "https://github.com/spmzt/decky-ipv6/releases/download/v0.1.2/IPv6.Enabler.Plugin.zip",
+      "releasePublishedAt": "",
+      "category": "Rete / IPv6",
+      "shortDescription": "Abilita, disabilita o forza IPv6 e può disattivare IPv4 sulle connessioni.",
+      "longDescription": "Abilita, disabilita o forza IPv6 e può disattivare IPv4 sulle connessioni.",
+      "coverUrl": "https://opengraph.githubassets.com/1/spmzt/decky-ipv6",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Modifica in modo persistente la configurazione di rete e può interrompere la connettività.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "IPv6 Enabler Plugin",
+        "spmzt/decky-ipv6"
+      ]
+    },
+    {
+      "active": true,
+      "name": "WiFi BandLock",
+      "installFolder": "WiFi BandLock",
+      "author": "JoeMossJr16",
+      "repository": "joemossjr16/Decky-WiFi-BandLock",
+      "repositoryUrl": "https://github.com/joemossjr16/Decky-WiFi-BandLock",
+      "version": "1.0.0",
+      "releaseAssetName": "WiFi-BandLock.zip",
+      "catalogReleaseUrl": "https://github.com/joemossjr16/Decky-WiFi-BandLock/releases/download/v1.0.0/WiFi-BandLock.zip",
+      "releasePublishedAt": "",
+      "category": "Rete / Wi-Fi",
+      "shortDescription": "Forza banda 2,4/5/6 GHz, blocca il BSSID e mostra telemetria della connessione.",
+      "longDescription": "Forza banda 2,4/5/6 GHz, blocca il BSSID e mostra telemetria della connessione.",
+      "coverUrl": "https://opengraph.githubassets.com/1/joemossjr16/Decky-WiFi-BandLock",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Modifica IWD/NetworkManager e il roaming; una scelta errata può lasciare il dispositivo offline.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "WiFi BandLock",
+        "joemossjr16/Decky-WiFi-BandLock"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Deckamine",
+      "installFolder": "Deckamine",
+      "author": "ElYarim",
+      "repository": "elyarim/deckamine",
+      "repositoryUrl": "https://github.com/elyarim/deckamine",
+      "version": "1.0.1",
+      "releaseAssetName": "deckamine.zip",
+      "catalogReleaseUrl": "https://github.com/elyarim/Deckamine/releases/download/v1.0.1/deckamine.zip",
+      "releasePublishedAt": "",
+      "category": "Accessibilità / sensori",
+      "shortDescription": "Mostra indicatori animati collegati ai sensori di movimento per ridurre il disagio durante i viaggi.",
+      "longDescription": "Mostra indicatori animati collegati ai sensori di movimento per ridurre il disagio durante i viaggi.",
+      "coverUrl": "https://opengraph.githubassets.com/1/elyarim/deckamine",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS e handheld Linux; Legge sensori IIO/evdev e crea un overlay; l'efficacia contro la cinetosi varia da persona a persona.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Deckamine",
+        "elyarim/deckamine"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Output Manager",
+      "installFolder": "Output Manager",
+      "author": "joeatethebeans",
+      "repository": "joeatethebeans/OutputManager",
+      "repositoryUrl": "https://github.com/joeatethebeans/OutputManager",
+      "version": "1.4.0",
+      "releaseAssetName": "Output.Manager-1.4.0.zip",
+      "catalogReleaseUrl": "https://github.com/joeatethebeans/OutputManager/releases/download/v1.4.0/Output.Manager-1.4.0.zip",
+      "releasePublishedAt": "",
+      "category": "Display / audio",
+      "shortDescription": "Cambia connettore video Gamescope e uscita audio, con profili e associazioni.",
+      "longDescription": "Cambia connettore video Gamescope e uscita audio, con profili e associazioni.",
+      "coverUrl": "https://opengraph.githubassets.com/1/joeatethebeans/OutputManager",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS con GPU AMD; Forza connettori AMDGPU e sink audio; testare con accesso fisico al pannello interno.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Output Manager",
+        "joeatethebeans/OutputManager"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Decky Macro",
+      "installFolder": "Decky Macro",
+      "author": "olivervbk",
+      "repository": "olivervbk/decky-macro",
+      "repositoryUrl": "https://github.com/olivervbk/decky-macro",
+      "version": "1.1.0",
+      "releaseAssetName": "decky-macro-v1.1.0.zip",
+      "catalogReleaseUrl": "https://github.com/olivervbk/decky-macro/releases/download/v1.1.0/decky-macro-v1.1.0.zip",
+      "releasePublishedAt": "",
+      "category": "Controller / automazione",
+      "shortDescription": "Registra e riproduce macro digitali del controller con slot e ripetizioni.",
+      "longDescription": "Registra e riproduce macro digitali del controller con slot e ripetizioni.",
+      "coverUrl": "https://opengraph.githubassets.com/1/olivervbk/decky-macro",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Legge /dev/input e genera input; può violare regole di giochi o servizi online.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Decky Macro",
+        "olivervbk/decky-macro"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Clearly Recent",
+      "installFolder": "Clearly Recent",
+      "author": "Dizg",
+      "repository": "D1zg/clearly-recent",
+      "repositoryUrl": "https://github.com/D1zg/clearly-recent",
+      "version": "1.0.0",
+      "releaseAssetName": "clearly-recent-1.0.0.zip",
+      "catalogReleaseUrl": "https://github.com/D1zg/clearly-recent/releases/download/v1.0.0/clearly-recent-1.0.0.zip",
+      "releasePublishedAt": "",
+      "category": "Home / libreria",
+      "shortDescription": "Nasconde dal carosello Recenti i giochi Steam non installati localmente.",
+      "longDescription": "Nasconde dal carosello Recenti i giochi Steam non installati localmente.",
+      "coverUrl": "https://opengraph.githubassets.com/1/D1zg/clearly-recent",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Patch solo frontend; può rompersi con aggiornamenti dell'interfaccia Steam.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Clearly Recent",
+        "D1zg/clearly-recent"
+      ]
+    },
+    {
+      "active": true,
+      "name": "GPU Picker",
+      "installFolder": "GPU Picker",
+      "author": "Maciej Śmietanko",
+      "repository": "revenpl/decky-gpu-picker",
+      "repositoryUrl": "https://github.com/revenpl/decky-gpu-picker",
+      "version": "0.2.1",
+      "releaseAssetName": "decky-gpu-picker.zip",
+      "catalogReleaseUrl": "https://github.com/revenpl/decky-gpu-picker/releases/download/v0.2.1/decky-gpu-picker.zip",
+      "releasePublishedAt": "",
+      "category": "GPU / launch options",
+      "shortDescription": "Elenca le GPU Vulkan e genera il comando MESA_VK_DEVICE_SELECT per scegliere la GPU di un gioco.",
+      "longDescription": "Elenca le GPU Vulkan e genera il comando MESA_VK_DEVICE_SELECT per scegliere la GPU di un gioco.",
+      "coverUrl": "https://opengraph.githubassets.com/1/revenpl/decky-gpu-picker",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS multi-GPU; Il comando va incollato nelle opzioni di avvio; selezionare la GPU sbagliata può impedire l'avvio.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "GPU Picker",
+        "revenpl/decky-gpu-picker"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Time Changer",
+      "installFolder": "Time Changer",
+      "author": "nanwangjkl",
+      "repository": "nanwangjkl/decky-time-changer",
+      "repositoryUrl": "https://github.com/nanwangjkl/decky-time-changer",
+      "version": "0.1.13",
+      "releaseAssetName": "decky-time-changer-v0.1.13.zip",
+      "catalogReleaseUrl": "https://github.com/nanwangjkl/decky-time-changer/releases/download/v0.1.13/decky-time-changer-v0.1.13.zip",
+      "releasePublishedAt": "",
+      "category": "Sistema / data e ora",
+      "shortDescription": "Cambia data e ora dal Gaming Mode e ripristina il tempo reale tramite NTP.",
+      "longDescription": "Cambia data e ora dal Gaming Mode e ripristina il tempo reale tramite NTP.",
+      "coverUrl": "https://opengraph.githubassets.com/1/nanwangjkl/decky-time-changer",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Una data errata può influire su TLS, cloud save, DRM, achievement e sincronizzazioni.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Time Changer",
+        "nanwangjkl/decky-time-changer"
+      ]
+    },
+    {
+      "active": true,
+      "name": "SpoutRemotePlay",
+      "installFolder": "SpoutRemotePlay",
+      "author": "justjoseorg",
+      "repository": "justjoseorg/SpoutRemotePlay",
+      "repositoryUrl": "https://github.com/justjoseorg/SpoutRemotePlay",
+      "version": "0.5.7",
+      "releaseAssetName": "SpoutRemotePlay-v0.5.7.zip",
+      "catalogReleaseUrl": "https://github.com/justjoseorg/SpoutRemotePlay/releases/download/v0.5.7/SpoutRemotePlay-v0.5.7.zip",
+      "releasePublishedAt": "",
+      "category": "Streaming / Remote Play",
+      "shortDescription": "Companion per Steam Remote Play con Wake-on-LAN, host abbinato e display virtuale sul PC.",
+      "longDescription": "Companion per Steam Remote Play con Wake-on-LAN, host abbinato e display virtuale sul PC.",
+      "coverUrl": "https://opengraph.githubassets.com/1/justjoseorg/SpoutRemotePlay",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS + Windows/Linux host; Richiede un host PC separato; può spegnere display fisici e offre accesso remoto/PIN opzionale.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "SpoutRemotePlay",
+        "justjoseorg/SpoutRemotePlay"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Quick Tab",
+      "installFolder": "Quick Tab",
+      "author": "moi952",
+      "repository": "moi952/decky-quick-tab",
+      "repositoryUrl": "https://github.com/moi952/decky-quick-tab",
+      "version": "0.1.0",
+      "releaseAssetName": "decky-quick-tab-v0.1.0.zip",
+      "catalogReleaseUrl": "https://github.com/moi952/decky-quick-tab/releases/download/v0.1.0/decky-quick-tab-v0.1.0.zip",
+      "releasePublishedAt": "",
+      "category": "UI / QAM",
+      "shortDescription": "Aggiunge icone dedicate nel QAM per aprire direttamente pannelli di altri plugin.",
+      "longDescription": "Aggiunge icone dedicate nel QAM per aprire direttamente pannelli di altri plugin.",
+      "coverUrl": "https://opengraph.githubassets.com/1/moi952/decky-quick-tab",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Sperimentale e basato su iniezione dell'interfaccia Steam; possibile incompatibilità dopo update.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Quick Tab",
+        "moi952/decky-quick-tab"
+      ]
+    },
+    {
+      "active": true,
+      "name": "CE Decky",
+      "installFolder": "CE Decky",
+      "author": "Dmitry Nikolaenya",
+      "repository": "goooroooX/CE-Decky",
+      "repositoryUrl": "https://github.com/goooroooX/CE-Decky",
+      "version": "0.9.29",
+      "releaseAssetName": "CE-Decky-v0.9.29.zip",
+      "catalogReleaseUrl": "https://github.com/goooroooX/CE-Decky/releases/download/v0.9.29/CE-Decky-v0.9.29.zip",
+      "releasePublishedAt": "",
+      "category": "Cheat Engine / trainer",
+      "shortDescription": "Gestisce tabelle Cheat Engine e controlli live dal Gaming Mode.",
+      "longDescription": "Gestisce tabelle Cheat Engine e controlli live dal Gaming Mode.",
+      "coverUrl": "https://opengraph.githubassets.com/1/goooroooX/CE-Decky",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Può alterare processi di gioco ed entrare in conflitto con anti-cheat o termini di servizio.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "CE Decky",
+        "goooroooX/CE-Decky"
+      ]
+    },
+    {
+      "active": true,
+      "name": "GabeCubeAura",
+      "installFolder": "GabeCubeAura",
+      "author": "Alyenax",
+      "repository": "Alyenax/GabeCubeAura",
+      "repositoryUrl": "https://github.com/Alyenax/GabeCubeAura",
+      "version": "1.4.0",
+      "releaseAssetName": "GabeCubeAura-v1.4.0.zip",
+      "catalogReleaseUrl": "https://github.com/Alyenax/GabeCubeAura/releases/download/v1.4.0/GabeCubeAura-v1.4.0.zip",
+      "releasePublishedAt": "",
+      "category": "Hardware / illuminazione",
+      "shortDescription": "Sincronizza la barra luminosa della Steam Machine con audio, schermo, artwork, meteo e stato.",
+      "longDescription": "Sincronizza la barra luminosa della Steam Machine con audio, schermo, artwork, meteo e stato.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Alyenax/GabeCubeAura",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "Steam Machine compatibile; Controllo hardware specifico e privilegi root; usare soltanto su dispositivi supportati.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "GabeCubeAura",
+        "Alyenax/GabeCubeAura"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Deck as Controller",
+      "installFolder": "Deck as Controller",
+      "author": "jmedina21",
+      "repository": "jmedina21/deck-as-controller",
+      "repositoryUrl": "https://github.com/jmedina21/deck-as-controller",
+      "version": "0.6.2",
+      "releaseAssetName": "deck-as-controller.zip",
+      "catalogReleaseUrl": "https://github.com/jmedina21/deck-as-controller/releases/download/v0.6.2/deck-as-controller.zip",
+      "releasePublishedAt": "",
+      "category": "Controller / Bluetooth",
+      "shortDescription": "Usa Steam Deck come controller Bluetooth wireless per Mac o iPad.",
+      "longDescription": "Usa Steam Deck come controller Bluetooth wireless per Mac o iPad.",
+      "coverUrl": "https://opengraph.githubassets.com/1/jmedina21/deck-as-controller",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS + Mac/iPad; Modifica servizi e profili Bluetooth con privilegi elevati.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Deck as Controller",
+        "jmedina21/deck-as-controller"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Spindeck",
+      "installFolder": "Spindeck",
+      "author": "justinca92",
+      "repository": "justinca92/spindeck",
+      "repositoryUrl": "https://github.com/justinca92/spindeck",
+      "version": "1.4.1",
+      "releaseAssetName": "spindeck-1.4.1.zip",
+      "catalogReleaseUrl": "https://github.com/justinca92/spindeck/releases/download/v1.4.1/spindeck-1.4.1.zip",
+      "releasePublishedAt": "",
+      "category": "Launcher / Home",
+      "shortDescription": "Sostituisce la home con un launcher a ruota controllabile tramite movimento circolare del trackpad.",
+      "longDescription": "Sostituisce la home con un launcher a ruota controllabile tramite movimento circolare del trackpad.",
+      "coverUrl": "https://opengraph.githubassets.com/1/justinca92/spindeck",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Interviene sulla schermata Home nativa e può rompersi con aggiornamenti Steam.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Spindeck",
+        "justinca92/spindeck"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Game Glance",
+      "installFolder": "Game Glance",
+      "author": "Michael Palma",
+      "repository": "michpalm/game-glance",
+      "repositoryUrl": "https://github.com/michpalm/game-glance",
+      "version": "3.4.0",
+      "releaseAssetName": "game-glance.zip",
+      "catalogReleaseUrl": "https://github.com/michpalm/game-glance/releases/download/v3.4.0/game-glance.zip",
+      "releasePublishedAt": "",
+      "category": "Libreria / metadata",
+      "shortDescription": "Ridisegna la pagina gioco con artwork fullscreen, tempi HLTB, descrizione e dati Store.",
+      "longDescription": "Ridisegna la pagina gioco con artwork fullscreen, tempi HLTB, descrizione e dati Store.",
+      "coverUrl": "https://opengraph.githubassets.com/1/michpalm/game-glance",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Patch frontend e fonti web esterne; verificare compatibilità con altri plugin della pagina gioco.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Game Glance",
+        "michpalm/game-glance"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Ambideck",
+      "installFolder": "Ambideck",
+      "author": "Michael Palma",
+      "repository": "michpalm/ambideck",
+      "repositoryUrl": "https://github.com/michpalm/ambideck",
+      "version": "1.2.0",
+      "releaseAssetName": "ambideck.zip",
+      "catalogReleaseUrl": "https://github.com/michpalm/ambideck/releases/download/v1.2.0/ambideck.zip",
+      "releasePublishedAt": "",
+      "category": "RGB / ROG Xbox Ally",
+      "shortDescription": "Fa seguire ai LED degli stick del ROG Xbox Ally i colori presenti sullo schermo.",
+      "longDescription": "Fa seguire ai LED degli stick del ROG Xbox Ally i colori presenti sullo schermo.",
+      "coverUrl": "https://opengraph.githubassets.com/1/michpalm/ambideck",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "ROG Xbox Ally compatibile; Controllo RGB specifico per hardware e lettura schermo con privilegi root.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Ambideck",
+        "michpalm/ambideck"
+      ]
+    },
+    {
+      "active": true,
+      "name": "CSS Loader — beallio fork",
+      "installFolder": "CSS Loader",
+      "author": "DeckThemes",
+      "repository": "beallio/SDH-CssLoader",
+      "repositoryUrl": "https://github.com/beallio/SDH-CssLoader",
+      "version": "2.1.4",
+      "releaseAssetName": "SDH-CssLoader-2.1.4.zip",
+      "catalogReleaseUrl": "https://github.com/beallio/SDH-CssLoader/releases/download/v2.1.4/SDH-CssLoader-2.1.4.zip",
+      "releasePublishedAt": "",
+      "category": "Temi / CSS",
+      "shortDescription": "Fork della versione ufficiale di CSS Loader distribuito più rapidamente dal custom store.",
+      "longDescription": "Fork della versione ufficiale di CSS Loader distribuito più rapidamente dal custom store.",
+      "coverUrl": "https://opengraph.githubassets.com/1/beallio/SDH-CssLoader",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Fork di un plugin ufficiale: confrontare versione, audit e percorso di aggiornamento.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "CSS Loader — beallio fork",
+        "CSS Loader",
+        "beallio/SDH-CssLoader"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Legion Go 2 Companion",
+      "installFolder": "Legion Go 2 Companion",
+      "author": "Rayek",
+      "repository": "Rayekkk/LegionGo2Companion",
+      "repositoryUrl": "https://github.com/Rayekkk/LegionGo2Companion",
+      "version": "2.2.0",
+      "releaseAssetName": "LegionGo2Companion-2.2.0.zip",
+      "catalogReleaseUrl": "https://github.com/Rayekkk/LegionGo2Companion/releases/download/2.2.0/LegionGo2Companion-2.2.0.zip",
+      "releasePublishedAt": "",
+      "category": "Hardware / Legion Go 2",
+      "shortDescription": "TDP, profili CPU, ventole, batteria, gyro, aptica, illuminazione, remap, OLED/HDR e Wi-Fi.",
+      "longDescription": "TDP, profili CPU, ventole, batteria, gyro, aptica, illuminazione, remap, OLED/HDR e Wi-Fi.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Rayekkk/LegionGo2Companion",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "Lenovo Legion Go 2; Suite hardware molto ampia con privilegi root; usarla solo sul Legion Go 2.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Legion Go 2 Companion",
+        "Rayekkk/LegionGo2Companion"
+      ]
+    },
+    {
+      "active": true,
+      "name": "SpotiDeck",
+      "installFolder": "SpotiDeck",
+      "author": "Rayek",
+      "repository": "Rayekkk/SpotiDeck",
+      "repositoryUrl": "https://github.com/Rayekkk/SpotiDeck",
+      "version": "1.1.1",
+      "releaseAssetName": "SpotiDeck-1.1.1.zip",
+      "catalogReleaseUrl": "https://github.com/Rayekkk/SpotiDeck/releases/download/1.1.1/SpotiDeck-1.1.1.zip",
+      "releasePublishedAt": "",
+      "category": "Musica / Spotify",
+      "shortDescription": "Riproduzione Spotify, ricerca e libreria all'interno di Decky.",
+      "longDescription": "Riproduzione Spotify, ricerca e libreria all'interno di Decky.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Rayekkk/SpotiDeck",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Richiede Spotify Premium e un Client ID; la riproduzione locale può richiedere un'ulteriore API key.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "SpotiDeck",
+        "Rayekkk/SpotiDeck"
+      ]
+    },
+    {
+      "active": true,
+      "name": "DeckyEQ",
+      "installFolder": "DeckyEQ",
+      "author": "Rayek",
+      "repository": "Rayekkk/DeckyEQ",
+      "repositoryUrl": "https://github.com/Rayekkk/DeckyEQ",
+      "version": "1.0.0",
+      "releaseAssetName": "DeckyEQ-1.0.0.zip",
+      "catalogReleaseUrl": "https://github.com/Rayekkk/DeckyEQ/releases/download/1.0.0/DeckyEQ-1.0.0.zip",
+      "releasePublishedAt": "",
+      "category": "Audio / equalizzatore",
+      "shortDescription": "Equalizzatore PipeWire a dieci bande con bassi, alti, filtri, uscite e preset portabili.",
+      "longDescription": "Equalizzatore PipeWire a dieci bande con bassi, alti, filtri, uscite e preset portabili.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Rayekkk/DeckyEQ",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Modifica la catena audio PipeWire; verificare latenza, clipping e compatibilità con sink esterni.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "DeckyEQ",
+        "Rayekkk/DeckyEQ"
+      ]
+    },
+    {
+      "active": true,
+      "name": "DeckyClocker",
+      "installFolder": "DeckyClocker",
+      "author": "Jaccident",
+      "repository": "Jaccident/DeckyClocker",
+      "repositoryUrl": "https://github.com/Jaccident/DeckyClocker",
+      "version": "1.0.0-rc3",
+      "releaseAssetName": "DeckyClocker.v1.0.0-rc3-release.zip",
+      "catalogReleaseUrl": "https://github.com/Jaccident/DeckyClocker/releases/download/v1.0.0-rc3/DeckyClocker.v1.0.0-rc3-release.zip",
+      "releasePublishedAt": "",
+      "category": "Sistema / data e ora",
+      "shortDescription": "Consente di cambiare manualmente data e ora del sistema e di ripristinare NTP dal Gaming Mode.",
+      "longDescription": "Consente di cambiare manualmente data e ora del sistema e di ripristinare NTP dal Gaming Mode.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Jaccident/DeckyClocker",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Un orologio errato può interrompere TLS, login, cloud save, DRM e sincronizzazioni. Richiede privilegi root.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "DeckyClocker",
+        "Jaccident/DeckyClocker"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Decky Direct Updater",
+      "installFolder": "Decky Direct Updater",
+      "author": "nukeador",
+      "repository": "nukeador/deckyup",
+      "repositoryUrl": "https://github.com/nukeador/deckyup",
+      "version": "0.2.6",
+      "releaseAssetName": "Decky-Direct-Updater.zip",
+      "catalogReleaseUrl": "https://github.com/nukeador/deckyup/releases/download/v0.2.6/Decky-Direct-Updater.zip",
+      "releasePublishedAt": "",
+      "category": "Gestione plugin / aggiornamenti",
+      "shortDescription": "Aggiorna i plugin Decky direttamente dalle release dei rispettivi sviluppatori, con note e avvisi.",
+      "longDescription": "Aggiorna i plugin Decky direttamente dalle release dei rispettivi sviluppatori, con note e avvisi.",
+      "coverUrl": "https://opengraph.githubassets.com/1/nukeador/deckyup",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Può installare aggiornamenti che non sono passati dalla revisione dello Store ufficiale; verificare sempre repository, firma e changelog.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Decky Direct Updater",
+        "nukeador/deckyup"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Proton VPN (Unofficial)",
+      "installFolder": "Proton VPN Unofficial",
+      "author": "acestronautical",
+      "repository": "acestronautical/decky-protonvpn",
+      "repositoryUrl": "https://github.com/acestronautical/decky-protonvpn",
+      "version": "0.1.0",
+      "releaseAssetName": "decky-protonvpn-v0.1.0.zip",
+      "catalogReleaseUrl": "https://github.com/acestronautical/decky-protonvpn/releases/download/v0.1.0/decky-protonvpn-v0.1.0.zip",
+      "releasePublishedAt": "",
+      "category": "Rete / VPN",
+      "shortDescription": "Controlla Proton VPN, account, country selection, kill switch, NetShield e impostazioni di rete dal QAM.",
+      "longDescription": "Controlla Proton VPN, account, country selection, kill switch, NetShield e impostazioni di rete dal QAM.",
+      "coverUrl": "https://opengraph.githubassets.com/1/acestronautical/decky-protonvpn",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS + Proton VPN Flatpak; Autenticazione, routing, DNS e IPv6 non sono certificati; alcuni test di leak, reboot e prima installazione restano incompleti.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Proton VPN (Unofficial)",
+        "Proton VPN Unofficial",
+        "acestronautical/decky-protonvpn"
+      ]
+    },
+    {
+      "active": true,
+      "name": "YouTube PiP",
+      "installFolder": "YouTube PiP",
+      "author": "SANSO",
+      "repository": "otisabiburada/decky-video-pip",
+      "repositoryUrl": "https://github.com/otisabiburada/decky-video-pip",
+      "version": "0.6.0",
+      "releaseAssetName": "video-pip-v0.6.0.zip",
+      "catalogReleaseUrl": "https://github.com/otisabiburada/decky-video-pip/releases/download/0.6.0/video-pip-v0.6.0.zip",
+      "releasePublishedAt": "",
+      "category": "Video / picture-in-picture",
+      "shortDescription": "Mostra YouTube in una finestra flottante sopra i giochi e accetta cast e comandi da telefono.",
+      "longDescription": "Mostra YouTube in una finestra flottante sopra i giochi e accetta cast e comandi da telefono.",
+      "coverUrl": "https://opengraph.githubassets.com/1/otisabiburada/decky-video-pip",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Utilizza API e componenti interni non documentati di Steam; un aggiornamento del client può interrompere l'overlay.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "YouTube PiP",
+        "otisabiburada/decky-video-pip"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Bluetooth Order",
+      "installFolder": "Bluetooth Order",
+      "author": "JediRhymeTrix",
+      "repository": "JediRhymeTrix/decky-bluetooth-order",
+      "repositoryUrl": "https://github.com/JediRhymeTrix/decky-bluetooth-order",
+      "version": "0.1.0",
+      "releaseAssetName": "bluetooth-order.zip",
+      "catalogReleaseUrl": "https://github.com/JediRhymeTrix/decky-bluetooth-order/releases/download/v0.1.0/bluetooth-order.zip",
+      "releasePublishedAt": "",
+      "category": "Bluetooth / interfaccia",
+      "shortDescription": "Riordina i dispositivi Bluetooth di Steam per uso recente, nome o stato connesso.",
+      "longDescription": "Riordina i dispositivi Bluetooth di Steam per uso recente, nome o stato connesso.",
+      "coverUrl": "https://opengraph.githubassets.com/1/JediRhymeTrix/decky-bluetooth-order",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Decky; Patching dell'interfaccia Steam: possibili incompatibilità con TabMaster o futuri aggiornamenti della UI.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Bluetooth Order",
+        "JediRhymeTrix/decky-bluetooth-order"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Deck as Capture Card",
+      "installFolder": "Deck as Capture Card",
+      "author": "filesfor",
+      "repository": "filesfor/decky-capture",
+      "repositoryUrl": "https://github.com/filesfor/decky-capture",
+      "version": "0.1.0",
+      "releaseAssetName": "decky-capture.zip",
+      "catalogReleaseUrl": "https://github.com/filesfor/decky-capture/releases/download/v0.1.0/decky-capture.zip",
+      "releasePublishedAt": "",
+      "category": "USB / cattura video",
+      "shortDescription": "Prova a presentare lo schermo del Deck a un altro dispositivo come webcam UVC via USB.",
+      "longDescription": "Prova a presentare lo schermo del Deck a un altro dispositivo come webcam UVC via USB.",
+      "coverUrl": "https://opengraph.githubassets.com/1/filesfor/decky-capture",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS in Desktop Mode; hardware da verificare; Codice dichiarato integralmente AI, mai eseguito su hardware; Game Mode non è supportato e il modulo UVC gadget potrebbe mancare.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Deck as Capture Card",
+        "filesfor/decky-capture"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Deck as Display",
+      "installFolder": "Deck as Display",
+      "author": "filesfor",
+      "repository": "filesfor/decky-display",
+      "repositoryUrl": "https://github.com/filesfor/decky-display",
+      "version": "0.1.0",
+      "releaseAssetName": "decky-display.zip",
+      "catalogReleaseUrl": "https://github.com/filesfor/decky-display/releases/download/v0.1.0/decky-display.zip",
+      "releasePublishedAt": "",
+      "category": "USB / display e capture card",
+      "shortDescription": "Mostra fullscreen sul Deck il segnale di un adattatore di cattura USB collegato a un altro computer.",
+      "longDescription": "Mostra fullscreen sul Deck il segnale di un adattatore di cattura USB collegato a un altro computer.",
+      "coverUrl": "https://opengraph.githubassets.com/1/filesfor/decky-display",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS in Desktop Mode + capture card UVC; Codice dichiarato integralmente AI e non provato; richiede una capture card UVC e può sottrarre il DRM master a Gamescope.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Deck as Display",
+        "filesfor/decky-display"
+      ]
+    },
+    {
+      "active": true,
+      "name": "DeckyMods",
+      "installFolder": "DeckyMods",
+      "author": "DeckyMods Contributors",
+      "repository": "18798aa12/DeckyMods",
+      "repositoryUrl": "https://github.com/18798aa12/DeckyMods",
+      "version": "0.2.14",
+      "releaseAssetName": "DeckyMods-v0.2.14.zip",
+      "catalogReleaseUrl": "https://github.com/18798aa12/DeckyMods/releases/download/v0.2.14/DeckyMods-v0.2.14.zip",
+      "releasePublishedAt": "",
+      "category": "Modding / Nexus Mods",
+      "shortDescription": "Scarica, installa, abilita, disabilita e ripristina mod per giochi SteamOS, con supporto Nexus e archivi locali.",
+      "longDescription": "Scarica, installa, abilita, disabilita e ripristina mod per giochi SteamOS, con supporto Nexus e archivi locali.",
+      "coverUrl": "https://opengraph.githubassets.com/1/18798aa12/DeckyMods",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Gestisce credenziali, protocolli NXM e file dei giochi; l'ultima release non risulta validata su un vero Steam Deck.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "DeckyMods",
+        "18798aa12/DeckyMods"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Decky MultiFrameGen",
+      "installFolder": "Decky MultiFrameGen",
+      "author": "MWGIH",
+      "repository": "MWGIH/DeckyMultiFrameGen",
+      "repositoryUrl": "https://github.com/MWGIH/DeckyMultiFrameGen",
+      "version": "0.6.1",
+      "releaseAssetName": "Decky-MultiFrameGen.zip",
+      "catalogReleaseUrl": "https://github.com/MWGIH/DeckyMultiFrameGen/releases/download/v0.6.1/Decky-MultiFrameGen.zip",
+      "releasePublishedAt": "",
+      "category": "Grafica / frame generation",
+      "shortDescription": "Installa OptiScaler, HelixSR e MAKO dalle rispettive release e seleziona il sistema usato per ogni gioco.",
+      "longDescription": "Installa OptiScaler, HelixSR e MAKO dalle rispettive release e seleziona il sistema usato per ogni gioco.",
+      "coverUrl": "https://opengraph.githubassets.com/1/MWGIH/DeckyMultiFrameGen",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Modifica file di gioco, componenti grafici e opzioni di lancio; può causare crash, ban anti-cheat o incompatibilità con Proton.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Decky MultiFrameGen",
+        "MWGIH/DeckyMultiFrameGen"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Nothing Ear",
+      "installFolder": "Nothing Ear",
+      "author": "Jose",
+      "repository": "Josemolivaresc/decky-nothing-ear",
+      "repositoryUrl": "https://github.com/Josemolivaresc/decky-nothing-ear",
+      "version": "0.3.2",
+      "releaseAssetName": "nothing-ear-deck.zip",
+      "catalogReleaseUrl": "https://github.com/Josemolivaresc/decky-nothing-ear/releases/download/v0.3.2/nothing-ear-deck.zip",
+      "releasePublishedAt": "",
+      "category": "Audio / auricolari Bluetooth",
+      "shortDescription": "Mostra batteria e controlla ANC, trasparenza, bassa latenza, EQ e gesti di auricolari Nothing e CMF.",
+      "longDescription": "Mostra batteria e controlla ANC, trasparenza, bassa latenza, EQ e gesti di auricolari Nothing e CMF.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Josemolivaresc/decky-nothing-ear",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS + auricolari compatibili; Controllo Bluetooth proprietario con backend root; verificare modello e firmware degli auricolari.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Nothing Ear",
+        "Josemolivaresc/decky-nothing-ear"
+      ]
+    },
+    {
+      "active": true,
+      "name": "External Storage Guard",
+      "installFolder": "External Storage Guard",
+      "author": "ohxiaoguang",
+      "repository": "ohxiaoguang/decky-external-storage-guard",
+      "repositoryUrl": "https://github.com/ohxiaoguang/decky-external-storage-guard",
+      "version": "0.5.5",
+      "releaseAssetName": "External-Storage-Guard.zip",
+      "catalogReleaseUrl": "https://github.com/ohxiaoguang/decky-external-storage-guard/releases/download/v0.5.5/External-Storage-Guard.zip",
+      "releasePublishedAt": "",
+      "category": "Storage / mount e diagnostica",
+      "shortDescription": "Monta e smonta in sicurezza unità esterne e mostra log grezzi di sistema e kernel.",
+      "longDescription": "Monta e smonta in sicurezza unità esterne e mostra log grezzi di sistema e kernel.",
+      "coverUrl": "https://opengraph.githubassets.com/1/ohxiaoguang/decky-external-storage-guard",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite con UDisks 2.10+; Usa UDisks e privilegi root; una gestione errata di mount o unità può provocare perdita o corruzione dei dati.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "External Storage Guard",
+        "ohxiaoguang/decky-external-storage-guard"
+      ]
+    },
+    {
+      "active": true,
+      "name": "SAM",
+      "installFolder": "SAM",
+      "author": "viktor",
+      "repository": "Kowalski-coder/SAM-for-Decky-Loader",
+      "repositoryUrl": "https://github.com/Kowalski-coder/SAM-for-Decky-Loader",
+      "version": "1.0.0",
+      "releaseAssetName": "SAM.zip",
+      "catalogReleaseUrl": "https://github.com/Kowalski-coder/SAM-for-Decky-Loader/releases/download/v1.0.0/SAM.zip",
+      "releasePublishedAt": "",
+      "category": "Achievement / modifica stato",
+      "shortDescription": "Porta Steam Achievement Manager nel QAM per modificare lo stato degli achievement.",
+      "longDescription": "Porta Steam Achievement Manager nel QAM per modificare lo stato degli achievement.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Kowalski-coder/SAM-for-Decky-Loader",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Steam Deck; La modifica artificiale degli achievement può violare regole di giochi, community o servizi. Nessuna protezione può garantire assenza di sanzioni.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "SAM",
+        "Kowalski-coder/SAM-for-Decky-Loader"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Upscaler Decky",
+      "installFolder": "Upscaler Decky",
+      "author": "Upscaler Decky contributors",
+      "repository": "supercleans/Upscaler-Decky",
+      "repositoryUrl": "https://github.com/supercleans/Upscaler-Decky",
+      "version": "0.1.29",
+      "releaseAssetName": "Upscaler-Decky-0.1.29.zip",
+      "catalogReleaseUrl": "https://github.com/supercleans/Upscaler-Decky/releases/download/v0.1.29/Upscaler-Decky-0.1.29.zip",
+      "releasePublishedAt": "",
+      "category": "Grafica / upscaling",
+      "shortDescription": "Gestisce HelixSR e FSR 4 per gioco, valuta la compatibilità e configura proxy e opzioni di lancio.",
+      "longDescription": "Gestisce HelixSR e FSR 4 per gioco, valuta la compatibilità e configura proxy e opzioni di lancio.",
+      "coverUrl": "https://opengraph.githubassets.com/1/supercleans/Upscaler-Decky",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Installa sostituzioni grafiche e modifica opzioni Proton; controllare anti-cheat, backup e compatibilità per titolo.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Upscaler Decky",
+        "supercleans/Upscaler-Decky"
+      ]
+    },
+    {
+      "active": true,
+      "name": "DeckyProxy",
+      "installFolder": "DeckyProxy",
+      "author": "DeckyProxy Contributors",
+      "repository": "18798aa12/DeckyProxy",
+      "repositoryUrl": "https://github.com/18798aa12/DeckyProxy",
+      "version": "0.2.3",
+      "releaseAssetName": "DeckyProxy-0.2.3.zip",
+      "catalogReleaseUrl": "https://github.com/18798aa12/DeckyProxy/releases/download/v0.2.3/DeckyProxy-0.2.3.zip",
+      "releasePublishedAt": "",
+      "category": "Rete / proxy e TUN",
+      "shortDescription": "Gestisce Mihomo, subscription, nodi, policy group, routing TUN e configurazioni YAML.",
+      "longDescription": "Gestisce Mihomo, subscription, nodi, policy group, routing TUN e configurazioni YAML.",
+      "coverUrl": "https://opengraph.githubassets.com/1/18798aa12/DeckyProxy",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Interviene su DNS, routing, TUN e traffico globale con privilegi root; verificare origine delle subscription e protezione delle credenziali.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "DeckyProxy",
+        "18798aa12/DeckyProxy"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Decky WhatsApp",
+      "installFolder": "Decky WhatsApp",
+      "author": "DeckyWhatsapp",
+      "repository": "db452/DeckyWhatsapp",
+      "repositoryUrl": "https://github.com/db452/DeckyWhatsapp",
+      "version": "1.1.0",
+      "releaseAssetName": "decky-whatsapp-decky-plugin-v1.1.0.zip",
+      "catalogReleaseUrl": "https://github.com/db452/DeckyWhatsapp/releases/download/v1.1.0/decky-whatsapp-decky-plugin-v1.1.0.zip",
+      "releasePublishedAt": "",
+      "category": "Messaggistica / companion PC",
+      "shortDescription": "Legge e risponde ai messaggi WhatsApp dal Gaming Mode tramite un bridge installato su PC Windows o Linux.",
+      "longDescription": "Legge e risponde ai messaggi WhatsApp dal Gaming Mode tramite un bridge installato su PC Windows o Linux.",
+      "coverUrl": "https://opengraph.githubassets.com/1/db452/DeckyWhatsapp",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS + PC companion; Richiede bridge PC, Node.js e tunnel SSH; tratta contenuti e sessioni WhatsApp personali.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Decky WhatsApp",
+        "db452/DeckyWhatsapp"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Finally 3D Game Cases",
+      "installFolder": "Finally 3D Game Cases",
+      "author": "SANSO",
+      "repository": "otisabiburada/finally-3d-game-cases-plugin",
+      "repositoryUrl": "https://github.com/otisabiburada/finally-3d-game-cases-plugin",
+      "version": "1.11.1",
+      "releaseAssetName": "Finally-3D-Game-Cases-v1.11.1.zip",
+      "catalogReleaseUrl": "https://github.com/otisabiburada/finally-3d-game-cases-plugin/releases/download/1.11.1/Finally-3D-Game-Cases-v1.11.1.zip",
+      "releasePublishedAt": "",
+      "category": "Personalizzazione / libreria",
+      "shortDescription": "Trasforma le copertine verticali di Home e Libreria in custodie 3D con dorso, sleeve, usura ed effetti.",
+      "longDescription": "Trasforma le copertine verticali di Home e Libreria in custodie 3D con dorso, sleeve, usura ed effetti.",
+      "coverUrl": "https://opengraph.githubassets.com/1/otisabiburada/finally-3d-game-cases-plugin",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Modifica profondamente il DOM di Steam; può entrare in conflitto con CSS Loader e altri plugin della libreria.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Finally 3D Game Cases",
+        "otisabiburada/finally-3d-game-cases-plugin"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Finally Screenshot Sound",
+      "installFolder": "Finally Screenshot Sound",
+      "author": "Finally",
+      "repository": "otisabiburada/finally-screenshot-sound",
+      "repositoryUrl": "https://github.com/otisabiburada/finally-screenshot-sound",
+      "version": "1.0.1",
+      "releaseAssetName": "Finally-Screenshot-Sound-v1.0.1.zip",
+      "catalogReleaseUrl": "https://github.com/otisabiburada/finally-screenshot-sound/releases/download/1.0.1/Finally-Screenshot-Sound-v1.0.1.zip",
+      "releasePublishedAt": "",
+      "category": "Screenshot / audio",
+      "shortDescription": "Riproduce un suono quando viene acquisito uno screenshot in Gaming Mode.",
+      "longDescription": "Riproduce un suono quando viene acquisito uno screenshot in Gaming Mode.",
+      "coverUrl": "https://opengraph.githubassets.com/1/otisabiburada/finally-screenshot-sound",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Patch leggera legata agli eventi screenshot; può richiedere aggiornamenti dopo modifiche del client Steam.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Finally Screenshot Sound",
+        "otisabiburada/finally-screenshot-sound"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Steamder",
+      "installFolder": "Steamder",
+      "author": "SANSO",
+      "repository": "otisabiburada/steamder",
+      "repositoryUrl": "https://github.com/otisabiburada/steamder",
+      "version": "1.4.3",
+      "releaseAssetName": "Steamder-v1.4.3.zip",
+      "catalogReleaseUrl": "https://github.com/otisabiburada/steamder/releases/download/1.4.3/Steamder-v1.4.3.zip",
+      "releasePublishedAt": "",
+      "category": "Libreria / scoperta giochi",
+      "shortDescription": "Interfaccia in stile dating app per scorrere la libreria e selezionare i giochi da provare.",
+      "longDescription": "Interfaccia in stile dating app per scorrere la libreria e selezionare i giochi da provare.",
+      "coverUrl": "https://opengraph.githubassets.com/1/otisabiburada/steamder",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Legge e presenta dati della libreria; patch UI soggetta ai cambiamenti del client Steam.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Steamder",
+        "otisabiburada/steamder"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Game Picks",
+      "installFolder": "Game Picks",
+      "author": "SANSO",
+      "repository": "otisabiburada/finally-game-picks",
+      "repositoryUrl": "https://github.com/otisabiburada/finally-game-picks",
+      "version": "1.3.5",
+      "releaseAssetName": "Game-Picks-v1.3.5.zip",
+      "catalogReleaseUrl": "https://github.com/otisabiburada/finally-game-picks/releases/download/1.3.5/Game-Picks-v1.3.5.zip",
+      "releasePublishedAt": "",
+      "category": "Libreria / raccomandazioni",
+      "shortDescription": "Apprende dalle abitudini di gioco e suggerisce titoli posseduti ma non provati e nuovi giochi potenzialmente affini.",
+      "longDescription": "Apprende dalle abitudini di gioco e suggerisce titoli posseduti ma non provati e nuovi giochi potenzialmente affini.",
+      "coverUrl": "https://opengraph.githubassets.com/1/otisabiburada/finally-game-picks",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Elabora dati della libreria e delle sessioni; verificare le fonti esterne usate per eventuali consigli di nuovi giochi.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Game Picks",
+        "otisabiburada/finally-game-picks"
+      ]
+    },
+    {
+      "active": true,
+      "name": "Finally Game Recorder",
+      "installFolder": "Finally Game Recorder",
+      "author": "otisabi",
+      "repository": "otisabiburada/finally-game-replay-recorder",
+      "repositoryUrl": "https://github.com/otisabiburada/finally-game-replay-recorder",
+      "version": "1.12.0",
+      "releaseAssetName": "Finally.Game.Recorder.1.12.0.zip",
+      "catalogReleaseUrl": "https://github.com/otisabiburada/finally-game-replay-recorder/releases/download/1.12.0/Finally.Game.Recorder.1.12.0.zip",
+      "releasePublishedAt": "",
+      "category": "Registrazione / replay buffer",
+      "shortDescription": "Registra gameplay in Gaming Mode con replay buffer, scorciatoia clip, audio di gioco e microfono.",
+      "longDescription": "Registra gameplay in Gaming Mode con replay buffer, scorciatoia clip, audio di gioco e microfono.",
+      "coverUrl": "https://opengraph.githubassets.com/1/otisabiburada/finally-game-replay-recorder",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Accede a cattura video, audio e microfono; controllare spazio libero, privacy e impatto sulle prestazioni.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Finally Game Recorder",
+        "otisabiburada/finally-game-replay-recorder"
+      ]
     }
   ],
-  "catalogRevision": 7
+  "catalogRevision": 8
 }

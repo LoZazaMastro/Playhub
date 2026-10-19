@@ -18683,6 +18683,2540 @@
       "provider": "Edition-specific retrospective game archive",
       "rights": "Respective rights holders",
       "subject": "Christmas NiGHTS"
+    },
+    "christmas-3.jpg": {
+      "subject": "Animal Crossing: New Horizons",
+      "kind": "cover",
+      "sha256": "c838b20f7a40ef2aeecfcc4751ac11da4f1ef8a5d9aeb627830beb9469604388",
+      "bytes": 79458
+    },
+    "education-3.jpg": {
+      "subject": "Minecraft",
+      "kind": "cover",
+      "sha256": "9d9c41e2cdbf26305a76680273bb397013849df317a0ce70e8dc8dfb56afa339",
+      "bytes": 69708
+    },
+    "women-science-3.jpg": {
+      "subject": "Mystery House",
+      "kind": "cover",
+      "sha256": "6bd748c4e217a7d06c76349b6a178788d8ace36f68128629372873ad62f8d9e0",
+      "bytes": 55376
+    },
+    "forests-3.jpg": {
+      "subject": "Ori and the Blind Forest",
+      "kind": "cover",
+      "sha256": "6492d2064f7a3e886a61ad99ba6b16db10e764a41bb7db9fc5252b5dbc2224ba",
+      "bytes": 64068
+    },
+    "water-3.jpg": {
+      "subject": "Subnautica",
+      "kind": "cover",
+      "sha256": "be2d4dcc7a7ccad386a3e90e27ae822d78e0368da8ae2d6d2804a1988dad5134",
+      "bytes": 69806
+    },
+    "art-3.jpg": {
+      "subject": "Ōkami",
+      "kind": "cover",
+      "sha256": "7c2c9fd0b25c1c1735c592be28ea0c15880a2e02f2cdb8ae75bfdfafa20b08fc",
+      "bytes": 97149
+    },
+    "books-3.jpg": {
+      "subject": "Myst",
+      "kind": "cover",
+      "sha256": "87382a1f5a64309755e92393d22e505ef32a640d934f0eaf08a68bcf376ffd01",
+      "bytes": 41326
+    },
+    "oceans-3.jpg": {
+      "subject": "Abzu",
+      "kind": "cover",
+      "sha256": "d4998eaed1a08fbfddd59bfa7ccf6d210eb4be85632855261f2f9c042d112f1c",
+      "bytes": 54790
+    },
+    "friendship-3.jpg": {
+      "subject": "Journey",
+      "kind": "cover",
+      "sha256": "c50c22688a8b0027c5f2097b2b848df6280e34f688d5377160d6c90990734e7f",
+      "bytes": 62254
+    },
+    "peace-3.jpg": {
+      "subject": "This War of Mine",
+      "kind": "cover",
+      "sha256": "2a8c5101c06cc70e6d0aee29042204d3f8d2dc783a8a2b8f5a09784c5935b864",
+      "bytes": 68890
+    },
+    "cities-3.jpg": {
+      "subject": "SimCity",
+      "kind": "cover",
+      "sha256": "fe2b86b503eb4967fa70409eccec9084d36a2e3eae946f879503349ba55044a0",
+      "bytes": 52076
+    },
+    "science-3.jpg": {
+      "subject": "Outer Wilds",
+      "kind": "cover",
+      "sha256": "2d9cdd461e8f1af52298041d44950400d7a1a03c1cc95dcf64f4241bf67e6e81",
+      "bytes": 54971
+    },
+    "mountains-3.jpg": {
+      "subject": "Celeste",
+      "kind": "cover",
+      "sha256": "62e76a76ab40859ad532e6824352833f34edbec50b0a9058677ae1feb1779a30",
+      "bytes": 66918
+    },
+    "tetris-2.jpg": {
+      "subject": "Tetris",
+      "kind": "cover",
+      "sha256": "ff41f2b73d9a24202e16fec096968c24052827166a52d0bec33bb56caac11312",
+      "bytes": 26334
+    },
+    "mario-3.jpg": {
+      "subject": "Super Mario Bros.",
+      "kind": "cover",
+      "sha256": "84535cd8dc4a5ee6b0985ec048798a0a56083d0cffd77500b62af2094ca5fbe5",
+      "bytes": 41575
+    },
+    "zelda-3.jpg": {
+      "subject": "The Legend of Zelda",
+      "kind": "cover",
+      "sha256": "91e11c9e32d4c32a9d24bda9375ea47932f1945d2e827dcbb5c7adda16fdd9c1",
+      "bytes": 32481
+    },
+    "stardew-3.jpg": {
+      "subject": "Stardew Valley",
+      "kind": "cover",
+      "sha256": "8e22fb786b8aaa6eb52a8821f7b3ea4b6a330877202316e9a43ddc5e5493587b",
+      "bytes": 73647
+    },
+    "monkey-3.jpg": {
+      "subject": "The Secret of Monkey Island",
+      "kind": "cover",
+      "sha256": "27608a2250d089549aea475840d50f5ba68bd80bde1ec5f2c943a0dc6615c0c6",
+      "bytes": 90714
+    },
+    "colossus-3.jpg": {
+      "subject": "Shadow of the Colossus",
+      "kind": "cover",
+      "sha256": "5dfa46f92645ccad65ec36fd188846cca2cd309d5c8ba32577adaa2af4f22830",
+      "bytes": 52803
+    },
+    "pacman-3.jpg": {
+      "subject": "Pac-Man",
+      "kind": "cover",
+      "sha256": "b957f7a4971bd04d45e6b31f1c0bbde27c7171278da0f8db7a7766f90cac88f7",
+      "bytes": 51613
+    },
+    "sonic-3.jpg": {
+      "subject": "Sonic the Hedgehog",
+      "kind": "cover",
+      "sha256": "91c0277162d5f46d293e66e3bc40bd895f0ca0caaeb95d4383aad090255a7df0",
+      "bytes": 65741
+    },
+    "doom-3.jpg": {
+      "subject": "Doom",
+      "kind": "cover",
+      "sha256": "fdcf3a87992c8a06d324f791943b872a1d04182bc4c19afa630289c00b1a381c",
+      "bytes": 87899
+    },
+    "cover-review-12-10-tgdb-745.jpg": {
+      "subject": "Doom",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "592febff6f659a123f31561df3ea54000a7b4c095ec0b791fdf616ee3713c2aa",
+      "bytes": 506329
+    },
+    "hollow-3.jpg": {
+      "subject": "Hollow Knight",
+      "kind": "cover",
+      "sha256": "97f81df765b37ded63f306ca0b181b0f1007f18af806895d2877d95feeba4fec",
+      "bytes": 60063
+    },
+    "katamari-3.jpg": {
+      "subject": "Katamari Damacy",
+      "kind": "cover",
+      "sha256": "220cbe8b4ac2e8e874ad69636bed6cf6801d4a1ca7365ed317b6921bf78f3857",
+      "bytes": 50603
+    },
+    "papers-3.jpg": {
+      "subject": "Papers, Please",
+      "kind": "cover",
+      "sha256": "27dcaf71b12e042110eb8083d049fb13ec445948faea644918c67a9305f76d20",
+      "bytes": 23531
+    },
+    "unpacking-3.jpg": {
+      "subject": "Unpacking",
+      "kind": "cover",
+      "sha256": "59b878cc27dfc3c1beae109046947ab6ad8861fed67d4017fa00270239e1eec0",
+      "bytes": 40402
+    },
+    "pentiment-3.jpg": {
+      "subject": "Pentiment",
+      "kind": "cover",
+      "sha256": "d56b0456f4d7090053f653d1bcb74ff070c5984838c4e969b2dd072fac521c9d",
+      "bytes": 52915
+    },
+    "rez-3.jpg": {
+      "subject": "Rez",
+      "kind": "cover",
+      "sha256": "7c8497b4dbf5ae80d33eb78efc039639d123fc73d95aa85efbe4083692705f1a",
+      "bytes": 60676
+    },
+    "rayman3-3.jpg": {
+      "subject": "Rayman 3: Hoodlum Havoc",
+      "kind": "cover",
+      "sha256": "ed405ba20757981c84153e52b22e594aaebbe793ad0f9e2721373fed5339e827",
+      "bytes": 75770
+    },
+    "mario64-3.jpg": {
+      "subject": "Super Mario 64",
+      "kind": "cover",
+      "sha256": "aa77e0022caef2b55f64bdb36e5c1302d80265301db26ef4fa8724d8daf5a5f4",
+      "bytes": 65166
+    },
+    "crash-3.jpg": {
+      "subject": "Crash Bandicoot",
+      "kind": "cover",
+      "sha256": "cacc940e49136c1cd4508b1935fe761207e5f8319cd7c526c7f29066390abc01",
+      "bytes": 68405
+    },
+    "cover-review-09-03-tgdb-112397.jpg": {
+      "subject": "Metal Gear Solid",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "896ff290775007be2aff1101c8a7c74f1892080756a6f9204ea1ff49197b3836",
+      "bytes": 58364
+    },
+    "pokemon-3.jpg": {
+      "subject": "Pokémon Red Version",
+      "kind": "cover",
+      "sha256": "dc1c7cad44a6e9f4b26abae26fbebd653566e2daaff6c71f4c03316a30193dc6",
+      "bytes": 73688
+    },
+    "gta-3.jpg": {
+      "subject": "Grand Theft Auto",
+      "kind": "cover",
+      "sha256": "835b9019b8f385c0b5d28629919ed7891201c816e1dba9ca9ec4ffcbf41f2096",
+      "bytes": 83543
+    },
+    "kondo-3.jpg": {
+      "subject": "The Legend of Zelda: Ocarina of Time",
+      "kind": "cover",
+      "sha256": "70e555820e03c49ce0ece37f6f15559b5419b4fa9435f1e63b18e4f5c9b2888f",
+      "bytes": 27445
+    },
+    "day-01-09-0.jpg": {
+      "subject": "The Oregon Trail",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "6c8b3ade8c31fbb22c73013ef99c6ab6387fc55fd6ab0286a5bc7135bdc522ab",
+      "bytes": 123687
+    },
+    "day-02-03-0.jpg": {
+      "subject": "Donkey Kong",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "b44fd120a2045d4ab79ecd8596ffcfe4d329d6ccfc21c148e2bc51a64e2165f3",
+      "bytes": 311767
+    },
+    "day-02-07-0.jpg": {
+      "subject": "Tempest",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "3ea5e27ce020399e7c4d0b63f44762d6cfeec137c1201b9056178bae2fb2d985",
+      "bytes": 355137
+    },
+    "day-01-05-0.jpg": {
+      "subject": "Adventure (Atari 2600)",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "023a816662152f144ee3e59703058077794fc50470c460efbae5c35b48976e2b",
+      "bytes": 270951
+    },
+    "day-01-31-0.jpg": {
+      "subject": "Ultima Online",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "034492e33f5f5edeb5efd33ad8da394c277464cfab52008da4bd522ee97b2a60",
+      "bytes": 204338
+    },
+    "day-01-11-0.jpg": {
+      "subject": "Metroid",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "1fe395234eda9a04c8fb64a4c56bbbda2480e7829ccdefaa8b144ed6575c830d",
+      "bytes": 151349
+    },
+    "day-01-17-0.jpg": {
+      "subject": "SimCity",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "f40e69bd9e387dea7e897c791f49a7d77a59e6eeec0513e79a9de34a6fad3a7e",
+      "bytes": 244931
+    },
+    "day-01-24-0.jpg": {
+      "subject": "Resident Evil",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "0e944fcfe87cb451811de9b1b8408fa459efc39d2eccb1875ebc8af9b28d0e6d",
+      "bytes": 366187
+    },
+    "day-02-23-0.jpg": {
+      "subject": "R-Type",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "bbf7d17447737f677321367e47ac44f797a6c448a4352ecd65b44e9dbb0abd34",
+      "bytes": 259302
+    },
+    "day-09-12-0.jpg": {
+      "subject": "Pikmin",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "3fc8c54dedb461310f6602741ffaf72e0666f03fdb730c3215b5635ed093ee06",
+      "bytes": 378792
+    },
+    "day-09-16-0.jpg": {
+      "subject": "Super Smash Bros. Melee",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "bf3f27cefc04bd395c3d7981592b6ff26a00df01970225adcc013b5ece278f6f",
+      "bytes": 369948
+    },
+    "day-09-18-0.jpg": {
+      "subject": "Fire Emblem",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "6f9a5dbf2bd9928d349ef035ed8bb8fd95e126ec989f74134c9819e55536a489",
+      "bytes": 338221
+    },
+    "day-01-07-0.jpg": {
+      "subject": "Elite",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "c152772a90c9605814267f20feae9733b368e5e24c2db8fdd01253caf5b8cdd0",
+      "bytes": 333473
+    },
+    "day-01-10-0.jpg": {
+      "subject": "Ultima IV: Quest of the Avatar",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "79f33d9944135ccff6d08f128df69a860ba8fc7b8ac11374b8d1f7a7b0362ab6",
+      "bytes": 357119
+    },
+    "day-01-12-0.jpg": {
+      "subject": "Castlevania: Symphony of the Night",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "a935439dd1fbe58a88c04d89e3795baf463204d581403d8b56f1a6d238cc8299",
+      "bytes": 235639
+    },
+    "day-01-16-0.jpg": {
+      "subject": "Sid Meier’s Civilization",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "7c0affb9d61100fb36275b3d1d25ed48e248631c89e374a25e988ea56189074b",
+      "bytes": 244974
+    },
+    "day-01-21-0.jpg": {
+      "subject": "Gran Turismo",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "6a202c0cc1750cff4b0d0445c063c49e283c560e28d8b4c350e51ddb7909d6c0",
+      "bytes": 150562
+    },
+    "day-01-22-0.jpg": {
+      "subject": "WipEout",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "1389f313459132f3637e23c2d550aa2ad5e25884617abee3e5b279d12fcaf4eb",
+      "bytes": 220096
+    },
+    "day-01-23-0.jpg": {
+      "subject": "Silent Hill",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "8620c0647476f117204021b0f084c5ed4ef27d0c342450064ecfb55f16764ff4",
+      "bytes": 239439
+    },
+    "day-01-29-0.jpg": {
+      "subject": "Diablo",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "b670d94245452c65e5b75ecb400ce5bd39e57b2fc1e63b770ee46ec72ccbb17d",
+      "bytes": 145873
+    },
+    "day-01-30-0.jpg": {
+      "subject": "StarCraft",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "63afa6d2cb03e3c77246e65ffd2cd042a3fd3579ae9f4f0bc4205f4fcee0d71b",
+      "bytes": 274698
+    },
+    "day-02-01-0.jpg": {
+      "subject": "Space Invaders",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "1a9cca6b83d784aafd8e96dae41a1642a50cac4686a6c3049e5323517787f0ec",
+      "bytes": 301520
+    },
+    "day-02-05-0.jpg": {
+      "subject": "Defender",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "efbd4b423e8d9349cad516a2b760ca363919144b549ebbbae663a09a821f3e32",
+      "bytes": 502026
+    },
+    "day-02-06-0.jpg": {
+      "subject": "Missile Command",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "bc986143ee2870a7ddb4cdb4f06e213206db61dcb2776e3c0e10b9bcf2a8e121",
+      "bytes": 492064
+    },
+    "day-02-09-0.jpg": {
+      "subject": "Gauntlet",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "7ee53487ab4f2cbd4267369af68890c10775b6345e75d14a407e5ec85a97eb0a",
+      "bytes": 313560
+    },
+    "day-02-10-0.jpg": {
+      "subject": "Golden Axe",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "782eb93fb45cbdeedf4d697e0fa4ec1c3a1d55313e75f19c69eb90ce7ece2db3",
+      "bytes": 632983
+    },
+    "day-02-13-0.jpg": {
+      "subject": "Mortal Kombat",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "8f0219613e83076b3a5973a3b9c06dc41c6cc4cb0992e050002d600898b9fdc8",
+      "bytes": 518969
+    },
+    "day-02-15-0.jpg": {
+      "subject": "Soulcalibur",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "8b7f0c61546b3ac1c9db1e7c3fe72bc93cafc5beeebe195824d4f441cd1e1b0a",
+      "bytes": 559388
+    },
+    "day-02-17-0.jpg": {
+      "subject": "Puyo Puyo",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "115c12599d6270755e09ee5d53b339795faafac46b1fcf3c4d87b4e4f1085d18",
+      "bytes": 417791
+    },
+    "day-02-18-0.jpg": {
+      "subject": "Bomberman",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "d7a3959d46dc545c63315a3ae7ede43fc13fd48460c7fd621fecce912e75b866",
+      "bytes": 388482
+    },
+    "day-02-19-0.jpg": {
+      "subject": "Bubble Bobble",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "47a5be4ce405667e6e336c4190a6ee7ff4b0f32e905c10ae34b0278604ab2121",
+      "bytes": 342343
+    },
+    "day-02-20-0.jpg": {
+      "subject": "Ghosts ’n Goblins",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "e1fd9be12eac704fc5b8c9448f9e0004b85bc7c5794812eaf87e2c44cb89063b",
+      "bytes": 396586
+    },
+    "day-02-28-0.jpg": {
+      "subject": "Space Harrier",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "6e1e773716bf9bc08a45317b0f4e2598f1c2e0e648d2dbb6f7602b38f0dd4cbd",
+      "bytes": 516800
+    },
+    "day-05-03-0.jpg": {
+      "subject": "The Sims",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "278f9f0361553f7f687bf061e7984d3e32b9a587b94932189cb718fa3252b4d6",
+      "bytes": 240380
+    },
+    "day-05-04-0.jpg": {
+      "subject": "World of Warcraft",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "a7f511d743634c489a45acf2a70802aa8278a1171a5259f4a90e4b4063e4c979",
+      "bytes": 649681
+    },
+    "day-09-14-0.jpg": {
+      "subject": "Splatoon",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "3e9ce5a4c3fffca281d7b3710dda1330c7649c8875445a0f1b6f03d24e5fef69",
+      "bytes": 430153
+    },
+    "day-09-19-0.jpg": {
+      "subject": "Advance Wars",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "fc7a64aace36977d970d41f13863dada877332d18fff385071945ee196d05e99",
+      "bytes": 379141
+    },
+    "day-01-08-0.jpg": {
+      "subject": "Dragon Quest",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "ec4ec749e85586503c93ab543453b97a3e4a8f7fead23446ce979159577e0a90",
+      "bytes": 425723
+    },
+    "day-02-22-0.jpg": {
+      "subject": "Gradius",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "0dec39cb5306278fe32f75722d794d65e9325417a4202a4e9c0c8a1595d2b6ed",
+      "bytes": 520657
+    },
+    "day-09-15-0.jpg": {
+      "subject": "Mario Kart",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "9cb5c414938d3a5793348c21593112957f73077efb48f9be436eff33b9744884",
+      "bytes": 430838
+    },
+    "workbook-header-rayman-legends.jpg": {
+      "subject": "Rayman Legends",
+      "kind": "cover",
+      "credit": "Ubisoft",
+      "sha256": "714585887802916c873ef40fba4fa261799b9f298aec4161c04fca76781d03c6",
+      "bytes": 110859
+    },
+    "workbook-header-live-a-live.jpg": {
+      "subject": "Live A Live",
+      "kind": "cover",
+      "credit": "Squaresoft",
+      "sha256": "7a01170ac76c091125d140373914c4ee8cadd5aaa78ffa9fb3c75451446814ab",
+      "bytes": 72500
+    },
+    "workbook-header-command-conquer.jpg": {
+      "subject": "Command & Conquer",
+      "kind": "cover",
+      "credit": "Westwood Studios / Virgin Interactive",
+      "sha256": "16ea21220277668baa16484c22b240c240981ddf539f328b7bb44d2984829b0e",
+      "bytes": 134731
+    },
+    "workbook-header-nfs-underground-2.jpg": {
+      "subject": "Need for Speed: Underground 2",
+      "kind": "cover",
+      "credit": "Electronic Arts",
+      "sha256": "09cfbee3833080b9c911eb6f0d5dad699ac784c0211e8f1810094b0a2b77a322",
+      "bytes": 127587
+    },
+    "cover-review-01-01-tgdb-107922.jpg": {
+      "subject": "Animal Crossing",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "9c9c9c5c9d44b034fa73a18dc7f665a5bfa4fb19b88b316d8d144cf031676835",
+      "bytes": 249381
+    },
+    "workbook-step06-gtcover-6.jpg": {
+      "subject": "Gran Turismo Concept 2001 Tokyo",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "7d9ae88d7b376b024293bbbc2e2a191e2588c107105b1bb6ee2b9a8f43f04e7b",
+      "bytes": 286506
+    },
+    "workbook-step06-cover-dia-0.png": {
+      "subject": "Diablo",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "d70a7d125f4febb95a15e2be19ed753a858814c1a1e12640661361589e154f4c",
+      "bytes": 50671
+    },
+    "workbook-runescape-original-logo.png": {
+      "subject": "RuneScape",
+      "kind": "cover",
+      "credit": "Jagex. Immagine fornita dall’utente.",
+      "sha256": "58a9b573c11c86c1fb6cb8012f097d9ddb50758a60f4517e78d963ce80424af3",
+      "bytes": 28124
+    },
+    "workbook-step06-cover-bayo-0.png": {
+      "subject": "Bayonetta",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "f3510031365bafea7cdd500f7bdf0f5bf56d848f373c08b4ca656b9de6250b1b",
+      "bytes": 152484
+    },
+    "workbook-step06-summon-1.jpg": {
+      "subject": "Summon Night (2000)",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "b12b05bce76483122b1e17dd30caa6501cfa0f5f5df9834615e72b90855d2db4",
+      "bytes": 27175
+    },
+    "workbook-step06-cover-pk-1.jpg": {
+      "subject": "Pokémon X e Y",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "db04e7c5e279a57206f81164046e0af4173ed1b5e876d7ca6873e15ad2b2777f",
+      "bytes": 16899
+    },
+    "workbook-step06-cover-min-1.png": {
+      "subject": "The Minish Cap",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "7dac7beeabb655d01a3176d3634c0e22dcfafee5c2e1c0531970b4588d7040ed",
+      "bytes": 113906
+    },
+    "workbook-step06-cover-resident-1.jpg": {
+      "subject": "Resident Evil 4",
+      "kind": "cover",
+      "credit": "Game imagery: respective publisher and rights holders.",
+      "sha256": "b46eebe24fe3382ff9320dfdaf308b7fec9609346f9ac6476c1003ea8e97fc7a",
+      "bytes": 28381
+    },
+    "workbook-step06-01-13-cover.jpg": {
+      "subject": "Puzzle Bobble",
+      "kind": "cover",
+      "credit": "Puzzle Bobble / www.thepixelempire.net",
+      "sha256": "cd94746949fdd19cdba58a20f868a3a603b0d52cbf0ae44447b013352869b5f8",
+      "bytes": 295987
+    },
+    "workbook-step06-header-01-14.webp": {
+      "subject": "Zelda II: The Adventure of Link",
+      "kind": "cover",
+      "credit": "Nintendo",
+      "sha256": "971ad613352ec60702173b72432b940d5e9cf75c96a0e593527b49ea210713c7",
+      "bytes": 67296
+    },
+    "workbook-step06-01-15-cover.jpg": {
+      "subject": "DmC: Devil May Cry",
+      "kind": "cover",
+      "credit": "DmC: Devil May Cry / en.wikipedia.org",
+      "sha256": "2c076d6f69d7231b15e743faa434053bcfd320889be9ba9deffb580c337c857f",
+      "bytes": 104746
+    },
+    "workbook-step06-01-16-cover.png": {
+      "subject": "Phoenix Wright: Ace Attorney - Justice for All",
+      "kind": "cover",
+      "credit": "Phoenix Wright: Ace Attorney - Justice for All / en.wikipedia.org",
+      "sha256": "e2bd3cf9346ca708a45b779940f7fe5ab1ccf5f33ad410b70e2fa945abc4a61a",
+      "bytes": 100558
+    },
+    "workbook-step06-header-01-21.png": {
+      "subject": "Super Smash Bros.",
+      "kind": "cover",
+      "credit": "Nintendo / HAL Laboratory",
+      "sha256": "66506eae106ac05cf4b323088e4cb0655cef0d82c9090178719f9eade13d371d",
+      "bytes": 1758609
+    },
+    "workbook-step06-header-01-22.jpg": {
+      "subject": "Hotel Dusk: Room 215",
+      "kind": "cover",
+      "credit": "Nintendo / Cing",
+      "sha256": "a3111f154de046932ff79fa134c3959a4104d790f9529131f382c19b87077a60",
+      "bytes": 142933
+    },
+    "workbook-step06-0123-cover.jpg": {
+      "subject": "PaRappa the Rapper 2",
+      "kind": "cover",
+      "credit": "Sony / NanaOn-Sha; PSX Data Center capture",
+      "sha256": "4db138ee110e801162074c24712b97663642db3fa954651da555484d01874136",
+      "bytes": 38528
+    },
+    "workbook-step06-0126-cover.png": {
+      "subject": "Mass Effect 2",
+      "kind": "cover",
+      "credit": "Game publisher; cover reproduced by Wikipedia",
+      "sha256": "e8a694708c29bad025f291c9b546fa011a5b41b04fd420b85b80b447dcc3db69",
+      "bytes": 187425
+    },
+    "workbook-step06-0127-cover.jpg": {
+      "subject": "Dying Light",
+      "kind": "cover",
+      "credit": "Game publisher; cover reproduced by Wikipedia",
+      "sha256": "be6934960ede155eedd2939d796c93ea6e7f6873710306f6685ea4b530c5a106",
+      "bytes": 26075
+    },
+    "workbook-step06-0128-cover.jpg": {
+      "subject": "Pokemon Legends Arceus",
+      "kind": "cover",
+      "credit": "Game publisher; cover reproduced by Wikipedia",
+      "sha256": "e8f7da7f33068bb4b311cca3d5b4cb3ea70fa18da048f667ed4c1dc932dbca61",
+      "bytes": 92398
+    },
+    "workbook-step06-0129-cover.jpg": {
+      "subject": "Resident Evil 2 (1998, PlayStation)",
+      "kind": "cover",
+      "credit": "Capcom / LaunchBox contributor archive",
+      "sha256": "e30953532dc1381dfe88af5af5d4ca6718927f1830214adfdd80577840f1ddf3",
+      "bytes": 15696
+    },
+    "workbook-step06-0130-cover.png": {
+      "subject": "Life Is Strange original",
+      "kind": "cover",
+      "credit": "Dontnod / Square Enix",
+      "sha256": "31b8ff55ac4e8e31687d3ff0e59adea0c80d8a01100e3aea5e4043236b22f579",
+      "bytes": 191067
+    },
+    "workbook-step06-0131-cover.jpg": {
+      "subject": "Final Fantasy VII",
+      "kind": "cover",
+      "credit": "Game publisher; cover reproduced by Wikipedia",
+      "sha256": "cb0b7b0bb1c41952622cb20674a5e1bde4508d7ab88763dd2c123f879ad003c6",
+      "bytes": 42684
+    },
+    "workbook-step06-0202-cover.jpg": {
+      "subject": "Frogger arcade advertisement",
+      "kind": "cover",
+      "credit": "Sega-Gremlin; Play Meter December 1981",
+      "sha256": "36047eb44ca7f60d79bcde3d544731697c1f5710a89f5153eff90cb8f283e48f",
+      "bytes": 442599
+    },
+    "workbook-step08-mswiki-0.png": {
+      "subject": "Ms. Pac-Man",
+      "kind": "cover",
+      "credit": "Namco / Midway / GCC; archive linked in source_url",
+      "sha256": "bd778632694422cb94d87e7d6daee13690747366d887a1b22aaa393ece4e0de6",
+      "bytes": 158155
+    },
+    "workbook-step08-simswiki-0.png": {
+      "subject": "The Sims",
+      "kind": "cover",
+      "credit": "Maxis / Electronic Arts; archive linked in source_url",
+      "sha256": "b8042c1291649dfc9edc79fb404996bb5ce0d8b131b4ec9ce40031ddeac2c88c",
+      "bytes": 157245
+    },
+    "workbook-step08-02-05-cover.jpg": {
+      "subject": "Paper Mario",
+      "kind": "cover",
+      "credit": "Nintendo / en.wikipedia.org",
+      "sha256": "dcd44090b5318c5a54b34cfcf2bfa2e5c20aec5fe797420f343e6b0c811d4607",
+      "bytes": 69198
+    },
+    "workbook-step08-02-06-cover.jpg": {
+      "subject": "Chibi-Robo!",
+      "kind": "cover",
+      "credit": "Nintendo / en.wikipedia.org",
+      "sha256": "f015ab232ca773013ea6e14291fbc80ada373a8782af3bad9c88a158434993e0",
+      "bytes": 74588
+    },
+    "workbook-step08-0207-cover.png": {
+      "subject": "Kingdoms of Amalur: Reckoning",
+      "kind": "cover",
+      "credit": "EA",
+      "sha256": "c428537f1cf3cef84bd18cc8739a1a5fd62413261484bde808ee73893280c6f5",
+      "bytes": 238381
+    },
+    "cover-review-08-22-tgdb-48363.jpg": {
+      "subject": "Uncharted: The Lost Legacy",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "e67fdbdb9ca22d5cabc2185fe9434dfa216bf8bc4f2e67c9a719cc567f45ba24",
+      "bytes": 377124
+    },
+    "residuo07-anno1800-cover.jpg": {
+      "subject": "Anno 1800",
+      "kind": "cover",
+      "sha256": "08ca2b547a6619cd2c4aabfe21a3bd07b6047726e5bb6d26551ec41a8b3fb057",
+      "bytes": 64134
+    },
+    "residuo07-09-20-cover.jpg": {
+      "subject": "Untitled Goose Game",
+      "kind": "cover",
+      "sha256": "fcfe7a522cb32533842a2e6618bb479998e8a2fedd839921c6a6c8460a6d0382",
+      "bytes": 52519
+    },
+    "residuo07-10-16-cover.jpg": {
+      "subject": "Machinarium",
+      "kind": "cover",
+      "sha256": "a287f111ad98a51d0da6854084879c636c009b652df520873b9ff7367279f1aa",
+      "bytes": 64527
+    },
+    "residuo07-10-18-cover.jpg": {
+      "subject": "Return of the Obra Dinn",
+      "kind": "cover",
+      "sha256": "2b6763ad1b07a00b51e48831adf6e4c9b756a5f52f11e41b336855aee9e90673",
+      "bytes": 55352
+    },
+    "cover-review-02-02-persona-3-reload.jpg": {
+      "subject": "Persona 3 Reload",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "3cf718e0d2e0a401b238654dfccdd9b201e793c05400fdea3160bf133ae6252e",
+      "bytes": 142066
+    },
+    "cover-review-02-09-dante-s-inferno-bioshock-2.jpg": {
+      "subject": "Dante's Inferno / BioShock 2",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "42f3b71602bc98e55f6ef3a36095ea59ed761734708ecffa8278a180135dfa85",
+      "bytes": 80800
+    },
+    "cover-review-02-10-vagrant-story.jpg": {
+      "subject": "Vagrant Story",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "b2ea424aba7efe26cd5c8b9ebfe3d0a6db265e8cf358d1770c6b5676f37fc6ac",
+      "bytes": 59232
+    },
+    "cover-review-02-11-final-fantasy-viii.jpg": {
+      "subject": "Final Fantasy VIII",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "6dc36cf850e7e79e83db2944d71a1345af7e105ca876815036b158b9a5603b1c",
+      "bytes": 54884
+    },
+    "cover-review-02-12-tgdb-76849.jpg": {
+      "subject": "Super Mario 3D World + Bowser's Fury",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "587e30481d4ff08912bbf18ec3f83e9866de8bf84f5caecaa5b20b25bcc44dbb",
+      "bytes": 826019
+    },
+    "cover-review-02-13-kingdom-come-deliverance.jpg": {
+      "subject": "Kingdom Come: Deliverance",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "d0709b67f1edb3861180991a8ba9fd47ffc4cf90f6b4d643844f3f7927595ff7",
+      "bytes": 22561
+    },
+    "cover-review-02-14-star-fox-assault.jpg": {
+      "subject": "Star Fox: Assault",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "31b8a5733db90c69564a294e883481b6ae0d0d81f0827bedbf239d54c0367446",
+      "bytes": 30931
+    },
+    "cover-review-02-15-marvel-vs-capcom-3-fate-of-two-worlds.jpg": {
+      "subject": "Marvel vs. Capcom 3: Fate of Two Worlds",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "4569df4e91f932af56eb9d91af05f21852035e116c65e27f34be225c662055d0",
+      "bytes": 152917
+    },
+    "cover-review-02-16-street-fighter-v.png": {
+      "subject": "Street Fighter V",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "140890a3f0042496c9ed9392b58af31c0d7d16d46ca0883430cbe55b3884c980",
+      "bytes": 138269
+    },
+    "cover-review-02-17-devil-may-cry-3-dante-s-awakening.jpg": {
+      "subject": "Devil May Cry 3: Dante's Awakening",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "b75142467cd07db474d1634f907dcc4d84f36e0ecdc4d32d53973858ea7352ff",
+      "bytes": 65372
+    },
+    "cover-review-02-18-horizon-forbidden-west.jpg": {
+      "subject": "Horizon Forbidden West",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "c614d19ff7f0baaf1334eaf9095caab3352b97c0aa33a119ef40673a4b1920be",
+      "bytes": 115978
+    },
+    "cover-review-02-19-metal-gear-rising-revengeance.jpg": {
+      "subject": "Metal Gear Rising: Revengeance",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "19096068720deeef02c753de6509f99d2af100466186e273d2aaa06a3a5d801c",
+      "bytes": 127477
+    },
+    "cover-review-02-20-the-order-1886.png": {
+      "subject": "The Order: 1886",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "0a9f424336782865fe9cbfe4e48599d6d717956cff44131cb279a0064a26451f",
+      "bytes": 127908
+    },
+    "cover-review-02-23-nier-automata.jpg": {
+      "subject": "NieR:Automata",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "fd5343518fbf366d9b75cd6e5692fde5d7c231365805a8201fb8562b836511d9",
+      "bytes": 21131
+    },
+    "cover-review-02-25-thief.jpg": {
+      "subject": "Thief",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "5ea1967cea58c5d055ceb8c8e1adb75b00088904ddda6b7d3ee34177709fe602",
+      "bytes": 26764
+    },
+    "cover-review-02-27-tgdb-97673.jpg": {
+      "subject": "Pokémon Red e Pokémon Green",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "55abdc6ef2ad7a3f351c10cb408908a4fffd5e1bef6a9b367d18786dab5264f9",
+      "bytes": 125083
+    },
+    "cover-review-02-28-horizon-zero-dawn.jpg": {
+      "subject": "Horizon Zero Dawn",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "c5c74db66773d79d1b8f9312333c08dc277b7807a93266e4a95823053faedd1b",
+      "bytes": 113938
+    },
+    "cover-review-03-01-aperture-desk-job.jpg": {
+      "subject": "Aperture Desk Job",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "e9afb526ce47b2f8667810a6a0f73bc1b754c3d9b6d030f43e54b82121b2e435",
+      "bytes": 72341
+    },
+    "cover-review-03-03-wo-long-fallen-dynasty.jpg": {
+      "subject": "Wo Long: Fallen Dynasty",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "988b04efb8795657afb565ba7eaec0ebb7cac58e636fbf7a4deda68edecaf62a",
+      "bytes": 115818
+    },
+    "cover-review-03-05-steam-21690.jpg": {
+      "subject": "Resident Evil 5",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "2d496409e95d32be79c7943879814e179588be31c8e97da5269822e9a0d2f43a",
+      "bytes": 41485
+    },
+    "cover-review-03-06-steam-1238020.jpg": {
+      "subject": "Mass Effect 3",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "ca8e12e518aba0a9fcc3a6e48951e157c680984567ff3287fce0c156509c8914",
+      "bytes": 72668
+    },
+    "cover-review-03-07-nier-automata-burnout-revenge-i-am-alive-tom-clancy-s-ghost-recon-wildlands.jpg": {
+      "subject": "NieR: Automata / Burnout Revenge / I Am Alive / Tom Clancy's Ghost Recon Wildlands",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "fd5343518fbf366d9b75cd6e5692fde5d7c231365805a8201fb8562b836511d9",
+      "bytes": 21131
+    },
+    "cover-review-03-09-super-mario-rpg.jpg": {
+      "subject": "Super Mario RPG",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "382f33a49aaf4d873817f490cf2a44024563c6dc267df03a4ce8cdc5a33277c2",
+      "bytes": 106893
+    },
+    "cover-review-03-10-call-of-duty-warzone.jpg": {
+      "subject": "Call of Duty: Warzone",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "548997b44a0c2441490f04a3e27ce7dc0856a97374445fd28618b129c9386b16",
+      "bytes": 46730
+    },
+    "cover-review-03-11-steam-613830.jpg": {
+      "subject": "Chrono Trigger",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "bd89ec7bfab7c8b4612823913623e22cc66bd304800d7225fa756ca00c3b46c8",
+      "bytes": 29443
+    },
+    "cover-review-03-12-steam-638970.jpg": {
+      "subject": "Yakuza 0",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "576997e4677e243bf8e2f1d30df1672987331d695888063dbaadb7e5c458667e",
+      "bytes": 57971
+    },
+    "cover-review-03-13-code-name-s-t-e-a-m.jpg": {
+      "subject": "Code Name: S.T.E.A.M.",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "3722d2bc49c7a27c554efd3d7213c7f6cf789258412090dd9ac37c5712b3f3e0",
+      "bytes": 171955
+    },
+    "cover-review-03-14-steam-236430.jpg": {
+      "subject": "Dark Souls II",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "2583769a5b38dcc8ae8f27954ead9e0f876ad46e1915a987db22f1d128c97872",
+      "bytes": 51441
+    },
+    "cover-review-03-15-homefront-tom-clancy-s-the-division-2.jpg": {
+      "subject": "Homefront / Tom Clancy's The Division 2",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "6619f73c533b7a1dd70f861ca1a673bd216c797e006babbe5cbda85bbe7dd586",
+      "bytes": 35227
+    },
+    "cover-review-03-16-kirby-star-allies.jpg": {
+      "subject": "Kirby Star Allies",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "0262506ed55e3bca79e453a99dab7f7d1442465f9d807dce2a93d1a0aa669c41",
+      "bytes": 52400
+    },
+    "cover-review-03-17-grand-theft-auto-chinatown-wars.jpg": {
+      "subject": "Grand Theft Auto: Chinatown Wars",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "00a11412a6a38fe66f012b8879fdca6bb268da64113bc9df1684aa0500fe183e",
+      "bytes": 76521
+    },
+    "cover-review-03-18-metal-gear-solid-v-ground-zeroes.jpg": {
+      "subject": "Metal Gear Solid V: Ground Zeroes",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "863673e4a6805e3d0041de2df9bee8b47550404ec5d693a626ac513b21aa0149",
+      "bytes": 33328
+    },
+    "cover-review-03-19-gears-of-war-judgment.jpg": {
+      "subject": "Gears of War: Judgment",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "8ac42ad37bf0616b5ef8629bda95943ede014934a0011a9315a04cd645a96b33",
+      "bytes": 250872
+    },
+    "cover-review-03-22-god-of-war.jpg": {
+      "subject": "God of War",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "13e88966c5d97062811a4849701fb18f718aa5cbf924a2062f4adcc91f6ef015",
+      "bytes": 27238
+    },
+    "cover-review-03-23-steam-546560.jpg": {
+      "subject": "Half-Life: Alyx",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "2eb5651ac3eadb91ecfbff1bb0eff559e7054b0ad77398f9a064879514d12d31",
+      "bytes": 41256
+    },
+    "cover-review-03-24-bloodborne.jpg": {
+      "subject": "Bloodborne",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "5afe8edeb95fbcfc95caea4c5191099f20c01976fdced8f86ab9a11689f5fd49",
+      "bytes": 45792
+    },
+    "cover-review-03-25-diablo-iii-reaper-of-souls.jpg": {
+      "subject": "Diablo III: Reaper of Souls",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "c5670124388b4edad1524cd2e0aedcef594213784a27e9da34b539bc46da2b58",
+      "bytes": 92412
+    },
+    "cover-review-03-26-steam-291650.jpg": {
+      "subject": "Pillars of Eternity",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "b6e0ba195e573ff6a257ef25ccb4e1e97fb3412454b28ab5c3302396ae375958",
+      "bytes": 63998
+    },
+    "cover-review-03-27-monster-hunter-freedom-2g.jpg": {
+      "subject": "Monster Hunter Freedom 2G",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "8185703abd34c7a124f749863ef0e38fe9e2863bbfcaf7f7967321d1ff1422e5",
+      "bytes": 70101
+    },
+    "cover-review-03-28-kingdom-hearts.jpg": {
+      "subject": "Kingdom Hearts",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "54bd180efa9f770750df4dd9deebc71f3d18f759991f109e0c5026faf6a468a0",
+      "bytes": 60008
+    },
+    "cover-review-03-29-yoshi-s-crafted-world.jpg": {
+      "subject": "Yoshi's Crafted World",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "cf0d5df109ebe0055dbb5542b19fdbbeb6292e18f0ac907624c75db590c235af",
+      "bytes": 59351
+    },
+    "cover-review-03-30-steam-569860.jpg": {
+      "subject": "Thimbleweed Park",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "0f24f5fd56fa6b88cb057aa3c8c099d27f5922f6d73f48f175c8aca1bfaa7ab9",
+      "bytes": 67171
+    },
+    "cover-review-03-31-steam-257850.jpg": {
+      "subject": "Hyper Light Drifter",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "14f767a28b13e0f00f61cfb72dbbfe501129334121717cd2f182e2c13fe7a6d8",
+      "bytes": 62737
+    },
+    "cover-review-04-01-steam-265930.jpg": {
+      "subject": "Goat Simulator",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "6a53153b7dfa85d81cf9b3ffe41d5fc913194917688159727727ad8709fa9e26",
+      "bytes": 43249
+    },
+    "cover-review-04-02-tgdb-34358.jpg": {
+      "subject": "Final Fantasy VI",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "2959ebddbd89468d51c59a1075daf5f171411c0be3c76a69a935326df1d853a7",
+      "bytes": 150471
+    },
+    "cover-review-04-03-monument-valley.jpg": {
+      "subject": "Monument Valley",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "5d8eff193002f182fd6d0124a6ef30b8b9d0e3e7793b212a3e094177f98e14a2",
+      "bytes": 8925
+    },
+    "cover-review-04-04-steam-306130.jpg": {
+      "subject": "The Elder Scrolls Online",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "f8b6b745bccf011a2c9c6d4e46429d8c77a7a043c028f1c850019437b58f3eeb",
+      "bytes": 62231
+    },
+    "cover-review-04-05-steam-920210.jpg": {
+      "subject": "LEGO Star Wars: The Skywalker Saga",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "18e3ea60eb6a00cfe15ed0a042e6bd32f252325d49e86e74095e000232867396",
+      "bytes": 73912
+    },
+    "cover-review-04-06-conker-s-bad-fur-day-oddworld-soulstorm.jpg": {
+      "subject": "Conker's Bad Fur Day / Oddworld: Soulstorm",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "2fa4a1c6dc8564b8b0f81ba6eba1c974afe70e97ec5b4d5b46d30a560431451a",
+      "bytes": 35867
+    },
+    "cover-review-04-10-mario-kart-wii.png": {
+      "subject": "Mario Kart Wii",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "f9273335000b9cf9bebf03c1ef57925bae135361a0d600a7eb9b1669a02d05e3",
+      "bytes": 91593
+    },
+    "cover-review-04-11-steam-360830.jpg": {
+      "subject": "Yooka-Laylee",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "0bc99112d03457da179cb473746326309b4da8285a6918add18447d939f7f0eb",
+      "bytes": 65021
+    },
+    "cover-review-04-12-jade-empire.png": {
+      "subject": "Jade Empire",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "364fd8f417d1f7fe84d3780f388bdf88cb363cc59f3b7472659e58e78564844f",
+      "bytes": 241045
+    },
+    "cover-review-04-13-tom-clancy-s-splinter-cell-conviction.jpg": {
+      "subject": "Tom Clancy's Splinter Cell: Conviction",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "4c08921462a062f9b729d8367db6ab01fbe1e9830b61d2e4111c21963245eba2",
+      "bytes": 50843
+    },
+    "cover-review-04-14-steam-307780.jpg": {
+      "subject": "Mortal Kombat X",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "a0fb3cbf56c850af5a936e4003b4a6ed7ab2f9b95d2041cbd705f4feab38a03f",
+      "bytes": 45749
+    },
+    "cover-review-04-15-skate-3.jpg": {
+      "subject": "SKATE 3",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "cb507f1e93295ac4bb25487af366f49dd75f7d6583d2a8cb4f9ba78ba01abc6a",
+      "bytes": 14964
+    },
+    "cover-review-04-17-steam-1388590.jpg": {
+      "subject": "Yakuza 6: The Song of Life",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "437667784fc40be3cf70b3c267a1712e328e8861e8bb96d3abff56d6aa914096",
+      "bytes": 50927
+    },
+    "cover-review-04-18-steam-1928870.jpg": {
+      "subject": "Minecraft Legends",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "cb4b382a4c4813461a7607e2b10e3cb6f7fa6f156801d45acaef142b2159c6c0",
+      "bytes": 86685
+    },
+    "cover-review-04-19-fire-emblem-awakening.png": {
+      "subject": "Fire Emblem Awakening",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "45618c4d16f8bcf767da1b6a07265fe1302ad8bd2ee9ac3d98f5aa145642943f",
+      "bytes": 143571
+    },
+    "cover-review-04-22-steam-1113560.jpg": {
+      "subject": "NieR Replicant ver.1.22474487139...",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "acd56b92c266a2b19f705e98584319a302935d7288c3e8d1cfada1d1abbc4c0a",
+      "bytes": 46423
+    },
+    "cover-review-04-23-steam-219740.jpg": {
+      "subject": "Don't Starve",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "47a40dcec3adcda64324624d734d72c662204fac64d90d8bc6a74dfd5dbd2c10",
+      "bytes": 54534
+    },
+    "cover-review-04-24-prototype-2.jpg": {
+      "subject": "Prototype 2",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "9a036cf95afa715e421db7f0904fe1056e5e6611b063d59f9c2b2de5e26c5aa3",
+      "bytes": 43232
+    },
+    "cover-review-04-25-fire-emblem-the-blazing-blade.jpg": {
+      "subject": "Fire Emblem: The Blazing Blade",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "03b1290b02158127a7d93557c548d38176984cf6d753c2f4a9e62c1e35e546bd",
+      "bytes": 100922
+    },
+    "cover-review-04-26-alienation.jpg": {
+      "subject": "Alienation",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "cf3c7e334365f4e9ef335658f1f20a7d50088f5e49e1d26f4de66def187e5121",
+      "bytes": 24831
+    },
+    "cover-review-04-27-super-street-fighter-iv.jpg": {
+      "subject": "Super Street Fighter IV",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "7feeb4faf24f82bb2cd346527f90ee8993dd55266350fe38d1dc8e9c9c8e70ac",
+      "bytes": 38997
+    },
+    "cover-review-04-28-steam-424840.jpg": {
+      "subject": "Little Nightmares",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "147eb8e65a217865f704a23fec3169654cf0f891e4bcaf90c111aff14970098e",
+      "bytes": 44524
+    },
+    "cover-review-04-29-steam-12210.jpg": {
+      "subject": "Grand Theft Auto IV",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "5736dd72c9e4dd5ae74eae5e7e6a08ea450422face42a29760f12362b10b55bd",
+      "bytes": 46834
+    },
+    "cover-review-04-30-steam-1649240.jpg": {
+      "subject": "Returnal",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "a4d7236a5f06353bd079c92ddabd3f964b55ed797ff6714374c811dc5a09be75",
+      "bytes": 65533
+    },
+    "cover-review-05-01-steam-22320.jpg": {
+      "subject": "The Elder Scrolls III: Morrowind",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "67806baa6201c17d5eafb3bccbf9898a9de2c86c121210bb2031c7f3a38b9384",
+      "bytes": 62336
+    },
+    "cover-review-05-02-steam-1669000.jpg": {
+      "subject": "Age of Wonders 4",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "41aa726af5428feef515fd29cf56c8113abec2ac2afdc56de850a74841176089",
+      "bytes": 58184
+    },
+    "cover-review-05-03-red-dead-revolver.jpg": {
+      "subject": "Red Dead Revolver",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "a5880e2c9b40445e261c95aedcf47ddbad6f94e64dd85252e013ea8ba974efff",
+      "bytes": 26510
+    },
+    "cover-review-05-04-steam-32370.jpg": {
+      "subject": "Star Wars Day · Star Wars: Knights of the Old Republic",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "e577149a3727d2dd0039e6df62730ea7eef254879d5ff54a85ce7ae1d539d6f0",
+      "bytes": 56128
+    },
+    "cover-review-05-05-steam-2270.jpg": {
+      "subject": "Wolfenstein 3D",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "c1a61c9a1ef22df91c115b518a168cda0ed23fa1d61f448225baaf85e6273689",
+      "bytes": 53095
+    },
+    "cover-review-05-06-tgdb-7626.jpg": {
+      "subject": "EVE Online",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "4046be2c675aa77df73fa45668b6fdb3a621985fd312635bf9b4ba357c5d4f80",
+      "bytes": 767451
+    },
+    "cover-review-05-07-steam-1196590.jpg": {
+      "subject": "Resident Evil Village",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "9969e24d2146757ee5e0da1942f8296ced75f7c9095a3471a2d9dceeb4ebc033",
+      "bytes": 46770
+    },
+    "cover-review-05-09-steam-281990.jpg": {
+      "subject": "Stellaris",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "7fe5b8daf59042a52541b2323637be83664612186c2da8973036acbc490b9115",
+      "bytes": 45188
+    },
+    "cover-review-05-10-uncharted-4-a-thief-s-end.jpg": {
+      "subject": "Uncharted 4: A Thief's End",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "f509c4da39afe99c1be7eceab541c0067c82a70823380f9206f45716abe6a6c6",
+      "bytes": 27483
+    },
+    "cover-review-05-14-fire-emblem-genealogy-of-the-holy-war.jpg": {
+      "subject": "Fire Emblem: Genealogy of the Holy War",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "01b84dfe16616cd30e3400857535fa0a63277e574d6b0376a9ca8113e1d75ef2",
+      "bytes": 40881
+    },
+    "cover-review-05-15-diablo-iii.png": {
+      "subject": "Diablo III",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "efced070911ecb6cdd345ff15ccff4f40b488a1908c57726c8097b1ba172b8b0",
+      "bytes": 177116
+    },
+    "cover-review-05-16-terraria.jpg": {
+      "subject": "Terraria",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "7c2ef1f870d5aacdc6e932c0c98bc4b751aab25d5fc0c93048ccb8d88bb96afb",
+      "bytes": 110946
+    },
+    "cover-review-05-18-steam-2668510.jpg": {
+      "subject": "Red Dead Redemption",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "845eada196cb3ee91d37d0c24dc4b6c025cdacbebcb6ac5403d7567fd1451755",
+      "bytes": 70712
+    },
+    "cover-review-05-19-tgdb-69854.jpg": {
+      "subject": "Full Throttle",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "d0fb1fe4e39312644f82c2f664dc612badb32c9c33cf3b42b2e231fa3b8f356f",
+      "bytes": 561172
+    },
+    "cover-review-05-20-steam-237930.jpg": {
+      "subject": "Transistor",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "99479fa86a4a80d05456f3a0795c38d617724a6d49af50ebe01bfbbf1c023067",
+      "bytes": 63130
+    },
+    "cover-review-05-21-steam-2461850.jpg": {
+      "subject": "Senua's Saga: Hellblade II",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "a429701a9910c6123d6239c8b3bc1e782b8a123ee5597c29f5967fcc57f25690",
+      "bytes": 28964
+    },
+    "cover-review-05-23-atelier-marie-the-alchemist-of-salburg.jpg": {
+      "subject": "Atelier Marie: The Alchemist of Salburg",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "dac19ca14ae31b905cfdef0fe9651141da70f3528f23794e4d6f7e393ae63aa5",
+      "bytes": 32249
+    },
+    "cover-review-05-24-tgdb-32185.jpg": {
+      "subject": "Overwatch",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "02dfd9315a518eadb8e814b30b01d7e21f791ded7dfcd08cfbc5187d2fa863e2",
+      "bytes": 464555
+    },
+    "cover-review-05-25-steam-597820.jpg": {
+      "subject": "Biomutant",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "95f057c52c5629038f91aed962e2875c78ca516331157715217aa1e96fe32138",
+      "bytes": 63676
+    },
+    "cover-review-05-26-infamous.jpg": {
+      "subject": "inFAMOUS",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "d082180b9a24205704c48d4cddfd6ea56099ea4a272b60b4e753210d10f57b0e",
+      "bytes": 103133
+    },
+    "cover-review-06-01-steam-8000.jpg": {
+      "subject": "Tomb Raider: Anniversary",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "e9f138327408837136e809603912f3fda697d5eae1d2f753c4e2296854465fe5",
+      "bytes": 60702
+    },
+    "cover-review-06-02-tgdb-72904.jpg": {
+      "subject": "VALORANT",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "cb97831c5dbb91b6db51b7d65be674a02a3a6e94f21b5080d9dc7ff17b08e496",
+      "bytes": 319675
+    },
+    "cover-review-06-03-super-mario-bros-2-famicom-disk-system.jpg": {
+      "subject": "Super Mario Bros. 2 (Famicom Disk System)",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "7ebb4a64a4075cfac97e50e20972a4ec80820f229cfed6569f26b006938b4693",
+      "bytes": 35097
+    },
+    "cover-review-06-04-tgdb-9545.jpg": {
+      "subject": "Leisure Suit Larry in the Land of the Lounge Lizards",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "535dbe158d68a27f7744d24c607bc3432e943edc8a1fe0b5c268eaacf8a61734",
+      "bytes": 169669
+    },
+    "cover-review-06-05-steam-286160.jpg": {
+      "subject": "Tabletop Simulator",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "a3018b9bef8b706c4f1190b2fcf33abae323756ccd60841fa093d59d890693ab",
+      "bytes": 29713
+    },
+    "cover-review-06-06-tgdb-3193.png": {
+      "subject": "The Legend of Zelda: Link's Awakening",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "f1dfeb16def67aa61a157af4d969123ed60526757c48bac7bacbc86feb5e1b31",
+      "bytes": 513728
+    },
+    "cover-review-06-07-steam-1233570.jpg": {
+      "subject": "Mirror's Edge Catalyst",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "0df750c2530377d0cfc4b179be18017c2de79996a01696d37587b03cc7e99ddd",
+      "bytes": 67093
+    },
+    "cover-review-06-08-tgdb-10612.jpg": {
+      "subject": "Green Day: Rock Band",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "0ca9340010b5b51ef74f2a28ac633114072aa911aa8cef3d2a7cf957fd7d32ac",
+      "bytes": 133422
+    },
+    "cover-review-06-09-killer7.jpg": {
+      "subject": "killer7",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "3d6d87c0efaa8ec189b29a8039bb782be9efc3b18d34d9063d51916393bece3c",
+      "bytes": 77121
+    },
+    "cover-review-06-11-steam-1895880.jpg": {
+      "subject": "Ratchet & Clank: Rift Apart",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "a18812a6fa7aa201d1ad3306513aaacf408253a97b8a5f2807dbb5fdcf2081c3",
+      "bytes": 75500
+    },
+    "cover-review-06-12-tgdb-1317.jpg": {
+      "subject": "Hogan's Alley",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "f21943f9ef50eff0b9cd7c4cd1bedc6e8cc40fcdffc945657eddd94ca68b305f",
+      "bytes": 1200700
+    },
+    "cover-review-06-13-tgdb-82733.jpg": {
+      "subject": "Star Soldier",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "8670efc5aa3a1b08eb9316c8df55beac590f67f30e67ac8e03e683083c9b02bd",
+      "bytes": 31386
+    },
+    "cover-review-06-14-tgdb-103667.jpg": {
+      "subject": "The Last of Us",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "9542528f3ad5e0d61644c665f2ac396d097fb35d2fee6d77492a9e7f84faf0ad",
+      "bytes": 429269
+    },
+    "cover-review-06-16-steam-610370.jpg": {
+      "subject": "Desperados III",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "3f6bd97e3148c078fe78e0cf4b073fd7a77991e072ea9bedd13df67aac9135d8",
+      "bytes": 68233
+    },
+    "cover-review-06-17-tgdb-1038.jpg": {
+      "subject": "Blaster Master",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "2bd3cc2b1c580ac124842363251cdbae54a4999d20ffa44c68c088fe6aac7cc7",
+      "bytes": 3801277
+    },
+    "cover-review-06-18-steam-692850.jpg": {
+      "subject": "Bloodstained: Ritual of the Night",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "f9c59c8d7fbea07344cb624fc75570d83c72a4758f35e3c9355bf1441409bdf4",
+      "bytes": 70683
+    },
+    "cover-review-06-20-arcade-flyer.jpg": {
+      "subject": "Time Crisis 4",
+      "kind": "cover",
+      "sha256": "116fd547ecc3e0dd458feaf3c983e30554397ad60a1012d0d84bdae043332bf6",
+      "bytes": 129943
+    },
+    "cover-review-06-21-tgdb-4161.jpg": {
+      "subject": "DRIV3R",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "6e5c6e5a18d3df344500df0c0cfae0210b226845b90f51859e517b576f737409",
+      "bytes": 540356
+    },
+    "cover-review-06-22-steam-2310.jpg": {
+      "subject": "Quake",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "d3d0fa430762b6913f90ccc6f8c40f6217261dadf897061975e14ff7d32420c1",
+      "bytes": 41870
+    },
+    "cover-review-06-24-steam-6800.jpg": {
+      "subject": "Commandos: Behind Enemy Lines",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "ace63f3efef3494ad8d4366fd79de28447cc2d4b7875cf18db1026b45a458434",
+      "bytes": 51359
+    },
+    "cover-review-06-25-tgdb-103746.jpg": {
+      "subject": "Phantom: Covert Ops",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "17869ac1e7c26fc59b40bf9a66d3ac2c320765d924067065eaa567b3dcfc37cf",
+      "bytes": 345992
+    },
+    "cover-review-06-26-tgdb-2775.jpg": {
+      "subject": "Viewtiful Joe",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "889349103b990ca83dafddfe721c42f65fda5946e5f5a17e174669e577f1dfd8",
+      "bytes": 1034396
+    },
+    "cover-review-06-28-tgdb-3182.jpg": {
+      "subject": "Final Fantasy Adventure",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "48a8ea1856c29263df260a078f688027629f75542fe666914f72275ff7c826cf",
+      "bytes": 167782
+    },
+    "cover-review-06-29-steam-304430.jpg": {
+      "subject": "INSIDE",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "bf1726022a5e304f9daeb72d40925b6581783d08de9dddac1c15eaf14354ec0f",
+      "bytes": 15319
+    },
+    "cover-review-06-30-tgdb-36706.jpg": {
+      "subject": "Tengai Makyō: Ziria",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "c4790ef2493880c31c6476fefefacd059ec5fadcad799341d03890662a6ede4a",
+      "bytes": 69628
+    },
+    "cover-review-07-01-tgdb-5460.jpg": {
+      "subject": "Duke Nukem",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "3042b4607a2b16b85e816e2d8467555d212c361cdd64640faab12f85267b204b",
+      "bytes": 236264
+    },
+    "cover-review-07-02-tgdb-64087.jpg": {
+      "subject": "Final Fantasy XIV: Shadowbringers",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "e45172a44f8744c30d3df3a1f7e978a49ae967501fcc05c4c77c5d563a51a08d",
+      "bytes": 686000
+    },
+    "cover-review-07-03-tgdb-10909.jpg": {
+      "subject": "The Secret World",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "94a38da1dbc470c964fd9aa223554f434190358a721949ac68df67c7c20f7e17",
+      "bytes": 148364
+    },
+    "cover-review-07-04-tgdb-29984.jpg": {
+      "subject": "America's Army: Operations",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "cf3e2b1235fbdf3e5f8403c9e1eb4105b54718da117eda6ef2365d0e79e408c7",
+      "bytes": 92772
+    },
+    "cover-review-07-05-steam-219950.jpg": {
+      "subject": "NiGHTS into Dreams...",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "f2dcbf83a95f23f95dd0dfe887faeb7552260925cb3331b1ca76adad9b86d9cf",
+      "bytes": 76887
+    },
+    "cover-review-07-06-tgdb-8234.jpg": {
+      "subject": "Super Star Soldier",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "7067b57b04333c21935952bcf51f321e608b989f08827e494fc746d273f4d233",
+      "bytes": 384981
+    },
+    "cover-review-07-07-steam-377840.jpg": {
+      "subject": "Final Fantasy IX",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "3193eae69254d0a6d550341c5a0ba2c954b89ae14cd374dd6cb90ca25c3b2c89",
+      "bytes": 55437
+    },
+    "cover-review-07-08-tgdb-3244.jpg": {
+      "subject": "Robotrek",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "9b5a265ec78824f30abcaa65eabb5aa56103ee4b5a93a162cfa10c84bb8acaa1",
+      "bytes": 2559387
+    },
+    "cover-review-07-10-tgdb-26522.jpg": {
+      "subject": "Yume Kōjō: Doki Doki Panic",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "9319209790cabc94c56a0ebbf2a935f4478bcc61bdc35370eb52cce946294356",
+      "bytes": 503042
+    },
+    "cover-review-07-11-tgdb-2622.jpg": {
+      "subject": "SaGa Frontier",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "c450822e860ba637636e0df94a110c73231696dd153a0339122cfc31f5e77349",
+      "bytes": 334941
+    },
+    "cover-review-07-12-tgdb-3167.png": {
+      "subject": "Castlevania II: Belmont's Revenge",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "3828be65617388910a22fe03a1bab3acb5e72780d17c45935278fd4418abf16a",
+      "bytes": 761649
+    },
+    "cover-review-07-13-tgdb-105095.jpg": {
+      "subject": "Super R-Type",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "b71b78c39ae81c024b776b6aae12783e76ca28a970360b0bc36e8e4ea7a8dbdc",
+      "bytes": 173859
+    },
+    "cover-review-07-14-tgdb-1781.jpg": {
+      "subject": "Mario Paint",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "a5a764a17684cba5384a502fe390e0f475e7e83a864f76559405d7a09f9506e5",
+      "bytes": 2978115
+    },
+    "cover-review-07-16-tgdb-1544.jpg": {
+      "subject": "Brave Fencer Musashi",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "0dbc30257b06c83abfe14a7e86b390b25956c568c36d1c373a479721b6ff5ac4",
+      "bytes": 1693895
+    },
+    "cover-review-07-17-tgdb-23762.jpg": {
+      "subject": "Summer Carnival '92: Recca",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "3151eaee6c50b2e3e280cabcc000a8136e8b21518a6bbbdd2b79387a67cf06b9",
+      "bytes": 318192
+    },
+    "cover-review-07-18-tgdb-75552.jpg": {
+      "subject": "Real Sound: Kaze no Regret",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "63b7deed0f5719a3bc2c3558df2ad4d701874b42ed667414320c02d24488c9b9",
+      "bytes": 163770
+    },
+    "cover-review-07-19-tgdb-9418.jpg": {
+      "subject": "Final Fantasy IV",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "daa127d7ddce454a444629049fe12c1cf404e9a1b88eff495f18ab63f93f94d9",
+      "bytes": 85595
+    },
+    "cover-review-07-20-tgdb-5663.jpg": {
+      "subject": "Devil's Crush",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "1b3d1a9b85e7da9452875cd404aaa1358c91e4c8a97184485651649500121bc1",
+      "bytes": 336395
+    },
+    "cover-review-07-21-steam-48000.jpg": {
+      "subject": "LIMBO",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "ec987b5e73c5d4e58bc85b275f80043bec2cdc7e3168162d040f1fb0ef0e5f5e",
+      "bytes": 19465
+    },
+    "cover-review-07-22-tgdb-24025.jpg": {
+      "subject": "Pulseman",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "79465ddb029982ab31b9eb51a7d625bb47995f6af98967ec80d5789042cd9209",
+      "bytes": 6251765
+    },
+    "cover-review-07-23-tgdb-120.jpg": {
+      "subject": "Shinobi III: Return of the Ninja Master",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "c0bb9830f5a5a388d3db9ce0bfcb5a78211c1d4d574a62b86f1b63f02baef38f",
+      "bytes": 765034
+    },
+    "cover-review-07-24-tgdb-53249.jpg": {
+      "subject": "Thunder Force IV",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "ed9b90256061a77b3478a2348286fe30f2e3d97fa4d42ec4f0e66be35881349d",
+      "bytes": 263698
+    },
+    "cover-review-07-26-tgdb-13078.jpg": {
+      "subject": "Mega Man: Dr. Wily's Revenge",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "43db30c628ecc7ffeaba2e99b624f3428dcdd28f282fde0a2a13818e8a58e4e8",
+      "bytes": 82490
+    },
+    "cover-review-07-27-tgdb-80597.jpg": {
+      "subject": "Dr. Mario",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "4a702973db6c5202e3d43ccec278b4c46575e7a578c40c486a7648a15c18cdf3",
+      "bytes": 1095739
+    },
+    "cover-review-07-29-tgdb-55649.jpg": {
+      "subject": "Policenauts",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "cdc22cb11482b9366935d6ad7c385b05693bcc7048a5d91fc6f92545f7a831df",
+      "bytes": 498526
+    },
+    "cover-review-08-01-tgdb-4426.jpg": {
+      "subject": "Monster Hunter Tri",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "42d59f604bbd3ccf1d5936d5e2d47797ad4fbdc8097ee1af6fda9dca8d425ede",
+      "bytes": 2063210
+    },
+    "cover-review-08-02-tgdb-48871.jpg": {
+      "subject": "Streets of Rage",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "b06ce93122ff32f2906f154434ecdd9df3d34b4e0e47550aa6e750df93ecce2b",
+      "bytes": 44341
+    },
+    "cover-review-08-04-tgdb-38504.jpg": {
+      "subject": "Gakkō de Atta Kowai Hanashi",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "c5611f1d79dbd3442aa50912767c5275c357b163ecd14783d77ac79bdca3de2d",
+      "bytes": 29787
+    },
+    "cover-review-08-05-tgdb-137.jpg": {
+      "subject": "Super Mario World 2: Yoshi's Island",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "001abe326356fd046047f5af5cce6993c653cc7be986705501d5788110a41d9b",
+      "bytes": 2159121
+    },
+    "jul-dec-review-alien-flash-official-card.png": {
+      "subject": "Alien Hominid original 2002 Flash",
+      "kind": "cover",
+      "sha256": "0115d3a1afa27f9365b5212601c69c33144feb156ea76388a2c2782ae2018d3b",
+      "bytes": 116892
+    },
+    "cover-review-08-08-stray.jpg": {
+      "subject": "Stray",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "f7dfceff58b301b75bc1d8b5ba8ef5e22c1f978d7bf74bae3aa29367918494c5",
+      "bytes": 41169
+    },
+    "cover-review-08-09-tgdb-97634.jpg": {
+      "subject": "Gradius: The Interstellar Assault",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "2729f69061322a21263d0e263843a4903a79c5d27dbd5765c951655aee18ad63",
+      "bytes": 818182
+    },
+    "cover-review-08-10-tgdb-2070.jpg": {
+      "subject": "Shadow of the Ninja",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "a0f95735b6b6f6e73c9d9c923120cceb68204cbd4e8aaddc317f650ffc25ebd5",
+      "bytes": 3386628
+    },
+    "cover-review-08-11-steam-238210.jpg": {
+      "subject": "System Shock 2",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "668a7137c4d2e58de785251e14e6b84c7a1d5e05410d66487c35f2bcef9bd6e5",
+      "bytes": 47733
+    },
+    "cover-review-08-12-tgdb-19052.png": {
+      "subject": "Famicom Wars",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "3147b112ffd4907c1232eb8b29e43837ca7d6b08e436d680d76d08b9a783894d",
+      "bytes": 226164
+    },
+    "cover-review-08-13-tgdb-1301.jpg": {
+      "subject": "Gyromite",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "1532bbc68c95b8468365b1150ce1e7e2f3c4936930b621a4241c7e975525486f",
+      "bytes": 705636
+    },
+    "cover-review-08-14-tgdb-23230.jpg": {
+      "subject": "Hyrule Warriors",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "2670fd81c92da1ffe40cda03338601ca7e7a0fc5aab525bc35bb6202f2ea9c02",
+      "bytes": 185004
+    },
+    "cover-review-08-15-tgdb-29737.jpg": {
+      "subject": "Starflight",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "3ad36ce1e4e80e55254434c20ef53616d65253973bc05b6aceb829dcd66c1e0f",
+      "bytes": 52059
+    },
+    "cover-review-08-16-tgdb-559.jpg": {
+      "subject": "Legacy of Kain: Soul Reaver",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "898354f3cc02a50cbb28071064ed7deb31c8e42710a19060ba70ef5f92ee9bfb",
+      "bytes": 615478
+    },
+    "cover-review-08-17-steam-1124300.jpg": {
+      "subject": "Humankind",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "a2eef97a001ed58b9812baee9b05c1c2745212584afd43ab1a1d03a56108d6bc",
+      "bytes": 54294
+    },
+    "cover-review-08-18-steam-287310.jpg": {
+      "subject": "Re-Volt",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "a6cb585f863fdfc85868da1eba8f7be29fa182ee560baa9d8212957ff60a6b37",
+      "bytes": 47609
+    },
+    "cover-review-08-19-ddr-verified.jpg": {
+      "subject": "Dance Dance Revolution Solo Bass Mix",
+      "kind": "cover",
+      "sha256": "e1e11a6481bfe54c5dd33cc39a35668bce6d4dc6f732df3e3dd80125a0797c4d",
+      "bytes": 109073
+    },
+    "cover-review-08-21-steam-7670.jpg": {
+      "subject": "BioShock",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "4fbff2b6658153b28fbc16b820dc4c00b2be7035b89c8695def5ca840b761a9d",
+      "bytes": 72911
+    },
+    "cover-review-08-25-steam-607080.jpg": {
+      "subject": "Psychonauts 2",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "ab0a0eafe6f5e4885a79fe28abd8c52fa53aa22462149759932029cf92e71246",
+      "bytes": 67099
+    },
+    "cover-review-08-26-tgdb-2236.jpg": {
+      "subject": "Super Mario Sunshine",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "b75eb3d74a2d0071f151250c045c32bbe2f39511d7d3bb8682bdca1e5b06fef8",
+      "bytes": 1731624
+    },
+    "cover-review-08-27-tgdb-108266.jpg": {
+      "subject": "Super Mario Kart",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "d0deb1ad18ac4f7d66064ad5b1c4cb38a4484cc246f1adb51f4cf3cb44436c62",
+      "bytes": 419646
+    },
+    "cover-review-08-28-steam-1284210.jpg": {
+      "subject": "Guild Wars 2",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "5d8538fa669adadba93fa1afafe8693b69b5817c29f1339989a66f76dc138bdd",
+      "bytes": 48565
+    },
+    "cover-review-08-30-tgdb-63378.jpg": {
+      "subject": "Astral Chain",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "cafb34f2f94924dc2b7a95b71d056d77aa86b8caa467a161761a95f3f0dce815",
+      "bytes": 712064
+    },
+    "cover-review-09-01-steam-234140.jpg": {
+      "subject": "Mad Max",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "d74e1fed19f243d003b14bc96db9d7688f0c4188eefa1b0c49cc266c75eaa4af",
+      "bytes": 59174
+    },
+    "cover-review-09-04-steam-2395210.jpg": {
+      "subject": "Tony Hawk’s Pro Skater 1 + 2",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "476f3bce5ddfcff05f24cba9fdbde690a062a158bfa3637b0c359b0a5ea1bb9c",
+      "bytes": 50143
+    },
+    "cover-review-09-05-tgdb-93759.jpg": {
+      "subject": "Test Drive Unlimited",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "21d413978886ea56e84630df12f78397518a4e2644e223d1807ad6364f7617d3",
+      "bytes": 66761
+    },
+    "cover-review-09-06-steam-1716740.jpg": {
+      "subject": "Starfield",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "262c70664194622bf64cbc51cb00fa1b6177ec55a13dd64500c610919367c17e",
+      "bytes": 55173
+    },
+    "cover-review-09-08-steam-2356560.jpg": {
+      "subject": "Monster Hunter Stories",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "defae5e77a3c0f20de35cec4255677a990e9554e9522ba4d44ed4e7ce0661a70",
+      "bytes": 106366
+    },
+    "cover-review-09-12-tgdb-99303.jpg": {
+      "subject": "Pokémon Giallo",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "5e4c9317849486f48a0e8c696998b9099c6cd4dd5252a32c20f9155f0bc5c5bf",
+      "bytes": 464911
+    },
+    "cover-review-09-07-tgdb-101198.jpg": {
+      "subject": "Marvel’s Spider-Man",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "7c40c071b9f40a600155c3af15d84438a763599e2cd9ee859cd049a413ece1ec",
+      "bytes": 113226
+    },
+    "cover-review-09-15-steam-391540.jpg": {
+      "subject": "Undertale",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "9bf9277d8d2f9fbaf6cb559eff2f1509a4f8fad87c1cd6cb20b06ed58e46a56e",
+      "bytes": 6576
+    },
+    "cover-review-09-16-tgdb-104016.jpg": {
+      "subject": "Pokémon Smeraldo",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "cc509e5c7c0df11bab1311e2931dc06df81f9e253f66a2874fe69f7c1151d1dd",
+      "bytes": 259763
+    },
+    "cover-review-09-18-tgdb-13189.jpg": {
+      "subject": "Eternal Sonata",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "04926c1f73189ae593f862d06dd85478bd47d604be19cf18c4eb0fe018a1b4f3",
+      "bytes": 468760
+    },
+    "cover-review-09-21-steam-49520.jpg": {
+      "subject": "Borderlands 2",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "d665d838739e1f64d78af07fba4ae7850f835b3ca9cc015b92be35d27c03ccb7",
+      "bytes": 95060
+    },
+    "cover-review-09-19-steam-1122720.jpg": {
+      "subject": "Sayonara Wild Hearts",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "ab6a9759a519bb835c12833bdb5a5ffaaa0226153a837f4d2168b1fa474d7e55",
+      "bytes": 41516
+    },
+    "cover-review-09-22-tgdb-112374.jpg": {
+      "subject": "Dark Souls",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "d70e904d252c79a0e150b9941a63231c58b86dac67b14515cdf3e926a60165ff",
+      "bytes": 598083
+    },
+    "cover-review-09-24-tgdb-2239.jpg": {
+      "subject": "Ico",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "bc13f38f495792d52d0b40d4329ffc73f639a178304d2a2594dd2fa8f40b0482",
+      "bytes": 2272900
+    },
+    "cover-review-09-25-tgdb-95487.jpg": {
+      "subject": "Halo 3",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "d5a56422f8449e3861c322f12120791000908370db4f7bc0078cdaaaa8866d66",
+      "bytes": 84856
+    },
+    "cover-review-09-26-tgdb-32097.jpg": {
+      "subject": "Castlevania",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "71d6eff5efc22e8dd26cdda73a928fc0e1314ce8a4ebdd1b5e96b0c987cc58c1",
+      "bytes": 481198
+    },
+    "cover-review-09-27-steam-678960.jpg": {
+      "subject": "Code Vein",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "df289383c7b0346225622728c7b287c5c2a869869b8b9a41ec97297ca315abed",
+      "bytes": 84090
+    },
+    "cover-review-09-30-steam-38400.jpg": {
+      "subject": "Fallout",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "8b9e19cc6ca2744ec669fc7f7c31d5cc57310aebedaa69fd0fc0404ea38931c2",
+      "bytes": 62696
+    },
+    "cover-review-10-04-steam-2231380.jpg": {
+      "subject": "Tom Clancy's Ghost Recon Breakpoint",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "add05b6873d121178c568cd0a0257ea73686827d533530dcba69229493028564",
+      "bytes": 66479
+    },
+    "cover-review-10-05-steam-812140.jpg": {
+      "subject": "Assassin's Creed Odyssey",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "bb8be34bb1af784e8f61ea6b011f919adf59373dfae4f1678538f0c9a0f431a8",
+      "bytes": 67408
+    },
+    "cover-review-10-06-steam-1086940.jpg": {
+      "subject": "Baldur's Gate 3",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "1105d8a101e4f9c34194eed69bbd055529337cf9d5cfe90399f38ebb2e2a1f4f",
+      "bytes": 66971
+    },
+    "cover-review-10-07-steam-214490.jpg": {
+      "subject": "Alien: Isolation",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "36d2b19491ee5b7e4b30e47759c31ab2d11c55c2b84cc85991b90d76ad9af676",
+      "bytes": 32660
+    },
+    "cover-review-10-08-tgdb-7193.jpg": {
+      "subject": "Mortal Kombat",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "7c6463d9ace5dec3811aca35c8e6677c54e699ac32ba8c01b9be3c9a482713f0",
+      "bytes": 161235
+    },
+    "cover-review-10-09-steam-205100.jpg": {
+      "subject": "Dishonored",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "08335fb92f963027969341b1027f34162a3b1c42893ff440a7b02c244692bc1c",
+      "bytes": 42994
+    },
+    "cover-review-10-10-steam-400.jpg": {
+      "subject": "Portal",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "83372866899274b9da03d7fe490463283bb4514bb945a451ff38b465797a1044",
+      "bytes": 28916
+    },
+    "cover-review-10-11-tgdb-2319.jpg": {
+      "subject": "Paper Mario: The Thousand-Year Door",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "b5954a04639a5eb57de17016d3b9780d7677e344faded6ec83ef6b69ebe5acef",
+      "bytes": 1005376
+    },
+    "cover-review-10-13-steam-225260.jpg": {
+      "subject": "Brütal Legend",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "5055eaf0b3a4d9402204f43cac6379a442cca5c7c92d9620ed6cb9985ddb1aa5",
+      "bytes": 55796
+    },
+    "cover-10-12-back-4-blood.jpg": {
+      "subject": "Back 4 Blood",
+      "kind": "cover",
+      "credit": "Back 4 Blood cover art",
+      "sha256": "f6cd33e4261d58a5c130dc2c11e9b3d7d4ea4686c501d0ebb10d35b303a71e03",
+      "bytes": 157921
+    },
+    "cover-review-10-14-steam-17470.jpg": {
+      "subject": "Dead Space",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "0005a6ceef5b5e4f3f325ff6583f7f18200034023a013e70705d17503c60fdcb",
+      "bytes": 107372
+    },
+    "cover-review-10-17-steam-2022670.jpg": {
+      "subject": "Sonic Superstars",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "3f22f643e2d26f957b3cbd50ad320b6ae83141f47a6d66f109017951dac3b6a1",
+      "bytes": 84990
+    },
+    "cover-review-10-19-steam-460810.jpg": {
+      "subject": "Vanquish",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "e398a4c2a8f16ecb52ee4f539596f622a929aaa0fadce8559d53ad953954bdde",
+      "bytes": 64832
+    },
+    "cover-review-10-20-tgdb-115948.jpg": {
+      "subject": "Super Mario Bros. Wonder",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "52d30b16786b3a6a4531204d98df953e367c7eef3f383478b457a06fe12ba31e",
+      "bytes": 5520046
+    },
+    "cover-review-10-21-steam-1238840.jpg": {
+      "subject": "Battlefield 1",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "f2c772a9c641450bb4e88da7b4d7027536761b85a09b7456ea0621b49403f2e7",
+      "bytes": 57716
+    },
+    "cover-review-10-22-tgdb-8136.jpg": {
+      "subject": "Grand Theft Auto 2",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "e67e87fca7c5ea58fc76e7d96465fe4c88a3eb66b3f39bd6689a0542243564ab",
+      "bytes": 52385
+    },
+    "cover-review-10-23-tgdb-126700.jpg": {
+      "subject": "Super Mario Bros. 3",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "aad623865b21b7781ff7c7efa19ded0f390b5ff637b47ebf7ca10372d822c8e2",
+      "bytes": 455741
+    },
+    "cover-review-10-25-tgdb-62728.jpg": {
+      "subject": "Dark Souls III: Ashes of Ariandel",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "503d1c521f4fafdc855b35d6a97b7370fb17ddccfb0df8cacde2846863884a15",
+      "bytes": 753512
+    },
+    "cover-review-10-27-super-mario-odyssey.jpg": {
+      "subject": "Super Mario Odyssey",
+      "kind": "cover",
+      "credit": "Game cover: respective publisher and rights holders; Wikipedia game infobox.",
+      "sha256": "f076ac6ab5016c04987fbe13ee1ee25275d5c12b50ddf30a8d733ac94e41d924",
+      "bytes": 68146
+    },
+    "cover-review-10-26-steam-1174180.jpg": {
+      "subject": "Red Dead Redemption 2",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "f758535316b8402ae5aeeb5fdea4384594913972f327a8d832da9f47225d6edd",
+      "bytes": 75653
+    },
+    "cover-review-10-28-steam-22300.jpg": {
+      "subject": "Fallout 3",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "64439453d67a6ea8f83896676db97b8e77fddc9cace3b9527b4b1dea7ee3a422",
+      "bytes": 57164
+    },
+    "cover-review-10-29-tgdb-16793.jpg": {
+      "subject": "Castlevania: Rondo of Blood",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "0eb8535e9f2926cdd323022a52b61e9f0cdf4869839ff02acfe0a2eac02ab127",
+      "bytes": 835069
+    },
+    "cover-review-10-31-tgdb-61018.jpg": {
+      "subject": "Luigi's Mansion 3",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "8a5d19d6db039cb46661ab3db846e83dc8eda2d88f638c360bf8b96d325b4c16",
+      "bytes": 4310647
+    },
+    "cover-review-10-30-tgdb-4264.jpg": {
+      "subject": "Grim Fandango",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "7d1710a0bfc6ca7863fd846c60e54563205f0932d7088f6da7011bb91af6917d",
+      "bytes": 204942
+    },
+    "cover-review-11-01-tgdb-115151.jpg": {
+      "subject": "Uncharted 3: Drake's Deception",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "9a4f8e4749421e164ef7eaebd8e0c78a02308c5f4ab48656b1fe99965199ac8e",
+      "bytes": 147618
+    },
+    "cover-review-11-05-steam-7940.jpg": {
+      "subject": "Call of Duty 4: Modern Warfare",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "9eb4b588baf93882da04c3af46cb7c78fda40c59e97b796d16d3d1764610be68",
+      "bytes": 39360
+    },
+    "cover-review-11-06-tgdb-3597.jpg": {
+      "subject": "Halo 4",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "55f691770c2dcaeebfc6866efe1f76e7d3469d7639287164ba2031697293cfe5",
+      "bytes": 1067312
+    },
+    "cover-review-11-08-steam-1190460.jpg": {
+      "subject": "Death Stranding",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "ea5879b48da4ae9c6058d90805875d01b0bd45b6e70d4a740e1c1fd1110d3372",
+      "bytes": 33917
+    },
+    "cover-review-11-09-steam-42700.jpg": {
+      "subject": "Call of Duty: Black Ops",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "75d16f0b692bcccaca9cfbd79765c8b7c069b6cf8373d74321620e72d068ffe9",
+      "bytes": 45153
+    },
+    "cover-review-11-10-steam-377160.jpg": {
+      "subject": "Fallout 4",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "3581acf1fdb98ab78ca3431171daa6e408d8ea63b35c4db095e781ed9dfa505d",
+      "bytes": 48173
+    },
+    "cover-review-11-11-steam-72850.jpg": {
+      "subject": "The Elder Scrolls V: Skyrim",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "ea16f990ecbb1a6598f9d9569e6b59f187491e9ecacf6287a56c22f8d686b069",
+      "bytes": 41596
+    },
+    "cover-review-11-13-steam-17300.jpg": {
+      "subject": "Crysis",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "868676efeff698a90c1234aa9d86fcef57e63b820814572e811e18de48904016",
+      "bytes": 103486
+    },
+    "cover-review-11-17-steam-1237980.jpg": {
+      "subject": "Star Wars Battlefront (2015)",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "271cb02d0474f952f1e7c242c5bd7793a923e986c3166ad02520ac1b83f64f98",
+      "bytes": 39858
+    },
+    "cover-review-11-19-steam-70.jpg": {
+      "subject": "Half-Life",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "1e3200fc5e4031e66ec34ee0993162ccc343c2fa1d5b8351bbb72d36c92105c1",
+      "bytes": 93652
+    },
+    "cover-review-11-24-tgdb-142.jpg": {
+      "subject": "Sonic the Hedgehog 2",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "e9375f4597a97b41dade7af0dccaababd1d6f3dff5f6556f0a8817b9d2763dde",
+      "bytes": 312453
+    },
+    "cover-review-11-27-tgdb-78265.jpg": {
+      "subject": "Dragon Quest VIII",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "b6e64e7e35cd09e6dd620926a9bd62a1c2eec941d211c691512fad28874b3f85",
+      "bytes": 214964
+    },
+    "cover-review-11-29-tgdb-7868.jpg": {
+      "subject": "Pong",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "39d931ddfdcd9bfe7d6d053d97cda9db01fd361720f10735fae7796df110d411",
+      "bytes": 93712
+    },
+    "cover-review-11-30-tgdb-97671.jpg": {
+      "subject": "Excitebike",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "59a463afafee8a9d1b6c498fafe3471efe9c738d22345dc0553cd3544c7aa2dd",
+      "bytes": 110896
+    },
+    "cover-review-12-01-steam-359550.jpg": {
+      "subject": "Rainbow Six Siege",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "fbfebf2ee7b7ad7e394a6f8b83d3fd780fd2f1548541452ee04a05e756e54dbc",
+      "bytes": 36989
+    },
+    "cover-review-12-04-tgdb-98458.jpg": {
+      "subject": "Prince of Persia (2008)",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "1addb88835abfba01510cdfacdeae25b0a75aafb5138047d749b8cb4597e9d33",
+      "bytes": 348071
+    },
+    "cover-review-12-07-tgdb-34990.jpg": {
+      "subject": "The Last Guardian",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "c85e4bcffc1637df274d446a21d9f8f2580565a35e3245fb37dc4754f8515b20",
+      "bytes": 288706
+    },
+    "cover-review-12-09-dq-verified.jpg": {
+      "subject": "Dragon Quest VI",
+      "kind": "cover",
+      "sha256": "ba31a6e84922b23fae75bffa238a80a40c5e9723d1aaf70413b35abcf5c65e03",
+      "bytes": 34380
+    },
+    "cover-review-12-11-tgdb-15249.jpg": {
+      "subject": "Angry Birds",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "84ac23edb7f87a1bde3fc0bfdce3e77bc7cdfe428735b6073da88264dc2560bc",
+      "bytes": 91499
+    },
+    "cover-review-12-13-steam-1608070.jpg": {
+      "subject": "Crisis Core: Final Fantasy VII Reunion",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "3dcc02e764b650be8bacd0b4e4e3278ef14f82312c8e81b01a2e46954a3080db",
+      "bytes": 53477
+    },
+    "cover-review-12-15-tgdb-10945.jpg": {
+      "subject": "Suikoden",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "4c5efd2fefc58b1c0b85754623920a9d96c4d4015938fb8c8bf99115c588bfd4",
+      "bytes": 171824
+    },
+    "cover-review-12-16-tgdb-1015.jpg": {
+      "subject": "Mega Man X2",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "7508ef2a6b706d93d5d0de269d542e1fdcbaa653b3402b45ef7f3ebbad219906",
+      "bytes": 2769356
+    },
+    "cover-review-12-17-steam-292120.jpg": {
+      "subject": "Final Fantasy XIII",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "02699d91b6169d801812eccae20164dbcdc99fdfec325dba7416026258b7006d",
+      "bytes": 56854
+    },
+    "cover-review-12-18-tgdb-90057.jpg": {
+      "subject": "Final Fantasy",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "f8f90c9772049d1e7d5e462b366eff34ca140e30e9e160e2a6e068de18e15a3a",
+      "bytes": 146297
+    },
+    "cover-review-12-22-tgdb-105064.jpg": {
+      "subject": "Valkyrie Profile",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "7f7bf0b0021c307f6d11f1996fa6994693829a118387e3202411c49bbd1eea2d",
+      "bytes": 54827
+    },
+    "cover-review-12-24-tgdb-72006.jpg": {
+      "subject": "Mega Man 2",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "f523cd549d2677926dc5bb6098d0b3bdcc6d957048ba0db56474ecc30c189b4a",
+      "bytes": 527932
+    },
+    "cover-review-12-27-tgdb-23240.jpg": {
+      "subject": "Fantasy Life",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "ec7774657979b5bd4661320daf9e2c12dde92e32b580b115024a61f1538f402c",
+      "bytes": 920395
+    },
+    "cover-review-12-28-tgdb-3929.jpg": {
+      "subject": "Gran Turismo 4",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "60ea1060bf597a5ee8ef16a12da285f8d00a0e933b4f0f8469d3127599d5d970",
+      "bytes": 342083
+    },
+    "cover-review-12-26-tgdb-1025.jpg": {
+      "subject": "Adventures of Lolo 3",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "daad0f5dafa571668870df9225d3e1bef28ec5475e0e2d30583d96216e47395e",
+      "bytes": 2602101
+    },
+    "cover-review-12-29-tgdb-430.png": {
+      "subject": "Shenmue",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "ce5d845abe86ebbf262ed854a27e3cacdf351bf563ddc771896c76e2a4cb5469",
+      "bytes": 2699195
+    },
+    "cover-review-12-31-tgdb-95501.jpg": {
+      "subject": "The Sims 2: Holiday Party Pack",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "e3f2ee4eeb0dcc46153a020d12e1d56af5b9d9ad6b70ca898b9cc70aa6608416",
+      "bytes": 67744
+    },
+    "cover-review-12-30-tgdb-94800.jpg": {
+      "subject": "Sonic Heroes",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "520f1714a05580f8ba1b9602eecd88bbc2e1e0d752b3227ad1e5f4e56042a8f1",
+      "bytes": 99212
+    },
+    "cover-review-09-10-steam-936790.jpg": {
+      "subject": "Life Is Strange: True Colors",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "ea53092fbecd7dbe8d6dc69779165449db284eda55a865a3ebb65425bd3afe93",
+      "bytes": 69379
+    },
+    "cover-review-09-28-tgdb-766.jpg": {
+      "subject": "Homeworld",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "8387920e0210a1fa0a9f85095078fda6982ca949a0e2dd13e8020640e45cee57",
+      "bytes": 1557251
+    },
+    "cover-review-10-02-steam-742300.jpg": {
+      "subject": "Mega Man 11",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "4bdf9f612a41d33db3b01279616f4a659fc13dee186f632b997b4a99c3154aa7",
+      "bytes": 81288
+    },
+    "cover-review-10-03-tgdb-49993.jpg": {
+      "subject": "Forza Motorsport 7",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "5f32c958c1b765e2f5cd7560f96f340e504203abaa6ee851a90b78fc318c4c96",
+      "bytes": 390426
+    },
+    "cover-review-10-15-steam-632470.jpg": {
+      "subject": "Disco Elysium",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "b721fc4deb7576f4ce7e7bae8af0176b87aca28e3a79e73952ef7708f027824f",
+      "bytes": 76440
+    },
+    "cover-review-11-02-tgdb-2684.jpg": {
+      "subject": "Alex Kidd in Miracle World",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "2b1c88410d93104be2160bc71ee23057668e797d3e3bc6364c0f41368450048d",
+      "bytes": 816961
+    },
+    "cover-review-11-07-tgdb-80805.jpg": {
+      "subject": "Gears of War",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "1875540cf0e307e9a9935fc174396d5554943209b648d4777c9e652c02a0c2e1",
+      "bytes": 94111
+    },
+    "cover-review-11-20-steam-17460.jpg": {
+      "subject": "Mass Effect",
+      "kind": "cover",
+      "credit": "Publisher-provided Steam library cover",
+      "sha256": "765b3d8705a5b6d46396795a239c3afcef4d7a51373f0c945d294880e8768b51",
+      "bytes": 47788
+    },
+    "cover-review-11-26-tgdb-34059.png": {
+      "subject": "Snatcher",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "60591baa24f87a7b79e7ff27e68b138de8bd77fb2a0f198ff5e934eb4db4d05a",
+      "bytes": 1009156
+    },
+    "cover-review-11-28-tgdb-35658.jpg": {
+      "subject": "Zanac",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "b69dbfcb272b8ea06dc23657e05e2b580400e339c1fd5bd8e022d8f75127fdec",
+      "bytes": 130474
+    },
+    "cover-review-12-08-tgdb-8500.jpg": {
+      "subject": "Yakuza",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "10af022edf1bacb168e2b1cd8131b9c392f797943a9e29dd9999244632f3d2c8",
+      "bytes": 784116
+    },
+    "cover-review-12-20-tgdb-113112.jpg": {
+      "subject": "Phantasy Star",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "6fb43bea3ab13fc66fa5f23e5371afcdd7c05f7cf461d57ae6e6c1bfce823dfb",
+      "bytes": 98770
+    },
+    "cover-review-09-11-tgdb-21492.jpg": {
+      "subject": "Digital Devil Story: Megami Tensei",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "57f22a6914d858417aa4b41301fe906072433348e31c460cef03037ce8b0244f",
+      "bytes": 271247
+    },
+    "cover-review-10-01-tgdb-76876.jpg": {
+      "subject": "Super Mario Bros. 35",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "2aa655e627991e7b30f849cce1005fda5946ea154dbdd8ff983bc54a208e2474",
+      "bytes": 77362
+    },
+    "cover-review-10-24-tgdb-7085.jpg": {
+      "subject": "Grand Theft Auto: Liberty City Stories",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "786e04fce88f26518405953bf7fa3b417f56c644dc3e23d3ad2ef63ea033c6db",
+      "bytes": 1057549
+    },
+    "cover-review-11-03-tgdb-109984.jpg": {
+      "subject": "Super Mario 3D Land",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "5ea0ceee8765013bebe767613025f2babd3ec4ad2ea262502a0ed272339d055c",
+      "bytes": 171178
+    },
+    "cover-review-11-14-tgdb-431.jpg": {
+      "subject": "Skies of Arcadia",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "7d75ecec6ebe62d15afaf7df4ab7cf89feb887824a3e8c0bff808d73123a080a",
+      "bytes": 199294
+    },
+    "cover-review-12-14-tgdb-10881.jpg": {
+      "subject": "Commander Keen in Invasion of the Vorticons",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "5ebd1cef22d3244363996a7b22a161456b6cf5d2837dc04faa8be9b6a5728247",
+      "bytes": 91718
+    },
+    "cover-review-12-19-tgdb-32214.jpg": {
+      "subject": "Kid Icarus",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "79754e89d8cb4ca6e53af37906db24a9e6d9148f36da89089f7b570aee7ce811",
+      "bytes": 1181583
+    },
+    "cover-review-12-21-tgdb-79157.jpg": {
+      "subject": "Phantasy Star Online",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "8bcc0deff1df89a47bd1f05bf6d2d5109e6c31490a5e0e7b12b03e07eda6a61b",
+      "bytes": 60974
+    },
+    "cover-review-12-25-tgdb-82754.jpg": {
+      "subject": "Christmas NiGHTS",
+      "kind": "cover",
+      "credit": "Original game packaging: respective publisher; scan catalogued by TheGamesDB",
+      "sha256": "c61948fd354423b1e2f852bcafbd6d52fe6ea9e65a0f3771f53e80f147032e9c",
+      "bytes": 144956
     }
   }
 }
