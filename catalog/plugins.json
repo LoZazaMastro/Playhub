@@ -13,7 +13,7 @@
       "version": "1.1.9",
       "releaseAssetName": "Playhub-Artworks-1.1.9_Installer.zip",
       "catalogReleaseUrl": "https://github.com/LoZazaMastro/Playhub-Artworks/releases/download/1.1.9/Playhub-Artworks-1.1.9_Installer.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-03T18:28:34Z",
       "category": "Playhub",
       "shortDescription": "The right artwork for every game in your library.",
       "longDescription": "Playhub Artworks brings artwork management into Big Picture with a controller-first experience: search, choose, and apply covers, banners, heroes, logos, and icons without returning to the desktop.\n\n## What it does\n• Searches for artwork across SteamGridDB, IGDB, PlayStation Store, Nintendo eShop, Xbox, AlphaCoders, iiDB, and IGN.\n• Remembers your filters and most recently used source separately for each artwork type.\n• Creates Perfect Heroes and Perfect Banners by blending a background and logo, with adjustable position, scale, opacity, and shadow.\n• Lets you leave the logo out of the composition when you only want the background.\n• Positions and resizes game logos just like Steam.\n• Displays square covers throughout the library and across every Home shelf, including Steam banners.\n• Fills in missing artwork for your entire library in the background.\n\n## Note\n• Searches using SteamGridDB require a personal API key, which is stored only on your PC.",
@@ -40,7 +40,9 @@
         "Artwork",
         "playhub-artworks",
         "Playhub-Artworks"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-02T20:42:06Z",
+      "updatedAt": "2026-10-03T18:28:34Z"
     },
     {
       "active": true,
@@ -77,7 +79,9 @@
         "Launch Curtain",
         "launch-curtain",
         "Launch-Curtain"
-      ]
+      ],
+      "firstPublishedAt": "2026-06-10T10:47:32Z",
+      "updatedAt": "2026-10-03T18:28:50Z"
     },
     {
       "active": true,
@@ -89,7 +93,7 @@
       "version": "2.5.2",
       "releaseAssetName": "Now-Playing-decky_Installer-2.5.2.zip",
       "catalogReleaseUrl": "https://github.com/LoZazaMastro/Now-Playing/releases/download/2.5.2/Now-Playing-decky_Installer-2.5.2.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-03T12:10:59Z",
       "category": "Playhub",
       "shortDescription": "Your favorite songs, always within reach.",
       "longDescription": "Now Playing is your console-style music companion, bringing the active Windows media session into Steam's Quick Access Menu with album art, track details, and controls always within gamepad reach.\n\n## What it does\n• Shows the active Windows media session in the Quick Access Menu.\n• Displays the title, artist, album art, and track progress.\n• Provides play/pause, previous, next, shuffle, and repeat controls whenever the player makes them available.\n• Opens popular music apps in an instant: Spotify, TIDAL, Apple Music, Deezer, Amazon Music, and SoundCloud.\n• Includes a full-screen Now Playing view with a visualizer.\n• Uses a dedicated Windows helper to read media sessions.",
@@ -116,7 +120,9 @@
         "Now Playing",
         "now-playing",
         "Now-Playing"
-      ]
+      ],
+      "firstPublishedAt": "2026-06-10T10:51:18Z",
+      "updatedAt": "2026-10-03T12:10:59Z"
     },
     {
       "active": true,
@@ -155,7 +161,9 @@
         "Metadata",
         "playhub-metadata",
         "Playhub-Metadata"
-      ]
+      ],
+      "firstPublishedAt": "2026-06-15T10:06:10Z",
+      "updatedAt": "2026-10-03T10:16:21Z"
     },
     {
       "active": false,
@@ -245,7 +253,7 @@
       "version": "1.3.1",
       "releaseAssetName": "Playhub-Notifications_Installer-1.3.1.zip",
       "catalogReleaseUrl": "https://github.com/LoZazaMastro/Playhub-Notifications/releases/download/1.3.1/Playhub-Notifications_Installer-1.3.1.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-03T11:35:58Z",
       "category": "Playhub",
       "shortDescription": "More beautiful, clearer, and more personal notifications.",
       "longDescription": "Playhub Notifications replaces Steam's visible notification popups and sounds with animated themes designed for Big Picture, while leaving the native notification history intact.\n\n## What it does\n• Offers seven dedicated themes: Xbox Console, PlayStation, GOG Galaxy, Epic Games Launcher, Nintendo, Android, and Playhub.\n• Customizes achievements, messages, invitations, downloads, screenshots, controllers, alerts, system notifications, and community notifications.\n• Uses the real achievement artwork supplied by Steam when available.\n• Lets you choose notification position, duration, and volume, with a range from 0% to 200%.\n• Shows system volume through an overlay matched to the selected theme.\n• Includes previews for testing every notification type directly from the Quick Access Menu.\n\n## Notes\n• Only the visible popup and its sound are replaced; Steam's original notification history remains available.\n• The overlay does not take focus or intercept controller, keyboard, or mouse input while you play.",
@@ -270,7 +278,9 @@
         "Playhub Notifications",
         "playhub-notifications",
         "Playhub-Notifications"
-      ]
+      ],
+      "firstPublishedAt": "2026-08-14T16:55:03Z",
+      "updatedAt": "2026-10-03T11:35:58Z"
     },
     {
       "active": true,
@@ -282,7 +292,7 @@
       "version": "3.3.7",
       "releaseAssetName": "ThemeDeck-Playhub_Installer-3.3.7.zip",
       "catalogReleaseUrl": "https://github.com/LoZazaMastro/ThemeDeck-Windows/releases/download/3.3.7/ThemeDeck-Playhub_Installer-3.3.7.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-03T10:49:22Z",
       "category": "Playhub",
       "shortDescription": "Soundtracks, heard the way they deserve.",
       "longDescription": "ThemeDeck gives your library a soundtrack. It plays music when you open a game page in Gaming Mode, with optional ambient music for the interface and a separate track for the Store. This Windows-focused fork remains named ThemeDeck inside Decky.\n\n## What it does\n• Plays a custom track when you open a game's detail page.\n• Lets you choose local audio files or search YouTube with yt-dlp.\n• Downloads and assigns tracks from YouTube results, with a preview before confirmation.\n• Supports per-game volume, start offset, and looping.\n• Provides a global ambient track for non-game pages and a separate track for the Store.\n• Stops the music when a game launches or is running.\n• Can automatically find and assign missing tracks through YouTube searches.\n\n## Notes\n• It controls only its own audio and does not change the Windows system volume.\n• The Windows release includes yt-dlp.exe to power search and downloads.\n• The interface automatically follows the Steam/Decky language, with 11 languages supported.",
@@ -307,7 +317,9 @@
         "ThemeDeck",
         "themedeck",
         "ThemeDeck-Windows"
-      ]
+      ],
+      "firstPublishedAt": "2026-06-10T10:59:33Z",
+      "updatedAt": "2026-10-03T10:49:22Z"
     },
     {
       "active": true,
@@ -319,7 +331,7 @@
       "version": "1.7.2",
       "releaseAssetName": "TrailerHero-v1.7.2_Installer.zip",
       "catalogReleaseUrl": "https://github.com/LoZazaMastro/TrailerHero/releases/download/1.7.2/TrailerHero-v1.7.2_Installer.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-03T17:22:43Z",
       "category": "Playhub",
       "shortDescription": "Your game trailers, always within gamepad reach.",
       "longDescription": "TrailerHero gives Steam Big Picture the feel of a console dashboard. When you open a game page, it keeps the original artwork visible for three seconds, then smoothly fades a muted trailer into the same hero area, preferring Steam trailers and falling back to YouTube when needed.\n\n## Main controls\n• Enabled turns the effect on or off.\n• Enable on home also plays trailers on the Big Picture library Home screen.\n• Game page logo moves the game logo to the lower-left corner during the trailer and restores it when you leave.\n• Automatic CRT applies a subtle CRT effect to low-resolution trailers.\n• Source selects Auto, Steam, or YouTube for each game.\n• Quality sets the preferred Steam and YouTube quality to 720p, 1080p, or 2160p.\n• Steam video lets you choose any Steam video for the game from a menu, not only the featured trailer.\n• Trim start / Trim end save a custom video cut for each game.\n• Custom YouTube link saves a specific YouTube trailer; without one, automatic search favors 4K results and applies strict title matching.\n\n## Notes\n• It was created on and for Windows, although it should also work on Linux.\n• It reads and adapts Big Picture interface elements, which Steam updates often, so some selectors may need adjustments over time.",
@@ -344,7 +356,9 @@
         "TrailerHero",
         "trailerhero",
         "TrailerHero"
-      ]
+      ],
+      "firstPublishedAt": "2026-06-10T11:00:54Z",
+      "updatedAt": "2026-10-03T17:22:43Z"
     },
     {
       "active": true,
@@ -381,7 +395,9 @@
         "News",
         "news",
         "News"
-      ]
+      ],
+      "firstPublishedAt": "2026-08-22T10:37:36Z",
+      "updatedAt": "2026-09-18T11:13:07Z"
     },
     {
       "active": true,
@@ -416,7 +432,9 @@
         "Weather",
         "weather",
         "Weather"
-      ]
+      ],
+      "firstPublishedAt": "2026-06-10T11:02:58Z",
+      "updatedAt": "2026-07-09T20:08:07Z"
     },
     {
       "active": true,
@@ -453,7 +471,9 @@
         "Playhub Surround",
         "playhub-surround",
         "Playhub-Surround"
-      ]
+      ],
+      "firstPublishedAt": "2026-06-15T14:46:37Z",
+      "updatedAt": "2026-06-15T14:46:37Z"
     },
     {
       "active": true,
@@ -490,7 +510,9 @@
         "Proton VPN",
         "proton-vpn",
         "Proton-VPN"
-      ]
+      ],
+      "firstPublishedAt": "2026-08-22T10:52:12Z",
+      "updatedAt": "2026-08-22T10:52:12Z"
     },
     {
       "active": true,
@@ -521,7 +543,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 137
+      "catalogPluginId": 137,
+      "firstPublishedAt": "2026-05-13T22:21:52Z",
+      "updatedAt": "2026-05-13T22:21:52Z"
     },
     {
       "active": true,
@@ -548,7 +572,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 136
+      "catalogPluginId": 136,
+      "firstPublishedAt": "2026-05-13T22:06:59Z",
+      "updatedAt": "2026-05-13T22:06:59Z"
     },
     {
       "active": true,
@@ -583,7 +609,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 135
+      "catalogPluginId": 135,
+      "firstPublishedAt": "2026-05-06T21:50:20Z",
+      "updatedAt": "2026-05-06T21:50:20Z"
     },
     {
       "active": true,
@@ -616,7 +644,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 134
+      "catalogPluginId": 134,
+      "firstPublishedAt": "2026-04-23T15:50:49Z",
+      "updatedAt": "2026-04-23T15:50:49Z"
     },
     {
       "active": true,
@@ -649,7 +679,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 133
+      "catalogPluginId": 133,
+      "firstPublishedAt": "2026-04-20T22:34:06Z",
+      "updatedAt": "2026-04-20T22:34:06Z"
     },
     {
       "active": true,
@@ -682,7 +714,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 132
+      "catalogPluginId": 132,
+      "firstPublishedAt": "2026-04-17T22:20:44Z",
+      "updatedAt": "2026-04-17T22:20:44Z"
     },
     {
       "active": true,
@@ -713,7 +747,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 131
+      "catalogPluginId": 131,
+      "firstPublishedAt": "2026-03-28T21:44:17Z",
+      "updatedAt": "2026-05-21T20:24:49Z"
     },
     {
       "active": true,
@@ -742,7 +778,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 130
+      "catalogPluginId": 130,
+      "firstPublishedAt": "2026-03-20T23:01:17Z",
+      "updatedAt": "2026-03-20T23:01:17Z"
     },
     {
       "active": true,
@@ -773,7 +811,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 129
+      "catalogPluginId": 129,
+      "firstPublishedAt": "2026-03-13T19:29:49Z",
+      "updatedAt": "2026-03-13T19:29:49Z"
     },
     {
       "active": true,
@@ -803,7 +843,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 128
+      "catalogPluginId": 128,
+      "firstPublishedAt": "2026-03-09T21:11:56Z",
+      "updatedAt": "2026-03-09T21:11:56Z"
     },
     {
       "active": true,
@@ -833,7 +875,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 127
+      "catalogPluginId": 127,
+      "firstPublishedAt": "2026-02-27T16:43:03Z",
+      "updatedAt": "2026-02-27T16:43:03Z"
     },
     {
       "active": true,
@@ -863,7 +907,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 126
+      "catalogPluginId": 126,
+      "firstPublishedAt": "2026-02-22T16:32:29Z",
+      "updatedAt": "2026-04-22T22:22:07Z"
     },
     {
       "active": true,
@@ -896,7 +942,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 125
+      "catalogPluginId": 125,
+      "firstPublishedAt": "2026-02-18T21:33:51Z",
+      "updatedAt": "2026-02-18T21:33:51Z"
     },
     {
       "active": true,
@@ -930,7 +978,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 124
+      "catalogPluginId": 124,
+      "firstPublishedAt": "2026-02-14T21:37:29Z",
+      "updatedAt": "2026-03-18T22:23:10Z"
     },
     {
       "active": true,
@@ -961,7 +1011,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 123
+      "catalogPluginId": 123,
+      "firstPublishedAt": "2026-02-14T21:32:43Z",
+      "updatedAt": "2026-02-14T21:32:43Z"
     },
     {
       "active": true,
@@ -989,7 +1041,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 122
+      "catalogPluginId": 122,
+      "firstPublishedAt": "2026-02-12T00:01:24Z",
+      "updatedAt": "2026-02-12T00:01:24Z"
     },
     {
       "active": true,
@@ -1021,7 +1075,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 121
+      "catalogPluginId": 121,
+      "firstPublishedAt": "2026-02-11T23:52:12Z",
+      "updatedAt": "2026-02-11T23:52:12Z"
     },
     {
       "active": true,
@@ -1053,7 +1109,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 120
+      "catalogPluginId": 120,
+      "firstPublishedAt": "2026-01-30T21:21:43Z",
+      "updatedAt": "2026-01-30T21:21:43Z"
     },
     {
       "active": true,
@@ -1085,7 +1143,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 119
+      "catalogPluginId": 119,
+      "firstPublishedAt": "2026-01-19T14:04:37Z",
+      "updatedAt": "2026-01-19T14:04:37Z"
     },
     {
       "active": true,
@@ -1116,7 +1176,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 118
+      "catalogPluginId": 118,
+      "firstPublishedAt": "2026-01-06T19:38:43Z",
+      "updatedAt": "2026-01-23T23:37:30Z"
     },
     {
       "active": true,
@@ -1150,7 +1212,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 117
+      "catalogPluginId": 117,
+      "firstPublishedAt": "2026-01-06T19:38:20Z",
+      "updatedAt": "2026-01-11T00:18:14Z"
     },
     {
       "active": true,
@@ -1183,7 +1247,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 116
+      "catalogPluginId": 116,
+      "firstPublishedAt": "2025-12-26T23:49:42Z",
+      "updatedAt": "2025-12-26T23:49:42Z"
     },
     {
       "active": true,
@@ -1213,7 +1279,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 115
+      "catalogPluginId": 115,
+      "firstPublishedAt": "2025-12-14T19:37:10Z",
+      "updatedAt": "2026-02-22T16:36:20Z"
     },
     {
       "active": true,
@@ -1245,7 +1313,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 114
+      "catalogPluginId": 114,
+      "firstPublishedAt": "2025-11-27T16:56:21Z",
+      "updatedAt": "2026-01-11T00:02:23Z"
     },
     {
       "active": true,
@@ -1279,7 +1349,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 113
+      "catalogPluginId": 113,
+      "firstPublishedAt": "2025-11-27T16:51:06Z",
+      "updatedAt": "2025-11-27T16:51:06Z"
     },
     {
       "active": true,
@@ -1309,7 +1381,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 112
+      "catalogPluginId": 112,
+      "firstPublishedAt": "2025-10-22T15:45:57Z",
+      "updatedAt": "2026-03-18T22:17:01Z"
     },
     {
       "active": true,
@@ -1340,7 +1414,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 111
+      "catalogPluginId": 111,
+      "firstPublishedAt": "2025-10-21T15:35:03Z",
+      "updatedAt": "2025-10-21T15:35:03Z"
     },
     {
       "active": true,
@@ -1370,7 +1446,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 110
+      "catalogPluginId": 110,
+      "firstPublishedAt": "2025-10-13T23:20:46Z",
+      "updatedAt": "2025-10-13T23:20:46Z"
     },
     {
       "active": true,
@@ -1404,7 +1482,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 109
+      "catalogPluginId": 109,
+      "firstPublishedAt": "2025-08-07T00:59:09Z",
+      "updatedAt": "2025-12-10T17:32:19Z"
     },
     {
       "active": true,
@@ -1432,7 +1512,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 108
+      "catalogPluginId": 108,
+      "firstPublishedAt": "2025-06-22T15:36:38Z",
+      "updatedAt": "2026-03-26T00:14:38Z"
     },
     {
       "active": true,
@@ -1465,7 +1547,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 107
+      "catalogPluginId": 107,
+      "firstPublishedAt": "2025-06-10T22:40:25Z",
+      "updatedAt": "2025-11-27T16:56:04Z"
     },
     {
       "active": true,
@@ -1496,7 +1580,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 106
+      "catalogPluginId": 106,
+      "firstPublishedAt": "2025-06-09T13:17:50Z",
+      "updatedAt": "2025-09-16T21:19:29Z"
     },
     {
       "active": true,
@@ -1527,7 +1613,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 105
+      "catalogPluginId": 105,
+      "firstPublishedAt": "2025-05-17T23:21:13Z",
+      "updatedAt": "2025-05-17T23:21:13Z"
     },
     {
       "active": true,
@@ -1558,7 +1646,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 104
+      "catalogPluginId": 104,
+      "firstPublishedAt": "2025-04-14T12:55:52Z",
+      "updatedAt": "2026-05-01T00:14:21Z"
     },
     {
       "active": true,
@@ -1590,7 +1680,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 103
+      "catalogPluginId": 103,
+      "firstPublishedAt": "2025-03-23T15:03:39Z",
+      "updatedAt": "2025-08-24T15:24:59Z"
     },
     {
       "active": true,
@@ -1626,7 +1718,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 102
+      "catalogPluginId": 102,
+      "firstPublishedAt": "2025-03-17T20:05:42Z",
+      "updatedAt": "2026-01-02T16:15:36Z"
     },
     {
       "active": true,
@@ -1659,7 +1753,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 101
+      "catalogPluginId": 101,
+      "firstPublishedAt": "2025-03-14T01:39:22Z",
+      "updatedAt": "2025-08-19T23:33:38Z"
     },
     {
       "active": true,
@@ -1696,7 +1792,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 100
+      "catalogPluginId": 100,
+      "firstPublishedAt": "2025-03-05T17:45:52Z",
+      "updatedAt": "2025-03-23T23:27:11Z"
     },
     {
       "active": true,
@@ -1726,7 +1824,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 99
+      "catalogPluginId": 99,
+      "firstPublishedAt": "2025-03-04T00:37:10Z",
+      "updatedAt": "2025-03-04T00:37:10Z"
     },
     {
       "active": true,
@@ -1757,7 +1857,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 98
+      "catalogPluginId": 98,
+      "firstPublishedAt": "2025-02-15T17:11:31Z",
+      "updatedAt": "2025-02-15T17:11:31Z"
     },
     {
       "active": true,
@@ -1788,7 +1890,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 97
+      "catalogPluginId": 97,
+      "firstPublishedAt": "2025-02-14T19:22:28Z",
+      "updatedAt": "2025-09-19T15:50:34Z"
     },
     {
       "active": true,
@@ -1819,7 +1923,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 96
+      "catalogPluginId": 96,
+      "firstPublishedAt": "2025-02-07T03:40:01Z",
+      "updatedAt": "2025-02-07T03:40:01Z"
     },
     {
       "active": true,
@@ -1850,7 +1956,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 95
+      "catalogPluginId": 95,
+      "firstPublishedAt": "2025-02-05T23:20:36Z",
+      "updatedAt": "2025-02-05T23:20:36Z"
     },
     {
       "active": true,
@@ -1881,7 +1989,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 94
+      "catalogPluginId": 94,
+      "firstPublishedAt": "2025-01-31T21:43:51Z",
+      "updatedAt": "2025-01-31T21:43:51Z"
     },
     {
       "active": true,
@@ -1915,7 +2025,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 93
+      "catalogPluginId": 93,
+      "firstPublishedAt": "2025-01-25T20:28:03Z",
+      "updatedAt": "2025-12-10T17:23:20Z"
     },
     {
       "active": true,
@@ -1947,7 +2059,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 92
+      "catalogPluginId": 92,
+      "firstPublishedAt": "2025-01-16T18:24:55Z",
+      "updatedAt": "2025-06-29T19:22:28Z"
     },
     {
       "active": true,
@@ -1979,7 +2093,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 91
+      "catalogPluginId": 91,
+      "firstPublishedAt": "2025-01-14T19:42:25Z",
+      "updatedAt": "2026-02-04T19:55:21Z"
     },
     {
       "active": true,
@@ -2012,7 +2128,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 90
+      "catalogPluginId": 90,
+      "firstPublishedAt": "2025-01-14T19:37:27Z",
+      "updatedAt": "2025-01-14T19:37:27Z"
     },
     {
       "active": true,
@@ -2041,7 +2159,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 89
+      "catalogPluginId": 89,
+      "firstPublishedAt": "2024-10-29T23:06:35Z",
+      "updatedAt": "2024-10-29T23:06:35Z"
     },
     {
       "active": true,
@@ -2073,7 +2193,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 88
+      "catalogPluginId": 88,
+      "firstPublishedAt": "2024-09-14T00:42:34Z",
+      "updatedAt": "2024-09-14T00:42:34Z"
     },
     {
       "active": true,
@@ -2103,7 +2225,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 87
+      "catalogPluginId": 87,
+      "firstPublishedAt": "2024-09-13T20:54:42Z",
+      "updatedAt": "2025-12-17T18:46:30Z"
     },
     {
       "active": true,
@@ -2137,7 +2261,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 85
+      "catalogPluginId": 85,
+      "firstPublishedAt": "2024-08-07T03:42:48Z",
+      "updatedAt": "2025-01-13T16:56:36Z"
     },
     {
       "active": true,
@@ -2168,7 +2294,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 84
+      "catalogPluginId": 84,
+      "firstPublishedAt": "2024-04-29T15:10:24Z",
+      "updatedAt": "2026-01-19T14:02:48Z"
     },
     {
       "active": true,
@@ -2201,7 +2329,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 82
+      "catalogPluginId": 82,
+      "firstPublishedAt": "2024-04-22T18:45:15Z",
+      "updatedAt": "2026-09-10T13:20:11Z"
     },
     {
       "active": true,
@@ -2232,7 +2362,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 81
+      "catalogPluginId": 81,
+      "firstPublishedAt": "2024-04-19T09:01:50Z",
+      "updatedAt": "2025-12-27T23:54:11Z"
     },
     {
       "active": true,
@@ -2266,7 +2398,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 80
+      "catalogPluginId": 80,
+      "firstPublishedAt": "2024-03-20T20:05:14Z",
+      "updatedAt": "2025-12-10T17:28:59Z"
     },
     {
       "active": true,
@@ -2296,7 +2430,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 79
+      "catalogPluginId": 79,
+      "firstPublishedAt": "2024-03-17T18:11:03Z",
+      "updatedAt": "2025-07-11T15:45:15Z"
     },
     {
       "active": true,
@@ -2326,7 +2462,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 78
+      "catalogPluginId": 78,
+      "firstPublishedAt": "2024-03-17T18:06:28Z",
+      "updatedAt": "2025-11-13T15:44:56Z"
     },
     {
       "active": true,
@@ -2358,7 +2496,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 77
+      "catalogPluginId": 77,
+      "firstPublishedAt": "2024-01-25T22:32:37Z",
+      "updatedAt": "2025-07-13T20:09:02Z"
     },
     {
       "active": true,
@@ -2387,7 +2527,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 76
+      "catalogPluginId": 76,
+      "firstPublishedAt": "2023-12-24T18:03:14Z",
+      "updatedAt": "2026-01-06T20:58:09Z"
     },
     {
       "active": true,
@@ -2416,7 +2558,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 75
+      "catalogPluginId": 75,
+      "firstPublishedAt": "2023-12-19T00:04:04Z",
+      "updatedAt": "2024-05-13T18:14:38Z"
     },
     {
       "active": true,
@@ -2446,7 +2590,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 74
+      "catalogPluginId": 74,
+      "firstPublishedAt": "2023-12-18T04:56:53Z",
+      "updatedAt": "2024-03-20T20:17:22Z"
     },
     {
       "active": true,
@@ -2474,7 +2620,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 73
+      "catalogPluginId": 73,
+      "firstPublishedAt": "2023-12-09T04:25:58Z",
+      "updatedAt": "2024-01-20T03:59:16Z"
     },
     {
       "active": true,
@@ -2504,7 +2652,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 72
+      "catalogPluginId": 72,
+      "firstPublishedAt": "2023-11-14T20:44:12Z",
+      "updatedAt": "2024-05-21T13:54:14Z"
     },
     {
       "active": true,
@@ -2534,7 +2684,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 70
+      "catalogPluginId": 70,
+      "firstPublishedAt": "2023-10-23T02:16:26Z",
+      "updatedAt": "2026-03-27T16:11:22Z"
     },
     {
       "active": true,
@@ -2567,7 +2719,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 68
+      "catalogPluginId": 68,
+      "firstPublishedAt": "2023-08-29T06:21:15Z",
+      "updatedAt": "2025-11-30T15:04:29Z"
     },
     {
       "active": true,
@@ -2597,7 +2751,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 67
+      "catalogPluginId": 67,
+      "firstPublishedAt": "2023-08-25T00:35:37Z",
+      "updatedAt": "2024-03-17T18:14:15Z"
     },
     {
       "active": true,
@@ -2628,7 +2784,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 66
+      "catalogPluginId": 66,
+      "firstPublishedAt": "2023-08-21T20:34:41Z",
+      "updatedAt": "2026-04-17T22:20:38Z"
     },
     {
       "active": true,
@@ -2657,7 +2815,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 65
+      "catalogPluginId": 65,
+      "firstPublishedAt": "2023-08-17T21:45:54Z",
+      "updatedAt": "2025-07-02T13:58:39Z"
     },
     {
       "active": true,
@@ -2692,7 +2852,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 64
+      "catalogPluginId": 64,
+      "firstPublishedAt": "2023-08-16T07:53:40Z",
+      "updatedAt": "2026-02-06T23:54:58Z"
     },
     {
       "active": true,
@@ -2731,7 +2893,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 63
+      "catalogPluginId": 63,
+      "firstPublishedAt": "2023-08-05T07:29:51Z",
+      "updatedAt": "2026-10-14T07:59:20Z"
     },
     {
       "active": true,
@@ -2760,7 +2924,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 62
+      "catalogPluginId": 62,
+      "firstPublishedAt": "2023-07-29T16:57:46Z",
+      "updatedAt": "2024-09-13T20:53:12Z"
     },
     {
       "active": true,
@@ -2791,7 +2957,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 61
+      "catalogPluginId": 61,
+      "firstPublishedAt": "2023-07-03T16:08:51Z",
+      "updatedAt": "2026-07-27T15:56:49Z"
     },
     {
       "active": true,
@@ -2823,7 +2991,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 59
+      "catalogPluginId": 59,
+      "firstPublishedAt": "2023-06-10T13:52:58Z",
+      "updatedAt": "2026-01-05T15:35:56Z"
     },
     {
       "active": true,
@@ -2857,7 +3027,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 58
+      "catalogPluginId": 58,
+      "firstPublishedAt": "2023-06-02T01:13:21Z",
+      "updatedAt": "2026-04-21T19:58:05Z"
     },
     {
       "active": true,
@@ -2886,7 +3058,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 56
+      "catalogPluginId": 56,
+      "firstPublishedAt": "2023-05-28T17:17:27Z",
+      "updatedAt": "2025-11-13T15:40:52Z"
     },
     {
       "active": true,
@@ -2914,7 +3088,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 53
+      "catalogPluginId": 53,
+      "firstPublishedAt": "2023-04-12T17:46:07Z",
+      "updatedAt": "2024-04-01T14:19:06Z"
     },
     {
       "active": true,
@@ -2943,7 +3119,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 52
+      "catalogPluginId": 52,
+      "firstPublishedAt": "2023-04-08T16:36:48Z",
+      "updatedAt": "2025-10-28T02:34:54Z"
     },
     {
       "active": true,
@@ -2981,7 +3159,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 50
+      "catalogPluginId": 50,
+      "firstPublishedAt": "2023-03-27T22:13:58Z",
+      "updatedAt": "2024-10-22T18:43:44Z"
     },
     {
       "active": true,
@@ -3012,7 +3192,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 49
+      "catalogPluginId": 49,
+      "firstPublishedAt": "2023-03-19T04:41:04Z",
+      "updatedAt": "2024-09-12T07:07:01Z"
     },
     {
       "active": true,
@@ -3041,7 +3223,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 48
+      "catalogPluginId": 48,
+      "firstPublishedAt": "2023-03-17T23:13:46Z",
+      "updatedAt": "2025-12-17T18:50:14Z"
     },
     {
       "active": true,
@@ -3071,7 +3255,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 46
+      "catalogPluginId": 46,
+      "firstPublishedAt": "2023-03-07T23:12:47Z",
+      "updatedAt": "2024-01-20T03:59:44Z"
     },
     {
       "active": true,
@@ -3102,7 +3288,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 44
+      "catalogPluginId": 44,
+      "firstPublishedAt": "2023-02-02T07:34:41Z",
+      "updatedAt": "2025-08-07T00:26:42Z"
     },
     {
       "active": true,
@@ -3131,7 +3319,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 43
+      "catalogPluginId": 43,
+      "firstPublishedAt": "2023-04-12T05:16:28Z",
+      "updatedAt": "2024-04-02T21:13:38Z"
     },
     {
       "active": true,
@@ -3165,7 +3355,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 40
+      "catalogPluginId": 40,
+      "firstPublishedAt": "2023-03-17T04:15:59Z",
+      "updatedAt": "2024-11-25T00:53:49Z"
     },
     {
       "active": true,
@@ -3195,7 +3387,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 38
+      "catalogPluginId": 38,
+      "firstPublishedAt": "2023-06-17T21:06:57Z",
+      "updatedAt": "2024-01-20T03:59:56Z"
     },
     {
       "active": true,
@@ -3225,7 +3419,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 37
+      "catalogPluginId": 37,
+      "firstPublishedAt": "2023-03-18T00:48:24Z",
+      "updatedAt": "2025-12-20T04:43:28Z"
     },
     {
       "active": true,
@@ -3255,7 +3451,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 36
+      "catalogPluginId": 36,
+      "firstPublishedAt": "2022-12-18T21:21:19Z",
+      "updatedAt": "2026-10-07T19:45:20Z"
     },
     {
       "active": true,
@@ -3287,7 +3485,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 35
+      "catalogPluginId": 35,
+      "firstPublishedAt": "2023-04-09T22:27:29Z",
+      "updatedAt": "2026-09-15T09:32:40Z"
     },
     {
       "active": true,
@@ -3320,7 +3520,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 32
+      "catalogPluginId": 32,
+      "firstPublishedAt": "2022-12-20T12:54:21Z",
+      "updatedAt": "2025-06-29T19:22:33Z"
     },
     {
       "active": true,
@@ -3349,7 +3551,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 30
+      "catalogPluginId": 30,
+      "firstPublishedAt": "2023-03-17T18:40:15Z",
+      "updatedAt": "2024-10-22T18:12:18Z"
     },
     {
       "active": true,
@@ -3378,7 +3582,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 28
+      "catalogPluginId": 28,
+      "firstPublishedAt": "2023-05-15T18:35:46Z",
+      "updatedAt": "2025-07-10T19:23:00Z"
     },
     {
       "active": true,
@@ -3410,7 +3616,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 27
+      "catalogPluginId": 27,
+      "firstPublishedAt": "2022-10-27T21:44:30Z",
+      "updatedAt": "2025-12-26T23:49:40Z"
     },
     {
       "active": true,
@@ -3441,7 +3649,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 26
+      "catalogPluginId": 26,
+      "firstPublishedAt": "2023-04-03T00:22:42Z",
+      "updatedAt": "2026-09-08T17:41:16Z"
     },
     {
       "active": true,
@@ -3472,7 +3682,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 24
+      "catalogPluginId": 24,
+      "firstPublishedAt": "2023-02-26T21:06:29Z",
+      "updatedAt": "2024-03-17T01:02:39Z"
     },
     {
       "active": true,
@@ -3502,7 +3714,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 23
+      "catalogPluginId": 23,
+      "firstPublishedAt": "2022-10-09T22:46:29Z",
+      "updatedAt": "2025-02-10T21:25:10Z"
     },
     {
       "active": true,
@@ -3533,7 +3747,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 22
+      "catalogPluginId": 22,
+      "firstPublishedAt": "2023-04-06T15:52:26Z",
+      "updatedAt": "2024-05-07T17:58:14Z"
     },
     {
       "active": true,
@@ -3563,7 +3779,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 21
+      "catalogPluginId": 21,
+      "firstPublishedAt": "2022-09-25T18:35:40Z",
+      "updatedAt": "2024-06-18T14:02:00Z"
     },
     {
       "active": true,
@@ -3597,7 +3815,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 19
+      "catalogPluginId": 19,
+      "firstPublishedAt": "2022-09-01T18:13:26Z",
+      "updatedAt": "2024-07-31T01:16:56Z"
     },
     {
       "active": true,
@@ -3626,7 +3846,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 18
+      "catalogPluginId": 18,
+      "firstPublishedAt": "2022-08-29T21:57:20Z",
+      "updatedAt": "2026-05-13T15:15:08Z"
     },
     {
       "active": true,
@@ -3657,7 +3879,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 16
+      "catalogPluginId": 16,
+      "firstPublishedAt": "2022-08-22T17:46:47Z",
+      "updatedAt": "2025-10-05T02:33:03Z"
     },
     {
       "active": true,
@@ -3686,7 +3910,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 14
+      "catalogPluginId": 14,
+      "firstPublishedAt": "2023-04-01T16:53:50Z",
+      "updatedAt": "2026-10-14T08:00:23Z"
     },
     {
       "active": true,
@@ -3723,7 +3949,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 13
+      "catalogPluginId": 13,
+      "firstPublishedAt": "2022-08-17T20:32:47Z",
+      "updatedAt": "2026-09-02T05:19:14Z"
     },
     {
       "active": true,
@@ -3753,7 +3981,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 11
+      "catalogPluginId": 11,
+      "firstPublishedAt": "2022-08-08T21:02:27Z",
+      "updatedAt": "2024-03-17T01:04:49Z"
     },
     {
       "active": true,
@@ -3782,7 +4012,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 10
+      "catalogPluginId": 10,
+      "firstPublishedAt": "2022-11-19T22:42:09Z",
+      "updatedAt": "2024-05-19T18:25:52Z"
     },
     {
       "active": true,
@@ -3812,7 +4044,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 7
+      "catalogPluginId": 7,
+      "firstPublishedAt": "2023-04-06T02:44:54Z",
+      "updatedAt": "2024-07-06T11:37:37Z"
     },
     {
       "active": true,
@@ -3842,7 +4076,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 2
+      "catalogPluginId": 2,
+      "firstPublishedAt": "2024-07-04T01:26:10Z",
+      "updatedAt": "2024-07-04T01:26:10Z"
     },
     {
       "active": true,
@@ -3879,7 +4115,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 1
+      "catalogPluginId": 1,
+      "firstPublishedAt": "2024-01-08T16:36:17Z",
+      "updatedAt": "2026-04-02T00:44:38Z"
     },
     {
       "active": true,
@@ -3911,7 +4149,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-31T02:23:32Z",
+      "updatedAt": "2026-10-09T03:34:26Z"
     },
     {
       "active": true,
@@ -3945,7 +4185,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-17T08:28:31Z",
+      "updatedAt": "2026-10-13T16:33:17Z"
     },
     {
       "active": true,
@@ -3982,7 +4224,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-01-04T20:14:36Z",
+      "updatedAt": "2026-10-15T21:08:42Z"
     },
     {
       "active": true,
@@ -4013,7 +4257,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-01-21T10:24:29Z",
+      "updatedAt": "2026-03-03T12:39:10Z"
     },
     {
       "active": true,
@@ -4047,7 +4293,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-02-16T10:47:02Z",
+      "updatedAt": "2026-09-14T11:39:35Z"
     },
     {
       "active": true,
@@ -4080,7 +4328,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-01-26T19:11:49Z",
+      "updatedAt": "2026-10-17T13:51:25Z"
     },
     {
       "active": true,
@@ -4112,7 +4362,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2025-10-12T15:06:48Z",
+      "updatedAt": "2025-10-12T15:06:48Z"
     },
     {
       "active": true,
@@ -4144,7 +4396,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-05T18:05:58Z",
+      "updatedAt": "2026-10-18T21:44:52Z"
     },
     {
       "active": true,
@@ -4175,7 +4429,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-28T04:49:28Z",
+      "updatedAt": "2026-10-19T06:44:08Z"
     },
     {
       "active": true,
@@ -4207,7 +4463,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2025-12-24T20:59:23Z",
+      "updatedAt": "2026-10-18T11:48:38Z"
     },
     {
       "active": true,
@@ -4242,7 +4500,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-20T01:58:58Z",
+      "updatedAt": "2026-04-24T14:15:28Z"
     },
     {
       "active": true,
@@ -4277,7 +4537,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-19T19:53:10Z",
+      "updatedAt": "2026-07-22T18:41:57Z"
     },
     {
       "active": true,
@@ -4309,7 +4571,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-21T22:19:50Z",
+      "updatedAt": "2026-07-22T22:21:06Z"
     },
     {
       "active": true,
@@ -4342,7 +4606,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-10T12:36:48Z",
+      "updatedAt": "2026-04-10T12:36:48Z"
     },
     {
       "active": true,
@@ -4377,7 +4643,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2025-12-27T15:56:00Z",
+      "updatedAt": "2026-01-10T16:16:39Z"
     },
     {
       "active": true,
@@ -4414,7 +4682,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-02T02:42:33Z",
+      "updatedAt": "2026-07-02T01:23:50Z"
     },
     {
       "active": true,
@@ -4446,7 +4716,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-09T14:19:17Z",
+      "updatedAt": "2026-06-20T06:12:33Z"
     },
     {
       "active": true,
@@ -4477,7 +4749,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-03-26T15:13:44Z",
+      "updatedAt": "2026-10-19T09:33:18Z"
     },
     {
       "active": true,
@@ -4508,7 +4782,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-03T01:43:53Z",
+      "updatedAt": "2026-04-04T03:04:54Z"
     },
     {
       "active": true,
@@ -4539,7 +4815,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2025-10-05T12:14:22Z",
+      "updatedAt": "2025-10-05T12:14:22Z"
     },
     {
       "active": true,
@@ -4573,7 +4851,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-01-26T03:54:58Z",
+      "updatedAt": "2026-07-25T22:12:24Z"
     },
     {
       "active": true,
@@ -4606,7 +4886,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-17T14:19:01Z",
+      "updatedAt": "2026-07-09T14:45:18Z"
     },
     {
       "active": true,
@@ -4639,7 +4921,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-02T21:53:01Z",
+      "updatedAt": "2026-10-18T20:40:42Z"
     },
     {
       "active": true,
@@ -4671,7 +4955,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-21T15:27:40Z",
+      "updatedAt": "2026-10-14T05:42:31Z"
     },
     {
       "active": true,
@@ -4706,7 +4992,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-28T01:44:53Z",
+      "updatedAt": "2026-09-04T16:03:55Z"
     },
     {
       "active": true,
@@ -4740,7 +5028,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-01T18:00:38Z",
+      "updatedAt": "2026-08-01T18:00:38Z"
     },
     {
       "active": true,
@@ -4775,7 +5065,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-02T16:16:16Z",
+      "updatedAt": "2026-08-03T19:39:02Z"
     },
     {
       "active": true,
@@ -4808,7 +5100,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-03-07T20:24:32Z",
+      "updatedAt": "2026-08-15T18:26:56Z"
     },
     {
       "active": true,
@@ -4841,7 +5135,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-06T22:35:32Z",
+      "updatedAt": "2026-06-06T00:10:05Z"
     },
     {
       "active": true,
@@ -4873,7 +5169,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-17T19:44:31Z",
+      "updatedAt": "2026-09-02T15:50:25Z"
     },
     {
       "active": true,
@@ -4905,7 +5203,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-12T16:58:13Z",
+      "updatedAt": "2026-07-25T19:44:05Z"
     },
     {
       "active": true,
@@ -4937,7 +5237,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-26T20:20:29Z",
+      "updatedAt": "2026-08-06T16:27:08Z"
     },
     {
       "active": true,
@@ -4970,7 +5272,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-01T18:58:17Z",
+      "updatedAt": "2026-07-15T18:20:21Z"
     },
     {
       "active": true,
@@ -5002,7 +5306,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-28T20:41:10Z",
+      "updatedAt": "2026-10-10T23:32:41Z"
     },
     {
       "active": true,
@@ -5033,7 +5339,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-18T17:01:15Z",
+      "updatedAt": "2026-10-18T19:06:12Z"
     },
     {
       "active": true,
@@ -5062,7 +5370,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-03-04T19:07:04Z",
+      "updatedAt": "2026-06-04T03:51:34Z"
     },
     {
       "active": true,
@@ -5093,7 +5403,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-18T04:54:04Z",
+      "updatedAt": "2026-10-19T00:14:19Z"
     },
     {
       "active": true,
@@ -5126,7 +5438,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-23T01:11:37Z",
+      "updatedAt": "2026-08-23T13:44:17Z"
     },
     {
       "active": true,
@@ -5158,7 +5472,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-29T04:40:14Z",
+      "updatedAt": "2026-08-29T04:40:14Z"
     },
     {
       "active": true,
@@ -5170,7 +5486,7 @@
       "version": "1.0.2",
       "releaseAssetName": "Ayaneo3Companion-1.0.2.zip",
       "catalogReleaseUrl": "https://github.com/Rayekkk/Ayaneo3Companion/releases/download/1.0.2/Ayaneo3Companion-1.0.2.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-08-25T17:19:01Z",
       "category": "Sistema e hardware",
       "shortDescription": "TDP, smart-amp audio, battery, controller and OLED support for AYANEO 3.",
       "longDescription": "TDP, smart-amp audio, battery, controller and OLED support for AYANEO 3.",
@@ -5190,7 +5506,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-23T20:51:35Z",
+      "updatedAt": "2026-10-10T14:23:34Z"
     },
     {
       "active": true,
@@ -5220,7 +5538,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-14T12:20:45Z",
+      "updatedAt": "2026-04-14T12:20:45Z"
     },
     {
       "active": true,
@@ -5251,7 +5571,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-17T13:59:51Z",
+      "updatedAt": "2026-05-20T01:01:43Z"
     },
     {
       "active": true,
@@ -5282,7 +5604,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-17T14:31:05Z",
+      "updatedAt": "2026-05-17T14:31:05Z"
     },
     {
       "active": true,
@@ -5314,7 +5638,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-15T19:42:08Z",
+      "updatedAt": "2026-07-15T19:42:08Z"
     },
     {
       "active": true,
@@ -5347,7 +5673,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-24T21:09:14Z",
+      "updatedAt": "2026-09-22T23:11:19Z"
     },
     {
       "active": true,
@@ -5384,7 +5712,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-17T11:04:34Z",
+      "updatedAt": "2026-08-20T10:46:59Z"
     },
     {
       "active": true,
@@ -5415,7 +5745,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-17T22:48:25Z",
+      "updatedAt": "2026-10-10T10:17:00Z"
     },
     {
       "active": true,
@@ -5446,7 +5778,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-02-09T20:45:55Z",
+      "updatedAt": "2026-09-13T06:53:37Z"
     },
     {
       "active": true,
@@ -5482,7 +5816,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-03-08T08:35:49Z",
+      "updatedAt": "2026-03-16T03:01:24Z"
     },
     {
       "active": true,
@@ -5513,7 +5849,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-17T18:50:47Z",
+      "updatedAt": "2026-09-24T22:49:28Z"
     },
     {
       "active": true,
@@ -5544,7 +5882,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-17T22:39:20Z",
+      "updatedAt": "2026-04-18T12:34:57Z"
     },
     {
       "active": true,
@@ -5576,7 +5916,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-18T19:22:28Z",
+      "updatedAt": "2026-08-05T08:00:05Z"
     },
     {
       "active": true,
@@ -5611,7 +5953,9 @@
       "catalogStatus": "github",
       "compatibility": "Versione originale per Linux e SteamOS.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2025-11-16T04:26:55Z",
+      "updatedAt": "2026-09-06T15:50:56Z"
     },
     {
       "active": true,
@@ -5644,7 +5988,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Decky Loader environments. Uses root and debug permissions for capture and streaming features.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-03T04:58:11Z",
+      "updatedAt": "2026-05-03T04:58:11Z"
     },
     {
       "active": true,
@@ -5677,7 +6023,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Decky Loader environments. Price and alert features use the external gamescheap.win service.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-03T23:56:50Z",
+      "updatedAt": "2026-06-03T23:56:50Z"
     },
     {
       "active": true,
@@ -5709,7 +6057,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires CachyOS and its cachy-update command. It is not intended for standard SteamOS installations.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-13T18:59:21Z",
+      "updatedAt": "2026-09-19T21:57:19Z"
     },
     {
       "active": true,
@@ -5741,7 +6091,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires a paired phone with Bluetooth AVRCP support on SteamOS or a compatible Linux handheld.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-20T16:24:21Z",
+      "updatedAt": "2026-06-29T19:30:50Z"
     },
     {
       "active": true,
@@ -5775,7 +6127,9 @@
       "catalogStatus": "github",
       "compatibility": "Designed for SteamOS and compatible Linux gaming environments. Some setup actions modify Proton prefixes and game dependencies.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-18T14:06:54Z",
+      "updatedAt": "2026-06-23T17:46:19Z"
     },
     {
       "active": true,
@@ -5808,7 +6162,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Linux handhelds. Requires root access and changes system networking.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-27T08:26:22Z",
+      "updatedAt": "2026-06-27T08:26:22Z"
     },
     {
       "active": true,
@@ -5843,7 +6199,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Linux handhelds. Requires root access and a compatible subscription provider.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-29T01:11:34Z",
+      "updatedAt": "2026-10-17T10:18:02Z"
     },
     {
       "active": true,
@@ -5876,7 +6234,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires compatible HDMI-CEC hardware and root access on SteamOS or a supported Linux gaming system.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-30T14:27:09Z",
+      "updatedAt": "2026-07-11T00:27:06Z"
     },
     {
       "active": true,
@@ -5909,7 +6269,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Decky Loader environments. Requires Discord authentication.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-03T05:52:21Z",
+      "updatedAt": "2026-09-04T00:05:54Z"
     },
     {
       "active": true,
@@ -5941,7 +6303,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Decky Loader environments. It can modify, move, and delete files, including game folders and Proton prefixes.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-08T19:12:08Z",
+      "updatedAt": "2026-09-08T21:28:36Z"
     },
     {
       "active": true,
@@ -5975,7 +6339,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires the separate MAKO Renderer installed through the plugin and a supported SteamOS system. Use only assets obtained from software you lawfully own.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-18T11:25:51Z",
+      "updatedAt": "2026-10-13T11:47:43Z"
     },
     {
       "active": true,
@@ -6008,7 +6374,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires root access and explicitly supported Linux handheld hardware. Incorrect power settings may reduce stability.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2023-11-16T04:46:48Z",
+      "updatedAt": "2026-09-03T02:25:55Z"
     },
     {
       "active": true,
@@ -6042,7 +6410,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires a self-hosted RomM 4.9 or newer server and RetroDECK or EmuDeck. This maintained fork installs separately from RomM Tender.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-03T01:04:07Z",
+      "updatedAt": "2026-09-18T03:36:53Z"
     },
     {
       "active": true,
@@ -6075,7 +6445,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires Steam Remote Play and another reachable Steam machine with the game installed. The release manifest enables debug mode.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-02T01:01:38Z",
+      "updatedAt": "2026-09-03T01:49:22Z"
     },
     {
       "active": true,
@@ -6108,7 +6480,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Linux handhelds. Installation and update features require root access, and the release manifest enables debug mode.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-30T19:57:34Z",
+      "updatedAt": "2026-10-12T07:54:55Z"
     },
     {
       "active": true,
@@ -6140,7 +6514,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires elevated permissions and changes game files. Use only with content you own and where local law and platform terms permit it.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-11T15:01:21Z",
+      "updatedAt": "2026-09-20T11:32:29Z"
     },
     {
       "active": true,
@@ -6172,7 +6548,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and Steam Deck. Reads controller input devices and uses elevated permissions.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-01T12:30:37Z",
+      "updatedAt": "2026-09-02T15:38:02Z"
     },
     {
       "active": true,
@@ -6204,7 +6582,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires a personal Telegram bot token and uploads selected media to Telegram. Built for SteamOS and compatible Decky Loader environments.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-30T19:39:52Z",
+      "updatedAt": "2026-09-16T08:34:15Z"
     },
     {
       "active": true,
@@ -6238,7 +6618,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires another device running a compatible LocalSend client on the same local network.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-02T05:07:12Z",
+      "updatedAt": "2026-09-02T06:50:12Z"
     },
     {
       "active": true,
@@ -6272,7 +6654,9 @@
       "catalogStatus": "github",
       "compatibility": "An early SteamOS prototype designed for MapleStory Classic. The install package is large and hardware validation is still limited.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-02T14:32:53Z",
+      "updatedAt": "2026-09-02T14:32:53Z"
     },
     {
       "active": true,
@@ -6306,7 +6690,9 @@
       "catalogStatus": "github",
       "compatibility": "Only for supported AMD BC-250 systems using the matching SteamOS toolkit. Requires root access and must not be installed on a standard Steam Deck.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-17T00:52:39Z",
+      "updatedAt": "2026-10-14T04:39:56Z"
     },
     {
       "active": true,
@@ -6341,7 +6727,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires SteamOS, Decky Loader, and a RetroAchievements account with an API key. The plugin manifest requests root access.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-28T05:38:52Z",
+      "updatedAt": "2026-09-16T04:42:15Z"
     },
     {
       "active": true,
@@ -6353,7 +6741,7 @@
       "version": "1.3.1",
       "releaseAssetName": "audio-output-switcher.zip",
       "catalogReleaseUrl": "https://github.com/zomars/audio-output-switcher/releases/download/v1.3.1/audio-output-switcher.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-06T06:09:42Z",
       "category": "Audio",
       "shortDescription": "Cambia l'uscita audio predefinita e può usare una scorciatoia controller.",
       "longDescription": "Cambia l'uscita audio predefinita e può usare una scorciatoia controller.",
@@ -6368,7 +6756,9 @@
       "aliases": [
         "Audio Output Switcher",
         "zomars/audio-output-switcher"
-      ]
+      ],
+      "firstPublishedAt": "2026-08-21T05:40:24Z",
+      "updatedAt": "2026-10-06T06:09:42Z"
     },
     {
       "active": true,
@@ -6380,7 +6770,7 @@
       "version": "1.3.3+beallio.2",
       "releaseAssetName": "protondb-decky.zip",
       "catalogReleaseUrl": "https://github.com/beallio/protondb-decky/releases/download/v1.3.3+beallio.2/protondb-decky.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-09-03T19:33:46Z",
       "category": "Compatibilità / ProtonDB",
       "shortDescription": "Mostra badge ProtonDB interattivi nelle pagine dei giochi tramite un fork mantenuto separatamente.",
       "longDescription": "Mostra badge ProtonDB interattivi nelle pagine dei giochi tramite un fork mantenuto separatamente.",
@@ -6396,7 +6786,9 @@
         "ProtonDB Badges — beallio fork",
         "ProtonDB Badges",
         "beallio/protondb-decky"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-02T18:26:21Z",
+      "updatedAt": "2026-09-19T21:50:13Z"
     },
     {
       "active": true,
@@ -6408,7 +6800,7 @@
       "version": "latest",
       "releaseAssetName": "DeckMicToggle-main.zip",
       "catalogReleaseUrl": "https://github.com/SpookyJoshua/Deck-Mic-Toggle/releases/download/latest/DeckMicToggle-main.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-09-04T22:20:01Z",
       "category": "Audio / microfono",
       "shortDescription": "Muta o riattiva il microfono interno dello Steam Deck direttamente dal QAM.",
       "longDescription": "Muta o riattiva il microfono interno dello Steam Deck direttamente dal QAM.",
@@ -6423,7 +6815,9 @@
       "aliases": [
         "Deck Mic Toggle",
         "SpookyJoshua/Deck-Mic-Toggle"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-04T22:20:01Z",
+      "updatedAt": "2026-09-04T22:20:01Z"
     },
     {
       "active": true,
@@ -6435,7 +6829,7 @@
       "version": "1.0.1",
       "releaseAssetName": "CheatDeck2.zip",
       "catalogReleaseUrl": "https://github.com/ilukezippo/CheatDeck2/releases/download/v1.0.1/CheatDeck2.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-09-10T16:50:16Z",
       "category": "Trainer / launch options",
       "shortDescription": "Fork di CheatDeck con ricerca, download e configurazione automatica dei trainer FLiNG.",
       "longDescription": "Fork di CheatDeck con ricerca, download e configurazione automatica dei trainer FLiNG.",
@@ -6450,7 +6844,9 @@
       "aliases": [
         "CheatDeck 2",
         "ilukezippo/CheatDeck2"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-10T15:21:00Z",
+      "updatedAt": "2026-09-10T16:50:16Z"
     },
     {
       "active": true,
@@ -6462,7 +6858,7 @@
       "version": "1.2.5",
       "releaseAssetName": "deckysales-v1.2.5.zip",
       "catalogReleaseUrl": "https://github.com/zarif98/DeckySales/releases/download/v1.2.5/deckysales-v1.2.5.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-09-24T00:04:18Z",
       "category": "Prezzi / offerte",
       "shortDescription": "Confronta Steam con circa 30 negozi, converte valute e invia avvisi per la wishlist.",
       "longDescription": "Confronta Steam con circa 30 negozi, converte valute e invia avvisi per la wishlist.",
@@ -6477,7 +6873,9 @@
       "aliases": [
         "DeckySales",
         "zarif98/DeckySales"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-09T06:32:28Z",
+      "updatedAt": "2026-09-24T00:04:18Z"
     },
     {
       "active": true,
@@ -6489,7 +6887,7 @@
       "version": "0.2.2",
       "releaseAssetName": "ssh-switch-0.2.2.zip",
       "catalogReleaseUrl": "https://github.com/nicholasyoannou/decky-ssh-switch/releases/download/v0.2.2/ssh-switch-0.2.2.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-09-17T12:58:19Z",
       "category": "Rete / SSH",
       "shortDescription": "Gestisce SSH, avvio al boot, password dell'account e dettagli di connessione dal QAM.",
       "longDescription": "Gestisce SSH, avvio al boot, password dell'account e dettagli di connessione dal QAM.",
@@ -6504,7 +6902,9 @@
       "aliases": [
         "SSH Switch",
         "nicholasyoannou/decky-ssh-switch"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-13T21:53:38Z",
+      "updatedAt": "2026-09-17T12:58:19Z"
     },
     {
       "active": true,
@@ -6516,7 +6916,7 @@
       "version": "0.4.0",
       "releaseAssetName": "SpeechToDeck.zip",
       "catalogReleaseUrl": "https://github.com/rusagent/SpeechToDeck/releases/download/v0.4.0/SpeechToDeck.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-09-21T06:06:46Z",
       "category": "Accessibilità / dettatura",
       "shortDescription": "Dovrebbe aggiungere dettatura locale basata su Whisper e copiare il testo negli appunti.",
       "longDescription": "Dovrebbe aggiungere dettatura locale basata su Whisper e copiare il testo negli appunti.",
@@ -6531,7 +6931,9 @@
       "aliases": [
         "SpeechToDeck",
         "rusagent/SpeechToDeck"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-16T23:49:07Z",
+      "updatedAt": "2026-09-21T06:06:46Z"
     },
     {
       "active": true,
@@ -6543,7 +6945,7 @@
       "version": "0.1.2",
       "releaseAssetName": "IPv6.Enabler.Plugin.zip",
       "catalogReleaseUrl": "https://github.com/spmzt/decky-ipv6/releases/download/v0.1.2/IPv6.Enabler.Plugin.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-08T17:18:03Z",
       "category": "Rete / IPv6",
       "shortDescription": "Abilita, disabilita o forza IPv6 e può disattivare IPv4 sulle connessioni.",
       "longDescription": "Abilita, disabilita o forza IPv6 e può disattivare IPv4 sulle connessioni.",
@@ -6558,7 +6960,9 @@
       "aliases": [
         "IPv6 Enabler Plugin",
         "spmzt/decky-ipv6"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-17T08:34:37Z",
+      "updatedAt": "2026-10-08T17:18:03Z"
     },
     {
       "active": true,
@@ -6570,7 +6974,7 @@
       "version": "1.0.0",
       "releaseAssetName": "WiFi-BandLock.zip",
       "catalogReleaseUrl": "https://github.com/joemossjr16/Decky-WiFi-BandLock/releases/download/v1.0.0/WiFi-BandLock.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-09-22T20:57:16Z",
       "category": "Rete / Wi-Fi",
       "shortDescription": "Forza banda 2,4/5/6 GHz, blocca il BSSID e mostra telemetria della connessione.",
       "longDescription": "Forza banda 2,4/5/6 GHz, blocca il BSSID e mostra telemetria della connessione.",
@@ -6585,7 +6989,9 @@
       "aliases": [
         "WiFi BandLock",
         "joemossjr16/Decky-WiFi-BandLock"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-22T20:57:16Z",
+      "updatedAt": "2026-09-22T20:57:16Z"
     },
     {
       "active": true,
@@ -6597,7 +7003,7 @@
       "version": "1.0.1",
       "releaseAssetName": "deckamine.zip",
       "catalogReleaseUrl": "https://github.com/elyarim/Deckamine/releases/download/v1.0.1/deckamine.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-09-27T21:33:53Z",
       "category": "Accessibilità / sensori",
       "shortDescription": "Mostra indicatori animati collegati ai sensori di movimento per ridurre il disagio durante i viaggi.",
       "longDescription": "Mostra indicatori animati collegati ai sensori di movimento per ridurre il disagio durante i viaggi.",
@@ -6612,7 +7018,9 @@
       "aliases": [
         "Deckamine",
         "elyarim/deckamine"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-26T17:09:21Z",
+      "updatedAt": "2026-09-27T21:33:53Z"
     },
     {
       "active": true,
@@ -6624,7 +7032,7 @@
       "version": "1.4.0",
       "releaseAssetName": "Output.Manager-1.4.0.zip",
       "catalogReleaseUrl": "https://github.com/joeatethebeans/OutputManager/releases/download/v1.4.0/Output.Manager-1.4.0.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-09-26T22:52:37Z",
       "category": "Display / audio",
       "shortDescription": "Cambia connettore video Gamescope e uscita audio, con profili e associazioni.",
       "longDescription": "Cambia connettore video Gamescope e uscita audio, con profili e associazioni.",
@@ -6639,7 +7047,9 @@
       "aliases": [
         "Output Manager",
         "joeatethebeans/OutputManager"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-05T14:33:30Z",
+      "updatedAt": "2026-09-26T22:52:37Z"
     },
     {
       "active": true,
@@ -6651,7 +7061,7 @@
       "version": "1.1.0",
       "releaseAssetName": "decky-macro-v1.1.0.zip",
       "catalogReleaseUrl": "https://github.com/olivervbk/decky-macro/releases/download/v1.1.0/decky-macro-v1.1.0.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-10T04:49:07Z",
       "category": "Controller / automazione",
       "shortDescription": "Registra e riproduce macro digitali del controller con slot e ripetizioni.",
       "longDescription": "Registra e riproduce macro digitali del controller con slot e ripetizioni.",
@@ -6666,7 +7076,9 @@
       "aliases": [
         "Decky Macro",
         "olivervbk/decky-macro"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-27T08:45:37Z",
+      "updatedAt": "2026-10-10T04:49:07Z"
     },
     {
       "active": true,
@@ -6678,7 +7090,7 @@
       "version": "1.0.0",
       "releaseAssetName": "clearly-recent-1.0.0.zip",
       "catalogReleaseUrl": "https://github.com/D1zg/clearly-recent/releases/download/v1.0.0/clearly-recent-1.0.0.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-03T20:09:18Z",
       "category": "Home / libreria",
       "shortDescription": "Nasconde dal carosello Recenti i giochi Steam non installati localmente.",
       "longDescription": "Nasconde dal carosello Recenti i giochi Steam non installati localmente.",
@@ -6693,7 +7105,9 @@
       "aliases": [
         "Clearly Recent",
         "D1zg/clearly-recent"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-03T20:09:18Z",
+      "updatedAt": "2026-10-03T20:09:18Z"
     },
     {
       "active": true,
@@ -6705,7 +7119,7 @@
       "version": "0.2.1",
       "releaseAssetName": "decky-gpu-picker.zip",
       "catalogReleaseUrl": "https://github.com/revenpl/decky-gpu-picker/releases/download/v0.2.1/decky-gpu-picker.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-07T09:34:58Z",
       "category": "GPU / launch options",
       "shortDescription": "Elenca le GPU Vulkan e genera il comando MESA_VK_DEVICE_SELECT per scegliere la GPU di un gioco.",
       "longDescription": "Elenca le GPU Vulkan e genera il comando MESA_VK_DEVICE_SELECT per scegliere la GPU di un gioco.",
@@ -6720,7 +7134,9 @@
       "aliases": [
         "GPU Picker",
         "revenpl/decky-gpu-picker"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-06T21:38:57Z",
+      "updatedAt": "2026-10-07T09:34:58Z"
     },
     {
       "active": true,
@@ -6732,7 +7148,7 @@
       "version": "0.1.13",
       "releaseAssetName": "decky-time-changer-v0.1.13.zip",
       "catalogReleaseUrl": "https://github.com/nanwangjkl/decky-time-changer/releases/download/v0.1.13/decky-time-changer-v0.1.13.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-19T09:48:53Z",
       "category": "Sistema / data e ora",
       "shortDescription": "Cambia data e ora dal Gaming Mode e ripristina il tempo reale tramite NTP.",
       "longDescription": "Cambia data e ora dal Gaming Mode e ripristina il tempo reale tramite NTP.",
@@ -6747,7 +7163,9 @@
       "aliases": [
         "Time Changer",
         "nanwangjkl/decky-time-changer"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-10T00:17:02Z",
+      "updatedAt": "2026-10-19T10:18:40Z"
     },
     {
       "active": true,
@@ -6759,7 +7177,7 @@
       "version": "0.5.7",
       "releaseAssetName": "SpoutRemotePlay-v0.5.7.zip",
       "catalogReleaseUrl": "https://github.com/justjoseorg/SpoutRemotePlay/releases/download/v0.5.7/SpoutRemotePlay-v0.5.7.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-12T16:43:36Z",
       "category": "Streaming / Remote Play",
       "shortDescription": "Companion per Steam Remote Play con Wake-on-LAN, host abbinato e display virtuale sul PC.",
       "longDescription": "Companion per Steam Remote Play con Wake-on-LAN, host abbinato e display virtuale sul PC.",
@@ -6774,7 +7192,9 @@
       "aliases": [
         "SpoutRemotePlay",
         "justjoseorg/SpoutRemotePlay"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-09T15:55:04Z",
+      "updatedAt": "2026-10-12T16:43:36Z"
     },
     {
       "active": true,
@@ -6786,7 +7206,7 @@
       "version": "0.1.0",
       "releaseAssetName": "decky-quick-tab-v0.1.0.zip",
       "catalogReleaseUrl": "https://github.com/moi952/decky-quick-tab/releases/download/v0.1.0/decky-quick-tab-v0.1.0.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-09-06T00:03:25Z",
       "category": "UI / QAM",
       "shortDescription": "Aggiunge icone dedicate nel QAM per aprire direttamente pannelli di altri plugin.",
       "longDescription": "Aggiunge icone dedicate nel QAM per aprire direttamente pannelli di altri plugin.",
@@ -6801,7 +7221,9 @@
       "aliases": [
         "Quick Tab",
         "moi952/decky-quick-tab"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-06T00:03:25Z",
+      "updatedAt": "2026-09-06T00:03:25Z"
     },
     {
       "active": true,
@@ -6813,7 +7235,7 @@
       "version": "0.9.29",
       "releaseAssetName": "CE-Decky-v0.9.29.zip",
       "catalogReleaseUrl": "https://github.com/goooroooX/CE-Decky/releases/download/v0.9.29/CE-Decky-v0.9.29.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-09-23T17:25:17Z",
       "category": "Cheat Engine / trainer",
       "shortDescription": "Gestisce tabelle Cheat Engine e controlli live dal Gaming Mode.",
       "longDescription": "Gestisce tabelle Cheat Engine e controlli live dal Gaming Mode.",
@@ -6828,7 +7250,9 @@
       "aliases": [
         "CE Decky",
         "goooroooX/CE-Decky"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-14T20:43:49Z",
+      "updatedAt": "2026-09-23T17:25:17Z"
     },
     {
       "active": true,
@@ -6840,7 +7264,7 @@
       "version": "1.4.0",
       "releaseAssetName": "GabeCubeAura-v1.4.0.zip",
       "catalogReleaseUrl": "https://github.com/Alyenax/GabeCubeAura/releases/download/v1.4.0/GabeCubeAura-v1.4.0.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-05T21:30:28Z",
       "category": "Hardware / illuminazione",
       "shortDescription": "Sincronizza la barra luminosa della Steam Machine con audio, schermo, artwork, meteo e stato.",
       "longDescription": "Sincronizza la barra luminosa della Steam Machine con audio, schermo, artwork, meteo e stato.",
@@ -6855,7 +7279,9 @@
       "aliases": [
         "GabeCubeAura",
         "Alyenax/GabeCubeAura"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-20T10:21:49Z",
+      "updatedAt": "2026-10-05T21:30:28Z"
     },
     {
       "active": true,
@@ -6867,7 +7293,7 @@
       "version": "0.6.2",
       "releaseAssetName": "deck-as-controller.zip",
       "catalogReleaseUrl": "https://github.com/jmedina21/deck-as-controller/releases/download/v0.6.2/deck-as-controller.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-16T04:01:05Z",
       "category": "Controller / Bluetooth",
       "shortDescription": "Usa Steam Deck come controller Bluetooth wireless per Mac o iPad.",
       "longDescription": "Usa Steam Deck come controller Bluetooth wireless per Mac o iPad.",
@@ -6882,7 +7308,9 @@
       "aliases": [
         "Deck as Controller",
         "jmedina21/deck-as-controller"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-30T16:21:18Z",
+      "updatedAt": "2026-10-16T04:01:05Z"
     },
     {
       "active": true,
@@ -6894,7 +7322,7 @@
       "version": "1.4.1",
       "releaseAssetName": "spindeck-1.4.1.zip",
       "catalogReleaseUrl": "https://github.com/justinca92/spindeck/releases/download/v1.4.1/spindeck-1.4.1.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-08T01:08:25Z",
       "category": "Launcher / Home",
       "shortDescription": "Sostituisce la home con un launcher a ruota controllabile tramite movimento circolare del trackpad.",
       "longDescription": "Sostituisce la home con un launcher a ruota controllabile tramite movimento circolare del trackpad.",
@@ -6909,7 +7337,9 @@
       "aliases": [
         "Spindeck",
         "justinca92/spindeck"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-03T18:50:17Z",
+      "updatedAt": "2026-10-08T01:08:25Z"
     },
     {
       "active": true,
@@ -6921,7 +7351,7 @@
       "version": "3.4.0",
       "releaseAssetName": "game-glance.zip",
       "catalogReleaseUrl": "https://github.com/michpalm/game-glance/releases/download/v3.4.0/game-glance.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-17T15:38:36Z",
       "category": "Libreria / metadata",
       "shortDescription": "Ridisegna la pagina gioco con artwork fullscreen, tempi HLTB, descrizione e dati Store.",
       "longDescription": "Ridisegna la pagina gioco con artwork fullscreen, tempi HLTB, descrizione e dati Store.",
@@ -6936,7 +7366,9 @@
       "aliases": [
         "Game Glance",
         "michpalm/game-glance"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-02T14:58:02Z",
+      "updatedAt": "2026-10-17T15:38:36Z"
     },
     {
       "active": true,
@@ -6948,7 +7380,7 @@
       "version": "1.2.0",
       "releaseAssetName": "ambideck.zip",
       "catalogReleaseUrl": "https://github.com/michpalm/ambideck/releases/download/v1.2.0/ambideck.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-15T08:32:08Z",
       "category": "RGB / ROG Xbox Ally",
       "shortDescription": "Fa seguire ai LED degli stick del ROG Xbox Ally i colori presenti sullo schermo.",
       "longDescription": "Fa seguire ai LED degli stick del ROG Xbox Ally i colori presenti sullo schermo.",
@@ -6963,7 +7395,9 @@
       "aliases": [
         "Ambideck",
         "michpalm/ambideck"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-03T15:40:34Z",
+      "updatedAt": "2026-10-15T08:32:08Z"
     },
     {
       "active": true,
@@ -6975,7 +7409,7 @@
       "version": "2.1.4",
       "releaseAssetName": "SDH-CssLoader-2.1.4.zip",
       "catalogReleaseUrl": "https://github.com/beallio/SDH-CssLoader/releases/download/v2.1.4/SDH-CssLoader-2.1.4.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-12T00:49:30Z",
       "category": "Temi / CSS",
       "shortDescription": "Fork della versione ufficiale di CSS Loader distribuito più rapidamente dal custom store.",
       "longDescription": "Fork della versione ufficiale di CSS Loader distribuito più rapidamente dal custom store.",
@@ -6991,7 +7425,9 @@
         "CSS Loader — beallio fork",
         "CSS Loader",
         "beallio/SDH-CssLoader"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-12T00:49:30Z",
+      "updatedAt": "2026-10-12T00:49:30Z"
     },
     {
       "active": true,
@@ -7003,7 +7439,7 @@
       "version": "2.2.0",
       "releaseAssetName": "LegionGo2Companion-2.2.0.zip",
       "catalogReleaseUrl": "https://github.com/Rayekkk/LegionGo2Companion/releases/download/2.2.0/LegionGo2Companion-2.2.0.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-18T19:50:06Z",
       "category": "Hardware / Legion Go 2",
       "shortDescription": "TDP, profili CPU, ventole, batteria, gyro, aptica, illuminazione, remap, OLED/HDR e Wi-Fi.",
       "longDescription": "TDP, profili CPU, ventole, batteria, gyro, aptica, illuminazione, remap, OLED/HDR e Wi-Fi.",
@@ -7018,7 +7454,9 @@
       "aliases": [
         "Legion Go 2 Companion",
         "Rayekkk/LegionGo2Companion"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-06T21:38:26Z",
+      "updatedAt": "2026-10-18T19:50:06Z"
     },
     {
       "active": true,
@@ -7030,7 +7468,7 @@
       "version": "1.1.1",
       "releaseAssetName": "SpotiDeck-1.1.1.zip",
       "catalogReleaseUrl": "https://github.com/Rayekkk/SpotiDeck/releases/download/1.1.1/SpotiDeck-1.1.1.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-09-15T17:29:39Z",
       "category": "Musica / Spotify",
       "shortDescription": "Riproduzione Spotify, ricerca e libreria all'interno di Decky.",
       "longDescription": "Riproduzione Spotify, ricerca e libreria all'interno di Decky.",
@@ -7045,7 +7483,9 @@
       "aliases": [
         "SpotiDeck",
         "Rayekkk/SpotiDeck"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-06T21:21:23Z",
+      "updatedAt": "2026-09-15T17:29:39Z"
     },
     {
       "active": true,
@@ -7057,7 +7497,7 @@
       "version": "1.0.0",
       "releaseAssetName": "DeckyEQ-1.0.0.zip",
       "catalogReleaseUrl": "https://github.com/Rayekkk/DeckyEQ/releases/download/1.0.0/DeckyEQ-1.0.0.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-09-07T19:52:39Z",
       "category": "Audio / equalizzatore",
       "shortDescription": "Equalizzatore PipeWire a dieci bande con bassi, alti, filtri, uscite e preset portabili.",
       "longDescription": "Equalizzatore PipeWire a dieci bande con bassi, alti, filtri, uscite e preset portabili.",
@@ -7072,7 +7512,9 @@
       "aliases": [
         "DeckyEQ",
         "Rayekkk/DeckyEQ"
-      ]
+      ],
+      "firstPublishedAt": "2026-09-07T19:52:39Z",
+      "updatedAt": "2026-09-07T19:52:39Z"
     },
     {
       "active": true,
@@ -7084,7 +7526,7 @@
       "version": "1.0.0-rc3",
       "releaseAssetName": "DeckyClocker.v1.0.0-rc3-release.zip",
       "catalogReleaseUrl": "https://github.com/Jaccident/DeckyClocker/releases/download/v1.0.0-rc3/DeckyClocker.v1.0.0-rc3-release.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-18T22:20:54Z",
       "category": "Sistema / data e ora",
       "shortDescription": "Consente di cambiare manualmente data e ora del sistema e di ripristinare NTP dal Gaming Mode.",
       "longDescription": "Consente di cambiare manualmente data e ora del sistema e di ripristinare NTP dal Gaming Mode.",
@@ -7099,7 +7541,9 @@
       "aliases": [
         "DeckyClocker",
         "Jaccident/DeckyClocker"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-18T21:19:33Z",
+      "updatedAt": "2026-10-18T22:20:54Z"
     },
     {
       "active": true,
@@ -7111,7 +7555,7 @@
       "version": "0.2.6",
       "releaseAssetName": "Decky-Direct-Updater.zip",
       "catalogReleaseUrl": "https://github.com/nukeador/deckyup/releases/download/v0.2.6/Decky-Direct-Updater.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-18T22:57:32Z",
       "category": "Gestione plugin / aggiornamenti",
       "shortDescription": "Aggiorna i plugin Decky direttamente dalle release dei rispettivi sviluppatori, con note e avvisi.",
       "longDescription": "Aggiorna i plugin Decky direttamente dalle release dei rispettivi sviluppatori, con note e avvisi.",
@@ -7126,7 +7570,9 @@
       "aliases": [
         "Decky Direct Updater",
         "nukeador/deckyup"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-17T12:13:52Z",
+      "updatedAt": "2026-10-18T22:57:32Z"
     },
     {
       "active": true,
@@ -7138,7 +7584,7 @@
       "version": "0.1.0",
       "releaseAssetName": "decky-protonvpn-v0.1.0.zip",
       "catalogReleaseUrl": "https://github.com/acestronautical/decky-protonvpn/releases/download/v0.1.0/decky-protonvpn-v0.1.0.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-16T06:53:47Z",
       "category": "Rete / VPN",
       "shortDescription": "Controlla Proton VPN, account, country selection, kill switch, NetShield e impostazioni di rete dal QAM.",
       "longDescription": "Controlla Proton VPN, account, country selection, kill switch, NetShield e impostazioni di rete dal QAM.",
@@ -7154,7 +7600,9 @@
         "Proton VPN (Unofficial)",
         "Proton VPN Unofficial",
         "acestronautical/decky-protonvpn"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-16T06:53:47Z",
+      "updatedAt": "2026-10-16T06:53:47Z"
     },
     {
       "active": true,
@@ -7166,7 +7614,7 @@
       "version": "0.6.0",
       "releaseAssetName": "video-pip-v0.6.0.zip",
       "catalogReleaseUrl": "https://github.com/otisabiburada/decky-video-pip/releases/download/0.6.0/video-pip-v0.6.0.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-17T12:02:06Z",
       "category": "Video / picture-in-picture",
       "shortDescription": "Mostra YouTube in una finestra flottante sopra i giochi e accetta cast e comandi da telefono.",
       "longDescription": "Mostra YouTube in una finestra flottante sopra i giochi e accetta cast e comandi da telefono.",
@@ -7181,7 +7629,9 @@
       "aliases": [
         "YouTube PiP",
         "otisabiburada/decky-video-pip"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-17T12:02:06Z",
+      "updatedAt": "2026-10-17T12:02:06Z"
     },
     {
       "active": true,
@@ -7193,7 +7643,7 @@
       "version": "0.1.0",
       "releaseAssetName": "bluetooth-order.zip",
       "catalogReleaseUrl": "https://github.com/JediRhymeTrix/decky-bluetooth-order/releases/download/v0.1.0/bluetooth-order.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-12T03:29:05Z",
       "category": "Bluetooth / interfaccia",
       "shortDescription": "Riordina i dispositivi Bluetooth di Steam per uso recente, nome o stato connesso.",
       "longDescription": "Riordina i dispositivi Bluetooth di Steam per uso recente, nome o stato connesso.",
@@ -7208,7 +7658,9 @@
       "aliases": [
         "Bluetooth Order",
         "JediRhymeTrix/decky-bluetooth-order"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-12T03:29:05Z",
+      "updatedAt": "2026-10-12T03:29:05Z"
     },
     {
       "active": true,
@@ -7220,7 +7672,7 @@
       "version": "0.1.0",
       "releaseAssetName": "decky-capture.zip",
       "catalogReleaseUrl": "https://github.com/filesfor/decky-capture/releases/download/v0.1.0/decky-capture.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-19T05:18:31Z",
       "category": "USB / cattura video",
       "shortDescription": "Prova a presentare lo schermo del Deck a un altro dispositivo come webcam UVC via USB.",
       "longDescription": "Prova a presentare lo schermo del Deck a un altro dispositivo come webcam UVC via USB.",
@@ -7235,7 +7687,9 @@
       "aliases": [
         "Deck as Capture Card",
         "filesfor/decky-capture"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-19T05:18:31Z",
+      "updatedAt": "2026-10-19T05:18:31Z"
     },
     {
       "active": true,
@@ -7247,7 +7701,7 @@
       "version": "0.1.0",
       "releaseAssetName": "decky-display.zip",
       "catalogReleaseUrl": "https://github.com/filesfor/decky-display/releases/download/v0.1.0/decky-display.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-19T05:18:28Z",
       "category": "USB / display e capture card",
       "shortDescription": "Mostra fullscreen sul Deck il segnale di un adattatore di cattura USB collegato a un altro computer.",
       "longDescription": "Mostra fullscreen sul Deck il segnale di un adattatore di cattura USB collegato a un altro computer.",
@@ -7262,7 +7716,9 @@
       "aliases": [
         "Deck as Display",
         "filesfor/decky-display"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-19T05:18:28Z",
+      "updatedAt": "2026-10-19T05:18:28Z"
     },
     {
       "active": true,
@@ -7274,7 +7730,7 @@
       "version": "0.2.14",
       "releaseAssetName": "DeckyMods-v0.2.14.zip",
       "catalogReleaseUrl": "https://github.com/18798aa12/DeckyMods/releases/download/v0.2.14/DeckyMods-v0.2.14.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-19T03:17:21Z",
       "category": "Modding / Nexus Mods",
       "shortDescription": "Scarica, installa, abilita, disabilita e ripristina mod per giochi SteamOS, con supporto Nexus e archivi locali.",
       "longDescription": "Scarica, installa, abilita, disabilita e ripristina mod per giochi SteamOS, con supporto Nexus e archivi locali.",
@@ -7289,7 +7745,9 @@
       "aliases": [
         "DeckyMods",
         "18798aa12/DeckyMods"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-19T01:54:36Z",
+      "updatedAt": "2026-10-19T03:17:21Z"
     },
     {
       "active": true,
@@ -7301,7 +7759,7 @@
       "version": "0.6.1",
       "releaseAssetName": "Decky-MultiFrameGen.zip",
       "catalogReleaseUrl": "https://github.com/MWGIH/DeckyMultiFrameGen/releases/download/v0.6.1/Decky-MultiFrameGen.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-18T20:04:37Z",
       "category": "Grafica / frame generation",
       "shortDescription": "Installa OptiScaler, HelixSR e MAKO dalle rispettive release e seleziona il sistema usato per ogni gioco.",
       "longDescription": "Installa OptiScaler, HelixSR e MAKO dalle rispettive release e seleziona il sistema usato per ogni gioco.",
@@ -7316,7 +7774,9 @@
       "aliases": [
         "Decky MultiFrameGen",
         "MWGIH/DeckyMultiFrameGen"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-18T00:21:07Z",
+      "updatedAt": "2026-10-18T20:04:37Z"
     },
     {
       "active": true,
@@ -7328,7 +7788,7 @@
       "version": "0.3.2",
       "releaseAssetName": "nothing-ear-deck.zip",
       "catalogReleaseUrl": "https://github.com/Josemolivaresc/decky-nothing-ear/releases/download/v0.3.2/nothing-ear-deck.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-12T19:40:07Z",
       "category": "Audio / auricolari Bluetooth",
       "shortDescription": "Mostra batteria e controlla ANC, trasparenza, bassa latenza, EQ e gesti di auricolari Nothing e CMF.",
       "longDescription": "Mostra batteria e controlla ANC, trasparenza, bassa latenza, EQ e gesti di auricolari Nothing e CMF.",
@@ -7343,7 +7803,9 @@
       "aliases": [
         "Nothing Ear",
         "Josemolivaresc/decky-nothing-ear"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-12T19:40:07Z",
+      "updatedAt": "2026-10-12T19:40:07Z"
     },
     {
       "active": true,
@@ -7355,7 +7817,7 @@
       "version": "0.5.5",
       "releaseAssetName": "External-Storage-Guard.zip",
       "catalogReleaseUrl": "https://github.com/ohxiaoguang/decky-external-storage-guard/releases/download/v0.5.5/External-Storage-Guard.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-18T18:50:47Z",
       "category": "Storage / mount e diagnostica",
       "shortDescription": "Monta e smonta in sicurezza unità esterne e mostra log grezzi di sistema e kernel.",
       "longDescription": "Monta e smonta in sicurezza unità esterne e mostra log grezzi di sistema e kernel.",
@@ -7370,7 +7832,9 @@
       "aliases": [
         "External Storage Guard",
         "ohxiaoguang/decky-external-storage-guard"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-18T10:33:48Z",
+      "updatedAt": "2026-10-18T18:50:47Z"
     },
     {
       "active": true,
@@ -7382,7 +7846,7 @@
       "version": "1.0.0",
       "releaseAssetName": "SAM.zip",
       "catalogReleaseUrl": "https://github.com/Kowalski-coder/SAM-for-Decky-Loader/releases/download/v1.0.0/SAM.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-13T11:53:03Z",
       "category": "Achievement / modifica stato",
       "shortDescription": "Porta Steam Achievement Manager nel QAM per modificare lo stato degli achievement.",
       "longDescription": "Porta Steam Achievement Manager nel QAM per modificare lo stato degli achievement.",
@@ -7397,7 +7861,9 @@
       "aliases": [
         "SAM",
         "Kowalski-coder/SAM-for-Decky-Loader"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-13T11:53:03Z",
+      "updatedAt": "2026-10-13T11:53:03Z"
     },
     {
       "active": true,
@@ -7409,7 +7875,7 @@
       "version": "0.1.29",
       "releaseAssetName": "Upscaler-Decky-0.1.29.zip",
       "catalogReleaseUrl": "https://github.com/supercleans/Upscaler-Decky/releases/download/v0.1.29/Upscaler-Decky-0.1.29.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-15T02:08:48Z",
       "category": "Grafica / upscaling",
       "shortDescription": "Gestisce HelixSR e FSR 4 per gioco, valuta la compatibilità e configura proxy e opzioni di lancio.",
       "longDescription": "Gestisce HelixSR e FSR 4 per gioco, valuta la compatibilità e configura proxy e opzioni di lancio.",
@@ -7424,7 +7890,9 @@
       "aliases": [
         "Upscaler Decky",
         "supercleans/Upscaler-Decky"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-13T05:01:21Z",
+      "updatedAt": "2026-10-15T02:08:48Z"
     },
     {
       "active": true,
@@ -7436,7 +7904,7 @@
       "version": "0.2.3",
       "releaseAssetName": "DeckyProxy-0.2.3.zip",
       "catalogReleaseUrl": "https://github.com/18798aa12/DeckyProxy/releases/download/v0.2.3/DeckyProxy-0.2.3.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-17T19:54:27Z",
       "category": "Rete / proxy e TUN",
       "shortDescription": "Gestisce Mihomo, subscription, nodi, policy group, routing TUN e configurazioni YAML.",
       "longDescription": "Gestisce Mihomo, subscription, nodi, policy group, routing TUN e configurazioni YAML.",
@@ -7451,7 +7919,9 @@
       "aliases": [
         "DeckyProxy",
         "18798aa12/DeckyProxy"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-17T17:43:40Z",
+      "updatedAt": "2026-10-17T19:54:27Z"
     },
     {
       "active": true,
@@ -7463,7 +7933,7 @@
       "version": "1.1.0",
       "releaseAssetName": "decky-whatsapp-decky-plugin-v1.1.0.zip",
       "catalogReleaseUrl": "https://github.com/db452/DeckyWhatsapp/releases/download/v1.1.0/decky-whatsapp-decky-plugin-v1.1.0.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-18T08:20:47Z",
       "category": "Messaggistica / companion PC",
       "shortDescription": "Legge e risponde ai messaggi WhatsApp dal Gaming Mode tramite un bridge installato su PC Windows o Linux.",
       "longDescription": "Legge e risponde ai messaggi WhatsApp dal Gaming Mode tramite un bridge installato su PC Windows o Linux.",
@@ -7478,7 +7948,9 @@
       "aliases": [
         "Decky WhatsApp",
         "db452/DeckyWhatsapp"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-14T12:07:58Z",
+      "updatedAt": "2026-10-18T08:20:47Z"
     },
     {
       "active": true,
@@ -7490,7 +7962,7 @@
       "version": "1.11.1",
       "releaseAssetName": "Finally-3D-Game-Cases-v1.11.1.zip",
       "catalogReleaseUrl": "https://github.com/otisabiburada/finally-3d-game-cases-plugin/releases/download/1.11.1/Finally-3D-Game-Cases-v1.11.1.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-17T08:16:16Z",
       "category": "Personalizzazione / libreria",
       "shortDescription": "Trasforma le copertine verticali di Home e Libreria in custodie 3D con dorso, sleeve, usura ed effetti.",
       "longDescription": "Trasforma le copertine verticali di Home e Libreria in custodie 3D con dorso, sleeve, usura ed effetti.",
@@ -7505,7 +7977,9 @@
       "aliases": [
         "Finally 3D Game Cases",
         "otisabiburada/finally-3d-game-cases-plugin"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-12T07:03:37Z",
+      "updatedAt": "2026-10-17T08:16:16Z"
     },
     {
       "active": true,
@@ -7517,7 +7991,7 @@
       "version": "1.0.1",
       "releaseAssetName": "Finally-Screenshot-Sound-v1.0.1.zip",
       "catalogReleaseUrl": "https://github.com/otisabiburada/finally-screenshot-sound/releases/download/1.0.1/Finally-Screenshot-Sound-v1.0.1.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-13T04:50:36Z",
       "category": "Screenshot / audio",
       "shortDescription": "Riproduce un suono quando viene acquisito uno screenshot in Gaming Mode.",
       "longDescription": "Riproduce un suono quando viene acquisito uno screenshot in Gaming Mode.",
@@ -7532,7 +8006,9 @@
       "aliases": [
         "Finally Screenshot Sound",
         "otisabiburada/finally-screenshot-sound"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-13T04:50:36Z",
+      "updatedAt": "2026-10-13T04:50:36Z"
     },
     {
       "active": true,
@@ -7544,7 +8020,7 @@
       "version": "1.4.3",
       "releaseAssetName": "Steamder-v1.4.3.zip",
       "catalogReleaseUrl": "https://github.com/otisabiburada/steamder/releases/download/1.4.3/Steamder-v1.4.3.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-18T05:33:59Z",
       "category": "Libreria / scoperta giochi",
       "shortDescription": "Interfaccia in stile dating app per scorrere la libreria e selezionare i giochi da provare.",
       "longDescription": "Interfaccia in stile dating app per scorrere la libreria e selezionare i giochi da provare.",
@@ -7559,7 +8035,9 @@
       "aliases": [
         "Steamder",
         "otisabiburada/steamder"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-13T04:37:45Z",
+      "updatedAt": "2026-10-18T05:33:59Z"
     },
     {
       "active": true,
@@ -7571,7 +8049,7 @@
       "version": "1.3.5",
       "releaseAssetName": "Game-Picks-v1.3.5.zip",
       "catalogReleaseUrl": "https://github.com/otisabiburada/finally-game-picks/releases/download/1.3.5/Game-Picks-v1.3.5.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-13T04:39:46Z",
       "category": "Libreria / raccomandazioni",
       "shortDescription": "Apprende dalle abitudini di gioco e suggerisce titoli posseduti ma non provati e nuovi giochi potenzialmente affini.",
       "longDescription": "Apprende dalle abitudini di gioco e suggerisce titoli posseduti ma non provati e nuovi giochi potenzialmente affini.",
@@ -7586,7 +8064,9 @@
       "aliases": [
         "Game Picks",
         "otisabiburada/finally-game-picks"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-13T04:39:46Z",
+      "updatedAt": "2026-10-13T04:39:46Z"
     },
     {
       "active": true,
@@ -7598,7 +8078,7 @@
       "version": "1.12.0",
       "releaseAssetName": "Finally.Game.Recorder.1.12.0.zip",
       "catalogReleaseUrl": "https://github.com/otisabiburada/finally-game-replay-recorder/releases/download/1.12.0/Finally.Game.Recorder.1.12.0.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-10-13T04:11:31Z",
       "category": "Registrazione / replay buffer",
       "shortDescription": "Registra gameplay in Gaming Mode con replay buffer, scorciatoia clip, audio di gioco e microfono.",
       "longDescription": "Registra gameplay in Gaming Mode con replay buffer, scorciatoia clip, audio di gioco e microfono.",
@@ -7613,8 +8093,10 @@
       "aliases": [
         "Finally Game Recorder",
         "otisabiburada/finally-game-replay-recorder"
-      ]
+      ],
+      "firstPublishedAt": "2026-10-13T04:11:31Z",
+      "updatedAt": "2026-10-13T04:11:31Z"
     }
   ],
-  "catalogRevision": 9
+  "catalogRevision": 10
 }

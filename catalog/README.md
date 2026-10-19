@@ -17,6 +17,14 @@ catalogRevision with every publication. Names, descriptions, categories,
 versions, exact release ZIP URLs, compatible covers, aliases and keywords are
 editable. Add repository records without updating the application.
 
+`firstPublishedAt` is the original Decky Store creation timestamp or the first
+published GitHub release. `updatedAt` is the latest upstream release/update.
+Both are ISO 8601 UTC timestamps with time preserved; neither is the date a
+record was added to Playhub. Missing dates sort last. Both date sort modes run
+from newest to oldest. Home's News collection selects at most 44 distinct
+projects by their latest publication/update, including older projects with new
+updates. Its first four cards preview the collection above Playhub's plugins.
+
 Repository identity, host, install folder, source and official Decky ID cannot
 be reassigned over an existing record. External releases must be versioned ZIPs
 belonging to their repositories, or official Decky CDN artifacts. New schema
@@ -90,3 +98,45 @@ all 366 dates and every referenced local image:
 
 Publication is separate from local tests. A successful local build does not
 confirm an uploaded public URL or interaction with Steam's live UI.
+
+## Publication dates and the Home chronology
+
+firstPublishedAt and updatedAt are optional ISO 8601 UTC timestamps (ending in Z).
+For official Decky entries, firstPublishedAt comes from created (minimum retained
+version added_on) and updatedAt comes from updated (maximum retained version
+added_on). The official source implements these as min/max of versions.created.
+Neither a Playhub import date nor a repository creation date is a publication.
+
+For GitHub entries, dates come from the explicit released-this timestamp of
+published release pages. The complete paginated release history establishes the
+first available publication. Atom discovers release URLs only: its updated value
+can describe edits to release notes and must never substitute for publication.
+Projects with separate release families, such as MAKO renderer and Decky plugin,
+are filtered using the catalog's release tag family.
+
+catalog/plugin-date-provenance.json records per-repository evidence and coverage.
+All 241 active records have both dates in the initial backfill. The available
+published history is the evidence boundary: a publisher can delete old releases,
+and no client can reconstruct dates that the publisher no longer exposes.
+Old caches remain readable. Local display dates such as 20/10/2025 never become
+fabricated UTC instants and cannot override precise source timestamps.
+
+The app's background publication scan covers all due outside-store repositories,
+not only installed plugins. It uses batches of six, at most three concurrent
+requests, six-hour durable receipts and cancellation owned by the Store.
+Completed batches publish partial results. Atom tags are compared with the
+receipt; the exact release HTML is fetched on a changed tag or a legacy cache
+without a precise date. Failed or malformed responses preserve known dates.
+It makes no GitHub REST calls for date discovery and does not block Home rendering.
+
+Maintainer backfill (ordinary Python, no packages or token required):
+
+    python catalog/tools/backfill-plugin-dates.py
+    python catalog/tools/backfill-plugin-dates.py --apply
+
+The default is a dry run that writes a proposal and provenance under .local.
+The apply option updates catalog/plugins.json and the bundled external snapshot;
+it does not publish or change the publication revision. A maintainer reviews the
+report, increases catalogRevision and publishes the approved data. Reuse the
+local response cache, or pass --refresh for a new source snapshot. A partial or
+failed history crawl leaves the first date unproven instead of guessing it.
