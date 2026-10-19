@@ -29,7 +29,7 @@ to match Playhub's interface language. README detail content also stays original
 published GitHub release. `updatedAt` is the latest upstream release/update.
 Both are ISO 8601 UTC timestamps with time preserved; neither is the date a
 record was added to Playhub. Missing dates sort last. Both date sort modes run
-from newest to oldest. Home's News collection selects at most 44 distinct
+from newest to oldest. Home's News collection selects at most 100 distinct
 projects by their first upstream publication. Updating an older plugin never
 moves it into News. Its first four cards preview the collection above Playhub's
 plugins; opening News starts with the publication-date order.
