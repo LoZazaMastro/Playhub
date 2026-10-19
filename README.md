@@ -107,9 +107,9 @@ Please do not ask the Decky team for support on Windows: it is not officially su
 
 <div align="center">
 
-Created by **Andrea Sgarro — [LoZazaMastro](https://github.com/LoZazaMastro)**.
+Created by **[LoZazaMastro](https://github.com/LoZazaMastro)**.
 
-© 2026 Andrea Sgarro
+© 2026 LoZazaMastro
 
 <br />
 
