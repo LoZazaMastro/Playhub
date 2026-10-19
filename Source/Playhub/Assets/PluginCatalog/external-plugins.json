@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "verifiedAt": "2026-09-11",
+  "verifiedAt": "2026-10-19",
   "officialDeckyCatalogUrl": "https://plugins.deckbrew.xyz/plugins",
   "plugins": [
     {
@@ -21,7 +21,8 @@
       "keywords": [
         "command",
         "launch",
-        "proton"
+        "proton",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Proton Launch",
@@ -31,7 +32,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 137
+      "catalogPluginId": 137,
+      "firstPublishedAt": "2026-05-13T22:21:52Z",
+      "updatedAt": "2026-05-13T22:21:52Z"
     },
     {
       "active": true,
@@ -48,7 +51,9 @@
       "shortDescription": "Record your screen even when a game is not running.",
       "longDescription": "Record your screen even when a game is not running.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky-Clipper-754ffbe978c882e5a3a2a1feb8e19a55091ba6edefc8c98650214e372ab50240.jpg",
-      "keywords": [],
+      "keywords": [
+        "catalog-added:2026-09-04"
+      ],
       "aliases": [
         "Decky-Clipper",
         "Managor/Decky-Clipper"
@@ -56,7 +61,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 136
+      "catalogPluginId": 136,
+      "firstPublishedAt": "2026-05-13T22:06:59Z",
+      "updatedAt": "2026-05-13T22:06:59Z"
     },
     {
       "active": true,
@@ -80,7 +87,8 @@
         "home",
         "library",
         "shelves",
-        "tabs"
+        "tabs",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Deck Shelves",
@@ -90,7 +98,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 135
+      "catalogPluginId": 135,
+      "firstPublishedAt": "2026-05-06T21:50:20Z",
+      "updatedAt": "2026-05-06T21:50:20Z"
     },
     {
       "active": true,
@@ -112,7 +122,8 @@
         "enhancement",
         "library",
         "progress-tracking",
-        "statistics"
+        "statistics",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Deck Progress Tracker",
@@ -122,7 +133,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 134
+      "catalogPluginId": 134,
+      "firstPublishedAt": "2026-04-23T15:50:49Z",
+      "updatedAt": "2026-04-23T15:50:49Z"
     },
     {
       "active": true,
@@ -144,7 +157,8 @@
         "non-steam",
         "nonsteam",
         "ui",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Non-Steam Badges",
@@ -154,7 +168,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 133
+      "catalogPluginId": 133,
+      "firstPublishedAt": "2026-04-20T22:34:06Z",
+      "updatedAt": "2026-04-20T22:34:06Z"
     },
     {
       "active": true,
@@ -175,7 +191,8 @@
         "game-library",
         "recommendations",
         "steam",
-        "suggestion"
+        "suggestion",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "SuggestMe",
@@ -186,7 +203,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 132
+      "catalogPluginId": 132,
+      "firstPublishedAt": "2026-04-17T22:20:44Z",
+      "updatedAt": "2026-04-17T22:20:44Z"
     },
     {
       "active": true,
@@ -205,7 +224,9 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Download%20All-8004bb65ffd88097c2392f2dfc40d910fc5250d5d6bd7e8e58b379c9ac3992f0.png",
       "keywords": [
         "downloads",
-        "queue"
+        "queue",
+        "catalog-added:2026-09-04",
+        "first-release:2026-03-27"
       ],
       "aliases": [
         "Download All",
@@ -215,7 +236,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 131
+      "catalogPluginId": 131,
+      "firstPublishedAt": "2026-03-28T21:44:17Z",
+      "updatedAt": "2026-05-21T20:24:49Z"
     },
     {
       "active": true,
@@ -233,7 +256,8 @@
       "longDescription": "Manage Steam Deck Prefixes, delete orphans, and backup data.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Games%20Prefix%20Manager-3c6c78adc121381e0aa108b0bee670bdac4d16779b4b575a6c220171edd923d9.jpg",
       "keywords": [
-        "utilities"
+        "utilities",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Games Prefix Manager",
@@ -243,7 +267,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 130
+      "catalogPluginId": 130,
+      "firstPublishedAt": "2026-03-20T23:01:17Z",
+      "updatedAt": "2026-03-20T23:01:17Z"
     },
     {
       "active": true,
@@ -264,7 +290,8 @@
         "network",
         "proxy",
         "root",
-        "vpn"
+        "vpn",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "ShadowDeck",
@@ -273,7 +300,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 129
+      "catalogPluginId": 129,
+      "firstPublishedAt": "2026-03-13T19:29:49Z",
+      "updatedAt": "2026-03-13T19:29:49Z"
     },
     {
       "active": true,
@@ -292,7 +321,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Quick%20User%20Switcher.png",
       "keywords": [
         "root",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Quick User Switcher",
@@ -302,7 +332,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 128
+      "catalogPluginId": 128,
+      "firstPublishedAt": "2026-03-09T21:11:56Z",
+      "updatedAt": "2026-03-09T21:11:56Z"
     },
     {
       "active": true,
@@ -320,7 +352,8 @@
       "longDescription": "Translate anything on your screen to your language",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky%20Translator-7499f82628f3cc449677e4a45294e90362a9c239d08d882401db39c6cad6355b.png",
       "keywords": [
-        "Translation"
+        "Translation",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Translator",
@@ -331,7 +364,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 127
+      "catalogPluginId": 127,
+      "firstPublishedAt": "2026-02-27T16:43:03Z",
+      "updatedAt": "2026-02-27T16:43:03Z"
     },
     {
       "active": true,
@@ -350,7 +385,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Launch%20Options-5a34cc61f06d25a49f304d48f74a47f4422d232812dc77810e007489d3bedcf9.png",
       "keywords": [
         "launch options",
-        "quality of life"
+        "quality of life",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Launch Options",
@@ -360,7 +396,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 126
+      "catalogPluginId": 126,
+      "firstPublishedAt": "2026-02-22T16:32:29Z",
+      "updatedAt": "2026-04-22T22:22:07Z"
     },
     {
       "active": true,
@@ -382,7 +420,8 @@
         "localsend",
         "Screenshot",
         "Text",
-        "transfer"
+        "transfer",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Localsend",
@@ -392,7 +431,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 125
+      "catalogPluginId": 125,
+      "firstPublishedAt": "2026-02-18T21:33:51Z",
+      "updatedAt": "2026-02-18T21:33:51Z"
     },
     {
       "active": true,
@@ -415,7 +456,8 @@
         "pomodoro",
         "productivity",
         "snooze",
-        "timer"
+        "timer",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "AlarMe",
@@ -425,7 +467,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 124
+      "catalogPluginId": 124,
+      "firstPublishedAt": "2026-02-14T21:37:29Z",
+      "updatedAt": "2026-03-18T22:23:10Z"
     },
     {
       "active": true,
@@ -445,7 +489,8 @@
       "keywords": [
         "monitoring",
         "status",
-        "steam"
+        "steam",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Steam Status",
@@ -455,7 +500,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 123
+      "catalogPluginId": 123,
+      "firstPublishedAt": "2026-02-14T21:32:43Z",
+      "updatedAt": "2026-02-14T21:32:43Z"
     },
     {
       "active": true,
@@ -473,7 +520,8 @@
       "longDescription": "A Decky Loader plugin for Steam Deck to play tracks from Plex, Jellyfin, Emby, Navidrome, and Subsonic.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Museck-96455c41d986da4a6cee329bbd9bdd051c0ccd44978a029077299d01460be839.png",
       "keywords": [
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Museck",
@@ -482,7 +530,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 122
+      "catalogPluginId": 122,
+      "firstPublishedAt": "2026-02-12T00:01:24Z",
+      "updatedAt": "2026-02-12T00:01:24Z"
     },
     {
       "active": true,
@@ -504,7 +554,8 @@
         "keepass",
         "password",
         "password-manager",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "DeckPass",
@@ -513,7 +564,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 121
+      "catalogPluginId": 121,
+      "firstPublishedAt": "2026-02-11T23:52:12Z",
+      "updatedAt": "2026-02-11T23:52:12Z"
     },
     {
       "active": true,
@@ -534,7 +587,8 @@
         "developer",
         "memory",
         "tools",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Reroll",
@@ -544,7 +598,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 120
+      "catalogPluginId": 120,
+      "firstPublishedAt": "2026-01-30T21:21:43Z",
+      "updatedAt": "2026-01-30T21:21:43Z"
     },
     {
       "active": true,
@@ -564,7 +620,8 @@
       "keywords": [
         "clipboard",
         "utility",
-        "web"
+        "web",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Clipboard",
@@ -575,7 +632,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 119
+      "catalogPluginId": 119,
+      "firstPublishedAt": "2026-01-19T14:04:37Z",
+      "updatedAt": "2026-01-19T14:04:37Z"
     },
     {
       "active": true,
@@ -595,7 +654,8 @@
       "keywords": [
         "network",
         "speed",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Speed Test",
@@ -605,7 +665,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 118
+      "catalogPluginId": 118,
+      "firstPublishedAt": "2026-01-06T19:38:43Z",
+      "updatedAt": "2026-01-23T23:37:30Z"
     },
     {
       "active": true,
@@ -628,7 +690,8 @@
         "fileserver",
         "management",
         "utility",
-        "web"
+        "web",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "DeckyParty File Manager",
@@ -638,7 +701,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 117
+      "catalogPluginId": 117,
+      "firstPublishedAt": "2026-01-06T19:38:20Z",
+      "updatedAt": "2026-01-11T00:18:14Z"
     },
     {
       "active": true,
@@ -660,7 +725,8 @@
         "multiplayer",
         "p2p",
         "root",
-        "wifi"
+        "wifi",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Muon",
@@ -670,7 +736,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 116
+      "catalogPluginId": 116,
+      "firstPublishedAt": "2025-12-26T23:49:42Z",
+      "updatedAt": "2025-12-26T23:49:42Z"
     },
     {
       "active": true,
@@ -689,7 +757,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky%20Clash-cd080e812a1c7371f5e5069bbb0d830f606e3d5063c6699f5c825678fb7bad5d.png",
       "keywords": [
         "network",
-        "root"
+        "root",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Clash",
@@ -699,7 +768,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 115
+      "catalogPluginId": 115,
+      "firstPublishedAt": "2025-12-14T19:37:10Z",
+      "updatedAt": "2026-02-22T16:36:20Z"
     },
     {
       "active": true,
@@ -720,7 +791,8 @@
         "gaming",
         "monitoring",
         "network",
-        "performance"
+        "performance",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Network Sentinel",
@@ -730,7 +802,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 114
+      "catalogPluginId": 114,
+      "firstPublishedAt": "2025-11-27T16:56:21Z",
+      "updatedAt": "2026-01-11T00:02:23Z"
     },
     {
       "active": true,
@@ -753,7 +827,8 @@
         "lossless",
         "lsfg",
         "scaling",
-        "vulkan"
+        "vulkan",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky LSFG-VK",
@@ -763,7 +838,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 113
+      "catalogPluginId": 113,
+      "firstPublishedAt": "2025-11-27T16:51:06Z",
+      "updatedAt": "2025-11-27T16:51:06Z"
     },
     {
       "active": true,
@@ -782,7 +859,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Better%20Keyboard-fe0345ec80756a44cd8b919018b509e0c0b0118deb51df49b0da39f8363d4987.png",
       "keywords": [
         "keyboard",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Better Keyboard",
@@ -792,7 +870,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 112
+      "catalogPluginId": 112,
+      "firstPublishedAt": "2025-10-22T15:45:57Z",
+      "updatedAt": "2026-03-18T22:17:01Z"
     },
     {
       "active": true,
@@ -812,7 +892,8 @@
       "keywords": [
         "media",
         "mpris",
-        "music"
+        "music",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Music Control",
@@ -822,7 +903,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 111
+      "catalogPluginId": 111,
+      "firstPublishedAt": "2025-10-21T15:35:03Z",
+      "updatedAt": "2025-10-21T15:35:03Z"
     },
     {
       "active": true,
@@ -841,7 +924,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Dimmer%20Deck-f1fd245cf60fbe923e63650171faf95f450208a9bc39a56c4d39d6d7f04b288f.png",
       "keywords": [
         "brightness",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Dimmer Deck",
@@ -851,7 +935,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 110
+      "catalogPluginId": 110,
+      "firstPublishedAt": "2025-10-13T23:20:46Z",
+      "updatedAt": "2025-10-13T23:20:46Z"
     },
     {
       "active": true,
@@ -875,7 +961,8 @@
         "muradeck",
         "mura-fix",
         "oled",
-        "samsung"
+        "samsung",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MuraDeck",
@@ -884,7 +971,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 109
+      "catalogPluginId": 109,
+      "firstPublishedAt": "2025-08-07T00:59:09Z",
+      "updatedAt": "2025-12-10T17:32:19Z"
     },
     {
       "active": true,
@@ -902,7 +991,8 @@
       "longDescription": "LED controller for non-Steam Deck gaming handhelds running SteamOS.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/HueSync-948e46730bc3a43d99d24e5b45cbc4a5df88c57806f49fe85f0a3b595d40c72e.jpg",
       "keywords": [
-        "root"
+        "root",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "HueSync",
@@ -911,7 +1001,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 108
+      "catalogPluginId": 108,
+      "firstPublishedAt": "2025-06-22T15:36:38Z",
+      "updatedAt": "2026-03-26T00:14:38Z"
     },
     {
       "active": true,
@@ -933,7 +1025,8 @@
         "root",
         "server",
         "streaming",
-        "sunshine"
+        "sunshine",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Sunshine",
@@ -943,7 +1036,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 107
+      "catalogPluginId": 107,
+      "firstPublishedAt": "2025-06-10T22:40:25Z",
+      "updatedAt": "2025-11-27T16:56:04Z"
     },
     {
       "active": true,
@@ -964,7 +1059,8 @@
         "graphics",
         "presets",
         "reshade",
-        "shaders"
+        "shaders",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "LetMeReShade",
@@ -973,7 +1069,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 106
+      "catalogPluginId": 106,
+      "firstPublishedAt": "2025-06-09T13:17:50Z",
+      "updatedAt": "2025-09-16T21:19:29Z"
     },
     {
       "active": true,
@@ -993,7 +1091,8 @@
       "keywords": [
         "network",
         "root",
-        "wifi"
+        "wifi",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "WiFi Locker",
@@ -1003,7 +1102,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 105
+      "catalogPluginId": 105,
+      "firstPublishedAt": "2025-05-17T23:21:13Z",
+      "updatedAt": "2025-05-17T23:21:13Z"
     },
     {
       "active": true,
@@ -1023,7 +1124,8 @@
       "keywords": [
         "backup",
         "cloud",
-        "rclone"
+        "rclone",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Game Sync",
@@ -1033,7 +1135,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 104
+      "catalogPluginId": 104,
+      "firstPublishedAt": "2025-04-14T12:55:52Z",
+      "updatedAt": "2026-05-01T00:14:21Z"
     },
     {
       "active": true,
@@ -1054,7 +1158,8 @@
         "backup",
         "cloud",
         "ludusavi",
-        "sync"
+        "sync",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Ludusavi",
@@ -1064,7 +1169,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 103
+      "catalogPluginId": 103,
+      "firstPublishedAt": "2025-03-23T15:03:39Z",
+      "updatedAt": "2025-08-24T15:24:59Z"
     },
     {
       "active": true,
@@ -1090,7 +1197,8 @@
         "equalizer",
         "fx",
         "reverb",
-        "sound"
+        "sound",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "DeckSP",
@@ -1099,7 +1207,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 102
+      "catalogPluginId": 102,
+      "firstPublishedAt": "2025-03-17T20:05:42Z",
+      "updatedAt": "2026-01-02T16:15:36Z"
     },
     {
       "active": true,
@@ -1121,7 +1231,8 @@
         "root",
         "XivAlexander",
         "XivMitmLatencyMitigator",
-        "XivOmega"
+        "XivOmega",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "XIVOmega",
@@ -1131,7 +1242,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 101
+      "catalogPluginId": 101,
+      "firstPublishedAt": "2025-03-14T01:39:22Z",
+      "updatedAt": "2025-08-19T23:33:38Z"
     },
     {
       "active": true,
@@ -1157,7 +1270,8 @@
         "dolby",
         "dts",
         "headphones",
-        "surround"
+        "surround",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Virtual Surround Sound",
@@ -1167,7 +1281,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 100
+      "catalogPluginId": 100,
+      "firstPublishedAt": "2025-03-05T17:45:52Z",
+      "updatedAt": "2025-03-23T23:27:11Z"
     },
     {
       "active": true,
@@ -1186,7 +1302,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky%20Zerotier-33b98e814cd56a08700771c7108c0473d914e68265fe5ed815bb72e7af237e57.jpg",
       "keywords": [
         "network",
-        "zerotier"
+        "zerotier",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Zerotier",
@@ -1196,7 +1313,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 99
+      "catalogPluginId": 99,
+      "firstPublishedAt": "2025-03-04T00:37:10Z",
+      "updatedAt": "2025-03-04T00:37:10Z"
     },
     {
       "active": true,
@@ -1217,7 +1336,8 @@
         "browser",
         "Lookup",
         "search",
-        "website"
+        "website",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky-Lookup",
@@ -1226,7 +1346,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 98
+      "catalogPluginId": 98,
+      "firstPublishedAt": "2025-02-15T17:11:31Z",
+      "updatedAt": "2025-02-15T17:11:31Z"
     },
     {
       "active": true,
@@ -1247,7 +1369,8 @@
         "DLSS",
         "Framegen",
         "FSR",
-        "upscaling"
+        "upscaling",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky-Framegen",
@@ -1256,7 +1379,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 97
+      "catalogPluginId": 97,
+      "firstPublishedAt": "2025-02-14T19:22:28Z",
+      "updatedAt": "2025-09-19T15:50:34Z"
     },
     {
       "active": true,
@@ -1276,7 +1401,8 @@
       "keywords": [
         "alarm",
         "decktools",
-        "timer"
+        "timer",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Simple Timer",
@@ -1286,7 +1412,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 96
+      "catalogPluginId": 96,
+      "firstPublishedAt": "2025-02-07T03:40:01Z",
+      "updatedAt": "2025-02-07T03:40:01Z"
     },
     {
       "active": true,
@@ -1306,7 +1434,8 @@
       "keywords": [
         "deep-packet-inspection",
         "networking",
-        "spoofdpi"
+        "spoofdpi",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky-SpoofDPI",
@@ -1316,7 +1445,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 95
+      "catalogPluginId": 95,
+      "firstPublishedAt": "2025-02-05T23:20:36Z",
+      "updatedAt": "2025-02-05T23:20:36Z"
     },
     {
       "active": true,
@@ -1336,7 +1467,8 @@
       "keywords": [
         "dns",
         "networking",
-        "root"
+        "root",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky DoT DNS",
@@ -1346,7 +1478,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 94
+      "catalogPluginId": 94,
+      "firstPublishedAt": "2025-01-31T21:43:51Z",
+      "updatedAt": "2025-01-31T21:43:51Z"
     },
     {
       "active": true,
@@ -1369,7 +1503,8 @@
         "game",
         "settings",
         "setup",
-        "verified"
+        "verified",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Deck Settings",
@@ -1379,7 +1514,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 93
+      "catalogPluginId": 93,
+      "firstPublishedAt": "2025-01-25T20:28:03Z",
+      "updatedAt": "2025-12-10T17:23:20Z"
     },
     {
       "active": true,
@@ -1400,7 +1537,8 @@
         "aim",
         "crosshair",
         "HUD",
-        "overlay"
+        "overlay",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Crosshair",
@@ -1410,7 +1548,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 92
+      "catalogPluginId": 92,
+      "firstPublishedAt": "2025-01-16T18:24:55Z",
+      "updatedAt": "2025-06-29T19:22:28Z"
     },
     {
       "active": true,
@@ -1431,7 +1571,8 @@
         "Currently Playing",
         "Player Count",
         "Steam Charts",
-        "SteamDB"
+        "SteamDB",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "PlayCount",
@@ -1441,7 +1582,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 91
+      "catalogPluginId": 91,
+      "firstPublishedAt": "2025-01-14T19:42:25Z",
+      "updatedAt": "2026-02-04T19:55:21Z"
     },
     {
       "active": true,
@@ -1463,7 +1606,8 @@
         "pip",
         "tv",
         "video",
-        "web"
+        "web",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Picture in Picture",
@@ -1473,7 +1617,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 90
+      "catalogPluginId": 90,
+      "firstPublishedAt": "2025-01-14T19:37:27Z",
+      "updatedAt": "2025-01-14T19:37:27Z"
     },
     {
       "active": true,
@@ -1491,7 +1637,8 @@
       "longDescription": "Spy on system information.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/DeckySpy-51c612d591d74fc33cf7bf76d54f68f66e0c6bd1b2c5ece1e6acc68d55e19dbc.png",
       "keywords": [
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "DeckySpy",
@@ -1501,7 +1648,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 89
+      "catalogPluginId": 89,
+      "firstPublishedAt": "2024-10-29T23:06:35Z",
+      "updatedAt": "2024-10-29T23:06:35Z"
     },
     {
       "active": true,
@@ -1523,7 +1672,8 @@
         "controller",
         "fix",
         "root",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "steamdeck-input-disabler",
@@ -1532,7 +1682,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 88
+      "catalogPluginId": 88,
+      "firstPublishedAt": "2024-09-14T00:42:34Z",
+      "updatedAt": "2024-09-14T00:42:34Z"
     },
     {
       "active": true,
@@ -1551,7 +1703,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/ScreenSaver-3a76929daa4ada55cf09bcb9402484b9a6ea3468d769b412c45cc005a6ef5b50.png",
       "keywords": [
         "dbus",
-        "screensaver"
+        "screensaver",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "ScreenSaver",
@@ -1561,7 +1714,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 87
+      "catalogPluginId": 87,
+      "firstPublishedAt": "2024-09-13T20:54:42Z",
+      "updatedAt": "2025-12-17T18:46:30Z"
     },
     {
       "active": true,
@@ -1585,7 +1740,8 @@
         "root",
         "ryzenadj",
         "temperature",
-        "undervolt"
+        "undervolt",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky-Undervolt",
@@ -1594,7 +1750,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 85
+      "catalogPluginId": 85,
+      "firstPublishedAt": "2024-08-07T03:42:48Z",
+      "updatedAt": "2025-01-13T16:56:36Z"
     },
     {
       "active": true,
@@ -1614,7 +1772,8 @@
       "keywords": [
         "88mph",
         "Epic",
-        "Launcher"
+        "Launcher",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Junk-Store",
@@ -1624,7 +1783,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 84
+      "catalogPluginId": 84,
+      "firstPublishedAt": "2024-04-29T15:10:24Z",
+      "updatedAt": "2026-01-19T14:02:48Z"
     },
     {
       "active": true,
@@ -1646,7 +1807,8 @@
         "battery",
         "beats",
         "bluetooth",
-        "headphones"
+        "headphones",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MagicPods",
@@ -1656,7 +1818,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 82
+      "catalogPluginId": 82,
+      "firstPublishedAt": "2024-04-22T18:45:15Z",
+      "updatedAt": "2026-09-10T13:20:11Z"
     },
     {
       "active": true,
@@ -1675,7 +1839,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/IsThereAnyDeal%20for%20Deck-0b997b64b394fd9ab01a7c8baaba452900a813bf3685d7ccfa794fe4e39d110d.png",
       "keywords": [
         "GameDeals",
-        "IsThereAnyDeal"
+        "IsThereAnyDeal",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "IsThereAnyDeal for Deck",
@@ -1686,7 +1851,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 81
+      "catalogPluginId": 81,
+      "firstPublishedAt": "2024-04-19T09:01:50Z",
+      "updatedAt": "2025-12-27T23:54:11Z"
     },
     {
       "active": true,
@@ -1709,7 +1876,8 @@
         "oled",
         "overlay",
         "screen",
-        "shortcut"
+        "shortcut",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MagicBlack",
@@ -1719,7 +1887,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 80
+      "catalogPluginId": 80,
+      "firstPublishedAt": "2024-03-20T20:05:14Z",
+      "updatedAt": "2025-12-10T17:28:59Z"
     },
     {
       "active": true,
@@ -1738,7 +1908,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky%20Notifications.png",
       "keywords": [
         "KDE Connect",
-        "Notifications"
+        "Notifications",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Notifications",
@@ -1748,7 +1919,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 79
+      "catalogPluginId": 79,
+      "firstPublishedAt": "2024-03-17T18:11:03Z",
+      "updatedAt": "2025-07-11T15:45:15Z"
     },
     {
       "active": true,
@@ -1767,7 +1940,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Brightness%20Bar-454e29e38632fda558035fe5e042c5520fc896b83b3609d020772c1cb303a89d.jpg",
       "keywords": [
         "brightness",
-        "display"
+        "display",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Brightness Bar",
@@ -1777,7 +1951,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 78
+      "catalogPluginId": 78,
+      "firstPublishedAt": "2024-03-17T18:06:28Z",
+      "updatedAt": "2025-11-13T15:44:56Z"
     },
     {
       "active": true,
@@ -1797,7 +1973,8 @@
       "keywords": [
         "bluetooth",
         "utility",
-        "wake"
+        "wake",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "BT Wake Control",
@@ -1808,7 +1985,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 77
+      "catalogPluginId": 77,
+      "firstPublishedAt": "2024-01-25T22:32:37Z",
+      "updatedAt": "2025-07-13T20:09:02Z"
     },
     {
       "active": true,
@@ -1827,7 +2006,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/CheatDeck-51bc4968c7a667d554750fa0e56e028a9ebff87d05d85c5e3ab941eb14e86d50.jpg",
       "keywords": [
         "cheat",
-        "trainer"
+        "trainer",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "CheatDeck",
@@ -1836,7 +2016,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 76
+      "catalogPluginId": 76,
+      "firstPublishedAt": "2023-12-24T18:03:14Z",
+      "updatedAt": "2026-01-06T20:58:09Z"
     },
     {
       "active": true,
@@ -1854,7 +2036,8 @@
       "longDescription": "A plugin for loading reshade shaders on steam deck",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Reshadeck-b4ed95dec3c0c2be6a898ce6bacbbf4da3c7eac45aefe690e618dd05752afaf5.png",
       "keywords": [
-        "control"
+        "control",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Reshadeck",
@@ -1864,7 +2047,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 75
+      "catalogPluginId": 75,
+      "firstPublishedAt": "2023-12-19T00:04:04Z",
+      "updatedAt": "2024-05-13T18:14:38Z"
     },
     {
       "active": true,
@@ -1882,7 +2067,8 @@
       "longDescription": "A plugin for running KDE Connect in gamemode",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/KDE%20Connect-d57d8e3140a96ef20c874172fd19b16375e7b4605b4aa06da33042b5225395f8.png",
       "keywords": [
-        "control"
+        "control",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "KDE Connect",
@@ -1893,7 +2079,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 74
+      "catalogPluginId": 74,
+      "firstPublishedAt": "2023-12-18T04:56:53Z",
+      "updatedAt": "2024-03-20T20:17:22Z"
     },
     {
       "active": true,
@@ -1911,7 +2099,8 @@
       "longDescription": "Official EmuDeck Decky plugin",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/EmuDecky-4cbb20adfdb066cb40577bdb80311154bda4b01409cd668d967911bb80fad991.png",
       "keywords": [
-        "EmuDeck"
+        "EmuDeck",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "EmuDecky",
@@ -1920,7 +2109,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 73
+      "catalogPluginId": 73,
+      "firstPublishedAt": "2023-12-09T04:25:58Z",
+      "updatedAt": "2024-01-20T03:59:16Z"
     },
     {
       "active": true,
@@ -1939,7 +2130,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/ScreenshotUploader-0edc34053b80433d346e524d3052bc9ce74cc24164c61420ea6bd36fa84b109b.png",
       "keywords": [
         "screenshots",
-        "uploader"
+        "uploader",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "ScreenshotUploader",
@@ -1949,7 +2141,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 72
+      "catalogPluginId": 72,
+      "firstPublishedAt": "2023-11-14T20:44:12Z",
+      "updatedAt": "2024-05-21T13:54:14Z"
     },
     {
       "active": true,
@@ -1969,7 +2163,8 @@
       "keywords": [
         "manager",
         "microsd",
-        "sdcard"
+        "sdcard",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MicroSDeck",
@@ -1978,7 +2173,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 70
+      "catalogPluginId": 70,
+      "firstPublishedAt": "2023-10-23T02:16:26Z",
+      "updatedAt": "2026-03-27T16:11:22Z"
     },
     {
       "active": true,
@@ -2000,7 +2197,8 @@
         "luxtorpeda",
         "proton",
         "proton-ge",
-        "wine"
+        "wine",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Wine Cellar",
@@ -2010,7 +2208,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 68
+      "catalogPluginId": 68,
+      "firstPublishedAt": "2023-08-29T06:21:15Z",
+      "updatedAt": "2025-11-30T15:04:29Z"
     },
     {
       "active": true,
@@ -2029,7 +2229,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Battery%20Tracker-7f96c2176e20d1dba4a107e78430aa477662a98c722465556aebf89aab916450.png",
       "keywords": [
         "root",
-        "template"
+        "template",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Battery Tracker",
@@ -2039,7 +2240,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 67
+      "catalogPluginId": 67,
+      "firstPublishedAt": "2023-08-25T00:35:37Z",
+      "updatedAt": "2024-03-17T18:14:15Z"
     },
     {
       "active": true,
@@ -2059,7 +2262,8 @@
       "keywords": [
         "playtime",
         "time-tracking",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "PlayTime",
@@ -2069,7 +2273,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 66
+      "catalogPluginId": 66,
+      "firstPublishedAt": "2023-08-21T20:34:41Z",
+      "updatedAt": "2026-04-17T22:20:38Z"
     },
     {
       "active": true,
@@ -2087,7 +2293,8 @@
       "longDescription": "Your terminal is going places.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Decky%20Terminal.png",
       "keywords": [
-        "terminal"
+        "terminal",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Terminal",
@@ -2097,7 +2304,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 65
+      "catalogPluginId": 65,
+      "firstPublishedAt": "2023-08-17T21:45:54Z",
+      "updatedAt": "2025-07-02T13:58:39Z"
     },
     {
       "active": true,
@@ -2120,7 +2329,8 @@
         "files",
         "services",
         "synchronization",
-        "syncthing"
+        "syncthing",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Syncthing",
@@ -2131,7 +2341,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 64
+      "catalogPluginId": 64,
+      "firstPublishedAt": "2023-08-16T07:53:40Z",
+      "updatedAt": "2026-02-06T23:54:58Z"
     },
     {
       "active": true,
@@ -2159,7 +2371,8 @@
         "loader",
         "notifications",
         "steam",
-        "store"
+        "store",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Free Loader",
@@ -2169,7 +2382,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 63
+      "catalogPluginId": 63,
+      "firstPublishedAt": "2023-08-05T07:29:51Z",
+      "updatedAt": "2026-10-14T07:59:20Z"
     },
     {
       "active": true,
@@ -2187,7 +2402,8 @@
       "longDescription": "A TeamSpeak 3 client plugin that integrates TeamSpeak 3 into Steam Deck's quick access menu.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/TS3%20QuickAccess-84921449c7c9dc1d46fa8a15f9a286dc0f240dc3411066bd68d9edd34a5eb671.png",
       "keywords": [
-        "teamspeak"
+        "teamspeak",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "TS3 QuickAccess",
@@ -2197,7 +2413,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 62
+      "catalogPluginId": 62,
+      "firstPublishedAt": "2023-07-29T16:57:46Z",
+      "updatedAt": "2024-09-13T20:53:12Z"
     },
     {
       "active": true,
@@ -2217,7 +2435,9 @@
       "keywords": [
         "Customization",
         "Library",
-        "Tabs"
+        "Tabs",
+        "catalog-added:2026-09-04",
+        "first-release:2023-06-25"
       ],
       "aliases": [
         "TabMaster",
@@ -2226,7 +2446,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 61
+      "catalogPluginId": 61,
+      "firstPublishedAt": "2023-07-03T16:08:51Z",
+      "updatedAt": "2026-07-27T15:56:49Z"
     },
     {
       "active": true,
@@ -2246,7 +2468,9 @@
       "keywords": [
         "browser",
         "internet",
-        "web"
+        "web",
+        "catalog-added:2026-09-04",
+        "first-release:2023-06-10"
       ],
       "aliases": [
         "Web Browser",
@@ -2256,7 +2480,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 59
+      "catalogPluginId": 59,
+      "firstPublishedAt": "2023-06-10T13:52:58Z",
+      "updatedAt": "2026-01-05T15:35:56Z"
     },
     {
       "active": true,
@@ -2279,7 +2505,8 @@
         "booster",
         "loud",
         "sound",
-        "volume"
+        "volume",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Volume Boost",
@@ -2289,7 +2516,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 58
+      "catalogPluginId": 58,
+      "firstPublishedAt": "2023-06-02T01:13:21Z",
+      "updatedAt": "2026-04-21T19:58:05Z"
     },
     {
       "active": true,
@@ -2308,7 +2537,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/MangoPeel-52ba42012bc0a46044793bbc34a0242519338bd33b8594240b0796c9c32561bb.png",
       "keywords": [
         "mangoapp",
-        "mangohud"
+        "mangohud",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MangoPeel",
@@ -2317,7 +2547,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 56
+      "catalogPluginId": 56,
+      "firstPublishedAt": "2023-05-28T17:17:27Z",
+      "updatedAt": "2025-11-13T15:40:52Z"
     },
     {
       "active": true,
@@ -2335,7 +2567,8 @@
       "longDescription": "A plugin for copying over screenshots to the Pictures folder",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Shotty-1d91927415ae472afab4b28f6d4dd7c2d7b73e70b68a89a1836c683bc449bff3.png",
       "keywords": [
-        "screenshots"
+        "screenshots",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Shotty",
@@ -2344,7 +2577,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 53
+      "catalogPluginId": 53,
+      "firstPublishedAt": "2023-04-12T17:46:07Z",
+      "updatedAt": "2024-04-01T14:19:06Z"
     },
     {
       "active": true,
@@ -2362,7 +2597,8 @@
       "longDescription": "Play theme songs on your game pages",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Game%20Theme%20Music-dce63e3764f8114afd8e21ae8288bb54c09077d8202baa7dab572b352cb12512.png",
       "keywords": [
-        "audio"
+        "audio",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Game Theme Music",
@@ -2372,7 +2608,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 52
+      "catalogPluginId": 52,
+      "firstPublishedAt": "2023-04-08T16:36:48Z",
+      "updatedAt": "2025-10-28T02:34:54Z"
     },
     {
       "active": true,
@@ -2399,7 +2637,8 @@
         "other",
         "shader",
         "storage",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Storage Cleaner",
@@ -2409,7 +2648,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 50
+      "catalogPluginId": 50,
+      "firstPublishedAt": "2023-03-27T22:13:58Z",
+      "updatedAt": "2024-10-22T18:43:44Z"
     },
     {
       "active": true,
@@ -2429,7 +2670,8 @@
       "keywords": [
         "backup",
         "cloud",
-        "rclone"
+        "rclone",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Cloud Save",
@@ -2439,7 +2681,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 49
+      "catalogPluginId": 49,
+      "firstPublishedAt": "2023-03-19T04:41:04Z",
+      "updatedAt": "2024-09-12T07:07:01Z"
     },
     {
       "active": true,
@@ -2457,7 +2701,8 @@
       "longDescription": "Quickly Launch Non-Steam-Apps from the Quick Access menu without adding them as Shortcuts, or add them to the Steam Library.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Quick%20Launch-7c408083451947f5be988e7a1905fd731631c10b248839bb7efb50b6cc0f181c.png",
       "keywords": [
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Quick Launch",
@@ -2467,7 +2712,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 48
+      "catalogPluginId": 48,
+      "firstPublishedAt": "2023-03-17T23:13:46Z",
+      "updatedAt": "2025-12-17T18:50:14Z"
     },
     {
       "active": true,
@@ -2486,7 +2733,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Steamback-e5f4826ada525272ea82cf80307d041c8147322e7f2130f8dac24fd2f1f65021.png",
       "keywords": [
         "backup",
-        "steamback"
+        "steamback",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Steamback",
@@ -2496,7 +2744,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 46
+      "catalogPluginId": 46,
+      "firstPublishedAt": "2023-03-07T23:12:47Z",
+      "updatedAt": "2024-01-20T03:59:44Z"
     },
     {
       "active": true,
@@ -2517,7 +2767,8 @@
         "file-transfer",
         "media",
         "root",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "DeckMTP",
@@ -2526,7 +2777,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 44
+      "catalogPluginId": 44,
+      "firstPublishedAt": "2023-02-02T07:34:41Z",
+      "updatedAt": "2025-08-07T00:26:42Z"
     },
     {
       "active": true,
@@ -2544,7 +2797,8 @@
       "longDescription": "A Decky plugin to activate and deactivate Tailscale, while staying in Gaming mode.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Tailscale%20Control.png",
       "keywords": [
-        "tailscale"
+        "tailscale",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Tailscale Control",
@@ -2554,7 +2808,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 43
+      "catalogPluginId": 43,
+      "firstPublishedAt": "2023-04-12T05:16:28Z",
+      "updatedAt": "2024-04-02T21:13:38Z"
     },
     {
       "active": true,
@@ -2577,7 +2833,8 @@
         "nintendo",
         "playstation",
         "switch",
-        "xbox"
+        "xbox",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Controller Tools",
@@ -2587,7 +2844,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 40
+      "catalogPluginId": 40,
+      "firstPublishedAt": "2023-03-17T04:15:59Z",
+      "updatedAt": "2024-11-25T00:53:49Z"
     },
     {
       "active": true,
@@ -2606,7 +2865,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Volume%20Mixer-f7fabe091001ef1c0df7b6f56e70de470e7ba333904d01034008ad517eee6ed5.png",
       "keywords": [
         "media",
-        "volume"
+        "volume",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Volume Mixer",
@@ -2616,7 +2876,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 38
+      "catalogPluginId": 38,
+      "firstPublishedAt": "2023-06-17T21:06:57Z",
+      "updatedAt": "2024-01-20T03:59:56Z"
     },
     {
       "active": true,
@@ -2634,7 +2896,8 @@
       "longDescription": "Displays current Steam Deck game in Discord",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Discord%20Status-97272e072a4a387ab14f139b77c7d3e0a9e597b04b40270b7999acad958378ec.png",
       "keywords": [
-        "discord"
+        "discord",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Discord Status",
@@ -2645,7 +2908,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 37
+      "catalogPluginId": 37,
+      "firstPublishedAt": "2023-03-18T00:48:24Z",
+      "updatedAt": "2025-12-20T04:43:28Z"
     },
     {
       "active": true,
@@ -2664,7 +2929,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/SteamGridDB-1a938447c46d3d7816c87181c20b96ca438840cbdbb556c13c37cf1f923b3512.png",
       "keywords": [
         "artwork",
-        "sgdb"
+        "sgdb",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "SteamGridDB",
@@ -2674,7 +2940,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 36
+      "catalogPluginId": 36,
+      "firstPublishedAt": "2022-12-18T21:21:19Z",
+      "updatedAt": "2026-10-07T19:45:20Z"
     },
     {
       "active": true,
@@ -2695,7 +2963,8 @@
         "gamestream",
         "moondeck",
         "moonlight",
-        "streaming"
+        "streaming",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MoonDeck",
@@ -2705,7 +2974,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 35
+      "catalogPluginId": 35,
+      "firstPublishedAt": "2023-04-09T22:27:29Z",
+      "updatedAt": "2026-09-15T09:32:40Z"
     },
     {
       "active": true,
@@ -2727,7 +2998,8 @@
         "package-management",
         "root",
         "update",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "AutoFlatpaks",
@@ -2737,7 +3009,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 32
+      "catalogPluginId": 32,
+      "firstPublishedAt": "2022-12-20T12:54:21Z",
+      "updatedAt": "2025-06-29T19:22:33Z"
     },
     {
       "active": true,
@@ -2756,7 +3030,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/TunnelDeck-0c35ec89be6646bab3c29cee8d167a178452049d0a5fc8b8461670dcd9c0449b.png",
       "keywords": [
         "root",
-        "vpn"
+        "vpn",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "TunnelDeck",
@@ -2765,7 +3040,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 30
+      "catalogPluginId": 30,
+      "firstPublishedAt": "2023-03-17T18:40:15Z",
+      "updatedAt": "2024-10-22T18:12:18Z"
     },
     {
       "active": true,
@@ -2784,7 +3061,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Emuchievements-3a3fc6e73d049b216d95cfce8ca671dae88595fb2af9d73641e32e451b4bfc49.png",
       "keywords": [
         "EmuDeck",
-        "retroachievements"
+        "retroachievements",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Emuchievements",
@@ -2793,7 +3071,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 28
+      "catalogPluginId": 28,
+      "firstPublishedAt": "2023-05-15T18:35:46Z",
+      "updatedAt": "2025-07-10T19:23:00Z"
     },
     {
       "active": true,
@@ -2814,7 +3094,8 @@
         "battery",
         "power-management",
         "suspend",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "AutoSuspend",
@@ -2824,7 +3105,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 27
+      "catalogPluginId": 27,
+      "firstPublishedAt": "2022-10-27T21:44:30Z",
+      "updatedAt": "2025-12-26T23:49:40Z"
     },
     {
       "active": true,
@@ -2844,7 +3127,8 @@
       "keywords": [
         "backlog",
         "how long to beat",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "HLTB for Deck",
@@ -2854,7 +3138,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 26
+      "catalogPluginId": 26,
+      "firstPublishedAt": "2023-04-03T00:22:42Z",
+      "updatedAt": "2026-09-08T17:41:16Z"
     },
     {
       "active": true,
@@ -2874,7 +3160,8 @@
       "keywords": [
         "media",
         "music",
-        "radio"
+        "radio",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "RadiYo!",
@@ -2884,7 +3171,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 24
+      "catalogPluginId": 24,
+      "firstPublishedAt": "2023-02-26T21:06:29Z",
+      "updatedAt": "2024-03-17T01:02:39Z"
     },
     {
       "active": true,
@@ -2903,7 +3192,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Animation%20Changer-2f01eb07e607c3ebd99b7e76648bc2486910d33081fa8571a8f18f718727d8bd.png",
       "keywords": [
         "boot-animation",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Animation Changer",
@@ -2913,7 +3203,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 23
+      "catalogPluginId": 23,
+      "firstPublishedAt": "2022-10-09T22:46:29Z",
+      "updatedAt": "2025-02-10T21:25:10Z"
     },
     {
       "active": true,
@@ -2933,7 +3225,8 @@
       "keywords": [
         "cheats",
         "memory",
-        "scanmem"
+        "scanmem",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Memory Deck",
@@ -2943,7 +3236,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 22
+      "catalogPluginId": 22,
+      "firstPublishedAt": "2023-04-06T15:52:26Z",
+      "updatedAt": "2024-05-07T17:58:14Z"
     },
     {
       "active": true,
@@ -2963,7 +3258,8 @@
       "keywords": [
         "power-management",
         "root",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "PowerTools",
@@ -2972,7 +3268,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 21
+      "catalogPluginId": 21,
+      "firstPublishedAt": "2022-09-25T18:35:40Z",
+      "updatedAt": "2024-06-18T14:02:00Z"
     },
     {
       "active": true,
@@ -2995,7 +3293,8 @@
         "notebook",
         "notes",
         "scribble",
-        "write"
+        "write",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Notebook",
@@ -3005,7 +3304,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 19
+      "catalogPluginId": 19,
+      "firstPublishedAt": "2022-09-01T18:13:26Z",
+      "updatedAt": "2024-07-31T01:16:56Z"
     },
     {
       "active": true,
@@ -3024,7 +3325,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Bluetooth-c04d77cc7911ae2ed69cf648dc7066b0c27b150c3fe1043ca7d0956338464826.png",
       "keywords": [
         "bluetooth",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Bluetooth",
@@ -3033,7 +3335,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 18
+      "catalogPluginId": 18,
+      "firstPublishedAt": "2022-08-29T21:57:20Z",
+      "updatedAt": "2026-05-13T15:15:08Z"
     },
     {
       "active": true,
@@ -3053,7 +3357,8 @@
       "keywords": [
         "media",
         "music",
-        "style"
+        "style",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Audio Loader",
@@ -3063,7 +3368,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 16
+      "catalogPluginId": 16,
+      "firstPublishedAt": "2022-08-22T17:46:47Z",
+      "updatedAt": "2025-10-05T02:33:03Z"
     },
     {
       "active": true,
@@ -3081,7 +3388,8 @@
       "longDescription": "Display tappable ProtonDB badges on your game pages",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/ProtonDB%20Badges-aa57ab7fbf2d1fcbd51e8d671c7e702405df674aeac6de039f77a135c8c7586a.png",
       "keywords": [
-        "protondb"
+        "protondb",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "ProtonDB Badges",
@@ -3091,7 +3399,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 14
+      "catalogPluginId": 14,
+      "firstPublishedAt": "2023-04-01T16:53:50Z",
+      "updatedAt": "2026-10-14T08:00:23Z"
     },
     {
       "active": true,
@@ -3117,7 +3427,8 @@
         "sigstop",
         "sleep",
         "stop",
-        "suspend"
+        "suspend",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Pause Games",
@@ -3127,7 +3438,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 13
+      "catalogPluginId": 13,
+      "firstPublishedAt": "2022-08-17T20:32:47Z",
+      "updatedAt": "2026-09-02T05:19:14Z"
     },
     {
       "active": true,
@@ -3147,7 +3460,8 @@
       "keywords": [
         "fan-control",
         "root",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Fantastic",
@@ -3156,7 +3470,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 11
+      "catalogPluginId": 11,
+      "firstPublishedAt": "2022-08-08T21:02:27Z",
+      "updatedAt": "2024-03-17T01:04:49Z"
     },
     {
       "active": true,
@@ -3175,7 +3491,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/vibrantDeck-cf0a9fb5eaed94bf5ab0d94a3440ad97b1f555dfafaa21eb65e0ab2a683046b1.jpg",
       "keywords": [
         "saturation",
-        "vibrant"
+        "vibrant",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "vibrantDeck",
@@ -3184,7 +3501,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 10
+      "catalogPluginId": 10,
+      "firstPublishedAt": "2022-11-19T22:42:09Z",
+      "updatedAt": "2024-05-19T18:25:52Z"
     },
     {
       "active": true,
@@ -3202,7 +3521,9 @@
       "longDescription": "Dynamically loads themes developed with CSS into the Steam UI.",
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/CSS%20Loader-521e6e0b59bd89ba3632f15b7a1463cb96127a8a43449d487a4e49b1f1cbafe2.png",
       "keywords": [
-        "style"
+        "style",
+        "catalog-added:2026-09-04",
+        "first-release:2022-04-24"
       ],
       "aliases": [
         "CSS Loader",
@@ -3212,7 +3533,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 7
+      "catalogPluginId": 7,
+      "firstPublishedAt": "2023-04-06T02:44:54Z",
+      "updatedAt": "2024-07-06T11:37:37Z"
     },
     {
       "active": true,
@@ -3231,7 +3554,8 @@
       "coverUrl": "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/artifact_images/Example%20Plugin-1362399fcdc3b51eb6e6f670bad777244e8cce460413c188269c6be69ab6d930.png",
       "keywords": [
         "root",
-        "template"
+        "template",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Example Plugin",
@@ -3241,7 +3565,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 2
+      "catalogPluginId": 2,
+      "firstPublishedAt": "2024-07-04T01:26:10Z",
+      "updatedAt": "2024-07-04T01:26:10Z"
     },
     {
       "active": true,
@@ -3267,7 +3593,8 @@
         "viture",
         "vr",
         "xr",
-        "xreal"
+        "xreal",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "XR Gaming",
@@ -3277,7 +3604,9 @@
       "catalogStatus": "decky",
       "compatibility": "Pubblicato nel catalogo ufficiale Decky.",
       "catalogSource": "decky-store",
-      "catalogPluginId": 1
+      "catalogPluginId": 1,
+      "firstPublishedAt": "2024-01-08T16:36:17Z",
+      "updatedAt": "2026-04-02T00:44:38Z"
     },
     {
       "active": true,
@@ -3297,7 +3626,9 @@
       "keywords": [
         "ludusavi",
         "backup",
-        "saves"
+        "saves",
+        "catalog-added:2026-09-04",
+        "first-release:2026-05-31"
       ],
       "aliases": [
         "SDH Ludusavi",
@@ -3307,7 +3638,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-31T02:23:32Z",
+      "updatedAt": "2026-10-09T03:34:26Z"
     },
     {
       "active": true,
@@ -3329,7 +3662,9 @@
         "library",
         "non-steam",
         "news",
-        "activity"
+        "activity",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-17"
       ],
       "aliases": [
         "Decky Metadata",
@@ -3339,7 +3674,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-17T08:28:31Z",
+      "updatedAt": "2026-10-13T16:33:17Z"
     },
     {
       "active": true,
@@ -3364,7 +3701,9 @@
         "amazon",
         "ubisoft",
         "battlenet",
-        "multi-store"
+        "multi-store",
+        "catalog-added:2026-09-04",
+        "first-release:2026-01-04"
       ],
       "aliases": [
         "Unifideck",
@@ -3374,7 +3713,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-01-04T20:14:36Z",
+      "updatedAt": "2026-10-15T21:08:42Z"
     },
     {
       "active": true,
@@ -3394,7 +3735,9 @@
       "keywords": [
         "file-transfer",
         "network",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04",
+        "first-release:2026-01-21"
       ],
       "aliases": [
         "Friendeck",
@@ -3403,7 +3746,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-01-21T10:24:29Z",
+      "updatedAt": "2026-03-03T12:39:10Z"
     },
     {
       "active": true,
@@ -3424,7 +3769,9 @@
         "romm",
         "rom-manager",
         "retrodeck",
-        "emulation"
+        "emulation",
+        "catalog-added:2026-09-04",
+        "first-release:2026-02-16"
       ],
       "aliases": [
         "RomM Tender",
@@ -3435,7 +3782,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-02-16T10:47:02Z",
+      "updatedAt": "2026-09-14T11:39:35Z"
     },
     {
       "active": true,
@@ -3456,7 +3805,9 @@
         "amnezia",
         "root",
         "amneziawg",
-        "vpn"
+        "vpn",
+        "catalog-added:2026-09-04",
+        "first-release:2026-01-26"
       ],
       "aliases": [
         "VPN Deck",
@@ -3466,7 +3817,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-01-26T19:11:49Z",
+      "updatedAt": "2026-10-17T13:51:25Z"
     },
     {
       "active": true,
@@ -3485,7 +3838,9 @@
       "coverUrl": "https://raw.githubusercontent.com/hydralauncher/decky-hydra-launcher/main/thumb.gif",
       "keywords": [
         "hydra launcher",
-        "steam"
+        "steam",
+        "catalog-added:2026-09-04",
+        "first-release:2025-10-12"
       ],
       "aliases": [
         "Hydra Launcher",
@@ -3496,7 +3851,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2025-10-12T15:06:48Z",
+      "updatedAt": "2025-10-12T15:06:48Z"
     },
     {
       "active": true,
@@ -3516,7 +3873,9 @@
       "keywords": [
         "proton",
         "compatibility",
-        "launch-options"
+        "launch-options",
+        "catalog-added:2026-09-04",
+        "first-release:2026-04-05"
       ],
       "aliases": [
         "Proton Pulse",
@@ -3526,7 +3885,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-05T18:05:58Z",
+      "updatedAt": "2026-10-18T21:44:52Z"
     },
     {
       "active": true,
@@ -3546,7 +3907,9 @@
       "keywords": [
         "discord",
         "chat",
-        "voice"
+        "voice",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-28"
       ],
       "aliases": [
         "Steamcord",
@@ -3555,7 +3918,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-28T04:49:28Z",
+      "updatedAt": "2026-10-19T06:44:08Z"
     },
     {
       "active": true,
@@ -3575,7 +3940,9 @@
       "keywords": [
         "music",
         "qqmusic",
-        "netease"
+        "netease",
+        "catalog-added:2026-09-04",
+        "first-release:2025-12-24"
       ],
       "aliases": [
         "Decky Music",
@@ -3585,7 +3952,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2025-12-24T20:59:23Z",
+      "updatedAt": "2026-10-18T11:48:38Z"
     },
     {
       "active": true,
@@ -3608,7 +3977,9 @@
         "speech-to-text",
         "whisper",
         "accessibility",
-        "microphone"
+        "microphone",
+        "catalog-added:2026-09-04",
+        "first-release:2026-04-20"
       ],
       "aliases": [
         "VoxType",
@@ -3618,7 +3989,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-20T01:58:58Z",
+      "updatedAt": "2026-04-24T14:15:28Z"
     },
     {
       "active": true,
@@ -3640,7 +4013,9 @@
         "home-assistant",
         "audio",
         "system-status",
-        "wake-on-lan"
+        "wake-on-lan",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-19"
       ],
       "aliases": [
         "Home Assistant MQTT",
@@ -3651,7 +4026,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-19T19:53:10Z",
+      "updatedAt": "2026-07-22T18:41:57Z"
     },
     {
       "active": true,
@@ -3671,7 +4048,9 @@
       "keywords": [
         "library",
         "fun",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-21"
       ],
       "aliases": [
         "Game Roulette",
@@ -3681,7 +4060,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-21T22:19:50Z",
+      "updatedAt": "2026-07-22T22:21:06Z"
     },
     {
       "active": true,
@@ -3702,7 +4083,9 @@
         "streaming",
         "screen-share",
         "capture",
-        "casting"
+        "casting",
+        "catalog-added:2026-09-04",
+        "first-release:2026-04-10"
       ],
       "aliases": [
         "Prysm",
@@ -3712,7 +4095,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-10T12:36:48Z",
+      "updatedAt": "2026-04-10T12:36:48Z"
     },
     {
       "active": true,
@@ -3735,7 +4120,9 @@
         "asus",
         "rgb",
         "battery",
-        "performance"
+        "performance",
+        "catalog-added:2026-09-04",
+        "first-release:2025-12-27"
       ],
       "aliases": [
         "Ally Center",
@@ -3745,7 +4132,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2025-12-27T15:56:00Z",
+      "updatedAt": "2026-01-10T16:16:39Z"
     },
     {
       "active": true,
@@ -3769,7 +4158,9 @@
         "XGMobile",
         "ROG-Ally",
         "Flow",
-        "ASUS"
+        "ASUS",
+        "catalog-added:2026-09-04",
+        "first-release:2026-05-02"
       ],
       "aliases": [
         "XG Mobile Manager",
@@ -3780,7 +4171,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-02T02:42:33Z",
+      "updatedAt": "2026-07-02T01:23:50Z"
     },
     {
       "active": true,
@@ -3800,7 +4193,9 @@
       "keywords": [
         "utilities",
         "hardware",
-        "controller"
+        "controller",
+        "catalog-added:2026-09-04",
+        "first-release:2026-05-09"
       ],
       "aliases": [
         "Ally Vibe Control",
@@ -3810,7 +4205,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-09T14:19:17Z",
+      "updatedAt": "2026-06-20T06:12:33Z"
     },
     {
       "active": true,
@@ -3830,7 +4227,9 @@
       "keywords": [
         "zotac",
         "inputplumber",
-        "root"
+        "root",
+        "catalog-added:2026-09-04",
+        "first-release:2026-03-26"
       ],
       "aliases": [
         "DeckyZone",
@@ -3839,7 +4238,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-03-26T15:13:44Z",
+      "updatedAt": "2026-10-19T09:33:18Z"
     },
     {
       "active": true,
@@ -3859,7 +4260,9 @@
       "keywords": [
         "utility",
         "samba",
-        "root"
+        "root",
+        "catalog-added:2026-09-04",
+        "first-release:2026-04-03"
       ],
       "aliases": [
         "DeckSMB",
@@ -3868,7 +4271,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-03T01:43:53Z",
+      "updatedAt": "2026-04-04T03:04:54Z"
     },
     {
       "active": true,
@@ -3888,7 +4293,9 @@
       "keywords": [
         "Rumble",
         "Haptic",
-        "DRV2605"
+        "DRV2605",
+        "catalog-added:2026-09-04",
+        "first-release:2025-10-05"
       ],
       "aliases": [
         "RumbleDeck",
@@ -3897,7 +4304,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2025-10-05T12:14:22Z",
+      "updatedAt": "2025-10-05T12:14:22Z"
     },
     {
       "active": true,
@@ -3918,7 +4327,9 @@
         "controller",
         "xbox",
         "drivers",
-        "xone"
+        "xone",
+        "catalog-added:2026-09-04",
+        "first-release:2026-01-26"
       ],
       "aliases": [
         "Xone Decky Plugin",
@@ -3929,7 +4340,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-01-26T03:54:58Z",
+      "updatedAt": "2026-07-25T22:12:24Z"
     },
     {
       "active": true,
@@ -3949,7 +4362,9 @@
       "keywords": [
         "controller",
         "dualsense",
-        "bluetooth"
+        "bluetooth",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-17"
       ],
       "aliases": [
         "DS5 Linux Decky",
@@ -3960,7 +4375,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-17T14:19:01Z",
+      "updatedAt": "2026-07-09T14:45:18Z"
     },
     {
       "active": true,
@@ -3981,7 +4398,9 @@
         "root",
         "tdp",
         "power",
-        "performance"
+        "performance",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-02"
       ],
       "aliases": [
         "Panel de Control",
@@ -3991,7 +4410,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-02T21:53:01Z",
+      "updatedAt": "2026-10-18T20:40:42Z"
     },
     {
       "active": true,
@@ -4010,7 +4431,9 @@
       "coverUrl": "https://images.steamusercontent.com/ugc/12628921612687895720/62D2DA8FF0F13E28B5B3A24B200BE3236D316D35/?imw=5000&imh=5000&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false",
       "keywords": [
         "steam",
-        "achievements"
+        "achievements",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-21"
       ],
       "aliases": [
         "SteamOS Achievements",
@@ -4021,7 +4444,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-21T15:27:40Z",
+      "updatedAt": "2026-10-14T05:42:31Z"
     },
     {
       "active": true,
@@ -4044,7 +4469,9 @@
         "gaming-mode",
         "ui",
         "fixes",
-        "achievements"
+        "achievements",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-28"
       ],
       "aliases": [
         "Decky UI Restored",
@@ -4054,7 +4481,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-28T01:44:53Z",
+      "updatedAt": "2026-09-04T16:03:55Z"
     },
     {
       "active": true,
@@ -4075,7 +4504,9 @@
         "utility",
         "boot",
         "uefi",
-        "root"
+        "root",
+        "catalog-added:2026-09-04",
+        "first-release:2026-08-01"
       ],
       "aliases": [
         "Decky BootNext",
@@ -4086,7 +4517,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-01T18:00:38Z",
+      "updatedAt": "2026-08-01T18:00:38Z"
     },
     {
       "active": true,
@@ -4108,7 +4541,9 @@
         "stats",
         "multiplayer",
         "events",
-        "library badge"
+        "library badge",
+        "catalog-added:2026-09-04",
+        "first-release:2026-08-02"
       ],
       "aliases": [
         "Decky Insignia",
@@ -4119,7 +4554,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-02T16:16:16Z",
+      "updatedAt": "2026-08-03T19:39:02Z"
     },
     {
       "active": true,
@@ -4141,7 +4578,9 @@
         "emulation",
         "gaming",
         "utility",
-        "retroachievements"
+        "retroachievements",
+        "catalog-added:2026-09-04",
+        "first-release:2026-03-07"
       ],
       "aliases": [
         "RetroDECKY",
@@ -4150,7 +4589,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-03-07T20:24:32Z",
+      "updatedAt": "2026-08-15T18:26:56Z"
     },
     {
       "active": true,
@@ -4171,7 +4612,9 @@
         "utility",
         "reshade",
         "shaders",
-        "addons"
+        "addons",
+        "catalog-added:2026-09-04",
+        "first-release:2026-04-06"
       ],
       "aliases": [
         "RSM Decky",
@@ -4181,7 +4624,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-06T22:35:32Z",
+      "updatedAt": "2026-06-06T00:10:05Z"
     },
     {
       "active": true,
@@ -4201,7 +4646,9 @@
       "keywords": [
         "utilities",
         "hardware",
-        "performance"
+        "performance",
+        "catalog-added:2026-09-04",
+        "first-release:2026-05-17"
       ],
       "aliases": [
         "LeGo TDP",
@@ -4211,7 +4658,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-17T19:44:31Z",
+      "updatedAt": "2026-09-02T15:50:25Z"
     },
     {
       "active": true,
@@ -4231,7 +4680,9 @@
       "keywords": [
         "utilities",
         "hardware",
-        "controller"
+        "controller",
+        "catalog-added:2026-09-04",
+        "first-release:2026-05-12"
       ],
       "aliases": [
         "LeGo Vibe Control",
@@ -4241,7 +4692,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-12T16:58:13Z",
+      "updatedAt": "2026-07-25T19:44:05Z"
     },
     {
       "active": true,
@@ -4261,7 +4714,9 @@
       "keywords": [
         "utilities",
         "hardware",
-        "display"
+        "display",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-26"
       ],
       "aliases": [
         "LeGo2 Brightness Fix",
@@ -4271,7 +4726,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-26T20:20:29Z",
+      "updatedAt": "2026-08-06T16:27:08Z"
     },
     {
       "active": true,
@@ -4291,7 +4748,9 @@
       "keywords": [
         "networking",
         "vpn",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04",
+        "first-release:2026-06-01"
       ],
       "aliases": [
         "NordVPN Decky",
@@ -4302,7 +4761,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-01T18:58:17Z",
+      "updatedAt": "2026-07-15T18:20:21Z"
     },
     {
       "active": true,
@@ -4322,7 +4783,9 @@
       "keywords": [
         "utilities",
         "display",
-        "color"
+        "color",
+        "catalog-added:2026-09-04",
+        "first-release:2026-07-28"
       ],
       "aliases": [
         "Decky Vibrance HDR",
@@ -4332,7 +4795,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-28T20:41:10Z",
+      "updatedAt": "2026-10-10T23:32:41Z"
     },
     {
       "active": true,
@@ -4352,7 +4817,8 @@
       "keywords": [
         "achievements",
         "retroachievements",
-        "steam"
+        "steam",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Achievement Companion",
@@ -4362,7 +4828,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-18T17:01:15Z",
+      "updatedAt": "2026-10-18T19:06:12Z"
     },
     {
       "active": true,
@@ -4381,7 +4849,8 @@
       "coverUrl": "https://opengraph.githubassets.com/1/lopesleo/decktools",
       "keywords": [
         "gaming",
-        "download-manager"
+        "download-manager",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "DeckTools",
@@ -4390,7 +4859,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-03-04T19:07:04Z",
+      "updatedAt": "2026-06-04T03:51:34Z"
     },
     {
       "active": true,
@@ -4410,7 +4881,8 @@
       "keywords": [
         "utility",
         "time-tracking",
-        "playtime"
+        "playtime",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "SDH PlayTime Remix",
@@ -4420,7 +4892,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-18T04:54:04Z",
+      "updatedAt": "2026-10-19T00:14:19Z"
     },
     {
       "active": true,
@@ -4442,7 +4916,8 @@
         "usb",
         "gamepad",
         "xinput",
-        "root"
+        "root",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Controller",
@@ -4452,7 +4927,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-23T01:11:37Z",
+      "updatedAt": "2026-08-23T13:44:17Z"
     },
     {
       "active": true,
@@ -4472,7 +4949,8 @@
       "keywords": [
         "cheat",
         "trainer",
-        "proton"
+        "proton",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Cheat Engine Launcher",
@@ -4483,7 +4961,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-29T04:40:14Z",
+      "updatedAt": "2026-08-29T04:40:14Z"
     },
     {
       "active": true,
@@ -4495,7 +4975,7 @@
       "version": "1.0.2",
       "releaseAssetName": "Ayaneo3Companion-1.0.2.zip",
       "catalogReleaseUrl": "https://github.com/Rayekkk/Ayaneo3Companion/releases/download/1.0.2/Ayaneo3Companion-1.0.2.zip",
-      "releasePublishedAt": "",
+      "releasePublishedAt": "2026-08-25T17:19:01Z",
       "category": "Sistema e hardware",
       "shortDescription": "TDP, smart-amp audio, battery, controller and OLED support for AYANEO 3.",
       "longDescription": "TDP, smart-amp audio, battery, controller and OLED support for AYANEO 3.",
@@ -4503,7 +4983,8 @@
       "keywords": [
         "utilities",
         "hardware",
-        "performance"
+        "performance",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Ayaneo 3 Companion",
@@ -4514,7 +4995,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-23T20:51:35Z",
+      "updatedAt": "2026-10-10T14:23:34Z"
     },
     {
       "active": true,
@@ -4533,7 +5016,8 @@
       "coverUrl": "https://opengraph.githubassets.com/1/genc-v/mute-on-sleep",
       "keywords": [
         "audio",
-        "utility"
+        "utility",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "MuteOnSleep",
@@ -4543,7 +5027,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-14T12:20:45Z",
+      "updatedAt": "2026-04-14T12:20:45Z"
     },
     {
       "active": true,
@@ -4563,7 +5049,9 @@
       "keywords": [
         "ftp",
         "file-transfer",
-        "network"
+        "network",
+        "catalog-added:2026-09-04",
+        "first-release:2026-04-17"
       ],
       "aliases": [
         "decky-ftpd",
@@ -4572,7 +5060,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-17T13:59:51Z",
+      "updatedAt": "2026-05-20T01:01:43Z"
     },
     {
       "active": true,
@@ -4593,7 +5083,8 @@
         "achievements",
         "completion",
         "library",
-        "qol"
+        "qol",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Completionist",
@@ -4602,7 +5093,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-17T14:31:05Z",
+      "updatedAt": "2026-05-17T14:31:05Z"
     },
     {
       "active": true,
@@ -4623,7 +5116,8 @@
         "forza",
         "dualsense",
         "haptics",
-        "controller"
+        "controller",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Forza DualSense Haptics",
@@ -4633,7 +5127,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-15T19:42:08Z",
+      "updatedAt": "2026-07-15T19:42:08Z"
     },
     {
       "active": true,
@@ -4655,7 +5151,8 @@
         "automation",
         "sunshine",
         "streaming",
-        "triggers"
+        "triggers",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Docky",
@@ -4665,7 +5162,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-24T21:09:14Z",
+      "updatedAt": "2026-09-22T23:11:19Z"
     },
     {
       "active": true,
@@ -4691,7 +5190,8 @@
         "manager",
         "tools",
         "games",
-        "sideload"
+        "sideload",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Side Deck",
@@ -4701,7 +5201,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-17T11:04:34Z",
+      "updatedAt": "2026-08-20T10:46:59Z"
     },
     {
       "active": true,
@@ -4720,7 +5222,8 @@
       "coverUrl": "https://opengraph.githubassets.com/1/RedRanger14/decky-nexus",
       "keywords": [
         "mods",
-        "nexus-mods"
+        "nexus-mods",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky Nexus",
@@ -4731,7 +5234,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-17T22:48:25Z",
+      "updatedAt": "2026-10-10T10:17:00Z"
     },
     {
       "active": true,
@@ -4751,7 +5256,8 @@
       "keywords": [
         "games",
         "utility",
-        "shortcuts"
+        "shortcuts",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "CapyDeploy",
@@ -4761,7 +5267,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-02-09T20:45:55Z",
+      "updatedAt": "2026-09-13T06:53:37Z"
     },
     {
       "active": true,
@@ -4787,7 +5295,8 @@
         "fx",
         "effects",
         "reverb",
-        "compressor"
+        "compressor",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "AudioForge",
@@ -4796,7 +5305,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-03-08T08:35:49Z",
+      "updatedAt": "2026-03-16T03:01:24Z"
     },
     {
       "active": true,
@@ -4817,7 +5328,8 @@
         "library",
         "store",
         "media",
-        "reviews"
+        "reviews",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "EnhancedGV",
@@ -4826,7 +5338,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-17T18:50:47Z",
+      "updatedAt": "2026-09-24T22:49:28Z"
     },
     {
       "active": true,
@@ -4847,7 +5361,8 @@
         "reshade",
         "shaders",
         "graphics",
-        "presets"
+        "presets",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "LetMeReShadeAll",
@@ -4856,7 +5371,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-04-17T22:39:20Z",
+      "updatedAt": "2026-04-18T12:34:57Z"
     },
     {
       "active": true,
@@ -4876,7 +5393,8 @@
       "keywords": [
         "vpn",
         "netbird",
-        "network"
+        "network",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Decky NetBird",
@@ -4887,7 +5405,9 @@
       "catalogStatus": "github",
       "compatibility": "Repository ufficiale del progetto.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-18T19:22:28Z",
+      "updatedAt": "2026-08-05T08:00:05Z"
     },
     {
       "active": true,
@@ -4911,7 +5431,8 @@
         "youtube",
         "yt-dlp",
         "linux",
-        "steamos"
+        "steamos",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "ThemeDeck (Linux Version)",
@@ -4921,7 +5442,9 @@
       "catalogStatus": "github",
       "compatibility": "Versione originale per Linux e SteamOS.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2025-11-16T04:26:55Z",
+      "updatedAt": "2026-09-06T15:50:56Z"
     },
     {
       "active": true,
@@ -4943,7 +5466,8 @@
         "casting",
         "streaming",
         "video",
-        "wifi"
+        "wifi",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Deck Cast",
@@ -4953,7 +5477,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Decky Loader environments. Uses root and debug permissions for capture and streaming features.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-03T04:58:11Z",
+      "updatedAt": "2026-05-03T04:58:11Z"
     },
     {
       "active": true,
@@ -4974,7 +5500,8 @@
         "prices",
         "deals",
         "watchlist",
-        "store"
+        "store",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "GamesCheap",
@@ -4985,7 +5512,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Decky Loader environments. Price and alert features use the external gamescheap.win service.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-03T23:56:50Z",
+      "updatedAt": "2026-06-03T23:56:50Z"
     },
     {
       "active": true,
@@ -5006,7 +5535,8 @@
         "cachyos",
         "system",
         "updates",
-        "linux"
+        "linux",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "CachyOS Update",
@@ -5016,7 +5546,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires CachyOS and its cachy-update command. It is not intended for standard SteamOS installations.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-05-13T18:59:21Z",
+      "updatedAt": "2026-09-19T21:57:19Z"
     },
     {
       "active": true,
@@ -5037,7 +5569,8 @@
         "music",
         "audio",
         "bluetooth",
-        "avrcp"
+        "avrcp",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Air Deck",
@@ -5047,7 +5580,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires a paired phone with Bluetooth AVRCP support on SteamOS or a compatible Linux handheld.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-20T16:24:21Z",
+      "updatedAt": "2026-06-29T19:30:50Z"
     },
     {
       "active": true,
@@ -5070,7 +5605,8 @@
         "proton",
         "wine",
         "steamgriddb",
-        "nas"
+        "nas",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Deckyfin",
@@ -5080,7 +5616,9 @@
       "catalogStatus": "github",
       "compatibility": "Designed for SteamOS and compatible Linux gaming environments. Some setup actions modify Proton prefixes and game dependencies.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-18T14:06:54Z",
+      "updatedAt": "2026-06-23T17:46:19Z"
     },
     {
       "active": true,
@@ -5102,7 +5640,8 @@
         "warp",
         "cloudflare",
         "amneziawg",
-        "network"
+        "network",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "Warp Deck",
@@ -5112,7 +5651,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Linux handhelds. Requires root access and changes system networking.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-27T08:26:22Z",
+      "updatedAt": "2026-06-27T08:26:22Z"
     },
     {
       "active": true,
@@ -5135,7 +5676,8 @@
         "sing-box",
         "vless",
         "vmess",
-        "network"
+        "network",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "SUB Deck",
@@ -5146,7 +5688,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Linux handhelds. Requires root access and a compatible subscription provider.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-29T01:11:34Z",
+      "updatedAt": "2026-10-17T10:18:02Z"
     },
     {
       "active": true,
@@ -5168,7 +5712,8 @@
         "television",
         "remote",
         "audio",
-        "wake"
+        "wake",
+        "catalog-added:2026-09-04"
       ],
       "aliases": [
         "CEC Mote",
@@ -5178,7 +5723,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires compatible HDMI-CEC hardware and root access on SteamOS or a supported Linux gaming system.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-06-30T14:27:09Z",
+      "updatedAt": "2026-07-11T00:27:06Z"
     },
     {
       "active": true,
@@ -5211,7 +5758,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Decky Loader environments. Requires Discord authentication.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-03T05:52:21Z",
+      "updatedAt": "2026-09-04T00:05:54Z"
     },
     {
       "active": true,
@@ -5243,7 +5792,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Decky Loader environments. It can modify, move, and delete files, including game folders and Proton prefixes.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-08T19:12:08Z",
+      "updatedAt": "2026-09-08T21:28:36Z"
     },
     {
       "active": true,
@@ -5277,7 +5828,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires the separate MAKO Renderer installed through the plugin and a supported SteamOS system. Use only assets obtained from software you lawfully own.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-18T11:25:51Z",
+      "updatedAt": "2026-10-13T11:47:43Z"
     },
     {
       "active": true,
@@ -5310,7 +5863,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires root access and explicitly supported Linux handheld hardware. Incorrect power settings may reduce stability.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2023-11-16T04:46:48Z",
+      "updatedAt": "2026-09-03T02:25:55Z"
     },
     {
       "active": true,
@@ -5344,7 +5899,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires a self-hosted RomM 4.9 or newer server and RetroDECK or EmuDeck. This maintained fork installs separately from RomM Tender.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-03T01:04:07Z",
+      "updatedAt": "2026-09-18T03:36:53Z"
     },
     {
       "active": true,
@@ -5377,7 +5934,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires Steam Remote Play and another reachable Steam machine with the game installed. The release manifest enables debug mode.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-02T01:01:38Z",
+      "updatedAt": "2026-09-03T01:49:22Z"
     },
     {
       "active": true,
@@ -5410,7 +5969,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and compatible Linux handhelds. Installation and update features require root access, and the release manifest enables debug mode.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-30T19:57:34Z",
+      "updatedAt": "2026-10-12T07:54:55Z"
     },
     {
       "active": true,
@@ -5442,7 +6003,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires elevated permissions and changes game files. Use only with content you own and where local law and platform terms permit it.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-11T15:01:21Z",
+      "updatedAt": "2026-09-20T11:32:29Z"
     },
     {
       "active": true,
@@ -5474,7 +6037,9 @@
       "catalogStatus": "github",
       "compatibility": "Built for SteamOS and Steam Deck. Reads controller input devices and uses elevated permissions.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-01T12:30:37Z",
+      "updatedAt": "2026-09-02T15:38:02Z"
     },
     {
       "active": true,
@@ -5506,7 +6071,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires a personal Telegram bot token and uploads selected media to Telegram. Built for SteamOS and compatible Decky Loader environments.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-30T19:39:52Z",
+      "updatedAt": "2026-09-16T08:34:15Z"
     },
     {
       "active": true,
@@ -5540,7 +6107,9 @@
       "catalogStatus": "github",
       "compatibility": "Requires another device running a compatible LocalSend client on the same local network.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-02T05:07:12Z",
+      "updatedAt": "2026-09-02T06:50:12Z"
     },
     {
       "active": true,
@@ -5574,7 +6143,9 @@
       "catalogStatus": "github",
       "compatibility": "An early SteamOS prototype designed for MapleStory Classic. The install package is large and hardware validation is still limited.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-09-02T14:32:53Z",
+      "updatedAt": "2026-09-02T14:32:53Z"
     },
     {
       "active": true,
@@ -5608,40 +6179,9 @@
       "catalogStatus": "github",
       "compatibility": "Only for supported AMD BC-250 systems using the matching SteamOS toolkit. Requires root access and must not be installed on a standard Steam Deck.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
-    },
-    {
-      "active": true,
-      "name": "LumaDeck",
-      "installFolder": "LumaDeck",
-      "author": "jayool",
-      "repository": "jayool/LumaDeck",
-      "repositoryUrl": "https://github.com/jayool/LumaDeck",
-      "version": "0.7.5",
-      "releaseAssetName": "LumaDeck.zip",
-      "catalogReleaseUrl": "https://github.com/jayool/LumaDeck/releases/download/v0.7.5/LumaDeck.zip",
-      "releasePublishedAt": "2026-08-31T18:57:32Z",
-      "category": "Libreria e giochi",
-      "shortDescription": "Manage Steam manifests and downloads through lumalinux and SLSsteam from a Decky interface.",
-      "longDescription": "LumaDeck is a separately maintained DeckTools fork that integrates lumalinux and SLSsteam workflows into Gaming Mode for Steam manifest and download management.",
-      "coverUrl": "https://opengraph.githubassets.com/1/jayool/LumaDeck",
-      "keywords": [
-        "steam",
-        "manifests",
-        "downloads",
-        "library",
-        "lumalinux",
-        "catalog-added:2026-09-04"
-      ],
-      "aliases": [
-        "Luma Deck",
-        "LumaDeck",
-        "jayool/LumaDeck"
-      ],
-      "catalogStatus": "github",
-      "compatibility": "Designed for stable SteamOS and requires elevated permissions. Use only with accounts and content you lawfully own.",
-      "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-07-17T00:52:39Z",
+      "updatedAt": "2026-10-14T04:39:56Z"
     },
     {
       "active": true,
@@ -5676,7 +6216,1375 @@
       "catalogStatus": "github",
       "compatibility": "Requires SteamOS, Decky Loader, and a RetroAchievements account with an API key. The plugin manifest requests root access.",
       "catalogSource": "outside-store",
-      "catalogPluginId": 0
+      "catalogPluginId": 0,
+      "firstPublishedAt": "2026-08-28T05:38:52Z",
+      "updatedAt": "2026-09-16T04:42:15Z"
+    },
+    {
+      "active": true,
+      "name": "Audio Output Switcher",
+      "installFolder": "Audio Output Switcher",
+      "author": "zomars",
+      "repository": "zomars/audio-output-switcher",
+      "repositoryUrl": "https://github.com/zomars/audio-output-switcher",
+      "version": "1.3.1",
+      "releaseAssetName": "audio-output-switcher.zip",
+      "catalogReleaseUrl": "https://github.com/zomars/audio-output-switcher/releases/download/v1.3.1/audio-output-switcher.zip",
+      "releasePublishedAt": "2026-10-06T06:09:42Z",
+      "category": "Audio",
+      "shortDescription": "Switch the default audio output device from the Quick Access Menu — for docks, TVs, headsets and DACs, without going through Settings → Audio. Lists the outputs Steam exposes, switches with one tap, and moves already-playing streams over so audio follows immediately. A handheld with nothing attached has only one output to pick.",
+      "longDescription": "Switch the default audio output device from the Quick Access Menu — for docks, TVs, headsets and DACs, without going through Settings → Audio. Lists the outputs Steam exposes, switches with one tap, and moves already-playing streams over so audio follows immediately. A handheld with nothing attached has only one output to pick.",
+      "coverUrl": "https://opengraph.githubassets.com/1/zomars/audio-output-switcher",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; verificare requisiti; ",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Audio Output Switcher",
+        "zomars/audio-output-switcher"
+      ],
+      "firstPublishedAt": "2026-08-21T05:40:24Z",
+      "updatedAt": "2026-10-06T06:09:42Z"
+    },
+    {
+      "active": true,
+      "name": "ProtonDB Badges — beallio fork",
+      "installFolder": "ProtonDB Badges",
+      "author": "Schelstraete Bart",
+      "repository": "beallio/protondb-decky",
+      "repositoryUrl": "https://github.com/beallio/protondb-decky",
+      "version": "1.3.3+beallio.2",
+      "releaseAssetName": "protondb-decky.zip",
+      "catalogReleaseUrl": "https://github.com/beallio/protondb-decky/releases/download/v1.3.3+beallio.2/protondb-decky.zip",
+      "releasePublishedAt": "2026-09-03T19:33:46Z",
+      "category": "Compatibilità / ProtonDB",
+      "shortDescription": "Display tappable ProtonDB badges on your game pages",
+      "longDescription": "Display tappable ProtonDB badges on your game pages",
+      "coverUrl": "https://opengraph.githubassets.com/1/beallio/protondb-decky",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Fork della versione ufficiale: confrontare differenze e percorso di aggiornamento.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "ProtonDB Badges — beallio fork",
+        "ProtonDB Badges",
+        "beallio/protondb-decky"
+      ],
+      "firstPublishedAt": "2026-09-02T18:26:21Z",
+      "updatedAt": "2026-09-19T21:50:13Z"
+    },
+    {
+      "active": true,
+      "name": "Deck Mic Toggle",
+      "installFolder": "Deck Mic Toggle",
+      "author": "Josh",
+      "repository": "SpookyJoshua/Deck-Mic-Toggle",
+      "repositoryUrl": "https://github.com/SpookyJoshua/Deck-Mic-Toggle",
+      "version": "latest",
+      "releaseAssetName": "DeckMicToggle-main.zip",
+      "catalogReleaseUrl": "https://github.com/SpookyJoshua/Deck-Mic-Toggle/releases/download/latest/DeckMicToggle-main.zip",
+      "releasePublishedAt": "2026-09-04T22:20:01Z",
+      "category": "Audio / microfono",
+      "shortDescription": "Quickly mute or unmute the Steam Deck's built-in microphone from the Quick Access Menu.",
+      "longDescription": "Quickly mute or unmute the Steam Deck's built-in microphone from the Quick Access Menu.",
+      "coverUrl": "https://opengraph.githubassets.com/1/SpookyJoshua/Deck-Mic-Toggle",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Agisce solo sul mute PipeWire/PulseAudio; verificare il corretto rilevamento del microfono interno.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Deck Mic Toggle",
+        "SpookyJoshua/Deck-Mic-Toggle"
+      ],
+      "firstPublishedAt": "2026-09-04T22:20:01Z",
+      "updatedAt": "2026-09-04T22:20:01Z"
+    },
+    {
+      "active": true,
+      "name": "CheatDeck 2",
+      "installFolder": "CheatDeck 2",
+      "author": "ilukezippo",
+      "repository": "ilukezippo/CheatDeck2",
+      "repositoryUrl": "https://github.com/ilukezippo/CheatDeck2",
+      "version": "1.0.1",
+      "releaseAssetName": "CheatDeck2.zip",
+      "catalogReleaseUrl": "https://github.com/ilukezippo/CheatDeck2/releases/download/v1.0.1/CheatDeck2.zip",
+      "releasePublishedAt": "2026-09-10T16:50:16Z",
+      "category": "Trainer / launch options",
+      "shortDescription": "A launch options manager allows you to run games with cheats and trainers.",
+      "longDescription": "A launch options manager allows you to run games with cheats and trainers.",
+      "coverUrl": "https://opengraph.githubassets.com/1/ilukezippo/CheatDeck2",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Scarica ed esegue programmi sidecar; verificare provenienza, hash e compatibilità con anti-cheat.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "CheatDeck 2",
+        "ilukezippo/CheatDeck2"
+      ],
+      "firstPublishedAt": "2026-09-10T15:21:00Z",
+      "updatedAt": "2026-09-10T16:50:16Z"
+    },
+    {
+      "active": true,
+      "name": "DeckySales",
+      "installFolder": "DeckySales",
+      "author": "zarif98",
+      "repository": "zarif98/DeckySales",
+      "repositoryUrl": "https://github.com/zarif98/DeckySales",
+      "version": "1.2.5",
+      "releaseAssetName": "deckysales-v1.2.5.zip",
+      "catalogReleaseUrl": "https://github.com/zarif98/DeckySales/releases/download/v1.2.5/deckysales-v1.2.5.zip",
+      "releasePublishedAt": "2026-09-24T00:04:18Z",
+      "category": "Prezzi / offerte",
+      "shortDescription": "See the cheapest price available right now across ~30 stores on any Steam store page, and get notified when a wishlisted game goes on sale anywhere - not just on Steam. Forked from Deckdeals by ebdevag.",
+      "longDescription": "See the cheapest price available right now across ~30 stores on any Steam store page, and get notified when a wishlisted game goes on sale anywhere - not just on Steam. Forked from Deckdeals by ebdevag.",
+      "coverUrl": "https://opengraph.githubassets.com/1/zarif98/DeckySales",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Dipende dall'API IsThereAnyDeal e da dati di wishlist/prezzi; controllare limiti e privacy.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "DeckySales",
+        "zarif98/DeckySales"
+      ],
+      "firstPublishedAt": "2026-09-09T06:32:28Z",
+      "updatedAt": "2026-09-24T00:04:18Z"
+    },
+    {
+      "active": true,
+      "name": "SSH Switch",
+      "installFolder": "SSH Switch",
+      "author": "nicholasyoannou",
+      "repository": "nicholasyoannou/decky-ssh-switch",
+      "repositoryUrl": "https://github.com/nicholasyoannou/decky-ssh-switch",
+      "version": "0.2.2",
+      "releaseAssetName": "ssh-switch-0.2.2.zip",
+      "catalogReleaseUrl": "https://github.com/nicholasyoannou/decky-ssh-switch/releases/download/v0.2.2/ssh-switch-0.2.2.zip",
+      "releasePublishedAt": "2026-09-17T12:58:19Z",
+      "category": "Rete / SSH",
+      "shortDescription": "Turn SSH on or off, choose whether it starts at boot, and set your Steam Deck account password.",
+      "longDescription": "Turn SSH on or off, choose whether it starts at boot, and set your Steam Deck account password.",
+      "coverUrl": "https://opengraph.githubassets.com/1/nicholasyoannou/decky-ssh-switch",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Espone accesso remoto e può modificare la password dell'account; usare credenziali robuste.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "SSH Switch",
+        "nicholasyoannou/decky-ssh-switch"
+      ],
+      "firstPublishedAt": "2026-09-13T21:53:38Z",
+      "updatedAt": "2026-09-17T12:58:19Z"
+    },
+    {
+      "active": true,
+      "name": "SpeechToDeck",
+      "installFolder": "SpeechToDeck",
+      "author": "rusagent",
+      "repository": "rusagent/SpeechToDeck",
+      "repositoryUrl": "https://github.com/rusagent/SpeechToDeck",
+      "version": "0.4.0",
+      "releaseAssetName": "SpeechToDeck.zip",
+      "catalogReleaseUrl": "https://github.com/rusagent/SpeechToDeck/releases/download/v0.4.0/SpeechToDeck.zip",
+      "releasePublishedAt": "2026-09-21T06:06:46Z",
+      "category": "Accessibilità / dettatura",
+      "shortDescription": "Local voice dictation on Steam Deck: press the dictation button in the QuickAccess panel, speak, and your words are transcribed on-device and copied to the system clipboard — paste them with the Steam keyboard's Paste key. No cloud services, no automatic typing.",
+      "longDescription": "Local voice dictation on Steam Deck: press the dictation button in the QuickAccess panel, speak, and your words are transcribed on-device and copied to the system clipboard — paste them with the Steam keyboard's Paste key. No cloud services, no automatic typing.",
+      "coverUrl": "https://opengraph.githubassets.com/1/rusagent/SpeechToDeck",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Usa microfono e un runtime Voxtype precompilato dinamicamente linkato.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "SpeechToDeck",
+        "rusagent/SpeechToDeck"
+      ],
+      "firstPublishedAt": "2026-09-16T23:49:07Z",
+      "updatedAt": "2026-09-21T06:06:46Z"
+    },
+    {
+      "active": true,
+      "name": "IPv6 Enabler Plugin",
+      "installFolder": "IPv6 Enabler Plugin",
+      "author": "Seyed Pouria Mousavizadeh Tehrani",
+      "repository": "spmzt/decky-ipv6",
+      "repositoryUrl": "https://github.com/spmzt/decky-ipv6",
+      "version": "0.1.2",
+      "releaseAssetName": "IPv6.Enabler.Plugin.zip",
+      "catalogReleaseUrl": "https://github.com/spmzt/decky-ipv6/releases/download/v0.1.2/IPv6.Enabler.Plugin.zip",
+      "releasePublishedAt": "2026-10-08T17:18:03Z",
+      "category": "Rete / IPv6",
+      "shortDescription": "Enable or disable IPv6 on your Steam Deck.",
+      "longDescription": "Enable or disable IPv6 on your Steam Deck.",
+      "coverUrl": "https://opengraph.githubassets.com/1/spmzt/decky-ipv6",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Modifica in modo persistente la configurazione di rete e può interrompere la connettività.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "IPv6 Enabler Plugin",
+        "spmzt/decky-ipv6"
+      ],
+      "firstPublishedAt": "2026-09-17T08:34:37Z",
+      "updatedAt": "2026-10-08T17:18:03Z"
+    },
+    {
+      "active": true,
+      "name": "WiFi BandLock",
+      "installFolder": "WiFi BandLock",
+      "author": "JoeMossJr16",
+      "repository": "joemossjr16/Decky-WiFi-BandLock",
+      "repositoryUrl": "https://github.com/joemossjr16/Decky-WiFi-BandLock",
+      "version": "1.0.0",
+      "releaseAssetName": "WiFi-BandLock.zip",
+      "catalogReleaseUrl": "https://github.com/joemossjr16/Decky-WiFi-BandLock/releases/download/v1.0.0/WiFi-BandLock.zip",
+      "releasePublishedAt": "2026-09-22T20:57:16Z",
+      "category": "Rete / Wi-Fi",
+      "shortDescription": "Scan and force Wi-Fi connections to specific frequency bands (2.4GHz, 5GHz, 6GHz) and Access Point BSSIDs.",
+      "longDescription": "Scan and force Wi-Fi connections to specific frequency bands (2.4GHz, 5GHz, 6GHz) and Access Point BSSIDs.",
+      "coverUrl": "https://opengraph.githubassets.com/1/joemossjr16/Decky-WiFi-BandLock",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Modifica IWD/NetworkManager e il roaming; una scelta errata può lasciare il dispositivo offline.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "WiFi BandLock",
+        "joemossjr16/Decky-WiFi-BandLock"
+      ],
+      "firstPublishedAt": "2026-09-22T20:57:16Z",
+      "updatedAt": "2026-09-22T20:57:16Z"
+    },
+    {
+      "active": true,
+      "name": "Deckamine",
+      "installFolder": "Deckamine",
+      "author": "ElYarim",
+      "repository": "elyarim/deckamine",
+      "repositoryUrl": "https://github.com/elyarim/deckamine",
+      "version": "1.0.1",
+      "releaseAssetName": "deckamine.zip",
+      "catalogReleaseUrl": "https://github.com/elyarim/Deckamine/releases/download/v1.0.1/deckamine.zip",
+      "releasePublishedAt": "2026-09-27T21:33:53Z",
+      "category": "Accessibilità / sensori",
+      "shortDescription": "Animated edge dots respond to motion on SteamOS and Linux handhelds and may help reduce motion discomfort while gaming in vehicles.",
+      "longDescription": "Animated edge dots respond to motion on SteamOS and Linux handhelds and may help reduce motion discomfort while gaming in vehicles.",
+      "coverUrl": "https://opengraph.githubassets.com/1/elyarim/deckamine",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS e handheld Linux; Legge sensori IIO/evdev e crea un overlay; l'efficacia contro la cinetosi varia da persona a persona.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Deckamine",
+        "elyarim/deckamine"
+      ],
+      "firstPublishedAt": "2026-09-26T17:09:21Z",
+      "updatedAt": "2026-09-27T21:33:53Z"
+    },
+    {
+      "active": true,
+      "name": "Output Manager",
+      "installFolder": "Output Manager",
+      "author": "joeatethebeans",
+      "repository": "joeatethebeans/OutputManager",
+      "repositoryUrl": "https://github.com/joeatethebeans/OutputManager",
+      "version": "1.4.0",
+      "releaseAssetName": "Output.Manager-1.4.0.zip",
+      "catalogReleaseUrl": "https://github.com/joeatethebeans/OutputManager/releases/download/v1.4.0/Output.Manager-1.4.0.zip",
+      "releasePublishedAt": "2026-09-26T22:52:37Z",
+      "category": "Display / audio",
+      "shortDescription": "Switch Steam Gaming Mode's display and audio outputs from the Quick Access Menu.",
+      "longDescription": "Switch Steam Gaming Mode's display and audio outputs from the Quick Access Menu.",
+      "coverUrl": "https://opengraph.githubassets.com/1/joeatethebeans/OutputManager",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS con GPU AMD; Forza connettori AMDGPU e sink audio; testare con accesso fisico al pannello interno.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Output Manager",
+        "joeatethebeans/OutputManager"
+      ],
+      "firstPublishedAt": "2026-09-05T14:33:30Z",
+      "updatedAt": "2026-09-26T22:52:37Z"
+    },
+    {
+      "active": true,
+      "name": "Decky Macro",
+      "installFolder": "Decky Macro",
+      "author": "olivervbk",
+      "repository": "olivervbk/decky-macro",
+      "repositoryUrl": "https://github.com/olivervbk/decky-macro",
+      "version": "1.1.0",
+      "releaseAssetName": "decky-macro-v1.1.0.zip",
+      "catalogReleaseUrl": "https://github.com/olivervbk/decky-macro/releases/download/v1.1.0/decky-macro-v1.1.0.zip",
+      "releasePublishedAt": "2026-10-10T04:49:07Z",
+      "category": "Controller / automazione",
+      "shortDescription": "Record and replay precise gamepad macros.",
+      "longDescription": "Record and replay precise gamepad macros.",
+      "coverUrl": "https://opengraph.githubassets.com/1/olivervbk/decky-macro",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Legge /dev/input e genera input; può violare regole di giochi o servizi online.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Decky Macro",
+        "olivervbk/decky-macro"
+      ],
+      "firstPublishedAt": "2026-09-27T08:45:37Z",
+      "updatedAt": "2026-10-10T04:49:07Z"
+    },
+    {
+      "active": true,
+      "name": "Clearly Recent",
+      "installFolder": "Clearly Recent",
+      "author": "Dizg",
+      "repository": "D1zg/clearly-recent",
+      "repositoryUrl": "https://github.com/D1zg/clearly-recent",
+      "version": "1.0.0",
+      "releaseAssetName": "clearly-recent-1.0.0.zip",
+      "catalogReleaseUrl": "https://github.com/D1zg/clearly-recent/releases/download/v1.0.0/clearly-recent-1.0.0.zip",
+      "releasePublishedAt": "2026-10-03T20:09:18Z",
+      "category": "Home / libreria",
+      "shortDescription": "Hides uninstalled games from Recent Games on the Steam Deck Home screen.",
+      "longDescription": "Hides uninstalled games from Recent Games on the Steam Deck Home screen.",
+      "coverUrl": "https://opengraph.githubassets.com/1/D1zg/clearly-recent",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Patch solo frontend; può rompersi con aggiornamenti dell'interfaccia Steam.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Clearly Recent",
+        "D1zg/clearly-recent"
+      ],
+      "firstPublishedAt": "2026-10-03T20:09:18Z",
+      "updatedAt": "2026-10-03T20:09:18Z"
+    },
+    {
+      "active": true,
+      "name": "GPU Picker",
+      "installFolder": "GPU Picker",
+      "author": "Maciej Śmietanko",
+      "repository": "revenpl/decky-gpu-picker",
+      "repositoryUrl": "https://github.com/revenpl/decky-gpu-picker",
+      "version": "0.2.1",
+      "releaseAssetName": "decky-gpu-picker.zip",
+      "catalogReleaseUrl": "https://github.com/revenpl/decky-gpu-picker/releases/download/v0.2.1/decky-gpu-picker.zip",
+      "releasePublishedAt": "2026-10-07T09:34:58Z",
+      "category": "GPU / launch options",
+      "shortDescription": "Lists the Vulkan GPUs (exact device + PCI id) and copies the launch command MESA_VK_DEVICE_SELECT=\"<vendor:device>!\" %command% to the clipboard — pin a game to a specific GPU. Pure stdlib backend, no dependencies.",
+      "longDescription": "Lists the Vulkan GPUs (exact device + PCI id) and copies the launch command MESA_VK_DEVICE_SELECT=\"<vendor:device>!\" %command% to the clipboard — pin a game to a specific GPU. Pure stdlib backend, no dependencies.",
+      "coverUrl": "https://opengraph.githubassets.com/1/revenpl/decky-gpu-picker",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS multi-GPU; Il comando va incollato nelle opzioni di avvio; selezionare la GPU sbagliata può impedire l'avvio.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "GPU Picker",
+        "revenpl/decky-gpu-picker"
+      ],
+      "firstPublishedAt": "2026-10-06T21:38:57Z",
+      "updatedAt": "2026-10-07T09:34:58Z"
+    },
+    {
+      "active": true,
+      "name": "Time Changer",
+      "installFolder": "Time Changer",
+      "author": "nanwangjkl",
+      "repository": "nanwangjkl/decky-time-changer",
+      "repositoryUrl": "https://github.com/nanwangjkl/decky-time-changer",
+      "version": "0.1.13",
+      "releaseAssetName": "decky-time-changer-v0.1.13.zip",
+      "catalogReleaseUrl": "https://github.com/nanwangjkl/decky-time-changer/releases/download/v0.1.13/decky-time-changer-v0.1.13.zip",
+      "releasePublishedAt": "2026-10-19T09:48:53Z",
+      "category": "Sistema / data e ora",
+      "shortDescription": "Change the system time from Game Mode: quick offsets, custom date & time picker, and one-click NTP restore.",
+      "longDescription": "Change the system time from Game Mode: quick offsets, custom date & time picker, and one-click NTP restore.",
+      "coverUrl": "https://opengraph.githubassets.com/1/nanwangjkl/decky-time-changer",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Una data errata può influire su TLS, cloud save, DRM, achievement e sincronizzazioni.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Time Changer",
+        "nanwangjkl/decky-time-changer"
+      ],
+      "firstPublishedAt": "2026-10-10T00:17:02Z",
+      "updatedAt": "2026-10-19T10:18:40Z"
+    },
+    {
+      "active": true,
+      "name": "SpoutRemotePlay",
+      "installFolder": "SpoutRemotePlay",
+      "author": "justjoseorg",
+      "repository": "justjoseorg/SpoutRemotePlay",
+      "repositoryUrl": "https://github.com/justjoseorg/SpoutRemotePlay",
+      "version": "0.5.7",
+      "releaseAssetName": "SpoutRemotePlay-v0.5.7.zip",
+      "catalogReleaseUrl": "https://github.com/justjoseorg/SpoutRemotePlay/releases/download/v0.5.7/SpoutRemotePlay-v0.5.7.zip",
+      "releasePublishedAt": "2026-10-12T16:43:36Z",
+      "category": "Streaming / Remote Play",
+      "shortDescription": "Companion for native Steam Remote Play: wake your PC, pair once, and while you stream the game stays on a virtual display matching your handheld with your PC's other displays off (needs the SpoutRemotePlayHost app on the PC).",
+      "longDescription": "Companion for native Steam Remote Play: wake your PC, pair once, and while you stream the game stays on a virtual display matching your handheld with your PC's other displays off (needs the SpoutRemotePlayHost app on the PC).",
+      "coverUrl": "https://opengraph.githubassets.com/1/justjoseorg/SpoutRemotePlay",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS + Windows/Linux host; Richiede un host PC separato; può spegnere display fisici e offre accesso remoto/PIN opzionale.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "SpoutRemotePlay",
+        "justjoseorg/SpoutRemotePlay"
+      ],
+      "firstPublishedAt": "2026-10-09T15:55:04Z",
+      "updatedAt": "2026-10-12T16:43:36Z"
+    },
+    {
+      "active": true,
+      "name": "Quick Tab",
+      "installFolder": "Quick Tab",
+      "author": "moi952",
+      "repository": "moi952/decky-quick-tab",
+      "repositoryUrl": "https://github.com/moi952/decky-quick-tab",
+      "version": "0.1.0",
+      "releaseAssetName": "decky-quick-tab-v0.1.0.zip",
+      "catalogReleaseUrl": "https://github.com/moi952/decky-quick-tab/releases/download/v0.1.0/decky-quick-tab-v0.1.0.zip",
+      "releasePublishedAt": "2026-09-06T00:03:25Z",
+      "category": "UI / QAM",
+      "shortDescription": "Experimental: adds a dedicated icon for your own plugins directly in Steam's Quick Access Menu, instead of going through Decky's own plugin list.",
+      "longDescription": "Experimental: adds a dedicated icon for your own plugins directly in Steam's Quick Access Menu, instead of going through Decky's own plugin list.",
+      "coverUrl": "https://opengraph.githubassets.com/1/moi952/decky-quick-tab",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Sperimentale e basato su iniezione dell'interfaccia Steam; possibile incompatibilità dopo update.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Quick Tab",
+        "moi952/decky-quick-tab"
+      ],
+      "firstPublishedAt": "2026-09-06T00:03:25Z",
+      "updatedAt": "2026-09-06T00:03:25Z"
+    },
+    {
+      "active": true,
+      "name": "CE Decky",
+      "installFolder": "CE Decky",
+      "author": "Dmitry Nikolaenya",
+      "repository": "goooroooX/CE-Decky",
+      "repositoryUrl": "https://github.com/goooroooX/CE-Decky",
+      "version": "0.9.29",
+      "releaseAssetName": "CE-Decky-v0.9.29.zip",
+      "catalogReleaseUrl": "https://github.com/goooroooX/CE-Decky/releases/download/v0.9.29/CE-Decky-v0.9.29.zip",
+      "releasePublishedAt": "2026-09-23T17:25:17Z",
+      "category": "Cheat Engine / trainer",
+      "shortDescription": "Manage Cheat Engine tables and live table controls from SteamOS Game Mode.",
+      "longDescription": "Manage Cheat Engine tables and live table controls from SteamOS Game Mode.",
+      "coverUrl": "https://opengraph.githubassets.com/1/goooroooX/CE-Decky",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Può alterare processi di gioco ed entrare in conflitto con anti-cheat o termini di servizio.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "CE Decky",
+        "goooroooX/CE-Decky"
+      ],
+      "firstPublishedAt": "2026-09-14T20:43:49Z",
+      "updatedAt": "2026-09-23T17:25:17Z"
+    },
+    {
+      "active": true,
+      "name": "GabeCubeAura",
+      "installFolder": "GabeCubeAura",
+      "author": "Alyenax",
+      "repository": "Alyenax/GabeCubeAura",
+      "repositoryUrl": "https://github.com/Alyenax/GabeCubeAura",
+      "version": "1.4.0",
+      "releaseAssetName": "GabeCubeAura-v1.4.0.zip",
+      "catalogReleaseUrl": "https://github.com/Alyenax/GabeCubeAura/releases/download/v1.4.0/GabeCubeAura-v1.4.0.zip",
+      "releasePublishedAt": "2026-10-05T21:30:28Z",
+      "category": "Hardware / illuminazione",
+      "shortDescription": "Real-time audio, screen colours, artwork, custom effects, weather and status lighting for the Steam Machine light bar.",
+      "longDescription": "Real-time audio, screen colours, artwork, custom effects, weather and status lighting for the Steam Machine light bar.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Alyenax/GabeCubeAura",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "Steam Machine compatibile; Controllo hardware specifico e privilegi root; usare soltanto su dispositivi supportati.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "GabeCubeAura",
+        "Alyenax/GabeCubeAura"
+      ],
+      "firstPublishedAt": "2026-09-20T10:21:49Z",
+      "updatedAt": "2026-10-05T21:30:28Z"
+    },
+    {
+      "active": true,
+      "name": "Deck as Controller",
+      "installFolder": "Deck as Controller",
+      "author": "jmedina21",
+      "repository": "jmedina21/deck-as-controller",
+      "repositoryUrl": "https://github.com/jmedina21/deck-as-controller",
+      "version": "0.6.2",
+      "releaseAssetName": "deck-as-controller.zip",
+      "catalogReleaseUrl": "https://github.com/jmedina21/deck-as-controller/releases/download/v0.6.2/deck-as-controller.zip",
+      "releasePublishedAt": "2026-10-16T04:01:05Z",
+      "category": "Controller / Bluetooth",
+      "shortDescription": "Use your Steam Deck as a wireless Bluetooth controller for your Mac or iPad.",
+      "longDescription": "Use your Steam Deck as a wireless Bluetooth controller for your Mac or iPad.",
+      "coverUrl": "https://opengraph.githubassets.com/1/jmedina21/deck-as-controller",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS + Mac/iPad; Modifica servizi e profili Bluetooth con privilegi elevati.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Deck as Controller",
+        "jmedina21/deck-as-controller"
+      ],
+      "firstPublishedAt": "2026-09-30T16:21:18Z",
+      "updatedAt": "2026-10-16T04:01:05Z"
+    },
+    {
+      "active": true,
+      "name": "Spindeck",
+      "installFolder": "Spindeck",
+      "author": "justinca92",
+      "repository": "justinca92/spindeck",
+      "repositoryUrl": "https://github.com/justinca92/spindeck",
+      "version": "1.4.1",
+      "releaseAssetName": "spindeck-1.4.1.zip",
+      "catalogReleaseUrl": "https://github.com/justinca92/spindeck/releases/download/v1.4.1/spindeck-1.4.1.zip",
+      "releasePublishedAt": "2026-10-08T01:08:25Z",
+      "category": "Launcher / Home",
+      "shortDescription": "A rotary-wheel game launcher that replaces the Steam Deck home screen. Spin it with a trackpad circle.",
+      "longDescription": "A rotary-wheel game launcher that replaces the Steam Deck home screen. Spin it with a trackpad circle.",
+      "coverUrl": "https://opengraph.githubassets.com/1/justinca92/spindeck",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Interviene sulla schermata Home nativa e può rompersi con aggiornamenti Steam.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Spindeck",
+        "justinca92/spindeck"
+      ],
+      "firstPublishedAt": "2026-10-03T18:50:17Z",
+      "updatedAt": "2026-10-08T01:08:25Z"
+    },
+    {
+      "active": true,
+      "name": "Game Glance",
+      "installFolder": "Game Glance",
+      "author": "Michael Palma",
+      "repository": "michpalm/game-glance",
+      "repositoryUrl": "https://github.com/michpalm/game-glance",
+      "version": "3.4.0",
+      "releaseAssetName": "game-glance.zip",
+      "catalogReleaseUrl": "https://github.com/michpalm/game-glance/releases/download/v3.4.0/game-glance.zip",
+      "releasePublishedAt": "2026-10-17T15:38:36Z",
+      "category": "Libreria / metadata",
+      "shortDescription": "Immersive game page: full-screen art, HowLongToBeat times, descriptions and store info.",
+      "longDescription": "Immersive game page: full-screen art, HowLongToBeat times, descriptions and store info.",
+      "coverUrl": "https://opengraph.githubassets.com/1/michpalm/game-glance",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Patch frontend e fonti web esterne; verificare compatibilità con altri plugin della pagina gioco.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Game Glance",
+        "michpalm/game-glance"
+      ],
+      "firstPublishedAt": "2026-10-02T14:58:02Z",
+      "updatedAt": "2026-10-17T15:38:36Z"
+    },
+    {
+      "active": true,
+      "name": "Ambideck",
+      "installFolder": "Ambideck",
+      "author": "Michael Palma",
+      "repository": "michpalm/ambideck",
+      "repositoryUrl": "https://github.com/michpalm/ambideck",
+      "version": "1.2.0",
+      "releaseAssetName": "ambideck.zip",
+      "catalogReleaseUrl": "https://github.com/michpalm/ambideck/releases/download/v1.2.0/ambideck.zip",
+      "releasePublishedAt": "2026-10-15T08:32:08Z",
+      "category": "RGB / ROG Xbox Ally",
+      "shortDescription": "Ambilight for the ROG Xbox Ally: the stick lights follow what's on screen.",
+      "longDescription": "Ambilight for the ROG Xbox Ally: the stick lights follow what's on screen.",
+      "coverUrl": "https://opengraph.githubassets.com/1/michpalm/ambideck",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "ROG Xbox Ally compatibile; Controllo RGB specifico per hardware e lettura schermo con privilegi root.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Ambideck",
+        "michpalm/ambideck"
+      ],
+      "firstPublishedAt": "2026-10-03T15:40:34Z",
+      "updatedAt": "2026-10-15T08:32:08Z"
+    },
+    {
+      "active": true,
+      "name": "CSS Loader — beallio fork",
+      "installFolder": "CSS Loader",
+      "author": "DeckThemes",
+      "repository": "beallio/SDH-CssLoader",
+      "repositoryUrl": "https://github.com/beallio/SDH-CssLoader",
+      "version": "2.1.4",
+      "releaseAssetName": "SDH-CssLoader-2.1.4.zip",
+      "catalogReleaseUrl": "https://github.com/beallio/SDH-CssLoader/releases/download/v2.1.4/SDH-CssLoader-2.1.4.zip",
+      "releasePublishedAt": "2026-10-12T00:49:30Z",
+      "category": "Temi / CSS",
+      "shortDescription": "Dynamically loads themes developed with CSS into the Steam UI. For more information, visit deckthemes.com.",
+      "longDescription": "Dynamically loads themes developed with CSS into the Steam UI. For more information, visit deckthemes.com.",
+      "coverUrl": "https://opengraph.githubassets.com/1/beallio/SDH-CssLoader",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Fork di un plugin ufficiale: confrontare versione, audit e percorso di aggiornamento.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "CSS Loader — beallio fork",
+        "CSS Loader",
+        "beallio/SDH-CssLoader"
+      ],
+      "firstPublishedAt": "2026-10-12T00:49:30Z",
+      "updatedAt": "2026-10-12T00:49:30Z"
+    },
+    {
+      "active": true,
+      "name": "Legion Go 2 Companion",
+      "installFolder": "Legion Go 2 Companion",
+      "author": "Rayek",
+      "repository": "Rayekkk/LegionGo2Companion",
+      "repositoryUrl": "https://github.com/Rayekkk/LegionGo2Companion",
+      "version": "2.2.0",
+      "releaseAssetName": "LegionGo2Companion-2.2.0.zip",
+      "catalogReleaseUrl": "https://github.com/Rayekkk/LegionGo2Companion/releases/download/2.2.0/LegionGo2Companion-2.2.0.zip",
+      "releasePublishedAt": "2026-10-18T19:50:06Z",
+      "category": "Hardware / Legion Go 2",
+      "shortDescription": "Tune power, cooling and vibration, personalise lighting and buttons, manage charging, and check your display and Wi-Fi without leaving Gaming Mode.",
+      "longDescription": "Tune power, cooling and vibration, personalise lighting and buttons, manage charging, and check your display and Wi-Fi without leaving Gaming Mode.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Rayekkk/LegionGo2Companion",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "Lenovo Legion Go 2; Suite hardware molto ampia con privilegi root; usarla solo sul Legion Go 2.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Legion Go 2 Companion",
+        "Rayekkk/LegionGo2Companion"
+      ],
+      "firstPublishedAt": "2026-09-06T21:38:26Z",
+      "updatedAt": "2026-10-18T19:50:06Z"
+    },
+    {
+      "active": true,
+      "name": "SpotiDeck",
+      "installFolder": "SpotiDeck",
+      "author": "Rayek",
+      "repository": "Rayekkk/SpotiDeck",
+      "repositoryUrl": "https://github.com/Rayekkk/SpotiDeck",
+      "version": "1.1.1",
+      "releaseAssetName": "SpotiDeck-1.1.1.zip",
+      "catalogReleaseUrl": "https://github.com/Rayekkk/SpotiDeck/releases/download/1.1.1/SpotiDeck-1.1.1.zip",
+      "releasePublishedAt": "2026-09-15T17:29:39Z",
+      "category": "Musica / Spotify",
+      "shortDescription": "Spotify playback, search and your library inside Decky.",
+      "longDescription": "Spotify playback, search and your library inside Decky.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Rayekkk/SpotiDeck",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Richiede Spotify Premium e un Client ID; la riproduzione locale può richiedere un'ulteriore API key.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "SpotiDeck",
+        "Rayekkk/SpotiDeck"
+      ],
+      "firstPublishedAt": "2026-09-06T21:21:23Z",
+      "updatedAt": "2026-09-15T17:29:39Z"
+    },
+    {
+      "active": true,
+      "name": "DeckyEQ",
+      "installFolder": "DeckyEQ",
+      "author": "Rayek",
+      "repository": "Rayekkk/DeckyEQ",
+      "repositoryUrl": "https://github.com/Rayekkk/DeckyEQ",
+      "version": "1.0.0",
+      "releaseAssetName": "DeckyEQ-1.0.0.zip",
+      "catalogReleaseUrl": "https://github.com/Rayekkk/DeckyEQ/releases/download/1.0.0/DeckyEQ-1.0.0.zip",
+      "releasePublishedAt": "2026-09-07T19:52:39Z",
+      "category": "Audio / equalizzatore",
+      "shortDescription": "A live equalizer, bass and treble controls, and your own presets inside Gaming Mode.",
+      "longDescription": "A live equalizer, bass and treble controls, and your own presets inside Gaming Mode.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Rayekkk/DeckyEQ",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Modifica la catena audio PipeWire; verificare latenza, clipping e compatibilità con sink esterni.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "DeckyEQ",
+        "Rayekkk/DeckyEQ"
+      ],
+      "firstPublishedAt": "2026-09-07T19:52:39Z",
+      "updatedAt": "2026-09-07T19:52:39Z"
+    },
+    {
+      "active": true,
+      "name": "DeckyClocker",
+      "installFolder": "DeckyClocker",
+      "author": "Jaccident",
+      "repository": "Jaccident/DeckyClocker",
+      "repositoryUrl": "https://github.com/Jaccident/DeckyClocker",
+      "version": "1.0.0-rc3",
+      "releaseAssetName": "DeckyClocker.v1.0.0-rc3-release.zip",
+      "catalogReleaseUrl": "https://github.com/Jaccident/DeckyClocker/releases/download/v1.0.0-rc3/DeckyClocker.v1.0.0-rc3-release.zip",
+      "releasePublishedAt": "2026-10-18T22:20:54Z",
+      "category": "Sistema / data e ora",
+      "shortDescription": "Manually set the system date and time",
+      "longDescription": "Manually set the system date and time",
+      "coverUrl": "https://opengraph.githubassets.com/1/Jaccident/DeckyClocker",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS; Un orologio errato può interrompere TLS, login, cloud save, DRM e sincronizzazioni. Richiede privilegi root.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "DeckyClocker",
+        "Jaccident/DeckyClocker"
+      ],
+      "firstPublishedAt": "2026-10-18T21:19:33Z",
+      "updatedAt": "2026-10-18T22:20:54Z"
+    },
+    {
+      "active": true,
+      "name": "Decky Direct Updater",
+      "installFolder": "Decky Direct Updater",
+      "author": "nukeador",
+      "repository": "nukeador/deckyup",
+      "repositoryUrl": "https://github.com/nukeador/deckyup",
+      "version": "0.2.6",
+      "releaseAssetName": "Decky-Direct-Updater.zip",
+      "catalogReleaseUrl": "https://github.com/nukeador/deckyup/releases/download/v0.2.6/Decky-Direct-Updater.zip",
+      "releasePublishedAt": "2026-10-18T22:57:32Z",
+      "category": "Gestione plugin / aggiornamenti",
+      "shortDescription": "Keep your Decky plugins up to date directly from their developers.",
+      "longDescription": "Keep your Decky plugins up to date directly from their developers.",
+      "coverUrl": "https://opengraph.githubassets.com/1/nukeador/deckyup",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Può installare aggiornamenti che non sono passati dalla revisione dello Store ufficiale; verificare sempre repository, firma e changelog.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Decky Direct Updater",
+        "nukeador/deckyup"
+      ],
+      "firstPublishedAt": "2026-10-17T12:13:52Z",
+      "updatedAt": "2026-10-18T22:57:32Z"
+    },
+    {
+      "active": true,
+      "name": "Proton VPN (Unofficial)",
+      "installFolder": "Proton VPN Unofficial",
+      "author": "acestronautical",
+      "repository": "acestronautical/decky-protonvpn",
+      "repositoryUrl": "https://github.com/acestronautical/decky-protonvpn",
+      "version": "0.1.0",
+      "releaseAssetName": "decky-protonvpn-v0.1.0.zip",
+      "catalogReleaseUrl": "https://github.com/acestronautical/decky-protonvpn/releases/download/v0.1.0/decky-protonvpn-v0.1.0.zip",
+      "releasePublishedAt": "2026-10-16T06:53:47Z",
+      "category": "Rete / VPN",
+      "shortDescription": "Unofficial Decky integration for Proton VPN. Not affiliated with or endorsed by Proton AG.",
+      "longDescription": "Unofficial Decky integration for Proton VPN. Not affiliated with or endorsed by Proton AG.",
+      "coverUrl": "https://opengraph.githubassets.com/1/acestronautical/decky-protonvpn",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS + Proton VPN Flatpak; Autenticazione, routing, DNS e IPv6 non sono certificati; alcuni test di leak, reboot e prima installazione restano incompleti.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Proton VPN (Unofficial)",
+        "Proton VPN Unofficial",
+        "acestronautical/decky-protonvpn"
+      ],
+      "firstPublishedAt": "2026-10-16T06:53:47Z",
+      "updatedAt": "2026-10-16T06:53:47Z"
+    },
+    {
+      "active": true,
+      "name": "YouTube PiP",
+      "installFolder": "YouTube PiP",
+      "author": "SANSO",
+      "repository": "otisabiburada/decky-video-pip",
+      "repositoryUrl": "https://github.com/otisabiburada/decky-video-pip",
+      "version": "0.6.0",
+      "releaseAssetName": "video-pip-v0.6.0.zip",
+      "catalogReleaseUrl": "https://github.com/otisabiburada/decky-video-pip/releases/download/0.6.0/video-pip-v0.6.0.zip",
+      "releasePublishedAt": "2026-10-17T12:02:06Z",
+      "category": "Video / picture-in-picture",
+      "shortDescription": "Watch YouTube in a small window over your game. Cast from the YouTube app on your phone, or paste a link.",
+      "longDescription": "Watch YouTube in a small window over your game. Cast from the YouTube app on your phone, or paste a link.",
+      "coverUrl": "https://opengraph.githubassets.com/1/otisabiburada/decky-video-pip",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Utilizza API e componenti interni non documentati di Steam; un aggiornamento del client può interrompere l'overlay.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "YouTube PiP",
+        "otisabiburada/decky-video-pip"
+      ],
+      "firstPublishedAt": "2026-10-17T12:02:06Z",
+      "updatedAt": "2026-10-17T12:02:06Z"
+    },
+    {
+      "active": true,
+      "name": "Bluetooth Order",
+      "installFolder": "Bluetooth Order",
+      "author": "JediRhymeTrix",
+      "repository": "JediRhymeTrix/decky-bluetooth-order",
+      "repositoryUrl": "https://github.com/JediRhymeTrix/decky-bluetooth-order",
+      "version": "0.1.0",
+      "releaseAssetName": "bluetooth-order.zip",
+      "catalogReleaseUrl": "https://github.com/JediRhymeTrix/decky-bluetooth-order/releases/download/v0.1.0/bluetooth-order.zip",
+      "releasePublishedAt": "2026-10-12T03:29:05Z",
+      "category": "Bluetooth / interfaccia",
+      "shortDescription": "Choose recent connections or alphabetical ordering for Steam's native Bluetooth device lists in Quick Access and Settings.",
+      "longDescription": "Choose recent connections or alphabetical ordering for Steam's native Bluetooth device lists in Quick Access and Settings.",
+      "coverUrl": "https://opengraph.githubassets.com/1/JediRhymeTrix/decky-bluetooth-order",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Decky; Patching dell'interfaccia Steam: possibili incompatibilità con TabMaster o futuri aggiornamenti della UI.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Bluetooth Order",
+        "JediRhymeTrix/decky-bluetooth-order"
+      ],
+      "firstPublishedAt": "2026-10-12T03:29:05Z",
+      "updatedAt": "2026-10-12T03:29:05Z"
+    },
+    {
+      "active": true,
+      "name": "Deck as Capture Card",
+      "installFolder": "Deck as Capture Card",
+      "author": "filesfor",
+      "repository": "filesfor/decky-capture",
+      "repositoryUrl": "https://github.com/filesfor/decky-capture",
+      "version": "0.1.0",
+      "releaseAssetName": "decky-capture.zip",
+      "catalogReleaseUrl": "https://github.com/filesfor/decky-capture/releases/download/v0.1.0/decky-capture.zip",
+      "releasePublishedAt": "2026-10-19T05:18:31Z",
+      "category": "USB / cattura video",
+      "shortDescription": "Presents the Deck's own screen to a host as a USB camera, over one cable, with no capture hardware.",
+      "longDescription": "Presents the Deck's own screen to a host as a USB camera, over one cable, with no capture hardware.",
+      "coverUrl": "https://opengraph.githubassets.com/1/filesfor/decky-capture",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS in Desktop Mode; hardware da verificare; Codice dichiarato integralmente AI, mai eseguito su hardware; Game Mode non è supportato e il modulo UVC gadget potrebbe mancare.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Deck as Capture Card",
+        "filesfor/decky-capture"
+      ],
+      "firstPublishedAt": "2026-10-19T05:18:31Z",
+      "updatedAt": "2026-10-19T05:18:31Z"
+    },
+    {
+      "active": true,
+      "name": "Deck as Display",
+      "installFolder": "Deck as Display",
+      "author": "filesfor",
+      "repository": "filesfor/decky-display",
+      "repositoryUrl": "https://github.com/filesfor/decky-display",
+      "version": "0.1.0",
+      "releaseAssetName": "decky-display.zip",
+      "catalogReleaseUrl": "https://github.com/filesfor/decky-display/releases/download/v0.1.0/decky-display.zip",
+      "releasePublishedAt": "2026-10-19T05:18:28Z",
+      "category": "USB / display e capture card",
+      "shortDescription": "Use the Steam Deck's screen as a display for another machine, via a USB capture adapter.",
+      "longDescription": "Use the Steam Deck's screen as a display for another machine, via a USB capture adapter.",
+      "coverUrl": "https://opengraph.githubassets.com/1/filesfor/decky-display",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS in Desktop Mode + capture card UVC; Codice dichiarato integralmente AI e non provato; richiede una capture card UVC e può sottrarre il DRM master a Gamescope.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Deck as Display",
+        "filesfor/decky-display"
+      ],
+      "firstPublishedAt": "2026-10-19T05:18:28Z",
+      "updatedAt": "2026-10-19T05:18:28Z"
+    },
+    {
+      "active": true,
+      "name": "DeckyMods",
+      "installFolder": "DeckyMods",
+      "author": "DeckyMods Contributors",
+      "repository": "18798aa12/DeckyMods",
+      "repositoryUrl": "https://github.com/18798aa12/DeckyMods",
+      "version": "0.2.14",
+      "releaseAssetName": "DeckyMods-v0.2.14.zip",
+      "catalogReleaseUrl": "https://github.com/18798aa12/DeckyMods/releases/download/v0.2.14/DeckyMods-v0.2.14.zip",
+      "releasePublishedAt": "2026-10-19T03:17:21Z",
+      "category": "Modding / Nexus Mods",
+      "shortDescription": "SteamOS 游戏 MOD 下载、安装与可恢复的启停管理。",
+      "longDescription": "SteamOS 游戏 MOD 下载、安装与可恢复的启停管理。",
+      "coverUrl": "https://opengraph.githubassets.com/1/18798aa12/DeckyMods",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Gestisce credenziali, protocolli NXM e file dei giochi; l'ultima release non risulta validata su un vero Steam Deck.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "DeckyMods",
+        "18798aa12/DeckyMods"
+      ],
+      "firstPublishedAt": "2026-10-19T01:54:36Z",
+      "updatedAt": "2026-10-19T03:17:21Z"
+    },
+    {
+      "active": true,
+      "name": "Decky MultiFrameGen",
+      "installFolder": "Decky MultiFrameGen",
+      "author": "MWGIH",
+      "repository": "MWGIH/DeckyMultiFrameGen",
+      "repositoryUrl": "https://github.com/MWGIH/DeckyMultiFrameGen",
+      "version": "0.6.1",
+      "releaseAssetName": "Decky-MultiFrameGen.zip",
+      "catalogReleaseUrl": "https://github.com/MWGIH/DeckyMultiFrameGen/releases/download/v0.6.1/Decky-MultiFrameGen.zip",
+      "releasePublishedAt": "2026-10-18T20:04:37Z",
+      "category": "Grafica / frame generation",
+      "shortDescription": "Install OptiScaler, HelixSR and MAKO from their own releases and choose which one each game uses.",
+      "longDescription": "Install OptiScaler, HelixSR and MAKO from their own releases and choose which one each game uses.",
+      "coverUrl": "https://opengraph.githubassets.com/1/MWGIH/DeckyMultiFrameGen",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Modifica file di gioco, componenti grafici e opzioni di lancio; può causare crash, ban anti-cheat o incompatibilità con Proton.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Decky MultiFrameGen",
+        "MWGIH/DeckyMultiFrameGen"
+      ],
+      "firstPublishedAt": "2026-10-18T00:21:07Z",
+      "updatedAt": "2026-10-18T20:04:37Z"
+    },
+    {
+      "active": true,
+      "name": "Nothing Ear",
+      "installFolder": "Nothing Ear",
+      "author": "Jose",
+      "repository": "Josemolivaresc/decky-nothing-ear",
+      "repositoryUrl": "https://github.com/Josemolivaresc/decky-nothing-ear",
+      "version": "0.3.2",
+      "releaseAssetName": "nothing-ear-deck.zip",
+      "catalogReleaseUrl": "https://github.com/Josemolivaresc/decky-nothing-ear/releases/download/v0.3.2/nothing-ear-deck.zip",
+      "releasePublishedAt": "2026-10-12T19:40:07Z",
+      "category": "Audio / auricolari Bluetooth",
+      "shortDescription": "Control your Nothing and CMF earbuds: battery, noise control, low latency, EQ, gestures and more.",
+      "longDescription": "Control your Nothing and CMF earbuds: battery, noise control, low latency, EQ, gestures and more.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Josemolivaresc/decky-nothing-ear",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS + auricolari compatibili; Controllo Bluetooth proprietario con backend root; verificare modello e firmware degli auricolari.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Nothing Ear",
+        "Josemolivaresc/decky-nothing-ear"
+      ],
+      "firstPublishedAt": "2026-10-12T19:40:07Z",
+      "updatedAt": "2026-10-12T19:40:07Z"
+    },
+    {
+      "active": true,
+      "name": "External Storage Guard",
+      "installFolder": "External Storage Guard",
+      "author": "ohxiaoguang",
+      "repository": "ohxiaoguang/decky-external-storage-guard",
+      "repositoryUrl": "https://github.com/ohxiaoguang/decky-external-storage-guard",
+      "version": "0.5.5",
+      "releaseAssetName": "External-Storage-Guard.zip",
+      "catalogReleaseUrl": "https://github.com/ohxiaoguang/decky-external-storage-guard/releases/download/v0.5.5/External-Storage-Guard.zip",
+      "releasePublishedAt": "2026-10-18T18:50:47Z",
+      "category": "Storage / mount e diagnostica",
+      "shortDescription": "外部存储分区安全卸载和挂载，直接查看与复制原始系统日志。",
+      "longDescription": "外部存储分区安全卸载和挂载，直接查看与复制原始系统日志。",
+      "coverUrl": "https://opengraph.githubassets.com/1/ohxiaoguang/decky-external-storage-guard",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite con UDisks 2.10+; Usa UDisks e privilegi root; una gestione errata di mount o unità può provocare perdita o corruzione dei dati.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "External Storage Guard",
+        "ohxiaoguang/decky-external-storage-guard"
+      ],
+      "firstPublishedAt": "2026-10-18T10:33:48Z",
+      "updatedAt": "2026-10-18T18:50:47Z"
+    },
+    {
+      "active": true,
+      "name": "SAM",
+      "installFolder": "SAM",
+      "author": "viktor",
+      "repository": "Kowalski-coder/SAM-for-Decky-Loader",
+      "repositoryUrl": "https://github.com/Kowalski-coder/SAM-for-Decky-Loader",
+      "version": "1.0.0",
+      "releaseAssetName": "SAM.zip",
+      "catalogReleaseUrl": "https://github.com/Kowalski-coder/SAM-for-Decky-Loader/releases/download/v1.0.0/SAM.zip",
+      "releasePublishedAt": "2026-10-13T11:53:03Z",
+      "category": "Achievement / modifica stato",
+      "shortDescription": "Steam Achievement Manager (SAM) для Steam Deck с интеллектуальной защитой от бана.",
+      "longDescription": "Steam Achievement Manager (SAM) для Steam Deck с интеллектуальной защитой от бана.",
+      "coverUrl": "https://opengraph.githubassets.com/1/Kowalski-coder/SAM-for-Decky-Loader",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Steam Deck; La modifica artificiale degli achievement può violare regole di giochi, community o servizi. Nessuna protezione può garantire assenza di sanzioni.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "SAM",
+        "Kowalski-coder/SAM-for-Decky-Loader"
+      ],
+      "firstPublishedAt": "2026-10-13T11:53:03Z",
+      "updatedAt": "2026-10-13T11:53:03Z"
+    },
+    {
+      "active": true,
+      "name": "Upscaler Decky",
+      "installFolder": "Upscaler Decky",
+      "author": "Upscaler Decky contributors",
+      "repository": "supercleans/Upscaler-Decky",
+      "repositoryUrl": "https://github.com/supercleans/Upscaler-Decky",
+      "version": "0.1.29",
+      "releaseAssetName": "Upscaler-Decky-0.1.29.zip",
+      "catalogReleaseUrl": "https://github.com/supercleans/Upscaler-Decky/releases/download/v0.1.29/Upscaler-Decky-0.1.29.zip",
+      "releasePublishedAt": "2026-10-15T02:08:48Z",
+      "category": "Grafica / upscaling",
+      "shortDescription": "Per-game HelixSR and FSR 4 management, compatibility assessment, updates and rendering diagnostics.",
+      "longDescription": "Per-game HelixSR and FSR 4 management, compatibility assessment, updates and rendering diagnostics.",
+      "coverUrl": "https://opengraph.githubassets.com/1/supercleans/Upscaler-Decky",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Installa sostituzioni grafiche e modifica opzioni Proton; controllare anti-cheat, backup e compatibilità per titolo.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Upscaler Decky",
+        "supercleans/Upscaler-Decky"
+      ],
+      "firstPublishedAt": "2026-10-13T05:01:21Z",
+      "updatedAt": "2026-10-15T02:08:48Z"
+    },
+    {
+      "active": true,
+      "name": "DeckyProxy",
+      "installFolder": "DeckyProxy",
+      "author": "DeckyProxy Contributors",
+      "repository": "18798aa12/DeckyProxy",
+      "repositoryUrl": "https://github.com/18798aa12/DeckyProxy",
+      "version": "0.2.3",
+      "releaseAssetName": "DeckyProxy-0.2.3.zip",
+      "catalogReleaseUrl": "https://github.com/18798aa12/DeckyProxy/releases/download/v0.2.3/DeckyProxy-0.2.3.zip",
+      "releasePublishedAt": "2026-10-17T19:54:27Z",
+      "category": "Rete / proxy e TUN",
+      "shortDescription": "Steam Deck 的 Mihomo 代理管理：订阅、节点切换与 TUN。",
+      "longDescription": "Steam Deck 的 Mihomo 代理管理：订阅、节点切换与 TUN。",
+      "coverUrl": "https://opengraph.githubassets.com/1/18798aa12/DeckyProxy",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Interviene su DNS, routing, TUN e traffico globale con privilegi root; verificare origine delle subscription e protezione delle credenziali.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "DeckyProxy",
+        "18798aa12/DeckyProxy"
+      ],
+      "firstPublishedAt": "2026-10-17T17:43:40Z",
+      "updatedAt": "2026-10-17T19:54:27Z"
+    },
+    {
+      "active": true,
+      "name": "Decky WhatsApp",
+      "installFolder": "Decky WhatsApp",
+      "author": "DeckyWhatsapp",
+      "repository": "db452/DeckyWhatsapp",
+      "repositoryUrl": "https://github.com/db452/DeckyWhatsapp",
+      "version": "1.1.0",
+      "releaseAssetName": "decky-whatsapp-decky-plugin-v1.1.0.zip",
+      "catalogReleaseUrl": "https://github.com/db452/DeckyWhatsapp/releases/download/v1.1.0/decky-whatsapp-decky-plugin-v1.1.0.zip",
+      "releasePublishedAt": "2026-10-18T08:20:47Z",
+      "category": "Messaggistica / companion PC",
+      "shortDescription": "Read and reply to WhatsApp messages from Gaming Mode through a PC bridge.",
+      "longDescription": "Read and reply to WhatsApp messages from Gaming Mode through a PC bridge.",
+      "coverUrl": "https://opengraph.githubassets.com/1/db452/DeckyWhatsapp",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS + PC companion; Richiede bridge PC, Node.js e tunnel SSH; tratta contenuti e sessioni WhatsApp personali.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Decky WhatsApp",
+        "db452/DeckyWhatsapp"
+      ],
+      "firstPublishedAt": "2026-10-14T12:07:58Z",
+      "updatedAt": "2026-10-18T08:20:47Z"
+    },
+    {
+      "active": true,
+      "name": "Finally 3D Game Cases",
+      "installFolder": "Finally 3D Game Cases",
+      "author": "SANSO",
+      "repository": "otisabiburada/finally-3d-game-cases-plugin",
+      "repositoryUrl": "https://github.com/otisabiburada/finally-3d-game-cases-plugin",
+      "version": "1.11.1",
+      "releaseAssetName": "Finally-3D-Game-Cases-v1.11.1.zip",
+      "catalogReleaseUrl": "https://github.com/otisabiburada/finally-3d-game-cases-plugin/releases/download/1.11.1/Finally-3D-Game-Cases-v1.11.1.zip",
+      "releasePublishedAt": "2026-10-17T08:16:16Z",
+      "category": "Personalizzazione / libreria",
+      "shortDescription": "Turns the portrait covers in your Gaming Mode library and Home into tilted 3D game cases with a spine, sleeve, gloss and shadow. Per-game and per-collection console looks, wear, works with non-Steam games.",
+      "longDescription": "Turns the portrait covers in your Gaming Mode library and Home into tilted 3D game cases with a spine, sleeve, gloss and shadow. Per-game and per-collection console looks, wear, works with non-Steam games.",
+      "coverUrl": "https://opengraph.githubassets.com/1/otisabiburada/finally-3d-game-cases-plugin",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Modifica profondamente il DOM di Steam; può entrare in conflitto con CSS Loader e altri plugin della libreria.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Finally 3D Game Cases",
+        "otisabiburada/finally-3d-game-cases-plugin"
+      ],
+      "firstPublishedAt": "2026-10-12T07:03:37Z",
+      "updatedAt": "2026-10-17T08:16:16Z"
+    },
+    {
+      "active": true,
+      "name": "Finally Screenshot Sound",
+      "installFolder": "Finally Screenshot Sound",
+      "author": "Finally",
+      "repository": "otisabiburada/finally-screenshot-sound",
+      "repositoryUrl": "https://github.com/otisabiburada/finally-screenshot-sound",
+      "version": "1.0.1",
+      "releaseAssetName": "Finally-Screenshot-Sound-v1.0.1.zip",
+      "catalogReleaseUrl": "https://github.com/otisabiburada/finally-screenshot-sound/releases/download/1.0.1/Finally-Screenshot-Sound-v1.0.1.zip",
+      "releasePublishedAt": "2026-10-13T04:50:36Z",
+      "category": "Screenshot / audio",
+      "shortDescription": "Plays a sound when you take a screenshot in Game Mode.",
+      "longDescription": "Plays a sound when you take a screenshot in Game Mode.",
+      "coverUrl": "https://opengraph.githubassets.com/1/otisabiburada/finally-screenshot-sound",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Patch leggera legata agli eventi screenshot; può richiedere aggiornamenti dopo modifiche del client Steam.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Finally Screenshot Sound",
+        "otisabiburada/finally-screenshot-sound"
+      ],
+      "firstPublishedAt": "2026-10-13T04:50:36Z",
+      "updatedAt": "2026-10-13T04:50:36Z"
+    },
+    {
+      "active": true,
+      "name": "Steamder",
+      "installFolder": "Steamder",
+      "author": "SANSO",
+      "repository": "otisabiburada/steamder",
+      "repositoryUrl": "https://github.com/otisabiburada/steamder",
+      "version": "1.4.3",
+      "releaseAssetName": "Steamder-v1.4.3.zip",
+      "catalogReleaseUrl": "https://github.com/otisabiburada/steamder/releases/download/1.4.3/Steamder-v1.4.3.zip",
+      "releasePublishedAt": "2026-10-18T05:33:59Z",
+      "category": "Libreria / scoperta giochi",
+      "shortDescription": "A dating app for your Steam library. Swipe right on games you want to play, left on the ones you'll ghost.",
+      "longDescription": "A dating app for your Steam library. Swipe right on games you want to play, left on the ones you'll ghost.",
+      "coverUrl": "https://opengraph.githubassets.com/1/otisabiburada/steamder",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Legge e presenta dati della libreria; patch UI soggetta ai cambiamenti del client Steam.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Steamder",
+        "otisabiburada/steamder"
+      ],
+      "firstPublishedAt": "2026-10-13T04:37:45Z",
+      "updatedAt": "2026-10-18T05:33:59Z"
+    },
+    {
+      "active": true,
+      "name": "Game Picks",
+      "installFolder": "Game Picks",
+      "author": "SANSO",
+      "repository": "otisabiburada/finally-game-picks",
+      "repositoryUrl": "https://github.com/otisabiburada/finally-game-picks",
+      "version": "1.3.5",
+      "releaseAssetName": "Game-Picks-v1.3.5.zip",
+      "catalogReleaseUrl": "https://github.com/otisabiburada/finally-game-picks/releases/download/1.3.5/Game-Picks-v1.3.5.zip",
+      "releasePublishedAt": "2026-10-13T04:39:46Z",
+      "category": "Libreria / raccomandazioni",
+      "shortDescription": "Learns what you play most and recommends games you own but haven't tried, and new games you may like.",
+      "longDescription": "Learns what you play most and recommends games you own but haven't tried, and new games you may like.",
+      "coverUrl": "https://opengraph.githubassets.com/1/otisabiburada/finally-game-picks",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Elabora dati della libreria e delle sessioni; verificare le fonti esterne usate per eventuali consigli di nuovi giochi.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Game Picks",
+        "otisabiburada/finally-game-picks"
+      ],
+      "firstPublishedAt": "2026-10-13T04:39:46Z",
+      "updatedAt": "2026-10-13T04:39:46Z"
+    },
+    {
+      "active": true,
+      "name": "Finally Game Recorder",
+      "installFolder": "Finally Game Recorder",
+      "author": "otisabi",
+      "repository": "otisabiburada/finally-game-replay-recorder",
+      "repositoryUrl": "https://github.com/otisabiburada/finally-game-replay-recorder",
+      "version": "1.12.0",
+      "releaseAssetName": "Finally.Game.Recorder.1.12.0.zip",
+      "catalogReleaseUrl": "https://github.com/otisabiburada/finally-game-replay-recorder/releases/download/1.12.0/Finally.Game.Recorder.1.12.0.zip",
+      "releasePublishedAt": "2026-10-13T04:11:31Z",
+      "category": "Registrazione / replay buffer",
+      "shortDescription": "Record gameplay in Game Mode with a replay buffer, clip shortcut, game audio and microphone.",
+      "longDescription": "Record gameplay in Game Mode with a replay buffer, clip shortcut, game audio and microphone.",
+      "coverUrl": "https://opengraph.githubassets.com/1/otisabiburada/finally-game-replay-recorder",
+      "catalogStatus": "github",
+      "catalogSource": "outside-store",
+      "catalogPluginId": 0,
+      "compatibility": "SteamOS/Bazzite; Accede a cattura video, audio e microfono; controllare spazio libero, privacy e impatto sulle prestazioni.",
+      "keywords": [
+        "catalog-added:2026-10-19"
+      ],
+      "aliases": [
+        "Finally Game Recorder",
+        "otisabiburada/finally-game-replay-recorder"
+      ],
+      "firstPublishedAt": "2026-10-13T04:11:31Z",
+      "updatedAt": "2026-10-13T04:11:31Z"
     }
   ]
 }

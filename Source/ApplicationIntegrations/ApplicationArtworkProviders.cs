@@ -195,7 +195,7 @@ public sealed class ApplicationArtworkProviders : IDisposable
         var variables = new JsonObject { ["countryCode"] = "US", ["languageCode"] = "en", ["nextCursor"] = "", ["pageOffset"] = 0, ["pageSize"] = 24, ["searchTerm"] = title };
         var extension = new JsonObject { ["persistedQuery"] = new JsonObject { ["version"] = 1, ["sha256Hash"] = "4df6284f982e57bec70f23c77e2c219dc792eb19af7fb3d3a81767aa3f1958aa" } };
         var reply = await JsonAsync("https://web.np.playstation.com/api/graphql/v1//op?operationName=getSearchResults&variables=" + Escape(variables.ToJsonString()) + "&extensions=" + Escape(extension.ToJsonString()), null, ct,
-            new() { ["Content-Type"] = "application/json", ["Origin"] = "https://store.playstation.com", ["Referer"] = "https://store.playstation.com/", ["apollographql-client-name"] = "@sie-ppr-web-store/app", ["apollographql-client-version"] = "0.113.0", ["X-PSN-Store-Locale-Override"] = "en-US" });
+            new() { ["Content-Type"] = "application/json", ["Origin"] = "https://store.playstation.com", ["Referer"] = "https://store.playstation.com/en-us/", ["Accept-Language"] = "en-US,en;q=0.9", ["apollographql-client-name"] = "@sie-ppr-web-store/app", ["apollographql-client-version"] = "0.113.0", ["X-PSN-Store-Locale-Override"] = "en-US" });
         var game = Best(title, Objects(reply?["data"]?["universalSearch"]?["results"]), item => item["name"]?.ToString() ?? item["title"]?.ToString() ?? "");
         var result = new JsonArray(); if (game is null) return result;
         foreach (var media in Objects(game["media"]))

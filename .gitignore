@@ -46,6 +46,7 @@ Source/GamingModeAgent/publish_verified_*/
 
 # Private work and generated diagnostics
 /.local/
+**/.local/
 /HANDOVER*
 **/__pycache__/
 *.pyc

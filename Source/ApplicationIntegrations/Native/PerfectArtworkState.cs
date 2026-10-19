@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 using Playhub.Integrations;
 
-namespace Playhub.Emulation.Workbench;
+namespace Playhub.Integrations;
 
 /// <summary>App-owned originals and exact-account logo positioning. No Decky backend is required.</summary>
 public sealed class PerfectArtworkState(ApplicationIntegrationDataStore store,

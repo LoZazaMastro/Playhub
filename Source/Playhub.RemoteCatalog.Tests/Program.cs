@@ -10,6 +10,10 @@ if (args.Contains("--print-bundled-manifest"))
     Console.WriteLine(BundledManifest.Assemble().ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
     return;
 }
+if (args.Contains("--live-official")) { await OfficialTests.LiveAsync(); return; }
+if (args.Contains("--official-checks")) { await OfficialTests.RunAsync(); return; }
+if (args.Contains("--chronology-checks")) { await ChronologyPipelineTests.RunAsync(); return; }
+if (args.Contains("--publication-checks")) { await PublicationRefreshTests.RunAsync(); return; }
 if (args.Length == 2 && args[0] == "--validate-manifest")
 {
     var manifest = RemotePluginCatalogService.Parse(File.ReadAllBytes(args[1]));
@@ -33,6 +37,11 @@ var tests = new (string Name, Func<Task> Run)[]
     ("actual catalog mapping: addition/update/assets/install/offline", IntegrationTests.Mapping),
     ("actual UI hook: first render/revision/operation guards/review isolation", Playhub.MainWindow.RunCatalogUiTests),
     ("timeout, caller cancellation and cache write failure", CancellationAndCacheFailure)
+    ,("official membership, identity, freshness and durable fallback", OfficialTests.RunAsync)
+    ,("actual release wave caller deadline cancels HTTP and queued repositories", ReleaseCancellation)
+    ,("upstream chronology ingestion, hydration and durable caches", ChronologyPipelineTests.RunAsync)
+    ,("publication scans terminate without a writable release cache", PublicationRefreshTests.RunAsync)
+    ,("external descriptions preserve original publisher language", OriginalDescriptionTests.RunAsync)
 };
 foreach (var test in tests)
 {
@@ -40,6 +49,25 @@ foreach (var test in tests)
     Console.WriteLine("PASS " + test.Name);
 }
 Console.WriteLine($"PASS {tests.Length} test groups (fake HTTP only).");
+
+async Task ReleaseCancellation()
+{
+    using var handler = new CancelReleaseHandler(); using var http = new HttpClient(handler);
+    var service = new PluginCatalogService(http);
+    var plugins = Enumerable.Range(0, 12).Select(index => new DeckyPluginInfo { Name = "Fixture " + index,
+        RepositorySlug = "fixture/release" + index, IsPlayhubPlugin = true, CatalogSource = "playhub" }).ToArray();
+    using var deadline = new CancellationTokenSource(TimeSpan.FromMilliseconds(60));
+    try { await service.RefreshReleasesAsync(plugins, force: true, cancellationToken: deadline.Token); throw new InvalidOperationException("Release deadline was ignored"); }
+    catch (OperationCanceledException) when (deadline.IsCancellationRequested) { }
+    if (handler.Calls is < 1 or > 3 || handler.Cancelled != handler.Calls || handler.AtomCalls != 0)
+        throw new InvalidOperationException("Caller cancellation restarted Atom fallback or queued repositories.");
+    var calls = handler.Calls; await Task.Delay(15);
+    if (handler.Calls != calls) throw new InvalidOperationException("Release HTTP continued after wave completion.");
+    using var preCancelled = new CancellationTokenSource(); preCancelled.Cancel();
+    try { await service.RefreshReleasesAsync(plugins, force: true, cancellationToken: preCancelled.Token); throw new InvalidOperationException("Precancelled release was accepted"); }
+    catch (OperationCanceledException) { }
+    if (handler.Calls != calls) throw new InvalidOperationException("Precancelled release sent HTTP.");
+}
 
 static void Check(bool value, string message)
 {
@@ -69,11 +97,28 @@ static Task Canonical()
     var path = Path.Combine(BundledManifest.Root, "catalog/plugins.json");
     var bytes = File.ReadAllBytes(path);
     var parsed = RemotePluginCatalogService.Parse(bytes);
-    Check(JsonNode.DeepEquals(JsonNode.Parse(bytes), BundledManifest.Assemble()), "Canonical data differs from configured source.");
-    Check(parsed.Plugins.Count == 196, "Expected 13 built-ins and all 183 external entries.");
+    var canonical = JsonNode.Parse(bytes)!.AsObject(); var assembled = BundledManifest.Assemble();
+    assembled["catalogRevision"] = canonical["catalogRevision"]!.DeepClone();
+    var sourceRecords = assembled["plugins"]!.AsArray().ToDictionary(plugin => plugin!["repository"]!.GetValue<string>());
+    foreach (var plugin in canonical["plugins"]!.AsArray())
+    {
+        var source = sourceRecords[plugin!["repository"]!.GetValue<string>()]!;
+        var expectedKeywords = source["keywords"]!.AsArray().Select(keyword => keyword!.GetValue<string>()).ToArray();
+        var actualKeywords = plugin["keywords"]!.AsArray().Select(keyword => keyword!.GetValue<string>()).ToArray();
+        Check(plugin["catalogSource"]!.GetValue<string>() == "playhub" || expectedKeywords.All(actualKeywords.Contains) && actualKeywords.Except(expectedKeywords).All(keyword =>
+            System.Text.RegularExpressions.Regex.IsMatch(keyword, @"^(catalog-added|first-release):\d{4}-\d{2}-\d{2}$")), "Canonical keywords lost source values or contain unrecognized publication metadata.");
+        source["keywords"] = plugin["keywords"]!.DeepClone();
+        // Publication deliberately carries English copy while built-in fallback copy is Italian.
+        if (plugin["catalogSource"]!.GetValue<string>() == "playhub")
+            foreach (var field in new[] { "shortDescription", "longDescription", "active", "releaseAssetName", "catalogReleaseUrl", "releasePublishedAt", "firstPublishedAt", "updatedAt" })
+                if (plugin[field] is { } value) source[field] = value.DeepClone();
+    }
+    Check(JsonNode.DeepEquals(canonical, assembled), "Canonical data differs from configured source.");
+    Check(parsed.Plugins.Count == 243, "Expected 13 built-ins and all 230 external entries.");
     Check(parsed.Plugins.Count(p => p.CatalogSource == "playhub") == 13, "Playhub provenance lost.");
     Check(parsed.Plugins.Count(p => p.CatalogSource == "decky-store") == 108, "Decky provenance lost.");
-    Check(parsed.Plugins.Count(p => p.CatalogSource == "outside-store") == 75, "GitHub provenance lost.");
+    Check(parsed.Plugins.Count(p => p.CatalogSource == "outside-store") == 122, "GitHub provenance lost.");
+    Check(parsed.Plugins.All(p => !p.Repository.Equals("jayool/LumaDeck", StringComparison.OrdinalIgnoreCase)), "LumaDeck must stay excluded.");
     Check(parsed.Plugins.Count(p => p.RepositoryUrl.StartsWith("https://gitlab.com/")) == 3, "GitLab sources lost.");
     return Task.CompletedTask;
 }
@@ -156,6 +201,8 @@ static async Task InvalidDocuments()
         root => Plugin(root)["installFolder"] = "directory:stream",
         root => Plugin(root)["installFolder"] = "gaming-mode",
         root => Plugin(root)["name"] = "Playhub Gaming Mode",
+        root => Plugin(root)["name"] = "LumaDeck",
+        root => Plugin(root)["aliases"] = new JsonArray("Luma-Deck"),
         root => Plugin(root)["name"] = "Varta",
         root => Plugin(root)["aliases"] = new JsonArray("owner/VartaPlugin"),
         root => Plugin(root)["aliases"] = new JsonArray("LoZazaMastro/GamingMode"),
@@ -392,9 +439,25 @@ sealed class FakeHandler : HttpMessageHandler
     public Uri? LastUri;
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        if (request.RequestUri?.AbsoluteUri != RemotePluginCatalogService.CatalogUrl)
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
+        if (request.Headers.Authorization is not null || request.Headers.Contains("Cookie") || request.RequestUri.Query.Length != 0)
+            throw new InvalidOperationException("Public catalog must be requested without account credentials or tokens.");
         Interlocked.Increment(ref Calls);
         LastUri = request.RequestUri;
         return Respond(request, cancellationToken);
+    }
+}
+
+sealed class CancelReleaseHandler : HttpMessageHandler
+{
+    public int Calls, Cancelled, AtomCalls;
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+    {
+        Interlocked.Increment(ref Calls);
+        if (request.RequestUri!.AbsolutePath.EndsWith(".atom")) Interlocked.Increment(ref AtomCalls);
+        try { await Task.Delay(Timeout.Infinite, token); throw new InvalidOperationException("Fixture requires cancellation."); }
+        catch (OperationCanceledException) { Interlocked.Increment(ref Cancelled); throw; }
     }
 }
 

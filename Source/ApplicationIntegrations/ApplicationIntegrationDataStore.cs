@@ -8,8 +8,8 @@ public static class ApplicationIntegrationIdentity
 {
     public static string Create(string scope, string sourceId)
     {
-        if (scope is not ("pc" or "emu") || string.IsNullOrWhiteSpace(sourceId) || sourceId.Length > 2000 || sourceId.Any(char.IsControl))
-            throw new ArgumentException("A stable PC or emulation source identity is required.");
+        if (scope != "pc" || string.IsNullOrWhiteSpace(sourceId) || sourceId.Length > 2000 || sourceId.Any(char.IsControl))
+            throw new ArgumentException("A stable PC game source identity is required.");
         return scope + ":" + sourceId;
     }
     public static string Validate(string identity)
@@ -20,7 +20,7 @@ public static class ApplicationIntegrationIdentity
     }
 }
 
-/// <summary>App-owned drafts and explicit bindings to exported Steam shortcuts.</summary>
+/// <summary>Stores artwork choices for exact imported PC game identities.</summary>
 public sealed class ApplicationIntegrationDataStore
 {
     private readonly string _root;
@@ -28,7 +28,6 @@ public sealed class ApplicationIntegrationDataStore
     public ApplicationIntegrationDataStore(string root) { _root = Path.GetFullPath(root); }
     public static string Key(string identity) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(ApplicationIntegrationIdentity.Validate(identity)))).ToLowerInvariant();
     private string Draft(string identity) => Path.Combine(_root, "games", Key(identity) + ".json");
-    private string Index => Path.Combine(_root, "steam-bindings.json");
 
     public async Task<JsonObject> ReadAsync(string identity, CancellationToken ct = default)
     {
@@ -60,46 +59,9 @@ public sealed class ApplicationIntegrationDataStore
         return (JsonObject)current.DeepClone();
     }
 
-    public async Task<JsonObject> PatchUnchangedAsync(string identity, string category, JsonObject fields, JsonObject baseline, CancellationToken ct = default)
-    {
-        ValidateCategory(category);
-        string path = Draft(identity);
-        using var held = await LockAsync(path, ct);
-        var draft = await ReadAsync(identity, ct);
-        var integrations = draft["integrations"] as JsonObject ?? new JsonObject();
-        if (draft["integrations"] is not JsonObject) draft["integrations"] = integrations;
-        var current = integrations[category] as JsonObject;
-        if (current is null) integrations[category] = current = new JsonObject();
-        foreach (var field in fields)
-            if (current.ContainsKey(field.Key) == baseline.ContainsKey(field.Key) && JsonNode.DeepEquals(current[field.Key], baseline[field.Key]))
-                current[field.Key] = field.Value?.DeepClone();
-        await WriteAsync(path, draft, ct);
-        return (JsonObject)current.DeepClone();
-    }
-
-    public async Task BindSteamAppIdAsync(string identity, uint actualAppId, CancellationToken ct = default)
-    {
-        ApplicationIntegrationIdentity.Validate(identity);
-        if (actualAppId == 0) throw new ArgumentException("Export must resolve a real Steam shortcut first.");
-        using var held = await LockAsync(Index, ct);
-        var bindings = await ReadFileAsync(Index, ct);
-        string id = actualAppId.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        if (bindings[id]?.GetValue<string>() is string existing && existing != identity)
-            throw new InvalidOperationException("Steam shortcut is already bound to another source identity.");
-        bindings[id] = identity;
-        await WriteAsync(Index, bindings, ct);
-    }
-
-    public async Task<string?> ResolveSteamAppIdAsync(uint actualAppId, CancellationToken ct = default)
-    {
-        if (actualAppId == 0) return null;
-        string? identity = (await ReadFileAsync(Index, ct))[actualAppId.ToString(System.Globalization.CultureInfo.InvariantCulture)]?.GetValue<string>();
-        return identity is null ? null : ApplicationIntegrationIdentity.Validate(identity);
-    }
-
     private static void ValidateCategory(string category)
     {
-        if (category is not ("metadatadeck" or "artwork" or "launchcurtain" or "themedeck" or "trailerhero")) throw new ArgumentException("Unknown integration category.");
+        if (category != "artwork") throw new ArgumentException("Choose Artwork.");
     }
     private static async Task<JsonObject> ReadFileAsync(string path, CancellationToken ct)
     {

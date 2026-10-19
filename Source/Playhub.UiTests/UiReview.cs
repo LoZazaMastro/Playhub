@@ -25,8 +25,162 @@ namespace Playhub;
 
 public sealed partial class MainWindow
 {
+    private async Task ReviewNativePluginCatalogAsync()
+    {
+        var output = Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_OUTPUT") ?? Path.Combine(AppContext.BaseDirectory, "plugin-catalog-native-review");
+        Directory.CreateDirectory(output);
+        var checks = new List<object>(); var failures = new List<string>();
+        var previousPlugins = _plugins.ToArray(); var previousPluginRoot = _settings.PluginRoot;
+        var previousInstalledRoot = _settings.DeckyPluginsPath; var previousPage = _currentPageTag;
+        var previousLanguage = _settings.Language; var previousDensityReady = _densityReady;
+        var previousMode = _pluginStoreMode; var previousShowAll = _pluginShowAll;
+        var previousCategory = _pluginCategoryFilter; var previousQuery = _pluginSearchBox.Text;
+        IAsyncDisposable? scope = null;
+        using var lifetime = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(60));
+        var handler = new NativeCatalogReviewHandler();
+        var pendingReleaseNotes = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        int releaseNoteCalls = 0;
+        using var http = new System.Net.Http.HttpClient(handler);
+        void Check(bool passed, string name) { checks.Add(new { Name = name, Passed = passed }); if (!passed) failures.Add(name); }
+        async Task Drain()
+        {
+            await ReviewRemotePluginCatalogCompletion.WaitAsync(lifetime.Token);
+            await Task.Delay(120, lifetime.Token);
+            Check(!ReviewRemotePluginCatalogQueued, "actual refresh queue drained");
+        }
+        try
+        {
+            var fixtureRoot = Path.Combine(AppPaths.LocalDataRoot, "fresh-catalog-fixture", Guid.NewGuid().ToString("N"));
+            if (!Path.GetFullPath(fixtureRoot).StartsWith(Path.GetFullPath(AppContext.BaseDirectory), StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Catalog review requires isolated review AppPaths.");
+            _densityReady = false; _settings.Language = "it";
+            _settings.PluginRoot = Path.Combine(fixtureRoot, "source");
+            _settings.DeckyPluginsPath = Path.Combine(fixtureRoot, "installed");
+            Directory.CreateDirectory(_settings.PluginRoot); Directory.CreateDirectory(_settings.DeckyPluginsPath);
+            var service = new RemotePluginCatalogService(http, Path.Combine(fixtureRoot, "catalog.json"),
+                () => DateTimeOffset.UtcNow, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
+            scope = ReviewUseRemotePluginCatalog(service, new RemotePluginCatalog { CatalogRevision = 741 },
+                () => { releaseNoteCalls++; return pendingReleaseNotes.Task; }, fixtureRoot);
+            _plugins.Clear(); _pluginStoreMode = "discover"; _pluginShowAll = true;
+            _pluginCategoryFilter = null; _pluginSearchBox.Text = "";
+            ApplyTheme(); ApplyLanguage();
+            ShowPage("welcome"); ShowPage("plugins"); await Drain();
+            Check(_plugins.Any(plugin => plugin.CatalogPluginId == 501 && plugin.FolderName == "PrivateNative501"),
+                "actual Plugin Store navigation publishes pinned native identity");
+            Check(releaseNoteCalls == 1 && !pendingReleaseNotes.Task.IsCompleted,
+                "first official member is published while optional release notes remain blocked");
+            var firstVersion = ReviewVisiblePluginCatalogContentVersion;
+            Check(_visiblePluginCatalogRevision == 741, "initial unchanged Playhub publication revision");
+            var installed = Path.Combine(_settings.DeckyPluginsPath, "PrivateNative501"); Directory.CreateDirectory(installed);
+            await File.WriteAllTextAsync(Path.Combine(installed, "plugin.json"),
+                JsonSerializer.Serialize(new { name = "PrivateNative501", author = "Private fixture" }), lifetime.Token);
+            await File.WriteAllTextAsync(Path.Combine(installed, "package.json"),
+                JsonSerializer.Serialize(new { name = "PrivateNative501", version = "1.0", homepage = "https://github.com/fixture/PrivateNative501" }), lifetime.Token);
+            handler.Ids = new[] { 502 };
+            ShowPage("welcome"); ShowPage("plugins"); await Drain();
+            Check(_plugins.Any(plugin => plugin.CatalogPluginId == 502), "new official member appears after native revisit");
+            Check(releaseNoteCalls == 1 && !pendingReleaseNotes.Task.IsCompleted,
+                "changed membership is published without waiting for or duplicating blocked release notes");
+            Check(_plugins.All(plugin => plugin.CatalogPluginId != 501) &&
+                _plugins.Any(plugin => plugin.FolderName == "PrivateNative501" && plugin.IsInstalled && plugin.CatalogSource == "installed"),
+                "removed official member remains visible because privately installed");
+            Check(firstVersion != ReviewVisiblePluginCatalogContentVersion && _visiblePluginCatalogRevision == 741,
+                "membership changes without increasing publication revision");
+            handler.Entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            handler.Release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            var enteredTask = handler.Entered.Task;
+            var callsBefore = handler.OfficialCalls;
+            ShowPage("welcome"); ShowPage("plugins");
+            await enteredTask.WaitAsync(lifetime.Token);
+            QueueRemotePluginCatalogRefresh(forceRefresh: true); QueueRemotePluginCatalogRefresh(forceRefresh: true);
+            handler.Release.TrySetResult(true); await Drain();
+            Check(handler.OfficialCalls == callsBefore + 2, "native in-flight requests coalesce into one trailing forced refresh");
+            Check(handler.PackageCalls == 2, "unchanged pinned ZIP identities are reused without downloading again");
+            _pluginCards.UpdateLayout();
+            await ReviewCaptureNativeScaleAsync(_pageHost, Path.Combine(output, "native-store-after-membership.png"));
+        }
+        catch (Exception ex) { failures.Add(ex.GetType().Name + ": " + ex.Message); }
+        finally
+        {
+            handler.Release?.TrySetResult(true);
+            pendingReleaseNotes.TrySetResult(false);
+            // Teardown keeps the fake transport installed until the real queue is idle.
+            if (scope is not null) await scope.DisposeAsync();
+            _settings.PluginRoot = previousPluginRoot; _settings.DeckyPluginsPath = previousInstalledRoot;
+            _plugins.Clear(); foreach (var plugin in previousPlugins) _plugins.Add(plugin);
+            _pluginStoreMode = previousMode; _pluginShowAll = previousShowAll; _pluginCategoryFilter = previousCategory;
+            _pluginSearchBox.Text = previousQuery; _settings.Language = previousLanguage;
+            InvalidatePluginAllViews(); InvalidateFeaturedFrames();
+            _pluginCardsDirty = true; _pluginManagementDirty = true;
+            ApplyLanguage(); ShowPage(previousPage); RenderVisiblePluginView(); RefreshOpenPluginPage();
+            _densityReady = previousDensityReady;
+        }
+        await File.WriteAllTextAsync(Path.Combine(output, "plugin-catalog-native.json"), JsonSerializer.Serialize(new {
+            Passed = failures.Count == 0, Checks = checks, Failures = failures, handler.OfficialCalls, handler.PackageCalls,
+            OptionalReleaseNoteCalls = releaseNoteCalls, OptionalReleaseNotesWereExplicitlyBlocked = true,
+            ActualNativeNavigation = true, ActualProductionRefreshQueue = true, FakeHttpOnly = true,
+            NoLiveNetwork = true, NoPluginInstallation = true, NoUserSettingsSaved = true,
+            InstalledRetentionManifestFixtureOnly = true, PublicationRevision = 741,
+            ScreenshotDoesNotCertifyMicaColors = true
+        }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    private sealed class NativeCatalogReviewHandler : System.Net.Http.HttpMessageHandler
+    {
+        private readonly Dictionary<int, (string Name, string Hash, byte[] Bytes)> _packages = new();
+        internal int[] Ids = new[] { 501 };
+        internal int OfficialCalls, PackageCalls;
+        internal TaskCompletionSource<bool>? Entered, Release;
+        internal NativeCatalogReviewHandler()
+        {
+            foreach (var id in new[] { 501, 502 })
+            {
+                var name = "PrivateNative" + id; using var stream = new MemoryStream();
+                using (var zip = new System.IO.Compression.ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Create, true))
+                {
+                    using (var writer = new StreamWriter(zip.CreateEntry(name + "/plugin.json").Open())) writer.Write(JsonSerializer.Serialize(new { name }));
+                    using (var writer = new StreamWriter(zip.CreateEntry(name + "/package.json").Open())) writer.Write(JsonSerializer.Serialize(new { homepage = "https://github.com/fixture/" + name }));
+                }
+                var bytes = stream.ToArray(); _packages[id] = (name, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)).ToLowerInvariant(), bytes);
+            }
+        }
+        protected override async Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken token)
+        {
+            if (request.RequestUri!.AbsoluteUri == "https://plugins.deckbrew.xyz/plugins")
+            {
+                System.Threading.Interlocked.Increment(ref OfficialCalls);
+                if (Entered is { } entered) { Entered = null; entered.TrySetResult(true); await Release!.Task.WaitAsync(token); }
+                var bytes = JsonSerializer.SerializeToUtf8Bytes(Ids.Select(id => new { id, name = _packages[id].Name,
+                    author = "Private fixture", description = "Native navigation fixture", visible = true,
+                    versions = new[] { new { name = "1.0", hash = _packages[id].Hash, created = "2026-10-10T00:00:00Z" } } }));
+                return new(System.Net.HttpStatusCode.OK) { Content = new System.Net.Http.ByteArrayContent(bytes) };
+            }
+            var package = _packages.Values.FirstOrDefault(value => request.RequestUri.AbsoluteUri ==
+                "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/" + value.Hash + ".zip");
+            if (package.Bytes is not null) { System.Threading.Interlocked.Increment(ref PackageCalls); return new(System.Net.HttpStatusCode.OK) { Content = new System.Net.Http.ByteArrayContent(package.Bytes) }; }
+            return new(System.Net.HttpStatusCode.NotFound);
+        }
+    }
+
     internal async Task RunUiReviewAsync()
     {
+        if (Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_PLUGIN_CHRONOLOGY") == "1")
+        {
+            try { await ReviewPluginChronologyAsync(); }
+            finally { Close(); }
+            return;
+        }
+        if (Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_ARTWORK_SHADOW") == "1")
+        {
+            try { await ReviewArtworkShadowAsync(); }
+            finally { Close(); }
+            return;
+        }
+        if (Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_PLUGIN_CATALOG") == "1")
+        {
+            await ReviewNativePluginCatalogAsync();
+            return;
+        }
         if (Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_NORMAL") == "1")
         {
             _settings.Language = "it";
@@ -40,14 +194,6 @@ public sealed partial class MainWindow
             await ShowDeckyRepairDialogAsync();
             return;
         }
-#if PLAYHUB_EMULATION
-        if (Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_EMULATION_INTERACTIVE") == "1")
-        {
-            _settings.Language = "it";
-            ApplyTheme(); ApplyLanguage(); RequestEmulationRoute("overview");
-            return;
-        }
-#endif
         var output = Path.Combine(AppContext.BaseDirectory, "ui-review");
         Directory.CreateDirectory(output);
         var results = new List<string>();
@@ -74,13 +220,6 @@ public sealed partial class MainWindow
             _settings.AccentColor = "#FFCB0F";
             ApplyTheme();
             ApplyLanguage();
-#if PLAYHUB_EMULATION
-            if (Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_EMULATION_ONLY") == "1")
-            {
-                await ReviewEmulationPagesAsync(output, Check);
-                return;
-            }
-#endif
             if (Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_UPDATE_SCROLL_ONLY") == "1")
             {
                 await ReviewNativeUpdateScrollAsync(output, Check);
@@ -249,7 +388,8 @@ public sealed partial class MainWindow
                     IsPlayhubPlugin = i < 12, IsInstalled = i % 3 == 0, HasUpdate = i == 0,
                     InstalledVersion = "1.0.0", Version = "1.1.0",
                     ReleasePublishedAt = new DateTime(2026, 1, 1).AddDays(i).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    UpdatedAt = new DateTime(2026, 1, 1).AddDays(160 - i).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    FirstPublishedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(i).ToString("O", CultureInfo.InvariantCulture),
+                    UpdatedAt = new DateTime(2026, 6, 10, 0, 0, 0, DateTimeKind.Utc).AddHours(160 - i).ToString("O", CultureInfo.InvariantCulture),
                     Category = categories[i % categories.Length],
                     CatalogSource = i < 12 ? "playhub" : i % 2 == 0 ? "decky-store" : "github",
                     IconGlyph = ((char)0xE7FC).ToString()
@@ -257,14 +397,14 @@ public sealed partial class MainWindow
             }
             ShowPage("plugins");
             await Task.Delay(800);
-            Check(_pluginDiscoveryCategories.Count == 6 && _pluginCards.Children.Count == 6,
-                "discovery home contains all six categories");
+            Check(_pluginDiscoveryCategories.Count == 7 && _pluginCards.Children.Count == 7,
+                "discovery home contains all seven categories");
             Check(_pluginCards.Children.OfType<StackPanel>().All(section =>
                 section.Children.OfType<ItemsRepeater>().SelectMany(repeater =>
                     (IEnumerable<IReadOnlyList<DeckyPluginInfo>>)repeater.ItemsSource).Sum(row => row.Count) == 4),
                 "each home category shows exactly four plugin cards");
             Check(_pluginDiscoveryCategories.Keys.OrderBy(PluginStoreCategoryOrder).SequenceEqual(
-                new[] { "I plugin di Playhub" }.Concat(categories)), "six category display order");
+                new[] { "Novità", "I plugin di Playhub" }.Concat(categories)), "seven category display order");
             foreach (var name in new[] { "Quick Settings", "Launch Curtain", "Playhub Notifications", "Playhub Surround", "Weather" })
             {
                 var plugin = _plugins.Single(item => item.Name == name);
@@ -1002,7 +1142,7 @@ public sealed partial class MainWindow
             _pluginAllSort = sort; InvalidatePluginAllViews(); RenderVisiblePluginView();
             var expected = sort == "name"
                 ? installed.OrderBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase)
-                : installed.OrderByDescending(plugin => sort == "added" ? plugin.ReleasePublishedAt : plugin.UpdatedAt, StringComparer.Ordinal)
+                : installed.OrderByDescending(plugin => sort == "added" ? plugin.FirstPublishedAt : plugin.UpdatedAt, StringComparer.Ordinal)
                     .ThenBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase);
             check(ReviewPluginItems(_pluginManageCardsCache).SequenceEqual(expected), "manage sorting changes rendered order: " + sort);
         }
@@ -1730,6 +1870,21 @@ public sealed partial class MainWindow
         yield return root;
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
             foreach (var child in ReviewDescendants(VisualTreeHelper.GetChild(root, i))) yield return child;
+    }
+
+    private static async Task ReviewCaptureNativeScaleAsync(FrameworkElement element, string path)
+    {
+        var bitmap = new RenderTargetBitmap();
+        var scale = element.XamlRoot.RasterizationScale;
+        await bitmap.RenderAsync(element, (int)Math.Ceiling(element.ActualWidth * scale), (int)Math.Ceiling(element.ActualHeight * scale));
+        var pixels = await bitmap.GetPixelsAsync();
+        var folder = await StorageFolder.GetFolderFromPathAsync(Path.GetDirectoryName(path)!);
+        var file = await folder.CreateFileAsync(Path.GetFileName(path), CreationCollisionOption.ReplaceExisting);
+        using var stream = await file.OpenAsync(FileAccessMode.ReadWrite);
+        var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
+        encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied, (uint)bitmap.PixelWidth,
+            (uint)bitmap.PixelHeight, 96 * scale, 96 * scale, pixels.ToArray());
+        await encoder.FlushAsync();
     }
 
     private static async Task ReviewCaptureAsync(FrameworkElement element, string path)

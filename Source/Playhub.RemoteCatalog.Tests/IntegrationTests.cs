@@ -1,6 +1,8 @@
 using Playhub.Models;
 using Playhub.Services;
 using System.Text.Json;
+using System.IO.Compression;
+using System.Security.Cryptography;
 
 internal static class IntegrationTests
 {
@@ -9,11 +11,11 @@ internal static class IntegrationTests
         using var files = new TestFiles();
         using var remote = new Fixture();
         var bundled = PluginCatalogService.GetBundledCatalog();
-        Check(bundled.CatalogRevision == 5 && bundled.Plugins.Count == 196, "Combined packaged baseline missing.");
+        Check(bundled.CatalogRevision > 0 && bundled.Plugins.Count == 241, "Combined packaged baseline missing active/tombstone handling.");
         var service = new PluginCatalogService();
         var empty = await service.LoadAsync(files.PluginRoot, files.InstalledRoot);
-        Check(empty.Count == 196 && empty.Count(p => p.IsPlayhubPlugin) == 13 &&
-            empty.Select(p => p.RepositorySlug).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 196, "Baseline duplicated/lost built-ins.");
+        Check(empty.Count == 241 && empty.Count(p => p.IsPlayhubPlugin) == 11 &&
+            empty.Select(p => p.RepositorySlug).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 241, "Baseline duplicated/lost active built-ins.");
 
         var artwork = bundled.Plugins.Single(p => p.Repository == "LoZazaMastro/Playhub-Artworks");
         var decky = bundled.Plugins.First(p => p.CatalogSource == "decky-store");
@@ -37,14 +39,14 @@ internal static class IntegrationTests
         files.Install(own, "1.0.0");
         var updatedDecky = decky with { Version = "9.0.0", LongDescription = "Remote updated description",
             ReleaseAssetName = "updated.zip", CatalogReleaseUrl = "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/updated.zip" };
-        var document = new RemotePluginCatalog { CatalogRevision = 6,
+        var document = new RemotePluginCatalog { CatalogRevision = bundled.CatalogRevision + 1,
             Plugins = new[] { artwork with { Version = "2.0.0" }, updatedDecky, own, github } };
         remote.Handler.Respond = (_, _) => Task.FromResult(new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK)
         { Content = new System.Net.Http.ByteArrayContent(Serialize(document)) });
         var refreshed = await remote.Service.RefreshAsync(bundled);
         Check(refreshed.Origin == "remote", refreshed.Error ?? "Remote manifest rejected.");
         var loaded = await service.LoadAsync(files.PluginRoot, files.InstalledRoot, refreshed.Catalog);
-        Check(loaded.Count == 198 && loaded.Select(p => p.RepositorySlug).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 198,
+        Check(loaded.Count == 243 && loaded.Select(p => p.RepositorySlug).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 243,
             "Remote additions duplicated/lost records.");
         var mappedArtwork = loaded.Single(p => p.RepositorySlug == artwork.Repository);
         Check(mappedArtwork.SourceFolder == source && mappedArtwork.InstallerZip == installer && mappedArtwork.CoverImage == cover &&
@@ -101,5 +103,64 @@ internal sealed class TestFiles : IDisposable
         var root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "Playhub.RemoteCatalog.Tests")) + Path.DirectorySeparatorChar;
         if (!Path.GetFullPath(_directory).StartsWith(root, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("Unsafe fixture path.");
         Directory.Delete(_directory, recursive: true);
+    }
+}
+
+internal sealed class PinnedUiCatalogFixture : IDisposable
+{
+    private readonly HttpClient _http;
+    internal readonly PinnedHandler Handler = new();
+    internal RemotePluginCatalogService Service { get; }
+    internal PinnedUiCatalogFixture(string root)
+    {
+        _http = new HttpClient(Handler);
+        Service = new(_http, Path.Combine(root, "remote-catalog.json"), () => DateTimeOffset.UtcNow,
+            TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
+    }
+    public void Dispose() => _http.Dispose();
+
+    internal sealed class PinnedHandler : HttpMessageHandler
+    {
+        private readonly Dictionary<int, (string Name, string Hash, byte[] Bytes)> _packages = new();
+        internal int[] Ids = [501];
+        internal int OfficialCalls, PackageCalls;
+        internal TaskCompletionSource? Entered { get; set; }
+        internal TaskCompletionSource? Release { get; set; }
+        internal PinnedHandler()
+        {
+            foreach (var id in new[] { 501, 502 })
+            {
+                var name = "PrivateUi" + id;
+                using var stream = new MemoryStream();
+                using (var zip = new ZipArchive(stream, ZipArchiveMode.Create, true))
+                {
+                    using (var writer = new StreamWriter(zip.CreateEntry(name + "/plugin.json").Open()))
+                        writer.Write(JsonSerializer.Serialize(new { name }));
+                    using (var writer = new StreamWriter(zip.CreateEntry(name + "/package.json").Open()))
+                        writer.Write(JsonSerializer.Serialize(new { homepage = "https://github.com/fixture/" + name }));
+                }
+                var bytes = stream.ToArray();
+                _packages[id] = (name, Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(), bytes);
+            }
+        }
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        {
+            if (request.RequestUri!.AbsoluteUri == "https://plugins.deckbrew.xyz/plugins")
+            {
+                Interlocked.Increment(ref OfficialCalls);
+                if (Entered is { } entered)
+                { Entered = null; entered.TrySetResult(); await Release!.Task.WaitAsync(token); }
+                var bytes = JsonSerializer.SerializeToUtf8Bytes(Ids.Select(id => new {
+                    id, name = _packages[id].Name, author = "Private fixture", description = "Private metadata", visible = true,
+                    versions = new[] { new { name = "1.0", hash = _packages[id].Hash, created = "2026-10-10T00:00:00Z" } }
+                }));
+                return new(System.Net.HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) };
+            }
+            var package = _packages.Values.FirstOrDefault(value => request.RequestUri.AbsoluteUri ==
+                "https://cdn.tzatzikiweeb.moe/file/steam-deck-homebrew/versions/" + value.Hash + ".zip");
+            if (package.Bytes is not null)
+            { Interlocked.Increment(ref PackageCalls); return new(System.Net.HttpStatusCode.OK) { Content = new ByteArrayContent(package.Bytes) }; }
+            return new(System.Net.HttpStatusCode.NotFound);
+        }
     }
 }

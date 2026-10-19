@@ -4,7 +4,15 @@ using System.Text.Json.Nodes;
 
 internal static class BundledManifest
 {
-    internal static string Root => Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
+    internal static string Root
+    {
+        get
+        {
+            for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+                if (File.Exists(Path.Combine(directory.FullName, "catalog", "plugins.json")) && Directory.Exists(Path.Combine(directory.FullName, "Source"))) return directory.FullName;
+            throw new DirectoryNotFoundException("Repository fixture root was not found.");
+        }
+    }
 
     // Parse C# literals with Roslyn so descriptions, escapes and glyphs are not retyped.
     internal static JsonObject Assemble()

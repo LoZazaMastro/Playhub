@@ -190,7 +190,7 @@ test("plugin init/mount/unload and ControlCenter anchors/replay are wired withou
   const index = readFileSync(new URL("../src/index.tsx", import.meta.url), "utf8");
   const controls = readFileSync(new URL("../src/ControlCenter.tsx", import.meta.url), "utf8");
   const integration = readFileSync(new URL("../src/onboardingIntegration.tsx", import.meta.url), "utf8");
-  assert.match(index, /const uninstallOnboarding = installPlayhubOnboarding/);
+  assert.match(index, /const uninstallOnboarding = installOptionalHook\("Onboarding", \(\) => installPlayhubOnboarding/);
   // Onboarding must be torn down on dismount. Other teardowns may run first, so
   // assert it happens inside onDismount rather than that it happens first.
   const dismount = index.match(/onDismount\(\)\s*\{[\s\S]*?\n    \}/);

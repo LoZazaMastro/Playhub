@@ -14,5 +14,7 @@
     <Compile Include="..\Playhub\Services\PlayhubUpdatePolicy.cs" Link="PlayhubUpdatePolicy.cs" />
     <Compile Include="..\PlayhubSetup\Installer.cs" Link="Installer.cs" />
     <Compile Include="..\PlayhubSetup\SetupSession.cs" Link="SetupSession.cs" />
+    <Compile Include="..\Shared\EditorialPhotoMigration.cs" Link="EditorialPhotoMigration.cs" />
+    <Compile Include="..\Shared\GamingModeInstallationPolicy.cs" Link="GamingModeInstallationPolicy.cs" />
   </ItemGroup>
 </Project>

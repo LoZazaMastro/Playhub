@@ -6,6 +6,15 @@ using System.Security.Cryptography;
 
 int passed = 0;
 void Check(bool condition, string name) { if (!condition) throw new Exception(name); Console.WriteLine("PASS " + name); passed++; }
+var shadowLogo = new byte[40*40*4];
+for(int y=10;y<30;y++) for(int x=10;x<30;x++) shadowLogo[(y*40+x)*4+3]=255;
+var shadow = PerfectArtworkPixels.RenderShadow(new(40,40,shadowLogo),80,80,12,5);
+int shadowPadding = PerfectArtworkPixels.ShadowPadding(12,5);
+Check(shadow.Width==80+shadowPadding*2 && shadow.Height==80+shadowPadding*2,"preview shadow reserves blur padding instead of clipping to logo bounds");
+Check(shadow.Bgra.Where((_,i)=>i%4==3).Any(alpha=>alpha>0),"preview shadow has physical nonzero alpha pixels");
+Check(shadow.Bgra.Where((_,i)=>i%4!=3).All(channel=>channel==0),"preview shadow remains black with independently adjustable opacity");
+Check(shadow.Bgra[((shadowPadding+5+19)*shadow.Width+shadowPadding+40)*4+3]>0,"blur extends outside the opaque logo silhouette");
+Check(shadow.Bgra[3]==0,"transparent corners stay transparent outside the blur support");
 ArtworkPixels Solid(int width, int height, byte b, byte g, byte r)
 {
     var pixels = new byte[width * height * 4];
@@ -54,7 +63,7 @@ try
     int center = (decoded.Height/2*decoded.Width + decoded.Width/4)*4;
     Check(decoded.Bgra[center+2]>200 && decoded.Bgra[center+1]<50,"transparent logo padding is trimmed and visible logo sits at left quarter");
     Check(decoded.Bgra[(decoded.Width*decoded.Height-1)*4]>180,"background covers target without blank border");
-    var banner = await compose.ComposeAsync("emu:system/game","banner",background,logo);
+    var banner = await compose.ComposeAsync("pc:exec:banner-test","banner",background,logo);
     Check(banner.Width == 1926 && banner.Height == 900 && (await Decode(banner.Path)).Width == 1926,"actual native banner matches Steam proportions at high resolution");
     var edited = await compose.ComposeAsync(identity,"hero",hero.Path,nextLogo);
     Check(edited.PristineSourcePath == hero.PristineSourcePath && edited.SourceSha256 == hero.SourceSha256,"editing a composition reuses its intact pristine background");

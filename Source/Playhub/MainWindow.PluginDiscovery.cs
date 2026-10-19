@@ -87,31 +87,19 @@ public sealed partial class MainWindow
 
     private static bool PluginBelongsToCategory(DeckyPluginInfo plugin, string category) =>
         string.Equals(category, "Novità", StringComparison.OrdinalIgnoreCase)
-            ? IsNewPlugin(plugin)
+            ? PluginChronology.FirstPublished(plugin) is not null
             : string.Equals(category, "I plugin di Playhub", StringComparison.OrdinalIgnoreCase)
             ? plugin.IsPlayhubPlugin
             : string.Equals(PluginDiscoveryCategory(plugin), category, StringComparison.OrdinalIgnoreCase);
 
-    private static DateTimeOffset? PluginCatalogAddedAt(DeckyPluginInfo plugin)
-        => PluginKeywordDate(plugin, "catalog-added:");
-
     private static DateTimeOffset? PluginFirstReleasedAt(DeckyPluginInfo plugin)
-        => PluginKeywordDate(plugin, "first-release:");
-
-    private static bool IsNewPlugin(DeckyPluginInfo plugin)
-    {
-        var first = PluginFirstReleasedAt(plugin);
-        var now = DateTimeOffset.UtcNow;
-        return first is not null && first <= now && first >= now.AddDays(-30);
-    }
+        => PluginChronology.FirstPublished(plugin);
 
     private static List<DeckyPluginInfo> OrderPluginDiscoveryPreview(string title,
         PluginDiscoveryCategoryState state, IReadOnlyList<DeckyPluginInfo> plugins)
     {
         return string.Equals(title, "Novità", StringComparison.OrdinalIgnoreCase)
-            ? plugins.Where(IsNewPlugin)
-                .OrderByDescending(PluginFirstReleasedAt)
-                .ThenBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase).ToList()
+            ? PluginChronology.News(plugins).ToList()
             : OrderPluginDiscoveryCategory(state, plugins);
     }
 
@@ -134,13 +122,13 @@ public sealed partial class MainWindow
             .DistinctBy(PluginStoreKey, StringComparer.OrdinalIgnoreCase).ToList();
         var now = DateTimeOffset.UtcNow;
         var newestAddition = shuffled.Where(plugin => plugin.IsPlayhubPlugin)
-            .Select(PluginCatalogAddedAt)
+            .Select(PluginFirstReleasedAt)
             .Where(date => date > DateTimeOffset.MinValue && date <= now).Max();
         // A shared catalog seed date does not distinguish a new addition.
         var prioritizeNewest = newestAddition is not null && shuffled.Any(plugin =>
-            plugin.IsPlayhubPlugin && PluginCatalogAddedAt(plugin) != newestAddition);
+            plugin.IsPlayhubPlugin && PluginFirstReleasedAt(plugin) != newestAddition);
         bool IsNewest(DeckyPluginInfo plugin) => plugin.IsPlayhubPlugin &&
-            prioritizeNewest && PluginCatalogAddedAt(plugin) == newestAddition;
+            prioritizeNewest && PluginFirstReleasedAt(plugin) == newestAddition;
         // Keep every curated external entry; only the Playhub pool is sampled.
         var selected = shuffled.Where(plugin => plugin.IsPlayhubPlugin)
             .OrderByDescending(IsNewest).Take(5)
@@ -148,18 +136,6 @@ public sealed partial class MainWindow
             .Select(PluginStoreKey).ToHashSet(StringComparer.OrdinalIgnoreCase);
         return shuffled.Where(plugin => selected.Contains(PluginStoreKey(plugin)))
             .OrderByDescending(IsNewest).ToList();
-    }
-
-    private static DateTimeOffset? PluginKeywordDate(DeckyPluginInfo plugin, string prefix)
-    {
-        foreach (var keyword in plugin.Keywords.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            if (!keyword.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
-            if (DateTimeOffset.TryParse(keyword[prefix.Length..], CultureInfo.InvariantCulture,
-                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var addedAt))
-                return addedAt;
-        }
-        return null;
     }
 
     private void OpenPluginCategory(string category)
@@ -189,11 +165,13 @@ public sealed partial class MainWindow
     }
 
     private Button BuildPluginCategoryHeading(string title)
+        => BuildStoreCategoryHeading(T(title), () => OpenPluginCategory(title));
+    private Button BuildStoreCategoryHeading(string displayTitle, Action open)
     {
         var foreground = new SolidColorBrush(Microsoft.UI.Colors.White);
         var label = new TextBlock
         {
-            Text = T(title), FontSize = 24, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Text = displayTitle, FontSize = 24, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
             Foreground = foreground, VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis
         };
@@ -216,7 +194,7 @@ public sealed partial class MainWindow
         };
         foreach (var key in new[] { "ButtonBackground", "ButtonBackgroundPointerOver", "ButtonBackgroundPressed", "ButtonBorderBrush", "ButtonBorderBrushPointerOver", "ButtonBorderBrushPressed" })
             SetLocalBrush(button, key, Microsoft.UI.Colors.Transparent);
-        AutomationProperties.SetName(button, T(title));
+        AutomationProperties.SetName(button, displayTitle);
         var pointerOver = false;
         Storyboard? transition = null;
         void UpdateHighlight()
@@ -256,7 +234,7 @@ public sealed partial class MainWindow
         button.GotFocus += (_, _) => UpdateHighlight();
         button.LostFocus += (_, _) => UpdateHighlight();
         button.Unloaded += (_, _) => transition?.Stop();
-        button.Click += (_, _) => OpenPluginCategory(title);
+        button.Click += (_, _) => open();
         return button;
     }
 

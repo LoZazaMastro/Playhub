@@ -18,6 +18,52 @@ from contextlib import contextmanager
 
 
 _DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4
+_independent_spawn_lock = threading.Lock()
+
+
+def _independent_process_environment():
+    # These helpers have an independent lifetime. Multiprocessing workers must
+    # retain Decky's PyInstaller state, so this is used only at explicit launches.
+    environment = {
+        key: value for key, value in os.environ.items()
+        if not key.upper().startswith("_PYI") and key.upper() != "_MEIPASS2"
+    }
+    environment["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+    return environment
+
+
+@contextmanager
+def _independent_process_dll_directory():
+    # Windows also inherits PyInstaller's DLL search directory across CreateProcess.
+    # Remove that extraction reference only during independent helper creation.
+    if os.name != "nt":
+        yield
+        return
+    with _independent_spawn_lock:
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        get_directory = kernel.GetDllDirectoryW
+        get_directory.argtypes = [wintypes.DWORD, wintypes.LPWSTR]
+        get_directory.restype = wintypes.DWORD
+        set_directory = kernel.SetDllDirectoryW
+        set_directory.argtypes = [wintypes.LPCWSTR]
+        set_directory.restype = wintypes.BOOL
+        required = int(get_directory(0, None))
+        if required == 0:
+            yield
+            return
+        if required > 32768:
+            raise OSError("The inherited DLL search directory is too long.")
+        directory = ctypes.create_unicode_buffer(required + 1)
+        length = int(get_directory(len(directory), directory))
+        if length == 0 or length >= len(directory):
+            raise OSError("Cannot read the inherited DLL search directory.")
+        if not set_directory(None):
+            raise ctypes.WinError(ctypes.get_last_error())
+        try:
+            yield
+        finally:
+            if not set_directory(directory.value):
+                raise ctypes.WinError(ctypes.get_last_error())
 
 
 def _configure_process_dpi_awareness():
@@ -556,15 +602,17 @@ class Plugin:
 
         for attempt in range(3):
             try:
-                self._agent_process = subprocess.Popen(
-                    [agent_path],
-                    cwd=os.path.dirname(agent_path),
-                    stdin=subprocess.DEVNULL,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    creationflags=creation_flags,
-                    close_fds=True,
-                )
+                with _independent_process_dll_directory():
+                    self._agent_process = subprocess.Popen(
+                        [agent_path],
+                        cwd=os.path.dirname(agent_path),
+                        stdin=subprocess.DEVNULL,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        creationflags=creation_flags,
+                        close_fds=True,
+                        env=_independent_process_environment(),
+                    )
             except Exception as error:
                 decky.logger.error(f"Cannot start Quick Settings agent: {error}")
                 return False
@@ -4747,11 +4795,13 @@ def _start_lossless_hidden(path):
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startupinfo.wShowWindow = 0
         creation_flags |= getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
-    process = subprocess.Popen(
-        [path, "-StartMinimized"], cwd=os.path.dirname(path), stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        startupinfo=startupinfo, creationflags=creation_flags, close_fds=True,
-    )
+    with _independent_process_dll_directory():
+        process = subprocess.Popen(
+            [path, "-StartMinimized"], cwd=os.path.dirname(path), stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            startupinfo=startupinfo, creationflags=creation_flags, close_fds=True,
+            env=_independent_process_environment(),
+        )
     _keep_lossless_hidden(process.pid, previous_foreground)
     return process
 

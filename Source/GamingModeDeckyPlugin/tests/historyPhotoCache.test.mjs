@@ -61,3 +61,15 @@ test('at most three downloads are in flight across many different images', async
   for(let turn=0;turn<30;turn++){await flush();releases.splice(0).forEach(resolve=>resolve());}
   assert.ok((await Promise.all(jobs)).every(Boolean)); assert.equal(peak,3);
 });
+
+test('a remote feed changing the digest at the same URL cannot reuse stale memory bytes', async () => {
+  const newer = Buffer.from('replacement remote image');
+  const updated = {sha256: createHash('sha256').update(newer).digest('hex'), bytes: newer.length};
+  let requests = 0;
+  const f = fixture(async () => { requests++; return requests === 1 ? response() : new Response(newer); });
+  const url = 'https://example.test/changing-image.jpg';
+  assert.equal(await (await f.load(url, expected)).text(), bytes.toString());
+  for(let i=0;i<5;i++) await flush();
+  assert.equal(await (await f.load(url, updated)).text(), newer.toString());
+  assert.equal(requests, 2);
+});

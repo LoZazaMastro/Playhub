@@ -6,7 +6,7 @@ string root=Path.Combine(Path.GetTempPath(),"Playhub-auto-perfect-"+Guid.NewGuid
 Directory.CreateDirectory(root);int checks=0;
 void Check(bool value,string name){if(!value)throw new Exception(name);checks++;}
 string Hash(string path)=>Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
-string identity=ApplicationIntegrationIdentity.Create("emu","exact-rom-id");
+string identity=ApplicationIntegrationIdentity.Create("pc","exact-imported-game-id");
 string hero=Path.Combine(root,"hero.jpg"),logo=Path.Combine(root,"logo.png"),output=Path.Combine(root,"output.jpg");
 File.WriteAllBytes(hero,[1,2,3,4,5]);File.WriteAllBytes(logo,[6,7,8,9,0]);File.WriteAllBytes(output,[9,8,7,6,5]);
 string originalHero=Hash(hero),originalLogo=Hash(logo);int assigned=0,hiddenCalls=0,compositions=0;bool? hidden=null;

@@ -39,7 +39,18 @@ def merge_editions(catalog, editions, language):
     return result
 
 
-def load_catalog(directory, language):
+def load_catalog(directory, language, cache_directory=None):
+    if cache_directory is not None:
+        import importlib.util
+        global _remote_module
+        if '_remote_module' not in globals():
+            spec = importlib.util.spec_from_file_location(
+                'playhub_history_remote', Path(__file__).with_name('history_remote.py'))
+            _remote_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(_remote_module)
+        remote = _remote_module.apply_remote(cache_directory, language, merge_editions)
+        if remote is not None:
+            return remote
     directory = Path(directory)
     with (directory / 'history_editorial.json').open(encoding='utf-8-sig') as stream:
         catalog = json.load(stream)

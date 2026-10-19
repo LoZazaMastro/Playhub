@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Playhub.Integrations;
 
-namespace Playhub.Emulation.Workbench;
+namespace Playhub.Integrations;
 
 /// <summary>Validates acquired image bytes before publishing an app-owned immutable file.</summary>
 public sealed class ApplicationImageCache(string root)

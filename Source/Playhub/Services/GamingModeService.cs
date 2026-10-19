@@ -1,4 +1,4 @@
-using Playhub.Models;
+﻿using Playhub.Models;
 using Playhub.Shared;
 using System;
 using System.Diagnostics;
@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,6 +17,9 @@ public sealed record GamingModeOperationResult(bool Success, string Message);
 
 public sealed class GamingModeService
 {
+    private sealed class ConfigBaseline(string json) { internal string Json = json; }
+    private readonly ConditionalWeakTable<GamingModeConfig, ConfigBaseline> _configBaselines = new();
+    private static readonly Mutex ConfigMutex = new(false, "Local\\PlayhubGamingModeJsonStore");
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
@@ -182,8 +187,8 @@ public sealed class GamingModeService
         File.Exists(Path.Combine(deckyPluginsPath, "gaming-mode", "plugin.json"));
 
     /// <summary>
-    /// Dice se l'agente installato e' diverso da quello che Playhub porta nel
-    /// pacchetto.
+    /// Dice se l'agente richiede un aggiornamento automatico al pacchetto.
+    /// Conserva una versione o build valida installata piu' recente.
     /// </summary>
     /// <remarks>
     /// Serve perché senza questo controllo l'agente restava indietro in
@@ -200,10 +205,7 @@ public sealed class GamingModeService
             if (!File.Exists(bundled)) return false;   // pacchetto assente: non si tocca niente
             if (!IsInstalled) return false;
 
-            var source = new FileInfo(bundled);
-            var installed = new FileInfo(InstalledExe);
-            return installed.Length != source.Length ||
-                   installed.LastWriteTimeUtc < source.LastWriteTimeUtc;
+            return GamingModePayloadSync.NeedsAgentUpdate(bundled, InstalledExe);
         }
         catch
         {
@@ -286,29 +288,7 @@ public sealed class GamingModeService
                 return true;
             }
 
-            foreach (var file in Directory.GetFiles(DeckyPluginSource, "*", SearchOption.AllDirectories))
-            {
-                var rel = Path.GetRelativePath(DeckyPluginSource, file);
-                var installed = Path.Combine(dest, rel);
-                if (!File.Exists(installed))
-                {
-                    return true;
-                }
-
-                var source = new FileInfo(file);
-                var current = new FileInfo(installed);
-                // La lunghezza da sola non basta: una modifica al bundle puo'
-                // lasciarla identica. La data di scrittura sopravvive a
-                // File.Copy, quindi il confronto regge fra una versione e
-                // l'altra di Playhub.
-                if (current.Length != source.Length ||
-                    current.LastWriteTimeUtc < source.LastWriteTimeUtc)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return GamingModePayloadSync.NeedsPluginUpdate(AppContext.BaseDirectory, DeckyPluginSource, dest);
         }
         catch
         {
@@ -366,7 +346,7 @@ public sealed class GamingModeService
 
             Directory.CreateDirectory(deckyPluginsPath);
             var dest = Path.Combine(deckyPluginsPath, "gaming-mode");
-            CopyDirectory(DeckyPluginSource, dest);
+            CopyDirectory(DeckyPluginSource, dest, GamingModePayloadSync.RequiredPluginFiles(AppContext.BaseDirectory, DeckyPluginSource));
             Playhub.Shared.EditorialPhotoMigration.PrunePlugin(AppContext.BaseDirectory, dest);
             MigrateStandaloneQuickSettings(deckyPluginsPath);
             return new(true, "Gaming Mode è pronto. Riavvia Steam per trovarlo nel menu rapido.");
@@ -428,7 +408,7 @@ public sealed class GamingModeService
         return Path.Combine(root, "gaming-mode");
     }
 
-    private static void CopyDirectory(string source, string dest)
+    private static void CopyDirectory(string source, string dest, IEnumerable<string>? requiredFiles = null)
     {
         Directory.CreateDirectory(dest);
         foreach (var dir in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
@@ -436,7 +416,7 @@ public sealed class GamingModeService
             Directory.CreateDirectory(dir.Replace(source, dest));
         }
 
-        foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
+        foreach (var file in requiredFiles ?? Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
         {
             var target = file.Replace(source, dest);
             // DeckyLoader tiene aperti i file del plugin mentre gira: la prima
@@ -598,7 +578,7 @@ public sealed class GamingModeService
                             catch (InvalidOperationException) { continue; }
                             if (executable is null || !string.Equals(Path.GetDirectoryName(Path.GetFullPath(executable)), services, StringComparison.OrdinalIgnoreCase)) continue;
                             restartLoader ??= executable;
-                            try { process.Kill(entireProcessTree: true); }
+                            try { Playhub.DeckyHost.DeckyProcessTree.StopInstallation(services); }
                             catch (InvalidOperationException) { continue; }
                             if (!process.WaitForExit(10000)) throw new IOException("Decky is still using the Quick Settings directory.");
                         }
@@ -736,81 +716,76 @@ public sealed class GamingModeService
 
     public async Task<GamingModeConfig> LoadConfigAsync()
     {
-        var config = TryReadConfig(ConfigFile);
-
-        // Config principale mancante, illeggibile o logicamente corrotta (es.
-        // troncata da un blackout, o salvata a zero prima del caricamento dei
-        // controlli): prova a recuperare il backup dell'ultima versione valida.
-        if (!IsConfigValid(config))
+        GamingModeConfig? loaded = null;
+        await Task.Run(() => WithConfigLock(() =>
         {
-            var backup = TryReadConfig(ConfigFile + ".bak");
-            if (IsConfigValid(backup))
+            var config = TryReadConfig(ConfigFile);
+            bool restore = false;
+            bool recoveredBackup = false;
+            if (!IsConfigValid(config))
             {
-                config = backup;
-                await WriteConfigAsync(config!); // ripristina il file principale dal backup
+                var backup = TryReadConfig(ConfigFile + ".bak");
+                if (IsConfigValid(backup)) { config = backup; restore = recoveredBackup = true; }
             }
-        }
-
-        // Se nemmeno il backup è valido, riparti dai default.
-        if (!IsConfigValid(config))
-        {
-            config = CreateDefaultConfig();
-            await WriteConfigAsync(config);
-            return config;
-        }
-
-        if (NormalizeConfig(config!))
-        {
-            await WriteConfigAsync(config!);
-        }
-
-        return config!;
+            if (!IsConfigValid(config))
+            {
+                if (File.Exists(ConfigFile) || File.Exists(ConfigFile + ".bak"))
+                    throw new IOException("Gaming Mode settings could not be read. Existing settings were preserved.");
+                config = CreateDefaultConfig();
+                restore = true;
+            }
+            if (NormalizeConfig(config!)) restore = true;
+            var json = JsonSerializer.Serialize(config, JsonOptions);
+            if (recoveredBackup)
+                GamingModeConfigRecovery.RestoreAsync(ConfigFile, json,
+                    Path.Combine(AppPaths.LocalDataRoot, "diagnostics", "GamingMode")).GetAwaiter().GetResult();
+            else if (restore)
+                AppPaths.WriteAtomicAsync(ConfigFile, json).GetAwaiter().GetResult();
+            _configBaselines.Add(config!, new(json));
+            loaded = config;
+        }));
+        return loaded!;
     }
 
     public async Task SaveConfigAsync(GamingModeConfig config)
     {
         NormalizeConfig(config);
 
-        // SI RILEGGE IL FILE UN ISTANTE PRIMA DI RISCRIVERLO.
-        //
-        // Questo file lo scrivono in due: Playhub e l'agente Gaming Mode. La
-        // scrittura e' atomica da entrambe le parti, ma "atomica" garantisce
-        // solo che non resti un file a meta': l'ultimo che scrive sostituisce
-        // comunque tutto. Se l'interfaccia aveva letto la configurazione dieci
-        // minuti prima, salvando riportava indietro il file a com'era allora.
-        //
-        // Cosi' si vedevano sparire le cose cambiate nel frattempo dal plugin:
-        // la combinazione da tastiera tornava a quella predefinita e le app
-        // preferite della Dashboard svanivano.
-        //
-        // Qui si recuperano dal disco i campi che questo modello non conosce,
-        // appena prima di scrivere: cio' che l'app gestisce lo decide l'app,
-        // tutto il resto resta quello che c'e' adesso sul disco.
-        try
+        // Merge against the snapshot this UI loaded, under the agent's file lock.
+        // Saving an unrelated switch must not reset a newer splash or shortcut.
+        await Task.Run(() => WithConfigLock(() =>
         {
             var current = TryReadConfig(ConfigFile);
+            if (!IsConfigValid(current) && (File.Exists(ConfigFile) || File.Exists(ConfigFile + ".bak")))
+                throw new IOException("Gaming Mode settings could not be read. Existing settings were preserved.");
             if (current is not null)
             {
                 config.Extra = current.Extra;
                 if (config.Gaming is not null) config.Gaming.Extra = current.Gaming?.Extra;
                 if (config.Safety is not null) config.Safety.Extra = current.Safety?.Extra;
             }
-        }
-        catch
-        {
-            // Se il file non e' leggibile si salva comunque: meglio la
-            // configurazione dell'app che nessuna configurazione.
-        }
-
-        await WriteConfigAsync(config);
+            var proposed = JsonSerializer.Serialize(config, JsonOptions);
+            string json = proposed;
+            if (current is not null && _configBaselines.TryGetValue(config, out var baseline))
+                json = ConfigSnapshotMerge.Merge(JsonNode.Parse(baseline.Json)!.AsObject(),
+                    JsonNode.Parse(proposed)!.AsObject(),
+                    JsonSerializer.SerializeToNode(current, JsonOptions)!.AsObject()).ToJsonString(JsonOptions);
+            AppPaths.WriteAtomicAsync(ConfigFile, json).GetAwaiter().GetResult();
+            _configBaselines.GetValue(config, _ => new(proposed)).Json = proposed;
+        }));
     }
 
-    private async Task WriteConfigAsync(GamingModeConfig config)
+    private static void WithConfigLock(Action action)
     {
-        var json = JsonSerializer.Serialize(config, JsonOptions);
-        // Scrittura atomica con backup: un blackout a metà salvataggio non può più
-        // azzerare la config (causa del reset di tutte le opzioni di Gaming Mode).
-        await AppPaths.WriteAtomicAsync(ConfigFile, json);
+        bool acquired = false;
+        try
+        {
+            try { acquired = ConfigMutex.WaitOne(TimeSpan.FromSeconds(10)); }
+            catch (AbandonedMutexException) { acquired = true; }
+            if (!acquired) throw new IOException("Gaming Mode settings are busy. Try again.");
+            action();
+        }
+        finally { if (acquired) ConfigMutex.ReleaseMutex(); }
     }
 
     private GamingModeConfig? TryReadConfig(string path)

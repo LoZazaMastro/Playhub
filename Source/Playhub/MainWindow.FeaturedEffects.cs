@@ -56,6 +56,13 @@ public sealed partial class MainWindow
     {
         if (_featuredAutoAdvanceControls.TryGetValue(card, out var existing)) return existing.Indicator;
         EnsureFeaturedAutoAdvance();
+        var state = CreateStoreFeaturedCountdown();
+        _featuredAutoAdvanceControls.Add(card, state);
+        return state.Indicator;
+    }
+
+    private static FeaturedAutoAdvanceControlState CreateStoreFeaturedCountdown()
+    {
         var indicator = new Border
         {
             Width = 20, Height = 20, Margin = new Thickness(18, 0, 0, 18),
@@ -90,9 +97,8 @@ public sealed partial class MainWindow
         var state = new FeaturedAutoAdvanceControlState(indicator, pie, ellipse,
             progress, countdown, trimEnd);
         ElementCompositionPreview.SetElementChildVisual(indicator, pie);
-        _featuredAutoAdvanceControls.Add(card, state);
         UpdateFeaturedPie(state, 1);
-        return indicator;
+        return state;
     }
 
     private void EnsureFeaturedAutoAdvance()
@@ -216,15 +222,18 @@ public sealed partial class MainWindow
     }
 
     private void StartFeaturedPie(FeaturedAutoAdvanceControlState state)
+        => StartStoreFeaturedPie(state, _featuredAutoAdvanceClock);
+
+    private static void StartStoreFeaturedPie(FeaturedAutoAdvanceControlState state, Stopwatch clock)
     {
-        var remaining = FeaturedAutoAdvanceInterval - _featuredAutoAdvanceClock.Elapsed;
+        var remaining = FeaturedAutoAdvanceInterval - clock.Elapsed;
         UpdateFeaturedPie(state, remaining.TotalSeconds / FeaturedAutoAdvanceInterval.TotalSeconds);
         if (remaining <= TimeSpan.Zero) return;
         state.Countdown.InsertKeyFrame(0, (float)state.Fraction);
         // Composition requires at least 1 ms; the independent deadline stays exact.
         var minimumDuration = TimeSpan.FromMilliseconds(1);
         state.Countdown.Duration = remaining >= minimumDuration ? remaining : minimumDuration;
-        state.Clock = _featuredAutoAdvanceClock;
+        state.Clock = clock;
         // The compositor samples this at its actual render cadence (including 120 Hz).
         // No Rendering subscription, frame-counting, geometry mutation or layout per frame.
         state.IsAnimating = true;

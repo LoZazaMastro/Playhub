@@ -6,6 +6,9 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Windows.System;
@@ -94,7 +97,7 @@ public sealed class DeckyInstallerService
     /// <summary>Installs the latest main artifact only when its files differ or are missing.</summary>
     public async Task<string> InstallOrUpdateLatestAsync()
     {
-        var bytes = await TryDownloadAsync(LatestZipUrl);
+        var bytes = await DownloadLatestArtifactAsync(allowFallback: !IsInstalled());
         if (bytes is null)
         {
             throw new InvalidOperationException("Non riesco a scaricare Decky. Controlla la connessione e riprova.");
@@ -114,6 +117,9 @@ public sealed class DeckyInstallerService
 
         if (comparison == DeckyArtifactMatch.Identical)
         {
+            EnsureRuntimeHostInstalled();
+            Playhub.Shared.DeckyStartupGuard.UpgradeExistingAutostart();
+            Playhub.Shared.DeckyStartupGuard.ProtectRunningLoader();
             return "La versione installata di Decky è già la più recente.";
         }
 
@@ -140,7 +146,7 @@ public sealed class DeckyInstallerService
 
     private async Task<string> InstallFromUrlAsync(string url, string label, bool console = false)
     {
-        var bytes = await TryDownloadAsync(url);
+        var bytes = url == LatestZipUrl ? await DownloadLatestArtifactAsync() : await TryDownloadAsync(url);
         if (bytes is null)
         {
             throw new InvalidOperationException("Non riesco a scaricare Decky. Controlla la connessione e riprova.");
@@ -222,6 +228,13 @@ public sealed class DeckyInstallerService
             () => SetupAutostartAndLaunch(), milliseconds => Task.Delay(milliseconds),
             error => _startupError = error.Message);
 
+    private Task<byte[]?> DownloadLatestArtifactAsync(bool allowFallback = true) => DeckyLatestArtifact.DownloadAsync(
+        () => TryDownloadAsync(LatestZipUrl),
+        async () => (await GetMainBuildsAsync()).Select(build => build.Id),
+        id => TryDownloadAsync($"https://nightly.link/{Owner}/{Repo}/actions/runs/{id}/{ArtifactName}"),
+        bytes => bytes.Length >= 500_000 && DeckyArtifactComparison.Compare(bytes, ServicesDir) != DeckyArtifactMatch.Invalid,
+        allowFallback);
+
     private async Task<byte[]?> TryDownloadAsync(string url)
     {
         try
@@ -281,6 +294,7 @@ public sealed class DeckyInstallerService
         _startupError = "";
         try
         {
+            EnsureRuntimeHostInstalled();
             var loader = Path.Combine(ServicesDir, console ? "PluginLoader.exe" : "PluginLoader_noconsole.exe");
             if (!File.Exists(loader))
             {
@@ -314,6 +328,39 @@ public sealed class DeckyInstallerService
             _startupError = error.Message;
             return false;
         }
+    }
+
+    /// <summary>Repair the standalone Decky lifetime helper without requiring Gaming Mode.</summary>
+    public void EnsureRuntimeHostInstalled()
+    {
+        string source = Path.Combine(AppContext.BaseDirectory, "Assets", "DeckyRuntime");
+        string runtime = Path.Combine(ServicesDir, "PlayhubRuntime");
+        if (!File.Exists(Path.Combine(source, "Playhub-DeckyHost.exe")))
+            throw new IOException("Il runtime Decky di Playhub è mancante. Reinstalla Playhub per ripristinarlo.");
+        string[] files = Directory.GetFiles(source).OrderBy(file => Path.GetFileName(file), StringComparer.Ordinal).ToArray();
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        foreach (string file in files)
+        {
+            hash.AppendData(Encoding.UTF8.GetBytes(Path.GetFileName(file) + "\0"));
+            using var stream = File.OpenRead(file);
+            var buffer = new byte[65536]; int length;
+            while ((length = stream.Read(buffer)) > 0) hash.AppendData(buffer.AsSpan(0, length));
+        }
+        string version = Convert.ToHexString(hash.GetHashAndReset());
+        string destination = Path.Combine(runtime, version);
+        Directory.CreateDirectory(destination);
+        foreach (string file in files)
+        {
+            string target = Path.Combine(destination, Path.GetFileName(file));
+            if (File.Exists(target) && File.ReadAllBytes(file).AsSpan().SequenceEqual(File.ReadAllBytes(target))) continue;
+            // Hash-named versions are immutable. A live host can keep its DLLs;
+            // a future Decky start selects the newly completed version.
+            File.Copy(file, target, overwrite: true);
+        }
+        string pointer = Path.Combine(runtime, "current");
+        string temporary = Path.Combine(runtime, ".current-" + Guid.NewGuid().ToString("N"));
+        try { File.WriteAllText(temporary, version, new UTF8Encoding(false)); File.Move(temporary, pointer, overwrite: true); }
+        finally { try { File.Delete(temporary); } catch (IOException) { } }
     }
 
     // Removes any leftover PluginLoader autostart so only a single instance ever runs.
@@ -360,23 +407,7 @@ public sealed class DeckyInstallerService
 
     private void KillLoaders()
     {
-        foreach (var name in new[] { "PluginLoader", "PluginLoader_noconsole" })
-        {
-            foreach (var process in Process.GetProcessesByName(name))
-            {
-                using (process)
-                {
-                    try
-                    {
-                        string? executable = process.MainModule?.FileName;
-                        if (executable is null || !string.Equals(Path.GetDirectoryName(Path.GetFullPath(executable)), Path.GetFullPath(ServicesDir), StringComparison.OrdinalIgnoreCase)) continue;
-                        process.Kill(entireProcessTree: true);
-                        if (!process.WaitForExit(10000)) throw new IOException("Decky is still closing. Try again after it has stopped.");
-                    }
-                    catch (InvalidOperationException) { }
-                }
-            }
-        }
+        Playhub.DeckyHost.DeckyProcessTree.StopInstallation(ServicesDir);
     }
 
     private static string ServicesDir => Path.Combine(

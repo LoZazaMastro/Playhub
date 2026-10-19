@@ -4,9 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.UI.Xaml.Hosting;
-using Microsoft.UI.Composition;
-using System.Numerics;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.Json.Nodes;
 using Playhub.Integrations;
 using Playhub.Services;
@@ -24,11 +22,10 @@ public sealed class LaunchCurtainVisualEditor : IDisposable
     private readonly Canvas _scene;
     private readonly Image _background = new() { Stretch = Stretch.Fill, IsHitTestVisible = false };
     private readonly Image _logo = new() { Stretch = Stretch.Fill };
-    private readonly Canvas _shadowHost = new() { IsHitTestVisible=false };
-    private SpriteVisual? _shadowVisual;
-    private DropShadow? _shadow;
-    private ImageSource? _shadowSource;
-    private bool _logoDecoded;
+    private readonly Image _shadowImage = new() { Stretch = Stretch.Fill, IsHitTestVisible = false };
+    private ArtworkPixels? _logoPixels;
+    private CancellationTokenSource? _shadowLoad;
+    private (ArtworkPixels Logo, int Width, int Height, int Blur)? _shadowKey;
     private readonly ContentControl _surface;
     private readonly ArtworkEditorGamepadInput _gamepad;
     private readonly Border _frame;
@@ -39,6 +36,9 @@ public sealed class LaunchCurtainVisualEditor : IDisposable
     private readonly double _resetLogoX,_resetLogoY,_maximumPreviewHeight;
     private CancellationTokenSource? _backgroundLoad, _logoLoad;
     private readonly JsonObject _settings = new();
+    private readonly Dictionary<string, (Slider Slider, double Default)> _appearanceControls = new();
+    private readonly ComboBox _targetPicker;
+    private bool _synchronizingAppearance;
     private double _backgroundWidth = 16, _backgroundHeight = 9, _logoWidth = 2, _logoHeight = 1;
     private uint? _pointer;
     private Point _origin;
@@ -51,10 +51,17 @@ public sealed class LaunchCurtainVisualEditor : IDisposable
     private const double SceneWidth = 1600;
     private double SceneHeight => SceneWidth / _aspect;
     public FrameworkElement Element { get; }
+    public FrameworkElement AppearanceElement { get; }
+    public string Target => _target;
+    public event Action? TargetChanged;
+#if PLAYHUB_UI_REVIEW
+    public Canvas ReviewScene => _scene;
+    public bool ReviewShadowReady => _shadowImage.Source is not null && _shadowLoad is null;
+#endif
 
     public LaunchCurtainVisualEditor(string? backgroundPath, string? logoPath, JsonObject settings, Action<JsonObject> changed,
         Func<string,string>? text = null, double aspectRatio = 16d/9d, double logoWidthFraction = .42, double logoHeightFraction = .20, bool trimLogoPadding = false,
-        double resetLogoX = 50, double resetLogoY = 50, double maxPreviewHeight = 260, bool showEmptyBackgroundPrompt = true)
+        double resetLogoX = 50, double resetLogoY = 50, double maxPreviewHeight = 260, bool showEmptyBackgroundPrompt = true, bool separateAppearance = false)
     {
         _changed = changed;
         _aspect = double.IsFinite(aspectRatio) && aspectRatio is >= 1 and <= 4 ? aspectRatio : 16d/9d;
@@ -66,7 +73,7 @@ public sealed class LaunchCurtainVisualEditor : IDisposable
         _maximumPreviewHeight=ArtworkEditorGeometry.Clamp(maxPreviewHeight,260,100,600);
         string T(string key) => text?.Invoke(key) ?? key;
         _scene = new Canvas { Width = SceneWidth, Height = SceneHeight, Background = new SolidColorBrush(Microsoft.UI.Colors.Black), Clip = new RectangleGeometry { Rect = new(0,0,SceneWidth,SceneHeight) } };
-        _scene.Children.Add(_background); _scene.Children.Add(_shadowHost); _scene.Children.Add(_logo);
+        _scene.Children.Add(_background); _scene.Children.Add(_shadowImage); _scene.Children.Add(_logo);
         var view = new Viewbox { Child = _scene, Stretch = Stretch.Uniform };
         _surface = new ContentControl { Content = view, IsTabStop = true, UseSystemFocusVisuals=true, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch };
         AutomationProperties.SetName(_surface,T("Anteprima"));
@@ -79,7 +86,8 @@ public sealed class LaunchCurtainVisualEditor : IDisposable
         controls.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1,GridUnitType.Star) });
         controls.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var target = new ComboBox { MinWidth = 120, HorizontalAlignment = HorizontalAlignment.Left, Items = { T("Logo"),T("Sfondo") }, SelectedIndex = 0 };
-        target.SelectionChanged += (_,_) => { EndDrag(); _target = target.SelectedIndex == 1 ? "background" : "logo"; };
+        _targetPicker = target;
+        target.SelectionChanged += (_,_) => { EndDrag(); _target = target.SelectedIndex == 1 ? "background" : "logo"; TargetChanged?.Invoke(); };
         AutomationProperties.SetName(target,T("Modifica")); controls.Children.Add(target);
         var directions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, HorizontalAlignment = HorizontalAlignment.Center };
         directions.Children.Add(Button("\uE76B",T("Sinistra"),()=>Move(-1,0)));
@@ -101,6 +109,59 @@ public sealed class LaunchCurtainVisualEditor : IDisposable
         };
         var panel = new StackPanel { Spacing = 12, HorizontalAlignment = HorizontalAlignment.Stretch };
         panel.Children.Add(_frame); panel.Children.Add(controls);
+        var appearance = new StackPanel { Spacing = 12 };
+        var appearanceHeading = new Grid { ColumnSpacing = 10 };
+        appearanceHeading.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        appearanceHeading.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) });
+        appearanceHeading.Children.Add(new FontIcon { Glyph = "\uE790", FontSize = 18, VerticalAlignment = VerticalAlignment.Center });
+        var appearanceTitle = new TextBlock { Text = T("Emulation.Artwork.Appearance"), FontSize = 16,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+        Grid.SetColumn(appearanceTitle, 1); appearanceHeading.Children.Add(appearanceTitle); appearance.Children.Add(appearanceHeading);
+        var fields = new Grid { ColumnSpacing = 18, RowSpacing = 12, HorizontalAlignment = HorizontalAlignment.Stretch };
+        foreach (var (key, label, fallback) in new[]
+        {
+            ("background_opacity", "Emulation.Artwork.BackgroundOpacity", 100d),
+            ("logo_shadow_opacity", "Emulation.Artwork.ShadowOpacity", 0d),
+            ("logo_shadow_blur", "Emulation.Artwork.ShadowBlur", 40d)
+        })
+        {
+            var field = new StackPanel { Spacing = 2 };
+            var fieldHeader = new Grid { ColumnSpacing = 10 };
+            fieldHeader.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) });
+            fieldHeader.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+            fieldHeader.Children.Add(new TextBlock { Text = T(label), TextWrapping = TextWrapping.Wrap, FontSize = 13 });
+            var value = new TextBlock { Text = fallback.ToString("0", System.Globalization.CultureInfo.InvariantCulture), FontSize = 12, Opacity = .65, VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(value, 1); fieldHeader.Children.Add(value); field.Children.Add(fieldHeader);
+            var slider = new Slider { Minimum = 0, Maximum = 100, StepFrequency = 1, Value = fallback, MinHeight = 30,
+                HorizontalAlignment = HorizontalAlignment.Stretch };
+            AutomationProperties.SetName(slider, T(label));
+            _appearanceControls.Add(key, (slider, fallback));
+            slider.ValueChanged += (_, args) =>
+            {
+                value.Text = args.NewValue.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
+                if (_disposed || _synchronizingAppearance || !double.IsFinite(args.NewValue)) return;
+                EndDrag();
+                _settings[key] = ArtworkEditorGeometry.Clamp(args.NewValue, fallback, 0, 100);
+                Paint(); Publish(key);
+            };
+            field.Children.Add(slider); fields.Children.Add(field);
+        }
+        int appearanceColumns = -1;
+        void ArrangeAppearance(double width)
+        {
+            int columns = width >= 760 ? 3 : width >= 520 ? 2 : 1;
+            if (columns == appearanceColumns) return;
+            appearanceColumns = columns;
+            fields.ColumnDefinitions.Clear(); fields.RowDefinitions.Clear();
+            for (int column = 0; column < columns; column++) fields.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star), MinWidth = 0 });
+            for (int row = 0; row < (fields.Children.Count + columns - 1) / columns; row++) fields.RowDefinitions.Add(new() { Height = GridLength.Auto });
+            for (int index = 0; index < fields.Children.Count; index++) { Grid.SetRow((FrameworkElement)fields.Children[index], index / columns); Grid.SetColumn((FrameworkElement)fields.Children[index], index % columns); }
+        }
+        fields.SizeChanged += (_, args) => ArrangeAppearance(args.NewSize.Width);
+        ArrangeAppearance(0); appearance.Children.Add(fields);
+        AppearanceElement = new Border { Child = appearance, Padding = new Thickness(16), CornerRadius = new CornerRadius(10),
+            Background = Brush("SubtleFillColorSecondaryBrush", Windows.UI.Color.FromArgb(18, 255, 255, 255)) };
+        if (!separateAppearance) panel.Children.Add(AppearanceElement);
         Element = panel;
         Element.SizeChanged += EditorSizeChanged;
         _scene.PointerPressed += PointerPressed; _scene.PointerMoved += PointerMoved; _scene.PointerReleased += PointerReleased;
@@ -112,6 +173,8 @@ public sealed class LaunchCurtainVisualEditor : IDisposable
         _gamepad=new(Element,_surface,Move,Zoom,Diag.Step);
         SetSettings(settings); SetImages(backgroundPath,logoPath);
     }
+
+    public void SelectTarget(string target) => _targetPicker.SelectedIndex = target == "background" ? 1 : 0;
 
     private static Brush Brush(string key,Windows.UI.Color fallback) => Application.Current.Resources.TryGetValue(key,out var resource) && resource is Brush value ? value : new SolidColorBrush(fallback);
     private static Button Button(string glyph,string label,Action action)
@@ -138,7 +201,7 @@ public sealed class LaunchCurtainVisualEditor : IDisposable
     {
         current?.Cancel(); current=null;
         if(string.IsNullOrWhiteSpace(path))
-        { if(destination==_logo) { _logoDecoded=false;ReleaseShadow(); } destination.Source=null; return; }
+        { if(destination==_logo) { _logoPixels=null;ReleaseShadow(); } destination.Source=null; return; }
         var load=current=new CancellationTokenSource();
         _=LoadImageAsync(path,destination,load);
     }
@@ -155,11 +218,15 @@ public sealed class LaunchCurtainVisualEditor : IDisposable
             using var output=new InMemoryRandomAccessStream();
             double width=image.Width,height=image.Height;
             bool trim=destination==_logo && _trimLogoPadding;
-            if(trim)
+            ArtworkPixels? decodedLogo = null;
+            if(destination==_logo)
             {
                 var decoder=await BitmapDecoder.CreateAsync(input).AsTask(load.Token);
                 var data=await decoder.GetPixelDataAsync(BitmapPixelFormat.Bgra8,BitmapAlphaMode.Straight,new BitmapTransform(),ExifOrientationMode.RespectExifOrientation,ColorManagementMode.ColorManageToSRgb).AsTask(load.Token);
                 var pixels=new ArtworkPixels((int)image.Width,(int)image.Height,data.DetachPixelData());
+                decodedLogo = pixels;
+                if(trim)
+                {
                 var bounds=await Task.Run(()=>PerfectArtworkPixels.LogoBounds(pixels,load.Token),load.Token);
                 var cropped=new byte[bounds.Width*bounds.Height*4];
                 for(int y=0;y<bounds.Height;y++)
@@ -167,6 +234,9 @@ public sealed class LaunchCurtainVisualEditor : IDisposable
                 var encoder=await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId,output).AsTask(load.Token);
                 encoder.SetPixelData(BitmapPixelFormat.Bgra8,BitmapAlphaMode.Straight,(uint)bounds.Width,(uint)bounds.Height,96,96,cropped);
                 await encoder.FlushAsync().AsTask(load.Token);output.Seek(0);width=bounds.Width;height=bounds.Height;
+                decodedLogo = new(bounds.Width, bounds.Height, cropped);
+                }
+                input.Seek(0);
             }
             var bitmap=new BitmapImage { DecodePixelWidth=1600 };
             bitmap.ImageFailed+=(_,args)=>
@@ -177,7 +247,7 @@ public sealed class LaunchCurtainVisualEditor : IDisposable
             await bitmap.SetSourceAsync(trim?output:input).AsTask(load.Token);
             if(!CurrentImageLoad(destination,load)) return;
             if(destination==_background) { _backgroundWidth=width;_backgroundHeight=height; }
-            else { _logoWidth=width;_logoHeight=height;_logoDecoded=false;ReleaseShadow(); }
+            else { _logoWidth=width;_logoHeight=height;ReleaseShadow();_logoPixels=decodedLogo; }
             destination.Source=bitmap;
             _empty.Visibility=_showEmptyBackgroundPrompt && _background.Source is null?Visibility.Visible:Visibility.Collapsed;Paint();
             Diag.Step($"Artwork preview loaded role={role} pathLength={path.Length} size={width}x{height}");
@@ -199,6 +269,13 @@ public sealed class LaunchCurtainVisualEditor : IDisposable
         if (_disposed) return;
         foreach (string key in new[] { "logo_position_x","logo_position_y","logo_scale","background_position_x","background_position_y","background_scale","background_opacity","logo_shadow_opacity","logo_shadow_blur","show_logo" })
             if (settings.ContainsKey(key)) _settings[key] = settings[key]?.DeepClone();
+        _synchronizingAppearance = true;
+        try
+        {
+            foreach (var (key, field) in _appearanceControls)
+                field.Slider.Value = Number(key, field.Default, 0, 100);
+        }
+        finally { _synchronizingAppearance = false; }
         Paint();
     }
     private double Number(string key,double fallback,double min,double max) => double.TryParse(_settings[key]?.ToString(),System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out double value) ? ArtworkEditorGeometry.Clamp(value,fallback,min,max) : fallback;
@@ -211,38 +288,48 @@ public sealed class LaunchCurtainVisualEditor : IDisposable
             Number("logo_position_x",50,0,100),Number("logo_position_y",50,0,100),Number("logo_scale",100,50,200),_logoWidthFraction,_logoHeightFraction);
         Place(_logo,logo); _logo.Visibility=_settings["show_logo"]?.ToString() == "false" || _logo.Source is null ? Visibility.Collapsed : Visibility.Visible;
         double shadowOpacity=Number("logo_shadow_opacity",0,0,100)/100;
-        bool visibleShadow=_logo.Visibility==Visibility.Visible && _logoDecoded && _logo.IsLoaded && Element.IsLoaded && shadowOpacity>0;
+        bool visibleShadow=_logo.Visibility==Visibility.Visible && _logoPixels is not null && Element.IsLoaded && shadowOpacity>0;
 #if PLAYHUB_UI_REVIEW
         if(Environment.GetEnvironmentVariable("PLAYHUB_REVIEW_DISABLE_EDITOR_SHADOW")=="1")visibleShadow=false;
 #endif
         if(visibleShadow)
         {
-            if(_shadowVisual is null)
-            {
-                var compositor=ElementCompositionPreview.GetElementVisual(_scene).Compositor;
-                _shadowVisual=compositor.CreateSpriteVisual();_shadow=compositor.CreateDropShadow();_shadowVisual.Shadow=_shadow;
-                ElementCompositionPreview.SetElementChildVisual(_shadowHost,_shadowVisual);
-#if PLAYHUB_UI_REVIEW
-                Diag.Step($"Artwork preview shadow created loaded={Element.IsLoaded} opacity={shadowOpacity}");
-#endif
-            }
-            _shadowVisual.IsVisible=true;_shadowVisual.Size=new((float)logo.Width,(float)logo.Height);
-            _shadowVisual.Offset=new((float)logo.X,(float)logo.Y,0);
-            if(!ReferenceEquals(_shadowSource,_logo.Source)) { _shadow!.Mask=_logo.GetAlphaMask();_shadowSource=_logo.Source; }
-            _shadow!.Color=Microsoft.UI.Colors.Black;
-            _shadow.BlurRadius=(float)(SceneWidth*.006*Number("logo_shadow_blur",40,0,100)/40);
-            _shadow.Opacity=(float)shadowOpacity;_shadow.Offset=new Vector3(0,(float)(SceneWidth*.003),0);
+            int blur = (int)Math.Round(SceneWidth * .006 * Number("logo_shadow_blur",40,0,100) / 40);
+            int offset = (int)Math.Round(SceneWidth * .003), padding = PerfectArtworkPixels.ShadowPadding(blur, offset);
+            _shadowImage.Width = logo.Width + 2 * padding; _shadowImage.Height = logo.Height + 2 * padding;
+            Canvas.SetLeft(_shadowImage,logo.X-padding); Canvas.SetTop(_shadowImage,logo.Y-padding);
+            _shadowImage.Opacity = shadowOpacity; _shadowImage.Visibility = Visibility.Visible;
+            var key = (_logoPixels!, Math.Max(1,(int)Math.Round(logo.Width)), Math.Max(1,(int)Math.Round(logo.Height)), blur);
+            if (_shadowKey != key) { _shadowKey = key; _ = RenderShadowAsync(key, offset); }
         }
-        else ReleaseShadow();
+        else _shadowImage.Visibility = Visibility.Collapsed;
+    }
+    private async Task RenderShadowAsync((ArtworkPixels Logo,int Width,int Height,int Blur) key,int offset)
+    {
+        _shadowLoad?.Cancel();
+        using var load = new CancellationTokenSource(); _shadowLoad=load;
+        try
+        {
+            await Task.Delay(35,load.Token);
+            var pixels=await Task.Run(()=>PerfectArtworkPixels.RenderShadow(key.Logo,key.Width,key.Height,key.Blur,offset,load.Token),load.Token);
+            if (_disposed || load.IsCancellationRequested || !ReferenceEquals(_shadowLoad,load)) return;
+            var bitmap=new WriteableBitmap(pixels.Width,pixels.Height);
+            using(var stream=bitmap.PixelBuffer.AsStream()) await stream.WriteAsync(pixels.Bgra,load.Token);
+            load.Token.ThrowIfCancellationRequested();
+            bitmap.Invalidate(); _shadowImage.Source=bitmap;
+        }
+        catch(OperationCanceledException) { }
+        catch(Exception error) when(error is IOException or ArgumentException or System.Runtime.InteropServices.COMException)
+        { _shadowKey=null; Diag.Step("Artwork shadow preview: "+error.GetType().Name); }
+        finally { if(ReferenceEquals(_shadowLoad,load)) _shadowLoad=null; }
     }
     private void LogoImageOpened(object sender,RoutedEventArgs args)
-    { if(!_disposed) { _logoDecoded=true;Paint(); } }
+    { if(!_disposed) Paint(); }
     private void Loaded(object sender,RoutedEventArgs args) { if(!_disposed)Paint(); }
     private void ReleaseShadow()
     {
-        if(_shadowVisual is null)return;
-        ElementCompositionPreview.SetElementChildVisual(_shadowHost,null);
-        _shadowVisual.Dispose();_shadow?.Dispose();_shadowVisual=null;_shadow=null;_shadowSource=null;
+        _shadowLoad?.Cancel(); _shadowLoad=null; _shadowKey=null;
+        _shadowImage.Source=null;
     }
     private static void Place(Image image,ArtworkEditorRect rect)
     { image.Width=rect.Width; image.Height=rect.Height; Canvas.SetLeft(image,rect.X); Canvas.SetTop(image,rect.Y); }

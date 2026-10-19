@@ -44,6 +44,8 @@ When you first launch Playhub, its mascots guide you through setup.
 - **Guided repairs:** a single check finds and fixes what isn't working.
 - **Easier support:** when needed, Playhub prepares a report that's ready to share.
 - **Built-in updates:** check for, download, and install app and plugin updates directly from the interface.
+- **A growing Plugin Store:** discover the 100 most recently published plugins and receive catalog updates from the public Playhub repository.
+- **Gaming history on demand:** On this day loads stories and images as you browse, keeping the installer lighter.
 
 ## The Playhub family
 
@@ -73,7 +75,7 @@ More available plugins:
 ## Download and installation
 
 1. Open the [latest release](https://github.com/LoZazaMastro/Playhub/releases/latest);
-2. Download `Playhub Setup.exe`;
+2. Download `Playhub-Setup.exe`;
 3. Run the installer, choose your language, and select **Install**;
 4. On first launch, let Playhub check Steam, Decky, and Gaming Mode.
 
@@ -101,7 +103,7 @@ Playhub is built on people working together and on the freedom of ideas and word
 
 Playhub and its creator ZazaMastro are not responsible for any content, message, post or publication coming from the community.
 
-> **Decky Loader on Windows has NO OFFICIAL SUPPORT from the Decky Loader team. All support requests for Windows will be ignored by that team.**
+> **Decky Loader on Windows has NO OFFICIAL SUPPORT from the Decky Loader team. All support requests for Windows will be ignored by that team. Contact Playhub support for the Windows integration.**
 
 Please do not ask the Decky team for support on Windows: it is not officially supported there. Decky and Playhub are two separate things, so please use the [Playhub subreddit](https://www.reddit.com/r/PlayhubGaming/) for questions or help. From our side you will always get a hand, whatever your platform, and with the greatest respect for people.
 

@@ -1,6 +1,6 @@
 {
-    "version":  "1.8.3",
-    "repository":  "LoZazaMastro/Playhub-Metadata",
-    "sha256":  "2282323c9db0cb622679de57c132f231104dc0710ab7f90fc9ae4f6317f96868",
-    "bundled":  true
+  "version": "1.8.4",
+  "repository": "LoZazaMastro/Playhub-Metadata",
+  "sha256": "2fcf5f7eff4869dde3389c5c645ad80e46eadc1abad173cfbf86309872e8b6e3",
+  "bundled": true
 }

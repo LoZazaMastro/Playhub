@@ -1,5 +1,4 @@
 using Playhub.Integrations;
-using Playhub.Emulation.Workbench;
 using System.Text.Json.Nodes;
 using System.Security.Cryptography;
 
@@ -20,8 +19,8 @@ try
  await state.SetHiddenAsync("pc:cuphead",2485417537,[grid],true,default);
  await state.SetHiddenAsync("pc:cuphead",2485417537,[grid],false,default);
  Check(JsonNode.DeepEquals(JsonNode.Parse(await File.ReadAllTextAsync(file)),original),"Repeated composition restores the exact original position");
- await state.SetHiddenAsync("emu:before-import",0,[],true,default);
- Check((await store.ReadCategoryAsync("emu:before-import","artwork"))["logoHiddenRequested"]!.GetValue<bool>(),"AppID zero prepares owned state without Steam writes");
+ await state.SetHiddenAsync("pc:before-import",0,[],true,default);
+ Check((await store.ReadCategoryAsync("pc:before-import","artwork"))["logoHiddenRequested"]!.GetValue<bool>(),"AppID zero prepares owned state without Steam writes");
  await Refuses(()=>state.SetHiddenAsync("pc:bad",2485417537,[fixture],true,default),"Untrusted account refused");
  string prior=await File.ReadAllTextAsync(file);
  var missingReadback=new PerfectArtworkState(store,()=>true,(_,_)=>Task.FromResult<JsonNode?>(new JsonObject{["ok"]=true}));
@@ -34,7 +33,7 @@ try
  int calls=0;var multi=new PerfectArtworkState(store,()=>true,(_,_)=>{calls++;return Task.FromResult<JsonNode?>(new JsonObject{["ok"]=true});});
  await Refuses(()=>multi.SetHiddenAsync("pc:multi",2485417537,[grid,otherGrid],true,default),"Multiple accounts cannot mutate the active Steam session");
  Check(calls==0&&!File.Exists(Path.Combine(otherGrid,"2485417537.json")),"Inactive account refused before native call or disk write");
- string node=args.FirstOrDefault()??Path.GetFullPath("Source/Playhub/Tools/Media/node.exe");
+ string node=args.FirstOrDefault()??"node";
  string expression=PerfectArtworkState.BuildLogoPositionExpression(2485417537,"7",original.ToJsonString());
  string probe=Path.Combine(fixture,"account-guard.cjs");
  await File.WriteAllTextAsync(probe,"const vm=require('node:vm');const expression="+System.Text.Json.JsonSerializer.Serialize(expression)+";(async()=>{let writes=0;global.window={App:{BHasCurrentUser:()=>true,GetServicesInitialized:()=>true,GetCurrentUser:()=>({strSteamID:'76561197960265736'})},SteamClient:{Apps:{SetCustomLogoPositionForApp:async()=>{writes++;}}}};try{await vm.runInThisContext(expression);throw Error('wrong account accepted');}catch(e){if(e.message!=='steam_account_mismatch')throw e;}if(writes!==0)throw Error('wrong account wrote');window.App.GetCurrentUser=()=>({strSteamID:'76561197960265735'});if(!(await vm.runInThisContext(expression)).ok||writes!==1)throw Error('exact account failed');window.App.GetServicesInitialized=()=>false;try{await vm.runInThisContext(expression);throw Error('unready accepted');}catch(e){if(e.message!=='steam_account_unavailable')throw e;}if(writes!==1)throw Error('unready wrote');console.log('3 native account protocol cases PASS');})().catch(e=>{console.error(e);process.exitCode=1;});");

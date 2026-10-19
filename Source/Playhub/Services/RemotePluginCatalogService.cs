@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Playhub.Services;
 
-public sealed class RemotePluginCatalogService
+public sealed partial class RemotePluginCatalogService
 {
     // Confirmed by .git/config and refs/remotes/origin/HEAD; publication is a separate step.
     public const string CatalogUrl = "https://raw.githubusercontent.com/LoZazaMastro/Playhub/main/catalog/plugins.json";
@@ -39,11 +39,13 @@ public sealed class RemotePluginCatalogService
     private readonly string _cachePath;
     private readonly Func<DateTimeOffset> _clock;
     private readonly TimeSpan _timeout;
+    private readonly TimeSpan _officialTimeout;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly SemaphoreSlim _cacheGate = new(1, 1);
     private RemotePluginCatalog? _knownGood;
     private DateTimeOffset _nextCheck;
     private bool _cacheRead;
+    private bool _officialCacheRead;
     private string _origin = "local";
     private string? _error;
 
@@ -51,7 +53,7 @@ public sealed class RemotePluginCatalogService
         : this(SharedHttp, cachePath, () => DateTimeOffset.UtcNow, TimeSpan.FromSeconds(10)) { }
 
     internal RemotePluginCatalogService(HttpClient http, string cachePath,
-        Func<DateTimeOffset> clock, TimeSpan timeout)
+        Func<DateTimeOffset> clock, TimeSpan timeout, TimeSpan? officialTimeout = null)
     {
         _http = http;
         _cachePath = Path.GetFullPath(cachePath);
@@ -59,6 +61,9 @@ public sealed class RemotePluginCatalogService
         if (timeout <= TimeSpan.Zero || timeout > TimeSpan.FromSeconds(30))
             throw new ArgumentOutOfRangeException(nameof(timeout));
         _timeout = timeout;
+        _officialTimeout = officialTimeout ?? TimeSpan.FromSeconds(25);
+        if (_officialTimeout <= TimeSpan.Zero || _officialTimeout > TimeSpan.FromSeconds(25))
+            throw new ArgumentOutOfRangeException(nameof(officialTimeout));
     }
 
     // File opens, JSON parsing and merging never run inline on a UI synchronization context.
@@ -73,24 +78,25 @@ public sealed class RemotePluginCatalogService
         => RunAsync(localCatalog, refresh: false, cancellationToken);
 
     public Task<RemotePluginCatalogResult> RefreshAsync(RemotePluginCatalog localCatalog,
-        CancellationToken cancellationToken = default)
-        => RunAsync(localCatalog, refresh: true, cancellationToken);
+        CancellationToken cancellationToken = default, bool forceRefresh = false)
+        => RunAsync(localCatalog, refresh: true, cancellationToken, forceRefresh);
 
     private Task<RemotePluginCatalogResult> RunAsync(RemotePluginCatalog localCatalog,
-        bool refresh, CancellationToken cancellationToken)
+        bool refresh, CancellationToken cancellationToken, bool forceRefresh = false)
     {
         ArgumentNullException.ThrowIfNull(localCatalog);
-        return Task.Run(() => LoadCoreAsync(localCatalog, refresh, cancellationToken), cancellationToken);
+        return Task.Run(() => LoadCoreAsync(localCatalog, refresh, cancellationToken, forceRefresh), cancellationToken);
     }
 
-    private async Task<RemotePluginCatalogResult> LoadCoreAsync(RemotePluginCatalog local, bool refresh, CancellationToken token)
+    private async Task<RemotePluginCatalogResult> LoadCoreAsync(RemotePluginCatalog local, bool refresh, CancellationToken token, bool forceRefresh)
     {
         await ReadCacheOnceAsync(local, token).ConfigureAwait(false);
+        await ReadOfficialCacheOnceAsync(token).ConfigureAwait(false);
         if (!refresh) return Snapshot(local);
         await _gate.WaitAsync(token).ConfigureAwait(false);
         try
         {
-            if (_clock() >= _nextCheck)
+            if (forceRefresh || _clock() >= _nextCheck)
             {
                 try
                 {
@@ -128,6 +134,7 @@ public sealed class RemotePluginCatalogService
                 }
             }
 
+            await RefreshOfficialAsync(local, forceRefresh, token).ConfigureAwait(false);
             return Snapshot(local);
         }
         finally { _gate.Release(); }
@@ -159,13 +166,23 @@ public sealed class RemotePluginCatalogService
     private RemotePluginCatalogResult Snapshot(RemotePluginCatalog local)
     {
         var knownGood = _knownGood;
-        try { return new(knownGood is null ? local : Merge(local, knownGood), knownGood is null ? "local" : _origin, _error); }
+        try
+        {
+            var catalog = knownGood is null ? local : Merge(local, knownGood);
+            if (_officialGood is not null) catalog = OverlayOfficial(catalog, _officialGood);
+            return new(catalog, _officialGood is null ? knownGood is null ? "local" : _origin : _officialOrigin,
+                string.Join("; ", new[] { _error, _officialError }.Where(value => !string.IsNullOrEmpty(value))) is { Length: > 0 } error ? error : null,
+                ComputeContentVersion(catalog));
+        }
         catch (InvalidDataException ex) { return new(local, "local", ex.Message); }
     }
 
     private static bool IsRecoverable(Exception ex, CancellationToken token) =>
         ex is IOException or InvalidDataException or HttpRequestException or JsonException or UnauthorizedAccessException ||
         ex is OperationCanceledException && !token.IsCancellationRequested;
+
+    public static string ComputeContentVersion(RemotePluginCatalog catalog) =>
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(catalog.Plugins, JsonOptions)));
 
     private static async Task<byte[]> ReadBoundedAsync(Stream stream, CancellationToken token)
     {
@@ -256,13 +273,14 @@ public sealed class RemotePluginCatalogService
             !Text(p.Category, 160, true) || !Text(p.ShortDescription, 4096, true) ||
             !Text(p.LongDescription, 32768, true) || !Text(p.Compatibility, 4096) ||
             !Text(p.IconGlyph, 8) || !Text(p.ReleasePublishedAt, 64) ||
+            !PublicationTimestamp(p.FirstPublishedAt) || !PublicationTimestamp(p.UpdatedAt) ||
             !Text(p.ReleaseAssetName, 255) || p.ReleaseAssetName.Length > 0 && !FileName(p.ReleaseAssetName) ||
             p.Aliases is null || p.Aliases.Count > 64 || p.Aliases.Any(s => !Text(s, 256, true) ||
                 s.Any(char.IsControl) || s.IndexOfAny(new[] { '\\', ':' }) >= 0 || s.Contains('/') && !Slug(s)) ||
             p.Keywords is null || p.Keywords.Count > 64 || p.Keywords.Any(s => !Text(s, 256, true)))
             throw new InvalidDataException("Invalid plugin fields.");
         if (new[] { p.Name, p.InstallFolder, p.Repository.Split('/')[1] }.Concat(p.Aliases).Any(IsBlockedIdentity))
-            throw new InvalidDataException("Integrated Gaming Mode and blocked Varta identities cannot enter the store.");
+            throw new InvalidDataException("Integrated or excluded plugin identities cannot enter the store.");
 
         var owner = p.Repository.Split('/')[0];
         var sourceValid = p.CatalogSource switch
@@ -316,6 +334,11 @@ public sealed class RemotePluginCatalogService
         text.Length <= limit && (!required || !string.IsNullOrWhiteSpace(text)) &&
         !text.Any(c => char.IsControl(c) && c is not ('\r' or '\n' or '\t'));
 
+    private static bool PublicationTimestamp(string? value) => value == "" || value is not null &&
+        System.Text.RegularExpressions.Regex.IsMatch(value, @"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,7})?Z$") &&
+        DateTimeOffset.TryParse(value, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.RoundtripKind, out _);
+
     private static bool Slug(string? value) => value is { Length: > 2 and <= 200 } &&
         value.Split('/') is { Length: 2 } parts && parts.All(part => part.Length > 0 &&
             part is not ("." or "..") && part.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.'));
@@ -332,6 +355,7 @@ public sealed class RemotePluginCatalogService
         var normalized = new string(name.Where(char.IsLetterOrDigit).ToArray());
         return normalized.Equals("gamingmode", StringComparison.OrdinalIgnoreCase) ||
             normalized.Equals("playhubgamingmode", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("lumadeck", StringComparison.OrdinalIgnoreCase) ||
             normalized.Equals("varta", StringComparison.OrdinalIgnoreCase) ||
             normalized.Equals("vartaplugin", StringComparison.OrdinalIgnoreCase);
     }
@@ -368,6 +392,8 @@ public sealed class RemotePluginCatalogService
                     CoverUrl = entry.CoverUrl.Length == 0 ? existing.CoverUrl : entry.CoverUrl,
                     IconGlyph = entry.IconGlyph.Length == 0 ? existing.IconGlyph : entry.IconGlyph,
                     Compatibility = entry.Compatibility.Length == 0 ? existing.Compatibility : entry.Compatibility,
+                    FirstPublishedAt = entry.FirstPublishedAt.Length == 0 ? existing.FirstPublishedAt : entry.FirstPublishedAt,
+                    UpdatedAt = entry.UpdatedAt.Length == 0 ? existing.UpdatedAt : entry.UpdatedAt,
                     Version = entry.Version.Length == 0 ? existing.Version : entry.Version,
                     Aliases = Array.AsReadOnly(existing.Aliases.Concat(entry.Aliases).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()),
                     Keywords = entry.Keywords.Count == 0 ? existing.Keywords : entry.Keywords

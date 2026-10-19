@@ -3,17 +3,18 @@ import { historyPhotoIntegrity } from './historyImages';
 import { loadHistoryPhoto } from './historyPhotoCache';
 
 export function useHistoryPhoto(url?: string): string | undefined {
-  const [resolved, setResolved] = React.useState<{source: string; url: string}>();
+  const [resolved, setResolved] = React.useState<{source: string; digest: string; url: string}>();
+  const expected = url ? historyPhotoIntegrity[url] : undefined;
   React.useEffect(() => {
-    if (!url || !historyPhotoIntegrity[url]) return;
+    if (!url || !expected) return;
     let alive = true; let objectUrl: string | undefined;
-    void loadHistoryPhoto(url, historyPhotoIntegrity[url]).then(blob => {
+    void loadHistoryPhoto(url, expected).then(blob => {
       if (!alive || !blob) return;
       objectUrl = URL.createObjectURL(blob);
-      setResolved({source: url, url: objectUrl});
+      setResolved({source: url, digest: expected.sha256, url: objectUrl});
     });
     return () => { alive = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
-  }, [url]);
+  }, [url, expected?.sha256]);
   if (!url || !historyPhotoIntegrity[url]) return url;
-  return resolved?.source === url ? resolved.url : undefined;
+  return resolved?.source === url && resolved.digest === expected?.sha256 ? resolved.url : undefined;
 }

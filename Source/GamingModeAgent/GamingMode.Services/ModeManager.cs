@@ -335,43 +335,35 @@ public sealed class ModeManager
 	public async Task RunSafetyWatchdogAsync(CancellationToken cancellationToken)
 	{
 		int deckyCleanupTicks = 0;
-		int steamDownTicks = 0;
+		var recovery = new DesktopRecoveryPolicy();
 		while (!cancellationToken.IsCancellationRequested)
 		{
 			await Task.Delay(TimeSpan.FromSeconds(5.0), cancellationToken);
 			if (IsSystemShuttingDown())
 			{
-				steamDownTicks = 0;
+				recovery.Reset();
 				continue;
 			}
+			try
+			{
 			deckyCleanupTicks++;
 			if (deckyCleanupTicks >= 3)
 			{
 				deckyCleanupTicks = 0;
-				_processTools.CleanupDeckyOrphanedForks();
+				try { _processTools.CleanupDeckyOrphanedForks(); }
+				catch (Exception error) { _logger.Error("Decky cleanup failed; Desktop safety remains active.", error); }
 			}
-			ModeConfig modeConfig = _store.LoadConfig();
-			if (_store.LoadState().CurrentMode == ModeKind.Gaming && modeConfig.Gaming.CloseExplorerInGamingMode && modeConfig.Gaming.AllowExplorerCloseInGamingMode)
-			{
-				ProcessState state = _processTools.GetState("steam");
-				ProcessState state2 = _processTools.GetState("explorer");
-				if (!state.Running && !state2.Running)
-				{
-					steamDownTicks++;
-					if (steamDownTicks >= 2 && !IsSystemShuttingDown())
-					{
-						steamDownTicks = 0;
-						await ApplyModeAsync(ModeKind.Desktop, "Safety watchdog restored Desktop Mode", interactive: false, restoreStartupApps: false, updateShell: false);
-					}
-				}
-				else
-				{
-					steamDownTicks = 0;
-				}
+			// An Explorer folder window is not the desktop shell. Recovery must
+			// also work after a configuration change or a failed plugin startup.
+			bool gaming = _store.LoadState().CurrentMode == ModeKind.Gaming;
+			bool steamRunning = gaming && _processTools.GetState("steam").Running;
+			if (recovery.ShouldRestore(gaming, steamRunning, ProcessTools.IsExplorerShellRunning(), IsSystemShuttingDown()))
+				await ApplyModeAsync(ModeKind.Desktop, "Safety watchdog restored Desktop Mode", interactive: false, restoreStartupApps: false, updateShell: false);
 			}
-			else
+			catch (Exception error)
 			{
-				steamDownTicks = 0;
+				recovery.Reset();
+				_logger.Error("Desktop safety check failed; it will retry on the next check.", error);
 			}
 		}
 	}
@@ -463,7 +455,7 @@ public sealed class ModeManager
 		try
 		{
 			restoreDecky = _store.LoadState().CurrentMode == ModeKind.Gaming &&
-				_processTools.StopDeckyForDesktopTransition();
+				_processTools.StopDeckyForDesktopTransition(config.Gaming.DeckyPath);
 		}
 		catch (Exception error) { _logger.Error("Decky cleanup failed; continuing Desktop recovery.", error); }
 		try

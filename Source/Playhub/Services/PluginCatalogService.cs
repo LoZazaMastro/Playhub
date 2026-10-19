@@ -58,9 +58,9 @@ public sealed partial class PluginCatalogService
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["Playhub-Artworks"] = "1.1.9",
-            ["Playhub-Metadata"] = "1.8.3",
+            ["Playhub-Metadata"] = "1.8.4",
             ["ThemeDeck-Windows"] = "3.3.7",
-            ["Launch-Curtain"] = "2.5.6",
+            ["Launch-Curtain"] = "2.5.7",
             ["TrailerHero"] = "1.7.2",
             ["Now-Playing"] = "2.5.2",
             ["Playhub-Surround"] = "1.2.1",
@@ -414,7 +414,11 @@ public sealed partial class PluginCatalogService
                 : bundledDefinition is null ? null : ResolveCover(bundledDefinition.Cover);
             var manifestRelease = !string.IsNullOrWhiteSpace(definition.CatalogReleaseUrl) &&
                 VersionsEquivalent(catalogVersion, definition.Version);
-            var published = manifestRelease ? FormatDate(definition.ReleasePublishedAt) : cachedRelease.PublishedAt ?? "";
+            var published = FormatDate(manifestRelease ? definition.ReleasePublishedAt : cachedRelease.PublishedAt);
+            var firstPublished = FirstValidPublicationTimestamp(definition.FirstPublishedAt, cachedRelease.FirstPublishedAt,
+                FirstPublicationFromKeywords(definition.Keywords));
+            var updated = LatestPublicationTimestamp(definition.UpdatedAt, cachedRelease.UpdatedAt,
+                manifestRelease ? definition.ReleasePublishedAt : cachedRelease.PublishedAt);
 
             plugins.Add(new DeckyPluginInfo
             {
@@ -447,7 +451,8 @@ public sealed partial class PluginCatalogService
                 Compatibility = definition.Compatibility,
                 ReleasePageUrl = cachedRelease.PageUrl ?? definition.RepositoryUrl,
                 ReleasePublishedAt = published,
-                UpdatedAt = published,
+                FirstPublishedAt = firstPublished,
+                UpdatedAt = updated,
                 InstalledFolder = Path.Combine(deckyPluginsPath, installFolder)
             });
         }
@@ -644,14 +649,14 @@ public sealed partial class PluginCatalogService
         foreach (var identity in identities.Where(value => !string.IsNullOrWhiteSpace(value)))
         {
             var normalized = Normalize(identity);
-            if (normalized is "varta" or "vartaplugin" or "gamingmode" or "playhubgamingmode" or "quicksettings" or "shortcuts")
+            if (normalized is "varta" or "vartaplugin" or "gamingmode" or "playhubgamingmode" or "quicksettings" or "shortcuts" or "lumadeck")
             {
                 return true;
             }
 
             var repository = ExtractGithubRepositorySlug(identity);
             if (!string.IsNullOrWhiteSpace(repository) &&
-                Normalize(repository[(repository.IndexOf('/') + 1)..]) is "varta" or "vartaplugin" or "gamingmode" or "playhubgamingmode" or "quicksettings" or "shortcuts")
+                Normalize(repository[(repository.IndexOf('/') + 1)..]) is "varta" or "vartaplugin" or "gamingmode" or "playhubgamingmode" or "quicksettings" or "shortcuts" or "lumadeck")
             {
                 return true;
             }
@@ -779,11 +784,12 @@ public sealed partial class PluginCatalogService
     }
 
     private static async Task<ReleaseInfo> SafeGetLatestReleaseAsync(string repoName,
-        string? repositorySlug = null, HttpClient? http = null)
+        string? repositorySlug = null, HttpClient? http = null, CancellationToken cancellationToken = default)
     {
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(6));
             var json = await (http ?? Http).GetStringAsync($"https://api.github.com/repos/{repositorySlug ?? Owner + "/" + repoName}/releases/latest", cts.Token);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
@@ -801,17 +807,21 @@ public sealed partial class PluginCatalogService
                 root.TryGetProperty("html_url", out var h) ? h.GetString() : null,
                 root.TryGetProperty("tag_name", out var t) ? t.GetString() : null,
                 root.TryGetProperty("body", out var b) ? b.GetString() : null,
-                root.TryGetProperty("published_at", out var p) ? FormatDate(p.GetString()) : null);
+                root.TryGetProperty("published_at", out var p) ? CanonicalPublicationTimestamp(p.GetString()) : null);
             release = PreserveCachedNotes(repoName, release);
+            cancellationToken.ThrowIfCancellationRequested();
             SaveReleaseCache(repoName, release);
             return release;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch
         {
-            var atomRelease = await TryGetLatestReleaseFromAtomAsync(repoName, repositorySlug, http);
+            cancellationToken.ThrowIfCancellationRequested();
+            var atomRelease = await TryGetLatestReleaseFromAtomAsync(repoName, repositorySlug, http, cancellationToken);
             if (!string.IsNullOrWhiteSpace(atomRelease.Version) || !string.IsNullOrWhiteSpace(atomRelease.Notes))
             {
                 atomRelease = PreserveCachedReleaseData(repoName, atomRelease);
+                cancellationToken.ThrowIfCancellationRequested();
                 SaveReleaseCache(repoName, atomRelease);
                 return atomRelease;
             }
@@ -845,11 +855,12 @@ public sealed partial class PluginCatalogService
     }
 
     private static async Task<ReleaseInfo> TryGetLatestReleaseFromAtomAsync(string repoName,
-        string? repositorySlug = null, HttpClient? http = null)
+        string? repositorySlug = null, HttpClient? http = null, CancellationToken cancellationToken = default)
     {
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(6));
             var xml = await (http ?? Http).GetStringAsync($"https://github.com/{repositorySlug ?? Owner + "/" + repoName}/releases.atom", cts.Token);
             var document = XDocument.Parse(xml);
             XNamespace atom = "http://www.w3.org/2005/Atom";
@@ -867,9 +878,12 @@ public sealed partial class PluginCatalogService
                 : Uri.UnescapeDataString(pageUrl[(pageUrl.LastIndexOf('/') + 1)..]);
             var html = entry.Element(atom + "content")?.Value ?? "";
             var notes = CleanReleaseHtml(html);
-            var published = FormatDate(entry.Element(atom + "updated")?.Value);
+            // Atom.updated is the edit time, not the release publication time.
+            // Only the release page's explicit published timestamp may drive date ordering.
+            var published = await ReadGithubPublishedAtAsync(pageUrl, repositorySlug ?? Owner + "/" + repoName, http ?? Http, cts.Token);
             return new ReleaseInfo(null, pageUrl, version, notes, published);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch
         {
             return new ReleaseInfo(null, null, null, null, null);
@@ -938,6 +952,14 @@ public sealed partial class PluginCatalogService
 
         try
         {
+            var previous = LoadReleaseCache(repoName);
+            release = release with
+            {
+                FirstPublishedAt = FirstValidPublicationTimestamp(release.FirstPublishedAt, previous.FirstPublishedAt),
+                UpdatedAt = LatestPublicationTimestamp(release.UpdatedAt, release.PublishedAt, previous.UpdatedAt),
+                PublicationCheckedAt = release.PublicationCheckedAt ?? previous.PublicationCheckedAt,
+                PublicationPageUrl = release.PublicationPageUrl ?? previous.PublicationPageUrl
+            };
             var directory = Path.Combine(AppPaths.LocalDataRoot, "cache", "plugin-releases");
             Directory.CreateDirectory(directory);
             File.WriteAllText(
@@ -2357,6 +2379,8 @@ public sealed partial class PluginCatalogService
     private static string Normalize(string value) => Regex.Replace(value.ToLowerInvariant(), @"[^a-z0-9]+", "");
 
     private static string FormatDate(string? value) =>
+        DateTimeOffset.TryParseExact(value, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out _) ? value! :
         DateTimeOffset.TryParse(value, out var date) ? date.ToLocalTime().ToString("dd/MM/yyyy") : "";
 
     private static HttpClient CreateHttpClient()
@@ -4026,7 +4050,8 @@ public sealed partial class PluginCatalogService
 
     private sealed record GithubRepo(string Name, string HtmlUrl, string UpdatedAt);
 
-    private sealed record ReleaseInfo(string? ZipUrl, string? PageUrl, string? Version, string? Notes, string? PublishedAt);
+    private sealed record ReleaseInfo(string? ZipUrl, string? PageUrl, string? Version, string? Notes, string? PublishedAt,
+        string? FirstPublishedAt = null, string? UpdatedAt = null, string? PublicationCheckedAt = null, string? PublicationPageUrl = null);
 
     private sealed record SemanticVersion(IReadOnlyList<long> Core, IReadOnlyList<string> Prerelease, string Canonical)
     {

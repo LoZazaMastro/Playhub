@@ -160,13 +160,23 @@ public static class LocalizationService
         try
         {
             using var document = JsonDocument.Parse(File.ReadAllText(path));
+            using var english = language == "en" ? null : JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Assets", "Localization", "en.json")));
             var translations = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var property in document.RootElement.EnumerateObject())
             {
                 if (property.Value.ValueKind != JsonValueKind.String) continue;
                 var value = property.Value.GetString();
                 if (string.IsNullOrWhiteSpace(value)) continue;
-                var sourceTokens = FormatPlaceholder.Matches(property.Name).Select(match => match.Value).Order(StringComparer.Ordinal);
+                var source = property.Name;
+                if (Regex.IsMatch(source, @"^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z][A-Za-z0-9-]*)+$", RegexOptions.CultureInvariant))
+                {
+                    // Resource identifiers are not format templates. Compare their translation with
+                    // the canonical English template, rather than rejecting all indexed resources.
+                    if (language == "en") source = value;
+                    else if (english!.RootElement.TryGetProperty(property.Name, out var baseline) && baseline.ValueKind == JsonValueKind.String)
+                        source = baseline.GetString() ?? property.Name;
+                }
+                var sourceTokens = FormatPlaceholder.Matches(source).Select(match => match.Value).Order(StringComparer.Ordinal);
                 var targetTokens = FormatPlaceholder.Matches(value).Select(match => match.Value).Order(StringComparer.Ordinal);
                 if (sourceTokens.SequenceEqual(targetTokens)) translations[property.Name] = value;
             }

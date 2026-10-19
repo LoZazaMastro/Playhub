@@ -50,6 +50,9 @@ namespace PlayhubSetup
     public sealed class Process : IDisposable
     {
         public int Id => -1;
+        public int SessionId => 0;
+        public System.Diagnostics.ProcessModule? MainModule => null;
+        public static Process GetCurrentProcess() => new();
         public static readonly List<System.Diagnostics.ProcessStartInfo> Launches = new();
         public static Process[] GetProcessesByName(string name) => Array.Empty<Process>();
         public static Process Start(System.Diagnostics.ProcessStartInfo info)
@@ -71,11 +74,15 @@ namespace PlayhubSetup
     {
         private readonly Dictionary<string, object> values = new();
         public MemoryKey CreateSubKey(string name) => this;
-        public MemoryKey OpenSubKey(string name) => this;
+        public MemoryKey OpenSubKey(string name, bool writable = false) => this;
         public object? GetValue(string name) => values.GetValueOrDefault(name);
         public void SetValue(string name, object value) => values[name] = value;
         public void SetValue(string name, object value, Microsoft.Win32.RegistryValueKind kind) => values[name] = value;
         public void DeleteSubKeyTree(string name, bool throwOnMissingSubKey) => values.Clear();
+        public void DeleteValue(string name, bool throwOnMissingValue)
+        {
+            if (!values.Remove(name) && throwOnMissingValue) throw new ArgumentException("Missing value: " + name);
+        }
         public void Dispose() { }
     }
     public static class Shortcuts
@@ -91,5 +98,15 @@ namespace PlayhubSetup
     {
         public static (string Code, string Native)[] Languages = { ("it", "Italiano"), ("en", "English") };
         public static string T(string text) => text;
+    }
+}
+
+namespace Playhub.Shared
+{
+    // Keep the production installation policy while redirecting its user path.
+    public static class Environment
+    {
+        public enum SpecialFolder { ApplicationData }
+        public static string GetFolderPath(SpecialFolder folder) => Path.Combine(UpdateTests.State.Root, folder.ToString());
     }
 }

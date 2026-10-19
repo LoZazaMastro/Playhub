@@ -46,6 +46,25 @@ var command = DeckyStartupGuard.CreateCommand(loader);
 var script = File.ReadAllText(Path.Combine(folder, "Playhub-StartDecky.ps1"));
 Check(script.Contains("Global\\Playhub.Decky.Start") && script.Contains("Test-DeckyListener"), "Autostart bypasses shared lock/listener check");
 Check(command.Contains("-WindowStyle Hidden"), "Autostart window is visible");
+Check(script.Contains("Playhub-DeckyHost.exe") && script.Contains("PYINSTALLER_RESET_ENVIRONMENT"), "Autostart bypasses runtime lifetime/environment boundary");
+var runtime = Path.Combine(folder, "PlayhubRuntime");
+var version = new string('A', 64);
+Directory.CreateDirectory(Path.Combine(runtime, version));
+File.WriteAllText(Path.Combine(runtime, "current"), version);
+var hostPath = Path.Combine(runtime, version, "Playhub-DeckyHost.exe");
+File.WriteAllText(hostPath, "fixture");
+var cleanStart = new ProcessStartInfo(loader) { UseShellExecute = true };
+cleanStart.Environment["_PYI_APPLICATION_HOME_DIR"] = "foreign";
+cleanStart.Environment["_MEIPASS2"] = "foreign";
+cleanStart.Environment["PLAYHUB_STARTUP_TOKEN"] = "preserved";
+DeckyStartupGuard.PrepareRootStart(cleanStart);
+Check(cleanStart.FileName == hostPath && !cleanStart.UseShellExecute && cleanStart.ArgumentList.SequenceEqual(new[] { "--loader", loader }), "Root startup bypasses standalone lifetime host");
+Check(!cleanStart.Environment.ContainsKey("_PYI_APPLICATION_HOME_DIR") && !cleanStart.Environment.ContainsKey("_MEIPASS2")
+    && cleanStart.Environment["PYINSTALLER_RESET_ENVIRONMENT"] == "1" && cleanStart.Environment["PLAYHUB_STARTUP_TOKEN"] == "preserved", "Root environment reset/preservation failed");
+File.WriteAllText(Path.Combine(runtime, "current"), "..\\foreign");
+try { DeckyStartupGuard.RuntimeHostPath(loader); throw new Exception("Runtime version path traversal accepted"); }
+catch (IOException) { checks++; }
+File.WriteAllText(Path.Combine(runtime, "current"), version);
 foreach (string file in Directory.GetFiles(AppContext.BaseDirectory))
     if (Path.GetFileName(file).StartsWith("DeckyStartupChecks", StringComparison.Ordinal))
         File.Copy(file, Path.Combine(folder, Path.GetFileName(file)), true);

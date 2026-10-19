@@ -715,27 +715,11 @@ public sealed class ProcessTools
 		catch { return false; }
 	}
 
-	public bool StopDeckyForDesktopTransition()
+	public bool StopDeckyForDesktopTransition(string? configuredPath = null)
 	{
-		var session = Process.GetCurrentProcess().SessionId;
-		var processes = new[] { "PluginLoader", "PluginLoader_noconsole" }
-			.SelectMany(Process.GetProcessesByName).Where(process => process.SessionId == session).ToArray();
-		if (processes.Length == 0) return false;
-		try
-		{
-			foreach (var process in processes)
-			{
-				try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
-				catch (InvalidOperationException) { }
-			}
-			foreach (var process in processes)
-			{
-				if (!process.WaitForExit(5000))
-					throw new InvalidOperationException("Decky did not stop; desktop transition cancelled to avoid a duplicate instance.");
-			}
-			return true;
-		}
-		finally { foreach (var process in processes) process.Dispose(); }
+		string? loader = ResolvePath(configuredPath, GetDeckyFallbackPaths());
+		if (loader is null) return false;
+		return Playhub.Shared.DeckyStartupGuard.RunExclusive(() => Playhub.DeckyHost.DeckyProcessTree.StopInstallation(Path.GetDirectoryName(loader)!) > 0);
 	}
 
 	[DllImport("user32.dll")] private static extern nint GetShellWindow();
@@ -851,6 +835,17 @@ public sealed class ProcessTools
 
 	private void RestartProcessesCore(string configuredPath, string fallbackPath, string arguments, bool killEntireProcessTree, IReadOnlyDictionary<string, string>? environment, params string[] processNames)
 	{
+		if (processNames.Any(name => name.Equals("PluginLoader", StringComparison.OrdinalIgnoreCase) || name.Equals("PluginLoader_noconsole", StringComparison.OrdinalIgnoreCase)))
+		{
+			Playhub.Shared.DeckyStartupGuard.RunExclusive(() =>
+			{
+				string? loader = ResolvePath(configuredPath, new[] { fallbackPath });
+				if (loader is null) return false;
+				Playhub.DeckyHost.DeckyProcessTree.StopInstallation(Path.GetDirectoryName(loader)!);
+				return EnsureProcessUnlocked(loader, new[] { fallbackPath }, arguments, environment, processNames);
+			});
+			return;
+		}
 		foreach (Process item in processNames.SelectMany(Process.GetProcessesByName).DistinctBy((Process process) => process.Id))
 		{
 			try

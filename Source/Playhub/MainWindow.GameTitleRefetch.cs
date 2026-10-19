@@ -1,6 +1,5 @@
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using Microsoft.UI.Xaml.Controls;
-using Playhub.Emulation.Workbench;
 using Playhub.Importing;
 using Playhub.Integrations;
 using Playhub.Models;
@@ -10,11 +9,9 @@ namespace Playhub;
 
 public sealed partial class MainWindow
 {
-    private static readonly System.Net.Http.HttpClient RefetchImageHttp = new(new System.Net.Http.HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(25) };
     private readonly Dictionary<string,int> _titleRefetchGenerations = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string,CancellationTokenSource> _titleRefetchRequests = new(StringComparer.OrdinalIgnoreCase);
     private GameTitleRefetchService CreateTitleRefetchService() => GameTitleRefetchFactory.Create(
-        new NativeMetadataService(RefetchImageHttp),
         async(title,ct) => (await _uwpXbox.SearchSteamGridDbGamesAsync(title,_settings.SteamGridDbApiKey).WaitAsync(ct))
             .Where(item=>item.Id>0).Select(item=>new GameTitleIdentity("steamgriddb",item.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),"",item.Name,item.ReleaseYear)).ToArray(),
         async(id,shape,type,ct) =>
@@ -22,7 +19,7 @@ public sealed partial class MainWindow
             var surrogate = new UwpGameEntry { SteamGridDbGameId = id };
             var options = await _uwpXbox.GetSteamGridDbArtworkAsync(surrogate,type,_settings.SteamGridDbApiKey).WaitAsync(ct);
             return new JsonArray(options.Select(option=>(JsonNode)new JsonObject { ["url"] = option.Url }).ToArray());
-        }, new ApplicationImageCache(Path.Combine(AppPaths.LocalDataRoot,"integrations")),RefetchImageHttp);
+        }, new ApplicationImageCache(Path.Combine(AppPaths.LocalDataRoot,"integrations")));
 
     private async Task ShowGameTitleRefetchDialogAsync(UwpGameEntry game)
     {
@@ -36,9 +33,10 @@ public sealed partial class MainWindow
         var service = CreateTitleRefetchService();
         string identity = ImportedIntegrationIdentity.Pc(game.Aumid,game.LocalExecutablePath,game.SourceLaunchArguments);
         var store = new ApplicationIntegrationDataStore(Path.Combine(AppPaths.LocalDataRoot,"integrations"));
-        string metadataQuery=await GameTitleQuery.ReadAsync(store,identity,"metadata",game.Name,lifetime.Token);
         string artworkQuery=await GameTitleQuery.ReadAsync(store,identity,"artwork",game.Name,lifetime.Token);
-        var chosen = await GameTitleIdentityPicker.ShowAsync(Content.XamlRoot,game.Name,T,service.SearchAsync,lifetime.Token,true,provider=>provider=="ign"?metadataQuery:artworkQuery);
+        var chosen = await GameTitleIdentityPicker.ShowAsync(Content.XamlRoot,game.Name,T,service.SearchAsync,lifetime.Token,true,
+            _=>artworkQuery, () => BuildSteamGridDbConnectionCard(),
+            () => !string.IsNullOrWhiteSpace(_settings.SteamGridDbApiKey));
         if (_titleRefetchGenerations.GetValueOrDefault(game.Aumid) != generation) return;
         if (chosen.Remove)
         {
@@ -51,8 +49,17 @@ public sealed partial class MainWindow
         if (chosen.Selection is null) return;
         foreach(var selected in chosen.AllSelections ?? new[]{chosen.Selection!})
         {
-        var acquired = await service.RefetchPreparedAsync(identity,selected,global::Playhub.Services.CoverFormat.IsSquare(_settings.CoverFormat)?"square":"vertical",store,null,lifetime.Token);
-        if (_titleRefetchGenerations.GetValueOrDefault(game.Aumid) != generation) return;
+        await ApplyImportedTitleAsync(game,service,selected,lifetime.Token);
+        RenderRefetchedGameCollections();
+        }
+        }
+        finally { if (_titleRefetchGenerations.GetValueOrDefault(game.Aumid)==generation) _titleRefetchRequests.Remove(game.Aumid); }
+    }
+    private async Task ApplyImportedTitleAsync(UwpGameEntry game,GameTitleRefetchService service,GameTitleIdentity selected,CancellationToken token)
+    {
+        string identity = ImportedIntegrationIdentity.Pc(game.Aumid,game.LocalExecutablePath,game.SourceLaunchArguments);
+        var store = new ApplicationIntegrationDataStore(Path.Combine(AppPaths.LocalDataRoot,"integrations"));
+        var acquired = await service.RefetchPreparedAsync(identity,selected,global::Playhub.Services.CoverFormat.IsSquare(_settings.CoverFormat)?"square":"vertical",store,token);
         if(selected.Provider=="steamgriddb")
         {
             RemoveSteamGridDbPreferenceKey(_settings.SteamGridDbGameOverrides,game.Aumid);
@@ -64,32 +71,24 @@ public sealed partial class MainWindow
         _settings.SteamGridDbArtworkDisabled.RemoveAll(value=>string.Equals(value,game.Aumid,StringComparison.OrdinalIgnoreCase)); game.SteamGridDbArtworkDisabled = false;
         ImportedArtworkSelection.RefreshSteam(game,_uwpXbox.ReadCurrentSteamArtwork(game));
         foreach (var type in ImportedArtworkSelection.Types)
-            if (!game.ArtworkChoices.ContainsKey(type) && acquired["assets"]?[type]?.ToString() is string path)
+            if (acquired["assets"]?[type]?.ToString() is string path)
             {
-                lifetime.Token.ThrowIfCancellationRequested();
+                token.ThrowIfCancellationRequested();
+                var previous = await store.ReadCategoryAsync(identity,"artwork",token);
+                var physical = _uwpXbox.ReadCurrentSteamArtwork(game);
+                bool removed = previous.ContainsKey(type) && previous[type] is null || game.ArtworkChoices.TryGetValue(type,out var choice) && choice is null;
+                if (!await GameTitleRefetchPolicy.CanReplaceArtworkAsync(previous[type+"_title_auto"] as JsonObject,
+                    new[] { previous[type]?.ToString(), game.ArtworkChoices.GetValueOrDefault(type), ImportedArtworkSelection.Get(game,type), physical.GetValueOrDefault(type) },removed,token)) continue;
                 bool delivered = await _uwpXbox.DownloadAndApplySteamGridDbArtworkAsync(game,type,new(path,path,0,0));
-                lifetime.Token.ThrowIfCancellationRequested();
-                await store.PatchAsync(identity,"artwork",new JsonObject { [type] = ImportedArtworkSelection.Get(game,type) },lifetime.Token);
+                token.ThrowIfCancellationRequested();
+                var after = _uwpXbox.ReadCurrentSteamArtwork(game);
+                var receipt = await GameTitleRefetchPolicy.ArtworkReceiptAsync(selected,new[] { ImportedArtworkSelection.Get(game,type),after.GetValueOrDefault(type) ?? "" },token);
+                await store.PatchAsync(identity,"artwork",new JsonObject { [type] = ImportedArtworkSelection.Get(game,type),[type+"_title_auto"] = receipt,[type+"_source"] = null },token);
                 if (_uwpXbox.TryGetSteamShortcutAppId(game) is not null && !delivered) throw new IOException("Steam artwork delivery was not confirmed.");
             }
         }
-        bool metadataReady = acquired["metadata"]?["metadata"] is JsonObject;
-        if (acquired["metadata"]?["metadata"] is JsonObject fields)
-        {
-            if (_uwpXbox.TryGetSteamShortcutAppId(game) is uint actualId)
-            {
-                await store.BindSteamAppIdAsync(identity,actualId,lifetime.Token);
-                string plugins = string.IsNullOrWhiteSpace(_settings.DeckyPluginsPath)?AppPaths.DefaultDeckyPluginsPath:Path.GetFullPath(_settings.DeckyPluginsPath);
-                var consumer = new PluginConsumerDelivery(plugins,Path.Combine(Path.GetDirectoryName(plugins)!,"settings"));
-                if (consumer.IsInstalled("metadata") && (await consumer.DeliverAsync("metadata",actualId,fields,lifetime.Token))["delivered"]?.GetValue<bool>()!=true)
-                    throw new IOException("Metadata delivery was not confirmed.");
-            }
-        }
-        await SaveSettingsSilentlyAsync(); RenderRefetchedGameCollections();
-        SetStatus(metadataReady || selected.Provider=="steamgriddb"?string.Format(T("Risultato aggiornato: {0}."),selected.Title):T("Nessun risultato trovato."),metadataReady || selected.Provider=="steamgriddb"?InfoBarSeverity.Success:InfoBarSeverity.Warning);
-        }
-        }
-        finally { if (_titleRefetchGenerations.GetValueOrDefault(game.Aumid)==generation) _titleRefetchRequests.Remove(game.Aumid); }
+        await SaveSettingsSilentlyAsync();
+        SetStatus(string.Format(T("Risultato aggiornato: {0}."),selected.Title),InfoBarSeverity.Success);
     }
     private void RenderRefetchedGameCollections() { RenderUwpGames(); RenderExecutableGames(); RenderEpicGames(); RenderGogGames(); }
 }

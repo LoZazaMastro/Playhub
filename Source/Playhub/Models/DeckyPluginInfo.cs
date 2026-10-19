@@ -38,6 +38,7 @@ public sealed class DeckyPluginInfo
     public string ReleaseNotesVersion { get; set; } = "";
     public string ReleaseNotesPublishedAt { get; set; } = "";
     public string ReleasePublishedAt { get; set; } = "";
+    public string FirstPublishedAt { get; set; } = "";
     public string UpdatedAt { get; set; } = "";
     public bool IsInstalled { get; set; }
     public string InstalledFolder { get; set; } = "";

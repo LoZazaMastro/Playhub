@@ -119,13 +119,13 @@ def display_subject(theme):
     return re.sub(r'\s+\([^()]*\)\s*$', '', str(topic)).strip()
 
 
-def daily_feature(day):
+def daily_feature(day, days=None):
     """The record for a date with no catalog anniversary of its own.
 
     Subject, article and images come from one entry, so the title, the Wikipedia page
     behind the card and the pictures always describe the same thing.
     """
-    entry = load_days().get(day.strftime('%m-%d'))
+    entry = (load_days() if days is None else days).get(day.strftime('%m-%d'))
     if not entry:
         # Packaging or data errors must stay visible. Reusing a generic essay
         # would silently bring back the repeated-content defect.
@@ -229,7 +229,7 @@ def select_editorial(catalog,day):
         return theme,selected,anniversaries
     # No date link was verified: use a deterministic, unique cultural essay.
     # This must never fall back to a creator or game from another date.
-    record = daily_feature(day)
+    record = daily_feature(day, catalog.get('_remote_days'))
     marker = {'kind': record['kind']}
     if any(record.get('occasion_headline', {}).values()):
         marker['headline'] = record['occasion_headline']
@@ -247,6 +247,7 @@ class DailyHistory:
     def __init__(self, directory, fetch=request_json, today=datetime.date.today):
         self.directory = directory
         self.fetch = fetch
+        self.remote_catalog = fetch is request_json
         self.today = today
         self.lock = threading.RLock()
         self.cache = {}
@@ -297,10 +298,10 @@ class DailyHistory:
     def wikipedia_url(self, theme_id, locale="en"):
         language = str(locale).lower().split('-')[0].split('_')[0]
         if language not in LANGUAGES: language = 'en'
-        catalog = load_catalog(os.path.dirname(__file__), language)
+        catalog = load_catalog(os.path.dirname(__file__), language, self.directory if self.remote_catalog else None)
         theme = next((item for item in catalog.get('themes', []) if item['id'] == theme_id), None)
         if not theme and str(theme_id).startswith('daily-'):
-            try: theme = daily_feature(datetime.date.fromisoformat(str(theme_id)[6:]))
+            try: theme = daily_feature(datetime.date.fromisoformat(str(theme_id)[6:]), catalog.get('_remote_days'))
             except ValueError: theme = None
         if not theme and str(theme_id).startswith('calendar-'):
             source_id=str(theme_id).rsplit('-', 1)[-1]
@@ -377,9 +378,9 @@ class DailyHistory:
         if type(offset) is not int or abs(offset)>366: raise ValueError('Invalid preview day')
         day = self.today() + datetime.timedelta(days=offset)
         try:
-            catalog = load_catalog(os.path.dirname(__file__), content_language)
+            catalog = load_catalog(os.path.dirname(__file__), content_language, self.directory if self.remote_catalog else None)
         except (OSError,ValueError): catalog={}
-        edition=hashlib.sha256(json.dumps({'catalog':catalog,'days':load_days()},sort_keys=True).encode()).hexdigest()[:12]
+        edition=catalog.get('_remote_version') or hashlib.sha256(json.dumps({'catalog':catalog,'days':load_days()},sort_keys=True).encode()).hexdigest()[:12]
         theme, occasion, anniversaries = select_editorial(catalog, day)
         if not theme: raise RuntimeError('Editorial catalog unavailable')
         def story_for(selected, marker):
@@ -410,6 +411,7 @@ class DailyHistory:
                     'article':{'title':subject,'description':'','excerpt':'','image':'','language':language,
                                'url':'https://en.wikipedia.org/wiki/'+urllib.parse.quote(topic.replace(' ','_'),safe='')},
                     'related':None,'stale':False,'preview':preview,'edition':edition,'editorial':editorial,
+                    'media':catalog.get('_remote_images', {}).get(selected.get('media_id') or selected.get('id'), []),
                     'quote':({'text':quote[0],'attribution':quote[1],'quoted':bool(quote[1]),
                               'after':EDITORIAL_QUOTE_AFTER.get(selected.get('id'), 1)} if quote else None),
                     'occasion':localized_marker}

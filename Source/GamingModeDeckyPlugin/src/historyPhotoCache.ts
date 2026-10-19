@@ -57,12 +57,13 @@ function store(cache: Cache, url: string, blob: Blob) {
 
 /** Immutable URLs and embedded hashes keep remote/cache contents out of the trust boundary. */
 export function loadHistoryPhoto(url: string, expected: PhotoIntegrity): Promise<Blob | null> {
-  if (memory.has(url)) {
-    const value = memory.get(url)!; memory.delete(url); memory.set(url, value);
+  const key = url + "#" + expected.sha256;
+  if (memory.has(key)) {
+    const value = memory.get(key)!; memory.delete(key); memory.set(key, value);
     return Promise.resolve(value);
   }
-  if ((failedUntil.get(url) || 0) > Date.now()) return Promise.resolve(null);
-  const existing = pending.get(url); if (existing) return existing;
+  if ((failedUntil.get(key) || 0) > Date.now()) return Promise.resolve(null);
+  const existing = pending.get(key); if (existing) return existing;
   const job = slot(async () => {
     let blob: Blob | null = null;
     const cache = await persistent();
@@ -82,7 +83,7 @@ export function loadHistoryPhoto(url: string, expected: PhotoIntegrity): Promise
       if (!blob && attempt === 0) await new Promise(resolve => setTimeout(resolve, 500));
     }
     if (blob) {
-      memory.set(url, blob);
+      memory.set(key, blob);
       let memoryBytes = Array.from(memory.values()).reduce((sum, item) => sum + item.size, 0);
       while (memory.size > 24 || memoryBytes > 32 * 1024 * 1024) {
         const oldest = memory.keys().next().value!;
@@ -91,10 +92,10 @@ export function loadHistoryPhoto(url: string, expected: PhotoIntegrity): Promise
       }
       if (cache) store(cache, url, blob);
     } else {
-      failedUntil.set(url, Date.now() + 300000);
+      failedUntil.set(key, Date.now() + 300000);
       if (failedUntil.size > 256) failedUntil.delete(failedUntil.keys().next().value!);
     }
     return blob;
-  }).catch(() => null).finally(() => pending.delete(url));
-  pending.set(url, job); return job;
+  }).catch(() => null).finally(() => pending.delete(key));
+  pending.set(key, job); return job;
 }

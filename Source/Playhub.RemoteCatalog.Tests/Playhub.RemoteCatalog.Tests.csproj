@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../Playhub/Services/RemotePluginCatalogService.cs" Link="RemotePluginCatalogService.cs" />
+    <Compile Include="../Playhub/Services/RemotePluginCatalogService.Decky.cs" Link="RemotePluginCatalogService.Decky.cs" />
     <Compile Include="../Playhub/Models/RemotePluginCatalog.cs" Link="RemotePluginCatalog.cs" />
     <Compile Include="../Playhub/Services/PluginCatalogService.cs" Link="PluginCatalogService.cs" />
     <Compile Include="../Playhub/Services/PluginCatalogService.Releases.cs" Link="PluginCatalogService.Releases.cs" />
@@ -18,8 +19,7 @@
     <Compile Include="../Playhub/MainWindow.RemoteCatalog.cs" Link="MainWindow.RemoteCatalog.cs" />
     <Content Include="../../catalog/plugins.json" Link="Assets/PluginCatalog/store-catalog.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../Playhub/Assets/PluginCatalog/external-plugins.json" Link="Assets/PluginCatalog/external-plugins.json" CopyToOutputDirectory="PreserveNewest" />
-    <!-- Use the SDK parser for lossless provenance checks, without a NuGet dependency. -->
-    <Reference Include="Microsoft.CodeAnalysis" HintPath="$(MSBuildToolsPath)/Roslyn/bincore/Microsoft.CodeAnalysis.dll" />
-    <Reference Include="Microsoft.CodeAnalysis.CSharp" HintPath="$(MSBuildToolsPath)/Roslyn/bincore/Microsoft.CodeAnalysis.CSharp.dll" />
+    <!-- Keep provenance parsing compatible with net8 regardless of the host SDK. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
   </ItemGroup>
 </Project>

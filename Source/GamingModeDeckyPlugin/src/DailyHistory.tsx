@@ -1,7 +1,7 @@
 import { SP_REACT as React, DFL } from './decky';
 import { HistoryConfirmHint, historyActionCopy, openHistoryImage } from './historyInteractions';
 import { call } from './controlBackend';
-import { historyImages } from './historyImages';
+import { historyImages, applyHistoryMedia } from './historyImages';
 import { useHistoryPhoto } from './useHistoryPhoto';
 import { orderHistoryImages, historyHeadingCover } from './historyMedia';
 const { Focusable, DialogButton, Navigation } = DFL as any;
@@ -129,7 +129,7 @@ export function DailyHistory({getLocale}:{getLocale:()=>string}){
  const [offset,setOffsetState]=React.useState(historyPreviewOffset),[story,setStory]=React.useState<Story>(),[failed,setFailed]=React.useState(false),[retry,setRetry]=React.useState(0);
  const setOffset=(update:(value:number)=>number)=>setOffsetState(value=>{historyPreviewOffset=update(value);return historyPreviewOffset;});
  const busy=React.useRef(false),root=React.useRef<HTMLDivElement>(null);
- React.useEffect(()=>{let alive=true;let running=false;const refresh=async()=>{if(running)return;running=true;busy.current=true;try{const next=await call<[string,number],Story>('get_daily_history',locale,offset);if(!next?.editorial)throw Error('Missing editorial');if(alive){setStory(next);setFailed(false);}}catch{if(alive)setFailed(true);}finally{running=false;if(alive)busy.current=false;}};void refresh();const timer=window.setInterval(()=>void refresh(),60000);return()=>{alive=false;window.clearInterval(timer);busy.current=false;};},[locale,retry,offset]);
+ React.useEffect(()=>{let alive=true;let running=false;const refresh=async()=>{if(running)return;running=true;busy.current=true;try{const next=await call<[string,number],Story>('get_daily_history',locale,offset);if(!next?.editorial)throw Error('Missing editorial');if(alive){applyHistoryMedia(next);setStory(next);setFailed(false);}}catch{if(alive)setFailed(true);}finally{running=false;if(alive)busy.current=false;}};void refresh();const timer=window.setInterval(()=>void refresh(),60000);return()=>{alive=false;window.clearInterval(timer);busy.current=false;};},[locale,retry,offset]);
  const date=story?new Date(`${story.date}T12:00:00`):new Date(),buttons=(DFL as any).GamepadButton;
  const hints=previewWords[lang]??previewWords.en;
  const headingFor=(item:Story)=>item.occasion?.headline|| (item.occasion?.kind==='birth'?(birth[lang]??birth.en):item.occasion?.kind==='foundation'?(foundation[lang]??foundation.en):item.occasion?.kind==='release'?(release[lang]??release.en):item.occasion?.kind==='commemoration'?(commemoration[lang]??commemoration.en):item.occasion?.kind==='feature'?(feature[lang]??feature.en):copy[3]);

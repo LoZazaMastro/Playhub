@@ -26,6 +26,7 @@ public sealed class PlayhubSettings
     // Formato delle cover nella pagina Importa Giochi: "vertical" (default,
     // comportamento storico) oppure "square" per i grid quadrati di SteamGridDB.
     public string CoverFormat { get; set; } = "vertical";
+    public int GameCoverSizeStep { get; set; } = 2;
     public string CssLoaderProfileUrl { get; set; } = "";
     public List<string> RecentArtworkBackups { get; set; } = new();
     public bool WelcomeCompleted { get; set; }

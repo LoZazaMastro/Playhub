@@ -24,7 +24,7 @@ public sealed record SteamGridGameOption(int Id, string Name, int? ReleaseYear, 
 /// Uses UWPHook's VDFParser and retains existing Steam identities. GameSession
 /// prepares the desktop shell before Xbox activation and tracks game lifetime.
 /// </summary>
-public sealed class UwpXboxService
+public sealed partial class UwpXboxService
 {
     // Timeout esplicito: il default di HttpClient è 100s, troppo per il download
     // di una copertina/icona; 30s evita attese lunghe se SteamGridDB non risponde.
@@ -965,14 +965,20 @@ public sealed class UwpXboxService
                 // Keep the shortcut identity (and its artwork/collections) when
                 // changing the launcher. Steam must keep tracking our session
                 // even if a game's bootstrapper exits or registers another AppID.
-                var oldArguments = existing?.LaunchOptions ?? game.SourceLaunchArguments;
+                var oldArguments = string.IsNullOrEmpty(game.SteamIdentity)
+                    ? existing?.LaunchOptions ?? game.SourceLaunchArguments : game.SourceLaunchArguments;
                 var alreadyTracked = existing is not null && IsSessionShortcut(existing);
                 var launchOptions = game.IsLocalExecutable
-                        ? alreadyTracked ? oldArguments : "--game " + targetExe + (oldArguments.Length > 0 ? " " + oldArguments : "")
+                        ? alreadyTracked && string.IsNullOrEmpty(game.SteamIdentity) ? oldArguments : "--game " + targetExe + (oldArguments.Length > 0 ? " " + oldArguments : "")
                         : global::Playhub.GameSession.UwpShortcutArguments.Build(game.Aumid, game.Executable, existing?.LaunchOptions ?? game.SourceLaunchArguments);
                 var entry = XboxSteamShortcut.Create(existing, appId, game.Name, sessionExe,
                     game.IsLocalExecutable ? targetDirectory : QuotePath(AppContext.BaseDirectory),
                     icon, launchOptions, game.IsLocalExecutable, (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+                if (!string.IsNullOrEmpty(game.SteamIdentity))
+                {
+                    entry.Tags = (entry.Tags ?? []).Append(game.SteamIdentity).Distinct(StringComparer.Ordinal).ToArray();
+                    entry.StartDir = targetDirectory;
+                }
 
                 if (existingIndex >= 0)
                 {
@@ -1040,6 +1046,7 @@ public sealed class UwpXboxService
 
     private static bool MatchesGame(VDFEntry entry, UwpGameEntry game)
     {
+        if (!string.IsNullOrEmpty(game.SteamIdentity) && (entry.Tags ?? []).Contains(game.SteamIdentity, StringComparer.Ordinal)) return true;
         if (game.IsLocalExecutable)
         {
             if (PathsEqual(entry.Exe, game.LocalExecutablePath)) return true;

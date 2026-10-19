@@ -27,6 +27,70 @@ if (-not (Test-Path $ExeSource)) {
 $InstallDir = Join-Path $env:LOCALAPPDATA "GamingMode"
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 
+function Resolve-GamingModeInstallIdentity([string]$Executable) {
+  if (-not [IO.Path]::IsPathRooted($Executable) -or
+      -not [string]::Equals([IO.Path]::GetFileName($Executable), 'GamingMode.exe', [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'The installed Gaming Mode executable identity is invalid.'
+  }
+  # A filesystem link is not evidence of ownership. Packaged-app path redirection
+  # is resolved by the read handle below, without guessing any package directory.
+  for ($part = [IO.Path]::GetFullPath($Executable); $part; $part = [IO.Path]::GetDirectoryName($part)) {
+    if ((Test-Path -LiteralPath $part) -and ((Get-Item -LiteralPath $part -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+      throw 'A linked Gaming Mode installation path is refused.'
+    }
+  }
+  if (-not ('PlayhubGamingModeInstall.ReadIdentity' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.IO;
+using System.Text;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+namespace PlayhubGamingModeInstall {
+    public sealed class Identity { public string PhysicalPath; public uint Volume; public ulong FileIndex; }
+    public static class ReadIdentity {
+        [StructLayout(LayoutKind.Sequential)] private struct Info {
+            public uint Attributes;
+            public System.Runtime.InteropServices.ComTypes.FILETIME Creation, Access, Write;
+            public uint Serial, SizeHigh, SizeLow, Links, IndexHigh, IndexLow;
+        }
+        [DllImport("kernel32.dll", SetLastError = true)] private static extern bool GetFileInformationByHandle(SafeFileHandle handle, out Info info);
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern uint GetFinalPathNameByHandle(SafeFileHandle handle, StringBuilder path, uint size, uint flags);
+        public static Identity Read(string path) {
+            using (var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete)) {
+                Info info;
+                if (!GetFileInformationByHandle(stream.SafeFileHandle, out info)) throw new System.ComponentModel.Win32Exception();
+                var name = new StringBuilder(32768);
+                uint length = GetFinalPathNameByHandle(stream.SafeFileHandle, name, (uint)name.Capacity, 0);
+                if (length == 0 || length >= name.Capacity) throw new System.ComponentModel.Win32Exception();
+                string physical = name.ToString();
+                if (physical.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase)) physical = @"\\" + physical.Substring(8);
+                else if (physical.StartsWith(@"\\?\", StringComparison.Ordinal)) physical = physical.Substring(4);
+                return new Identity { PhysicalPath = Path.GetFullPath(physical), Volume = info.Serial, FileIndex = ((ulong)info.IndexHigh << 32) | info.IndexLow };
+            }
+        }
+    }
+}
+'@
+  }
+  return [PlayhubGamingModeInstall.ReadIdentity]::Read([IO.Path]::GetFullPath($Executable))
+}
+
+function Test-GamingModeInstallProcess([string]$ProcessPath, [int]$ProcessSessionId, [int]$InstallerSessionId, $ExpectedIdentity) {
+  if ($null -eq $ExpectedIdentity -or $ProcessSessionId -ne $InstallerSessionId -or [string]::IsNullOrWhiteSpace($ProcessPath)) { return $false }
+  try {
+    $candidate = Resolve-GamingModeInstallIdentity $ProcessPath
+    return [string]::Equals($candidate.PhysicalPath, $ExpectedIdentity.PhysicalPath, [StringComparison]::OrdinalIgnoreCase) -and
+      $candidate.Volume -eq $ExpectedIdentity.Volume -and $candidate.FileIndex -eq $ExpectedIdentity.FileIndex
+  } catch { return $false }
+}
+
+$Target = Join-Path $InstallDir "GamingMode.exe"
+$ExpectedIdentity = $null
+# Existing targets must resolve before any stop/copy operation. An absent target
+# never authorizes stopping another installation's agent.
+if (Test-Path -LiteralPath $Target) { $ExpectedIdentity = Resolve-GamingModeInstallIdentity $Target }
+
 # FERMARE L'AGENTE PRIMA DI SOVRASCRIVERLO.
 #
 # Chiedere l'uscita non basta: fra il momento in cui il processo termina e
@@ -38,8 +102,7 @@ New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 # Qui si aspetta di poter davvero scrivere sul file prima di provarci.
 Get-Process -Name "GamingMode" -ErrorAction SilentlyContinue | ForEach-Object {
   try {
-    if ($_.SessionId -ne [Diagnostics.Process]::GetCurrentProcess().SessionId) { return }
-    if (-not [string]::Equals([IO.Path]::GetFullPath($_.Path), [IO.Path]::Combine($InstallDir, 'GamingMode.exe'), [StringComparison]::OrdinalIgnoreCase)) { return }
+    if (-not (Test-GamingModeInstallProcess $_.Path $_.SessionId ([Diagnostics.Process]::GetCurrentProcess().SessionId) $ExpectedIdentity)) { return }
     if (-not $_.CloseMainWindow()) {
       $_.Kill()
     }
@@ -52,7 +115,6 @@ Get-Process -Name "GamingMode" -ErrorAction SilentlyContinue | ForEach-Object {
   }
 }
 
-$Target = Join-Path $InstallDir "GamingMode.exe"
 for ($attempt = 0; $attempt -lt 40; $attempt++) {
   if (-not (Test-Path $Target)) { break }
   try {

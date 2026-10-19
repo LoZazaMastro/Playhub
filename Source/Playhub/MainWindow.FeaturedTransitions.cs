@@ -1,6 +1,7 @@
 using Microsoft.UI.Composition;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Playhub.Services;
 using System;
@@ -32,7 +33,19 @@ public sealed partial class MainWindow
 
     private void StartFeaturedSlideTransition(FrameworkElement previous, FrameworkElement next, int direction)
     {
-        var host = _pluginFeaturedCarouselHost;
+        StartStoreFeaturedSlideTransition(_pluginFeaturedCarouselHost, previous, next, direction,
+            complete => ReferenceEquals(_completeFeaturedSlide, complete),
+            complete =>
+            {
+                _completeFeaturedSlide = complete;
+                _featuredPluginTransitioning = true;
+                _featuredSlideStartedAt = Stopwatch.GetTimestamp();
+            }, CompleteFeaturedSlideTransition);
+    }
+
+    private void StartStoreFeaturedSlideTransition(Grid host, FrameworkElement previous, FrameworkElement next,
+        int direction, Func<Action, bool> isCurrent, Action<Action> activate, Action finish)
+    {
         var distance = (float)host.ActualWidth * direction;
         Visual? previousVisual = null;
         Visual? nextVisual = null;
@@ -44,12 +57,12 @@ public sealed partial class MainWindow
 
         void OnBatchCompleted(object sender, CompositionBatchCompletedEventArgs args)
         {
-            if (ReferenceEquals(_completeFeaturedSlide, complete)) CompleteFeaturedSlideTransition();
+            if (complete is not null && isCurrent(complete)) finish();
         }
 
         void OnDeadline(DispatcherQueueTimer sender, object args)
         {
-            if (ReferenceEquals(_completeFeaturedSlide, complete)) CompleteFeaturedSlideTransition();
+            if (complete is not null && isCurrent(complete)) finish();
         }
 
         complete = () =>
@@ -76,9 +89,7 @@ public sealed partial class MainWindow
                 if (next.Parent == null) host.Children.Add(next);
             }
         };
-        _completeFeaturedSlide = complete;
-        _featuredPluginTransitioning = true;
-        _featuredSlideStartedAt = Stopwatch.GetTimestamp();
+        activate(complete);
 
         try
         {
@@ -118,12 +129,11 @@ public sealed partial class MainWindow
             deadline.IsRepeating = false;
             deadline.Interval = FeaturedSlideDuration;
             deadline.Tick += OnDeadline;
-            _featuredSlideStartedAt = Stopwatch.GetTimestamp();
             deadline.Start();
         }
         catch (Exception ex)
         {
-            CompleteFeaturedSlideTransition();
+            finish();
             Diag.Crash("Featured carousel transition", ex);
         }
     }

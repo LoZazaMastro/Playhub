@@ -1,6 +1,6 @@
 #requires -Version 7.0
 [CmdletBinding()]
-param([switch]$KeepStage, [string]$ReuseStage, [switch]$IncludeEmulation)
+param([switch]$KeepStage, [string]$ReuseStage)
 
 $ErrorActionPreference = 'Stop'
 $setupRoot = [IO.Path]::GetFullPath($PSScriptRoot)
@@ -15,9 +15,45 @@ if ($ReuseStage) {
 $output = Join-Path $setupRoot 'Output'
 $agentDir = Join-Path $stage 'agent'
 
+function Assert-PackagingDirectory([string]$directory, [string]$parent) {
+    $absolute = [IO.Path]::GetFullPath($directory)
+    $boundary = [IO.Path]::GetFullPath($parent).TrimEnd('\') + '\'
+    if (!$absolute.StartsWith($boundary, [StringComparison]::OrdinalIgnoreCase)) { throw 'Packaging path escaped its owned directory.' }
+    for ($ancestor = $absolute; $ancestor; $ancestor = [IO.Path]::GetDirectoryName($ancestor)) {
+        if ((Test-Path -LiteralPath $ancestor) -and ((Get-Item -LiteralPath $ancestor -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+            throw 'Packaging directories must not pass through links or junctions.'
+        }
+    }
+}
+
+function Archive-PreviousPublicOutput {
+    $repository = [IO.Path]::GetFullPath((Join-Path $setupRoot '..\..'))
+    Assert-PackagingDirectory $output $setupRoot
+    $existing = @(Get-ChildItem -LiteralPath $output -Force -ErrorAction SilentlyContinue)
+    if (!$existing.Count) { return }
+    $archiveRoot = Join-Path $repository '.local\release-packaging\retired-output'
+    $retired = Join-Path $archiveRoot ((Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N'))
+    Assert-PackagingDirectory $retired $repository
+    foreach ($entry in $existing) {
+        Assert-PackagingDirectory $entry.FullName $output
+        if ($entry.PSIsContainer) {
+            foreach ($child in (Get-ChildItem -LiteralPath $entry.FullName -Recurse -Force)) {
+                Assert-PackagingDirectory $child.FullName $output
+            }
+        }
+    }
+    New-Item -ItemType Directory -Path $retired -Force | Out-Null
+    foreach ($entry in $existing) {
+        $destination = Join-Path $retired $entry.Name
+        Assert-PackagingDirectory $destination $retired
+        Move-Item -LiteralPath $entry.FullName -Destination $destination
+    }
+    Write-Host "Previous output preserved privately: $retired"
+}
+
 function Get-ReleaseSourceManifest {
     $sourceRoot = [IO.Path]::GetFullPath((Join-Path $setupRoot '..'))
-    $files = foreach ($folder in @('GamingModeAgent', 'Playhub.GameSession', 'Playhub.XboxSession', 'Playhub', 'Shared', 'ApplicationIntegrations', 'PerfectArtwork')) {
+    $files = foreach ($folder in @('GamingModeAgent', 'Playhub.GameSession', 'Playhub.XboxSession', 'Playhub.DeckyHost', 'Playhub', 'Shared', 'ApplicationIntegrations', 'PerfectArtwork')) {
         Get-ChildItem -LiteralPath (Join-Path $sourceRoot $folder) -Recurse -File |
             Where-Object { $_.Extension -in '.cs', '.csproj', '.ps1' -and $_.FullName -notmatch '[\\/](bin|obj|dist_publish|Assets|Plugins)[\\/]' }
     }
@@ -25,25 +61,13 @@ function Get-ReleaseSourceManifest {
         Where-Object { ($_.Extension -eq '.md' -or $_.Name -in @('LICENSE', 'MIT-LICENSE')) -and $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }
     $files += Get-Item -LiteralPath (Join-Path $sourceRoot 'Playhub\Assets\GamingMode\desktop-safety.ps1')
     $files += Get-Item -LiteralPath (Join-Path $sourceRoot '..\catalog\plugins.json'), (Join-Path $sourceRoot 'Playhub\THIRD-PARTY-NOTICES.txt')
-    foreach ($contract in @('SteamPluginBridge.cs', 'GameIntegrationEditorService.cs', 'PostImportIntegrationService.cs', 'PerfectArtworkState.cs', 'PerfectHeroService.cs', 'PluginConsumerDelivery.cs', 'ApplicationIntegrationCoordinator.cs', 'NativeMetadataService.cs', 'ApplicationImageCache.cs', 'GameTitleRefetchFactory.cs')) {
+    foreach ($contract in @('SteamPluginBridge.cs', 'PerfectArtworkState.cs', 'ApplicationImageCache.cs', 'GameTitleRefetchFactory.cs')) {
         $files += Get-Item -LiteralPath (Join-Path $sourceRoot ('ApplicationIntegrations\Native\' + $contract))
     }
     $files += Get-Item -LiteralPath (Join-Path $setupRoot 'build-update-preview.ps1')
-    $files += Get-Item -LiteralPath (Join-Path $sourceRoot 'Playhub\ApplicationMediaTools.props')
-    $files += Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'Playhub\Tools\Media') -Recurse -File |
-        Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }
-    if ($IncludeEmulation) {
-        $workbenchRoot = Join-Path $sourceRoot 'EmulationWorkbench'
-        foreach ($folder in @('Host', 'Core', 'ModsCore')) {
-            $files += Get-ChildItem -LiteralPath (Join-Path $workbenchRoot $folder) -Recurse -File |
-                Where-Object { $_.Extension -in '.cs', '.csproj' -and $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }
-        }
-        $files += Get-ChildItem -LiteralPath (Join-Path $workbenchRoot 'Preview') -Recurse -File
-        $files += Get-ChildItem -LiteralPath (Join-Path $workbenchRoot 'Research') -File -Filter '*.json'
-        foreach ($runtimeFile in @('7za.exe', 'License.txt', 'copying.txt', 'NOTICE.md', '7z2603-src.tar.xz', 'download-provenance.json', 'readme.txt', 'history.txt')) {
-            $files += Get-Item -LiteralPath (Join-Path $workbenchRoot ('Runtime\7zip\' + $runtimeFile))
-        }
-    }
+    $files += Get-ChildItem -LiteralPath $setupRoot -File | Where-Object { $_.Extension -in '.cs', '.csproj', '.xaml', '.manifest', '.ps1' }
+    $files += Get-ChildItem -LiteralPath (Join-Path $setupRoot 'Assets') -Recurse -File
+    $files += Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'Playhub\Assets\Localization') -File -Filter '*.json'
     foreach ($helper in @('focus-rescue.ps1', 'xbox-gamebar.ps1')) {
         $files += Get-Item -LiteralPath (Join-Path $sourceRoot ('Playhub\Assets\GamingMode\' + $helper))
     }
@@ -52,9 +76,11 @@ function Get-ReleaseSourceManifest {
     }
     foreach ($pluginName in @('Artwork', 'Metadata', 'ThemeDeck', 'Launch Curtain', 'Playhub Notifications', 'Now Playing', 'TrailerHero')) {
         $bundleRoot = Join-Path $sourceRoot ('Playhub\Plugins\' + $pluginName)
-        $installers = @(Get-ChildItem -LiteralPath $bundleRoot -File -Filter '*Installer*.zip')
-        if ($installers.Count -ne 1) { throw "Expected one current bundled installer for $pluginName." }
-        $files += $installers[0]
+        if ($pluginName -in @('Metadata', 'Launch Curtain')) {
+            $installers = @(Get-ChildItem -LiteralPath $bundleRoot -File -Filter '*Installer*.zip')
+            if ($installers.Count -ne 1) { throw "Expected one current bundled installer for $pluginName." }
+            $files += $installers[0]
+        }
         $files += Get-Item -LiteralPath (Join-Path $bundleRoot 'release-info.json')
     }
     $files += Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'GamingModeDeckyPlugin\src') -Recurse -File |
@@ -75,17 +101,17 @@ if ($ReuseStage) {
     }
 }
 
-function Assert-ReleaseFlags([string]$assemblyPath, [bool]$emulationExpected) {
+function Assert-ReleaseFlags([string]$assemblyPath) {
     $stream = [IO.File]::OpenRead($assemblyPath)
     $pe = [System.Reflection.PortableExecutable.PEReader]::new($stream)
     try {
         $reader = [System.Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($pe)
-        $flags = @{ 'PlayhubUpdatePolicy.IsPreview' = $false; 'BuildFeatures.EmulationEnabled' = $emulationExpected }
+        $flags = @{ 'PlayhubUpdatePolicy.IsPreview' = $false }
         $found = @{}
         foreach ($handle in $reader.TypeDefinitions) {
             $type = $reader.GetTypeDefinition($handle)
             $typeName = $reader.GetString($type.Name)
-            if ($typeName -in @('PlayhubUpdatePolicy', 'BuildFeatures')) {
+            if ($typeName -eq 'PlayhubUpdatePolicy') {
                 foreach ($fieldHandle in $type.GetFields()) {
                     $field = $reader.GetFieldDefinition($fieldHandle)
                     $key = $typeName + '.' + $reader.GetString($field.Name)
@@ -115,29 +141,14 @@ try {
     if (!$ReuseStage) {
     & (Join-Path $setupRoot '..\GamingModeDeckyPlugin\build-plugin.bat')
     if ($LASTEXITCODE) { throw 'Current Decky source build failed.' }
-    & dotnet publish (Join-Path $setupRoot 'PlayhubSetup.csproj') -c Release -r win-x64 --no-restore -o $stubDir
+    & dotnet publish (Join-Path $setupRoot 'PlayhubSetup.csproj') -c Release -r win-x64 -o $stubDir
     if ($LASTEXITCODE) { throw 'Installer stub build failed.' }
     $stub = Join-Path $stubDir 'Playhub Setup.exe'
 
     $publish = Join-Path $stage 'normal'
-    & dotnet publish $appProject -c Release -r win-x64 --self-contained true --no-restore -p:Platform=x64 -p:WindowsAppSDKSelfContained=true -p:PlayhubUiReview=false -p:PlayhubUpdatePreview=false "-p:PlayhubEmulation=$($IncludeEmulation.IsPresent.ToString().ToLowerInvariant())" -o $publish
+    & dotnet publish $appProject -c Release -r win-x64 --self-contained true -p:Platform=x64 -p:WindowsAppSDKSelfContained=true -p:PlayhubUiReview=false -p:PlayhubUpdatePreview=false -o $publish
     if ($LASTEXITCODE) { throw 'App normal build failed.' }
-    Assert-ReleaseFlags (Join-Path $publish 'Playhub.dll') $IncludeEmulation.IsPresent
-    # Build runtime services from the same sources as the app, rather than
-    # shipping binaries left behind by an earlier development build.
-    if ($IncludeEmulation) {
-    $workbench = [IO.Path]::GetFullPath((Join-Path $setupRoot '..\EmulationWorkbench'))
-    $emulation = Join-Path $publish 'Emulation'
-    & dotnet publish (Join-Path $workbench 'Host\Playhub.Emulation.Workbench.csproj') -c Release -r win-x64 --self-contained true -o (Join-Path $emulation 'Host')
-    if ($LASTEXITCODE) { throw 'Emulation host build failed.' }
-    Copy-Item -LiteralPath (Join-Path $workbench 'Preview') -Destination $emulation -Recurse -Force
-    New-Item -ItemType Directory -Path (Join-Path $emulation 'Research'), (Join-Path $emulation 'Runtime\7zip') -Force | Out-Null
-    Get-ChildItem -LiteralPath (Join-Path $workbench 'Research') -Filter '*.json' -File | Copy-Item -Destination (Join-Path $emulation 'Research')
-    foreach ($runtimeFile in @('7za.exe', 'License.txt', 'copying.txt', 'NOTICE.md', '7z2603-src.tar.xz', 'download-provenance.json', 'readme.txt', 'history.txt')) {
-        Copy-Item -LiteralPath (Join-Path $workbench "Runtime\7zip\$runtimeFile") -Destination (Join-Path $emulation 'Runtime\7zip')
-    }
-    }
-    [IO.File]::WriteAllText((Join-Path $publish 'playhub-release-features.json'), ('{"emulation":' + $IncludeEmulation.IsPresent.ToString().ToLowerInvariant() + '}'))
+    Assert-ReleaseFlags (Join-Path $publish 'Playhub.dll')
     & dotnet publish (Join-Path $setupRoot '..\GamingModeAgent\GamingMode.csproj') -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o $agentDir
     if ($LASTEXITCODE) { throw 'Gaming Mode agent build failed.' }
     $agentPayload = Join-Path $publish 'Plugins\Gaming Mode\gaming-mode-win-x64'
@@ -147,9 +158,7 @@ try {
     [IO.File]::WriteAllText($sourceManifestPath, $sourceManifest)
     }
     $stub = Join-Path $stubDir 'Playhub Setup.exe'
-    Assert-ReleaseFlags (Join-Path $publish 'Playhub.dll') $IncludeEmulation.IsPresent
-    $features = Get-Content -LiteralPath (Join-Path $publish 'playhub-release-features.json') -Raw | ConvertFrom-Json
-    if ([bool]$features.emulation -ne $IncludeEmulation.IsPresent) { throw 'The reused stage has a different emulation feature set.' }
+    Assert-ReleaseFlags (Join-Path $publish 'Playhub.dll')
     # Rollup's old hashed editorial images can remain after switching to remote
     # photos. Prune only unreferenced hashed assets in this isolated payload.
     $dist = Join-Path $publish 'Assets\GamingModeDeckyPlugin\gaming-mode\dist'
@@ -170,17 +179,21 @@ try {
         foreach ($required in @('Playhub.exe', 'Playhub.dll', 'Assets/Brand/cube.png', 'Assets/Brand/playhub-wordmark-white.png', 'Assets/Welcome/Mascots/final-onboarding.png')) {
             if ($null -eq $archive.GetEntry($required)) { throw "Missing payload entry: $required" }
         }
-        $runtimeEntries = @('Plugins/Gaming Mode/gaming-mode-win-x64/GamingMode.exe', 'Assets/GamingModeDeckyPlugin/gaming-mode/main.py', 'Playhub.GameSession.exe', 'Playhub.XboxSession.exe', 'XboxSession/source/LICENSE', 'XboxSession/source/NOTICE.md', 'XboxSession/source/BUILD.md', 'XboxSession/source/Playhub.XboxSession.csproj', 'XboxSession/source/Runtime/MIT-LICENSE', 'playhub-release-features.json')
+        $runtimeEntries = @('Plugins/Gaming Mode/gaming-mode-win-x64/GamingMode.exe', 'Assets/GamingModeDeckyPlugin/gaming-mode/main.py', 'Playhub.GameSession.exe', 'Playhub.XboxSession.exe', 'XboxSession/source/LICENSE', 'XboxSession/source/NOTICE.md', 'XboxSession/source/BUILD.md', 'XboxSession/source/Playhub.XboxSession.csproj', 'XboxSession/source/Runtime/MIT-LICENSE')
         foreach ($legacyHelperFile in @('Playhub.GameSession.dll', 'Playhub.GameSession.deps.json', 'Playhub.GameSession.runtimeconfig.json', 'Playhub.XboxSession.dll', 'Playhub.XboxSession.deps.json', 'Playhub.XboxSession.runtimeconfig.json')) {
             if ($null -ne $archive.GetEntry($legacyHelperFile)) { throw "Stale non-single-file helper payload: $legacyHelperFile" }
         }
-        if ($IncludeEmulation) {
-            $runtimeEntries += @('Emulation/Host/Playhub.Emulation.Workbench.exe', 'Emulation/Host/Playhub.Emulation.Workbench.dll', 'Emulation/Research/graphics-audio-profiles.json', 'Emulation/Research/metadata-languages.json', 'Emulation/Preview/index.html', 'Emulation/Runtime/7zip/7za.exe', 'Emulation/Runtime/7zip/7z2603-src.tar.xz', 'Emulation/Runtime/7zip/License.txt', 'Emulation/Runtime/7zip/copying.txt', 'Emulation/Runtime/7zip/NOTICE.md', 'Emulation/Runtime/7zip/download-provenance.json', 'Emulation/Runtime/7zip/readme.txt', 'Emulation/Runtime/7zip/history.txt')
-        } elseif (@($archive.Entries | Where-Object { $_.FullName -match '^(Emulation/|Assets/Emulation/|Assets/Emulators/)' }).Count) {
-            throw 'Emulation payload found in the maintenance release.'
+        if (@($archive.Entries | Where-Object { $_.FullName -match '^(Emulation/|Assets/Emulation/|Assets/Emulators/|RecompCore\.|Quiver-|Vendor/(QUIVER|SHARPCOMPRESS))' }).Count) {
+            throw 'Removed feature payload found in the release.'
         }
         foreach ($required in $runtimeEntries) {
             if ($null -eq $archive.GetEntry($required)) { throw "Missing runtime payload entry: $required" }
+        }
+        foreach ($required in @('Assets/DeckyRuntime/Playhub-DeckyHost.exe')) {
+            if ($null -eq $archive.GetEntry($required)) { throw "Missing 2.5 runtime payload entry: $required" }
+        }
+        if (@($archive.Entries | Where-Object { $_.FullName.StartsWith('Assets/DeckyRuntime/') -and $_.FullName -ne 'Assets/DeckyRuntime/Playhub-DeckyHost.exe' }).Count) {
+            throw 'Unrelated application files found inside the Decky lifetime runtime.'
         }
         $artwork = $archive.GetEntry('Assets/Welcome/Mascots/final-onboarding.png').Open()
         try {
@@ -194,6 +207,7 @@ try {
             'THIRD-PARTY-NOTICES.txt' = Join-Path $setupRoot '..\Playhub\THIRD-PARTY-NOTICES.txt'
             'Playhub.GameSession.exe' = Join-Path $setupRoot '..\Playhub.GameSession\bin\Release\net8.0-windows\win-x64\publish\Playhub.GameSession.exe'
             'Playhub.XboxSession.exe' = Join-Path $setupRoot '..\Playhub.XboxSession\bin\Release\net8.0-windows\win-x64\publish\Playhub.XboxSession.exe'
+            'Assets/DeckyRuntime/Playhub-DeckyHost.exe' = Join-Path $setupRoot '..\Playhub.DeckyHost\bin\Release\net8.0-windows\win-x64\publish\Playhub-DeckyHost.exe'
             'Assets/GamingModeDeckyPlugin/gaming-mode/dist/index.js' = Join-Path $setupRoot '..\GamingModeDeckyPlugin\dist\index.js'
             'Assets/GamingModeDeckyPlugin/gaming-mode/main.py' = Join-Path $setupRoot '..\GamingModeDeckyPlugin\main.py'
             'Assets/GamingModeDeckyPlugin/gaming-mode/decky_ipc_health.py' = Join-Path $setupRoot '..\GamingModeDeckyPlugin\decky_ipc_health.py'
@@ -205,25 +219,6 @@ try {
             'Plugins/Gaming Mode/gaming-mode-win-x64/owned-helpers.ps1' = Join-Path $setupRoot '..\Playhub\Plugins\Gaming Mode\gaming-mode-win-x64\owned-helpers.ps1'
             'Plugins/Gaming Mode/gaming-mode-win-x64/install.ps1' = Join-Path $setupRoot '..\Playhub\Plugins\Gaming Mode\gaming-mode-win-x64\install.ps1'
             'Plugins/Gaming Mode/gaming-mode-win-x64/uninstall.ps1' = Join-Path $setupRoot '..\Playhub\Plugins\Gaming Mode\gaming-mode-win-x64\uninstall.ps1'
-        }
-        if ($IncludeEmulation) {
-            foreach ($runtimeFile in @('7za.exe', 'License.txt', 'copying.txt', 'NOTICE.md', '7z2603-src.tar.xz', 'download-provenance.json', 'readme.txt', 'history.txt')) {
-                $dataAssets["Emulation/Runtime/7zip/$runtimeFile"] = Join-Path $setupRoot "..\EmulationWorkbench\Runtime\7zip\$runtimeFile"
-            }
-        }
-        $mediaRoot = [IO.Path]::GetFullPath((Join-Path $setupRoot '..\Playhub\Tools\Media'))
-        $mediaFiles = @(Get-ChildItem -LiteralPath $mediaRoot -Recurse -File |
-            Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' })
-        $mediaEntries = @()
-        foreach ($mediaFile in $mediaFiles) {
-            $entryName = 'Tools/Media/' + [IO.Path]::GetRelativePath($mediaRoot, $mediaFile.FullName).Replace('\', '/')
-            $dataAssets[$entryName] = $mediaFile.FullName
-            $mediaEntries += $entryName
-        }
-        foreach ($entry in $archive.Entries) {
-            if ($entry.FullName.StartsWith('Tools/Media/') -and !$entry.FullName.EndsWith('/') -and $entry.FullName -notin $mediaEntries) {
-                throw "Unexpected app media tool payload: $($entry.FullName)"
-            }
         }
         $xboxSourceRoot = [IO.Path]::GetFullPath((Join-Path $setupRoot '..\Playhub.XboxSession'))
         $xboxSources = @(Get-ChildItem -LiteralPath $xboxSourceRoot -Recurse -File |
@@ -244,12 +239,17 @@ try {
         }
         foreach ($pluginName in @('Artwork', 'Metadata', 'ThemeDeck', 'Launch Curtain', 'Playhub Notifications', 'Now Playing', 'TrailerHero')) {
             $pluginSource = Join-Path $setupRoot "..\Playhub\Plugins\$pluginName"
-            $installers = @(Get-ChildItem -LiteralPath $pluginSource -File -Filter '*.zip' | Where-Object { $_.Name -match 'Installer' })
-            if ($installers.Count -ne 1) { throw "Expected one current bundled installer for $pluginName." }
-            $dataAssets["Plugins/$pluginName/$($installers[0].Name)"] = $installers[0].FullName
+            if ($pluginName -in @('Metadata', 'Launch Curtain')) {
+                $installers = @(Get-ChildItem -LiteralPath $pluginSource -File -Filter '*Installer*.zip')
+                if ($installers.Count -ne 1) { throw "Expected one current bundled installer for $pluginName." }
+                $dataAssets["Plugins/$pluginName/$($installers[0].Name)"] = $installers[0].FullName
+            }
             $marker = Join-Path $pluginSource 'release-info.json'
             if (!(Test-Path -LiteralPath $marker)) { throw "Missing bundled version provenance for $pluginName." }
             $dataAssets["Plugins/$pluginName/release-info.json"] = $marker
+        }
+        if (@($archive.Entries | Where-Object { $_.FullName -match '^Plugins/(?!Metadata/|Launch Curtain/).*\.zip$' }).Count) {
+            throw 'Remotely available plugin installer archives must not be bundled.'
         }
         foreach ($entryPath in $dataAssets.Keys) {
             $entry = $archive.GetEntry($entryPath)
@@ -285,6 +285,7 @@ try {
         }
     } finally { $check.Dispose() }
     $destination = Join-Path $output $name
+    Archive-PreviousPublicOutput
     Move-Item -LiteralPath $partial -Destination $destination -Force
     $hash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
     "$hash  $name" | Set-Content -LiteralPath ($destination + '.sha256') -Encoding ascii

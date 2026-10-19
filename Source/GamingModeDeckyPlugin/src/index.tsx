@@ -1,4 +1,4 @@
-import { installCirclesScreensaver } from "./circlesScreensaver";
+﻿import { installCirclesScreensaver } from "./circlesScreensaver";
 import { pollStatus } from "./statusPoll";
 import { agentAvailability } from "./agentAvailability";
 import { optionalAgentCopy } from "./optionalAgentLocale";
@@ -777,8 +777,16 @@ const EWindowBringToFront_AndForceOS = 1;
 
 // ---------------------------------------------------------------------------
 
+function installOptionalHook(name: string, install: () => () => void): () => void {
+  try { return install(); }
+  catch (error) {
+    console.warn(`[Playhub] ${name} unavailable; continuing startup`, error);
+    return () => {};
+  }
+}
+
 export default definePlugin(() => {
-  const stopDeckyIpcRecovery = installDeckyIpcRecovery({
+  const stopDeckyIpcRecovery = installOptionalHook("Decky IPC recovery", () => installDeckyIpcRecovery({
     scan: () => controlCall<[], IpcFailure[]>("get_decky_ipc_failures"),
     claim: failure => controlCall<[string, string, string], { ok: boolean; name?: string }>("claim_decky_ipc_recovery", failure.folder, failure.session, failure.log),
     reload: name => {
@@ -789,12 +797,12 @@ export default definePlugin(() => {
     schedule: (callback, delay) => window.setTimeout(callback, delay),
     cancel: timer => window.clearTimeout(timer as number),
     warn: error => console.warn("[Playhub] Decky IPC startup recovery unavailable", error),
-  });
-  const uninstallCircles = installCirclesScreensaver(() => currentLocale);
-  const uninstallOnboarding = installPlayhubOnboarding(() => currentLocale);
-  const uninstallDeckyHost = initDeckyHost(() => controlCall<[], { deckyHostEnabled?: boolean }>("get_panel_preferences"));
-  const uninstallQuickSettings = installQuickSettings();
-  const uninstallControlledQamFocus = installControlledQamFocus();
+  }));
+  const uninstallCircles = installOptionalHook("Screensaver", () => installCirclesScreensaver(() => currentLocale));
+  const uninstallOnboarding = installOptionalHook("Onboarding", () => installPlayhubOnboarding(() => currentLocale));
+  const uninstallDeckyHost = installOptionalHook("Decky host", () => initDeckyHost(() => controlCall<[], { deckyHostEnabled?: boolean }>("get_panel_preferences")));
+  const uninstallQuickSettings = installOptionalHook("Quick settings", installQuickSettings);
+  const uninstallControlledQamFocus = installOptionalHook("QAM focus", installControlledQamFocus);
   void initializeQamPreferences().catch(error=>console.warn('[Playhub QAM] Preferences unavailable',error));
   let uninstallHomeNews = () => {};
   try { uninstallHomeNews = installHomeNews(() => currentLocale); }
@@ -805,12 +813,12 @@ export default definePlugin(() => {
   void preloadPluginStoreCatalog().catch(() => {});
   const steamFocusRecovery = installSteamNavigationFocusRecovery();
   const stopOpenRequestWatcher = startOpenRequestWatcher(() => steamFocusRecovery.schedule("chiusura gioco"));
-  const uninstallNavigationHaptics = installNavigationHaptics();
+  const uninstallNavigationHaptics = installOptionalHook("Navigation haptics", installNavigationHaptics);
   const uninstallPlayhubQam = initPlayhubQam({ content: <Content origin="qam" />, icon: <PlayhubIcon />, title: <div style={{ paddingInline: 16, boxSizing: "border-box" }}>{playhubTitle}</div> });
-  const uninstallPowerMenuPatch = installPowerMenuPatch(
+  const uninstallPowerMenuPatch = installOptionalHook("Power menu", () => installPowerMenuPatch(
     () => ({ gaming: t().switchGaming, desktop: t().switchDesktop }),
     (mode) => confirmModeSwitch(mode, () => { void post(`/mode/${mode}/switch`).catch((error) => toaster.toast({ title: "Playhub", body: String(error) })); })
-  );
+  ));
 
   const hapticRevision = getNavigationHapticsRevision();
   void hapticSettingsWrite.catch(() => {}).then(() => readSettings()).then((settings) => {

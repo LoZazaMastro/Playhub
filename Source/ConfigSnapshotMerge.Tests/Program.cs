@@ -1,0 +1,35 @@
+using System.Text.Json.Nodes;
+using Playhub.Services;
+
+int passed = 0;
+void Check(bool condition, string name) { if (!condition) throw new Exception(name); passed++; }
+JsonObject Parse(string json) => JsonNode.Parse(json)!.AsObject();
+var baseline = Parse("""{"gaming":{"splash":{"logoPath":"old.png","enabled":true,"animationOpacity":100},"closeExplorerInGamingMode":true,"shortcuts":[1]},"defaultMode":"Gaming"}""");
+var proposed = (JsonObject)baseline.DeepClone();
+proposed["gaming"]!["closeExplorerInGamingMode"] = false;
+var disk = (JsonObject)baseline.DeepClone();
+disk["gaming"]!["splash"]!["logoPath"] = "custom.png";
+disk["gaming"]!["shortcuts"] = new JsonArray(1, 2);
+disk["agentOnly"] = "keep";
+var merged = ConfigSnapshotMerge.Merge(baseline, proposed, disk);
+Check(merged["gaming"]!["splash"]!["logoPath"]!.GetValue<string>() == "custom.png", "Unrelated app toggle preserves custom splash selected through agent");
+Check(!merged["gaming"]!["closeExplorerInGamingMode"]!.GetValue<bool>(), "Explicit false applies");
+Check(merged["gaming"]!["shortcuts"]!.AsArray().Count == 2 && merged["agentOnly"]!.GetValue<string>() == "keep", "Concurrent array and unknown agent field preserved");
+Check(disk["gaming"]!["closeExplorerInGamingMode"]!.GetValue<bool>(), "Original snapshots remain immutable");
+proposed["gaming"]!["splash"]!["logoPath"] = null;
+merged = ConfigSnapshotMerge.Merge(baseline, proposed, disk);
+Check(merged["gaming"]!["splash"]!["logoPath"] is null, "Explicit logo reset wins over concurrent logo");
+Check(merged["gaming"]!["splash"]!["enabled"]!.GetValue<bool>(), "Unchanged sibling remains");
+proposed["gaming"]!["shortcuts"] = new JsonArray();
+merged = ConfigSnapshotMerge.Merge(baseline, proposed, disk);
+Check(merged["gaming"]!["shortcuts"]!.AsArray().Count == 0, "Explicit array removal applies");
+proposed.Remove("defaultMode");
+merged = ConfigSnapshotMerge.Merge(baseline, proposed, disk);
+Check(!merged.ContainsKey("defaultMode"), "Explicit property removal applies");
+var unchanged = ConfigSnapshotMerge.Merge(baseline, baseline, disk);
+Check(JsonNode.DeepEquals(unchanged, disk), "Unchanged cached settings never revert any disk settings");
+disk["gaming"]!["splash"]!["animationOpacity"] = 25;
+proposed["gaming"]!["splash"]!["enabled"] = false;
+merged = ConfigSnapshotMerge.Merge(baseline, proposed, disk);
+Check(merged["gaming"]!["splash"]!["animationOpacity"]!.GetValue<int>() == 25 && !merged["gaming"]!["splash"]!["enabled"]!.GetValue<bool>(), "Independent same-section changes merge individually");
+Console.WriteLine($"Configuration merge: {passed} checks passed; no installed settings or processes changed.");

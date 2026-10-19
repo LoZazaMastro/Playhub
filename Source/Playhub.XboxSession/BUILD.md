@@ -49,10 +49,3 @@ Source checks, from the Playhub repository:
 dotnet run --project Source/Playhub.XboxSession.Tests/Playhub.XboxSession.Tests.csproj -c Release
 dotnet run --project Source/Playhub.GameSession.Tests/Playhub.GameSession.Tests.csproj -c Release
 ```
-
-The initial isolated route passed an attended DOOM 64 test on 2026-10-03: Steam tracked the real renderer process,
-Guide overlay and Playhub QAM opened, an ordinary virtual XInput controller navigated and moved in the game after Guide,
-and natural exit removed the game, launch helper and wrapper before Big Picture returned automatically. That does not
-establish physical-controller or other-title compatibility. The generic candidate subsequently failed initial input in
-a fresh DOOM session before Guide; reconnecting the test pad only fixed the preceding session. Automatic renderer handoff
-is therefore disabled. The source and attended evidence remain available for an explicit experiment, not release approval.

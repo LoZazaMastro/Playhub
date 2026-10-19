@@ -6,6 +6,29 @@ public readonly record struct ArtworkPixelBounds(int X,int Y,int Width,int Heigh
 /// <summary>Original raster implementation of Playhub's centered background and left-quarter logo layout.</summary>
 public static class PerfectArtworkPixels
 {
+    public static ArtworkPixels RenderShadow(ArtworkPixels logo, int width, int height, int blur, int offset, CancellationToken ct = default)
+    {
+        Validate(logo);
+        if (width is < 1 or > 8192 || height is < 1 or > 8192 || blur is < 0 or > 256 || offset is < 0 or > 256)
+            throw new ArgumentOutOfRangeException(nameof(width));
+        int padding = ShadowPadding(blur, offset), outputWidth = checked(width + padding * 2), outputHeight = checked(height + padding * 2);
+        if ((long)outputWidth * outputHeight > 32 * 1024 * 1024) throw new InvalidDataException("Shadow preview is too large.");
+        var mask = new byte[checked(outputWidth * outputHeight)];
+        for (int y = 0; y < height; y++)
+        {
+            ct.ThrowIfCancellationRequested();
+            for (int x = 0; x < width; x++)
+                mask[(y + padding + offset) * outputWidth + x + padding] = (byte)Sample(logo,
+                    (x + .5) * logo.Width / width - .5, (y + .5) * logo.Height / height - .5).A;
+        }
+        if (blur > 0) for (int pass = 0; pass < 3; pass++) mask = Blur(mask, outputWidth, outputHeight, Math.Max(1, blur / 3), ct);
+        var pixels = new byte[checked(mask.Length * 4)];
+        for (int i = 0; i < mask.Length; i++) pixels[i * 4 + 3] = mask[i];
+        return new(outputWidth, outputHeight, pixels);
+    }
+
+    public static int ShadowPadding(int blur, int offset) => checked(blur * 2 + offset + 2);
+
     public static ArtworkPixels Render(ArtworkPixels background, ArtworkPixels logo, string target, CancellationToken ct = default, PerfectArtworkLayout? layout = null)
     {
         Validate(background); Validate(logo);

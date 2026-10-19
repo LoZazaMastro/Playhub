@@ -19,16 +19,19 @@ string hash = Convert.ToHexString(SHA256.HashData("original"u8.ToArray()));
 void Assert(bool condition, string message) { if (!condition) throw new Exception(message); Console.WriteLine("PASS " + message); }
 void Put(string name, string content) => File.WriteAllText(Path.Combine(assets, name), content);
 File.WriteAllText(Path.Combine(metadata, "manifest.json"), JsonSerializer.Serialize(new { files = new Dictionary<string, object> { ["photo.jpg"] = new { sha256 = hash } } }));
-var entries = new[] { "photo.jpg", "modified.jpg", "cover.jpg", "../outside.jpg", "unknown.jpg", "linked.jpg" }
-    .Select(name => new { name, sha256 = name == "unknown.jpg" ? new string('0', 64) : hash });
+var entries = new[] { "photo.jpg", "modified.jpg", "cover.jpg", "modified-cover.jpg", "user-cover.jpg", "../outside.jpg", "unknown.jpg", "linked.jpg" }
+    .Select(name => new { name, sha256 = name is "unknown.jpg" or "user-cover.jpg" ? new string('0', 64) : hash });
 File.WriteAllText(Path.Combine(metadata, "legacy-photos.json"), JsonSerializer.Serialize(new { files = entries }));
 Put("photo.jpg", "original"); Put("modified.jpg", "user edit"); Put("cover.jpg", "original"); Put("unknown.jpg", "original");
+Put("modified-cover.jpg", "user edit"); Put("user-cover.jpg", "original");
 File.WriteAllText(Path.Combine(root, "outside.jpg"), "original");
 Assert(EditorialPhotoMigration.Prune(root) == 0, "no deletion without streaming bundle");
 File.WriteAllText(Path.Combine(assets, "../index.js"), "assets/on-this-day/v1/");
-Assert(EditorialPhotoMigration.Prune(root) == 1, "only exact legacy hash removed");
+Assert(EditorialPhotoMigration.Prune(root) == 2, "only approved exact legacy photo and cover hashes removed");
 Assert(File.Exists(Path.Combine(assets, "modified.jpg")), "user-modified photo retained");
-Assert(File.Exists(Path.Combine(assets, "cover.jpg")), "cover retained");
+Assert(!File.Exists(Path.Combine(assets, "cover.jpg")), "hash-approved legacy cover removed");
+Assert(File.Exists(Path.Combine(assets, "modified-cover.jpg")), "user-modified legacy cover retained");
+Assert(File.Exists(Path.Combine(assets, "user-cover.jpg")), "unapproved user cover retained even when bytes match a legacy photo");
 Assert(File.Exists(Path.Combine(assets, "unknown.jpg")), "unapproved hash retained");
 Assert(File.Exists(Path.Combine(root, "outside.jpg")), "path traversal retained");
 Assert(EditorialPhotoMigration.Prune(root) == 0, "migration idempotent");

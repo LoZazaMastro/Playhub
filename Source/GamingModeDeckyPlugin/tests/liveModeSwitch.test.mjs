@@ -40,7 +40,8 @@ test("Explorer autostart and agent launches share a Decky startup lock", () => {
   assert.match(guard, /Get-Process -Name PluginLoader,PluginLoader_noconsole/);
   assert.equal(guard.split("Global\\Playhub.Decky.Start").length - 1, 2);
   assert.ok(guard.indexOf("$mutex.WaitOne") < guard.indexOf("Get-Process -Name"));
-  assert.ok(guard.indexOf("Get-Process -Name") < guard.indexOf("[Diagnostics.Process]::Start"));
+  // The earlier Start belongs to the existing-listener protection function.
+  assert.ok(guard.indexOf("Get-Process -Name") < guard.lastIndexOf("[Diagnostics.Process]::Start($start)"));
 });
 
 test("desktop transition stops Decky before Explorer and only ensures one replacement", () => {
@@ -49,7 +50,7 @@ test("desktop transition stops Decky before Explorer and only ensures one replac
   assert.match(desktop, /CurrentMode == ModeKind.Gaming/);
   assert.match(desktop, /finally[\s\S]*if \(restoreDecky\)[\s\S]*EnsureProcessWithEnvironment/);
   const processes = read("../../GamingModeAgent/GamingMode.Services/ProcessTools.cs");
-  assert.match(processes, /process.SessionId == session/);
+  assert.match(processes, /process.SessionId == self.SessionId/);
   assert.match(processes, /WaitForExit\(5000\)/);
   assert.match(processes, /if \(decky\) return Playhub.Shared.DeckyStartupGuard.StartOrReuse\(processStartInfo, _logger.Info\)/);
 });

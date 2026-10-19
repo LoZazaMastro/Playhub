@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Playhub.DeckyHost/DeckyProcessTree.cs" Link="DeckyProcessTree.cs" />
+    <Compile Include="../Playhub.DeckyHost/DeckyRuntimeDirectory.cs" Link="DeckyRuntimeDirectory.cs" />
+    <Compile Include="../Shared/DeckyStartupGuard.cs" Link="DeckyStartupGuard.cs" />
+  </ItemGroup>
+</Project>

@@ -25,6 +25,8 @@ public sealed record RemotePluginCatalogEntry
     public string ReleaseAssetName { get; init; } = "";
     public string CatalogReleaseUrl { get; init; } = "";
     public string ReleasePublishedAt { get; init; } = "";
+    public string FirstPublishedAt { get; init; } = "";
+    public string UpdatedAt { get; init; } = "";
     public string Category { get; init; } = "";
     public string ShortDescription { get; init; } = "";
     public string LongDescription { get; init; } = "";
@@ -38,4 +40,4 @@ public sealed record RemotePluginCatalogEntry
     public IReadOnlyList<string> Aliases { get; init; } = Array.Empty<string>();
 }
 
-public sealed record RemotePluginCatalogResult(RemotePluginCatalog Catalog, string Origin, string? Error = null);
+public sealed record RemotePluginCatalogResult(RemotePluginCatalog Catalog, string Origin, string? Error = null, string ContentVersion = "");

@@ -49,6 +49,8 @@ try
     Check(DeckyPluginService.FindBundledPayload(plugin) is { IsZip: false, Version: "1.8.2" },
         "Corrupt local archive does not block complete source or online fallback");
     Check(DeckyPluginService.ShouldUseBundledVersion("1.8.3", "v1.8.2"), "Older online release never downgrades bundled payload");
+    Check(DeckyPluginService.ShouldUseBundledVersion("1.8.4", "1.8.3"), "Unpublished Metadata fix remains ahead of the public release");
+    Check(DeckyPluginService.ShouldUseBundledVersion("2.5.7", "2.5.6"), "Unpublished Launch Curtain fix remains ahead of the public release");
     Check(!DeckyPluginService.ShouldUseBundledVersion("1.8.3", "1.9.0"), "Newer online release retains priority");
     Check(DeckyPluginService.ShouldUseBundledVersion("1.8.3", "v1.8.3"), "Equal online release uses local bytes");
     Check(!DeckyPluginService.ShouldUseBundledVersion("1.8.3-beta", "1.8.3"), "Prerelease bundle cannot displace stable release");

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Playhub/Services/GamingModePayloadSync.cs" Link="GamingModePayloadSync.cs" />
+    <Compile Include="../Playhub/Services/BundledExecutableCopy.cs" Link="BundledExecutableCopy.cs" />
+    <Compile Include="../Shared/EditorialPhotoMigration.cs" Link="EditorialPhotoMigration.cs" />
+  </ItemGroup>
+</Project>
