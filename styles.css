@@ -69,6 +69,7 @@ p { max-width: 64ch; }
 
 .topbar { position: sticky; z-index: 5; top: 0; background: var(--surface); border-bottom: 1px solid var(--border); }
 .site-header { display: grid; grid-template-columns: auto 1fr auto auto; gap: clamp(.65rem, 1.55vw, 1.65rem); align-items: center; min-height: 5rem; padding-block: .7rem; }
+.site-header > .brand { justify-self: start; }
 .brand { display: inline-flex; align-items: center; gap: .45rem; text-decoration: none; }
 .brand img { object-fit: contain; }
 .brand img:first-child { width: 34px; height: 34px; }
@@ -176,12 +177,17 @@ p { max-width: 64ch; }
 .footer nav a { display: inline-flex; align-items: center; gap: .4rem; }
 .footer p { color: var(--secondary); margin-top: .35rem; }
 
-@media (max-width: 980px) {
-  .site-header { grid-template-columns: auto 1fr auto; }
+@media (max-width: 1080px) {
+  .site-header { grid-template-columns: max-content minmax(2.75rem, 1fr) max-content; }
   .site-header nav { grid-column: 1 / -1; grid-row: 2; justify-content: start; }
   .theme-toggle { grid-column: 2; grid-row: 1; justify-self: end; }
   .header-actions { grid-column: 3; grid-row: 1; }
   :root { --sticky-offset: 7.6rem; }
+}
+@media (max-width: 720px) {
+  .header-actions .button { width: 2.75rem; padding: 0; }
+  .header-actions .button-label { display: none; }
+  :root { --sticky-offset: 6.5rem; }
 }
 @media (max-width: 700px) {
   .hero-layout { grid-template-columns: 1fr; gap: 1.2rem; }
@@ -193,19 +199,17 @@ p { max-width: 64ch; }
 }
 @media (max-width: 555px) {
   .feature-pair { grid-template-columns: 1fr; }
-  .site-header { grid-template-columns: 1fr auto; gap: .4rem; padding-block: .5rem; }
-  .site-header nav { grid-column: 1 / -1; grid-row: 3; font-size: .9rem; }
-  .theme-toggle { grid-column: 2; grid-row: 1; width: 2.3rem; min-height: 2.3rem; }
-  .header-actions { grid-column: 1 / -1; grid-row: 2; justify-content: start; }
-  .header-actions .button { padding: .4rem .54rem; min-height: 2.28rem; font-size: .84rem; white-space: normal; text-align: center; }
+  .site-header { grid-template-columns: max-content minmax(2.3rem, 1fr) max-content; gap: .4rem; padding-block: .5rem; }
+  .site-header nav { font-size: .9rem; }
+  .theme-toggle, .header-actions .button { width: 2.3rem; min-height: 2.3rem; }
+  .header-actions { gap: .4rem; }
   .site-header .brand img:first-child { width: 29px; height: 29px; }
-  .site-header .wordmark { width: 104px; height: auto; }
-  :root { --sticky-offset: 8.6rem; }
+  .site-header .wordmark { width: 104px; }
+  :root { --sticky-offset: 5.5rem; }
   .hero h1 { font-size: clamp(2.85rem, 10.5vw, 4.45rem); }
   .media-controls button { width: 2.3rem; height: 2.3rem; }
   .media-frame figcaption { font-size: .87rem; }
 }
 @media (max-width: 360px) {
-  .header-actions { gap: .35rem; }
-  .header-actions .button { gap: .3rem; padding-inline: .37rem; }
+  .site-header .wordmark { width: clamp(4.25rem, calc(100vw - 13.2rem), 6.5rem); }
 }
