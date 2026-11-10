@@ -71,6 +71,10 @@ p { max-width: 64ch; }
 .site-header { display: grid; grid-template-columns: auto 1fr auto auto; gap: clamp(.65rem, 1.55vw, 1.65rem); align-items: center; min-height: 5rem; padding-block: .7rem; }
 .brand { display: inline-flex; align-items: center; gap: .45rem; text-decoration: none; }
 .brand img { object-fit: contain; }
+.brand img:first-child { width: 34px; height: 34px; }
+.brand .wordmark { width: 115px; height: auto; }
+.footer .brand img:first-child { width: 32px; height: 32px; }
+.footer .brand .wordmark { width: 108px; }
 .wordmark { filter: brightness(0); }
 [data-theme="dark"] .wordmark { filter: brightness(0) invert(1); }
 .site-header nav { display: flex; justify-content: center; align-items: center; gap: clamp(.85rem, 2.2vw, 2rem); }
