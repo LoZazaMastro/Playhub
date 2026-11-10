@@ -354,6 +354,23 @@ p { max-width: 60ch; }
 .styler img { width: min(100%, 14rem); height: auto; }
 .styler h3 { margin-block: .55rem .75rem; }
 .styler-copy > p:last-child { color: var(--muted); }
+.app-preview {
+  max-width: 67rem;
+  margin: clamp(2.4rem, 6vw, 5rem) auto 0;
+}
+.app-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  border: 1px solid #342e32;
+  box-shadow: 0 .9rem 2.1rem #241b1730;
+}
+.app-preview figcaption {
+  margin-top: .9rem;
+  color: var(--muted);
+  font-size: .93rem;
+}
 .suite { padding-block: clamp(4rem, 8vw, 8rem); }
 .suite-group + .suite-group { margin-top: 2.45rem; }
 .group-heading {
