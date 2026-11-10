@@ -56,8 +56,8 @@ a, button { touch-action: manipulation; }
 button { font: inherit; cursor: pointer; }
 a:focus-visible, button:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
 ::selection { background: var(--yellow); color: var(--dark-ink); }
-h1, h2, h3, p, figure { margin: 0; }
-h1, h2, h3 { font-family: var(--title); line-height: 1.02; letter-spacing: -.058em; }
+h1, h2, h3, h4, h5, p, figure { margin: 0; }
+h1, h2, h3, h4, h5 { font-family: var(--title); line-height: 1.02; letter-spacing: -.058em; }
 h2 { font-size: clamp(3rem, 6.25vw, 5.5rem); }
 h3 { font-size: clamp(1.75rem, 3.2vw, 3rem); }
 p { max-width: 64ch; }
@@ -128,29 +128,83 @@ p { max-width: 64ch; }
 .feature img { justify-self: center; width: auto; max-height: 10rem; height: auto; object-fit: contain; }
 .styler img { width: 100%; height: auto; border-radius: .65rem; }
 .app-gallery { margin-top: clamp(2.5rem, 6vw, 5rem); }
-.gallery-heading { margin-bottom: 1.15rem; }
-
-.card-media { min-width: 0; position: relative; align-self: center; }
-.media-frame img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; background: #191b20; border-radius: .72rem; }
-.media-frame figcaption {
-  min-height: 3.05rem;
-  padding: .76rem 6.3rem .4rem 0;
-  font-weight: 700;
+.gallery-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.15rem; }
+.action-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) min(70%, calc(100% - 6.5rem), 96svh) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(.45rem, 1.6vw, 1.4rem);
 }
-.media-controls { display: flex; justify-content: end; gap: .45rem; margin-top: .55rem; }
-.action-media .media-controls { position: absolute; right: 0; bottom: 0; }
-.media-controls button {
+.action-current { grid-column: 2; grid-row: 1; overflow: hidden; border-radius: .72rem; background: #191b20; }
+.action-current img, .action-preview img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; }
+.action-preview {
+  display: grid;
+  align-items: center;
+  width: min(100%, 14rem);
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: .65rem;
+}
+.action-preview img { border-radius: inherit; opacity: .76; }
+.action-preview:hover img, .action-preview:focus-visible img { opacity: 1; }
+.action-previous { grid-column: 1; grid-row: 1; justify-self: end; }
+.action-next { grid-column: 3; grid-row: 1; justify-self: start; }
+.action-playback {
   display: grid;
   place-items: center;
-  width: 2.7rem;
-  height: 2.7rem;
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
   border: 1px solid var(--border);
   border-radius: .62rem;
   background: var(--card);
   color: var(--text);
 }
-.media-controls button:hover { background: var(--yellow); color: var(--dark-ink); border-color: var(--yellow); }
-.media-controls [data-previous] svg { rotate: 180deg; }
+.action-playback:hover { background: var(--yellow); color: var(--dark-ink); border-color: var(--yellow-edge); }
+.slideshow-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+.card-media { min-width: 0; position: relative; align-self: center; }
+.media-frame img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; background: #191b20; border-radius: .72rem; }
+.card-stage { position: relative; }
+.card-frames { overflow: hidden; border-radius: .72rem; background: #191b20; }
+.slide-toolbar {
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-end: .55rem;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  padding: .16rem .28rem;
+  border: 1px solid #ffffff38;
+  border-radius: 2rem;
+  background: #17171cf0;
+  color: #fff;
+}
+.slide-selectors { display: flex; }
+.slide-toolbar button {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+}
+.slide-toolbar button:hover { background: #ffffff24; }
+.slide-toolbar button:focus-visible { outline: 2px solid var(--yellow); outline-offset: -2px; }
+.slide-toolbar .icon { width: .9rem; height: .9rem; }
+.slide-selectors button::before {
+  content: "";
+  width: .37rem;
+  height: .37rem;
+  border-radius: 1rem;
+  background: #b7b7bd;
+}
+.slide-selectors button[aria-current="true"]::before { width: .72rem; background: var(--yellow); }
 
 .plugin-list { display: grid; gap: 1.25rem; }
 .plugin-card {
@@ -170,7 +224,23 @@ p { max-width: 64ch; }
 .plugin-copy h3 a:hover { text-decoration: underline; }
 .plugin-copy h3 .icon { display: inline; width: .5em; height: .5em; vertical-align: .17em; margin-inline-start: .15em; }
 .plugin-copy p { margin-top: .65rem; color: var(--secondary); font-size: clamp(.98rem, 1.23vw, 1.1rem); line-height: 1.57; }
-.plugin-card#playhub { border-color: var(--yellow-edge); }
+.playhub-suite {
+  background: var(--card);
+  border: 1px solid var(--yellow-edge);
+  border-radius: 1.15rem;
+  box-shadow: 0 7px 24px var(--shadow);
+}
+.playhub-feature { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.playhub-feature + .playhub-feature { border-top: 1px solid var(--border); }
+.playhub-features { border-top: 1px solid var(--border); }
+.playhub-features-title {
+  padding: 1rem clamp(.85rem, 2vw, 1.55rem) 0;
+  color: var(--secondary);
+  font: 700 .9rem/1.3 var(--body);
+  letter-spacing: 0;
+}
+.playhub-feature h5 { font-size: clamp(1.35rem, 2.35vw, 2rem); }
+
 
 .footer { padding-block: 2rem; border-top: 1px solid var(--border); background: var(--layer); }
 .footer-inner, .footer nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 1.6rem; }
@@ -207,8 +277,6 @@ p { max-width: 64ch; }
   .site-header .wordmark { width: 104px; }
   :root { --sticky-offset: 5.5rem; }
   .hero h1 { font-size: clamp(2.85rem, 10.5vw, 4.45rem); }
-  .media-controls button { width: 2.3rem; height: 2.3rem; }
-  .media-frame figcaption { font-size: .87rem; }
 }
 @media (max-width: 360px) {
   .site-header .wordmark { width: clamp(4.25rem, calc(100vw - 13.2rem), 6.5rem); }

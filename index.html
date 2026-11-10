@@ -11,13 +11,14 @@
   <title>Playhub — PC gaming. Couch mode.</title>
   <link rel="icon" href="./assets/cube.webp" type="image/webp">
   <link rel="preload" href="./assets/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
-  <script src="./gallery.js?v=a6260171aa74"></script>
-  <link rel="stylesheet" href="./styles.css?v=386322c422c8">
+  <script src="./gallery.js?v=0a0489a66e8d"></script>
+  <link rel="stylesheet" href="./styles.css?v=acbca2feffb2">
 </head>
 <body>
   <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <symbol id="arrow-down" viewBox="0 0 24 24"><path d="M12 4v12m-5-5 5 5 5-5M5 20h14"/></symbol>
-    <symbol id="arrow-right" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+    <symbol id="pause" viewBox="0 0 24 24"><path d="M9 5v14m6-14v14"/></symbol>
+    <symbol id="play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z"/></symbol>
     <symbol id="arrow-external" viewBox="0 0 24 24"><path d="M6 18 18 6M7 6h11v11"/></symbol>
     <symbol id="moon" viewBox="0 0 24 24"><path d="M20.6 15.3A9 9 0 0 1 8.7 3.4 9 9 0 1 0 20.6 15.3Z"/></symbol>
     <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4m0-14.2-1.4 1.4M6.3 17.7l-1.4 1.4"/></symbol>
@@ -105,19 +106,25 @@
           <img src="./assets/screens/steam-big-picture.webp" alt="Steam Big Picture home showing the game library and the Steam Controller button hints" width="2400" height="1349" loading="lazy" decoding="async">
         </article>
 
-        <section class="app-gallery" aria-labelledby="gallery-title">
-          <div class="gallery-heading"><h3 id="gallery-title">Playhub in action</h3></div>
-          <div class="card-media action-media" data-carousel role="group" aria-label="Playhub for Windows screenshots">
-            <figure class="media-frame" data-slide><img src="./assets/screens/action-decky.webp" alt="The Decky setup page in the maximized Playhub Windows app" width="1920" height="1081" loading="lazy" decoding="async"><figcaption>Decky</figcaption></figure>
-            <figure class="media-frame" data-slide hidden><img src="./assets/screens/action-store.webp" alt="The Plugin Store home in the maximized Playhub Windows app" width="1920" height="1081" loading="lazy" decoding="async"><figcaption>Plugin Store</figcaption></figure>
-            <figure class="media-frame" data-slide hidden><img src="./assets/screens/action-gaming.webp" alt="The Gaming Mode page in the maximized Playhub Windows app" width="1920" height="1081" loading="lazy" decoding="async"><figcaption>Gaming Mode</figcaption></figure>
-            <figure class="media-frame" data-slide hidden><img src="./assets/screens/action-import.webp" alt="The Import Games page in the maximized Playhub Windows app" width="1920" height="1081" loading="lazy" decoding="async"><figcaption>Import Games</figcaption></figure>
-            <figure class="media-frame" data-slide hidden><img src="./assets/screens/action-styler.webp" alt="The Big Picture Styler page in the maximized Playhub Windows app" width="1920" height="1081" loading="lazy" decoding="async"><figcaption>Big Picture Styler</figcaption></figure>
-            <div class="media-controls" hidden>
-              <button type="button" data-previous aria-label="Previous screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
-              <button type="button" data-next aria-label="Next screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
-            </div>
+        <section class="app-gallery" aria-labelledby="gallery-title" data-slideshow>
+          <div class="gallery-heading">
+            <h3 id="gallery-title">Playhub in action</h3>
+            <button class="action-playback" type="button" data-slideshow-playback aria-label="Pause slideshow" title="Pause slideshow" hidden>
+              <svg class="icon" aria-hidden="true"><use href="#pause"/></svg>
+            </button>
           </div>
+          <div class="action-stage" data-slideshow-stage role="group" aria-roledescription="carousel" aria-label="Playhub for Windows screenshots">
+            <button class="action-preview action-previous" type="button" data-action-previous aria-keyshortcuts="ArrowLeft" hidden><img src="./assets/screens/steam-big-picture.webp" alt="" width="2400" height="1349" decoding="async"></button>
+            <div class="action-current">
+              <figure data-slide="Decky"><img src="./assets/screens/action-decky.webp" alt="The Decky setup page in the maximized Playhub Windows app" width="1920" height="1081" loading="lazy" decoding="async"></figure>
+              <figure data-slide="Plugin Store" hidden><img src="./assets/screens/action-store.webp" alt="The Plugin Store home in the maximized Playhub Windows app" width="1920" height="1081" loading="lazy" decoding="async"></figure>
+              <figure data-slide="Gaming Mode" hidden><img src="./assets/screens/action-gaming.webp?v=1e7bf44f7445" alt="The Gaming Mode page in the maximized Playhub Windows app" width="1920" height="1081" loading="lazy" decoding="async"></figure>
+              <figure data-slide="Import Games" hidden><img src="./assets/screens/action-import.webp" alt="The Import Games page in the maximized Playhub Windows app" width="1920" height="1081" loading="lazy" decoding="async"></figure>
+              <figure data-slide="Big Picture Styler" hidden><img src="./assets/screens/steam-big-picture.webp" alt="The Steam Big Picture home screen with recent games and the first library tabs" width="2400" height="1349" loading="lazy" decoding="async"></figure>
+            </div>
+            <button class="action-preview action-next" type="button" data-action-next aria-keyshortcuts="ArrowRight" hidden><img src="./assets/screens/action-store.webp" alt="" width="1920" height="1081" decoding="async"></button>
+          </div>
+          <span class="slideshow-status" role="status"></span>
         </section>
       </div>
     </section>
@@ -130,80 +137,91 @@
         </div>
 
         <div class="plugin-list">
-          <article class="plugin-card" id="playhub">
-            <div class="card-media" data-carousel role="group" aria-label="Playhub Quick Access screenshots">
-              <figure class="media-frame" data-slide>
-                <img src="./assets/screens/playhub-qam.webp" alt="Playhub’s controls open in Steam’s Quick Access Menu" width="2400" height="1349" loading="lazy" decoding="async">
-              </figure>
-              <figure class="media-frame" data-slide hidden>
-                <img src="./assets/screens/playhub-qam-video.webp" alt="The Video tab in Playhub’s Quick Access controls" width="2400" height="1349" loading="lazy" decoding="async">
-              </figure>
-              <figure class="media-frame" data-slide hidden>
-                <img src="./assets/screens/playhub-qam-store.webp" alt="The Plugin Store tab in Playhub’s Quick Access controls" width="2400" height="1349" loading="lazy" decoding="async">
-              </figure>
-              <div class="media-controls" hidden>
-                <button type="button" data-previous aria-label="Previous screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
-                <button type="button" data-next aria-label="Next screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
+          <article class="playhub-suite" id="playhub" aria-labelledby="playhub-plugin-title">
+            <div class="plugin-card playhub-feature">
+              <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Playhub Quick Access screenshots">
+                <div class="card-stage" data-slideshow-stage>
+                  <div class="card-frames">
+                    <figure class="media-frame" data-slide="Session"><img src="./assets/screens/playhub-qam.webp" alt="Playhub’s controls open in Steam’s Quick Access Menu" width="2400" height="1349" loading="lazy" decoding="async"></figure>
+                    <figure class="media-frame" data-slide="Video" hidden><img src="./assets/screens/playhub-qam-video.webp" alt="The Video tab in Playhub’s Quick Access controls" width="2400" height="1349" loading="lazy" decoding="async"></figure>
+                    <figure class="media-frame" data-slide="Plugin Store" hidden><img src="./assets/screens/playhub-qam-store.webp" alt="The Plugin Store tab in Playhub’s Quick Access controls" width="2400" height="1349" loading="lazy" decoding="async"></figure>
+                  </div>
+                  <div class="slide-toolbar" hidden>
+                    <button type="button" data-slideshow-playback aria-label="Pause slideshow" title="Pause slideshow"><svg class="icon" aria-hidden="true"><use href="#pause"/></svg></button>
+                    <div class="slide-selectors" role="group" aria-label="Choose a screenshot"></div>
+                  </div>
+                </div>
+                <span class="slideshow-status" role="status"></span>
+              </div>
+              <div class="plugin-copy">
+                <h3 id="playhub-plugin-title"><a href="https://github.com/LoZazaMastro/Playhub/tree/main/Source/GamingModeDeckyPlugin">Playhub <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
+                <p>Set volume and microphone levels, pick your audio device, and change refresh rate, resolution or HDR from Steam’s Quick Access Menu. Playhub shows the controls your hardware supports.</p>
+                <p>Tune controller settings and access graphics options such as Radeon controls or Lossless Scaling when available. Reorder Quick Access tabs, pin plugin shortcuts, or open Decky and the Plugin Store from the same panel.</p>
               </div>
             </div>
-            <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/Playhub/tree/main/Source/GamingModeDeckyPlugin">Playhub <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>Set volume and microphone levels, pick your audio device, and change refresh rate, resolution or HDR from Steam’s Quick Access Menu. Playhub shows the controls your hardware supports.</p>
-              <p>Tune controller settings and access graphics options such as Radeon controls or Lossless Scaling when available. Reorder Quick Access tabs, pin plugin shortcuts, or open Decky and the Plugin Store from the same panel.</p>
-            </div>
-          </article>
 
-          <article class="plugin-card" id="playhub-dashboard">
-            <div class="card-media" data-carousel role="group" aria-label="Playhub Dashboard screenshots">
-              <figure class="media-frame" data-slide>
-                <img src="./assets/screens/app-dashboard.webp" alt="Playhub Dashboard showing open Steam and Chrome windows" width="1440" height="810" loading="lazy" decoding="async">
-              </figure>
-              <figure class="media-frame" data-slide hidden>
-                <img src="./assets/screens/app-dashboard-apps.webp" alt="The Apps tab with controller-accessible shortcuts" width="1440" height="810" loading="lazy" decoding="async">
-              </figure>
-              <figure class="media-frame" data-slide hidden>
-                <img src="./assets/screens/app-dashboard-system.webp" alt="The System tab showing resource use and running processes" width="1440" height="810" loading="lazy" decoding="async">
-              </figure>
-              <div class="media-controls" hidden>
-                <button type="button" data-previous aria-label="Previous screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
-                <button type="button" data-next aria-label="Next screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
-              </div>
-            </div>
-            <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/Playhub/tree/main/Source/GamingModeDeckyPlugin">Playhub Dashboard <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>Pick up an open game or app from its window preview. Save the apps you launch often as shortcuts and open them with the controller from the Apps tab.</p>
-              <p>Check CPU, GPU and memory use from System, or use Switch Mode when you want to return to the Windows desktop.</p>
-            </div>
-          </article>
+            <section class="playhub-features" aria-labelledby="playhub-features-title">
+              <h4 id="playhub-features-title" class="playhub-features-title">Included in Playhub</h4>
+              <section class="plugin-card playhub-feature" id="playhub-dashboard" aria-labelledby="playhub-dashboard-title">
+                <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Playhub Dashboard screenshots">
+                  <div class="card-stage" data-slideshow-stage>
+                    <div class="card-frames">
+                      <figure class="media-frame" data-slide="Dashboard"><img src="./assets/screens/app-dashboard.webp" alt="Playhub Dashboard showing open Steam and Chrome windows" width="1440" height="810" loading="lazy" decoding="async"></figure>
+                      <figure class="media-frame" data-slide="Apps" hidden><img src="./assets/screens/app-dashboard-apps.webp" alt="The Apps tab with controller-accessible shortcuts" width="1440" height="810" loading="lazy" decoding="async"></figure>
+                      <figure class="media-frame" data-slide="System" hidden><img src="./assets/screens/app-dashboard-system.webp" alt="The System tab showing resource use and running processes" width="1440" height="810" loading="lazy" decoding="async"></figure>
+                    </div>
+                    <div class="slide-toolbar" hidden>
+                      <button type="button" data-slideshow-playback aria-label="Pause slideshow" title="Pause slideshow"><svg class="icon" aria-hidden="true"><use href="#pause"/></svg></button>
+                      <div class="slide-selectors" role="group" aria-label="Choose a screenshot"></div>
+                    </div>
+                  </div>
+                  <span class="slideshow-status" role="status"></span>
+                </div>
+                <div class="plugin-copy">
+                  <h5 id="playhub-dashboard-title">Dashboard</h5>
+                  <p>Pick up an open game or app from its window preview. Save the apps you launch often as shortcuts and open them with the controller from the Apps tab.</p>
+                  <p>Check CPU, GPU and memory use from System, or use Switch Mode when you want to return to the Windows desktop.</p>
+                </div>
+              </section>
 
-          <article class="plugin-card" id="playhub-discover">
-            <div class="card-media" data-carousel role="group" aria-label="Playhub home features screenshots">
-              <figure class="media-frame" data-slide>
-                <img src="./assets/screens/app-whats-new.webp" alt="Gaming headlines in Playhub’s What’s New section" width="1280" height="648" loading="lazy" decoding="async">
-              </figure>
-              <figure class="media-frame" data-slide hidden>
-                <img src="./assets/screens/app-on-this-day.webp" alt="On this day in Steam Big Picture featuring Fallout 4" width="1600" height="810" loading="lazy" decoding="async">
-              </figure>
-              <figure class="media-frame" data-slide hidden>
-                <img src="./assets/screens/app-screensaver.webp" alt="The Playhub Circles screensaver with its clock and weather" width="1280" height="721" loading="lazy" decoding="async">
-              </figure>
-              <div class="media-controls" hidden>
-                <button type="button" data-previous aria-label="Previous screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
-                <button type="button" data-next aria-label="Next screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
-              </div>
-            </div>
-            <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/Playhub/tree/main/Source/GamingModeDeckyPlugin">What’s New, On this day and Circles <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>Browse gaming headlines in What’s New, then open On this day for a story about a release, studio or creator from that date in gaming history.</p>
-              <p>When you step away, Playhub Circles turns Big Picture into an animated screensaver with the time, date and weather when available.</p>
-            </div>
+              <section class="plugin-card playhub-feature" id="playhub-discover" aria-labelledby="playhub-discover-title">
+                <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Playhub home features screenshots">
+                  <div class="card-stage" data-slideshow-stage>
+                    <div class="card-frames">
+                      <figure class="media-frame" data-slide="What’s New"><img src="./assets/screens/app-whats-new.webp" alt="Gaming headlines in Playhub’s What’s New section" width="1280" height="648" loading="lazy" decoding="async"></figure>
+                      <figure class="media-frame" data-slide="On this day" hidden><img src="./assets/screens/app-on-this-day.webp" alt="On this day in Steam Big Picture featuring Fallout 4" width="1600" height="810" loading="lazy" decoding="async"></figure>
+                      <figure class="media-frame" data-slide="Screensaver" hidden><img src="./assets/screens/app-screensaver.webp" alt="The Playhub Circles screensaver with its clock and weather" width="1280" height="721" loading="lazy" decoding="async"></figure>
+                    </div>
+                    <div class="slide-toolbar" hidden>
+                      <button type="button" data-slideshow-playback aria-label="Pause slideshow" title="Pause slideshow"><svg class="icon" aria-hidden="true"><use href="#pause"/></svg></button>
+                      <div class="slide-selectors" role="group" aria-label="Choose a screenshot"></div>
+                    </div>
+                  </div>
+                  <span class="slideshow-status" role="status"></span>
+                </div>
+                <div class="plugin-copy">
+                  <h5 id="playhub-discover-title">What’s New, On this day and Screensaver</h5>
+                  <p>Browse gaming headlines in What’s New, then open On this day for a story about a release, studio or creator from that date in gaming history.</p>
+                  <p>Set a screensaver for when you step away from Big Picture. Playhub Circles shows the time, date and weather alongside its animation.</p>
+                </div>
+              </section>
+            </section>
           </article>
 
           <article class="plugin-card" id="artworks">
-            <div class="card-media">
-              <figure class="media-frame">
-                <img src="./assets/screens/artworks.webp" alt="The Portal 2 cover picker in Playhub Artworks" width="960" height="508" loading="lazy" decoding="async">
-              </figure>
+            <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Playhub Artworks screenshots">
+              <div class="card-stage" data-slideshow-stage>
+                <div class="card-frames">
+                  <figure class="media-frame" data-slide="Covers"><img src="./assets/screens/artworks.webp?v=9638d73ab3c7" alt="The Portal 2 cover picker in Playhub Artworks" width="2400" height="1350" loading="lazy" decoding="async"></figure>
+                  <figure class="media-frame" data-slide="Wide banners" hidden><img src="./assets/screens/artworks-banner.webp?v=a5b32eae7322" alt="The wide banner picker in Playhub Artworks" width="2400" height="1350" loading="lazy" decoding="async"></figure>
+                  <figure class="media-frame" data-slide="Perfect Hero" hidden><img src="./assets/screens/artworks-perfect-hero.webp?v=79e2261adb29" alt="The Perfect Hero composition editor in Playhub Artworks" width="2400" height="1350" loading="lazy" decoding="async"></figure>
+                </div>
+                <div class="slide-toolbar" hidden>
+                  <button type="button" data-slideshow-playback aria-label="Pause slideshow" title="Pause slideshow"><svg class="icon" aria-hidden="true"><use href="#pause"/></svg></button>
+                  <div class="slide-selectors" role="group" aria-label="Choose a screenshot"></div>
+                </div>
+              </div>
+              <span class="slideshow-status" role="status"></span>
             </div>
             <div class="plugin-copy">
               <h3><a href="https://github.com/LoZazaMastro/Playhub-Artworks">Playhub Artworks <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
@@ -215,7 +233,7 @@
           <article class="plugin-card" id="metadata">
             <div class="card-media">
               <figure class="media-frame">
-                <img src="./assets/screens/metadata.webp" alt="The Forza Horizon 2 Game Info tab populated by Playhub Metadata" width="960" height="508" loading="lazy" decoding="async">
+                <img src="./assets/screens/metadata.webp?v=39f618ad96de" alt="The Forza Horizon 2 Game Info tab populated by Playhub Metadata" width="2400" height="1350" loading="lazy" decoding="async">
               </figure>
             </div>
             <div class="plugin-copy">
@@ -228,7 +246,7 @@
           <article class="plugin-card" id="trailerhero">
             <div class="card-media">
               <figure class="media-frame">
-                <img src="./assets/screens/trailerhero.webp" alt="TrailerHero’s trailer preview and per-game settings for Portal 2" width="960" height="508" loading="lazy" decoding="async">
+                <img src="./assets/screens/trailerhero.webp?v=4736b342a39c" alt="TrailerHero’s trailer preview and per-game settings for Portal 2" width="2400" height="1350" loading="lazy" decoding="async">
               </figure>
             </div>
             <div class="plugin-copy">
@@ -254,7 +272,7 @@
           <article class="plugin-card" id="launch-curtain">
             <div class="card-media">
               <figure class="media-frame">
-                <img src="./assets/screens/launch-curtain.webp" alt="The Launch Curtain editor previewing Sonic Frontiers" width="960" height="508" loading="lazy" decoding="async">
+                <img src="./assets/screens/launch-curtain.webp?v=7ab49f66ad5d" alt="The Launch Curtain editor previewing Sonic Frontiers" width="2400" height="1350" loading="lazy" decoding="async">
               </figure>
             </div>
             <div class="plugin-copy">
@@ -265,23 +283,20 @@
           </article>
 
           <article class="plugin-card" id="now-playing">
-            <div class="card-media" data-carousel role="group" aria-label="Now Playing screenshots">
-              <figure class="media-frame" data-slide>
-                <img src="./assets/screens/now-playing-qam.webp" alt="Now Playing’s music controls in Steam’s Quick Access Menu" width="2400" height="1349" loading="lazy" decoding="async">
-              </figure>
-              <figure class="media-frame" data-slide hidden>
-                <img src="./assets/screens/now-playing.webp" alt="The Now Playing full-screen player with album artwork" width="1280" height="720" loading="lazy" decoding="async">
-              </figure>
-              <figure class="media-frame" data-slide hidden>
-                <img src="./assets/screens/now-playing-artist.webp" alt="An artist page in Now Playing" width="1280" height="720" loading="lazy" decoding="async">
-              </figure>
-              <figure class="media-frame" data-slide hidden>
-                <img src="./assets/screens/now-playing-circles.webp" alt="Now Playing track information in the Circles screensaver" width="1280" height="720" loading="lazy" decoding="async">
-              </figure>
-              <div class="media-controls" hidden>
-                <button type="button" data-previous aria-label="Previous screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
-                <button type="button" data-next aria-label="Next screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
+            <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Now Playing screenshots">
+              <div class="card-stage" data-slideshow-stage>
+                <div class="card-frames">
+                  <figure class="media-frame" data-slide="Quick Access"><img src="./assets/screens/now-playing-qam.webp" alt="Now Playing’s music controls in Steam’s Quick Access Menu" width="2400" height="1349" loading="lazy" decoding="async"></figure>
+                  <figure class="media-frame" data-slide="Full-screen player" hidden><img src="./assets/screens/now-playing.webp" alt="The Now Playing full-screen player with album artwork" width="1280" height="720" loading="lazy" decoding="async"></figure>
+                  <figure class="media-frame" data-slide="Artist page" hidden><img src="./assets/screens/now-playing-artist.webp" alt="An artist page in Now Playing" width="1280" height="720" loading="lazy" decoding="async"></figure>
+                  <figure class="media-frame" data-slide="Screensaver" hidden><img src="./assets/screens/now-playing-circles.webp" alt="Now Playing track information in the Circles screensaver" width="1280" height="720" loading="lazy" decoding="async"></figure>
+                </div>
+                <div class="slide-toolbar" hidden>
+                  <button type="button" data-slideshow-playback aria-label="Pause slideshow" title="Pause slideshow"><svg class="icon" aria-hidden="true"><use href="#pause"/></svg></button>
+                  <div class="slide-selectors" role="group" aria-label="Choose a screenshot"></div>
+                </div>
               </div>
+              <span class="slideshow-status" role="status"></span>
             </div>
             <div class="plugin-copy">
               <h3><a href="https://github.com/LoZazaMastro/Now-Playing">Now Playing <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
@@ -291,17 +306,18 @@
           </article>
 
           <article class="plugin-card" id="notifications">
-            <div class="card-media" data-carousel role="group" aria-label="Playhub Notifications screenshots">
-              <figure class="media-frame" data-slide>
-                <img src="./assets/screens/notification-toast.webp" alt="A Playhub Notifications toast shown over Steam Big Picture" width="2400" height="1349" loading="lazy" decoding="async">
-              </figure>
-              <figure class="media-frame" data-slide hidden>
-                <img src="./assets/screens/notifications.webp?v=c1bf905c7fec" alt="Theme and preview controls in Playhub Notifications" width="2400" height="1349" loading="lazy" decoding="async">
-              </figure>
-              <div class="media-controls" hidden>
-                <button type="button" data-previous aria-label="Previous screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
-                <button type="button" data-next aria-label="Next screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
+            <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Playhub Notifications screenshots">
+              <div class="card-stage" data-slideshow-stage>
+                <div class="card-frames">
+                  <figure class="media-frame" data-slide="Notification preview"><img src="./assets/screens/notification-toast.webp" alt="A Playhub Notifications toast shown over Steam Big Picture" width="2400" height="1349" loading="lazy" decoding="async"></figure>
+                  <figure class="media-frame" data-slide="Quick Access settings" hidden><img src="./assets/screens/notifications.webp?v=c1bf905c7fec" alt="Theme and preview controls in Playhub Notifications" width="2400" height="1349" loading="lazy" decoding="async"></figure>
+                </div>
+                <div class="slide-toolbar" hidden>
+                  <button type="button" data-slideshow-playback aria-label="Pause slideshow" title="Pause slideshow"><svg class="icon" aria-hidden="true"><use href="#pause"/></svg></button>
+                  <div class="slide-selectors" role="group" aria-label="Choose a screenshot"></div>
+                </div>
               </div>
+              <span class="slideshow-status" role="status"></span>
             </div>
             <div class="plugin-copy">
               <h3><a href="https://github.com/LoZazaMastro/Playhub-Notifications">Playhub Notifications <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
