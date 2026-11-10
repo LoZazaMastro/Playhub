@@ -29,6 +29,7 @@
     let hovering = false;
     let timer;
     let actionMotion;
+    let cardFade;
 
     const dots = selectors ? slides.map((slide, index) => {
       const button = document.createElement("button");
@@ -105,17 +106,36 @@
       animation.finished.then(() => motion.remove(), () => motion.remove());
     }
 
+    function fadeCard(outgoing, incoming) {
+      cardFade?.remove();
+      const overlay = outgoing.querySelector("img").cloneNode();
+      overlay.className = "card-fade-out";
+      overlay.alt = "";
+      overlay.setAttribute("aria-hidden", "true");
+      overlay.loading = "eager";
+      outgoing.parentElement.append(overlay);
+      cardFade = overlay;
+
+      const image = incoming.querySelector("img");
+      image.loading = "eager";
+      image.decode().then(() => {
+        if (!overlay.isConnected) return;
+        const animation = overlay.animate([{ opacity: 1 }, { opacity: 0 }], {
+          duration: 420, easing: "ease-in-out", fill: "forwards"
+        });
+        animation.finished.then(() => overlay.remove(), () => overlay.remove());
+      }, () => overlay.remove());
+    }
+
     function show(index, manual = false, direction = 1) {
       if (index !== current) {
-        const animate = !motionPreference.matches;
-        if (animate && previous) slideAction(direction);
+        if (!motionPreference.matches) {
+          if (previous) slideAction(direction);
+          else fadeCard(slides[current], slides[index]);
+        }
         slides[current].hidden = true;
         current = index;
-        const slide = slides[current];
-        slide.hidden = false;
-        if (animate && !previous) {
-          slide.animate([{ opacity: .72 }, { opacity: 1 }], { duration: 240, easing: "ease-out" });
-        }
+        slides[current].hidden = false;
         updateControls();
       }
       if (manual) {
@@ -152,12 +172,13 @@
     motionPreference.addEventListener("change", event => {
       if (event.matches) {
         actionMotion?.remove();
+        cardFade?.remove();
         setPlaying(false);
       }
     });
     new IntersectionObserver(([entry]) => {
       inView = entry.intersectionRatio >= .25;
-      if (inView && previous) {
+      if (inView) {
         for (const slide of slides) slide.querySelector("img").loading = "eager";
       }
       schedule();

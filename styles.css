@@ -192,7 +192,8 @@ p { max-width: 64ch; }
 .card-media { min-width: 0; position: relative; align-self: center; }
 .media-frame img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; background: #191919; border-radius: .72rem; }
 .card-stage { position: relative; }
-.card-frames { overflow: hidden; border-radius: .72rem; background: #191919; }
+.card-frames { position: relative; overflow: hidden; border-radius: .72rem; background: #191919; }
+.card-fade-out { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #191919; pointer-events: none; }
 .slide-toolbar {
   position: absolute;
   inset-inline-start: 50%;
