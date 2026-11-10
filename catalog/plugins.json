@@ -131,10 +131,10 @@
       "author": "LoZazaMastro",
       "repository": "LoZazaMastro/Playhub-Metadata",
       "repositoryUrl": "https://github.com/LoZazaMastro/Playhub-Metadata",
-      "version": "1.8.4",
-      "releaseAssetName": "",
-      "catalogReleaseUrl": "",
-      "releasePublishedAt": "",
+      "version": "1.8.5",
+      "releaseAssetName": "Playhub-Metadata_1.8.5_Installer.zip",
+      "catalogReleaseUrl": "https://github.com/LoZazaMastro/Playhub-Metadata/releases/tag/1.8.5",
+      "releasePublishedAt": "2026-11-10T11:57:19Z",
       "category": "Playhub",
       "shortDescription": "Details, artwork, and achievements for your games.",
       "longDescription": "Playhub Metadata gives your Big Picture library a richer, more polished, console-like feel, especially for non-Steam games such as external PC titles, Game Pass games, Xbox apps, and emulators. It adds metadata, community images and videos, categories, and even achievements.\n\n## Metadata and images\n• Automatically finds missing game metadata.\n• Adds descriptions, developers, publishers, release dates, ratings, and information panels.\n• Adds community screenshots and media when available.\n• Lets you edit each game's metadata manually.\n\n## Achievements\n• Displays achievements for non-Steam games inside Big Picture.\n• Supports RetroAchievements for ROMs and emulators.\n• Supports Xbox, Game Pass, and Microsoft Store achievements through OpenXBL (games must be imported through Playhub's Import Games tab).\n• Lets you choose the source for each game: Auto, RetroAchievements, Xbox, or Disabled.\n• Offers flexible hourly, daily, weekly, per-session, or manual caching to limit API calls.\n\n## Note\n• These do not become native Steam achievements; they are displayed only inside Big Picture.",
@@ -163,7 +163,7 @@
         "Playhub-Metadata"
       ],
       "firstPublishedAt": "2026-06-15T10:06:10Z",
-      "updatedAt": "2026-10-03T10:16:21Z"
+      "updatedAt": "2026-11-10T11:57:19Z"
     },
     {
       "active": false,
