@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.0 (in development)
+
+- Reduced Gaming Mode's background work when the Windows desktop shell is already running.
+
 ## 2.5.5
 
 - Fixed Decky installation, updates, and repair on Windows by using verified releases from Decky Loader.

@@ -336,6 +336,7 @@ public sealed class ModeManager
 	{
 		int deckyCleanupTicks = 0;
 		var recovery = new DesktopRecoveryPolicy();
+		Func<bool> isGaming = () => _store.LoadState().CurrentMode == ModeKind.Gaming;
 		while (!cancellationToken.IsCancellationRequested)
 		{
 			await Task.Delay(TimeSpan.FromSeconds(5.0), cancellationToken);
@@ -353,12 +354,10 @@ public sealed class ModeManager
 				try { _processTools.CleanupDeckyOrphanedForks(); }
 				catch (Exception error) { _logger.Error("Decky cleanup failed; Desktop safety remains active.", error); }
 			}
-			// An Explorer folder window is not the desktop shell. Recovery must
-			// also work after a configuration change or a failed plugin startup.
-			bool gaming = _store.LoadState().CurrentMode == ModeKind.Gaming;
-			bool steamRunning = gaming && _processTools.GetState("steam").Running;
-			if (recovery.ShouldRestore(gaming, steamRunning, ProcessTools.IsExplorerShellRunning(), IsSystemShuttingDown()))
-				await ApplyModeAsync(ModeKind.Desktop, "Safety watchdog restored Desktop Mode", interactive: false, restoreStartupApps: false, updateShell: false);
+				// An Explorer folder window is not the desktop shell. Recovery must
+				// also work after a configuration change or a failed plugin startup.
+				if (recovery.ShouldRestore(ProcessTools.IsExplorerShellRunning, isGaming, IsSteamProcessRunning, IsSystemShuttingDown))
+					await ApplyModeAsync(ModeKind.Desktop, "Safety watchdog restored Desktop Mode", interactive: false, restoreStartupApps: false, updateShell: false);
 			}
 			catch (Exception error)
 			{
@@ -366,6 +365,13 @@ public sealed class ModeManager
 				_logger.Error("Desktop safety check failed; it will retry on the next check.", error);
 			}
 		}
+	}
+
+	private static bool IsSteamProcessRunning()
+	{
+		var processes = Process.GetProcessesByName("steam");
+		try { return processes.Length > 0; }
+		finally { foreach (var process in processes) process.Dispose(); }
 	}
 
 	private static bool IsSystemShuttingDown()
