@@ -11,8 +11,8 @@
   <title>Playhub — PC gaming. Couch mode.</title>
   <link rel="icon" href="./assets/cube.webp" type="image/webp">
   <link rel="preload" href="./assets/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
-  <script src="./gallery.js?v=0a0489a66e8d"></script>
-  <link rel="stylesheet" href="./styles.css?v=f5b6efe4eb0f">
+  <script src="./gallery.js?v=5215d63694b3"></script>
+  <link rel="stylesheet" href="./styles.css?v=73ab250fc8f6">
 </head>
 <body>
   <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -38,11 +38,11 @@
         <a href="#plugins">Plugins</a>
         <a href="https://github.com/LoZazaMastro/Playhub/issues">Support</a>
       </nav>
-      <button class="theme-toggle" type="button" aria-label="Dark mode" aria-pressed="false" title="Dark mode" hidden>
-        <svg class="icon theme-moon" aria-hidden="true"><use href="#moon"/></svg>
-        <svg class="icon theme-sun" aria-hidden="true"><use href="#sun"/></svg>
-      </button>
       <div class="header-actions">
+        <button class="theme-toggle" type="button" aria-label="Dark mode" aria-pressed="false" title="Dark mode" hidden>
+          <svg class="icon theme-moon" aria-hidden="true"><use href="#moon"/></svg>
+          <svg class="icon theme-sun" aria-hidden="true"><use href="#sun"/></svg>
+        </button>
         <a class="button button-secondary" href="https://ko-fi.com/LoZazaMastro" aria-label="Support on Ko-fi" title="Support on Ko-fi"><svg class="icon" aria-hidden="true"><use href="#kofi"/></svg><span class="button-label">Support on Ko-fi</span></a>
         <a class="button button-primary" href="https://github.com/LoZazaMastro/Playhub/releases/latest/download/Playhub-Setup.exe" aria-label="Download Playhub" title="Download Playhub"><span class="button-label">Download Playhub</span><svg class="icon" aria-hidden="true"><use href="#arrow-down"/></svg></a>
       </div>
@@ -75,7 +75,7 @@
             <h3>From desktop<br>to Big Picture.</h3>
             <p>Start Windows in a controller-friendly Steam interface and return to the desktop with Switch Mode.</p>
           </div>
-          <img class="gaming-visual" src="./assets/gaming-mode.webp" alt="" width="663" height="720" loading="lazy" decoding="async">
+          <img class="gaming-visual" src="./assets/gaming-mode.webp?v=3bb102abcc36" alt="" width="1254" height="621" loading="lazy" decoding="async">
         </article>
 
         <div class="feature-pair">
@@ -107,13 +107,7 @@
         </article>
       </div>
 
-      <section class="app-gallery" aria-labelledby="gallery-title" data-slideshow>
-        <div class="gallery-heading wrap">
-          <h3 id="gallery-title">Playhub in action</h3>
-          <button class="action-playback" type="button" data-slideshow-playback aria-label="Pause slideshow" title="Pause slideshow" hidden>
-            <svg class="icon" aria-hidden="true"><use href="#pause"/></svg>
-          </button>
-        </div>
+      <section class="app-gallery" aria-label="Playhub screenshots" data-slideshow>
         <div class="action-stage" data-slideshow-stage role="group" aria-roledescription="carousel" aria-label="Playhub for Windows screenshots">
           <button class="action-preview action-previous" type="button" data-action-previous aria-keyshortcuts="ArrowLeft" hidden><img src="./assets/screens/steam-big-picture.webp" alt="" width="2400" height="1349" decoding="async"></button>
           <div class="action-current">
@@ -380,6 +374,7 @@
         </div>
       </div>
     </section>
+    <img class="footer-mascots" src="./assets/footer-mascots.webp" alt="" width="1672" height="941" loading="lazy" decoding="async">
   </main>
 
   <footer class="footer">

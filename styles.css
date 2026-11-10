@@ -33,15 +33,15 @@
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --surface: #171612;
-  --layer: #1e1c17;
-  --card: #25221b;
-  --text: #fbf2da;
-  --secondary: #d2c8ae;
-  --border: #4e4633;
+  --surface: #161616;
+  --layer: #1c1c1c;
+  --card: #242424;
+  --text: #f4f4f4;
+  --secondary: #c8c8c8;
+  --border: #3b3b3b;
   --focus: #f9d15c;
-  --scroll-thumb: #948059;
-  --shadow: #0005;
+  --scroll-thumb: #777777;
+  --shadow: #0006;
 }
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -68,7 +68,7 @@ p { max-width: 64ch; }
 .skip-link:focus { transform: none; }
 
 .topbar { position: sticky; z-index: 5; top: 0; background: var(--surface); border-bottom: 1px solid var(--border); }
-.site-header { display: grid; grid-template-columns: auto 1fr auto auto; gap: clamp(.65rem, 1.55vw, 1.65rem); align-items: center; min-height: 5rem; padding-block: .7rem; }
+.site-header { --header-control-gap: .625rem; display: grid; grid-template-columns: auto 1fr auto; gap: clamp(.65rem, 1.55vw, 1.65rem); align-items: center; min-height: 5rem; padding-block: .7rem; }
 .site-header > .brand { justify-self: start; }
 .brand { display: inline-flex; align-items: center; gap: .45rem; text-decoration: none; }
 .brand img { object-fit: contain; }
@@ -78,10 +78,10 @@ p { max-width: 64ch; }
 .footer .brand .wordmark { width: 108px; }
 .wordmark { filter: brightness(0); }
 [data-theme="dark"] .wordmark { filter: brightness(0) invert(1); }
-.site-header nav { display: flex; justify-content: center; align-items: center; gap: clamp(.85rem, 2.2vw, 2rem); }
+.site-header nav { display: flex; justify-content: center; align-items: center; gap: var(--header-control-gap); }
 .site-header nav a, .footer nav a { font-weight: 700; text-decoration: none; text-underline-offset: .26em; }
 .site-header nav a:hover, .footer nav a:hover { text-decoration: underline; }
-.header-actions { display: flex; align-items: center; justify-content: end; gap: .55rem; }
+.header-actions { display: flex; align-items: center; justify-content: end; gap: var(--header-control-gap); }
 .button, .theme-toggle {
   display: inline-flex;
   align-items: center;
@@ -122,21 +122,23 @@ p { max-width: 64ch; }
 .gaming-scene, .feature, .styler { border: 1px solid var(--border); border-radius: 1.15rem; background: var(--card); }
 .gaming-scene, .styler { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); align-items: center; gap: clamp(1.2rem, 4vw, 4.2rem); padding: clamp(1.2rem, 4vw, 3.6rem); }
 .gaming-scene p:not(.eyebrow), .feature p:not(.eyebrow), .styler p:not(.eyebrow) { margin-top: .75rem; }
-.gaming-visual { margin-inline: auto; width: auto; max-height: 15.5rem; height: auto; object-fit: contain; }
+.gaming-visual { margin-inline: auto; width: min(100%, 36rem); height: auto; }
 .feature-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-block: 1rem; }
 .feature { display: grid; grid-template-columns: minmax(0, 1fr) minmax(4rem, .31fr); align-items: center; gap: .8rem; padding: clamp(1.1rem, 3vw, 2.2rem); }
 .feature img { justify-self: center; width: auto; max-height: 10rem; height: auto; object-fit: contain; }
 .styler img { width: 100%; height: auto; border-radius: .65rem; }
 .app-gallery { margin-top: clamp(2.5rem, 6vw, 5rem); }
-.gallery-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.15rem; }
 .action-stage {
+  --action-width: min(72%, calc(100% - 6.5rem), 96svh);
+  --action-gap: clamp(.45rem, 1.6vw, 1.4rem);
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) min(72%, calc(100% - 6.5rem), 96svh) minmax(0, 1fr);
-  gap: clamp(.45rem, 1.6vw, 1.4rem);
+  grid-template-columns: minmax(0, 1fr) var(--action-width) minmax(0, 1fr);
+  gap: var(--action-gap);
   width: min(100%, 270svh);
   margin-inline: auto;
 }
-.action-current { grid-column: 2; grid-row: 1; overflow: hidden; border-radius: .72rem; background: #191b20; }
+.action-current { grid-column: 2; grid-row: 1; overflow: hidden; border-radius: .72rem; background: #191919; }
 .action-current img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; }
 .action-preview {
   position: relative;
@@ -145,7 +147,7 @@ p { max-width: 64ch; }
   padding: 0;
   overflow: hidden;
   border: 0;
-  background: #191b20;
+  background: #191919;
 }
 .action-preview img {
   position: absolute;
@@ -163,24 +165,34 @@ p { max-width: 64ch; }
 .action-previous img { inset-inline-end: 0; }
 .action-next { grid-column: 3; border-radius: .72rem 0 0 .72rem; }
 .action-next img { inset-inline-start: 0; }
-.action-playback {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 2.75rem;
-  height: 2.75rem;
-  border: 1px solid var(--border);
-  border-radius: .62rem;
-  background: var(--card);
-  color: var(--text);
+.action-motion {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--layer);
+  pointer-events: none;
 }
-.action-playback:hover { background: var(--yellow); color: var(--dark-ink); border-color: var(--yellow-edge); }
+.action-track {
+  display: grid;
+  grid-template-columns: repeat(5, var(--action-width));
+  justify-content: center;
+  column-gap: var(--action-gap);
+}
+.action-track img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  background: #191919;
+  border-radius: .72rem;
+  opacity: .82;
+}
 .slideshow-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 
 .card-media { min-width: 0; position: relative; align-self: center; }
-.media-frame img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; background: #191b20; border-radius: .72rem; }
+.media-frame img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; background: #191919; border-radius: .72rem; }
 .card-stage { position: relative; }
-.card-frames { overflow: hidden; border-radius: .72rem; background: #191b20; }
+.card-frames { overflow: hidden; border-radius: .72rem; background: #191919; }
 .slide-toolbar {
   position: absolute;
   inset-inline-start: 50%;
@@ -191,7 +203,7 @@ p { max-width: 64ch; }
   padding: .16rem .28rem;
   border: 1px solid #ffffff38;
   border-radius: 2rem;
-  background: #17171cf0;
+  background: #171717f0;
   color: #fff;
 }
 .slide-selectors { display: flex; }
@@ -254,16 +266,20 @@ p { max-width: 64ch; }
 .playhub-feature h5 { font-size: clamp(1.35rem, 2.35vw, 2rem); }
 
 
+.footer-mascots {
+  width: min(35rem, calc(100% - var(--gutter) * 2));
+  height: auto;
+  margin: 0 auto clamp(1.6rem, 4vw, 3.2rem);
+}
 .footer { padding-block: 2rem; border-top: 1px solid var(--border); background: var(--layer); }
 .footer-inner, .footer nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 1.6rem; }
 .footer nav a { display: inline-flex; align-items: center; gap: .4rem; }
 .footer p { color: var(--secondary); margin-top: .35rem; }
 
 @media (max-width: 1080px) {
-  .site-header { grid-template-columns: max-content minmax(2.75rem, 1fr) max-content; }
+  .site-header { grid-template-columns: max-content 1fr; }
   .site-header nav { grid-column: 1 / -1; grid-row: 2; justify-content: start; }
-  .theme-toggle { grid-column: 2; grid-row: 1; justify-self: end; }
-  .header-actions { grid-column: 3; grid-row: 1; }
+  .header-actions { grid-column: 2; grid-row: 1; }
   :root { --sticky-offset: 7.6rem; }
 }
 @media (max-width: 720px) {
@@ -276,15 +292,13 @@ p { max-width: 64ch; }
   .hero-visual { max-width: 31rem; margin-inline: auto; }
   .section-intro { grid-template-columns: 1fr; gap: .85rem; }
   .gaming-scene, .styler, .plugin-card { grid-template-columns: minmax(0, 1fr); }
-  .gaming-visual { max-height: 12rem; }
   .plugin-copy { padding: 0 .25rem .25rem; }
 }
 @media (max-width: 555px) {
   .feature-pair { grid-template-columns: 1fr; }
-  .site-header { grid-template-columns: max-content minmax(2.3rem, 1fr) max-content; gap: .4rem; padding-block: .5rem; }
+  .site-header { --header-control-gap: .4rem; gap: .4rem; padding-block: .5rem; }
   .site-header nav { font-size: .9rem; }
   .theme-toggle, .header-actions .button { width: 2.3rem; min-height: 2.3rem; }
-  .header-actions { gap: .4rem; }
   .site-header .brand img:first-child { width: 29px; height: 29px; }
   .site-header .wordmark { width: 104px; }
   :root { --sticky-offset: 5.5rem; }

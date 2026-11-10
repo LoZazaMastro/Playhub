@@ -10,7 +10,7 @@
     root.dataset.theme = theme;
     const toggle = document.querySelector(".theme-toggle");
     if (toggle) toggle.setAttribute("aria-pressed", String(theme === "dark"));
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#171612" : "#fff9ec");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#161616" : "#fff9ec");
   }
 
   function initSlideshow(gallery) {
@@ -28,6 +28,7 @@
     let inView = false;
     let hovering = false;
     let timer;
+    let actionMotion;
 
     const dots = selectors ? slides.map((slide, index) => {
       const button = document.createElement("button");
@@ -67,22 +68,53 @@
     function setPlaying(value) {
       playing = value;
       const label = playing ? "Pause slideshow" : "Start slideshow";
-      playback.setAttribute("aria-label", label);
-      playback.title = label;
-      playback.querySelector("use").setAttribute("href", playing ? "#pause" : "#play");
+      if (playback) {
+        playback.setAttribute("aria-label", label);
+        playback.title = label;
+        playback.querySelector("use").setAttribute("href", playing ? "#pause" : "#play");
+      }
       schedule();
+    }
+
+    function slideAction(direction) {
+      actionMotion?.remove();
+      const motion = document.createElement("div");
+      motion.className = "action-motion";
+      motion.setAttribute("aria-hidden", "true");
+      const track = document.createElement("div");
+      track.className = "action-track";
+      for (let offset = -2; offset <= 2; offset++) {
+        const image = slides[slideAt(offset)].querySelector("img").cloneNode();
+        image.loading = "eager";
+        track.append(image);
+      }
+      motion.append(track);
+      stage.append(motion);
+      actionMotion = motion;
+
+      const width = slides[current].getBoundingClientRect().width;
+      const gap = Number.parseFloat(getComputedStyle(stage).columnGap);
+      const distance = (width + gap) * direction;
+      const timing = { duration: 440, easing: "cubic-bezier(.25,.7,.3,1)" };
+      track.children[2].animate([{ opacity: 1 }, { opacity: .82 }], timing);
+      track.children[2 + direction].animate([{ opacity: .82 }, { opacity: 1 }], timing);
+      const animation = track.animate([
+        { transform: "translateX(0)" },
+        { transform: "translateX(" + -distance + "px)" }
+      ], timing);
+      animation.finished.then(() => motion.remove(), () => motion.remove());
     }
 
     function show(index, manual = false, direction = 1) {
       if (index !== current) {
+        const animate = !motionPreference.matches;
+        if (animate && previous) slideAction(direction);
         slides[current].hidden = true;
         current = index;
         const slide = slides[current];
         slide.hidden = false;
-        if (!motionPreference.matches) {
-          const firstFrame = { opacity: .72 };
-          if (previous) firstFrame.transform = direction > 0 ? "translateX(14px)" : "translateX(-14px)";
-          slide.animate([firstFrame, { opacity: 1, transform: "none" }], { duration: 240, easing: "ease-out" });
+        if (animate && !previous) {
+          slide.animate([{ opacity: .72 }, { opacity: 1 }], { duration: 240, easing: "ease-out" });
         }
         updateControls();
       }
@@ -96,7 +128,7 @@
 
     previous?.addEventListener("click", () => show(slideAt(-1), true, -1));
     next?.addEventListener("click", () => show(slideAt(1), true));
-    playback.addEventListener("click", () => setPlaying(!playing));
+    playback?.addEventListener("click", () => setPlaying(!playing));
     stage.addEventListener("keydown", event => {
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
       event.preventDefault();
@@ -118,10 +150,16 @@
     });
     document.addEventListener("visibilitychange", schedule);
     motionPreference.addEventListener("change", event => {
-      if (event.matches) setPlaying(false);
+      if (event.matches) {
+        actionMotion?.remove();
+        setPlaying(false);
+      }
     });
     new IntersectionObserver(([entry]) => {
       inView = entry.intersectionRatio >= .25;
+      if (inView && previous) {
+        for (const slide of slides) slide.querySelector("img").loading = "eager";
+      }
       schedule();
     }, { threshold: .25 }).observe(stage);
 
@@ -130,7 +168,7 @@
     if (previous && next) previous.hidden = next.hidden = false;
     const toolbar = gallery.querySelector(".slide-toolbar");
     if (toolbar) toolbar.hidden = false;
-    playback.hidden = false;
+    if (playback) playback.hidden = false;
   }
 
   applyTheme(saved ?? (preference.matches ? "dark" : "light"));
