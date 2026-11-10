@@ -22,7 +22,7 @@
     const selectors = gallery.querySelector(".slide-selectors");
     const status = gallery.querySelector(".slideshow-status");
     const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const interval = 5500;
+    const interval = 2000;
     let current = 0;
     let playing = !motionPreference.matches;
     let inView = false;
