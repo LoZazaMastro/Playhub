@@ -8,6 +8,8 @@
 
 <p><a href="https://github.com/LoZazaMastro/Playhub/releases/latest"><img src="docs/images/readme-button-download.png" height="36" alt="Download Playhub" /></a>&nbsp;<a href="https://ko-fi.com/LoZazaMastro"><img src="docs/images/readme-button-support.png" height="36" alt="Support Playhub on Ko-fi" /></a></p>
 
+<p><a href="https://lozazamastro.github.io/Playhub/">Visit the Playhub website</a></p>
+
 <p><a href="https://github.com/LoZazaMastro/Playhub/releases"><img src="https://img.shields.io/github/downloads/LoZazaMastro/Playhub/total?style=for-the-badge&label=Downloads&labelColor=000000&color=ffcf12" alt="Total Playhub downloads" /></a>&nbsp;&nbsp;<a href="https://github.com/LoZazaMastro/Playhub/stargazers"><img src="https://img.shields.io/github/stars/LoZazaMastro/Playhub?style=for-the-badge&label=Stars&labelColor=000000&color=ffffff" alt="GitHub stars" /></a></p>
 
 <br />
