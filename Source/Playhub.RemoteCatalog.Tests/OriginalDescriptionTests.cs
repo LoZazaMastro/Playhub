@@ -10,12 +10,20 @@ internal static class OriginalDescriptionTests
         var root = BundledManifest.Root;
         var catalog = RemotePluginCatalogService.Parse(File.ReadAllBytes(Path.Combine(root, "catalog/plugins.json")));
         using var provenance = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(root, "catalog/plugin-description-provenance.json")));
-        using var workbook = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(root, "catalog/workbook-import-2026-10-19.json")));
-        var additions = workbook.RootElement.GetProperty("added").EnumerateArray()
-            .Select(entry => entry.GetProperty("repository").GetString()!).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var imports = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in Directory.EnumerateFiles(Path.Combine(root, "catalog"), "workbook-import-*.json"))
+        {
+            using var workbook = JsonDocument.Parse(File.ReadAllBytes(file));
+            foreach (var group in new[] { "added", "updated" })
+            {
+                if (!workbook.RootElement.TryGetProperty(group, out var entries)) continue;
+                imports.UnionWith(entries.EnumerateArray().Select(entry => entry.GetProperty("repository").GetString()!));
+            }
+        }
         var sources = provenance.RootElement.GetProperty("sources").EnumerateArray().ToArray();
-        if (sources.Length != 47 || !additions.SetEquals(sources.Select(source => source.GetProperty("repository").GetString()!)))
-            throw new InvalidOperationException("Original-copy evidence must cover all 47 workbook additions.");
+        if (imports.Count == 0 || sources.Length != imports.Count ||
+            !imports.SetEquals(sources.Select(source => source.GetProperty("repository").GetString()!)))
+            throw new InvalidOperationException("Original-copy evidence must cover every workbook import.");
 
         var directory = Path.Combine(Path.GetTempPath(), "Playhub.OriginalCopy.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
@@ -44,7 +52,7 @@ internal static class OriginalDescriptionTests
             if (!catalog.Plugins.Single(plugin => plugin.Repository == "18798aa12/DeckyMods").ShortDescription.Contains("游戏") ||
                 !catalog.Plugins.Single(plugin => plugin.Repository == "Kowalski-coder/SAM-for-Decky-Loader").ShortDescription.Contains("для"))
                 throw new InvalidOperationException("Non-Latin publisher copy was replaced or damaged.");
-            Console.WriteLine("PASS original publisher descriptions: 47 records mapped unchanged across 11 interface languages, including Chinese and Russian.");
+            Console.WriteLine($"PASS original publisher descriptions: {sources.Length} records mapped unchanged across {languages.Length} interface languages.");
         }
         finally { Directory.Delete(directory, recursive: true); }
     }

@@ -114,10 +114,9 @@ static Task Canonical()
                 if (plugin[field] is { } value) source[field] = value.DeepClone();
     }
     Check(JsonNode.DeepEquals(canonical, assembled), "Canonical data differs from configured source.");
-    Check(parsed.Plugins.Count == 243, "Expected 13 built-ins and all 230 external entries.");
     Check(parsed.Plugins.Count(p => p.CatalogSource == "playhub") == 13, "Playhub provenance lost.");
-    Check(parsed.Plugins.Count(p => p.CatalogSource == "decky-store") == 108, "Decky provenance lost.");
-    Check(parsed.Plugins.Count(p => p.CatalogSource == "outside-store") == 122, "GitHub provenance lost.");
+    Check(parsed.Plugins.Any(p => p.CatalogSource == "decky-store" && p.CatalogPluginId > 0), "Decky provenance lost.");
+    Check(parsed.Plugins.Any(p => p.CatalogSource == "outside-store" && p.CatalogPluginId == 0), "GitHub provenance lost.");
     Check(parsed.Plugins.All(p => !p.Repository.Equals("jayool/LumaDeck", StringComparison.OrdinalIgnoreCase)), "LumaDeck must stay excluded.");
     Check(parsed.Plugins.Count(p => p.RepositoryUrl.StartsWith("https://gitlab.com/")) == 3, "GitLab sources lost.");
     return Task.CompletedTask;

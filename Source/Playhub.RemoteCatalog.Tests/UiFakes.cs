@@ -89,6 +89,7 @@ namespace Playhub
             window._settings.PluginRoot = files.PluginRoot;
             window._settings.DeckyPluginsPath = files.InstalledRoot;
             var bundled = PluginCatalogService.GetBundledCatalog();
+            var baselineCount = bundled.Plugins.Count(plugin => plugin.Name != "Gaming Mode");
             window._bundledPluginCatalogTask = Task.FromResult(bundled);
 #if !PLAYHUB_UI_REVIEW
             using var fixture = new Fixture();
@@ -100,7 +101,7 @@ namespace Playhub
 #endif
             AppPaths.Reads = 0;
             await window.RefreshPluginsAsync();
-            IntegrationTests.Check(window._renders == 1 && window._plugins.Count == 241 && window._errors == 0, "Local baseline did not render first.");
+            IntegrationTests.Check(window._renders == 1 && window._plugins.Count == baselineCount && window._errors == 0, "Local baseline did not render first.");
 #if PLAYHUB_UI_REVIEW
             IntegrationTests.Check(window.DispatcherQueue.Pending.Count == 0 && AppPaths.Reads == 0,
                 "UI review scheduled network or accessed user cache.");
@@ -108,7 +109,8 @@ namespace Playhub
             IntegrationTests.Check(fixture.Handler.Calls == 0 && window.DispatcherQueue.Pending.Count == 1, "Network ran before first render.");
             window.DispatcherQueue.RunNext();
             await WaitFor(() => !window._remotePluginCatalogRefreshQueued);
-            IntegrationTests.Check(window._renders == 2 && window._plugins.Count == 242 && window._visiblePluginCatalogRevision == bundled.CatalogRevision + 1,
+            IntegrationTests.Check(window._renders == 2 && window._plugins.Count == baselineCount + 1 &&
+                window._visiblePluginCatalogRevision == bundled.CatalogRevision + 1,
                 "New remote revision did not refresh visible catalog.");
             window.QueueRemotePluginCatalogRefresh();
             window.DispatcherQueue.RunNext();

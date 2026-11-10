@@ -11,11 +11,14 @@ internal static class IntegrationTests
         using var files = new TestFiles();
         using var remote = new Fixture();
         var bundled = PluginCatalogService.GetBundledCatalog();
-        Check(bundled.CatalogRevision > 0 && bundled.Plugins.Count == 241, "Combined packaged baseline missing active/tombstone handling.");
+        var baselineCount = bundled.Plugins.Count;
+        Check(bundled.CatalogRevision > 0 && baselineCount > 0 && bundled.Plugins.All(plugin => plugin.Active),
+            "Combined packaged baseline missing active/tombstone handling.");
         var service = new PluginCatalogService();
         var empty = await service.LoadAsync(files.PluginRoot, files.InstalledRoot);
-        Check(empty.Count == 241 && empty.Count(p => p.IsPlayhubPlugin) == 11 &&
-            empty.Select(p => p.RepositorySlug).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 241, "Baseline duplicated/lost active built-ins.");
+        Check(empty.Count == baselineCount && empty.Count(p => p.IsPlayhubPlugin) == 11 &&
+            empty.Select(p => p.RepositorySlug).Distinct(StringComparer.OrdinalIgnoreCase).Count() == baselineCount,
+            "Baseline duplicated/lost active built-ins.");
 
         var artwork = bundled.Plugins.Single(p => p.Repository == "LoZazaMastro/Playhub-Artworks");
         var decky = bundled.Plugins.First(p => p.CatalogSource == "decky-store");
@@ -46,7 +49,8 @@ internal static class IntegrationTests
         var refreshed = await remote.Service.RefreshAsync(bundled);
         Check(refreshed.Origin == "remote", refreshed.Error ?? "Remote manifest rejected.");
         var loaded = await service.LoadAsync(files.PluginRoot, files.InstalledRoot, refreshed.Catalog);
-        Check(loaded.Count == 243 && loaded.Select(p => p.RepositorySlug).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 243,
+        Check(loaded.Count == baselineCount + 2 &&
+            loaded.Select(p => p.RepositorySlug).Distinct(StringComparer.OrdinalIgnoreCase).Count() == baselineCount + 2,
             "Remote additions duplicated/lost records.");
         var mappedArtwork = loaded.Single(p => p.RepositorySlug == artwork.Repository);
         Check(mappedArtwork.SourceFolder == source && mappedArtwork.InstallerZip == installer && mappedArtwork.CoverImage == cover &&

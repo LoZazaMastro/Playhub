@@ -22,8 +22,8 @@ Use `publish.description` from their `plugin.json`, or their own introductory
 README text when that field is absent. Spreadsheet summaries are discovery notes,
 not replacement store descriptions. Do not translate or rewrite publisher copy
 to match Playhub's interface language. README detail content also stays original.
-`plugin-description-provenance.json` records the sources and text hashes for the
-47 workbook additions corrected in revision 11, including non-English originals.
+`plugin-description-provenance.json` records the sources and text hashes for
+workbook imports, including non-English originals.
 
 `firstPublishedAt` is the original Decky Store creation timestamp or the first
 published GitHub release. `updatedAt` is the latest upstream release/update.
@@ -41,13 +41,14 @@ versions or URL hosts require a client update. An explicit active: false removes
 the catalog record. Omitted bundled records survive. Disabling a record does
 not uninstall an already installed plugin.
 
-The supplied 19 October workbook adds 47 installable records, including the 20
-newest entries, and removes LumaDeck. There are 243 records: 13 Playhub, 108
-Decky, 122 outside the Store. Two built-ins are disabled; the active fallback
-has 241 entries. See workbook-import-2026-10-19.json for source rows and exclusions.
-Nineteen older candidates lack a supported versioned installable ZIP.
-Unverified radar leads are excluded. Catalog membership does not mean a plugin
-has been tested on Windows or on the user's hardware.
+The 19 October workbook added 47 records and removed LumaDeck. The 10 November
+workbook adds 158 repositories and updates 20 release pins. The catalog has 401
+records, including 13 Playhub entries, 108 Decky Store entries and 280 external
+entries. Two Playhub entries are disabled. The workbook import receipts record
+source rows, package hashes where verified, and reasons for exclusions.
+Package checks cover the pinned ZIP, Decky manifest, compiled frontend and
+publisher metadata. Runtime compatibility depends on the plugin and its
+supported platforms.
 
 A bundled snapshot and last-good disk cache render first. Background refresh
 reads the public file every six hours or on explicit Store refresh. Changed
