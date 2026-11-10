@@ -12,6 +12,7 @@
   <link rel="icon" href="./assets/cube.webp" type="image/webp">
   <link rel="preload" href="./assets/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="./styles.css">
+  <script src="./gallery.js" defer></script>
 </head>
 <body>
   <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -19,40 +20,28 @@
     <symbol id="arrow-right" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
     <symbol id="arrow-external" viewBox="0 0 24 24"><path d="M6 18 18 6M7 6h11v11"/></symbol>
     <symbol id="gamepad" viewBox="0 0 24 24"><path d="M8 7h8a5 5 0 0 1 4.8 3.7l1.1 4.2a2.7 2.7 0 0 1-4.5 2.7L15 15H9l-2.4 2.6a2.7 2.7 0 0 1-4.5-2.7l1.1-4.2A5 5 0 0 1 8 7Z"/><path d="M8 10v4m-2-2h4m6-1h.01m2 2h.01"/></symbol>
-    <symbol id="frames" viewBox="0 0 24 24"><path d="M8 6h12v14H8zM4 16V3h12M9 16l4-4 3 3 4-4"/><circle cx="12" cy="10" r=".75"/></symbol>
-    <symbol id="metadata-icon" viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8m-8 4h8m-8 4h5"/></symbol>
-    <symbol id="color" viewBox="0 0 24 24"><path d="M12 3c5 0 9 3.5 9 8.2 0 2.4-1.4 3.8-3.8 3.8h-2.1c-1.1 0-1.7.9-1.2 1.9.5 1.1-.2 3.1-2.2 3.1A8.7 8.7 0 0 1 3 11.5C3 6.7 6.9 3 12 3Z"/><path d="M7.5 10h.01M10 7h.01m4.5 0h.01m3 3h.01"/></symbol>
-    <symbol id="bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 5-2 7h16c0-2-2-2-2-7Zm-9 10a3 3 0 0 0 6 0"/></symbol>
-    <symbol id="curtain" viewBox="0 0 24 24"><path d="M3 4h18M4 4v15h7c-3-3-3-7 0-15m9 0v15h-7c3-3 3-7 0-15"/></symbol>
-    <symbol id="film" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m10 9 5 3-5 3z"/></symbol>
-    <symbol id="music" viewBox="0 0 24 24"><path d="M9 17V5l10-2v12M9 9l10-2"/><ellipse cx="6" cy="17" rx="3" ry="2"/><ellipse cx="16" cy="15" rx="3" ry="2"/></symbol>
-    <symbol id="sound" viewBox="0 0 24 24"><path d="M3 9h4l5-4v14l-5-4H3Zm12 0c1.5 1.5 1.5 4.5 0 6m3-9c3 3 3 9 0 12"/></symbol>
-    <symbol id="newsprint" viewBox="0 0 24 24"><path d="M5 5h15v14H5a2 2 0 0 1-2-2V8m2 11V5m3 3h5v5H8zm8 0h1m-1 4h1m-9 4h9"/></symbol>
-    <symbol id="weather-icon" viewBox="0 0 24 24"><path d="M6 13a4 4 0 1 1 4-7M6 3V2M3 5 2 4m1 5H2m5 11h11a3 3 0 0 0 0-6h-1a4.5 4.5 0 1 0-8.8-1H7a3.5 3.5 0 0 0 0 7Z"/></symbol>
-    <symbol id="shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.3 3.2 7.6 8 9 4.8-1.4 8-4.7 8-9V6Zm-3 9 2 2 4-4"/></symbol>
-    <symbol id="grid" viewBox="0 0 24 24"><path d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z"/></symbol>
-    <symbol id="spark" viewBox="0 0 24 24"><path d="M12 1v22M1 12h22M4 4l16 16M20 4 4 20"/></symbol>
   </svg>
 
   <a class="skip-link" href="#main">Skip to content</a>
-  <header class="site-header wrap">
-    <a href="./" class="brand" aria-label="Playhub home">
-      <img src="./assets/cube.webp" width="34" height="34" alt="">
-      <img class="wordmark" src="./assets/wordmark.png" width="115" height="31" alt="Playhub">
-    </a>
-    <nav aria-label="Main">
-      <a href="#experience">Experience</a>
-      <a href="#plugins">Plugins</a>
-      <a href="#support">Support</a>
-    </nav>
-    <a class="button header-download" href="#download">Get Playhub <svg class="icon" aria-hidden="true"><use href="#arrow-down"/></svg></a>
+  <header class="topbar">
+    <div class="site-header wrap">
+      <a href="./" class="brand" aria-label="Playhub home">
+        <img src="./assets/cube.webp" width="34" height="34" alt="">
+        <img class="wordmark" src="./assets/wordmark.png" width="115" height="31" alt="Playhub">
+      </a>
+      <nav aria-label="Main">
+        <a href="#experience">Experience</a>
+        <a href="#plugins">Plugins</a>
+        <a href="#support">Support</a>
+      </nav>
+      <a class="button header-download" href="#download">Get Playhub <svg class="icon" aria-hidden="true"><use href="#arrow-down"/></svg></a>
+    </div>
   </header>
 
   <main id="main" tabindex="-1">
     <section class="hero wrap" aria-labelledby="hero-title">
       <div class="hero-copy">
-        <p class="eyebrow"><span class="signal" aria-hidden="true"></span> Built for Windows</p>
-        <h1 id="hero-title">PC gaming.<br>Couch mode<span>.</span></h1>
+        <h1 id="hero-title">PC gaming.<br>Couch mode.</h1>
         <p class="hero-lead">Bring your games into Steam, make Big&nbsp;Picture yours, and pick up a controller.</p>
         <div class="hero-actions">
           <a class="button button-primary" href="https://github.com/LoZazaMastro/Playhub/releases/latest/download/Playhub-Setup.exe">Download Playhub <svg class="icon" aria-hidden="true"><use href="#arrow-down"/></svg></a>
@@ -60,19 +49,14 @@
         </div>
         <p class="platform-note">Free and open source <span aria-hidden="true">·</span> Windows 10 / 11</p>
       </div>
-      <figure class="hero-visual" aria-label="Playhub’s yellow mascot with a game controller">
-        <span class="visual-label" aria-hidden="true"><svg class="icon"><use href="#gamepad"/></svg> Ready to play</span>
-        <div class="orbit" aria-hidden="true"></div>
-        <svg class="icon hero-spark" aria-hidden="true"><use href="#spark"/></svg>
-        <img src="./assets/controller.webp" alt="" width="701" height="900" fetchpriority="high">
-        <span class="visual-index" aria-hidden="true">PLAYER 01 <span></span></span>
+      <figure class="hero-visual">
+        <img src="./assets/sofa-mascots.png" alt="Five colourful Playhub mascots sitting on a sofa" width="1670" height="941" fetchpriority="high">
       </figure>
     </section>
 
     <section id="experience" class="experience" aria-labelledby="experience-title">
       <div class="wrap">
         <div class="section-intro">
-          <p class="eyebrow"><span>01</span> The experience</p>
           <h2 id="experience-title">Made for the sofa.</h2>
           <p>Playhub sets up the parts of Windows gaming that matter when you’re sitting a few metres from the screen.</p>
         </div>
@@ -84,7 +68,6 @@
             <p>Start in Steam’s controller-friendly interface. Play a game, return to your library, or switch back to the Windows desktop when you need it.</p>
           </div>
           <div class="gaming-visual" aria-hidden="true">
-            <span class="scene-ring"></span>
             <img src="./assets/gaming-mode.webp" alt="" width="663" height="720" loading="lazy" decoding="async">
           </div>
         </article>
@@ -109,122 +92,190 @@
         </div>
 
         <article class="styler">
-          <div class="styler-visual"><img src="./assets/styler.webp" alt="" width="450" height="437" loading="lazy" decoding="async"></div>
           <div class="styler-copy">
             <p class="eyebrow">Big Picture Styler</p>
             <h3>Give Steam your look.</h3>
             <p>Set the mood with Playhub themes and a ready-to-use CSS Loader profile for Big Picture.</p>
           </div>
+          <img class="styler-visual" src="./assets/screens/app-styler-card.webp" alt="Big Picture Styler’s Playhub theme preview and CSS Loader controls" width="1450" height="353" loading="lazy" decoding="async">
         </article>
 
-        <figure class="app-preview">
-          <img src="./assets/plugin-store-preview.webp" alt="Playhub for Windows with the ThemeDeck plugin page open" width="1600" height="900" loading="lazy" decoding="async">
-          <figcaption>ThemeDeck in the Playhub Plugin Store.</figcaption>
-        </figure>
+        <section class="app-gallery" data-gallery aria-labelledby="gallery-title">
+          <div class="gallery-heading">
+            <h3 id="gallery-title">Playhub in action</h3>
+            <div class="gallery-controls" hidden>
+              <button type="button" data-gallery-previous aria-controls="app-screens" aria-label="Previous screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
+              <button type="button" data-gallery-next aria-controls="app-screens" aria-label="Next screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
+            </div>
+          </div>
+          <ul class="app-gallery-track" id="app-screens" tabindex="0" aria-label="Playhub screenshots">
+            <li><img src="./assets/plugin-store-preview.webp" alt="The ThemeDeck page in Playhub’s Plugin Store" width="1600" height="900" loading="lazy" decoding="async"></li>
+            <li><img src="./assets/screens/app-store.webp" alt="The Playhub plugins collection in Plugin Store" width="1600" height="541" loading="lazy" decoding="async"></li>
+            <li><img src="./assets/screens/app-styler.webp" alt="Playhub’s Big Picture Styler page" width="1600" height="901" loading="lazy" decoding="async"></li>
+            <li><img src="./assets/screens/app-on-this-day.webp" alt="The On this day section in Steam Big Picture, featuring Fallout 4" width="1600" height="810" loading="lazy" decoding="async"></li>
+          </ul>
+        </section>
       </div>
     </section>
 
     <section id="plugins" class="suite" aria-labelledby="suite-title">
       <div class="wrap">
         <div class="section-intro">
-          <p class="eyebrow"><span>02</span> The Playhub family</p>
           <h2 id="suite-title">Good things<br>come in plugins.</h2>
           <p>Change how your library looks, what happens when a game starts, and what’s within reach in Steam’s Quick Access Menu.</p>
         </div>
 
-        <section class="suite-group" aria-labelledby="suite-library">
-          <div class="group-heading"><span>01 /</span><h3 id="suite-library">Make the library yours</h3></div>
-          <ul class="plugin-list">
-            <li id="artworks"><a class="plugin" href="https://github.com/LoZazaMastro/Playhub-Artworks">
-              <span class="plugin-icon lilac"><svg class="icon" aria-hidden="true"><use href="#frames"/></svg></span>
-              <span><strong>Playhub Artworks</strong><small>Choose covers, backgrounds, logos and icons with your controller.</small></span>
-              <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
-            </a></li>
-            <li id="metadata"><a class="plugin" href="https://github.com/LoZazaMastro/Playhub-Metadata">
-              <span class="plugin-icon mint"><svg class="icon" aria-hidden="true"><use href="#metadata-icon"/></svg></span>
-              <span><strong>Playhub Metadata</strong><small>Give non-Steam games richer details and achievements from supported sources.</small></span>
-              <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
-            </a></li>
-            <li id="trailerhero"><a class="plugin" href="https://github.com/LoZazaMastro/TrailerHero">
-              <span class="plugin-icon peach"><svg class="icon" aria-hidden="true"><use href="#film"/></svg></span>
-              <span><strong>TrailerHero</strong><small>Watch game trailers from your Steam library.</small></span>
-              <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
-            </a></li>
-            <li id="themedeck"><a class="plugin" href="https://github.com/LoZazaMastro/ThemeDeck-Windows">
-              <span class="plugin-icon yellow"><svg class="icon" aria-hidden="true"><use href="#music"/></svg></span>
-              <span><strong>ThemeDeck</strong><small>Play game soundtracks as you browse Big Picture.</small></span>
-              <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
-            </a></li>
-          </ul>
-        </section>
-
-        <section class="suite-group" aria-labelledby="suite-session">
-          <div class="group-heading"><span>02 /</span><h3 id="suite-session">Set the scene</h3></div>
-          <ul class="plugin-list">
-            <li id="launch-curtain"><a class="plugin" href="https://github.com/LoZazaMastro/Launch-Curtain">
-              <span class="plugin-icon yellow"><svg class="icon" aria-hidden="true"><use href="#curtain"/></svg></span>
-              <span><strong>Launch Curtain</strong><small>Show game artwork and a transition while a game starts.</small></span>
-              <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
-            </a></li>
-            <li id="now-playing"><a class="plugin" href="https://github.com/LoZazaMastro/Now-Playing">
-              <span class="plugin-icon lilac"><svg class="icon" aria-hidden="true"><use href="#music"/></svg></span>
-              <span><strong>Now Playing</strong><small>See what’s playing and control your media from Gaming Mode.</small></span>
-              <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
-            </a></li>
-            <li id="notifications"><a class="plugin" href="https://github.com/LoZazaMastro/Playhub-Notifications">
-              <span class="plugin-icon peach"><svg class="icon" aria-hidden="true"><use href="#bell"/></svg></span>
-              <span><strong>Playhub Notifications</strong><small>Style notifications and volume overlays to suit your setup.</small></span>
-              <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
-            </a></li>
-            <li id="surround"><a class="plugin" href="https://github.com/LoZazaMastro/Playhub-Surround">
-              <span class="plugin-icon mint"><svg class="icon" aria-hidden="true"><use href="#sound"/></svg></span>
-              <span><strong>Playhub Surround</strong><small>Set up stereo, 5.1 or 7.1 and test one speaker at a time.</small></span>
-              <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
-            </a></li>
-          </ul>
-        </section>
-
-        <section class="suite-group" aria-labelledby="suite-tools">
-          <div class="group-heading"><span>03 /</span><h3 id="suite-tools">Keep it within reach</h3></div>
-          <div class="utilities">
-            <article class="decky-feature" id="playhub-for-decky">
-              <span class="plugin-icon yellow"><svg class="icon" aria-hidden="true"><use href="#grid"/></svg></span>
-              <div>
-                <h4>Playhub for Decky</h4>
-                <p>Open the dashboard, switch modes or manage plugins from Big Picture.</p>
-                <dl>
-                  <div id="quick-settings"><dt>Quick Settings</dt><dd>Adjust audio, display and power from the Playhub tab.</dd></div>
-                  <div id="shortcuts"><dt>Shortcuts</dt><dd>Choose and arrange your Quick Access tabs.</dd></div>
-                </dl>
-                <a class="text-link" href="https://github.com/LoZazaMastro/Playhub/tree/main/Source/GamingModeDeckyPlugin">Explore Playhub for Decky <svg class="icon" aria-hidden="true"><use href="#arrow-external"/></svg></a>
+        <ul class="plugin-list">
+          <li id="playhub" class="plugin-featured">
+            <article class="plugin">
+              <img src="./assets/screens/app-dashboard-system.webp" alt="Playhub’s System tab showing usage and running processes" width="1440" height="810" decoding="async">
+              <div class="plugin-copy">
+                <h3><a href="https://github.com/LoZazaMastro/Playhub/tree/main/Source/GamingModeDeckyPlugin">Playhub <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
+                <p>Switch between games and apps from the dashboard, then return to Windows with Switch Mode. Catch up on gaming news, revisit a moment in gaming history or pick a screensaver.</p>
               </div>
+              <section class="plugin-featured-previews" data-gallery aria-labelledby="playhub-screens-title">
+                <div class="gallery-heading">
+                  <h4 id="playhub-screens-title">Explore Playhub</h4>
+                  <div class="gallery-controls" hidden>
+                    <button type="button" data-gallery-previous aria-controls="playhub-screens" aria-label="Previous Playhub screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
+                    <button type="button" data-gallery-next aria-controls="playhub-screens" aria-label="Next Playhub screenshot"><svg class="icon" aria-hidden="true"><use href="#arrow-right"/></svg></button>
+                  </div>
+                </div>
+                <ul class="app-gallery-track" id="playhub-screens" tabindex="0" aria-label="Playhub dashboard and Gaming Mode screenshots">
+                  <li><a href="./assets/screens/app-dashboard.webp"><img src="./assets/screens/app-dashboard.webp" alt="Playhub’s Dashboard showing Steam and Chrome" width="1440" height="810" loading="lazy" decoding="async"></a></li>
+                  <li><a href="./assets/screens/app-dashboard-apps.webp"><img src="./assets/screens/app-dashboard-apps.webp" alt="Playhub’s Apps tab with controller-accessible shortcuts" width="1440" height="810" loading="lazy" decoding="async"></a></li>
+                  <li><a href="./assets/screens/app-whats-new.webp"><img src="./assets/screens/app-whats-new.webp" alt="Gaming news and updates in Playhub’s What’s New section" width="1280" height="648" loading="lazy" decoding="async"></a></li>
+                  <li><a href="./assets/screens/app-screensaver.webp"><img src="./assets/screens/app-screensaver.webp" alt="Playhub Circles screensaver with its clock and weather" width="1280" height="721" loading="lazy" decoding="async"></a></li>
+                </ul>
+              </section>
             </article>
-            <ul class="plugin-list utility-list">
-              <li id="news"><a class="plugin" href="https://github.com/LoZazaMastro/News">
-                <span class="plugin-icon peach"><svg class="icon" aria-hidden="true"><use href="#newsprint"/></svg></span>
-                <span><strong>News</strong><small>Read headlines in Quick Access or open the full-screen Newsstand.</small></span>
+          </li>
+          <li id="artworks">
+            <a class="plugin" href="https://github.com/LoZazaMastro/Playhub-Artworks">
+              <img src="./assets/screens/artworks.webp" alt="The Portal 2 cover picker in Playhub Artworks" width="960" height="508" loading="lazy" decoding="async">
+              <div class="plugin-copy">
+                <h3>Playhub Artworks</h3>
+                <p>Choose covers, backgrounds, logos and icons right from your Steam library.</p>
                 <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
-              </a></li>
-              <li id="weather"><a class="plugin" href="https://github.com/LoZazaMastro/Weather">
-                <span class="plugin-icon lilac"><svg class="icon" aria-hidden="true"><use href="#weather-icon"/></svg></span>
-                <span><strong>Weather</strong><small>Check current conditions and forecasts, including in Steam’s top bar.</small></span>
+              </div>
+            </a>
+          </li>
+          <li id="metadata">
+            <a class="plugin" href="https://github.com/LoZazaMastro/Playhub-Metadata">
+              <img src="./assets/screens/metadata.webp" alt="The Forza Horizon 2 Game Info tab populated by Playhub Metadata" width="960" height="508" loading="lazy" decoding="async">
+              <div class="plugin-copy">
+                <h3>Playhub Metadata</h3>
+                <p>Bring game details, achievements and activity to supported non-Steam games.</p>
                 <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
-              </a></li>
-              <li id="proton-vpn"><a class="plugin" href="https://github.com/LoZazaMastro/Proton-VPN">
-                <span class="plugin-icon mint"><svg class="icon" aria-hidden="true"><use href="#shield"/></svg></span>
-                <span><strong>Proton VPN</strong><small>Control the Proton VPN Windows client from Quick Access.</small></span>
+              </div>
+            </a>
+          </li>
+          <li id="trailerhero">
+            <a class="plugin" href="https://github.com/LoZazaMastro/TrailerHero">
+              <img src="./assets/screens/trailerhero.webp" alt="TrailerHero’s per-game trailer preview and settings for Portal 2" width="960" height="508" loading="lazy" decoding="async">
+              <div class="plugin-copy">
+                <h3>TrailerHero</h3>
+                <p>Play game trailers directly on library pages as you browse.</p>
                 <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
-              </a></li>
-            </ul>
-          </div>
-        </section>
+              </div>
+            </a>
+          </li>
+          <li id="themedeck">
+            <a class="plugin" href="https://github.com/LoZazaMastro/ThemeDeck-Windows">
+              <img src="./assets/screens/themedeck.webp" alt="The ThemeDeck detail page in Playhub’s Plugin Store" width="960" height="403" loading="lazy" decoding="async">
+              <div class="plugin-copy">
+                <h3>ThemeDeck</h3>
+                <p>Listen to game soundtracks as you move through your Steam library.</p>
+                <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
+              </div>
+            </a>
+          </li>
+          <li id="launch-curtain">
+            <a class="plugin" href="https://github.com/LoZazaMastro/Launch-Curtain">
+              <img src="./assets/screens/launch-curtain.webp" alt="The Launch Curtain editor previewing Sonic Frontiers" width="960" height="508" loading="lazy" decoding="async">
+              <div class="plugin-copy">
+                <h3>Launch Curtain</h3>
+                <p>Give each game a full-screen artwork transition while it loads.</p>
+                <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
+              </div>
+            </a>
+          </li>
+          <li id="now-playing">
+            <article class="plugin plugin-with-media">
+              <a class="plugin-main" href="https://github.com/LoZazaMastro/Now-Playing">
+                <img src="./assets/screens/now-playing.webp" alt="Now Playing showing Tame Impala’s Sundown Syndrome" width="1280" height="720" loading="lazy" decoding="async">
+                <div class="plugin-copy">
+                  <h3>Now Playing</h3>
+                  <p>Browse and control Spotify, YouTube Music and local tracks with a controller.</p>
+                  <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
+                </div>
+              </a>
+              <details class="plugin-extra-media">
+                <summary>More screenshots</summary>
+                <ul>
+                  <li><a href="./assets/screens/now-playing-circles.webp"><img src="./assets/screens/now-playing-circles.webp" alt="Now Playing track information in the Circles screensaver" width="1280" height="720" loading="lazy" decoding="async"></a></li>
+                  <li><a href="./assets/screens/now-playing-artist.webp"><img src="./assets/screens/now-playing-artist.webp" alt="Dan Croll’s artist page in Now Playing" width="1280" height="720" loading="lazy" decoding="async"></a></li>
+                </ul>
+              </details>
+            </article>
+          </li>
+          <li id="notifications">
+            <a class="plugin" href="https://github.com/LoZazaMastro/Playhub-Notifications">
+              <img src="./assets/screens/notifications.webp" alt="Theme controls in Playhub Notifications" width="862" height="480" loading="lazy" decoding="async">
+              <div class="plugin-copy">
+                <h3>Playhub Notifications</h3>
+                <p>Personalize Big Picture’s notifications, sounds and volume indicator.</p>
+                <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
+              </div>
+            </a>
+          </li>
+          <li id="surround">
+            <a class="plugin" href="https://github.com/LoZazaMastro/Playhub-Surround">
+              <img src="./assets/screens/surround.webp" alt="Playhub Surround’s interactive 5.1 speaker layout" width="860" height="1201" loading="lazy" decoding="async">
+              <div class="plugin-copy">
+                <h3>Playhub Surround</h3>
+                <p>Configure stereo, 5.1 or 7.1 and test each speaker from the sofa.</p>
+                <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
+              </div>
+            </a>
+          </li>
+          <li id="news">
+            <a class="plugin" href="https://github.com/LoZazaMastro/News">
+              <img src="./assets/screens/news.webp" alt="Newsstand showing articles from several publishers" width="960" height="540" loading="lazy" decoding="async">
+              <div class="plugin-copy">
+                <h3>News</h3>
+                <p>Read headlines in Quick Access or browse your feeds in a full-screen Newsstand.</p>
+                <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
+              </div>
+            </a>
+          </li>
+          <li id="weather">
+            <a class="plugin" href="https://github.com/LoZazaMastro/Weather">
+              <img src="./assets/screens/weather.webp" alt="Weather’s daily and hourly forecasts in Quick Access" width="862" height="771" loading="lazy" decoding="async">
+              <div class="plugin-copy">
+                <h3>Weather</h3>
+                <p>See current conditions, an hourly outlook and the five-day forecast in Quick Access.</p>
+                <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
+              </div>
+            </a>
+          </li>
+          <li id="proton-vpn">
+            <a class="plugin" href="https://github.com/LoZazaMastro/Proton-VPN">
+              <img src="./assets/screens/proton-vpn.webp" alt="Proton VPN’s connection and country controls in Quick Access" width="887" height="907" loading="lazy" decoding="async">
+              <div class="plugin-copy">
+                <h3>Proton VPN</h3>
+                <p>Control the Windows Proton VPN client from Steam’s Quick Access Menu.</p>
+                <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg>
+              </div>
+            </a>
+          </li>
+        </ul>
       </div>
     </section>
 
     <section id="download" class="download-section" aria-labelledby="download-title">
       <div class="wrap download-layout">
         <div>
-          <p class="eyebrow"><span>03</span> Get started</p>
           <h2 id="download-title">See you<br>on the sofa.</h2>
           <p>Grab the Windows setup, then let Playhub guide you through Steam, Decky and Gaming Mode.</p>
           <div class="download-actions">
@@ -239,7 +290,6 @@
 
     <section id="support" class="support wrap" aria-labelledby="support-title">
       <div>
-        <p class="eyebrow"><span>04</span> Support</p>
         <h2 id="support-title">Need a hand?</h2>
         <p>Stuck getting started? Ask the Playhub community about setup, Gaming Mode, or using Decky on Windows.</p>
       </div>
