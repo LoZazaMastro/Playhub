@@ -1,44 +1,59 @@
-const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+(() => {
+  const storageKey = "playhub-site-theme";
+  const preference = window.matchMedia("(prefers-color-scheme: dark)");
+  const root = document.documentElement;
+  let saved;
+  try { saved = localStorage.getItem(storageKey); } catch { /* A blocked store still allows switching themes. */ }
+  if (saved !== "dark" && saved !== "light") saved = undefined;
 
-for (const gallery of document.querySelectorAll("[data-gallery]")) {
-  const track = gallery.querySelector(".app-gallery-track");
-  const controls = gallery.querySelector(".gallery-controls");
-  const previous = controls.querySelector("[data-gallery-previous]");
-  const next = controls.querySelector("[data-gallery-next]");
-  const slides = [...track.children];
-
-  function maxScroll() {
-    return track.scrollWidth - track.clientWidth;
+  function applyTheme(theme) {
+    root.dataset.theme = theme;
+    const toggle = document.querySelector(".theme-toggle");
+    if (toggle) toggle.setAttribute("aria-pressed", String(theme === "dark"));
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#171612" : "#fff9ec");
   }
 
-  function slideOffsets() {
-    const firstOffset = slides[0].offsetLeft;
-    return slides.map(slide => Math.min(slide.offsetLeft - firstOffset, maxScroll()));
-  }
+  applyTheme(saved ?? (preference.matches ? "dark" : "light"));
+  document.addEventListener("DOMContentLoaded", () => {
+    const toggle = document.querySelector(".theme-toggle");
+    toggle.hidden = false;
+    applyTheme(root.dataset.theme);
+    toggle.addEventListener("click", () => {
+      saved = root.dataset.theme === "dark" ? "light" : "dark";
+      try { localStorage.setItem(storageKey, saved); } catch { /* The current page keeps the choice. */ }
+      applyTheme(saved);
+    });
+    preference.addEventListener("change", event => {
+      if (!saved) applyTheme(event.matches ? "dark" : "light");
+    });
 
-  function move(direction) {
-    const offsets = slideOffsets();
-    const destination = direction > 0
-      ? offsets.find(offset => offset > track.scrollLeft + 2)
-      : offsets.findLast(offset => offset < track.scrollLeft - 2);
-    if (destination === undefined) return;
-    track.scrollTo({ left: destination, behavior: reducedMotion.matches ? "instant" : "smooth" });
-  }
+    for (const gallery of document.querySelectorAll("[data-carousel]")) {
+      const slides = Array.from(gallery.querySelectorAll("[data-slide]"));
+      const controls = gallery.querySelector(".media-controls");
+      const previous = controls?.querySelector("[data-previous]");
+      const next = controls?.querySelector("[data-next]");
+      if (slides.length < 2 || !previous || !next) continue;
 
-  function updateControls() {
-    controls.hidden = maxScroll() < 2;
-    previous.disabled = track.scrollLeft < 2;
-    next.disabled = track.scrollLeft >= maxScroll() - 2;
-  }
-
-  previous.addEventListener("click", () => move(-1));
-  next.addEventListener("click", () => move(1));
-  track.addEventListener("scroll", updateControls, { passive: true });
-  track.addEventListener("keydown", event => {
-    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
-    event.preventDefault();
-    move(event.key === "ArrowRight" ? 1 : -1);
+      let current = 0;
+      const status = document.createElement("span");
+      status.setAttribute("role", "status");
+      status.style.cssText = "position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)";
+      controls.append(status);
+      const show = index => {
+        slides[current].hidden = true;
+        current = (index + slides.length) % slides.length;
+        slides[current].hidden = false;
+        status.textContent = slides[current].querySelector("figcaption")?.textContent
+          ?? slides[current].querySelector("img")?.alt ?? "";
+      };
+      controls.hidden = false;
+      previous.addEventListener("click", () => show(current - 1));
+      next.addEventListener("click", () => show(current + 1));
+      gallery.addEventListener("keydown", event => {
+        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+        event.preventDefault();
+        show(current + (event.key === "ArrowLeft" ? -1 : 1));
+      });
+    }
   });
-  new ResizeObserver(updateControls).observe(track);
-  updateControls();
-}
+})();
