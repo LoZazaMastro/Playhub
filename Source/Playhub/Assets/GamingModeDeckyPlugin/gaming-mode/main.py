@@ -44,6 +44,27 @@ _TOPBAR_CLOCK_SELECTORS = ["#header ._1HhLUvHH6BZLIOyOE80TVh", "._1HhLUvHH6BZLIO
 
 
 class Plugin(QuickSettingsPlugin):
+    def _measure_game_frames(self, app_id):
+        if type(app_id) is not int or not 0 < app_id <= 0xffffffff:
+            return {"status": "TargetUnavailable"}
+        try:
+            token_path = os.path.join(os.environ["APPDATA"], "GamingMode", "xbox-shell-token")
+            with open(token_path, "r", encoding="utf-8") as token_file:
+                token = token_file.read(513).strip()
+            if not token or len(token) > 512:
+                return {"status": "ProviderUnavailable"}
+            url = f"http://127.0.0.1:47991/session/frame-measurement?appId={app_id}"
+            request = urllib.request.Request(url, data=b"", headers={"X-Playhub-Shell-Token": token}, method="POST")
+            local_client = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            with local_client.open(request, timeout=11.0) as response:
+                measurement = json.loads(response.read(4096))
+            return measurement if isinstance(measurement, dict) else {"status": "Failed"}
+        except (OSError, ValueError, KeyError):
+            return {"status": "ProviderUnavailable"}
+
+    async def measure_game_frames(self, app_id):
+        return await asyncio.get_running_loop().run_in_executor(None, self._measure_game_frames, app_id)
+
     def _request_uwp_gamebar(self, request):
         if (not isinstance(request, dict) or type(request.get("appId")) is not int
                 or not 0 < request["appId"] <= 0xffffffff

@@ -10,7 +10,7 @@ internal static class PublicationRefreshTests
         await UnwritableCacheAsync(newerDate: true);
         await FailedRequestIsThrottledAsync();
         await CancellationReleasesLeaseAsync();
-        Console.WriteLine("PASS 10 publication HTTP assertions: unwritable cache, unchanged/changed metadata, finite scans, retry throttling and cancellation lease.");
+        Console.WriteLine("PASS 12 publication HTTP assertions: unwritable cache, precise changed date, finite scans, retry throttling and cancellation lease.");
     }
 
     private static async Task UnwritableCacheAsync(bool newerDate)
@@ -18,15 +18,19 @@ internal static class PublicationRefreshTests
         using var fixture = new PublicationFixture();
         fixture.Handler.Published = newerDate ? "2025-10-19T23:30:00Z" : fixture.Plugin.UpdatedAt;
         var callbacks = 0;
+        IReadOnlyDictionary<string, string>? publishedDates = null;
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-        await fixture.Service.RefreshPublicationDatesAsync(new[] { fixture.Plugin }, () => callbacks++, deadline.Token);
+        await fixture.Service.RefreshPublicationDatesAsync(new[] { fixture.Plugin }, dates => { callbacks++; publishedDates = dates; }, deadline.Token);
         IntegrationTests.Check(fixture.Handler.AtomCalls == 1 && fixture.Handler.PageCalls == 1 && !deadline.IsCancellationRequested,
             "An unwritable release cache caused publication discovery to repeat instead of finishing one scan.");
         IntegrationTests.Check(callbacks == (newerDate ? 1 : 0),
             "Publication discovery emitted a callback for unchanged visible metadata or lost a genuine newer publication.");
+        IntegrationTests.Check(!newerDate || publishedDates is { Count: 1 } &&
+            publishedDates[fixture.Plugin.RepositorySlug] == "2025-10-19T23:30:00.0000000Z",
+            "The batch did not include the precise publication timestamp when the cache could not be written.");
         IntegrationTests.Check(Directory.Exists(fixture.Blocker) && !File.Exists(fixture.Blocker) && fixture.Plugin.UpdatedAt == "2025-10-18T23:30:00Z",
             "The cache failure fixture was bypassed or publication discovery mutated the UI-owned model.");
-        await fixture.Service.RefreshPublicationDatesAsync(new[] { fixture.Plugin }, () => callbacks++, deadline.Token);
+        await fixture.Service.RefreshPublicationDatesAsync(new[] { fixture.Plugin }, _ => callbacks++, deadline.Token);
         IntegrationTests.Check(fixture.Handler.AtomCalls == 1 && fixture.Handler.PageCalls == 1 && callbacks == (newerDate ? 1 : 0),
             "A successful source without a durable cache was fetched or published again on the next scan.");
     }
@@ -37,8 +41,8 @@ internal static class PublicationRefreshTests
         fixture.Handler.FailAtom = true;
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(3));
         var callbacks = 0;
-        await fixture.Service.RefreshPublicationDatesAsync(new[] { fixture.Plugin }, () => callbacks++, deadline.Token);
-        await fixture.Service.RefreshPublicationDatesAsync(new[] { fixture.Plugin }, () => callbacks++, deadline.Token);
+        await fixture.Service.RefreshPublicationDatesAsync(new[] { fixture.Plugin }, _ => callbacks++, deadline.Token);
+        await fixture.Service.RefreshPublicationDatesAsync(new[] { fixture.Plugin }, _ => callbacks++, deadline.Token);
         IntegrationTests.Check(fixture.Handler.AtomCalls == 1 && fixture.Handler.PageCalls == 0 && callbacks == 0,
             "Failed publication requests were immediately retried despite their in-memory retry lease.");
     }
@@ -49,7 +53,7 @@ internal static class PublicationRefreshTests
         fixture.Handler.BlockAtom = true;
         using var cancellation = new CancellationTokenSource();
         var callbacks = 0;
-        var pending = fixture.Service.RefreshPublicationDatesAsync(new[] { fixture.Plugin }, () => callbacks++, cancellation.Token);
+        var pending = fixture.Service.RefreshPublicationDatesAsync(new[] { fixture.Plugin }, _ => callbacks++, cancellation.Token);
         await fixture.Handler.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
         cancellation.Cancel();
         try
@@ -60,7 +64,7 @@ internal static class PublicationRefreshTests
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
         fixture.Handler.BlockAtom = false;
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-        await fixture.Service.RefreshPublicationDatesAsync(new[] { fixture.Plugin }, () => callbacks++, deadline.Token);
+        await fixture.Service.RefreshPublicationDatesAsync(new[] { fixture.Plugin }, _ => callbacks++, deadline.Token);
         IntegrationTests.Check(fixture.Handler.AtomCalls == 2 && fixture.Handler.PageCalls == 1 && callbacks == 0,
             "A cancelled source retained its retry lease and could not resume on the next Store visit.");
     }

@@ -134,6 +134,7 @@ public sealed partial class MainWindow
                     .Focus(FocusState.Programmatic);
             }
             finally { _contentScroller.BringIntoViewOnFocusChange = bringIntoView; }
+            UpdatePluginPublicationOrder();
         });
     }
 

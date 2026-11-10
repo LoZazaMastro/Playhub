@@ -28,6 +28,8 @@ export function createScopedDeckyState(real: any): ScopedDeckyState {
     closeActivePlugin() { selected = null; notify(); },
   };
   for (const key of delegates) state[key] = real[key].bind(real);
+  // Decky 3.3.1 binds this setter when mounting its provider. Older providers do not need it.
+  if (typeof real.setSortPlugins === "function") state.setSortPlugins = real.setSortPlugins.bind(real);
   state.publicState();
   real.eventBus.addEventListener("update", notify);
   return { state, setVisible(next: boolean) {

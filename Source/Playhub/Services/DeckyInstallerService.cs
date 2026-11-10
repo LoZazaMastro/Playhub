@@ -4,14 +4,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Net.Http;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.System;
+using Playhub.DeckyHost;
+using Playhub.Shared;
 
 namespace Playhub.Services;
 
@@ -21,31 +23,19 @@ namespace Playhub.Services;
 /// This is an original, clean-room implementation: it performs the documented
 /// DeckyLoader-on-Windows install steps directly in Playhub and does NOT bundle
 /// or execute any third-party installer binary. The PluginLoader build is the
-/// official one from SteamDeckHomebrew/decky-loader, fetched through nightly.link
-/// (a public proxy that serves GitHub Actions artifacts without authentication).
-///
-/// Steps performed:
-///   1. stop any running PluginLoader process
-///   2. download the official "PluginLoader Win" artifact
-///   3. create %USERPROFILE%\homebrew\services and extract into it
-///   4. enable Steam CEF remote debugging (.cef-enable-remote-debugging)
-///   5. (no desktop shortcut is created; any legacy one is removed)
-///   6. register PluginLoader for autostart and launch it
+/// official Windows pair from SteamDeckHomebrew/decky-loader releases.
+/// Verify and stage both binaries before touching the running installation;
+/// roll back the pair if the new loader fails to start.
 /// </summary>
 public sealed class DeckyInstallerService
 {
-    private const string Owner = "SteamDeckHomebrew";
-    private const string Repo = "decky-loader";
-    private const string ArtifactName = "PluginLoader%20Win.zip";
+    private const int DeckyPort = 1337;
+    private static readonly HttpClient SharedHttp = CreateHttpClient();
+    private static readonly SemaphoreSlim DesktopOperationGate = new(1, 1);
+    private readonly DeckyWindowsReleaseClient _releases;
 
-    private static readonly Uri WorkflowRunsUri = new(
-        $"https://api.github.com/repos/{Owner}/{Repo}/actions/workflows/build-win.yml/runs?branch=main&status=success&per_page=20");
-
-    // Latest main build, always available without auth via nightly.link.
-    private static readonly string LatestZipUrl =
-        $"https://nightly.link/{Owner}/{Repo}/workflows/build-win/main/{ArtifactName}";
-
-    private readonly HttpClient _http = CreateHttpClient();
+    public DeckyInstallerService() : this(SharedHttp) { }
+    internal DeckyInstallerService(HttpClient http) => _releases = new(http, RuntimeInformation.OSArchitecture);
 
     /// <summary>True if DeckyLoader's PluginLoader is present under homebrew\services.</summary>
     public bool IsInstalled()
@@ -66,128 +56,95 @@ public sealed class DeckyInstallerService
         await Launcher.LaunchUriAsync(new Uri("ms-settings:developers"));
     }
 
-    public async Task<IReadOnlyList<DeckyBuildRun>> GetMainBuildsAsync()
-    {
-        using var response = await _http.GetAsync(WorkflowRunsUri);
-        response.EnsureSuccessStatusCode();
-        await using var stream = await response.Content.ReadAsStreamAsync();
-        using var doc = await JsonDocument.ParseAsync(stream);
-        var runs = new List<DeckyBuildRun>();
+    public Task<IReadOnlyList<DeckyWindowsRelease>> GetWindowsReleasesAsync() => _releases.ListAsync();
 
-        foreach (var item in doc.RootElement.GetProperty("workflow_runs").EnumerateArray())
+    public Task<string> InstallLatestAsync() => InstallWindowsReleaseAsync(reinstall: true);
+    public Task<string> InstallOrUpdateLatestAsync() => InstallWindowsReleaseAsync();
+    public Task<string> InstallLatestConsoleAsync() => InstallWindowsReleaseAsync(console: true);
+    public Task<string> InstallReleaseAsync(DeckyWindowsRelease release) => InstallWindowsReleaseAsync(release.Tag);
+
+    private Task<string> InstallWindowsReleaseAsync(string? tag = null, bool? console = null, bool reinstall = false) =>
+        RunDesktopOperationAsync(() => InstallWindowsReleaseCoreAsync(tag, console, reinstall));
+
+    private async Task<string> InstallWindowsReleaseCoreAsync(string? tag, bool? console, bool reinstall)
+    {
+        var release = await _releases.GetAsync(tag).ConfigureAwait(false);
+        var assets = release.Assets;
+        var services = ServicesDir;
+        var matches = await Task.Run(() => DeckyFileUpgrade.Matches(services, assets)).ConfigureAwait(false);
+        IReadOnlyDictionary<DeckyWindowsReleaseClient.Asset, byte[]>? payload = null;
+        if (!matches || reinstall)
         {
-            runs.Add(new DeckyBuildRun
+            var downloaded = await Task.WhenAll(assets.Select(async asset =>
+                (Asset: asset, Bytes: await _releases.DownloadAsync(asset).ConfigureAwait(false)))).ConfigureAwait(false);
+            payload = downloaded.ToDictionary(item => item.Asset, item => item.Bytes);
+        }
+
+        return await Task.Run(() => DeckyStartupGuard.RunExclusive(() =>
+        {
+            // Validate the listener before touching binaries. Never reuse or stop a
+            // same-named process owned by another installation, session or user.
+            var previous = CurrentListener();
+            string loader = LoaderPath(console ?? (previous?.EndsWith(DeckyFileUpgrade.ConsoleName, StringComparison.OrdinalIgnoreCase) == true ||
+                (previous is null && PreferConsole())));
+            string runtimePointer = Path.Combine(services, "PlayhubRuntime", "current");
+            DeckyFileUpgrade.RequireOrdinaryPath(runtimePointer);
+            string? previousRuntime = File.Exists(runtimePointer) ? File.ReadAllText(runtimePointer) : null;
+            string? startupCommand = null;
+            void Prepare()
             {
-                Id = item.GetProperty("id").GetInt64(),
-                Title = item.GetProperty("display_title").GetString() ?? "",
-                HeadSha = item.GetProperty("head_sha").GetString() ?? "",
-                CreatedAt = NormalizeDate(item.GetProperty("created_at").GetString()),
-                UpdatedAt = NormalizeDate(item.GetProperty("updated_at").GetString()),
-                Url = item.GetProperty("html_url").GetString() ?? "",
-                ArtifactsUrl = item.GetProperty("artifacts_url").GetString() ?? ""
-            });
-        }
+                EnsureRuntimeHostInstalled();
+                startupCommand = PrepareAutostart(loader);
+                EnableSteamCefDebugging();
+            }
+            void Start()
+            {
+                StartVerified(loader);
+                SetAutostart(startupCommand!);
+            }
+            void Restore()
+            {
+                if (previousRuntime is not null) WriteRuntimePointer(runtimePointer, previousRuntime);
+                else
+                {
+                    DeckyFileUpgrade.RequireOrdinaryPath(runtimePointer);
+                    if (File.Exists(runtimePointer)) File.Delete(runtimePointer);
+                }
+                if (previous is not null && DeckyStartupGuard.ListenerOwner(DeckyPort) is null) StartVerified(previous);
+            }
 
-        return runs;
+            if (!reinstall && DeckyFileUpgrade.Matches(services, assets))
+            {
+                bool switchLoader = previous is not null && !string.Equals(previous, loader, StringComparison.OrdinalIgnoreCase);
+                bool starting = false;
+                try
+                {
+                    Prepare();
+                    if (switchLoader) StopForReplacement();
+                    starting = true;
+                    Start();
+                }
+                catch
+                {
+                    if (starting && (switchLoader || previous is null)) StopOwnedLoaders();
+                    Restore();
+                    throw;
+                }
+                return tag is null ? "La versione installata di Decky è già la più recente." :
+                    "Decky è pronto. Riavvia Steam per attivarlo.";
+            }
+
+            if (payload is null) throw new IOException("I file di Decky sono cambiati durante l'aggiornamento. Riprova.");
+            DeckyFileUpgrade.Apply(services, payload, Prepare, StopForReplacement, Start, StopOwnedLoaders, Restore);
+            RemoveLegacyDesktopShortcut();
+            return "Decky è pronto. Riavvia Steam per attivarlo.";
+        })).ConfigureAwait(false);
     }
 
-    /// <summary>Installs the latest main build.</summary>
-    public Task<string> InstallLatestAsync() => InstallFromUrlAsync(LatestZipUrl, "ultima versione");
+    public Task<string> RemoveAsync() =>
+        RunDesktopOperationAsync(() => Task.Run(() => DeckyStartupGuard.RunExclusive(Remove)));
 
-    /// <summary>Installs the latest main artifact only when its files differ or are missing.</summary>
-    public async Task<string> InstallOrUpdateLatestAsync()
-    {
-        var bytes = await DownloadLatestArtifactAsync(allowFallback: !IsInstalled());
-        if (bytes is null)
-        {
-            throw new InvalidOperationException("Non riesco a scaricare Decky. Controlla la connessione e riprova.");
-        }
-
-        if (bytes.Length < 500_000)
-        {
-            throw new InvalidDataException("Il download di Decky sembra incompleto. Riprova.");
-        }
-
-        var servicesDir = ServicesDir;
-        var comparison = await Task.Run(() => DeckyArtifactComparison.Compare(bytes, servicesDir));
-        if (comparison == DeckyArtifactMatch.Invalid)
-        {
-            throw new InvalidDataException("Il download di Decky sembra incompleto. Riprova.");
-        }
-
-        if (comparison == DeckyArtifactMatch.Identical)
-        {
-            EnsureRuntimeHostInstalled();
-            Playhub.Shared.DeckyStartupGuard.UpgradeExistingAutostart();
-            Playhub.Shared.DeckyStartupGuard.ProtectRunningLoader();
-            return "La versione installata di Decky è già la più recente.";
-        }
-
-        return await InstallFromBytesAsync(bytes, "ultima versione");
-    }
-
-    // Variante per utenti esperti: registra e avvia PluginLoader.exe (con finestra
-    // console/log sempre visibile) invece di PluginLoader_noconsole.exe.
-    public Task<string> InstallLatestConsoleAsync() => InstallFromUrlAsync(LatestZipUrl, "versione con console", console: true);
-
-    /// <summary>Installs a specific build run, falling back to the latest if that run isn't mirrored.</summary>
-    public async Task<string> InstallBuildAsync(DeckyBuildRun build)
-    {
-        var runUrl = $"https://nightly.link/{Owner}/{Repo}/actions/runs/{build.Id}/{ArtifactName}";
-        var bytes = await TryDownloadAsync(runUrl);
-        if (bytes is null)
-        {
-            // Older runs may not be mirrored; use the latest main build instead.
-            return await InstallFromUrlAsync(LatestZipUrl, "ultima versione");
-        }
-
-        return await InstallFromBytesAsync(bytes, $"build {build.Id}");
-    }
-
-    private async Task<string> InstallFromUrlAsync(string url, string label, bool console = false)
-    {
-        var bytes = url == LatestZipUrl ? await DownloadLatestArtifactAsync() : await TryDownloadAsync(url);
-        if (bytes is null)
-        {
-            throw new InvalidOperationException("Non riesco a scaricare Decky. Controlla la connessione e riprova.");
-        }
-
-        return await InstallFromBytesAsync(bytes, label, console);
-    }
-
-    private async Task<string> InstallFromBytesAsync(byte[] zipBytes, string label, bool console = false)
-    {
-        if (zipBytes.Length < 500_000)
-        {
-            throw new InvalidDataException("Il download di Decky sembra incompleto. Riprova.");
-        }
-
-        var servicesDir = ServicesDir;
-        if (DeckyArtifactComparison.Compare(zipBytes, servicesDir) == DeckyArtifactMatch.Invalid)
-            throw new InvalidDataException("Il download di Decky sembra incompleto. Riprova.");
-        Directory.CreateDirectory(servicesDir);
-
-        Directory.CreateDirectory(AppPaths.DownloadsRoot);
-        var zipPath = Path.Combine(AppPaths.DownloadsRoot, "PluginLoaderWin.zip");
-        await File.WriteAllBytesAsync(zipPath, zipBytes);
-
-        return Playhub.Shared.DeckyStartupGuard.RunExclusive(() =>
-        {
-        KillLoaders();
-        ZipFile.ExtractToDirectory(zipPath, servicesDir, overwriteFiles: true);
-        try { File.Delete(zipPath); } catch { }
-
-        var notes = new List<string>();
-        notes.Add(EnableSteamCefDebugging() ? "debug CEF attivato" : "debug CEF non riuscito");
-        bool started = SetupAutostartAndLaunch(console);
-        RemoveLegacyDesktopShortcut();
-
-        if (!started) throw new InvalidOperationException("Decky è installato, ma non è stato avviato. " + _startupError);
-        return "Decky è pronto. Riavvia Steam per attivarlo.";
-        });
-    }
-
-    public Task<string> RemoveAsync()
+    private string Remove()
     {
         KillLoaders();
 
@@ -217,40 +174,25 @@ public sealed class DeckyInstallerService
         if (Directory.Exists(ServicesDir))
         {
             try { Directory.Delete(ServicesDir, recursive: true); } catch { }
-            return Task.FromResult("Decky è stato rimosso. I plugin installati restano al loro posto.");
+            return "Decky è stato rimosso. I plugin installati restano al loro posto.";
         }
 
-        return Task.FromResult("Decky non era installato. I collegamenti rimasti sono stati rimossi.");
+        return "Decky non era installato. I collegamenti rimasti sono stati rimossi.";
     }
 
     public Task<bool> RestartWithSteamAsync(SteamService steam) =>
-        RestartSequence.SteamAndDeckyAsync(IsInstalled(), KillLoaders, steam.RestartSteamAsync,
+        RunDesktopOperationAsync(() => Task.Run(() => RestartSequence.SteamAndDeckyAsync(IsInstalled(),
+            () => DeckyStartupGuard.RunExclusive(() => { StopForReplacement(); return true; }), steam.RestartSteamAsync,
             () => SetupAutostartAndLaunch(), milliseconds => Task.Delay(milliseconds),
-            error => _startupError = error.Message);
+            error => _startupError = error.Message)));
 
-    private Task<byte[]?> DownloadLatestArtifactAsync(bool allowFallback = true) => DeckyLatestArtifact.DownloadAsync(
-        () => TryDownloadAsync(LatestZipUrl),
-        async () => (await GetMainBuildsAsync()).Select(build => build.Id),
-        id => TryDownloadAsync($"https://nightly.link/{Owner}/{Repo}/actions/runs/{id}/{ArtifactName}"),
-        bytes => bytes.Length >= 500_000 && DeckyArtifactComparison.Compare(bytes, ServicesDir) != DeckyArtifactMatch.Invalid,
-        allowFallback);
-
-    private async Task<byte[]?> TryDownloadAsync(string url)
+    // Keep desktop install, removal and restart ordered across awaits. The
+    // thread-affine startup mutex is acquired only within synchronous sections.
+    internal static async Task<T> RunDesktopOperationAsync<T>(Func<Task<T>> operation)
     {
-        try
-        {
-            using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
-
-            return await response.Content.ReadAsByteArrayAsync();
-        }
-        catch
-        {
-            return null;
-        }
+        await DesktopOperationGate.WaitAsync().ConfigureAwait(false);
+        try { return await operation().ConfigureAwait(false); }
+        finally { DesktopOperationGate.Release(); }
     }
 
     private bool EnableSteamCefDebugging()
@@ -263,7 +205,8 @@ public sealed class DeckyInstallerService
                 return false;
             }
 
-            File.WriteAllText(Path.Combine(steam, ".cef-enable-remote-debugging"), string.Empty);
+            string marker = Path.Combine(steam, ".cef-enable-remote-debugging");
+            if (!File.Exists(marker)) File.WriteAllText(marker, string.Empty);
             return true;
         }
         catch
@@ -289,39 +232,23 @@ public sealed class DeckyInstallerService
     }
 
     private string _startupError = "";
-    private bool SetupAutostartAndLaunch(bool console = false)
+    private bool SetupAutostartAndLaunch()
     {
         _startupError = "";
         try
         {
-            EnsureRuntimeHostInstalled();
-            var loader = Path.Combine(ServicesDir, console ? "PluginLoader.exe" : "PluginLoader_noconsole.exe");
-            if (!File.Exists(loader))
+            return DeckyStartupGuard.RunExclusive(() =>
             {
-                // Se la variante richiesta non è nel pacchetto, ripiega sull'altra.
-                loader = Path.Combine(ServicesDir, console ? "PluginLoader_noconsole.exe" : "PluginLoader.exe");
-                if (!File.Exists(loader))
-                {
-                    _startupError = "Non trovo PluginLoader nei file di Decky. Reinstalla Decky.";
-                    return false;
-                }
-            }
-
-            // Remove every existing PluginLoader autostart entry / running instance first,
-            // otherwise two loaders try to bind port 1337 at boot (WinError 10048).
-            CleanExistingAutostart();
-
-            using (var run = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", writable: true))
-            {
-                run?.SetValue("DeckyLoader", Playhub.Shared.DeckyStartupGuard.CreateCommand(loader));
-            }
-
-            return Playhub.Shared.DeckyStartupGuard.StartOrReuse(new ProcessStartInfo
-                {
-                    FileName = loader,
-                    WorkingDirectory = ServicesDir,
-                    UseShellExecute = true
-                });
+                EnsureRuntimeHostInstalled();
+                bool console = PreferConsole();
+                string loader = CurrentListener() ?? LoaderPath(console);
+                if (!File.Exists(loader)) loader = LoaderPath(!console);
+                if (!File.Exists(loader)) throw new IOException("Non trovo PluginLoader nei file di Decky. Reinstalla Decky.");
+                string command = PrepareAutostart(loader);
+                StartVerified(loader);
+                SetAutostart(command);
+                return true;
+            });
         }
         catch (Exception error)
         {
@@ -330,11 +257,95 @@ public sealed class DeckyInstallerService
         }
     }
 
+    private static string LoaderPath(bool console) => DeckyFileUpgrade.GetLoaderPath(ServicesDir,
+        console ? DeckyFileUpgrade.ConsoleName : DeckyFileUpgrade.BackgroundName);
+
+    private static bool PreferConsole()
+    {
+        using var run = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run");
+        string command = (run?.GetValue("DeckyLoader") as string ?? "").Trim();
+        return command.EndsWith(" -Loader " + DeckyFileUpgrade.ConsoleName, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(command.Trim('"'), LoaderPath(console: true), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? CurrentListener()
+    {
+        if (DeckyStartupGuard.ListenerOwner(DeckyPort) is not int listener) return null;
+        foreach (bool console in new[] { false, true })
+        {
+            var loader = LoaderPath(console);
+            if (DeckyProcessTree.FindRoot(listener, loader) is not null) return loader;
+        }
+        throw new IOException("La porta 1337 è occupata da un'altra installazione o applicazione. Playhub non l'ha fermata.");
+    }
+
+    private static string PrepareAutostart(string loader)
+    {
+        DeckyFileUpgrade.RequireOrdinaryPath(Path.Combine(ServicesDir, "Playhub-StartDecky.ps1"));
+        return DeckyStartupGuard.CreateCommand(loader);
+    }
+
+    private static void SetAutostart(string command)
+    {
+        using var run = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", writable: true)
+            ?? throw new IOException("Impossibile impostare l'avvio automatico di Decky.");
+        run.SetValue("DeckyLoader", command, RegistryValueKind.String);
+    }
+
+    private static void StartVerified(string loader)
+    {
+        _ = CurrentListener();
+        if (!File.Exists(loader) || !DeckyStartupGuard.StartOrReuse(new ProcessStartInfo
+        {
+            FileName = loader,
+            WorkingDirectory = ServicesDir,
+            UseShellExecute = false
+        }) || !string.Equals(CurrentListener(), loader, StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Il loader Decky atteso non ha aperto la porta 1337.");
+    }
+
+    private void StopForReplacement()
+    {
+        _ = CurrentListener();
+        StopOwnedLoaders();
+        if (DeckyStartupGuard.ListenerOwner(DeckyPort) is not null)
+            throw new IOException("Decky non si è ancora fermato. Riprova dopo la chiusura del loader.");
+    }
+
+    private void StopOwnedLoaders()
+    {
+        KillLoaders();
+        var console = LoaderPath(console: true);
+        var background = LoaderPath(console: false);
+        if (DeckyProcessTree.HasLiveLoader(console) || DeckyProcessTree.HasLiveLoader(background))
+            throw new IOException("Decky non si è ancora fermato. Riprova dopo la chiusura del loader.");
+        WaitForLifetimeHostExit(console);
+        WaitForLifetimeHostExit(background);
+    }
+
+    private static void WaitForLifetimeHostExit(string loader)
+    {
+        // The wrapper releases its per-loader mutex only after PyInstaller's
+        // private extraction cleanup. A replacement started before then exits
+        // immediately as a duplicate even when the previous listener is gone.
+        string name = "Local\\Playhub.DeckyHost." +
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(loader.ToUpperInvariant())));
+        var deadline = Stopwatch.StartNew();
+        while (Mutex.TryOpenExisting(name, out var host))
+        {
+            host.Dispose();
+            if (deadline.Elapsed >= TimeSpan.FromSeconds(5))
+                throw new IOException("Il servizio di avvio di Decky sta ancora chiudendo il loader. Riprova.");
+            Thread.Sleep(100);
+        }
+    }
+
     /// <summary>Repair the standalone Decky lifetime helper without requiring Gaming Mode.</summary>
     public void EnsureRuntimeHostInstalled()
     {
         string source = Path.Combine(AppContext.BaseDirectory, "Assets", "DeckyRuntime");
         string runtime = Path.Combine(ServicesDir, "PlayhubRuntime");
+        DeckyFileUpgrade.RequireOrdinaryPath(runtime);
         if (!File.Exists(Path.Combine(source, "Playhub-DeckyHost.exe")))
             throw new IOException("Il runtime Decky di Playhub è mancante. Reinstalla Playhub per ripristinarlo.");
         string[] files = Directory.GetFiles(source).OrderBy(file => Path.GetFileName(file), StringComparer.Ordinal).ToArray();
@@ -348,61 +359,27 @@ public sealed class DeckyInstallerService
         }
         string version = Convert.ToHexString(hash.GetHashAndReset());
         string destination = Path.Combine(runtime, version);
+        DeckyFileUpgrade.RequireOrdinaryPath(destination);
         Directory.CreateDirectory(destination);
         foreach (string file in files)
         {
             string target = Path.Combine(destination, Path.GetFileName(file));
+            DeckyFileUpgrade.RequireOrdinaryPath(target);
             if (File.Exists(target) && File.ReadAllBytes(file).AsSpan().SequenceEqual(File.ReadAllBytes(target))) continue;
             // Hash-named versions are immutable. A live host can keep its DLLs;
             // a future Decky start selects the newly completed version.
             File.Copy(file, target, overwrite: true);
         }
-        string pointer = Path.Combine(runtime, "current");
-        string temporary = Path.Combine(runtime, ".current-" + Guid.NewGuid().ToString("N"));
-        try { File.WriteAllText(temporary, version, new UTF8Encoding(false)); File.Move(temporary, pointer, overwrite: true); }
-        finally { try { File.Delete(temporary); } catch (IOException) { } }
+        WriteRuntimePointer(Path.Combine(runtime, "current"), version);
     }
 
-    // Removes any leftover PluginLoader autostart so only a single instance ever runs.
-    // Cleans: running processes, HKCU Run entries that point at PluginLoader, and
-    // Startup-folder shortcuts named after Decky/PluginLoader.
-    private void CleanExistingAutostart()
+    private static void WriteRuntimePointer(string pointer, string version)
     {
-        try
-        {
-            using var run = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", writable: true);
-            if (run is not null)
-            {
-                foreach (var name in run.GetValueNames())
-                {
-                    var value = run.GetValue(name) as string ?? string.Empty;
-                    if (value.Contains("PluginLoader", StringComparison.OrdinalIgnoreCase) ||
-                        name.Contains("Decky", StringComparison.OrdinalIgnoreCase))
-                    {
-                        try { run.DeleteValue(name, throwOnMissingValue: false); } catch { }
-                    }
-                }
-            }
-        }
-        catch { }
-
-        try
-        {
-            var startup = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
-            if (Directory.Exists(startup))
-            {
-                foreach (var lnk in Directory.GetFiles(startup, "*.lnk"))
-                {
-                    var fileName = Path.GetFileNameWithoutExtension(lnk);
-                    if (fileName.Contains("Decky", StringComparison.OrdinalIgnoreCase) ||
-                        fileName.Contains("PluginLoader", StringComparison.OrdinalIgnoreCase))
-                    {
-                        try { File.Delete(lnk); } catch { }
-                    }
-                }
-            }
-        }
-        catch { }
+        DeckyFileUpgrade.RequireOrdinaryPath(pointer);
+        if (File.Exists(pointer) && File.ReadAllText(pointer) == version) return;
+        string temporary = Path.Combine(Path.GetDirectoryName(pointer)!, ".current-" + Guid.NewGuid().ToString("N"));
+        try { File.WriteAllText(temporary, version, new UTF8Encoding(false)); File.Move(temporary, pointer, overwrite: true); }
+        finally { try { File.Delete(temporary); } catch (IOException) { } }
     }
 
     private void KillLoaders()
@@ -434,18 +411,8 @@ public sealed class DeckyInstallerService
 
     private static HttpClient CreateHttpClient()
     {
-        var client = new HttpClient();
+        var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Playhub/1.0");
         return client;
-    }
-
-    private static string NormalizeDate(string? value)
-    {
-        if (DateTimeOffset.TryParse(value, out var date))
-        {
-            return date.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
-        }
-
-        return value ?? "";
     }
 }

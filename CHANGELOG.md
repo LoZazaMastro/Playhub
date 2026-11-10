@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.5.5
+
+- Fixed Decky installation, updates, and repair on Windows by using verified releases from Decky Loader.
+- Fixed Plugin Store flicker during background refreshes and refreshed the featured plugin selection.
+- Restored artwork on plugin detail pages when the catalog has no dedicated cover.
+- Simplified the Gaming Mode setup, moved startup mode controls to the top of the page, and placed the recovery steps with the controller shortcuts.
+- Matched the Import Games cover format switcher to the Plugin Store controls.
+- Updated the Decky tutorials to show the Steam interface directly.
+- Removed the old Quick Settings and Shortcuts notice from Setup.
+- Restored the Decky panel in Playhub and kept the native tab available if the integrated panel fails to load.
+- Reduced background work in the System dashboard and made Steam display recovery respect active game sessions.
+- Added on-demand FPS and frame-time measurement for the current game. Gaming Mode repair now restores the bundled frame-time capture tool if it is missing.
+
 ## 2.5.0
 
 Playhub 2.5.0 brings more plugins to discover, a lighter download, and a simpler way to prepare your games for Steam.

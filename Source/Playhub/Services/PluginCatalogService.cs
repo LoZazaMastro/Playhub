@@ -58,7 +58,7 @@ public sealed partial class PluginCatalogService
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["Playhub-Artworks"] = "1.1.9",
-            ["Playhub-Metadata"] = "1.8.4",
+            ["Playhub-Metadata"] = "1.8.5",
             ["ThemeDeck-Windows"] = "3.3.7",
             ["Launch-Curtain"] = "2.5.7",
             ["TrailerHero"] = "1.7.2",
@@ -810,8 +810,7 @@ public sealed partial class PluginCatalogService
                 root.TryGetProperty("published_at", out var p) ? CanonicalPublicationTimestamp(p.GetString()) : null);
             release = PreserveCachedNotes(repoName, release);
             cancellationToken.ThrowIfCancellationRequested();
-            SaveReleaseCache(repoName, release);
-            return release;
+            return SaveReleaseCache(repoName, release);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch
@@ -822,8 +821,7 @@ public sealed partial class PluginCatalogService
             {
                 atomRelease = PreserveCachedReleaseData(repoName, atomRelease);
                 cancellationToken.ThrowIfCancellationRequested();
-                SaveReleaseCache(repoName, atomRelease);
-                return atomRelease;
+                return SaveReleaseCache(repoName, atomRelease);
             }
             return LoadReleaseCache(repoName);
         }
@@ -941,13 +939,13 @@ public sealed partial class PluginCatalogService
         return release;
     }
 
-    private static void SaveReleaseCache(string repoName, ReleaseInfo release)
+    private static ReleaseInfo SaveReleaseCache(string repoName, ReleaseInfo release)
     {
         if (string.IsNullOrWhiteSpace(release.Version) &&
             string.IsNullOrWhiteSpace(release.Notes) &&
             string.IsNullOrWhiteSpace(release.PageUrl))
         {
-            return;
+            return release;
         }
 
         try
@@ -960,6 +958,8 @@ public sealed partial class PluginCatalogService
                 PublicationCheckedAt = release.PublicationCheckedAt ?? previous.PublicationCheckedAt,
                 PublicationPageUrl = release.PublicationPageUrl ?? previous.PublicationPageUrl
             };
+            if (release == previous) return release;
+
             var directory = Path.Combine(AppPaths.LocalDataRoot, "cache", "plugin-releases");
             Directory.CreateDirectory(directory);
             File.WriteAllText(
@@ -969,6 +969,8 @@ public sealed partial class PluginCatalogService
         catch
         {
         }
+
+        return release;
     }
 
     private static void SaveInstalledReleaseCache(string repoName, string installedVersion, ReleaseInfo release)

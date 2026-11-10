@@ -3,6 +3,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
@@ -58,7 +59,6 @@ public sealed partial class MainWindow : Window
     private readonly PlayhubUpdateService _updateService = new();
 
     private readonly ObservableCollection<DeckyPluginInfo> _plugins = new();
-    private readonly ObservableCollection<DeckyBuildRun> _deckyBuilds = new();
     private readonly ObservableCollection<UwpGameEntry> _uwpGames = new();
     private readonly ObservableCollection<UwpGameEntry> _executableGames = new();
     private readonly ObservableCollection<UwpGameEntry> _epicGames = new();
@@ -210,8 +210,8 @@ public sealed partial class MainWindow : Window
     private bool _playhubUpdateRunning;
 
     // Gaming Mode: visual mode selector + logo preview.
-    private Border _desktopModeTile = new();
-    private Border _gamingModeTile = new();
+    private ToggleButton _desktopModeTile = new();
+    private ToggleButton _gamingModeTile = new();
     private Action<bool>? _setDesktopSelected;
     private Action<bool>? _setGamingSelected;
     private Image _splashLogoPreview = new();
@@ -426,8 +426,8 @@ public sealed partial class MainWindow : Window
             PopulateSettingsControls();
             RefreshCssLoaderState();
             ApplyLanguage();
-            Diag.Step("LoadAsync: LoadDeckyBuildsSilently");
-            _ = LoadDeckyBuildsSilentlyAsync();
+            Diag.Step("LoadAsync: LoadDeckyWindowsReleases");
+            _ = LoadDeckyWindowsReleasesAsync();
             Diag.Step("LoadAsync: RefreshPlugins");
             _ = RefreshPluginsAsync();
             Diag.Step("LoadAsync: RefreshGamingMode");
@@ -1478,7 +1478,7 @@ public sealed partial class MainWindow : Window
             Button("Apri impostazioni", async () => { await _deckyInstaller.OpenDeveloperSettingsAsync(); }),
             out _devTile, out _devGlyph, out _devStatus));
 
-        _installButton = DeckyOperationButton(_deckyInstaller.IsInstalled() ? "Aggiorna" : "Installa", InstallLatestDeckyBuildAsync, primary: true);
+        _installButton = DeckyOperationButton(_deckyInstaller.IsInstalled() ? "Aggiorna" : "Installa", InstallLatestDeckyReleaseAsync, primary: true);
         panel.Children.Add(BuildDeckyStep(
             "",
             "Installa Decky",
@@ -1509,7 +1509,7 @@ public sealed partial class MainWindow : Window
             "Usa questa opzione solo se ti serve una versione precisa."));
         _deckyBuildCombo = new ComboBox { PlaceholderText = "Scegli una versione", HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 4, 0, 0) };
         update.Children.Add(_deckyBuildCombo);
-        update.Children.Add(ActionRow(DeckyOperationButton("Installa questa versione", async () => { await InstallSelectedDeckyBuildAsync(); await RefreshDeckyStateAsync(); })));
+        update.Children.Add(ActionRow(DeckyOperationButton("Installa questa versione", async () => { await InstallSelectedDeckyReleaseAsync(); await RefreshDeckyStateAsync(); })));
         panel.Children.Add(update);
 
         // Variante avanzata: DeckyLoader con console visibile (log in tempo reale).
@@ -2044,8 +2044,8 @@ public sealed partial class MainWindow : Window
 
         var quickAccess = BuildQuickAccessTutorialCard(
             "gaming",
-            "Apri il plugin Gaming Mode",
-            "Apri Gaming Mode dal menu rapido di Decky, senza lasciare il controller.",
+            "Apri Playhub in Gaming Mode",
+            "In Big Picture, apri il menu rapido e seleziona l’icona Playhub.",
             "",
             warning: "Se il menu rapido non risponde, chiudi Steam per tornare al desktop. Puoi anche tenere premuto Shift durante l'accesso a Windows.",
             videoFile: "Gaming-Mode-Plugin.mp4",
@@ -2053,10 +2053,38 @@ public sealed partial class MainWindow : Window
         panel.Children.Add(quickAccess.Root);
 
         var dashboardCard = Card();
-        dashboardCard.Children.Add(IconHeader(((char)0xE80F).ToString(), "Playhub Dashboard",
+        var dashboardText = new StackPanel { Spacing = 12, VerticalAlignment = VerticalAlignment.Center };
+        dashboardText.Children.Add(IconHeader(((char)0xE80F).ToString(), "Playhub Dashboard",
             "Passa fra giochi e app, controlla il PC e raggiungi gli strumenti essenziali senza lasciare il controller."));
-        dashboardCard.Children.Add(Body("Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop."));
-        dashboardCard.Children.Add(BuildDashboardIllustration());
+        dashboardText.Children.Add(Body("Aprila con Ctrl + Alt + P per passare tra le finestre, gestire le app preferite e controllare prestazioni e processi. Puoi anche chiudere un'app bloccata senza tornare al desktop."));
+
+        const double dashboardIllustrationWidth = 292;
+        var dashboardIllustration = BuildDashboardIllustration();
+        dashboardIllustration.MaxWidth = dashboardIllustrationWidth;
+        dashboardIllustration.VerticalAlignment = VerticalAlignment.Center;
+        var dashboardLayout = new Grid { ColumnSpacing = 24 };
+        dashboardLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(dashboardIllustrationWidth) });
+        dashboardLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        dashboardLayout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        dashboardLayout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        Grid.SetColumn(dashboardText, 1);
+        dashboardLayout.Children.Add(dashboardText);
+        dashboardLayout.Children.Add(dashboardIllustration);
+        var dashboardStacked = false;
+        dashboardLayout.SizeChanged += (_, args) =>
+        {
+            if (args.NewSize.Width <= 0) return;
+            var stacked = args.NewSize.Width < 640;
+            if (dashboardStacked == stacked) return;
+            dashboardStacked = stacked;
+            dashboardLayout.ColumnSpacing = stacked ? 0 : 24;
+            dashboardLayout.RowSpacing = stacked ? 12 : 0;
+            dashboardLayout.ColumnDefinitions[0].Width = stacked ? new GridLength(1, GridUnitType.Star) : new GridLength(dashboardIllustrationWidth);
+            dashboardLayout.ColumnDefinitions[1].Width = stacked ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+            Grid.SetColumn(dashboardText, stacked ? 0 : 1);
+            Grid.SetRow(dashboardIllustration, stacked ? 1 : 0);
+        };
+        dashboardCard.Children.Add(dashboardLayout);
 
         // ---------- 2. Default mode: two big tiles + one-time switch ----------
         var modeCard = Card();
@@ -2072,7 +2100,7 @@ public sealed partial class MainWindow : Window
         desktopIconRow.Children.Add(keyboardIcon);
         desktopIconRow.Children.Add(mouseIcon);
         _desktopModeTile = ModeTileShell(desktopIconRow, "Desktop", "Il desktop di Windows, con mouse e tastiera.");
-        _desktopModeTile.Tapped += async (_, _) => await SelectDefaultModeAsync("Desktop");
+        _desktopModeTile.Click += async (_, _) => await SelectDefaultModeAsync("Desktop");
 
         var gamingIcons = new List<FontIcon>();
         var gamingIconRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
@@ -2080,45 +2108,51 @@ public sealed partial class MainWindow : Window
         gamingIcons.Add(padIcon);
         gamingIconRow.Children.Add(padIcon);
         _gamingModeTile = ModeTileShell(gamingIconRow, "Gaming", "Big Picture a tutto schermo, pronto per il controller.");
-        _gamingModeTile.Tapped += async (_, _) => await SelectDefaultModeAsync("Gaming");
+        _gamingModeTile.Click += async (_, _) => await SelectDefaultModeAsync("Gaming");
 
         _setDesktopSelected = sel => ApplyModeTileState(_desktopModeTile, desktopIcons, sel);
         _setGamingSelected = sel => ApplyModeTileState(_gamingModeTile, gamingIcons, sel);
 
-        var modeGrid = new Grid { ColumnSpacing = 16, Margin = new Thickness(0, 6, 0, 0) };
+        var modeGrid = new Grid { ColumnSpacing = 12, RowSpacing = 8 };
         modeGrid.ColumnDefinitions.Add(new ColumnDefinition());
         modeGrid.ColumnDefinitions.Add(new ColumnDefinition());
+        for (var i = 0; i < 4; i++) modeGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-        var desktopCol = new StackPanel { Spacing = 12 };
-        desktopCol.Children.Add(_desktopModeTile);
-        var desktopSwitch = Button("Avvia ora in Desktop", async () =>
+        Button ModeLaunchButton(string label, string mode)
         {
-            if (!await _gamingMode.SwitchModeAsync("Desktop", _gamingConfig.Safety.ApiPort))
+            var button = Button(label, async () =>
             {
-                SetStatus("Gaming Mode non risponde. Avvialo e riprova.", InfoBarSeverity.Warning);
-            }
-        });
-        desktopSwitch.HorizontalAlignment = HorizontalAlignment.Stretch;
-        desktopCol.Children.Add(desktopSwitch);
-        Grid.SetColumn(desktopCol, 0);
+                if (!await _gamingMode.SwitchModeAsync(mode, _gamingConfig.Safety.ApiPort))
+                    SetStatus("Gaming Mode non risponde. Avvialo e riprova.", InfoBarSeverity.Warning);
+            });
+            button.Content = LocalizedText(new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center }, label);
+            button.HorizontalAlignment = HorizontalAlignment.Stretch;
+            button.MinWidth = 0;
+            return button;
+        }
 
-        var gamingCol = new StackPanel { Spacing = 12 };
-        gamingCol.Children.Add(_gamingModeTile);
-        var gamingSwitch = Button("Avvia ora in Gaming", async () =>
+        var desktopSwitch = ModeLaunchButton("Avvia ora in Desktop", "Desktop");
+        var gamingSwitch = ModeLaunchButton("Avvia ora in Gaming", "Gaming");
+        modeGrid.Children.Add(_desktopModeTile);
+        modeGrid.Children.Add(desktopSwitch);
+        modeGrid.Children.Add(_gamingModeTile);
+        modeGrid.Children.Add(gamingSwitch);
+        Grid.SetRow(desktopSwitch, 1);
+        Grid.SetColumn(_gamingModeTile, 1);
+        Grid.SetColumn(gamingSwitch, 1);
+        Grid.SetRow(gamingSwitch, 1);
+        modeGrid.SizeChanged += (_, args) =>
         {
-            if (!await _gamingMode.SwitchModeAsync("Gaming", _gamingConfig.Safety.ApiPort))
-            {
-                SetStatus("Gaming Mode non risponde. Avvialo e riprova.", InfoBarSeverity.Warning);
-            }
-        });
-        gamingSwitch.HorizontalAlignment = HorizontalAlignment.Stretch;
-        gamingCol.Children.Add(gamingSwitch);
-        Grid.SetColumn(gamingCol, 1);
-
-        modeGrid.Children.Add(desktopCol);
-        modeGrid.Children.Add(gamingCol);
+            var stack = args.NewSize.Width < 350;
+            if ((Grid.GetColumn(_gamingModeTile) == 0) == stack) return;
+            modeGrid.ColumnSpacing = stack ? 0 : 12;
+            modeGrid.ColumnDefinitions[1].Width = stack ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+            Grid.SetColumn(_gamingModeTile, stack ? 0 : 1);
+            Grid.SetColumn(gamingSwitch, stack ? 0 : 1);
+            Grid.SetRow(_gamingModeTile, stack ? 2 : 0);
+            Grid.SetRow(gamingSwitch, stack ? 3 : 1);
+        };
         modeCard.Children.Add(modeGrid);
-        panel.Children.Add(modeCard);
         panel.Children.Add(dashboardCard);
 
         // Shared fields (placed into the concept cards below).
@@ -2287,7 +2321,7 @@ public sealed partial class MainWindow : Window
         var serviceCard = Card();
         serviceCard.Children.Add(AdvancedGamingTools());
         panel.Children.Add(serviceCard.Root);
-        AddOptionalGamingControls(panel);
+        AddOptionalGamingControls(panel, modeCard.Root);
         return panel;
     }
 
@@ -2367,7 +2401,9 @@ public sealed partial class MainWindow : Window
     private StackPanel IconHeader(string glyph, string title, string subtitle)
     {
         var header = new StackPanel { Spacing = 8 };
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, VerticalAlignment = VerticalAlignment.Center };
+        var row = new Grid { ColumnSpacing = 10, VerticalAlignment = VerticalAlignment.Center };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition());
         row.Children.Add(new FontIcon
         {
             Glyph = glyph,
@@ -2376,7 +2412,10 @@ public sealed partial class MainWindow : Window
             // Shared accent brush (mutates in place) so icons follow the accent live.
             Foreground = ResourceBrush("AccentFillColorDefaultBrush", ParseColor(_settings.AccentColor))
         });
-        row.Children.Add(LocalizedText(new TextBlock { Text = title, Style = StyleResource("PlayhubSectionTitleStyle"), VerticalAlignment = VerticalAlignment.Center }, title));
+        var heading = SectionTitle(title);
+        heading.VerticalAlignment = VerticalAlignment.Center;
+        Grid.SetColumn(heading, 1);
+        row.Children.Add(heading);
         header.Children.Add(row);
         if (!string.IsNullOrWhiteSpace(subtitle))
         {
@@ -2483,10 +2522,21 @@ public sealed partial class MainWindow : Window
         var card = Card();
         var text = new StackPanel { Spacing = 14, VerticalAlignment = VerticalAlignment.Center };
         var headerGlyph = pageTag == "plugins" ? ((char)0xE719).ToString() : ((char)0xE7FC).ToString();
-        var header = IconHeader(headerGlyph, title, subtitle);
-        if (compact) card.Children.Add(header);
-        else text.Children.Add(header);
-        text.Children.Add(BuildQuickAccessShortcuts());
+        if (compact)
+        {
+            var heading = new StackPanel { Spacing = 4 };
+            heading.Children.Add(SectionTitle(title));
+            heading.Children.Add(Body(subtitle));
+            card.Children.Add(heading);
+            var shortcutTitle = SectionTitle("Tasti del menu rapido");
+            shortcutTitle.FontSize = 16;
+            text.Children.Add(shortcutTitle);
+        }
+        else
+        {
+            text.Children.Add(IconHeader(headerGlyph, title, subtitle));
+        }
+        text.Children.Add(BuildQuickAccessShortcuts(keycaps: compact));
         if (!string.IsNullOrWhiteSpace(finalStep))
         {
             text.Children.Add(Body(finalStep));
@@ -2497,9 +2547,11 @@ public sealed partial class MainWindow : Window
             text.Children.Add(BuildYellowWarning(warning));
         }
 
+        const double compactVideoScale = 0.7;
+        const double compactVideoShare = 0.6 * compactVideoScale;
         var grid = new Grid { ColumnSpacing = 20, HorizontalAlignment = HorizontalAlignment.Stretch };
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(compact ? compactVideoShare : 2, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(compact ? 1 - compactVideoShare : 3, GridUnitType.Star) });
         var video = BuildLoopingTutorialVideo(pageTag, videoFile, requiresDeckyInstalled: pageTag == "decky");
         Grid.SetColumn(video, 0);
         Grid.SetColumn(text, 1);
@@ -2507,14 +2559,27 @@ public sealed partial class MainWindow : Window
         grid.Children.Add(text);
         if (compact)
         {
-            grid.RowSpacing = 14;
+            if (video is Border stage)
+            {
+                stage.CornerRadius = new CornerRadius(8);
+                stage.BorderThickness = new Thickness(1);
+                stage.BorderBrush = ResourceBrush("CardStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255));
+            }
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var stacked = false;
             grid.SizeChanged += (_, args) =>
             {
-                var stacked = args.NewSize.Width < 560;
-                grid.ColumnDefinitions[0].Width = new GridLength(stacked ? 1 : 2, GridUnitType.Star);
-                grid.ColumnDefinitions[1].Width = stacked ? new GridLength(0) : new GridLength(3, GridUnitType.Star);
+                if (args.NewSize.Width <= 0 || args.NewSize.Width == args.PreviousSize.Width) return;
+                var next = args.NewSize.Width < 700;
+                video.Width = next ? args.NewSize.Width * compactVideoScale : double.NaN;
+                if (stacked == next) return;
+                stacked = next;
+                grid.ColumnSpacing = stacked ? 0 : 20;
+                grid.RowSpacing = stacked ? 16 : 0;
+                grid.ColumnDefinitions[0].Width = new GridLength(stacked ? 1 : compactVideoShare, GridUnitType.Star);
+                grid.ColumnDefinitions[1].Width = stacked ? new GridLength(0) : new GridLength(1 - compactVideoShare, GridUnitType.Star);
+                video.HorizontalAlignment = stacked ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
                 Grid.SetRow(text, stacked ? 1 : 0);
                 Grid.SetColumn(text, stacked ? 0 : 1);
             };
@@ -2655,40 +2720,48 @@ public sealed partial class MainWindow : Window
         return card;
     }
 
-    private Grid BuildQuickAccessShortcuts()
+    private Grid BuildQuickAccessShortcuts(bool keycaps = false)
     {
-        var grid = new Grid { ColumnSpacing = 18, RowSpacing = 10 };
+        var grid = new Grid { ColumnSpacing = keycaps ? 10 : 18, RowSpacing = 10 };
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-        var shortcuts = new[]
+        var shortcuts = new (string Device, string Modifier, string Key, string Glyph)[]
         {
-            ("Xbox", "Home + A", ((char)0xE7FC).ToString()),
-            ("PlayStation", "PS + X", ((char)0xE7FC).ToString()),
-            ("Nintendo", "Home + B", ((char)0xE7FC).ToString()),
-            ("Tastiera", "CTRL + 2", ((char)0xE765).ToString())
+            ("Xbox", "Home", "A", ((char)0xE7FC).ToString()),
+            ("PlayStation", "PS", "X", ((char)0xE7FC).ToString()),
+            ("Nintendo", "Home", "B", ((char)0xE7FC).ToString()),
+            ("Tastiera", "CTRL", "2", ((char)0xE765).ToString())
         };
         for (var i = 0; i < shortcuts.Length; i++)
         {
             var shortcut = shortcuts[i];
+            if (keycaps)
+            {
+                var tile = BuildQuickAccessKeycaps(shortcut.Device, shortcut.Modifier, shortcut.Key);
+                Grid.SetColumn(tile, i % 2);
+                Grid.SetRow(tile, i / 2);
+                grid.Children.Add(tile);
+                continue;
+            }
             var row = new Grid { ColumnSpacing = 9 };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition());
             row.Children.Add(new FontIcon
             {
-                Glyph = shortcut.Item3,
+                Glyph = shortcut.Glyph,
                 FontSize = 15,
                 Foreground = ResourceBrush("AccentFillColorDefaultBrush", ParseColor(_settings.AccentColor)),
                 VerticalAlignment = VerticalAlignment.Center
             });
 
             var labels = new StackPanel { Spacing = 1 };
-            labels.Children.Add(new TextBlock { Text = shortcut.Item1, FontSize = 11.5, Opacity = 0.62 });
+            labels.Children.Add(new TextBlock { Text = shortcut.Device, FontSize = 11.5, Opacity = 0.62 });
             labels.Children.Add(new TextBlock
             {
-                Text = shortcut.Item2,
+                Text = $"{shortcut.Modifier} + {shortcut.Key}",
                 FontSize = 14,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 TextWrapping = TextWrapping.Wrap
@@ -2700,8 +2773,77 @@ public sealed partial class MainWindow : Window
             grid.Children.Add(row);
         }
 
+        if (keycaps)
+        {
+            var stacked = false;
+            grid.SizeChanged += (_, args) =>
+            {
+                if (args.NewSize.Width <= 0) return;
+                var next = args.NewSize.Width < 250;
+                if (stacked == next) return;
+                stacked = next;
+                grid.ColumnSpacing = stacked ? 0 : 10;
+                grid.ColumnDefinitions[1].Width = stacked ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+                if (stacked)
+                {
+                    for (var row = grid.RowDefinitions.Count; row < grid.Children.Count; row++)
+                        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                }
+                for (var index = 0; index < grid.Children.Count; index++)
+                {
+                    var tile = (FrameworkElement)grid.Children[index];
+                    Grid.SetRow(tile, stacked ? index : index / 2);
+                    Grid.SetColumn(tile, stacked ? 0 : index % 2);
+                }
+                while (!stacked && grid.RowDefinitions.Count > 2)
+                    grid.RowDefinitions.RemoveAt(grid.RowDefinitions.Count - 1);
+            };
+        }
         return grid;
     }
+
+    private Border BuildQuickAccessKeycaps(string device, string modifier, string key)
+    {
+        var chord = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5 };
+        chord.Children.Add(QuickAccessKeycap(modifier));
+        chord.Children.Add(new TextBlock { Text = "+", Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center });
+        chord.Children.Add(QuickAccessKeycap(key));
+
+        var content = new StackPanel { Spacing = 6 };
+        content.Children.Add(LocalizedText(new TextBlock
+        {
+            Text = device,
+            FontSize = 13,
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = ResourceBrush("TextFillColorSecondaryBrush", Color.FromArgb(210, 255, 255, 255))
+        }, device));
+        content.Children.Add(chord);
+
+        return new Border
+        {
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(10, 8, 10, 8),
+            Background = ResourceBrush("ControlFillColorDefaultBrush", Color.FromArgb(20, 255, 255, 255)),
+            Child = content
+        };
+    }
+
+    private static Border QuickAccessKeycap(string text) => new()
+    {
+        CornerRadius = new CornerRadius(4),
+        BorderThickness = new Thickness(1),
+        BorderBrush = ResourceBrush("ControlStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255)),
+        Background = ResourceBrush("ControlFillColorSecondaryBrush", Color.FromArgb(30, 255, 255, 255)),
+        Padding = new Thickness(6, 2, 6, 2),
+        MinWidth = 24,
+        Child = new TextBlock
+        {
+            Text = text,
+            FontSize = 14,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            HorizontalAlignment = HorizontalAlignment.Center
+        }
+    };
 
     private FrameworkElement BuildLoopingTutorialVideo(string pageTag, string videoFile, bool requiresDeckyInstalled)
     {
@@ -2752,67 +2894,72 @@ public sealed partial class MainWindow : Window
         };
     }
 
-    private Border ModeTileShell(UIElement icon, string title, string subtitle)
+    private ToggleButton ModeTileShell(UIElement icon, string title, string subtitle)
     {
-        var content = new StackPanel { Spacing = 10, HorizontalAlignment = HorizontalAlignment.Center };
-        var iconHost = new Grid { Height = 56 };
-        iconHost.Children.Add(icon);
-        content.Children.Add(iconHost);
-        content.Children.Add(new TextBlock
+        var content = new StackPanel { Spacing = 5, VerticalAlignment = VerticalAlignment.Center };
+        content.Children.Add(new Viewbox
         {
-            Text = title,
-            FontSize = 19,
+            Child = icon,
+            MaxWidth = 64,
+            MaxHeight = 28,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Stretch = Stretch.Uniform
+        });
+        var titleText = LocalizedText(new TextBlock
+        {
+            FontSize = 16,
             FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            Foreground = new SolidColorBrush(Colors.White),
             TextAlignment = TextAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
-            MaxLines = 2,
-            MinHeight = 46
-        });
-        content.Children.Add(new TextBlock
+            Foreground = ResourceBrush("TextFillColorPrimaryBrush", Colors.White)
+        }, title);
+        content.Children.Add(titleText);
+        content.Children.Add(LocalizedText(new TextBlock
         {
-            Text = subtitle,
             FontSize = 12.5,
-            Opacity = 0.72,
             TextAlignment = TextAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            MaxWidth = 250,
-            MinHeight = 38
-        });
+            Foreground = ResourceBrush("TextFillColorSecondaryBrush", Color.FromArgb(190, 255, 255, 255))
+        }, subtitle));
 
-        return new Border
+        var tile = new ToggleButton
         {
-            Height = 220,
-            Padding = new Thickness(20, 22, 20, 22),
-            CornerRadius = new CornerRadius(16),
+            MinHeight = 112,
+            Padding = new Thickness(12, 10, 12, 10),
+            CornerRadius = new CornerRadius(12),
             BorderThickness = new Thickness(1.5),
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            Child = content
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            VerticalContentAlignment = VerticalAlignment.Center,
+            Content = content
         };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetLabeledBy(tile, titleText);
+        return tile;
     }
 
-    private void ApplyModeTileState(Border tile, List<FontIcon> icons, bool selected)
+    private void ApplyModeTileState(ToggleButton tile, List<FontIcon> icons, bool selected)
     {
         var accent = ParseColor(_settings.AccentColor);
-        if (selected)
+        var tint = WithAlpha(accent, 32);
+        SetLocalBrush(tile, "ToggleButtonBackgroundChecked", tint);
+        SetLocalBrush(tile, "ToggleButtonBackgroundCheckedPointerOver", WithAlpha(accent, 46));
+        SetLocalBrush(tile, "ToggleButtonBackgroundCheckedPressed", WithAlpha(accent, 26));
+        SetLocalBrush(tile, "ToggleButtonBorderBrushChecked", accent);
+        SetLocalBrush(tile, "ToggleButtonBorderBrushCheckedPointerOver", accent);
+        SetLocalBrush(tile, "ToggleButtonBorderBrushCheckedPressed", accent);
+        tile.BorderBrush = selected
+            ? new SolidColorBrush(accent)
+            : ResourceBrush("ControlStrokeColorDefaultBrush", Color.FromArgb(46, 255, 255, 255));
+        tile.Background = selected
+            ? new SolidColorBrush(tint)
+            : ResourceBrush("ControlFillColorDefaultBrush", Color.FromArgb(18, 255, 255, 255));
+        tile.IsChecked = selected;
+        var iconBrush = selected
+            ? ResourceBrush("AccentTextFillColorPrimaryBrush", accent)
+            : ResourceBrush("TextFillColorSecondaryBrush", Color.FromArgb(190, 255, 255, 255));
+        foreach (var icon in icons)
         {
-            tile.BorderBrush = new SolidColorBrush(accent);
-            tile.Background = new SolidColorBrush(WithAlpha(accent, 38));
-            foreach (var icon in icons)
-            {
-                icon.Foreground = new SolidColorBrush(accent);
-            }
-        }
-        else
-        {
-            tile.BorderBrush = new SolidColorBrush(Color.FromArgb(46, 255, 255, 255));
-            tile.Background = new SolidColorBrush(Color.FromArgb(18, 255, 255, 255));
-            foreach (var icon in icons)
-            {
-                icon.Foreground = new SolidColorBrush(Color.FromArgb(190, 255, 255, 255));
-            }
+            icon.Foreground = iconBrush;
         }
     }
 
@@ -3047,11 +3194,9 @@ public sealed partial class MainWindow : Window
     }
 
     // Selettore a due scelte (una sola attiva) per il formato delle cover.
-    // Stessa estetica del selettore di layout del negozio plugin.
+    // Stessa palette del selettore Scopri/Gestisci nel Plugin Store.
     private FrameworkElement BuildCoverFormatSelector()
     {
-        var accent = ParseColor(_settings.AccentColor);
-        var selectedForeground = NeedsLightForeground(accent) ? Colors.White : Colors.Black;
         var buttons = new Grid { ColumnSpacing = 2 };
         buttons.ColumnDefinitions.Add(new ColumnDefinition());
         buttons.ColumnDefinitions.Add(new ColumnDefinition());
@@ -3059,9 +3204,6 @@ public sealed partial class MainWindow : Window
         Button FormatButton(string format, double iconWidth, double iconHeight, string label)
         {
             var selected = string.Equals(global::Playhub.Services.CoverFormat.Normalize(_settings.CoverFormat), format, StringComparison.Ordinal);
-            var iconBrush = selected
-                ? new SolidColorBrush(selectedForeground)
-                : ResourceBrush("TextFillColorSecondaryBrush", Color.FromArgb(210, 255, 255, 255));
             var content = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
@@ -3071,15 +3213,15 @@ public sealed partial class MainWindow : Window
             };
             // Icona disegnata: la forma stessa della cover (rettangolo alto / quadrato),
             // cosi' la scelta si legge a colpo d'occhio senza dipendere da un glifo.
-            content.Children.Add(new Border
+            var icon = new Border
             {
                 Width = iconWidth,
                 Height = iconHeight,
                 CornerRadius = new CornerRadius(3),
                 BorderThickness = new Thickness(2),
-                BorderBrush = iconBrush,
                 VerticalAlignment = VerticalAlignment.Center
-            });
+            };
+            content.Children.Add(icon);
             var formatText = LocalizedText(new TextBlock
             {
                 Text = label,
@@ -3095,14 +3237,10 @@ public sealed partial class MainWindow : Window
                 CornerRadius = new CornerRadius(6),
                 BorderThickness = new Thickness(0),
                 HorizontalAlignment = HorizontalAlignment.Stretch,
-                Background = selected
-                    ? new SolidColorBrush(accent)
-                    : new SolidColorBrush(Colors.Transparent),
-                Foreground = selected
-                    ? new SolidColorBrush(selectedForeground)
-                    : ResourceBrush("TextFillColorSecondaryBrush", Color.FromArgb(210, 255, 255, 255)),
                 Content = content
             };
+            UpdatePluginStoreModeButton(button, selected);
+            icon.BorderBrush = button.Foreground;
             SetLocalizedToolTip(button, label);
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, formatText.Text);
             formatText.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) =>
@@ -3137,8 +3275,8 @@ public sealed partial class MainWindow : Window
             Padding = new Thickness(2),
             CornerRadius = new CornerRadius(8),
             BorderThickness = new Thickness(1),
-            BorderBrush = ResourceBrush("ControlStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255)),
-            Background = new SolidColorBrush(Color.FromArgb(74, 255, 255, 255)),
+            BorderBrush = ResourceBrush("CardStrokeColorDefaultBrush", Color.FromArgb(48, 255, 255, 255)),
+            Background = ResourceBrush("CardBackgroundFillColorDefaultBrush", Color.FromArgb(220, 28, 28, 32)),
             Child = buttons
         };
     }
@@ -3795,29 +3933,25 @@ by Valve.";
         await Task.CompletedTask;
     }
 
-    private async Task LoadDeckyBuildsSilentlyAsync()
+    private async Task LoadDeckyWindowsReleasesAsync()
     {
         try
         {
-            _deckyBuilds.Clear();
-            foreach (var run in await _deckyInstaller.GetMainBuildsAsync())
-            {
-                _deckyBuilds.Add(run);
-            }
-
-            _deckyBuildCombo.ItemsSource = _deckyBuilds;
-            _deckyBuildCombo.DisplayMemberPath = "Display";
-            if (_deckyBuilds.Count > 0)
+            var releases = await _deckyInstaller.GetWindowsReleasesAsync();
+            _deckyBuildCombo.DisplayMemberPath = nameof(DeckyWindowsRelease.Display);
+            _deckyBuildCombo.ItemsSource = releases;
+            if (releases.Count > 0)
             {
                 _deckyBuildCombo.SelectedIndex = 0;
             }
         }
-        catch
+        catch (Exception error)
         {
+            Diag.Crash(nameof(LoadDeckyWindowsReleasesAsync), error);
         }
     }
 
-    private async Task InstallLatestDeckyBuildAsync()
+    private async Task InstallLatestDeckyReleaseAsync()
     {
         using var context = BeginNotificationContext("decky");
         try
@@ -3830,15 +3964,15 @@ by Valve.";
         }
     }
 
-    private async Task InstallSelectedDeckyBuildAsync()
+    private async Task InstallSelectedDeckyReleaseAsync()
     {
-        if (_deckyBuildCombo.SelectedItem is not DeckyBuildRun run)
+        if (_deckyBuildCombo.SelectedItem is not DeckyWindowsRelease release)
         {
             SetStatus("Scegli prima una versione dall'elenco.", InfoBarSeverity.Warning);
             return;
         }
 
-        SetStatus(await _deckyInstaller.InstallBuildAsync(run), InfoBarSeverity.Success);
+        SetStatus(await _deckyInstaller.InstallReleaseAsync(release), InfoBarSeverity.Success);
     }
 
     private void RenderPluginCardsIfNeeded()
@@ -5784,7 +5918,12 @@ by Valve.";
         };
 
         var imagePath = PluginImagePath(plugin);
-        if (imagePath is not null)
+        if (pageMode)
+        {
+            var detailArtwork = CreatePluginPreviewImage(plugin, 1500, showStoreMark: false);
+            if (detailArtwork is not null) banner.Children.Add(detailArtwork);
+        }
+        else if (imagePath is not null)
         {
             var bitmap = CachedPluginBitmap(imagePath, 1500);
             var artwork = new Image
@@ -5796,7 +5935,7 @@ by Valve.";
             };
             banner.Children.Add(artwork);
         }
-        else
+        if (imagePath is null)
         {
             banner.Background = new SolidColorBrush(WithAlpha(ParseColor(_settings.AccentColor), 70));
         }

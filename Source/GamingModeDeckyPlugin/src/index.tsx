@@ -19,6 +19,8 @@ import { PlayhubIcon } from "./PlayhubIcon";
 import playhubWordmark from "../assets/playhub-wordmark.png";
 import { TbShoppingBag } from "react-icons/tb";
 import { ControlCenter } from "./ControlCenter";
+import { GameFrameTiming } from "./GameFrameTiming";
+import { steamAppId } from "./controlledQamFocus";
 import { PluginStoreIntro } from "./PluginStoreIntro";
 import { initDeckyHost } from "./deckyHost";
 import { call as controlCall } from "./controlBackend";
@@ -632,6 +634,7 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
     return () => { alive = false; stopStatus(); };
   }, []);
 
+  const gameAppId = steamAppId((window as any).SteamUIStore?.MainRunningAppID ?? (DFL as any).Router?.MainRunningAppID);
   return (
     <ControlCenter locale={locale} origin={origin} homeTitle={local.controlCentre} session={<>
       {!status && <PanelSection><PanelSectionRow>
@@ -641,6 +644,7 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
           <div style={{ fontSize: 13, lineHeight: 1.5, opacity: .8 }}>{optional.AgentRequired}</div>
         </div>
       </PanelSectionRow></PanelSection>}
+      {origin === "qam" && status && gameAppId !== 0 && <GameFrameTiming key={gameAppId} appId={gameAppId} locale={locale} />}
       <PanelSection>
         <PanelSectionRow>
           <ButtonItem

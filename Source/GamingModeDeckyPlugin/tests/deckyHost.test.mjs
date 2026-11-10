@@ -61,6 +61,21 @@ test("unsupported native state is rejected before subscribing", () => {
   assert.throws(() => stateApi.createScopedDeckyState(real), /unsupported_plugin_inventory/);
 });
 
+test("the Decky 3.3.1 provider can bind and call the real sorting setter", () => {
+  const { real } = realState();
+  real.setSortPlugins = function (sortPlugins) {
+    assert.equal(this, real);
+    this.snapshot.sortPlugins = sortPlugins;
+  };
+  const scoped = stateApi.createScopedDeckyState(real);
+  try {
+    scoped.state.setSortPlugins.bind(scoped.state)(true);
+    assert.equal(scoped.state.publicState().sortPlugins, true);
+  } finally {
+    scoped.dispose();
+  }
+});
+
 function fixture(withCapability = true, projectionConflict = false) {
   const host = new EventTarget();
   const timers = new Map();
@@ -96,7 +111,7 @@ function fixture(withCapability = true, projectionConflict = false) {
       WeakRef, setInterval: host.setInterval, clearInterval: host.clearInterval,
     }); },
   });
-  return { api, host, bridge, acquired, timers, setProjectionConflict: value => { projectionConflict = value; }, setAvailable: value => { available = value; }, tick: () => [...timers.values()].forEach(fn => fn()) };
+  return { api, host, bridge, acquired, timers, preference, setProjectionConflict: value => { projectionConflict = value; }, setAvailable: value => { available = value; }, tick: () => [...timers.values()].forEach(fn => fn()) };
 }
 const options = { element: {}, createContent: () => ({}), isHealthy: () => true, onRelease: () => {} };
 
@@ -132,9 +147,11 @@ test("cold start retries persisted preference and deferred host without opening 
     assert.equal(f.api.mountDeckyHost(options), null);
     f.setAvailable(true); f.tick();
     const lease = f.api.mountDeckyHost(options);
-    assert.ok(lease); lease.setReady();
+    assert.ok(lease);
+    assert.equal(f.acquired[0].nativeHidden, false, "native Decky is available during the embedded mount");
+    lease.setReady();
     assert.equal(f.acquired[0].nativeHidden, hidden);
-    // acquire receives persisted suppression even before ControlCenter has mounted.
+    // The persisted preference takes effect when the embedded view commits.
     f.api.setDeckyNativeHidden(false);
     assert.equal(f.acquired[0].nativeHidden, false);
     assert.equal(f.api.getDeckyHostSnapshot().available, true, "native toggle must not remove internal host");
@@ -143,7 +160,10 @@ test("cold start retries persisted preference and deferred host without opening 
     const stopRestart = restart.api.initDeckyHost(async () => ({ deckyHostEnabled: hidden }));
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(restart.api.getDeckyHostSnapshot().enabled, true);
-    assert.ok(restart.api.mountDeckyHost(options));
+    const restartedLease = restart.api.mountDeckyHost(options);
+    assert.ok(restartedLease);
+    assert.equal(restart.acquired[0].nativeHidden, false);
+    restartedLease.setReady();
     assert.equal(restart.acquired[0].nativeHidden, hidden);
     assert.equal(reads, 2); stopRestart();
   }
@@ -180,6 +200,70 @@ test("native visibility toggles keep the committed Playhub host mounted", () => 
     assert.equal(f.api.getDeckyHostSnapshot().enabled, true);
     assert.equal(f.api.getDeckyHostSnapshot().ready, true);
   }
+  stop();
+});
+
+test("an embedded Decky crash restores the original QAM tab and retained focus attributes", () => {
+  const f = fixture();
+  const standalone = load("deckyHostStandalone.ts", {
+    window: f.host, WeakRef, setInterval: f.host.setInterval, clearInterval: f.host.clearInterval,
+  });
+  const playhubId = 0x50484B;
+  const hook = { tabs: [{ id: playhubId, content: {} }, { id: 999, content: {} }], render(tabs) {
+    for (const entry of this.tabs) if (!tabs.some(tab => tab.key === entry.id)) tabs.push({ key: entry.id, panel: entry.content });
+  } };
+  const tabs = [];
+  const refresh = () => { adapter.beforeRender(tabs); hook.render(tabs); adapter.afterRender(tabs, true); };
+  const adapter = standalone.createStandaloneDeckyHost(hook, hook.render, playhubId, () => true, refresh);
+  f.bridge.deckyHost = adapter.capability;
+  refresh();
+  const original = tabs.find(tab => tab.key === 999);
+  const projection = standalone.getDeckyTabProjection(tabs);
+  const attrs = new Map([["tabindex", "0"], ["aria-hidden", "false"]]);
+  const nativeButton = { getAttribute: name => attrs.get(name) ?? null,
+    setAttribute: (name, value) => attrs.set(name, value), removeAttribute: name => attrs.delete(name) };
+  const element = { isConnected: true, closest: () => ({ id: `quickaccess_content_${playhubId}` }),
+    ownerDocument: { getElementById: id => id === "quickaccess_tab_999" ? nativeButton : id === `quickaccess_tab_${playhubId}` ? {} : null } };
+  const stop = f.api.initDeckyHost();
+  f.api.setDeckyNativeHidden(true);
+  f.api.setDeckyHostEnabled(true);
+  const lease = f.api.mountDeckyHost({ ...options, element });
+  assert.ok(lease);
+  assert.equal(f.preference.isNativeDeckyHidden(), false);
+  assert.equal(projection.getSnapshot().find(tab => tab.key === 999), original);
+
+  assert.equal(lease.setReady(), true);
+  assert.equal(projection.getSnapshot().some(tab => tab.key === 999), false);
+  assert.equal(attrs.get("tabindex"), "-1");
+  assert.equal(attrs.get("aria-hidden"), "true");
+  assert.equal(attrs.has("inert"), true);
+
+  f.api.failDeckyHost("native_root_error");
+  f.tick();
+  assert.equal(f.api.getDeckyHostSnapshot().available, false);
+  assert.equal(f.preference.isNativeDeckyHidden(), false);
+  assert.equal(projection.getSnapshot().find(tab => tab.key === 999), original);
+  assert.deepEqual([...attrs], [["tabindex", "0"], ["aria-hidden", "false"]]);
+  assert.equal(tabs.filter(tab => tab.key === 999).length, 1);
+  stop(); adapter.stop();
+});
+
+test("a lease that rejects suppression leaves native Decky available on later reconciliations", () => {
+  const f = fixture();
+  const acquire = f.bridge.deckyHost.acquire;
+  let requests = 0;
+  f.bridge.deckyHost.acquire = options => {
+    const lease = acquire(options);
+    lease.setNativeHidden = () => { requests++; return false; };
+    return lease;
+  };
+  const stop = f.api.initDeckyHost();
+  f.api.setDeckyNativeHidden(true);
+  f.api.setDeckyHostEnabled(true);
+  assert.equal(f.api.mountDeckyHost(options).setReady(), true);
+  f.tick(); f.tick();
+  assert.equal(f.preference.isNativeDeckyHidden(), false);
+  assert.equal(requests, 1);
   stop();
 });
 

@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Playhub.Models;
 using Playhub.Services;
@@ -25,6 +26,7 @@ public sealed partial class MainWindow
         var catalogField = typeof(MainWindow).GetField("_catalog", BindingFlags.Instance | BindingFlags.NonPublic)!;
         var previousCatalog = _catalog;
         var previousBaseline = _bundledPluginCatalogTask;
+        var previousPublicationDates = _pluginPublicationDates.ToArray();
         bool previousDeferred = _pluginCatalogRefreshDeferred;
         var handler = new DetailStabilityReadmeHandler();
         using var http = new HttpClient(handler);
@@ -105,6 +107,38 @@ public sealed partial class MainWindow
             check(_pluginStoreMode == "discover" && _pluginDiscoverView.Visibility == Visibility.Visible &&
                 _pluginManageView.Visibility == Visibility.Collapsed,
                 "external News entry is visibly in Discover after the actual production mode switch");
+            ItemsRepeater VisibleRepeater() => (ItemsRepeater)(_pluginAllLayout == "list" ? _pluginAllListCache : _pluginAllCardsCache)!;
+            var news = VisibleRepeater();
+            var offset = CurrentNavigationOffset();
+            var originalOrder = ReviewPluginItems(news).ToArray();
+            var date = "2026-10-19T14:00:00.0000000Z";
+            PublishPluginPublicationDates(new Dictionary<string, string> { [other.Repository] = date });
+            await Settle();
+            check(ReferenceEquals(news, VisibleRepeater()) && ReviewPluginItems(news).SequenceEqual(originalOrder) &&
+                _plugins.Single(item => item.RepositorySlug == other.Repository).UpdatedAt == date && CurrentNavigationOffset() == offset,
+                "an update-only date arrives in News without replacing its repeater, changing first-release order or scrolling");
+
+            _pluginAllSort = "updated";
+            InvalidatePluginAllViews(); RenderPluginCards(); await Settle();
+            var ranked = VisibleRepeater();
+            var section = (Panel)VisualTreeHelper.GetParent(ranked);
+            var headingRoot = section.Children[0];
+            var focusTarget = ReviewDescendants(ranked).OfType<FrameworkElement>()
+                .First(element => element.IsTabStop && element.Visibility == Visibility.Visible && element.ActualHeight > 0);
+            check(focusTarget.Focus(FocusState.Programmatic), "a native plugin control accepts focus before the date reorder");
+            var updated = "2026-10-29T14:00:00.0000000Z";
+            PublishPluginPublicationDates(new Dictionary<string, string> { [external.Repository] = updated });
+            await Settle();
+            check(ReferenceEquals(ranked, VisibleRepeater()) && ReferenceEquals(FocusManager.GetFocusedElement(ranked.XamlRoot), focusTarget),
+                "a genuine update-date reorder waits while a card holds focus");
+            _pluginDiscoverButton.Focus(FocusState.Programmatic);
+            check(await ReviewWaitUntilAsync(() => !ReferenceEquals(ranked, VisibleRepeater())),
+                "changing focus releases the pending reorder of updated results");
+            check(ReferenceEquals(headingRoot, section.Children[0]) && ReviewPluginItems(VisibleRepeater()).FirstOrDefault() == selected &&
+                ReferenceEquals(FocusManager.GetFocusedElement(_pluginDiscoverButton.XamlRoot), _pluginDiscoverButton),
+                "the latest upstream date reorders only the results and preserves the heading and focus");
+            _pluginAllSort = "added";
+            InvalidatePluginAllViews(); RenderPluginCards(); await Settle();
             check(handler.ReadmeCalls == 0, "local artwork avoids README prefetch before the detail Loaded event");
 
             // Race a real catalog load against opening the detail. The deferred
@@ -182,6 +216,8 @@ public sealed partial class MainWindow
             if (detailRoot is not null) { detailRoot.Loaded -= OnLoaded; detailRoot.Unloaded -= OnUnloaded; }
             catalogField.SetValue(this, previousCatalog);
             _bundledPluginCatalogTask = previousBaseline; _pluginCatalogRefreshDeferred = previousDeferred;
+            _pluginPublicationDates.Clear();
+            foreach (var (repository, date) in previousPublicationDates) _pluginPublicationDates[repository] = date;
             await File.WriteAllTextAsync(Path.Combine(output, "detail-stability-native.json"), JsonSerializer.Serialize(new
             {
                 ProcessId = Environment.ProcessId, Samples = samples, Frames = frames, Violations = violations,

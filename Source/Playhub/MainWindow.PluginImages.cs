@@ -16,7 +16,7 @@ public sealed partial class MainWindow
     private readonly Dictionary<(string Path, int Width), BitmapImage> _pluginBitmapCache = new();
     private readonly Dictionary<string, DateTimeOffset> _pluginPreviewFailures = new(StringComparer.Ordinal);
 
-    private Image? CreatePluginPreviewImage(DeckyPluginInfo plugin, int width)
+    private Image? CreatePluginPreviewImage(DeckyPluginInfo plugin, int width, bool showStoreMark = true)
     {
         var path = PluginImagePath(plugin);
         if (path is null && plugin.IsPlayhubPlugin) return null;
@@ -30,10 +30,11 @@ public sealed partial class MainWindow
         var resolving = false;
         var fallback = false;
 
-        void ShowStoreMark()
+        void CompleteWithoutPreview()
         {
-            path = Path.Combine(AppContext.BaseDirectory, "Assets", "Brand", "DeckyStoreBadge.png");
             fallback = true;
+            if (!showStoreMark) return;
+            path = Path.Combine(AppContext.BaseDirectory, "Assets", "Brand", "DeckyStoreBadge.png");
             image.Stretch = Stretch.Uniform;
             image.Source = CachedPluginBitmap(path, width);
         }
@@ -69,7 +70,7 @@ public sealed partial class MainWindow
                 if (path is null)
                 {
                     // Use the bundled store mark only when no real repository image is reachable.
-                    ShowStoreMark();
+                    CompleteWithoutPreview();
                     return;
                 }
                 image.Source = CachedPluginBitmap(path, width);
@@ -77,7 +78,7 @@ public sealed partial class MainWindow
             catch
             {
                 RejectCurrentImage();
-                ShowStoreMark();
+                CompleteWithoutPreview();
             }
             finally { resolving = false; }
         }

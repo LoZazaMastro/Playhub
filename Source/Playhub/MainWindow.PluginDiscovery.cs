@@ -92,9 +92,6 @@ public sealed partial class MainWindow
             ? plugin.IsPlayhubPlugin
             : string.Equals(PluginDiscoveryCategory(plugin), category, StringComparison.OrdinalIgnoreCase);
 
-    private static DateTimeOffset? PluginFirstReleasedAt(DeckyPluginInfo plugin)
-        => PluginChronology.FirstPublished(plugin);
-
     private static List<DeckyPluginInfo> OrderPluginDiscoveryPreview(string title,
         PluginDiscoveryCategoryState state, IReadOnlyList<DeckyPluginInfo> plugins)
     {
@@ -105,37 +102,42 @@ public sealed partial class MainWindow
 
     private readonly PluginDiscoveryCategoryState _featuredOrder = new();
 
+    // Decky's published download counts, plus established store favorites.
+    // Use stable store IDs so a rename does not change the featured pool.
+    private static readonly HashSet<int> PopularDeckyPluginIds = new()
+    {
+        7,   // CSS Loader
+        14,  // ProtonDB Badges
+        16,  // Audio Loader
+        23,  // Animation Changer
+        26,  // HLTB for Deck
+        36,  // SteamGridDB
+        37,  // Discord Status
+        52,  // Game Theme Music
+        59,  // Web Browser
+        61,  // TabMaster
+        63,  // Free Loader
+        66,  // PlayTime
+        81,  // IsThereAnyDeal for Deck
+        91,  // PlayCount
+        131  // Download All
+    };
+
     private static bool IsFeaturedPluginCandidate(DeckyPluginInfo plugin) =>
-        plugin.IsPlayhubPlugin || (plugin.RepositorySlug.ToLowerInvariant() switch
-        {
-            "tormak9970/tabmaster" or "emerald0874/sdh-audioloader" or
-                "bentemple/decky-download-all" or "jessebofill/deckwebbrowser" => true,
-            "deckthemes/sdh-cssloader" => string.Equals(plugin.CatalogSource, "decky-store",
-                StringComparison.OrdinalIgnoreCase),
-            _ => false
-        });
+        plugin.IsPlayhubPlugin ||
+        (string.Equals(plugin.CatalogSource, "decky-store", StringComparison.OrdinalIgnoreCase) &&
+            PopularDeckyPluginIds.Contains(plugin.CatalogPluginId));
 
     private static List<DeckyPluginInfo> SelectFeaturedPlugins(PluginDiscoveryCategoryState state,
         IReadOnlyList<DeckyPluginInfo> candidates)
     {
         var shuffled = OrderPluginDiscoveryCategory(state, candidates)
             .DistinctBy(PluginStoreKey, StringComparer.OrdinalIgnoreCase).ToList();
-        var now = DateTimeOffset.UtcNow;
-        var newestAddition = shuffled.Where(plugin => plugin.IsPlayhubPlugin)
-            .Select(PluginFirstReleasedAt)
-            .Where(date => date > DateTimeOffset.MinValue && date <= now).Max();
-        // A shared catalog seed date does not distinguish a new addition.
-        var prioritizeNewest = newestAddition is not null && shuffled.Any(plugin =>
-            plugin.IsPlayhubPlugin && PluginFirstReleasedAt(plugin) != newestAddition);
-        bool IsNewest(DeckyPluginInfo plugin) => plugin.IsPlayhubPlugin &&
-            prioritizeNewest && PluginFirstReleasedAt(plugin) == newestAddition;
-        // Keep every curated external entry; only the Playhub pool is sampled.
         var selected = shuffled.Where(plugin => plugin.IsPlayhubPlugin)
-            .OrderByDescending(IsNewest).Take(5)
+            .Take(3)
             .Concat(shuffled.Where(plugin => !plugin.IsPlayhubPlugin).Take(5))
             .Select(PluginStoreKey).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        return shuffled.Where(plugin => selected.Contains(PluginStoreKey(plugin)))
-            .OrderByDescending(IsNewest).ToList();
+        return shuffled.Where(plugin => selected.Contains(PluginStoreKey(plugin))).ToList();
     }
 
     private void OpenPluginCategory(string category)

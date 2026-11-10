@@ -96,6 +96,20 @@ public static class OverlaySteamArtworkResolver
 		}
 	}
 
+	internal static bool IsTrackedAppProcess(int processId, uint appId)
+	{
+		if (appId == 0) return false;
+		try
+		{
+			ActiveSteamGame? game = FindActiveGame(FindSteamPath(), processId);
+			return game is not null && (game.GameId <= uint.MaxValue ? (uint)game.GameId : (uint)(game.GameId >> 32)) == appId;
+		}
+		catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+		{
+			return false;
+		}
+	}
+
 	// Svuota l'indice: da chiamare quando si sa che la libreria e' cambiata.
 	public static void InvalidateIndex()
 	{
@@ -313,6 +327,7 @@ public static class OverlaySteamArtworkResolver
 	private static string? _activeLogPath;
 	private static long _activeLogLength = -1;
 	private static DateTime _activeLogModified;
+	private static DateTime? _activeLogClientStartedAt;
 	private static long _activeCheckedAt = long.MinValue;
 	private static long _parentsCheckedAt = long.MinValue;
 
@@ -320,33 +335,7 @@ public static class OverlaySteamArtworkResolver
 	{
 		lock (ActiveSync)
 		{
-			long now = Environment.TickCount64;
-			string path = Path.Combine(steamPath, "logs", "gameprocess_log.txt");
-			bool differentPath = !string.Equals(_activeLogPath, path, StringComparison.OrdinalIgnoreCase);
-			if (differentPath || _activeCheckedAt == long.MinValue || now - _activeCheckedAt >= 500)
-			{
-				_activeCheckedAt = now;
-				var info = new FileInfo(path);
-				if (!info.Exists)
-				{
-					ActiveGames.Clear();
-					_activeLogPath = null;
-					return null;
-				}
-				if (differentPath || info.Length != _activeLogLength || info.LastWriteTimeUtc != _activeLogModified)
-				{
-					// One shared parse for the window batch; unchanged logs are never reparsed.
-					Dictionary<int, ActiveSteamGame> parsed = ParseActiveGames(ReadTail(path, 768 * 1024));
-					ActiveGames.Clear();
-					foreach (var entry in parsed) ActiveGames[entry.Key] = entry.Value;
-					_activeLogPath = path;
-					_activeLogLength = info.Length;
-					_activeLogModified = info.LastWriteTimeUtc;
-					_parentsCheckedAt = long.MinValue;
-				}
-				foreach (int stale in ActiveGames.Values.Where(game => !IsCurrentTrackedProcess(game)).Select(game => game.ProcessId).ToArray())
-					ActiveGames.Remove(stale);
-			}
+			RefreshActiveGames(steamPath);
 			// Desktop idle must not enumerate every system process for every window.
 			if (ActiveGames.Count == 0) return null;
 			try
@@ -363,6 +352,7 @@ public static class OverlaySteamArtworkResolver
 			catch { return null; }
 			if (ActiveGames.TryGetValue(windowProcessId, out ActiveSteamGame? direct))
 				return IsCurrentTrackedProcess(direct) ? direct : null;
+			long now = Environment.TickCount64;
 			if (_parentsCheckedAt == long.MinValue || now - _parentsCheckedAt >= 1000)
 			{
 				_activeParents = SnapshotParents();
@@ -375,14 +365,71 @@ public static class OverlaySteamArtworkResolver
 		}
 	}
 
-	private static Dictionary<int, ActiveSteamGame> ParseActiveGames(string tail)
+	internal static bool? HasActiveGameForRecovery(string steamPath, DateTime clientBirth)
 	{
+		try
+		{
+			lock (ActiveSync)
+			{
+				bool? active = RefreshActiveGames(steamPath, force: true);
+				if (active != false) return active;
+				// An absent, rotated, or previous client's log cannot confirm that Steam is idle.
+				return _activeLogClientStartedAt >= clientBirth.AddSeconds(-1) ? false : null;
+			}
+		}
+		catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+		{
+			return null;
+		}
+	}
+
+	private static bool? RefreshActiveGames(string steamPath, bool force = false)
+	{
+		long now = Environment.TickCount64;
+		string path = Path.Combine(steamPath, "logs", "gameprocess_log.txt");
+		bool differentPath = !string.Equals(_activeLogPath, path, StringComparison.OrdinalIgnoreCase);
+		if (!force && !differentPath && _activeCheckedAt != long.MinValue && now - _activeCheckedAt < 500) return null;
+		var info = new FileInfo(path);
+		if (!info.Exists)
+		{
+			ActiveGames.Clear();
+			_activeLogPath = null;
+			_activeLogClientStartedAt = null;
+			return null;
+		}
+		if (differentPath || info.Length != _activeLogLength || info.LastWriteTimeUtc != _activeLogModified)
+		{
+			Dictionary<int, ActiveSteamGame> parsed = ParseActiveGames(ReadTail(path, 768 * 1024), out var clientStartedAt);
+			ActiveGames.Clear();
+			foreach (var entry in parsed) ActiveGames[entry.Key] = entry.Value;
+			_activeLogPath = path;
+			_activeLogLength = info.Length;
+			_activeLogModified = info.LastWriteTimeUtc;
+			_activeLogClientStartedAt = clientStartedAt;
+			_parentsCheckedAt = long.MinValue;
+		}
+		bool? active = false;
+		foreach (var game in ActiveGames.Values.ToArray())
+		{
+			bool? current = TrackedProcessIsLive(game);
+			if (current == false) ActiveGames.Remove(game.ProcessId);
+			else if (active != true) active = current;
+		}
+		_activeCheckedAt = now;
+		return active;
+	}
+
+	private static Dictionary<int, ActiveSteamGame> ParseActiveGames(string tail, out DateTime? clientStartedAt)
+	{
+		clientStartedAt = null;
 		Dictionary<int, ActiveSteamGame> active = new();
 		foreach (string line in tail.Split('\n'))
 		{
-			if (line.Contains("Client version:", StringComparison.Ordinal))
+			if (line.StartsWith("Client version:", StringComparison.Ordinal) ||
+				(line.Length > 21 && line.AsSpan(21).StartsWith(" Client version:", StringComparison.Ordinal)))
 			{
 				active.Clear();
+				clientStartedAt = ReadTrackingTimestamp(line);
 				continue;
 			}
 			Match added = ProcessAdded.Match(line);
@@ -390,9 +437,10 @@ public static class OverlaySteamArtworkResolver
 				&& ulong.TryParse(added.Groups["app"].Value, out ulong gameId)
 				&& int.TryParse(added.Groups["pid"].Value, out int processId))
 			{
-				if (line.Length >= 21 && DateTime.TryParseExact(line.Substring(1, 19), "yyyy-MM-dd HH:mm:ss",
-					CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime trackedAt))
+				if (ReadTrackingTimestamp(line) is DateTime trackedAt)
 					active[processId] = new ActiveSteamGame(gameId, processId, trackedAt);
+				else
+					clientStartedAt = null;
 				continue;
 			}
 			Match removed = ProcessRemoved.Match(line);
@@ -400,6 +448,11 @@ public static class OverlaySteamArtworkResolver
 		}
 		return active;
 	}
+
+	private static DateTime? ReadTrackingTimestamp(string line) =>
+		line.Length >= 21 && line[0] == '[' && line[20] == ']' &&
+		DateTime.TryParseExact(line.AsSpan(1, 19), "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture,
+			DateTimeStyles.None, out DateTime timestamp) ? timestamp : null;
 	// Cached process trees are only candidates. Recheck the matched chain to avoid
 	// granting a newly recycled child PID the previous process's game identity.
 	private static bool IsCurrentTrackedChild(int trackedId, int processId)
@@ -418,7 +471,9 @@ public static class OverlaySteamArtworkResolver
 		return false;
 	}
 
-	private static bool IsCurrentTrackedProcess(ActiveSteamGame game)
+	private static bool IsCurrentTrackedProcess(ActiveSteamGame game) => TrackedProcessIsLive(game) == true;
+
+	private static bool? TrackedProcessIsLive(ActiveSteamGame game)
 	{
 		try
 		{
@@ -426,7 +481,8 @@ public static class OverlaySteamArtworkResolver
 			return !process.HasExited && !SteamGameIdentityPolicy.IsSteamClient(process.ProcessName)
 				&& SteamGameIdentityPolicy.IsCurrentProcess(process.StartTime, game.TrackedAt);
 		}
-		catch { return false; }
+		catch (Exception error) when (error is ArgumentException or InvalidOperationException) { return false; }
+		catch (System.ComponentModel.Win32Exception) { return null; }
 	}
 
 	private static OverlaySteamArtwork BuildArtwork(string steamPath, string assetId, string? gameId, string title)

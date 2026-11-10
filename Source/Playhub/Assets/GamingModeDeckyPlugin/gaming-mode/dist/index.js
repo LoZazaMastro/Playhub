@@ -216,7 +216,7 @@ function createAgentAvailability(now = Date.now) {
 }
 const agentAvailability = createAgentAvailability();
 
-const copy$4 = {
+const copy$5 = {
     "en": {
         "Title": "Gaming Mode optional",
         "Description": "Start in Big Picture, switch to the desktop and open the Playhub Dashboard with a controller.",
@@ -386,7 +386,7 @@ const copy$4 = {
         "Ready": "Gaming Mode तैयार है।"
     }
 };
-function optionalAgentCopy(locale) { return copy$4[locale] ?? copy$4.en; }
+function optionalAgentCopy(locale) { return copy$5[locale] ?? copy$5.en; }
 
 var DefaultContext = {
   color: undefined,
@@ -631,7 +631,7 @@ function gameSettingsLabel(_language) {
     return "Playhub Game Settings";
 }
 
-const copy$3 = {
+const copy$4 = {
     en: ["Session", "Audio", "Display", "Performance", "Graphics", "Controller", "System", "Settings", "Customize your panel", "Show tabs", "Move up", "Move down", "Restore defaults", "Back", "Hide a tab without changing its settings or disabling its features.", "Expand", "Collapse", "Switch tab", "Settings could not be saved. Try again."],
     it: ["Sessione", "Audio", "Schermo", "Prestazioni", "Grafica", "Controller", "Sistema", "Impostazioni", "Personalizza il pannello", "Mostra le schede", "Sposta su", "Sposta giù", "Ripristina predefiniti", "Indietro", "Nascondere una scheda non modifica le impostazioni e non disattiva le sue funzioni.", "Espandi", "Comprimi", "Cambia scheda", "Impossibile salvare le impostazioni. Riprova."],
     de: ["Sitzung", "Audio", "Bildschirm", "Leistung", "Grafik", "Controller", "System", "Einstellungen", "Panel anpassen", "Tabs anzeigen", "Nach oben", "Nach unten", "Standard wiederherstellen", "Zurück", "Das Ausblenden eines Tabs ändert keine Einstellungen und deaktiviert keine Funktionen.", "Ausklappen", "Einklappen", "Tab wechseln", "Einstellungen konnten nicht gespeichert werden. Erneut versuchen."],
@@ -648,7 +648,7 @@ const copy$3 = {
 function controlLocale(locale) {
     const aliases = { english: "en", italian: "it", german: "de", spanish: "es", latam: "es", french: "fr", brazilian: "pt", portuguese: "pt", russian: "ru", ukrainian: "uk", japanese: "ja", koreana: "ko", schinese: "zh", tchinese: "zh", hindi: "hi" };
     const key = aliases[locale] ?? locale.split(/[-_]/)[0];
-    const row = copy$3[key] ?? copy$3.en;
+    const row = copy$4[key] ?? copy$4.en;
     const tabs = tabCopy[key] ?? tabCopy.en;
     const video = { en: "Video", it: "Video", de: "Video", es: "Vídeo", fr: "Vidéo", pt: "Vídeo", ru: "Видео", uk: "Відео", ja: "映像", ko: "비디오", zh: "视频", hi: "वीडियो" };
     return { home: row[0], audio: video[key] ?? video.en, display: row[2], performance: row[1], graphics: row[4], controller: row[5], tools: row[6], store: 'Plugin Store', decky: 'Decky', settings: row[7], customize: tabs[1], show: tabs[4], up: tabs[2], down: tabs[3], reset: row[12], back: row[13], hint: row[14], expand: row[15], collapse: row[16], switchTab: row[17], saveError: row[18], device: tabs[5], unavailable: tabs[6], loading: tabs[7], retry: tabs[8] };
@@ -13718,7 +13718,7 @@ function useHistoryPhoto(url) {
     return resolved?.source === url && resolved.digest === expected?.sha256 ? resolved.url : undefined;
 }
 
-const copy$2 = {
+const copy$3 = {
     it: ['Premi', 'per approfondire', 'per richiudere', 'Visualizza immagine', 'Chiudi'],
     en: ['Press', 'to explore', 'to collapse', 'View image', 'Close'],
     de: ['Drücke', 'für mehr', 'zum Zuklappen', 'Bild ansehen', 'Schließen'],
@@ -13732,7 +13732,7 @@ const copy$2 = {
     zh: ['按', '深入閱讀', '收起內容', '查看圖片', '關閉'],
     hi: ['', 'दबाकर विस्तार से पढ़ें', 'दबाकर समेटें', 'चित्र देखें', 'बंद करें'],
 };
-const historyActionCopy = (locale) => copy$2[locale.split(/[-_]/)[0]] ?? copy$2.en;
+const historyActionCopy = (locale) => copy$3[locale.split(/[-_]/)[0]] ?? copy$3.en;
 class GlyphBoundary extends _global_SP_REACT.Component {
     constructor() {
         super(...arguments);
@@ -14303,10 +14303,12 @@ function logToAgent(message) {
 async function request(path, init, timeoutMs = 4000) {
     // An explicit click must be able to recover immediately after a transient
     // outage. Only passive polling shares the cooldown.
-    if ((!init?.method || init.method === "GET") && !agentAvailability.canRequest())
+    if (init?.signal?.aborted || ((!init?.method || init.method === "GET") && !agentAvailability.canRequest()))
         return null;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const abort = () => controller.abort();
+    init?.signal?.addEventListener("abort", abort, { once: true });
+    const timer = setTimeout(abort, timeoutMs);
     try {
         const response = await fetch(`${API_BASE}${path}`, { ...init, signal: controller.signal });
         if (!response.ok)
@@ -14324,6 +14326,7 @@ async function request(path, init, timeoutMs = 4000) {
     }
     finally {
         clearTimeout(timer);
+        init?.signal?.removeEventListener("abort", abort);
     }
 }
 function post$1(path, body) {
@@ -14385,8 +14388,9 @@ async function listPrograms() {
 // ---------- attivita' in corso ----------
 // Il consumo di processore si misura fra due chiamate: la prima torna con gli
 // zeri ed e' normale. Dalla seconda in poi i numeri sono veri.
-async function listProcesses() {
-    return (await request("/dash/processes", undefined, 8000)) ?? [];
+async function listProcesses(signal) {
+    const result = await request("/dash/processes", { signal }, 8000);
+    return Array.isArray(result) ? result : null;
 }
 function closeProcess(id) {
     return post$1("/dash/processes/close", { id });
@@ -14395,8 +14399,8 @@ function killProcess(id) {
     return post$1("/dash/processes/kill", { id });
 }
 // ---------- sistema ----------
-function readUsage() {
-    return request("/dash/usage");
+function readUsage(signal) {
+    return request("/dash/usage", { signal });
 }
 function readEnvironment() {
     return request("/dash/environment", undefined, 2200);
@@ -14486,6 +14490,91 @@ function consumeDashboardCancel(event, now, last, held = false) {
     catch { }
     return !held && !event?.repeat && !event?.nativeEvent?.repeat
         && !event?.detail?.repeat && now - last >= 420;
+}
+
+// Each feed owns its clock and has at most one request in flight. An explicit
+// refresh invalidates a sample taken before the process action completed.
+function createDashboardPoll({ read, publish, interval, visible, now = Date.now, schedule = setTimeout, cancel = clearTimeout, }) {
+    let active = false;
+    let disposed = false;
+    let generation = 0;
+    let timer;
+    let inFlight;
+    let refreshAt;
+    const canPoll = () => active && !disposed && visible();
+    const clear = () => {
+        if (timer !== undefined)
+            cancel(timer);
+        timer = undefined;
+    };
+    const arm = (delay) => {
+        clear();
+        timer = schedule(() => { void poll(); }, delay);
+    };
+    async function poll() {
+        timer = undefined;
+        if (!canPoll() || inFlight)
+            return;
+        refreshAt = undefined;
+        const controller = new AbortController();
+        inFlight = controller;
+        const visit = generation;
+        try {
+            const sample = await read(controller.signal);
+            if (sample !== null && visit === generation && canPoll())
+                publish(sample);
+        }
+        catch {
+            // A failed sample leaves the last successful one visible.
+        }
+        finally {
+            inFlight = undefined;
+            if (canPoll())
+                arm(refreshAt === undefined ? interval : Math.max(0, refreshAt - now()));
+        }
+    }
+    function setActive(next) {
+        if (disposed || next === active)
+            return;
+        active = next;
+        generation++;
+        clear();
+        refreshAt = undefined;
+        if (!active)
+            inFlight?.abort();
+        else if (inFlight)
+            refreshAt = now();
+        else
+            void poll();
+    }
+    return {
+        setActive,
+        refresh(delay = 0) {
+            if (!canPoll())
+                return;
+            generation++;
+            refreshAt = now() + delay;
+            if (!inFlight)
+                arm(delay);
+        },
+        dispose() {
+            setActive(false);
+            disposed = true;
+        },
+    };
+}
+function dashboardSystemVisible(surface, routeActive, intersects) {
+    if (!routeActive || !intersects || !surface.isConnected || surface.ownerDocument.hidden)
+        return false;
+    const view = surface.ownerDocument.defaultView;
+    if (!view || view.closed)
+        return false;
+    try {
+        return surface.getClientRects().length > 0 && view.getComputedStyle(surface).visibility === "visible";
+    }
+    catch {
+        return false;
+    }
 }
 
 const messages = {
@@ -14796,6 +14885,7 @@ let dashboardOverlayGameId = "";
 let dashboardOverlayIdentity = null;
 let dashboardOverlayGeneration = 0;
 let dashboardOverlayRegistration;
+const dashboardOverlayClosedListeners = new Set();
 function overlayDocument() {
     const store = _global_DFL?.Router?.WindowStore;
     const candidate = findOverlayWindow(store?.OverlayWindows, dashboardOverlayIdentity);
@@ -14848,6 +14938,8 @@ function closeDashboardOverlay(hide = true) {
     }
     catch { }
     dashboardOverlayRegistration = undefined;
+    if (gameId)
+        dashboardOverlayClosedListeners.forEach((listener) => listener());
     if (!gameId || !hide)
         return;
     try {
@@ -15886,7 +15978,7 @@ function formatRate(value) {
         return `${Math.round(value / 1024)} KB/s`;
     return `${Math.round(value)} B/s`;
 }
-function HistoryMetric({ title, value, detail, series, fixedPeak, index }) {
+function HistoryMetric({ title, value, detail, series, fixedPeak, index, active }) {
     const lineRef = useRef$1(null);
     const samplesRef = useRef$1([]);
     const targetRef = useRef$1(0);
@@ -15902,15 +15994,19 @@ function HistoryMetric({ title, value, detail, series, fixedPeak, index }) {
             displayedRef.current = next;
             return;
         }
-        samplesRef.current.push({ value: displayedRef.current, at: performance.now() });
+        const clock = lineRef.current?.ownerDocument.defaultView?.performance ?? performance;
+        samplesRef.current.push({ value: displayedRef.current, at: clock.now() });
         targetRef.current = next;
         if (samplesRef.current.length > 32)
             samplesRef.current.splice(0, samplesRef.current.length - 32);
     }, [series]);
     useEffect$2(() => {
+        const view = lineRef.current?.ownerDocument.defaultView;
+        if (!active || !view || view.closed)
+            return;
         const windowMs = 65000;
         let frame = 0;
-        let previousFrame = performance.now();
+        let previousFrame = view.performance.now();
         const paint = (now) => {
             const elapsed = Math.min(50, now - previousFrame);
             previousFrame = now;
@@ -15927,11 +16023,11 @@ function HistoryMetric({ title, value, detail, series, fixedPeak, index }) {
             const liveY = 38 - Math.min(1, displayedRef.current / peak) * 34;
             const points = historyPoints.length ? [...historyPoints, `182.00,${liveY.toFixed(2)}`].join(" ") : "";
             lineRef.current?.setAttribute("points", points);
-            frame = window.requestAnimationFrame(paint);
+            frame = view.requestAnimationFrame(paint);
         };
-        frame = window.requestAnimationFrame(paint);
-        return () => window.cancelAnimationFrame(frame);
-    }, [fixedPeak]);
+        frame = view.requestAnimationFrame(paint);
+        return () => view.cancelAnimationFrame(frame);
+    }, [active, fixedPeak]);
     return (SP_JSX.jsxs(FocusItem, { className: "ph-history-card", "data-ph-grid-index": index, onPress: () => { }, onButtonDown: (event) => {
             const direction = gridDirectionFromGamepad(event?.detail?.button);
             if (direction === "down") {
@@ -15971,15 +16067,33 @@ function SystemTab({ copy, extra, onConfirm }) {
     const [history, setHistory] = useState$2({});
     const [deckyRestarting, setDeckyRestarting] = useState$2(false);
     const deckyRestartingRef = useRef$1(false);
-    const refreshing = useRef$1(false);
-    const refresh = useCallback$1(async () => {
-        if (refreshing.current)
+    const surfaceRef = useRef$1(null);
+    const processPollRef = useRef$1(null);
+    const [active, setActive] = useState$2(false);
+    useEffect$2(() => {
+        const surface = surfaceRef.current;
+        const ownerDocument = surface?.ownerDocument;
+        const ownerWindow = ownerDocument?.defaultView;
+        if (!surface || !ownerDocument || !ownerWindow)
             return;
-        refreshing.current = true;
-        try {
-            const [nextUsage, nextProcesses] = await Promise.all([readUsage(), listProcesses()]);
-            setUsage(nextUsage);
-            if (nextUsage) {
+        const overlayGame = dashboardOverlayGameId;
+        const store = _global_DFL?.Router?.WindowStore;
+        const overlay = overlayGame ? findOverlayWindow(store?.OverlayWindows, dashboardOverlayIdentity) : null;
+        // A portal may be hosted in a different window from the React route.
+        // Observe the Steam history that currently owns the Dashboard route.
+        const histories = [overlay, store?.GamepadUIMainWindowInstance, ...(store?.SteamUIWindows ?? [])];
+        const routeMatches = (pathname) => pathname?.replace(/\/$/, "") === DASHBOARD_ROUTE;
+        const history = histories.map((entry) => entry?.m_history).find((entry) => routeMatches(entry?.location?.pathname));
+        const canObserve = typeof ownerWindow.IntersectionObserver === "function";
+        let intersects = !canObserve;
+        let pagePresent = true;
+        let mounted = true;
+        const visible = () => dashboardSystemVisible(surface, pagePresent &&
+            (!history || routeMatches(history.location?.pathname)) && (!overlayGame || dashboardOverlayGameId === overlayGame), intersects);
+        const usagePoll = createDashboardPoll({ read: readUsage, interval: 2500, visible, publish: (nextUsage) => {
+                if (!Array.isArray(nextUsage.disks))
+                    return;
+                setUsage(nextUsage);
                 const samples = {
                     cpu: nextUsage.cpuPercent,
                     gpu: nextUsage.gpuAvailable ? nextUsage.gpuPercent : 0,
@@ -15992,23 +16106,65 @@ function SystemTab({ copy, extra, onConfirm }) {
                     Object.entries(samples).forEach(([key, value]) => { next[key] = [...(current[key] ?? []), value].slice(-28); });
                     return next;
                 });
-            }
-            setProcesses((current) => {
-                if (current.length === 0)
-                    return nextProcesses;
-                const incoming = new Map(nextProcesses.map((entry) => [entry.id, entry]));
-                const known = new Set(current.map((entry) => entry.id));
-                return [
-                    ...current.filter((entry) => incoming.has(entry.id)).map((entry) => incoming.get(entry.id)),
-                    ...nextProcesses.filter((entry) => !known.has(entry.id)),
-                ];
-            });
+            } });
+        const processPoll = createDashboardPoll({ read: listProcesses, interval: 8000, visible, publish: (nextProcesses) => {
+                setProcesses((current) => {
+                    if (current.length === 0)
+                        return nextProcesses;
+                    const incoming = new Map(nextProcesses.map((entry) => [entry.id, entry]));
+                    const known = new Set(current.map((entry) => entry.id));
+                    return [
+                        ...current.filter((entry) => incoming.has(entry.id)).map((entry) => incoming.get(entry.id)),
+                        ...nextProcesses.filter((entry) => !known.has(entry.id)),
+                    ];
+                });
+            } });
+        processPollRef.current = processPoll;
+        const syncVisibility = () => {
+            if (!mounted)
+                return;
+            const next = visible();
+            usagePoll.setActive(next);
+            processPoll.setActive(next);
+            setActive(next);
+        };
+        const onPageHide = () => { pagePresent = false; syncVisibility(); };
+        const onPageShow = () => { pagePresent = true; syncVisibility(); };
+        const observer = canObserve
+            ? new ownerWindow.IntersectionObserver(([entry]) => {
+                intersects = entry?.isIntersecting ?? false;
+                syncVisibility();
+            }) : null;
+        observer?.observe(surface);
+        // IntersectionObserver tracks layout but can miss visibility-only changes.
+        // Observe the hosting chain, without subscribing to changes in the content.
+        const styles = typeof ownerWindow.MutationObserver === "function"
+            ? new ownerWindow.MutationObserver(syncVisibility) : null;
+        for (let node = surface; styles && node; node = node.parentElement) {
+            styles.observe(node, { attributes: true, attributeFilter: ["class", "hidden", "style"] });
         }
-        finally {
-            refreshing.current = false;
-        }
+        ownerDocument.addEventListener("visibilitychange", syncVisibility);
+        ownerWindow.addEventListener("pagehide", onPageHide);
+        ownerWindow.addEventListener("pageshow", onPageShow);
+        if (overlayGame)
+            dashboardOverlayClosedListeners.add(syncVisibility);
+        const unlisten = history?.listen?.(syncVisibility);
+        syncVisibility();
+        return () => {
+            mounted = false;
+            usagePoll.dispose();
+            processPoll.dispose();
+            processPollRef.current = null;
+            observer?.disconnect();
+            styles?.disconnect();
+            ownerDocument.removeEventListener("visibilitychange", syncVisibility);
+            ownerWindow.removeEventListener("pagehide", onPageHide);
+            ownerWindow.removeEventListener("pageshow", onPageShow);
+            dashboardOverlayClosedListeners.delete(syncVisibility);
+            if (typeof unlisten === "function")
+                unlisten();
+        };
     }, []);
-    useEffect$2(() => { void refresh(); const timer = window.setInterval(() => void refresh(), 2500); return () => window.clearInterval(timer); }, [refresh]);
     const requestDeckyRestart = useCallback$1(() => {
         if (deckyRestartingRef.current)
             return;
@@ -16019,8 +16175,8 @@ function SystemTab({ copy, extra, onConfirm }) {
         // richiesta HTTP termina prima del riavvio effettivo.
         void restartDecky();
     }, []);
-    return (SP_JSX.jsxs("div", { className: "ph-page ph-page-scroll ph-system-page", children: [SP_JSX.jsxs("div", { className: "ph-system-stack", children: [SP_JSX.jsxs(FocusGrid, { className: "ph-metrics-rail", onWheel: (event) => { if (Math.abs(event.deltaY) > Math.abs(event.deltaX))
-                            event.currentTarget.scrollLeft += event.deltaY; }, children: [SP_JSX.jsx(HistoryMetric, { index: 0, title: copy.cpu, value: `${Math.round(usage?.cpuPercent ?? 0)}%`, detail: `${navigator.hardwareConcurrency || "--"} core`, series: history.cpu ?? [], fixedPeak: 100 }), SP_JSX.jsx(HistoryMetric, { index: 1, title: copy.gpu, value: usage?.gpuAvailable ? `${Math.round(usage.gpuPercent)}%` : "--", detail: usage?.gpuAvailable ? "GPU" : "--", series: history.gpu ?? [], fixedPeak: 100 }), SP_JSX.jsx(HistoryMetric, { index: 2, title: copy.memory, value: `${Math.round(usage?.memoryPercent ?? 0)}%`, detail: `${((usage?.memoryUsedMb ?? 0) / 1024).toFixed(1)} / ${((usage?.memoryTotalMb ?? 0) / 1024).toFixed(1)} GB`, series: history.memory ?? [], fixedPeak: 100 }), SP_JSX.jsx(HistoryMetric, { index: 3, title: extra.network, value: formatRate(usage?.networkBytesPerSecond ?? 0), detail: extra.network, series: history.network ?? [] }), (usage?.disks ?? []).map((disk, diskIndex) => SP_JSX.jsx(HistoryMetric, { index: 4 + diskIndex, title: `${extra.disk} ${disk.name}`, value: formatRate(disk.bytesPerSecond), detail: disk.kind ? disk.kind.toUpperCase() : extra.disk, series: history[`disk:${disk.name}`] ?? [] }, disk.name))] }), SP_JSX.jsx("div", { className: "ph-system-lower", children: SP_JSX.jsxs("div", { className: "ph-tile ph-process-panel", children: [SP_JSX.jsxs("div", { className: "ph-process-heading", children: [SP_JSX.jsx("div", { className: "ph-device-list-head", style: { padding: 0 }, children: copy.processes }), SP_JSX.jsxs(FocusItem, { className: `ph-restart-decky${deckyRestarting ? " ph-busy" : ""}`, "aria-busy": deckyRestarting ? "true" : "false", "aria-disabled": deckyRestarting ? "true" : "false", onPress: () => {
+    return (SP_JSX.jsxs("div", { ref: surfaceRef, className: "ph-page ph-page-scroll ph-system-page", children: [SP_JSX.jsxs("div", { className: "ph-system-stack", children: [SP_JSX.jsxs(FocusGrid, { className: "ph-metrics-rail", onWheel: (event) => { if (Math.abs(event.deltaY) > Math.abs(event.deltaX))
+                            event.currentTarget.scrollLeft += event.deltaY; }, children: [SP_JSX.jsx(HistoryMetric, { active: active, index: 0, title: copy.cpu, value: `${Math.round(usage?.cpuPercent ?? 0)}%`, detail: `${navigator.hardwareConcurrency || "--"} core`, series: history.cpu ?? [], fixedPeak: 100 }), SP_JSX.jsx(HistoryMetric, { active: active, index: 1, title: copy.gpu, value: usage?.gpuAvailable ? `${Math.round(usage.gpuPercent)}%` : "--", detail: usage?.gpuAvailable ? "GPU" : "--", series: history.gpu ?? [], fixedPeak: 100 }), SP_JSX.jsx(HistoryMetric, { active: active, index: 2, title: copy.memory, value: `${Math.round(usage?.memoryPercent ?? 0)}%`, detail: `${((usage?.memoryUsedMb ?? 0) / 1024).toFixed(1)} / ${((usage?.memoryTotalMb ?? 0) / 1024).toFixed(1)} GB`, series: history.memory ?? [], fixedPeak: 100 }), SP_JSX.jsx(HistoryMetric, { active: active, index: 3, title: extra.network, value: formatRate(usage?.networkBytesPerSecond ?? 0), detail: extra.network, series: history.network ?? [] }), (usage?.disks ?? []).map((disk, diskIndex) => SP_JSX.jsx(HistoryMetric, { active: active, index: 4 + diskIndex, title: `${extra.disk} ${disk.name}`, value: formatRate(disk.bytesPerSecond), detail: disk.kind ? disk.kind.toUpperCase() : extra.disk, series: history[`disk:${disk.name}`] ?? [] }, disk.name))] }), SP_JSX.jsx("div", { className: "ph-system-lower", children: SP_JSX.jsxs("div", { className: "ph-tile ph-process-panel", children: [SP_JSX.jsxs("div", { className: "ph-process-heading", children: [SP_JSX.jsx("div", { className: "ph-device-list-head", style: { padding: 0 }, children: copy.processes }), SP_JSX.jsxs(FocusItem, { className: `ph-restart-decky${deckyRestarting ? " ph-busy" : ""}`, "aria-busy": deckyRestarting ? "true" : "false", "aria-disabled": deckyRestarting ? "true" : "false", onPress: () => {
                                                 if (deckyRestartingRef.current)
                                                     return;
                                                 onConfirm(copy.confirmAction, copy.restartDecky, requestDeckyRestart);
@@ -16075,11 +16231,11 @@ function SystemTab({ copy, extra, onConfirm }) {
                                         }, children: [SP_JSX.jsx("div", { className: "ph-process-name", children: process.name }), SP_JSX.jsxs("div", { className: "ph-process-stat", children: [process.cpuPercent, "%"] }), SP_JSX.jsxs("div", { className: "ph-process-stat", children: [Math.round(process.memoryMb), " MB"] })] }, process.id))) })] }) })] }), selectedProcess ? (SP_JSX.jsx(ProcessOptionsSheet, { process: selectedProcess, copy: copy, onCancel: () => setSelectedProcess(null), onClose: () => {
                     const current = selectedProcess;
                     setSelectedProcess(null);
-                    void closeProcess(current.id).then(() => window.setTimeout(refresh, 450));
+                    void closeProcess(current.id).then(() => processPollRef.current?.refresh(450));
                 }, onKill: () => {
                     const current = selectedProcess;
                     setSelectedProcess(null);
-                    void killProcess(current.id).then(() => window.setTimeout(refresh, 450));
+                    void killProcess(current.id).then(() => processPollRef.current?.refresh(450));
                 } })) : null] }));
 }
 function ProcessOptionsSheet({ process, copy, onCancel, onClose, onKill }) {
@@ -19545,7 +19701,7 @@ function resolveInstallArtifact(plugin, release) {
 }
 
 var schemaVersion = 3;
-var verifiedAt = "2026-10-19";
+var verifiedAt = "2026-11-10";
 var officialDeckyCatalogUrl = "https://plugins.deckbrew.xyz/plugins";
 var plugins = [
 	{
@@ -19676,10 +19832,10 @@ var plugins = [
 		author: "LoZazaMastro",
 		repository: "LoZazaMastro/Playhub-Metadata",
 		repositoryUrl: "https://github.com/LoZazaMastro/Playhub-Metadata",
-		version: "1.8.4",
-		releaseAssetName: "",
-		catalogReleaseUrl: "",
-		releasePublishedAt: "",
+		version: "1.8.5",
+		releaseAssetName: "Playhub-Metadata_1.8.5_Installer.zip",
+		catalogReleaseUrl: "https://github.com/LoZazaMastro/Playhub-Metadata/releases/download/1.8.5/Playhub-Metadata_1.8.5_Installer.zip",
+		releasePublishedAt: "2026-11-10T11:57:19Z",
 		category: "Playhub",
 		shortDescription: "Details, artwork, and achievements for your games.",
 		longDescription: "Playhub Metadata gives your Big Picture library a richer, more polished, console-like feel, especially for non-Steam games such as external PC titles, Game Pass games, Xbox apps, and emulators. It adds metadata, community images and videos, categories, and even achievements.\n\n## Metadata and images\n• Automatically finds missing game metadata.\n• Adds descriptions, developers, publishers, release dates, ratings, and information panels.\n• Adds community screenshots and media when available.\n• Lets you edit each game's metadata manually.\n\n## Achievements\n• Displays achievements for non-Steam games inside Big Picture.\n• Supports RetroAchievements for ROMs and emulators.\n• Supports Xbox, Game Pass, and Microsoft Store achievements through OpenXBL (games must be imported through Playhub's Import Games tab).\n• Lets you choose the source for each game: Auto, RetroAchievements, Xbox, or Disabled.\n• Offers flexible hourly, daily, weekly, per-session, or manual caching to limit API calls.\n\n## Note\n• These do not become native Steam achievements; they are displayed only inside Big Picture.",
@@ -19708,7 +19864,7 @@ var plugins = [
 			"Playhub-Metadata"
 		],
 		firstPublishedAt: "2026-06-15T10:06:10Z",
-		updatedAt: "2026-10-03T10:16:21Z"
+		updatedAt: "2026-11-10T11:57:19Z"
 	},
 	{
 		active: false,
@@ -23671,10 +23827,10 @@ var plugins = [
 		author: "David Beall",
 		repository: "beallio/SDH-Ludusavi",
 		repositoryUrl: "https://github.com/beallio/SDH-Ludusavi",
-		version: "0.4.6",
-		releaseAssetName: "SDH-Ludusavi-v0.4.6.zip",
-		catalogReleaseUrl: "https://github.com/beallio/SDH-Ludusavi/releases/download/v0.4.6/SDH-Ludusavi-v0.4.6.zip",
-		releasePublishedAt: "2026-08-19T18:31:13Z",
+		version: "0.5.3",
+		releaseAssetName: "SDH-Ludusavi-v0.5.3.zip",
+		catalogReleaseUrl: "https://github.com/beallio/SDH-Ludusavi/releases/download/v0.5.3/SDH-Ludusavi-v0.5.3.zip",
+		releasePublishedAt: "2026-11-04T02:00:52Z",
 		category: "Libreria e giochi",
 		shortDescription: "Decky Loader controls for Ludusavi save backups and restores.",
 		longDescription: "Decky Loader controls for Ludusavi save backups and restores.",
@@ -23696,7 +23852,7 @@ var plugins = [
 		catalogSource: "outside-store",
 		catalogPluginId: 0,
 		firstPublishedAt: "2026-05-31T02:23:32Z",
-		updatedAt: "2026-10-09T03:34:26Z"
+		updatedAt: "2026-11-04T02:00:52Z"
 	},
 	{
 		active: true,
@@ -23705,10 +23861,10 @@ var plugins = [
 		author: "beallio",
 		repository: "beallio/Decky-Metadata",
 		repositoryUrl: "https://github.com/beallio/Decky-Metadata",
-		version: "0.3.10",
+		version: "0.6.1",
 		releaseAssetName: "Decky-Metadata.zip",
-		catalogReleaseUrl: "https://github.com/beallio/Decky-Metadata/releases/download/v0.3.10/Decky-Metadata.zip",
-		releasePublishedAt: "2026-08-31T04:56:50Z",
+		catalogReleaseUrl: "https://github.com/beallio/Decky-Metadata/releases/download/v0.6.1/Decky-Metadata.zip",
+		releasePublishedAt: "2026-11-02T18:45:25Z",
 		category: "Libreria e giochi",
 		shortDescription: "Add game metadata, Steam activity news, and Steam community controller layouts to non-Steam games in Steam Gaming Mode.",
 		longDescription: "Add game metadata, Steam activity news, and Steam community controller layouts to non-Steam games in Steam Gaming Mode.",
@@ -23732,7 +23888,7 @@ var plugins = [
 		catalogSource: "outside-store",
 		catalogPluginId: 0,
 		firstPublishedAt: "2026-07-17T08:28:31Z",
-		updatedAt: "2026-10-13T16:33:17Z"
+		updatedAt: "2026-11-07T19:37:08Z"
 	},
 	{
 		active: true,
@@ -23741,13 +23897,13 @@ var plugins = [
 		author: "numan",
 		repository: "mubaraknumann/unifideck",
 		repositoryUrl: "https://github.com/mubaraknumann/unifideck",
-		version: "0.7.4",
-		releaseAssetName: "unifideck.prod.v0.7.4.zip",
-		catalogReleaseUrl: "https://github.com/mubaraknumann/unifideck/releases/download/Release-0.7.4/unifideck.prod.v0.7.4.zip",
-		releasePublishedAt: "2026-08-23T10:28:03Z",
+		version: "0.8.0",
+		releaseAssetName: "unifideck.prod.v0.8.0.zip",
+		catalogReleaseUrl: "https://github.com/mubaraknumann/unifideck/releases/download/Release-0.8.0/unifideck.prod.v0.8.0.zip",
+		releasePublishedAt: "2026-11-09T14:57:34Z",
 		category: "Libreria e giochi",
-		shortDescription: "Unified game library for Steam Deck — browse, install and launch games from Epic Games, GOG, Amazon, Ubisoft and Battle.net directly inside Steam's interface.",
-		longDescription: "Unified game library for Steam Deck — browse, install and launch games from Epic Games, GOG, Amazon, Ubisoft and Battle.net directly inside Steam's interface.",
+		shortDescription: "Unified game library for Steam Deck and Steam Machine — browse, install and launch games from Epic Games, GOG, Amazon, Ubisoft, Battle.net and GameVault directly inside Steam's interface.",
+		longDescription: "Unified game library for Steam Deck and Steam Machine — browse, install and launch games from Epic Games, GOG, Amazon, Ubisoft, Battle.net and GameVault directly inside Steam's interface.",
 		coverUrl: "https://github.com/user-attachments/assets/58aafad6-5c54-475d-a309-c44f77895b72",
 		keywords: [
 			"library",
@@ -23771,7 +23927,7 @@ var plugins = [
 		catalogSource: "outside-store",
 		catalogPluginId: 0,
 		firstPublishedAt: "2026-01-04T20:14:36Z",
-		updatedAt: "2026-10-15T21:08:42Z"
+		updatedAt: "2026-11-09T14:57:34Z"
 	},
 	{
 		active: true,
@@ -23780,10 +23936,10 @@ var plugins = [
 		author: "Panyiwei",
 		repository: "panyiwei-home/Friendeck",
 		repositoryUrl: "https://github.com/panyiwei-home/Friendeck",
-		version: "0.7.7",
-		releaseAssetName: "Friendeck.v.0.7.7.zip",
-		catalogReleaseUrl: "https://github.com/panyiwei-home/Friendeck/releases/download/0.7.7/Friendeck.v.0.7.7.zip",
-		releasePublishedAt: "2026-03-03T12:39:10Z",
+		version: "0.8",
+		releaseAssetName: "Friendeck-plugin.v.0.8.zip",
+		catalogReleaseUrl: "https://github.com/panyiwei-home/Friendeck/releases/download/v0.8/Friendeck-plugin.v.0.8.zip",
+		releasePublishedAt: "2026-10-24T07:01:02Z",
 		category: "Strumenti e utilità",
 		shortDescription: "通过局域网在设备间传输文件到 Steam Deck",
 		longDescription: "通过局域网在设备间传输文件到 Steam Deck",
@@ -23804,7 +23960,7 @@ var plugins = [
 		catalogSource: "outside-store",
 		catalogPluginId: 0,
 		firstPublishedAt: "2026-01-21T10:24:29Z",
-		updatedAt: "2026-03-03T12:39:10Z"
+		updatedAt: "2026-10-24T07:01:02Z"
 	},
 	{
 		active: true,
@@ -23952,10 +24108,10 @@ var plugins = [
 		author: "Necrosiak",
 		repository: "Necrosiak/Steamcord",
 		repositoryUrl: "https://github.com/Necrosiak/Steamcord",
-		version: "1.30.0",
+		version: "1.45.0",
 		releaseAssetName: "Steamcord.zip",
-		catalogReleaseUrl: "https://github.com/Necrosiak/Steamcord/releases/download/v1.30.0/Steamcord.zip",
-		releasePublishedAt: "2026-09-01T08:19:40Z",
+		catalogReleaseUrl: "https://github.com/Necrosiak/Steamcord/releases/download/v1.45.0/Steamcord.zip",
+		releasePublishedAt: "2026-11-09T08:18:12Z",
 		category: "Social e community",
 		shortDescription: "Discord in Steam Gaming Mode — voice chat, DMs, QR login",
 		longDescription: "Discord in Steam Gaming Mode — voice chat, DMs, QR login",
@@ -23976,7 +24132,7 @@ var plugins = [
 		catalogSource: "outside-store",
 		catalogPluginId: 0,
 		firstPublishedAt: "2026-06-28T04:49:28Z",
-		updatedAt: "2026-10-19T06:44:08Z"
+		updatedAt: "2026-11-09T08:18:12Z"
 	},
 	{
 		active: true,
@@ -24272,10 +24428,10 @@ var plugins = [
 		author: "Felix Hirschfeld",
 		repository: "DeckFilter/DeckyZone",
 		repositoryUrl: "https://github.com/DeckFilter/DeckyZone",
-		version: "0.4.0",
+		version: "0.6.6",
 		releaseAssetName: "DeckyZone.zip",
-		catalogReleaseUrl: "https://github.com/DeckFilter/DeckyZone/releases/download/v0.4.0/DeckyZone.zip",
-		releasePublishedAt: "2026-05-07T10:01:40Z",
+		catalogReleaseUrl: "https://github.com/DeckFilter/DeckyZone/releases/download/v0.6.6/DeckyZone.zip",
+		releasePublishedAt: "2026-10-23T10:19:48Z",
 		category: "Libreria e giochi",
 		shortDescription: "Zotac Gaming Zone plugin for Decky Loader.",
 		longDescription: "Zotac Gaming Zone plugin for Decky Loader.",
@@ -24296,7 +24452,7 @@ var plugins = [
 		catalogSource: "outside-store",
 		catalogPluginId: 0,
 		firstPublishedAt: "2026-03-26T15:13:44Z",
-		updatedAt: "2026-10-19T09:33:18Z"
+		updatedAt: "2026-10-23T10:21:55Z"
 	},
 	{
 		active: true,
@@ -24442,10 +24598,10 @@ var plugins = [
 		author: "Hooandee",
 		repository: "Hooandee/panel-de-control",
 		repositoryUrl: "https://github.com/Hooandee/panel-de-control",
-		version: "0.37.12",
+		version: "0.86.0",
 		releaseAssetName: "Panel.de.Control.zip",
-		catalogReleaseUrl: "https://github.com/Hooandee/panel-de-control/releases/download/panel-de-control-v0.37.12/Panel.de.Control.zip",
-		releasePublishedAt: "2026-08-24T19:11:57Z",
+		catalogReleaseUrl: "https://github.com/Hooandee/panel-de-control/releases/download/panel-de-control-v0.86.0/Panel.de.Control.zip",
+		releasePublishedAt: "2026-11-09T19:29:23Z",
 		category: "Sistema e hardware",
 		shortDescription: "Panel de control definitivo para PCs portátiles: TDP, ventiladores y más.",
 		longDescription: "Panel de control definitivo para PCs portátiles: TDP, ventiladores y más.",
@@ -24468,7 +24624,7 @@ var plugins = [
 		catalogSource: "outside-store",
 		catalogPluginId: 0,
 		firstPublishedAt: "2026-07-02T21:53:01Z",
-		updatedAt: "2026-10-18T20:40:42Z"
+		updatedAt: "2026-11-09T19:29:23Z"
 	},
 	{
 		active: true,
@@ -24828,13 +24984,13 @@ var plugins = [
 		author: "Rayek",
 		repository: "Rayekkk/DeckyVibranceHDR",
 		repositoryUrl: "https://github.com/Rayekkk/DeckyVibranceHDR",
-		version: "1.0.1",
-		releaseAssetName: "DeckyVibranceHDR-1.0.1.zip",
-		catalogReleaseUrl: "https://github.com/Rayekkk/DeckyVibranceHDR/releases/download/1.0.1/DeckyVibranceHDR-1.0.1.zip",
-		releasePublishedAt: "2026-08-09T16:35:39Z",
+		version: "1.3.0",
+		releaseAssetName: "DeckyVibranceHDR-1.3.0.zip",
+		catalogReleaseUrl: "https://github.com/Rayekkk/DeckyVibranceHDR/releases/download/1.3.0/DeckyVibranceHDR-1.3.0.zip",
+		releasePublishedAt: "2026-10-30T16:42:39Z",
 		category: "Personalizzazione e media",
-		shortDescription: "Saturation control under gamescope, for HDR content as well as SDR.",
-		longDescription: "Saturation control under gamescope, for HDR content as well as SDR.",
+		shortDescription: "Saturation control under gamescope for SDR and HDR content, calibrated from the built-in panel's EDID.",
+		longDescription: "Saturation control under gamescope for SDR and HDR content, calibrated from the built-in panel's EDID.",
 		coverUrl: "https://raw.githubusercontent.com/Rayekkk/DeckyVibranceHDR/main/docs/store.jpg",
 		keywords: [
 			"utilities",
@@ -24853,7 +25009,7 @@ var plugins = [
 		catalogSource: "outside-store",
 		catalogPluginId: 0,
 		firstPublishedAt: "2026-07-28T20:41:10Z",
-		updatedAt: "2026-10-10T23:32:41Z"
+		updatedAt: "2026-10-30T16:42:39Z"
 	},
 	{
 		active: true,
@@ -24862,13 +25018,13 @@ var plugins = [
 		author: "Adam <nullbit5@protonmail.com>",
 		repository: "parvagans/achievement-companion",
 		repositoryUrl: "https://github.com/parvagans/achievement-companion",
-		version: "0.3.3",
-		releaseAssetName: "achievement-companion-v0.3.3.zip",
-		catalogReleaseUrl: "https://github.com/parvagans/achievement-companion/releases/download/v0.3.3/achievement-companion-v0.3.3.zip",
-		releasePublishedAt: "2026-08-15T09:15:09Z",
+		version: "0.40.0",
+		releaseAssetName: "achievement-companion-v0.40.0.zip",
+		catalogReleaseUrl: "https://github.com/parvagans/achievement-companion/releases/download/v0.40.0/achievement-companion-v0.40.0.zip",
+		releasePublishedAt: "2026-10-31T12:17:06Z",
 		category: "Libreria e giochi",
-		shortDescription: "Decky plugin for Steam Deck Game Mode with provider-first achievement dashboards for RetroAchievements and Steam, backend-owned credentials, and controller-friendly browsing.",
-		longDescription: "Decky plugin for Steam Deck Game Mode with provider-first achievement dashboards for RetroAchievements and Steam, backend-owned credentials, and controller-friendly browsing.",
+		shortDescription: "Bring RetroAchievements and Steam achievement progress directly into Game Mode, with unlock history, game stats, achievement tracking, and compact or full-screen controller-friendly views.",
+		longDescription: "Bring RetroAchievements and Steam achievement progress directly into Game Mode, with unlock history, game stats, achievement tracking, and compact or full-screen controller-friendly views.",
 		coverUrl: "https://raw.githubusercontent.com/parvagans/achievement-companion/main/assets/providers_menu.png",
 		keywords: [
 			"achievements",
@@ -24886,7 +25042,7 @@ var plugins = [
 		catalogSource: "outside-store",
 		catalogPluginId: 0,
 		firstPublishedAt: "2026-04-18T17:01:15Z",
-		updatedAt: "2026-10-18T19:06:12Z"
+		updatedAt: "2026-10-31T12:17:06Z"
 	},
 	{
 		active: true,
@@ -25268,10 +25424,10 @@ var plugins = [
 		author: "Michael Finney",
 		repository: "RedRanger14/decky-nexus",
 		repositoryUrl: "https://github.com/RedRanger14/decky-nexus",
-		version: "1.4.1",
-		releaseAssetName: "Nexus-Mods-1.4.1.zip",
-		catalogReleaseUrl: "https://github.com/RedRanger14/decky-nexus/releases/download/v1.4.1/Nexus-Mods-1.4.1.zip",
-		releasePublishedAt: "2026-08-31T16:29:31Z",
+		version: "1.21.40",
+		releaseAssetName: "Nexus-Mods-1.21.40.zip",
+		catalogReleaseUrl: "https://github.com/RedRanger14/decky-nexus/releases/download/v1.21.40/Nexus-Mods-1.21.40.zip",
+		releasePublishedAt: "2026-10-25T16:06:18Z",
 		category: "Libreria e giochi",
 		shortDescription: "Browse, install, and enable/disable Nexus Mods for the current game without leaving Gaming Mode.",
 		longDescription: "Browse, install, and enable/disable Nexus Mods for the current game without leaving Gaming Mode.",
@@ -25292,7 +25448,7 @@ var plugins = [
 		catalogSource: "outside-store",
 		catalogPluginId: 0,
 		firstPublishedAt: "2026-08-17T22:48:25Z",
-		updatedAt: "2026-10-10T10:17:00Z"
+		updatedAt: "2026-10-25T16:06:18Z"
 	},
 	{
 		active: true,
@@ -26036,13 +26192,13 @@ var plugins = [
 		author: "Qiming-Liu",
 		repository: "Qiming-Liu/CreamDeck",
 		repositoryUrl: "https://github.com/Qiming-Liu/CreamDeck",
-		version: "1.0.0",
-		releaseAssetName: "CreamDeck.zip",
-		catalogReleaseUrl: "https://github.com/Qiming-Liu/CreamDeck/releases/download/1.0.0/CreamDeck.zip",
-		releasePublishedAt: "2026-09-02T15:58:00Z",
+		version: "1.0.5",
+		releaseAssetName: "CreamDeck.v1.0.5.zip",
+		catalogReleaseUrl: "https://github.com/Qiming-Liu/CreamDeck/releases/download/v1.0.5/CreamDeck.v1.0.5.zip",
+		releasePublishedAt: "2026-11-05T07:49:03Z",
 		category: "Libreria e giochi",
-		shortDescription: "Manage supported DLC loaders and related tools from an installed Steam game's context menu.",
-		longDescription: "CreamDeck provides a Decky interface for installing and managing several third-party DLC loader systems on selected Steam games.",
+		shortDescription: "Select an installed Steam game from its library context menu and unlock its DLC (SmokeAPI/CreamAPI), directly on the Steam Deck.",
+		longDescription: "Select an installed Steam game from its library context menu and unlock its DLC (SmokeAPI/CreamAPI), directly on the Steam Deck.",
 		coverUrl: "https://opengraph.githubassets.com/1/Qiming-Liu/CreamDeck",
 		keywords: [
 			"dlc",
@@ -26061,7 +26217,7 @@ var plugins = [
 		catalogSource: "outside-store",
 		catalogPluginId: 0,
 		firstPublishedAt: "2026-09-11T15:01:21Z",
-		updatedAt: "2026-09-20T11:32:29Z"
+		updatedAt: "2026-11-05T07:49:03Z"
 	},
 	{
 		active: true,
@@ -26246,13 +26402,13 @@ var plugins = [
 		author: "FAILINATOR5000",
 		repository: "FAILINATOR5000/decky-cheevodeck",
 		repositoryUrl: "https://github.com/FAILINATOR5000/decky-cheevodeck",
-		version: "0.8.8",
-		releaseAssetName: "CheevoDeck-0.8.8.zip",
-		catalogReleaseUrl: "https://github.com/FAILINATOR5000/decky-cheevodeck/releases/download/v0.8.8/CheevoDeck-0.8.8.zip",
-		releasePublishedAt: "2026-09-09T21:21:37Z",
+		version: "1.0.0",
+		releaseAssetName: "CheevoDeck-1.0.0.zip",
+		catalogReleaseUrl: "https://github.com/FAILINATOR5000/decky-cheevodeck/releases/download/v1.0.0/CheevoDeck-1.0.0.zip",
+		releasePublishedAt: "2026-10-24T12:02:43Z",
 		category: "Libreria e giochi",
-		shortDescription: "Track RetroAchievements, goals, notes, guides, activity, and community events from the Quick Access Menu.",
-		longDescription: "CheevoDeck is a complete RetroAchievements companion for Gaming Mode. It tracks achievements and mastery goals, organizes notes and reminders, opens guides, follows discussions and community activity, validates compatible game files, and supports multiple RetroAchievements accounts without leaving the Quick Access Menu.",
+		shortDescription: "A full RetroAchievements tracking and management system inside the Quick Access Menu. Track achievements, build custom lists, keep notes, reminders and goals, read guides, even follow activity feeds, discussions and community events — all without leaving your game.",
+		longDescription: "A full RetroAchievements tracking and management system inside the Quick Access Menu. Track achievements, build custom lists, keep notes, reminders and goals, read guides, even follow activity feeds, discussions and community events — all without leaving your game.",
 		coverUrl: "https://raw.githubusercontent.com/FAILINATOR5000/decky-cheevodeck/main/docs/images/cheevodeck-wide.webp",
 		keywords: [
 			"retroachievements",
@@ -26274,7 +26430,7 @@ var plugins = [
 		catalogSource: "outside-store",
 		catalogPluginId: 0,
 		firstPublishedAt: "2026-08-28T05:38:52Z",
-		updatedAt: "2026-09-16T04:42:15Z"
+		updatedAt: "2026-10-24T12:02:43Z"
 	},
 	{
 		active: true,
@@ -26777,10 +26933,10 @@ var plugins = [
 		author: "Dmitry Nikolaenya",
 		repository: "goooroooX/CE-Decky",
 		repositoryUrl: "https://github.com/goooroooX/CE-Decky",
-		version: "0.9.29",
-		releaseAssetName: "CE-Decky-v0.9.29.zip",
-		catalogReleaseUrl: "https://github.com/goooroooX/CE-Decky/releases/download/v0.9.29/CE-Decky-v0.9.29.zip",
-		releasePublishedAt: "2026-09-23T17:25:17Z",
+		version: "0.9.34",
+		releaseAssetName: "CE-Decky-v0.9.34.zip",
+		catalogReleaseUrl: "https://github.com/goooroooX/CE-Decky/releases/download/v0.9.34/CE-Decky-v0.9.34.zip",
+		releasePublishedAt: "2026-11-07T21:15:55Z",
 		category: "Cheat Engine / trainer",
 		shortDescription: "Manage Cheat Engine tables and live table controls from SteamOS Game Mode.",
 		longDescription: "Manage Cheat Engine tables and live table controls from SteamOS Game Mode.",
@@ -26797,7 +26953,7 @@ var plugins = [
 			"goooroooX/CE-Decky"
 		],
 		firstPublishedAt: "2026-09-14T20:43:49Z",
-		updatedAt: "2026-09-23T17:25:17Z"
+		updatedAt: "2026-11-07T21:15:55Z"
 	},
 	{
 		active: true,
@@ -26835,10 +26991,10 @@ var plugins = [
 		author: "jmedina21",
 		repository: "jmedina21/deck-as-controller",
 		repositoryUrl: "https://github.com/jmedina21/deck-as-controller",
-		version: "0.6.2",
+		version: "0.6.5",
 		releaseAssetName: "deck-as-controller.zip",
-		catalogReleaseUrl: "https://github.com/jmedina21/deck-as-controller/releases/download/v0.6.2/deck-as-controller.zip",
-		releasePublishedAt: "2026-10-16T04:01:05Z",
+		catalogReleaseUrl: "https://github.com/jmedina21/deck-as-controller/releases/download/v0.6.5/deck-as-controller.zip",
+		releasePublishedAt: "2026-10-28T12:36:55Z",
 		category: "Controller / Bluetooth",
 		shortDescription: "Use your Steam Deck as a wireless Bluetooth controller for your Mac or iPad.",
 		longDescription: "Use your Steam Deck as a wireless Bluetooth controller for your Mac or iPad.",
@@ -26855,7 +27011,7 @@ var plugins = [
 			"jmedina21/deck-as-controller"
 		],
 		firstPublishedAt: "2026-09-30T16:21:18Z",
-		updatedAt: "2026-10-16T04:01:05Z"
+		updatedAt: "2026-10-28T12:36:55Z"
 	},
 	{
 		active: true,
@@ -26893,10 +27049,10 @@ var plugins = [
 		author: "Michael Palma",
 		repository: "michpalm/game-glance",
 		repositoryUrl: "https://github.com/michpalm/game-glance",
-		version: "3.4.0",
+		version: "3.6.2",
 		releaseAssetName: "game-glance.zip",
-		catalogReleaseUrl: "https://github.com/michpalm/game-glance/releases/download/v3.4.0/game-glance.zip",
-		releasePublishedAt: "2026-10-17T15:38:36Z",
+		catalogReleaseUrl: "https://github.com/michpalm/game-glance/releases/download/v3.6.2/game-glance.zip",
+		releasePublishedAt: "2026-11-09T22:57:13Z",
 		category: "Libreria / metadata",
 		shortDescription: "Immersive game page: full-screen art, HowLongToBeat times, descriptions and store info.",
 		longDescription: "Immersive game page: full-screen art, HowLongToBeat times, descriptions and store info.",
@@ -26913,7 +27069,7 @@ var plugins = [
 			"michpalm/game-glance"
 		],
 		firstPublishedAt: "2026-10-02T14:58:02Z",
-		updatedAt: "2026-10-17T15:38:36Z"
+		updatedAt: "2026-11-09T22:57:49Z"
 	},
 	{
 		active: true,
@@ -26922,13 +27078,13 @@ var plugins = [
 		author: "Michael Palma",
 		repository: "michpalm/ambideck",
 		repositoryUrl: "https://github.com/michpalm/ambideck",
-		version: "1.2.0",
+		version: "1.3.0",
 		releaseAssetName: "ambideck.zip",
-		catalogReleaseUrl: "https://github.com/michpalm/ambideck/releases/download/v1.2.0/ambideck.zip",
-		releasePublishedAt: "2026-10-15T08:32:08Z",
+		catalogReleaseUrl: "https://github.com/michpalm/ambideck/releases/download/v1.3.0/ambideck.zip",
+		releasePublishedAt: "2026-10-22T18:43:29Z",
 		category: "RGB / ROG Xbox Ally",
-		shortDescription: "Ambilight for the ROG Xbox Ally: the stick lights follow what's on screen.",
-		longDescription: "Ambilight for the ROG Xbox Ally: the stick lights follow what's on screen.",
+		shortDescription: "Ambilight for compatible handheld PCs: RGB lights follow what's on screen.",
+		longDescription: "Ambilight for compatible handheld PCs: RGB lights follow what's on screen.",
 		coverUrl: "https://opengraph.githubassets.com/1/michpalm/ambideck",
 		catalogStatus: "github",
 		catalogSource: "outside-store",
@@ -26942,7 +27098,7 @@ var plugins = [
 			"michpalm/ambideck"
 		],
 		firstPublishedAt: "2026-10-03T15:40:34Z",
-		updatedAt: "2026-10-15T08:32:08Z"
+		updatedAt: "2026-10-22T18:43:29Z"
 	},
 	{
 		active: true,
@@ -26981,13 +27137,13 @@ var plugins = [
 		author: "Rayek",
 		repository: "Rayekkk/LegionGo2Companion",
 		repositoryUrl: "https://github.com/Rayekkk/LegionGo2Companion",
-		version: "2.2.0",
-		releaseAssetName: "LegionGo2Companion-2.2.0.zip",
-		catalogReleaseUrl: "https://github.com/Rayekkk/LegionGo2Companion/releases/download/2.2.0/LegionGo2Companion-2.2.0.zip",
-		releasePublishedAt: "2026-10-18T19:50:06Z",
+		version: "2.4.1",
+		releaseAssetName: "LegionGo2Companion-2.4.1.zip",
+		catalogReleaseUrl: "https://github.com/Rayekkk/LegionGo2Companion/releases/download/2.4.1/LegionGo2Companion-2.4.1.zip",
+		releasePublishedAt: "2026-11-03T18:38:24Z",
 		category: "Hardware / Legion Go 2",
-		shortDescription: "Tune power, cooling and vibration, personalise lighting and buttons, manage charging, and check your display and Wi-Fi without leaving Gaming Mode.",
-		longDescription: "Tune power, cooling and vibration, personalise lighting and buttons, manage charging, and check your display and Wi-Fi without leaving Gaming Mode.",
+		shortDescription: "Legion Go 2 Companion combines nine hardware modules in one Decky plugin. Use the controls you need, hide the rest, and keep separate power and vibration settings for your games. Saved profiles keep working while the menu is closed. In Desktop Mode the same controls are also available as a native [Desktop app](#desktop-app).",
+		longDescription: "Legion Go 2 Companion combines nine hardware modules in one Decky plugin. Use the controls you need, hide the rest, and keep separate power and vibration settings for your games. Saved profiles keep working while the menu is closed. In Desktop Mode the same controls are also available as a native [Desktop app](#desktop-app).",
 		coverUrl: "https://opengraph.githubassets.com/1/Rayekkk/LegionGo2Companion",
 		catalogStatus: "github",
 		catalogSource: "outside-store",
@@ -27001,7 +27157,7 @@ var plugins = [
 			"Rayekkk/LegionGo2Companion"
 		],
 		firstPublishedAt: "2026-09-06T21:38:26Z",
-		updatedAt: "2026-10-18T19:50:06Z"
+		updatedAt: "2026-11-03T18:38:24Z"
 	},
 	{
 		active: true,
@@ -27272,10 +27428,10 @@ var plugins = [
 		author: "DeckyMods Contributors",
 		repository: "18798aa12/DeckyMods",
 		repositoryUrl: "https://github.com/18798aa12/DeckyMods",
-		version: "0.2.14",
-		releaseAssetName: "DeckyMods-v0.2.14.zip",
-		catalogReleaseUrl: "https://github.com/18798aa12/DeckyMods/releases/download/v0.2.14/DeckyMods-v0.2.14.zip",
-		releasePublishedAt: "2026-10-19T03:17:21Z",
+		version: "0.3.1",
+		releaseAssetName: "DeckyMods-v0.3.1.zip",
+		catalogReleaseUrl: "https://github.com/18798aa12/DeckyMods/releases/download/v0.3.1/DeckyMods-v0.3.1.zip",
+		releasePublishedAt: "2026-10-20T18:59:52Z",
 		category: "Modding / Nexus Mods",
 		shortDescription: "SteamOS 游戏 MOD 下载、安装与可恢复的启停管理。",
 		longDescription: "SteamOS 游戏 MOD 下载、安装与可恢复的启停管理。",
@@ -27292,7 +27448,7 @@ var plugins = [
 			"18798aa12/DeckyMods"
 		],
 		firstPublishedAt: "2026-10-19T01:54:36Z",
-		updatedAt: "2026-10-19T03:17:21Z"
+		updatedAt: "2026-10-20T18:59:52Z"
 	},
 	{
 		active: true,
@@ -27301,13 +27457,13 @@ var plugins = [
 		author: "MWGIH",
 		repository: "MWGIH/DeckyMultiFrameGen",
 		repositoryUrl: "https://github.com/MWGIH/DeckyMultiFrameGen",
-		version: "0.6.1",
+		version: "1.1.13",
 		releaseAssetName: "Decky-MultiFrameGen.zip",
-		catalogReleaseUrl: "https://github.com/MWGIH/DeckyMultiFrameGen/releases/download/v0.6.1/Decky-MultiFrameGen.zip",
-		releasePublishedAt: "2026-10-18T20:04:37Z",
+		catalogReleaseUrl: "https://github.com/MWGIH/DeckyMultiFrameGen/releases/download/v1.1.13/Decky-MultiFrameGen.zip",
+		releasePublishedAt: "2026-11-08T19:35:41Z",
 		category: "Grafica / frame generation",
-		shortDescription: "Install OptiScaler, HelixSR and MAKO from their own releases and choose which one each game uses.",
-		longDescription: "Install OptiScaler, HelixSR and MAKO from their own releases and choose which one each game uses.",
+		shortDescription: "Install OptiScaler, HelixSR, MAKO and FSR4 Injector from their own releases and choose which one each game uses.",
+		longDescription: "Install OptiScaler, HelixSR, MAKO and FSR4 Injector from their own releases and choose which one each game uses.",
 		coverUrl: "https://opengraph.githubassets.com/1/MWGIH/DeckyMultiFrameGen",
 		catalogStatus: "github",
 		catalogSource: "outside-store",
@@ -27321,7 +27477,7 @@ var plugins = [
 			"MWGIH/DeckyMultiFrameGen"
 		],
 		firstPublishedAt: "2026-10-18T00:21:07Z",
-		updatedAt: "2026-10-18T20:04:37Z"
+		updatedAt: "2026-11-10T01:12:57Z"
 	},
 	{
 		active: true,
@@ -27446,10 +27602,10 @@ var plugins = [
 		author: "DeckyProxy Contributors",
 		repository: "18798aa12/DeckyProxy",
 		repositoryUrl: "https://github.com/18798aa12/DeckyProxy",
-		version: "0.2.3",
-		releaseAssetName: "DeckyProxy-0.2.3.zip",
-		catalogReleaseUrl: "https://github.com/18798aa12/DeckyProxy/releases/download/v0.2.3/DeckyProxy-0.2.3.zip",
-		releasePublishedAt: "2026-10-17T19:54:27Z",
+		version: "0.2.6",
+		releaseAssetName: "DeckyProxy-0.2.6.zip",
+		catalogReleaseUrl: "https://github.com/18798aa12/DeckyProxy/releases/download/v0.2.6/DeckyProxy-0.2.6.zip",
+		releasePublishedAt: "2026-10-20T18:40:58Z",
 		category: "Rete / proxy e TUN",
 		shortDescription: "Steam Deck 的 Mihomo 代理管理：订阅、节点切换与 TUN。",
 		longDescription: "Steam Deck 的 Mihomo 代理管理：订阅、节点切换与 TUN。",
@@ -27466,7 +27622,7 @@ var plugins = [
 			"18798aa12/DeckyProxy"
 		],
 		firstPublishedAt: "2026-10-17T17:43:40Z",
-		updatedAt: "2026-10-17T19:54:27Z"
+		updatedAt: "2026-10-20T18:40:58Z"
 	},
 	{
 		active: true,
@@ -27641,9 +27797,4667 @@ var plugins = [
 		],
 		firstPublishedAt: "2026-10-13T04:11:31Z",
 		updatedAt: "2026-10-13T04:11:31Z"
+	},
+	{
+		active: true,
+		name: "SkullKey",
+		installFolder: "SkullKey",
+		author: "Necrosiak",
+		repository: "Necrosiak/SkullKey",
+		repositoryUrl: "https://github.com/Necrosiak/SkullKey",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"SkullKey",
+			"Necrosiak/SkullKey"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.21.10",
+		releaseAssetName: "SkullKey.zip",
+		catalogReleaseUrl: "https://github.com/Necrosiak/SkullKey/releases/download/v1.21.10/SkullKey.zip",
+		releasePublishedAt: "2026-11-09T08:18:50Z",
+		firstPublishedAt: "2026-07-03T21:25:21Z",
+		updatedAt: "2026-11-09T08:18:50Z",
+		shortDescription: "The key that opens every store. Play your Epic Games, GOG and Amazon Games libraries directly from Game Mode: login, install, Proton prefixes and Steam shortcuts with proper artwork — no desktop mode needed. Based on Junk-Store by Eben Bruyns.",
+		longDescription: "The key that opens every store. Play your Epic Games, GOG and Amazon Games libraries directly from Game Mode: login, install, Proton prefixes and Steam shortcuts with proper artwork — no desktop mode needed. Based on Junk-Store by Eben Bruyns."
+	},
+	{
+		active: true,
+		name: "BoneCast",
+		installFolder: "BoneCast",
+		author: "Necrosiak",
+		repository: "Necrosiak/BoneCast",
+		repositoryUrl: "https://github.com/Necrosiak/BoneCast",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"BoneCast",
+			"Necrosiak/BoneCast"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.5.9",
+		releaseAssetName: "BoneCast.zip",
+		catalogReleaseUrl: "https://github.com/Necrosiak/BoneCast/releases/download/v0.5.9/BoneCast.zip",
+		releasePublishedAt: "2026-11-09T08:18:49Z",
+		firstPublishedAt: "2026-07-07T16:41:54Z",
+		updatedAt: "2026-11-09T08:18:49Z",
+		shortDescription: "Twitch and YouTube in Steam Gaming Mode — go live with editable title & auto game category, plus a transparent chat overlay over the game.",
+		longDescription: "Twitch and YouTube in Steam Gaming Mode — go live with editable title & auto game category, plus a transparent chat overlay over the game."
+	},
+	{
+		active: true,
+		name: "ED Journal Monitor",
+		installFolder: "ed-journal-monitor",
+		author: "AwaNoodle",
+		repository: "AwaNoodle/ed-journal-monitor-decky",
+		repositoryUrl: "https://github.com/AwaNoodle/ed-journal-monitor-decky",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"ED Journal Monitor",
+			"ed-journal-monitor",
+			"AwaNoodle/ed-journal-monitor-decky"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.2",
+		releaseAssetName: "ed-journal-monitor-decky-v1.0.2.zip",
+		catalogReleaseUrl: "https://github.com/AwaNoodle/ed-journal-monitor-decky/releases/download/v1.0.2/ed-journal-monitor-decky-v1.0.2.zip",
+		releasePublishedAt: "2026-11-08T21:18:55Z",
+		firstPublishedAt: "2026-05-17T22:27:33Z",
+		updatedAt: "2026-11-08T21:18:55Z",
+		shortDescription: "Monitors Elite Dangerous journal files and submits events to the Elite Dangerous Data Network (EDDN).",
+		longDescription: "Monitors Elite Dangerous journal files and submits events to the Elite Dangerous Data Network (EDDN)."
+	},
+	{
+		active: true,
+		name: "NetDeck",
+		installFolder: "NetDeck",
+		author: "Fewtarius",
+		repository: "fewtarius/NetDeck",
+		repositoryUrl: "https://github.com/fewtarius/NetDeck",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"NetDeck",
+			"fewtarius/NetDeck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.31",
+		releaseAssetName: "NetDeck.zip",
+		catalogReleaseUrl: "https://github.com/fewtarius/NetDeck/releases/download/v1.0.31/NetDeck.zip",
+		releasePublishedAt: "2026-11-07T00:22:41Z",
+		firstPublishedAt: "2025-12-04T13:09:17Z",
+		updatedAt: "2026-11-07T00:22:41Z",
+		shortDescription: "NetDeck is a powerful networking plugin for [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) that provides advanced networking capabilities for Steam Deck and handheld gaming PCs. Turn your device into a versatile networking tool with MAC address spoofing, WiFi hotspot creation, and internet sharing capabilities.",
+		longDescription: "NetDeck is a powerful networking plugin for [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) that provides advanced networking capabilities for Steam Deck and handheld gaming PCs. Turn your device into a versatile networking tool with MAC address spoofing, WiFi hotspot creation, and internet sharing capabilities."
+	},
+	{
+		active: true,
+		name: "Desk of Madness",
+		installFolder: "desk-of-madness",
+		author: "MarshyMadness",
+		repository: "Marshy-Madness/desk-of-madness",
+		repositoryUrl: "https://github.com/Marshy-Madness/desk-of-madness",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Desk of Madness",
+			"desk-of-madness",
+			"Marshy-Madness/desk-of-madness"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.5.1",
+		releaseAssetName: "desk-of-madness-0.5.1.zip",
+		catalogReleaseUrl: "https://github.com/Marshy-Madness/desk-of-madness/releases/download/v0.5.1/desk-of-madness-0.5.1.zip",
+		releasePublishedAt: "2026-11-06T22:26:51Z",
+		firstPublishedAt: "2026-09-28T04:41:12Z",
+		updatedAt: "2026-11-06T22:26:51Z",
+		shortDescription: "Your Deck. Your Notes. Your Madness. A game-aware desk for per-game notes, checklists, counters, guides and the Madness Workshop.",
+		longDescription: "Your Deck. Your Notes. Your Madness. A game-aware desk for per-game notes, checklists, counters, guides and the Madness Workshop."
+	},
+	{
+		active: true,
+		name: "ResonaDeck",
+		installFolder: "ResonaDeck",
+		author: "Valentine",
+		repository: "ValentineBSAA/ResonaDeck",
+		repositoryUrl: "https://github.com/ValentineBSAA/ResonaDeck",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"ResonaDeck",
+			"ValentineBSAA/ResonaDeck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.5.7",
+		releaseAssetName: "ResonaDeck-1.5.7.zip",
+		catalogReleaseUrl: "https://github.com/ValentineBSAA/ResonaDeck/releases/download/1.5.7/ResonaDeck-1.5.7.zip",
+		releasePublishedAt: "2026-11-06T12:32:54Z",
+		firstPublishedAt: "2026-11-06T12:32:54Z",
+		updatedAt: "2026-11-06T12:32:54Z",
+		shortDescription: "ResonaDeck 1.5.7: Donation UI removed; playback and visualizer integration unchanged.",
+		longDescription: "ResonaDeck 1.5.7: Donation UI removed; playback and visualizer integration unchanged."
+	},
+	{
+		active: true,
+		name: "FSR4 Injector",
+		installFolder: "FSR4Injector",
+		author: "Rayek",
+		repository: "Rayekkk/FSR4Injector",
+		repositoryUrl: "https://github.com/Rayekkk/FSR4Injector",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"FSR4 Injector",
+			"FSR4Injector",
+			"Rayekkk/FSR4Injector"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.2.1",
+		releaseAssetName: "FSR4Injector-1.2.1.zip",
+		catalogReleaseUrl: "https://github.com/Rayekkk/FSR4Injector/releases/download/1.2.1/FSR4Injector-1.2.1.zip",
+		releasePublishedAt: "2026-11-05T22:30:32Z",
+		firstPublishedAt: "2026-10-25T02:14:06Z",
+		updatedAt: "2026-11-05T22:30:32Z",
+		shortDescription: "Official AMD FSR 4.1 (Lite) in FSR 3.1+ games on RDNA 3.5 handhelds under Proton.",
+		longDescription: "Official AMD FSR 4.1 (Lite) in FSR 3.1+ games on RDNA 3.5 handhelds under Proton."
+	},
+	{
+		active: true,
+		name: "FNV Settings",
+		installFolder: "fnv-settings",
+		author: "qahtni",
+		repository: "qahtni/decky-fnv-settings",
+		repositoryUrl: "https://github.com/qahtni/decky-fnv-settings",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"FNV Settings",
+			"fnv-settings",
+			"qahtni/decky-fnv-settings"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.2",
+		releaseAssetName: "fnv-settings.zip",
+		catalogReleaseUrl: "https://github.com/qahtni/decky-fnv-settings/releases/download/v1.0.2/fnv-settings.zip",
+		releasePublishedAt: "2026-11-05T20:29:09Z",
+		firstPublishedAt: "2026-11-05T20:29:06Z",
+		updatedAt: "2026-11-05T20:29:09Z",
+		shortDescription: "Fallout: New Vegas graphics settings and presets from Game Mode, replacing the game's launcher.",
+		longDescription: "Fallout: New Vegas graphics settings and presets from Game Mode, replacing the game's launcher."
+	},
+	{
+		active: true,
+		name: "TitleDeck",
+		installFolder: "TitleDeck",
+		author: "Valentine",
+		repository: "ValentineBSAA/TitleDeck",
+		repositoryUrl: "https://github.com/ValentineBSAA/TitleDeck",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"TitleDeck",
+			"ValentineBSAA/TitleDeck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.2.2",
+		releaseAssetName: "TitleDeck-1.2.2-Stable.zip",
+		catalogReleaseUrl: "https://github.com/ValentineBSAA/TitleDeck/releases/download/1.2.2/TitleDeck-1.2.2-Stable.zip",
+		releasePublishedAt: "2026-11-05T07:00:49Z",
+		firstPublishedAt: "2026-11-05T07:00:49Z",
+		updatedAt: "2026-11-07T23:37:48Z",
+		shortDescription: "Customize Steam Deck game titles and locally displayed game descriptions, with safe restoration and controller-friendly editing.",
+		longDescription: "Customize Steam Deck game titles and locally displayed game descriptions, with safe restoration and controller-friendly editing."
+	},
+	{
+		active: true,
+		name: "Storage Cleaner (Rust)",
+		installFolder: "decky-storage-cleaner-rust",
+		author: "beallio (original by Matt Carlucci)",
+		repository: "beallio/decky-storage-cleaner-rust",
+		repositoryUrl: "https://github.com/beallio/decky-storage-cleaner-rust",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Storage Cleaner (Rust)",
+			"decky-storage-cleaner-rust",
+			"beallio/decky-storage-cleaner-rust"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.3",
+		releaseAssetName: "decky-storage-cleaner-rust.zip",
+		catalogReleaseUrl: "https://github.com/beallio/decky-storage-cleaner-rust/releases/download/v0.1.3/decky-storage-cleaner-rust.zip",
+		releasePublishedAt: "2026-11-04T08:07:09Z",
+		firstPublishedAt: "2026-11-02T07:48:05Z",
+		updatedAt: "2026-11-04T08:07:09Z",
+		shortDescription: "Native port of Storage Cleaner. Quickly visualize, select and clear shader cache and compatibility data. Uninstall the original Storage Cleaner first.",
+		longDescription: "Native port of Storage Cleaner. Quickly visualize, select and clear shader cache and compatibility data. Uninstall the original Storage Cleaner first."
+	},
+	{
+		active: true,
+		name: "HelixSR Manager",
+		installFolder: "helixsr-manager",
+		author: "Denarmo",
+		repository: "Denarmo/HelixSR-Manager",
+		repositoryUrl: "https://github.com/Denarmo/HelixSR-Manager",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"HelixSR Manager",
+			"helixsr-manager",
+			"Denarmo/HelixSR-Manager"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.3.2",
+		releaseAssetName: "helixsr-manager-decky-1.3.2.zip",
+		catalogReleaseUrl: "https://github.com/Denarmo/HelixSR-Manager/releases/download/decky-v1.3.2/helixsr-manager-decky-1.3.2.zip",
+		releasePublishedAt: "2026-11-04T07:37:56Z",
+		firstPublishedAt: "2026-10-12T17:28:03Z",
+		updatedAt: "2026-11-04T07:37:56Z",
+		shortDescription: "Install, switch and remove HelixSR (DLSS Model E on AMD) per game from Game Mode. Companion to HelixSR Manager.",
+		longDescription: "Install, switch and remove HelixSR (DLSS Model E on AMD) per game from Game Mode. Companion to HelixSR Manager."
+	},
+	{
+		active: true,
+		name: "RomM Armada",
+		installFolder: "romm-armada",
+		author: "abduznik",
+		repository: "abduznik/romm-armada",
+		repositoryUrl: "https://github.com/abduznik/romm-armada",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"RomM Armada",
+			"romm-armada",
+			"abduznik/romm-armada"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.4.1",
+		releaseAssetName: "RomM-Armada-0.4.1.zip",
+		catalogReleaseUrl: "https://github.com/abduznik/romm-armada/releases/download/v0.4.1/RomM-Armada-0.4.1.zip",
+		releasePublishedAt: "2026-11-04T07:03:20Z",
+		firstPublishedAt: "2026-10-25T18:48:01Z",
+		updatedAt: "2026-11-04T07:03:20Z",
+		shortDescription: "Download your RomM library to this handheld and keep its saves in sync, Arm64 first.",
+		longDescription: "Download your RomM library to this handheld and keep its saves in sync, Arm64 first."
+	},
+	{
+		active: true,
+		name: "DeckyReshade",
+		installFolder: "DeckyReshade",
+		author: "Rayek",
+		repository: "Rayekkk/DeckyReshade",
+		repositoryUrl: "https://github.com/Rayekkk/DeckyReshade",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckyReshade",
+			"Rayekkk/DeckyReshade"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "DeckyReshade-1.0.0.zip",
+		catalogReleaseUrl: "https://github.com/Rayekkk/DeckyReshade/releases/download/1.0.0/DeckyReshade-1.0.0.zip",
+		releasePublishedAt: "2026-11-03T18:08:05Z",
+		firstPublishedAt: "2026-11-03T18:08:05Z",
+		updatedAt: "2026-11-03T18:08:05Z",
+		shortDescription: "ReShade for Steam games under Proton: per-game setup, shader packages and automatic ReShade updates.",
+		longDescription: "ReShade for Steam games under Proton: per-game setup, shader packages and automatic ReShade updates."
+	},
+	{
+		active: true,
+		name: "Jedi-ReFrameShade4All",
+		installFolder: "Jedi-ReFrameShade4All",
+		author: "Jedi (OptiScaler by xXJSONDeruloXx, ReShade by itsOwen)",
+		repository: "sauliiin/Jedi-ReFrameShade4All",
+		repositoryUrl: "https://github.com/sauliiin/Jedi-ReFrameShade4All",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Jedi-ReFrameShade4All",
+			"sauliiin/Jedi-ReFrameShade4All"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.35",
+		releaseAssetName: "Jedi-ReFrameShade4All-1.1.35.zip",
+		catalogReleaseUrl: "https://github.com/sauliiin/Jedi-ReFrameShade4All/releases/download/v.1.1.35/Jedi-ReFrameShade4All-1.1.35.zip",
+		releasePublishedAt: "2026-11-03T00:16:55Z",
+		firstPublishedAt: "2026-06-09T02:45:53Z",
+		updatedAt: "2026-11-03T00:16:55Z",
+		shortDescription: "All-in-one: OptiScaler frame generation/upscaling + ReShade (with addons) in a single plugin, with automatic DLL-slot coexistence so both run together.",
+		longDescription: "All-in-one: OptiScaler frame generation/upscaling + ReShade (with addons) in a single plugin, with automatic DLL-slot coexistence so both run together."
+	},
+	{
+		active: true,
+		name: "GlucoDeck",
+		installFolder: "GlucoDeck",
+		author: "JD",
+		repository: "JDLKMR/Decky-GlucoDeck",
+		repositoryUrl: "https://github.com/JDLKMR/Decky-GlucoDeck",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"GlucoDeck",
+			"JDLKMR/Decky-GlucoDeck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.1",
+		releaseAssetName: "GlucoDeck.zip",
+		catalogReleaseUrl: "https://github.com/JDLKMR/Decky-GlucoDeck/releases/download/v1.0.1/GlucoDeck.zip",
+		releasePublishedAt: "2026-11-02T07:32:32Z",
+		firstPublishedAt: "2026-11-01T09:31:20Z",
+		updatedAt: "2026-11-02T07:32:32Z",
+		shortDescription: "Shows your current Dexcom glucose reading on the Steam Deck via Dexcom Share.",
+		longDescription: "Shows your current Dexcom glucose reading on the Steam Deck via Dexcom Share."
+	},
+	{
+		active: true,
+		name: "DeckyLS",
+		installFolder: "DeckyLS",
+		author: "Rayek",
+		repository: "Rayekkk/DeckyLS",
+		repositoryUrl: "https://github.com/Rayekkk/DeckyLS",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckyLS",
+			"Rayekkk/DeckyLS"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.1",
+		releaseAssetName: "DeckyLS-1.0.1.zip",
+		catalogReleaseUrl: "https://github.com/Rayekkk/DeckyLS/releases/download/1.0.1/DeckyLS-1.0.1.zip",
+		releasePublishedAt: "2026-10-31T20:26:47Z",
+		firstPublishedAt: "2026-10-30T19:48:37Z",
+		updatedAt: "2026-10-31T20:26:47Z",
+		shortDescription: "Lossless Scaling frame generation for the game you are playing: one menu, no launch options.",
+		longDescription: "Lossless Scaling frame generation for the game you are playing: one menu, no launch options."
+	},
+	{
+		active: true,
+		name: "PS5 Dashboard",
+		installFolder: "ps5-dashboard",
+		author: "kromossomo",
+		repository: "kromossomom-debug/decky-ps5-dashboard",
+		repositoryUrl: "https://github.com/kromossomom-debug/decky-ps5-dashboard",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"PS5 Dashboard",
+			"ps5-dashboard",
+			"kromossomom-debug/decky-ps5-dashboard"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.10.0",
+		releaseAssetName: "ps5-dashboard.zip",
+		catalogReleaseUrl: "https://github.com/kromossomom-debug/decky-ps5-dashboard/releases/download/v1.10.0/ps5-dashboard.zip",
+		releasePublishedAt: "2026-10-31T12:15:05Z",
+		firstPublishedAt: "2026-10-24T21:18:17Z",
+		updatedAt: "2026-10-31T12:15:05Z",
+		shortDescription: "The PlayStation 5 home screen for SteamOS Game Mode: a game row on top, full-screen art, a white Play button, HowLongToBeat and achievement cards, and PS5 colors everywhere.",
+		longDescription: "The PlayStation 5 home screen for SteamOS Game Mode: a game row on top, full-screen art, a white Play button, HowLongToBeat and achievement cards, and PS5 colors everywhere."
+	},
+	{
+		active: true,
+		name: "Remove Decky Warnings",
+		installFolder: "Remove-Decky-Warnings",
+		author: "JD",
+		repository: "JDLKMR/Remove-Decky-Warnings",
+		repositoryUrl: "https://github.com/JDLKMR/Remove-Decky-Warnings",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Remove Decky Warnings",
+			"Remove-Decky-Warnings",
+			"JDLKMR/Remove-Decky-Warnings"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "Remove-Decky-Warnings.zip",
+		catalogReleaseUrl: "https://github.com/JDLKMR/Remove-Decky-Warnings/releases/download/v1.0.0/Remove-Decky-Warnings.zip",
+		releasePublishedAt: "2026-10-31T00:05:31Z",
+		firstPublishedAt: "2026-10-31T00:05:31Z",
+		updatedAt: "2026-10-31T00:05:31Z",
+		shortDescription: "A Decky Loader plugin that affects Decky Loader itself, removing the recently added, frustrating 5-second waits forced upon users trying to set a custom plugin store URL or trying to install a third-party plugin.",
+		longDescription: "A Decky Loader plugin that affects Decky Loader itself, removing the recently added, frustrating 5-second waits forced upon users trying to set a custom plugin store URL or trying to install a third-party plugin."
+	},
+	{
+		active: true,
+		name: "Loadout",
+		installFolder: "Loadout",
+		author: "Cyro Dubeux",
+		repository: "cyruzin/loadout",
+		repositoryUrl: "https://github.com/cyruzin/loadout",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Loadout",
+			"cyruzin/loadout"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.6.3",
+		releaseAssetName: "Loadout.zip",
+		catalogReleaseUrl: "https://github.com/cyruzin/loadout/releases/download/v0.6.3/Loadout.zip",
+		releasePublishedAt: "2026-10-29T23:07:30Z",
+		firstPublishedAt: "2026-10-24T13:49:35Z",
+		updatedAt: "2026-10-29T23:07:30Z",
+		shortDescription: "One-click per-game Quality, Balanced and Performance profiles, with a Default (original) state.",
+		longDescription: "One-click per-game Quality, Balanced and Performance profiles, with a Default (original) state."
+	},
+	{
+		active: true,
+		name: "Xbox Dashboard",
+		installFolder: "xbox-dashboard",
+		author: "kromossomo",
+		repository: "kromossomom-debug/decky-xbox-dashboard",
+		repositoryUrl: "https://github.com/kromossomom-debug/decky-xbox-dashboard",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Xbox Dashboard",
+			"xbox-dashboard",
+			"kromossomom-debug/decky-xbox-dashboard"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.9-alpha",
+		releaseAssetName: "xbox-dashboard.zip",
+		catalogReleaseUrl: "https://github.com/kromossomom-debug/decky-xbox-dashboard/releases/download/v0.0.9-alpha/xbox-dashboard.zip",
+		releasePublishedAt: "2026-10-29T02:31:47Z",
+		firstPublishedAt: "2026-10-24T04:50:17Z",
+		updatedAt: "2026-10-29T02:31:47Z",
+		shortDescription: "The Xbox Series X|S dashboard look for Steam Deck Game Mode: game art home screen, LB/RB tabs, My games & apps, Guide-style menus and Xbox colors.",
+		longDescription: "The Xbox Series X|S dashboard look for Steam Deck Game Mode: game art home screen, LB/RB tabs, My games & apps, Guide-style menus and Xbox colors."
+	},
+	{
+		active: true,
+		name: "VaporType",
+		installFolder: "vaportype",
+		author: "VaporType contributors",
+		repository: "dmitrii-galantsev/VaporType",
+		repositoryUrl: "https://github.com/dmitrii-galantsev/VaporType",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"VaporType",
+			"vaportype",
+			"dmitrii-galantsev/VaporType"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.2.8",
+		releaseAssetName: "VaporType.zip",
+		catalogReleaseUrl: "https://github.com/dmitrii-galantsev/VaporType/releases/download/v0.2.8/VaporType.zip",
+		releasePublishedAt: "2026-10-28T14:10:23Z",
+		firstPublishedAt: "2026-10-25T20:46:51Z",
+		updatedAt: "2026-10-28T14:10:23Z",
+		shortDescription: "Swipe typing with the trackpads or touchscreen, word suggestions, autocorrect and Esc/Ctrl/Alt keys for the Steam on-screen keyboard.",
+		longDescription: "Swipe typing with the trackpads or touchscreen, word suggestions, autocorrect and Esc/Ctrl/Alt keys for the Steam on-screen keyboard."
+	},
+	{
+		active: true,
+		name: "Launch Manager",
+		installFolder: "Launch-Manager",
+		author: "JD",
+		repository: "JDLKMR/Decky-Launch-Manager",
+		repositoryUrl: "https://github.com/JDLKMR/Decky-Launch-Manager",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Launch Manager",
+			"Launch-Manager",
+			"JDLKMR/Decky-Launch-Manager"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.1",
+		releaseAssetName: "Launch-Manager.zip",
+		catalogReleaseUrl: "https://github.com/JDLKMR/Decky-Launch-Manager/releases/download/v1.1.1/Launch-Manager.zip",
+		releasePublishedAt: "2026-10-28T06:03:36Z",
+		firstPublishedAt: "2026-10-26T02:29:26Z",
+		updatedAt: "2026-10-28T06:03:36Z",
+		shortDescription: "Add ROM launch options (ROM profiles), assign launch .sh scripts, add game links, or clear launch options for any Steam or non-Steam game from one button. Also prompts for a script profile when a script-bound game launches.",
+		longDescription: "Add ROM launch options (ROM profiles), assign launch .sh scripts, add game links, or clear launch options for any Steam or non-Steam game from one button. Also prompts for a script profile when a script-bound game launches."
+	},
+	{
+		active: true,
+		name: "DeckyTrainers",
+		installFolder: "DeckyTrainers",
+		author: "raygunjohn",
+		repository: "raygunjohn/decky-trainers",
+		repositoryUrl: "https://github.com/raygunjohn/decky-trainers",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckyTrainers",
+			"raygunjohn/decky-trainers"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.2.0",
+		releaseAssetName: "DeckyTrainers.zip",
+		catalogReleaseUrl: "https://github.com/raygunjohn/decky-trainers/releases/download/v0.2.0/DeckyTrainers.zip",
+		releasePublishedAt: "2026-10-27T16:17:15Z",
+		firstPublishedAt: "2026-08-12T17:04:47Z",
+		updatedAt: "2026-10-27T16:17:15Z",
+		shortDescription: "Build a trainer from any CT table on the Deck, access features from the plugin Menu.",
+		longDescription: "Build a trainer from any CT table on the Deck, access features from the plugin Menu."
+	},
+	{
+		active: true,
+		name: "ScreenTime",
+		installFolder: "ScreenTime",
+		author: "Jonathan Dechow",
+		repository: "jonathan-dd/screentime-decky-plugin",
+		repositoryUrl: "https://github.com/jonathan-dd/screentime-decky-plugin",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"ScreenTime",
+			"jonathan-dd/screentime-decky-plugin"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.5.4",
+		releaseAssetName: "ScreenTime.zip",
+		catalogReleaseUrl: "https://github.com/jonathan-dd/screentime-decky-plugin/releases/download/v1.5.4/ScreenTime.zip",
+		releasePublishedAt: "2026-10-27T09:18:19Z",
+		firstPublishedAt: "2026-10-20T13:00:56Z",
+		updatedAt: "2026-10-27T09:18:19Z",
+		shortDescription: "Erzwingt regelmäßige Spielpausen: Sitzungen begrenzen, rechtzeitig warnen und das Gerät in den Ruhemodus versetzen.",
+		longDescription: "Erzwingt regelmäßige Spielpausen: Sitzungen begrenzen, rechtzeitig warnen und das Gerät in den Ruhemodus versetzen."
+	},
+	{
+		active: true,
+		name: "Claudecky",
+		installFolder: "claudecky",
+		author: "Andarael",
+		repository: "Andarael/claudecky",
+		repositoryUrl: "https://github.com/Andarael/claudecky",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Claudecky",
+			"claudecky",
+			"Andarael/claudecky"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.0",
+		releaseAssetName: "claudecky.zip",
+		catalogReleaseUrl: "https://github.com/Andarael/claudecky/releases/download/v0.1.0/claudecky.zip",
+		releasePublishedAt: "2026-10-27T06:10:12Z",
+		firstPublishedAt: "2026-10-27T06:10:12Z",
+		updatedAt: "2026-10-27T06:10:12Z",
+		shortDescription: "Start/stop a Claude Code Remote Control server from Game Mode.",
+		longDescription: "Start/stop a Claude Code Remote Control server from Game Mode."
+	},
+	{
+		active: true,
+		name: "Achievement Customizer",
+		installFolder: "Achievement Customizer",
+		author: "Hector Mendez",
+		repository: "Hector2242/decky-plugin",
+		repositoryUrl: "https://github.com/Hector2242/decky-plugin",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Achievement Customizer",
+			"Hector2242/decky-plugin"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.0",
+		releaseAssetName: "achievement-customizer.zip",
+		catalogReleaseUrl: "https://github.com/Hector2242/decky-plugin/releases/download/v1.1.0/achievement-customizer.zip",
+		releasePublishedAt: "2026-10-26T21:13:28Z",
+		firstPublishedAt: "2026-10-19T22:21:09Z",
+		updatedAt: "2026-11-10T04:29:59Z",
+		shortDescription: "Give Steam Deck achievement notifications console-style looks and animations: Xbox unfold, PlayStation drop and six more entrances with matching exits, rarity glow, pixel-art themes (day, night, cherry blossom, Halloween) and full color control.",
+		longDescription: "Give Steam Deck achievement notifications console-style looks and animations: Xbox unfold, PlayStation drop and six more entrances with matching exits, rarity glow, pixel-art themes (day, night, cherry blossom, Halloween) and full color control."
+	},
+	{
+		active: true,
+		name: "Decky API Caller",
+		installFolder: "Decky API Caller",
+		author: "ZacTyAdams",
+		repository: "ZacTyAdams/Decky-API-Caller",
+		repositoryUrl: "https://github.com/ZacTyAdams/Decky-API-Caller",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decky API Caller",
+			"ZacTyAdams/Decky-API-Caller"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.1",
+		releaseAssetName: "Decky-API-Caller-9d100a4.zip",
+		catalogReleaseUrl: "https://github.com/ZacTyAdams/Decky-API-Caller/releases/download/build-1/Decky-API-Caller-9d100a4.zip",
+		releasePublishedAt: "2026-10-26T02:09:21Z",
+		firstPublishedAt: "2026-10-26T02:09:21Z",
+		updatedAt: "2026-10-26T02:09:21Z",
+		shortDescription: "Create buttons that call a configured API endpoint.",
+		longDescription: "Create buttons that call a configured API endpoint."
+	},
+	{
+		active: true,
+		name: "DateDeck",
+		installFolder: "DateDeck",
+		author: "JD",
+		repository: "JDLKMR/DateDeck",
+		repositoryUrl: "https://github.com/JDLKMR/DateDeck",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DateDeck",
+			"JDLKMR/DateDeck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.2",
+		releaseAssetName: "DateDeck.zip",
+		catalogReleaseUrl: "https://github.com/JDLKMR/DateDeck/releases/download/v1.0.2/DateDeck.zip",
+		releasePublishedAt: "2026-10-26T02:03:29Z",
+		firstPublishedAt: "2026-10-22T07:18:46Z",
+		updatedAt: "2026-10-26T02:03:29Z",
+		shortDescription: "Shows the date next to the clock in the Steam Deck header.",
+		longDescription: "Shows the date next to the clock in the Steam Deck header."
+	},
+	{
+		active: true,
+		name: "Pixel Faceplate",
+		installFolder: "Pixel-Faceplate",
+		author: "Eli Hodapp",
+		repository: "hodapp/pixel-faceplate",
+		repositoryUrl: "https://github.com/hodapp/pixel-faceplate",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Pixel Faceplate",
+			"Pixel-Faceplate",
+			"hodapp/pixel-faceplate"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.3.1",
+		releaseAssetName: "Pixel-Faceplate-v0.3.1.zip",
+		catalogReleaseUrl: "https://github.com/hodapp/pixel-faceplate/releases/download/v0.3.1/Pixel-Faceplate-v0.3.1.zip",
+		releasePublishedAt: "2026-10-25T23:37:39Z",
+		firstPublishedAt: "2026-10-05T18:37:33Z",
+		updatedAt: "2026-10-25T23:37:39Z",
+		shortDescription: "Drives the JSAUX Pixel Matrix Faceplate on the Steam Machine without the vendor software: game artwork, the Steam logo between games, a clock, a light bar glow or your own image.",
+		longDescription: "Drives the JSAUX Pixel Matrix Faceplate on the Steam Machine without the vendor software: game artwork, the Steam logo between games, a clock, a light bar glow or your own image."
+	},
+	{
+		active: true,
+		name: "Github Plugin Updater",
+		installFolder: "github-plugin-updater",
+		author: "Fabian Petrusky",
+		repository: "Steamdeckchecker/Github-Decky-Plugins-Updater",
+		repositoryUrl: "https://github.com/Steamdeckchecker/Github-Decky-Plugins-Updater",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Github Plugin Updater",
+			"github-plugin-updater",
+			"Steamdeckchecker/Github-Decky-Plugins-Updater"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.9.2",
+		releaseAssetName: "github-plugin-updater-v1.9.2.zip",
+		catalogReleaseUrl: "https://github.com/Steamdeckchecker/Github-Decky-Plugins-Updater/releases/download/192/github-plugin-updater-v1.9.2.zip",
+		releasePublishedAt: "2026-10-25T06:42:21Z",
+		firstPublishedAt: "2026-09-24T18:24:36Z",
+		updatedAt: "2026-10-25T06:42:21Z",
+		shortDescription: "Überwacht gespeicherte GitHub-Repositories und installiert neue Decky-Plugin-Releases.",
+		longDescription: "Überwacht gespeicherte GitHub-Repositories und installiert neue Decky-Plugin-Releases."
+	},
+	{
+		active: true,
+		name: "Jedi LSFG-VK",
+		installFolder: "Jedi LSFG-VK",
+		author: "Saulo Hugo Rossi (sauliiin)",
+		repository: "sauliiin/Jedi-LSFG-VK",
+		repositoryUrl: "https://github.com/sauliiin/Jedi-LSFG-VK",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Jedi LSFG-VK",
+			"sauliiin/Jedi-LSFG-VK"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.2.1",
+		releaseAssetName: "Jedi.LSFG-VK.zip",
+		catalogReleaseUrl: "https://github.com/sauliiin/Jedi-LSFG-VK/releases/download/v1.2.1/Jedi.LSFG-VK.zip",
+		releasePublishedAt: "2026-10-24T21:22:06Z",
+		firstPublishedAt: "2026-10-22T13:04:54Z",
+		updatedAt: "2026-10-24T21:22:06Z",
+		shortDescription: "Adaptive Lossless Scaling frame generation on Steam Deck with a single target FPS slider, powered by MAKO Renderer.",
+		longDescription: "Adaptive Lossless Scaling frame generation on Steam Deck with a single target FPS slider, powered by MAKO Renderer."
+	},
+	{
+		active: true,
+		name: "DeckyNews",
+		installFolder: "DeckyNews",
+		author: "th3pajay",
+		repository: "th3pajay/DeckyNews",
+		repositoryUrl: "https://github.com/th3pajay/DeckyNews",
+		category: "Social e community",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckyNews",
+			"th3pajay/DeckyNews"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.8.37",
+		releaseAssetName: "DeckyNews-v0.8.37.zip",
+		catalogReleaseUrl: "https://github.com/th3pajay/DeckyNews/releases/download/v0.8.37/DeckyNews-v0.8.37.zip",
+		releasePublishedAt: "2026-10-24T14:07:48Z",
+		firstPublishedAt: "2026-03-09T09:10:26Z",
+		updatedAt: "2026-10-24T14:07:48Z",
+		shortDescription: "Gaming news aggregator for Steam Deck",
+		longDescription: "Gaming news aggregator for Steam Deck"
+	},
+	{
+		active: true,
+		name: "PowerControl",
+		installFolder: "PowerControl",
+		author: "yxx, honjow",
+		repository: "mengmeet/PowerControl",
+		repositoryUrl: "https://github.com/mengmeet/PowerControl",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"PowerControl",
+			"mengmeet/PowerControl"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "3.16.0",
+		releaseAssetName: "PowerControl.zip",
+		catalogReleaseUrl: "https://github.com/mengmeet/PowerControl/releases/download/v3.16.0/PowerControl.zip",
+		releasePublishedAt: "2026-10-23T05:15:56Z",
+		firstPublishedAt: "2023-01-07T09:45:31Z",
+		updatedAt: "2026-10-23T05:15:56Z",
+		shortDescription: "PowerControl plugin.",
+		longDescription: "PowerControl plugin."
+	},
+	{
+		active: true,
+		name: "AppID Lister",
+		installFolder: "AppID-Lister",
+		author: "JD",
+		repository: "JDLKMR/Decky-AppID-Lister",
+		repositoryUrl: "https://github.com/JDLKMR/Decky-AppID-Lister",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"AppID Lister",
+			"AppID-Lister",
+			"JDLKMR/Decky-AppID-Lister"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "AppID-Lister.zip",
+		catalogReleaseUrl: "https://github.com/JDLKMR/Decky-AppID-Lister/releases/download/v1.0.0/AppID-Lister.zip",
+		releasePublishedAt: "2026-10-22T08:02:45Z",
+		firstPublishedAt: "2026-10-22T08:02:45Z",
+		updatedAt: "2026-10-22T08:02:45Z",
+		shortDescription: "Lists the Steam App IDs of installed games in the plugin menu.",
+		longDescription: "Lists the Steam App IDs of installed games in the plugin menu."
+	},
+	{
+		active: true,
+		name: "DeckRoulette",
+		installFolder: "deck-roulette",
+		author: "Chrisae9, davocarli",
+		repository: "JDLKMR/deck-roulette",
+		repositoryUrl: "https://github.com/JDLKMR/deck-roulette",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckRoulette",
+			"deck-roulette",
+			"JDLKMR/deck-roulette"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.7",
+		releaseAssetName: "deck-roulette.zip",
+		catalogReleaseUrl: "https://github.com/JDLKMR/deck-roulette/releases/download/v1.1.7/deck-roulette.zip",
+		releasePublishedAt: "2026-10-22T06:14:59Z",
+		firstPublishedAt: "2026-10-22T06:14:59Z",
+		updatedAt: "2026-10-22T06:14:59Z",
+		shortDescription: "A plugin that allows you to navigate to a random game in your library or a Steam Collection.",
+		longDescription: "A plugin that allows you to navigate to a random game in your library or a Steam Collection."
+	},
+	{
+		active: true,
+		name: "SteamProxy",
+		installFolder: "SteamProxy",
+		author: "color",
+		repository: "chenpx976/steamproxy",
+		repositoryUrl: "https://github.com/chenpx976/steamproxy",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"SteamProxy",
+			"chenpx976/steamproxy"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "SteamProxy-v1.0.0.zip",
+		catalogReleaseUrl: "https://github.com/chenpx976/steamproxy/releases/download/v1.0.0/SteamProxy-v1.0.0.zip",
+		releasePublishedAt: "2026-10-21T14:46:06Z",
+		firstPublishedAt: "2026-10-21T14:46:06Z",
+		updatedAt: "2026-10-21T14:46:06Z",
+		shortDescription: "香港节点自动选优，只代理 Steam/Google/GitHub 等站点，国内流量直连",
+		longDescription: "香港节点自动选优，只代理 Steam/Google/GitHub 等站点，国内流量直连"
+	},
+	{
+		active: true,
+		name: "Finally Achievement Plugin",
+		installFolder: "Finally Achievement Plugin",
+		author: "otisabi",
+		repository: "otisabiburada/finally-decky-achievements",
+		repositoryUrl: "https://github.com/otisabiburada/finally-decky-achievements",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Finally Achievement Plugin",
+			"otisabiburada/finally-decky-achievements"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.7.0",
+		releaseAssetName: "Finally-Achievement-Plugin-1.7.0.zip",
+		catalogReleaseUrl: "https://github.com/otisabiburada/finally-decky-achievements/releases/download/1.7.0/Finally-Achievement-Plugin-1.7.0.zip",
+		releasePublishedAt: "2026-10-21T06:30:48Z",
+		firstPublishedAt: "2026-10-06T08:08:51Z",
+		updatedAt: "2026-10-21T06:30:48Z",
+		shortDescription: "SteamOS achievement popups with selectable templates, colors and sounds, plus a built-in achievement browser and pinned-achievement tracker.",
+		longDescription: "SteamOS achievement popups with selectable templates, colors and sounds, plus a built-in achievement browser and pinned-achievement tracker."
+	},
+	{
+		active: true,
+		name: "VoidDeck",
+		installFolder: "VoidDeck",
+		author: "AlejandroTenorioC",
+		repository: "AlejandroTenorioC/VoidDeck",
+		repositoryUrl: "https://github.com/AlejandroTenorioC/VoidDeck",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"VoidDeck",
+			"AlejandroTenorioC/VoidDeck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.1",
+		releaseAssetName: "VoidDeck-v1.0.1.zip",
+		catalogReleaseUrl: "https://github.com/AlejandroTenorioC/VoidDeck/releases/download/v1.0.1/VoidDeck-v1.0.1.zip",
+		releasePublishedAt: "2026-10-21T00:12:09Z",
+		firstPublishedAt: "2026-10-15T05:37:10Z",
+		updatedAt: "2026-10-21T00:12:09Z",
+		shortDescription: "Void Deck: una interfaz de puntos, luz y vacío para la Steam Deck.",
+		longDescription: "Void Deck: una interfaz de puntos, luz y vacío para la Steam Deck."
+	},
+	{
+		active: true,
+		name: "Manifest Downloader",
+		installFolder: "decky-manifest-downloader",
+		author: "hintay",
+		repository: "Hintay/decky-manifest-downloader",
+		repositoryUrl: "https://github.com/Hintay/decky-manifest-downloader",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Manifest Downloader",
+			"decky-manifest-downloader",
+			"Hintay/decky-manifest-downloader"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.2.1",
+		releaseAssetName: "decky-manifest-downloader-v0.2.1.zip",
+		catalogReleaseUrl: "https://github.com/Hintay/decky-manifest-downloader/releases/download/v0.2.1/decky-manifest-downloader-v0.2.1.zip",
+		releasePublishedAt: "2026-10-20T18:30:27Z",
+		firstPublishedAt: "2026-10-03T13:54:09Z",
+		updatedAt: "2026-10-20T18:30:27Z",
+		shortDescription: "Download and manage Lua scripts and depot manifests from Steam Game Mode, built for gamepad use.",
+		longDescription: "Download and manage Lua scripts and depot manifests from Steam Game Mode, built for gamepad use."
+	},
+	{
+		active: true,
+		name: "XLM Setup",
+		installFolder: "XLM Setup",
+		author: "PofMagicfingers",
+		repository: "PofMagicfingers/decky-xlm",
+		repositoryUrl: "https://github.com/PofMagicfingers/decky-xlm",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"XLM Setup",
+			"PofMagicfingers/decky-xlm"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.2.3",
+		releaseAssetName: "xlm-setup.zip",
+		catalogReleaseUrl: "https://github.com/PofMagicfingers/decky-xlm/releases/download/v0.2.3/xlm-setup.zip",
+		releasePublishedAt: "2026-10-20T11:18:00Z",
+		firstPublishedAt: "2026-10-20T10:43:21Z",
+		updatedAt: "2026-10-20T11:18:00Z",
+		shortDescription: "Installs XIVLauncher (XLM) for FINAL FANTASY XIV and sets it as the game's compatibility tool.",
+		longDescription: "Installs XIVLauncher (XLM) for FINAL FANTASY XIV and sets it as the game's compatibility tool."
+	},
+	{
+		active: true,
+		name: "Screen Mirror PiP",
+		installFolder: "screen-mirror-pip",
+		author: "SANSO",
+		repository: "otisabiburada/decky-screen-mirror",
+		repositoryUrl: "https://github.com/otisabiburada/decky-screen-mirror",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Screen Mirror PiP",
+			"screen-mirror-pip",
+			"otisabiburada/decky-screen-mirror"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.5.0",
+		releaseAssetName: "screen-mirror-pip-v0.5.0.zip",
+		catalogReleaseUrl: "https://github.com/otisabiburada/decky-screen-mirror/releases/download/0.5.0/screen-mirror-pip-v0.5.0.zip",
+		releasePublishedAt: "2026-10-20T10:09:36Z",
+		firstPublishedAt: "2026-10-20T10:09:36Z",
+		updatedAt: "2026-10-20T10:09:36Z",
+		shortDescription: "Mirror your iPhone's screen (AirPlay) into a small window over your game.",
+		longDescription: "Mirror your iPhone's screen (AirPlay) into a small window over your game."
+	},
+	{
+		active: true,
+		name: "Decky Tools",
+		installFolder: "Decky Tools",
+		author: "jinzhongjia",
+		repository: "jinzhongjia/decky-tools",
+		repositoryUrl: "https://github.com/jinzhongjia/decky-tools",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decky Tools",
+			"jinzhongjia/decky-tools"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.2",
+		releaseAssetName: "Decky.Tools.zip",
+		catalogReleaseUrl: "https://github.com/jinzhongjia/decky-tools/releases/download/v0.1.2/Decky.Tools.zip",
+		releasePublishedAt: "2026-10-18T04:07:14Z",
+		firstPublishedAt: "2026-10-11T03:10:40Z",
+		updatedAt: "2026-10-18T04:07:14Z",
+		shortDescription: "SteamOS 游戏模式工具箱：一键下载 / 管理 GE-Proton、Proton-CachyOS 等兼容层运行时。",
+		longDescription: "SteamOS 游戏模式工具箱：一键下载 / 管理 GE-Proton、Proton-CachyOS 等兼容层运行时。"
+	},
+	{
+		active: true,
+		name: "OpenNOW",
+		installFolder: "OpenNOW",
+		author: "OpenCloudGaming",
+		repository: "OpenCloudGaming/OpenNOW",
+		repositoryUrl: "https://github.com/OpenCloudGaming/OpenNOW",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"OpenNOW",
+			"OpenCloudGaming/OpenNOW"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.1",
+		releaseAssetName: "OpenNOW.zip",
+		catalogReleaseUrl: "https://github.com/OpenCloudGaming/OpenNOW/releases/download/decky-v0.1.1/OpenNOW.zip",
+		releasePublishedAt: "2026-10-17T11:19:48Z",
+		firstPublishedAt: "2025-12-24T15:34:41Z",
+		updatedAt: "2026-11-08T23:00:52Z",
+		shortDescription: "Launch OpenNOW, add GeForce NOW games to your Steam library and tune stream settings from Game Mode.",
+		longDescription: "Launch OpenNOW, add GeForce NOW games to your Steam library and tune stream settings from Game Mode."
+	},
+	{
+		active: true,
+		name: "ThemeHub",
+		installFolder: "DeckHomeThemes",
+		author: "ThemeHub",
+		repository: "Kaal31/benderthemes",
+		repositoryUrl: "https://github.com/Kaal31/benderthemes",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"ThemeHub",
+			"DeckHomeThemes",
+			"Kaal31/benderthemes"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.10.9",
+		releaseAssetName: "DeckHomeThemes-v1.10.9.zip",
+		catalogReleaseUrl: "https://github.com/Kaal31/benderthemes/releases/download/v1.10.9/DeckHomeThemes-v1.10.9.zip",
+		releasePublishedAt: "2026-10-17T02:18:04Z",
+		firstPublishedAt: "2026-10-07T00:07:21Z",
+		updatedAt: "2026-11-09T11:25:06Z",
+		shortDescription: "ThemeHub: console-style home screens for the Steam Deck (PlayStation, Xbox and Nintendo looks), a theme Hub, theme-file importers and Plugin Spotlight.",
+		longDescription: "ThemeHub: console-style home screens for the Steam Deck (PlayStation, Xbox and Nintendo looks), a theme Hub, theme-file importers and Plugin Spotlight."
+	},
+	{
+		active: true,
+		name: "FileExplorer",
+		installFolder: "FileExplorer",
+		author: "60plus",
+		repository: "60plus/Decky-FileExplorer",
+		repositoryUrl: "https://github.com/60plus/Decky-FileExplorer",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"FileExplorer",
+			"60plus/Decky-FileExplorer"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.8.2",
+		releaseAssetName: "FileExplorer-0.8.2.zip",
+		catalogReleaseUrl: "https://github.com/60plus/Decky-FileExplorer/releases/download/v0.8.2/FileExplorer-0.8.2.zip",
+		releasePublishedAt: "2026-10-17T00:45:29Z",
+		firstPublishedAt: "2026-10-11T23:40:15Z",
+		updatedAt: "2026-10-17T00:45:29Z",
+		shortDescription: "A simple two-pane file manager with gamepad controls, archives and SMB shares.",
+		longDescription: "A simple two-pane file manager with gamepad controls, archives and SMB shares."
+	},
+	{
+		active: true,
+		name: "MotionCueDots",
+		installFolder: "MotionCueDots",
+		author: "Matthew Martori",
+		repository: "matttt/steamdeck-motion-cues",
+		repositoryUrl: "https://github.com/matttt/steamdeck-motion-cues",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"MotionCueDots",
+			"matttt/steamdeck-motion-cues"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.0",
+		releaseAssetName: "SteamDeckMotionCues-0.1.0.zip",
+		catalogReleaseUrl: "https://github.com/matttt/steamdeck-motion-cues/releases/download/0.1.0/SteamDeckMotionCues-0.1.0.zip",
+		releasePublishedAt: "2026-10-14T03:16:10Z",
+		firstPublishedAt: "2026-06-24T22:38:15Z",
+		updatedAt: "2026-10-14T03:16:10Z",
+		shortDescription: "Draws accelerometer-driven motion cue dots over Steam Deck games.",
+		longDescription: "Draws accelerometer-driven motion cue dots over Steam Deck games."
+	},
+	{
+		active: true,
+		name: "Deck Curfew",
+		installFolder: "DeckCurfew",
+		author: "Michiel Saey",
+		repository: "MichielSaey/deck-curfew",
+		repositoryUrl: "https://github.com/MichielSaey/deck-curfew",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Deck Curfew",
+			"DeckCurfew",
+			"MichielSaey/deck-curfew"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.3.1",
+		releaseAssetName: "DeckCurfew-v0.3.1.zip",
+		catalogReleaseUrl: "https://github.com/MichielSaey/deck-curfew/releases/download/v0.3.1/DeckCurfew-v0.3.1.zip",
+		releasePublishedAt: "2026-10-13T20:08:25Z",
+		firstPublishedAt: "2026-10-13T19:50:56Z",
+		updatedAt: "2026-10-13T20:08:25Z",
+		shortDescription: "Schedule lock for Steam Deck: hard-quit games outside your play window. Once locked, settings cannot be changed until the commitment ends.",
+		longDescription: "Schedule lock for Steam Deck: hard-quit games outside your play window. Once locked, settings cannot be changed until the commitment ends."
+	},
+	{
+		active: true,
+		name: "4deus Mod",
+		installFolder: "4deusMod",
+		author: "Petr Filippov",
+		repository: "ptflp/4deus-mod",
+		repositoryUrl: "https://github.com/ptflp/4deus-mod",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"4deus Mod",
+			"4deusMod",
+			"ptflp/4deus-mod"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.4.34",
+		releaseAssetName: "4deusMod.zip",
+		catalogReleaseUrl: "https://github.com/ptflp/4deus-mod/releases/download/v0.4.34/4deusMod.zip",
+		releasePublishedAt: "2026-10-12T21:14:11Z",
+		firstPublishedAt: "2026-07-27T17:18:48Z",
+		updatedAt: "2026-10-12T21:14:11Z",
+		shortDescription: "A modular collection of Steam Deck fixes and customizations.",
+		longDescription: "A modular collection of Steam Deck fixes and customizations."
+	},
+	{
+		active: true,
+		name: "Shoehorn",
+		installFolder: "Shoehorn",
+		author: "catvitalio",
+		repository: "catvitalio/shoehorn",
+		repositoryUrl: "https://github.com/catvitalio/shoehorn",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Shoehorn",
+			"catvitalio/shoehorn"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.1",
+		releaseAssetName: "Shoehorn.zip",
+		catalogReleaseUrl: "https://github.com/catvitalio/shoehorn/releases/download/v0.1.1/Shoehorn.zip",
+		releasePublishedAt: "2026-10-12T17:04:24Z",
+		firstPublishedAt: "2026-10-12T16:53:15Z",
+		updatedAt: "2026-10-12T17:04:24Z",
+		shortDescription: "Run a mod or translation installer inside a game's Proton prefix, from Gaming Mode.",
+		longDescription: "Run a mod or translation installer inside a game's Proton prefix, from Gaming Mode."
+	},
+	{
+		active: true,
+		name: "Kettle Frame Generation",
+		installFolder: "decky-kettle-framegen",
+		author: "Mirza Arnaut",
+		repository: "arunoruto/decky-kettle-framegen",
+		repositoryUrl: "https://github.com/arunoruto/decky-kettle-framegen",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Kettle Frame Generation",
+			"decky-kettle-framegen",
+			"arunoruto/decky-kettle-framegen"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.5",
+		releaseAssetName: "decky-kettle-framegen.zip",
+		catalogReleaseUrl: "https://github.com/arunoruto/decky-kettle-framegen/releases/download/v0.1.5/decky-kettle-framegen.zip",
+		releasePublishedAt: "2026-10-11T02:15:49Z",
+		firstPublishedAt: "2026-10-11T02:15:49Z",
+		updatedAt: "2026-10-11T02:15:49Z",
+		shortDescription: "Per-game frame generation with the kettle-framegen Vulkan layer: install it, turn it on per game, and change its settings live.",
+		longDescription: "Per-game frame generation with the kettle-framegen Vulkan layer: install it, turn it on per game, and change its settings live."
+	},
+	{
+		active: true,
+		name: "DeckSoundpad",
+		installFolder: "DeckSoundpad",
+		author: "DeckSoundpad contributors",
+		repository: "chrpk/decksoundpad",
+		repositoryUrl: "https://github.com/chrpk/decksoundpad",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckSoundpad",
+			"chrpk/decksoundpad"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.5.2",
+		releaseAssetName: "DeckSoundpad-v1.5.2-full.zip",
+		catalogReleaseUrl: "https://github.com/chrpk/decksoundpad/releases/download/v1.5.2/DeckSoundpad-v1.5.2-full.zip",
+		releasePublishedAt: "2026-10-10T09:24:10Z",
+		firstPublishedAt: "2026-10-10T09:24:10Z",
+		updatedAt: "2026-10-10T09:24:10Z",
+		shortDescription: "Steam Deck soundboard with Decky controls and PipeWire microphone routing.",
+		longDescription: "Steam Deck soundboard with Decky controls and PipeWire microphone routing."
+	},
+	{
+		active: true,
+		name: "Minimi Town",
+		installFolder: "minimi-town",
+		author: "justinca92",
+		repository: "justinca92/minimi-town",
+		repositoryUrl: "https://github.com/justinca92/minimi-town",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Minimi Town",
+			"minimi-town",
+			"justinca92/minimi-town"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.2.2",
+		releaseAssetName: "minimi-town-0.2.2.zip",
+		catalogReleaseUrl: "https://github.com/justinca92/minimi-town/releases/download/v0.2.2/minimi-town-0.2.2.zip",
+		releasePublishedAt: "2026-10-09T23:24:09Z",
+		firstPublishedAt: "2026-10-09T22:58:41Z",
+		updatedAt: "2026-10-09T23:24:09Z",
+		shortDescription: "Your library as a little street. A baby penguin walks to the game you pick and goes in through the door.",
+		longDescription: "Your library as a little street. A baby penguin walks to the game you pick and goes in through the door."
+	},
+	{
+		active: true,
+		name: "SteamOS_Friends_activity",
+		installFolder: "SteamOS_Friends_activity",
+		author: "Axel",
+		repository: "AG69075/SteamOS_plugin_Friends_activity",
+		repositoryUrl: "https://github.com/AG69075/SteamOS_plugin_Friends_activity",
+		category: "Social e community",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"SteamOS_Friends_activity",
+			"AG69075/SteamOS_plugin_Friends_activity"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.3.3",
+		releaseAssetName: "SteamOS_plugin_Friends-activity_v1.3.3.zip",
+		catalogReleaseUrl: "https://github.com/AG69075/SteamOS_plugin_Friends_activity/releases/download/v1.3.3/SteamOS_plugin_Friends-activity_v1.3.3.zip",
+		releasePublishedAt: "2026-10-09T05:40:37Z",
+		firstPublishedAt: "2026-07-26T01:07:19Z",
+		updatedAt: "2026-10-09T05:40:37Z",
+		shortDescription: "Floats a \"Friends recently played\" bubble over the Clean GameView hero art, sourced from the same Activity tab data.",
+		longDescription: "Floats a \"Friends recently played\" bubble over the Clean GameView hero art, sourced from the same Activity tab data."
+	},
+	{
+		active: true,
+		name: "DeckPad",
+		installFolder: "DeckPad",
+		author: "thedavidweng",
+		repository: "thedavidweng/DeckPad",
+		repositoryUrl: "https://github.com/thedavidweng/DeckPad",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckPad",
+			"thedavidweng/DeckPad"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.1",
+		releaseAssetName: "DeckPad.zip",
+		catalogReleaseUrl: "https://github.com/thedavidweng/DeckPad/releases/download/v0.0.1/DeckPad.zip",
+		releasePublishedAt: "2026-10-07T23:07:07Z",
+		firstPublishedAt: "2026-10-07T23:07:07Z",
+		updatedAt: "2026-10-07T23:07:07Z",
+		shortDescription: "Use your Steam Deck as a Bluetooth game controller for a PC, phone, or tablet. Unlike plugins that connect headphones or controllers to the Deck, DeckPad makes the Deck itself the controller.",
+		longDescription: "Use your Steam Deck as a Bluetooth game controller for a PC, phone, or tablet. Unlike plugins that connect headphones or controllers to the Deck, DeckPad makes the Deck itself the controller."
+	},
+	{
+		active: true,
+		name: "Wake Dispatch",
+		installFolder: "wake-dispatch",
+		author: "jedwards1230",
+		repository: "jedwards1230/decky-wake-dispatch",
+		repositoryUrl: "https://github.com/jedwards1230/decky-wake-dispatch",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Wake Dispatch",
+			"wake-dispatch",
+			"jedwards1230/decky-wake-dispatch"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.2.1",
+		releaseAssetName: "wake-dispatch.zip",
+		catalogReleaseUrl: "https://github.com/jedwards1230/decky-wake-dispatch/releases/download/v0.2.1/wake-dispatch.zip",
+		releasePublishedAt: "2026-10-07T01:07:59Z",
+		firstPublishedAt: "2026-10-06T21:29:46Z",
+		updatedAt: "2026-10-07T01:07:59Z",
+		shortDescription: "Wake your PCs with Wake-on-LAN from the Quick Access menu, with optional wake on boot and resume.",
+		longDescription: "Wake your PCs with Wake-on-LAN from the Quick Access menu, with optional wake on boot and resume."
+	},
+	{
+		active: true,
+		name: "WhisPTT",
+		installFolder: "WhisPTT",
+		author: "Felipe Falanghe",
+		repository: "PsykomantaBrain/WhisPTT",
+		repositoryUrl: "https://github.com/PsykomantaBrain/WhisPTT",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"WhisPTT",
+			"PsykomantaBrain/WhisPTT"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.0",
+		releaseAssetName: "WhisPTT.zip",
+		catalogReleaseUrl: "https://github.com/PsykomantaBrain/WhisPTT/releases/download/v1.1.0/WhisPTT.zip",
+		releasePublishedAt: "2026-10-04T22:14:02Z",
+		firstPublishedAt: "2026-07-29T20:49:16Z",
+		updatedAt: "2026-10-04T22:14:02Z",
+		shortDescription: "Push-to-talk voice dictation. Hold a controller combo or key, speak, and your words are typed into the focused field via OpenAI Whisper. Works in-game and in the Steam UI. Requires an OpenAI API key.",
+		longDescription: "Push-to-talk voice dictation. Hold a controller combo or key, speak, and your words are typed into the focused field via OpenAI Whisper. Works in-game and in the Steam UI. Requires an OpenAI API key."
+	},
+	{
+		active: true,
+		name: "Decky Task Manager",
+		installFolder: "decky-task-manager",
+		author: "yuri",
+		repository: "Feelsrat/decky-task-manager",
+		repositoryUrl: "https://github.com/Feelsrat/decky-task-manager",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decky Task Manager",
+			"decky-task-manager",
+			"Feelsrat/decky-task-manager"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.20",
+		releaseAssetName: "decky-task-manager.zip",
+		catalogReleaseUrl: "https://github.com/Feelsrat/decky-task-manager/releases/download/v0.1.20/decky-task-manager.zip",
+		releasePublishedAt: "2026-10-04T11:05:14Z",
+		firstPublishedAt: "2026-04-29T17:56:56Z",
+		updatedAt: "2026-10-04T11:05:14Z",
+		shortDescription: "A small Decky panel for checking plugin log errors, system load, and disabling plugins.",
+		longDescription: "A small Decky panel for checking plugin log errors, system load, and disabling plugins."
+	},
+	{
+		active: true,
+		name: "Launch Options Recipes",
+		installFolder: "Launch Options Recipes",
+		author: "Wurielle",
+		repository: "Wurielle/decky-launch-options-recipes",
+		repositoryUrl: "https://github.com/Wurielle/decky-launch-options-recipes",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Launch Options Recipes",
+			"Wurielle/decky-launch-options-recipes"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.2.0",
+		releaseAssetName: "decky-launch-options-recipes.zip",
+		catalogReleaseUrl: "https://github.com/Wurielle/decky-launch-options-recipes/releases/download/v1.2.0/decky-launch-options-recipes.zip",
+		releasePublishedAt: "2026-09-30T18:17:04Z",
+		firstPublishedAt: "2026-02-07T21:18:15Z",
+		updatedAt: "2026-11-10T10:33:14Z",
+		shortDescription: "Recipes for the Decky Launch Options plugin.",
+		longDescription: "Recipes for the Decky Launch Options plugin."
+	},
+	{
+		active: true,
+		name: "DeckyEmu",
+		installFolder: "deckyemu",
+		author: "Pendor",
+		repository: "elpendor/deckyemu",
+		repositoryUrl: "https://github.com/elpendor/deckyemu",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckyEmu",
+			"deckyemu",
+			"elpendor/deckyemu"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.19.1",
+		releaseAssetName: "deckyemu.zip",
+		catalogReleaseUrl: "https://github.com/elpendor/deckyemu/releases/download/v0.19.1/deckyemu.zip",
+		releasePublishedAt: "2026-09-29T22:55:29Z",
+		firstPublishedAt: "2026-08-19T19:18:16Z",
+		updatedAt: "2026-09-29T22:55:29Z",
+		shortDescription: "A complete emulation setup for the Steam Deck: install emulators, transfer ROMs, add games to Steam, back up saves - all with a controller.",
+		longDescription: "A complete emulation setup for the Steam Deck: install emulators, transfer ROMs, add games to Steam, back up saves - all with a controller."
+	},
+	{
+		active: true,
+		name: "Deck Play Badges",
+		installFolder: "ControllerXbox",
+		author: "niklo",
+		repository: "Rannius/ControllerXbox",
+		repositoryUrl: "https://github.com/Rannius/ControllerXbox",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Deck Play Badges",
+			"ControllerXbox",
+			"Rannius/ControllerXbox"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.133",
+		releaseAssetName: "ControllerXbox-v1.0.133.zip",
+		catalogReleaseUrl: "https://github.com/Rannius/ControllerXbox/releases/download/v1.0.133/ControllerXbox-v1.0.133.zip",
+		releasePublishedAt: "2026-09-28T06:16:42Z",
+		firstPublishedAt: "2026-07-17T08:56:27Z",
+		updatedAt: "2026-09-28T06:16:42Z",
+		shortDescription: "Deck Play Badges shows controller support, GeForce NOW, and Boosteroid status in the Steam Library and Store.",
+		longDescription: "Deck Play Badges shows controller support, GeForce NOW, and Boosteroid status in the Steam Library and Store."
+	},
+	{
+		active: true,
+		name: "StripMine",
+		installFolder: "StripMine",
+		author: "Albus Querque",
+		repository: "Alyenax/StripMine",
+		repositoryUrl: "https://github.com/Alyenax/StripMine",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"StripMine",
+			"Alyenax/StripMine"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.1",
+		releaseAssetName: "StripMine-v0.1.1.zip",
+		catalogReleaseUrl: "https://github.com/Alyenax/StripMine/releases/download/v0.1.1/StripMine-v0.1.1.zip",
+		releasePublishedAt: "2026-09-26T23:26:11Z",
+		firstPublishedAt: "2026-09-26T13:14:14Z",
+		updatedAt: "2026-09-26T23:26:11Z",
+		shortDescription: "A persistent idle mining game built around the Steam Machine's 17-LED light bar.",
+		longDescription: "A persistent idle mining game built around the Steam Machine's 17-LED light bar."
+	},
+	{
+		active: true,
+		name: "XMDeck",
+		installFolder: "XMDeck",
+		author: "PrivateiFox",
+		repository: "PrivateiFox/XMDeck",
+		repositoryUrl: "https://github.com/PrivateiFox/XMDeck",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"XMDeck",
+			"PrivateiFox/XMDeck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.3",
+		releaseAssetName: "XMDeck.zip",
+		catalogReleaseUrl: "https://github.com/PrivateiFox/XMDeck/releases/download/v0.1.3/XMDeck.zip",
+		releasePublishedAt: "2026-09-25T14:03:09Z",
+		firstPublishedAt: "2026-09-24T09:51:37Z",
+		updatedAt: "2026-09-25T14:03:09Z",
+		shortDescription: "Monitor and control Sony WH/WF-1000XM headphones directly from the Steam Quick Access Menu.",
+		longDescription: "Monitor and control Sony WH/WF-1000XM headphones directly from the Steam Quick Access Menu."
+	},
+	{
+		active: true,
+		name: "Decky Links",
+		installFolder: "Decky Links",
+		author: "kmturley",
+		repository: "kmturley/decky-links",
+		repositoryUrl: "https://github.com/kmturley/decky-links",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decky Links",
+			"kmturley/decky-links"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.1",
+		releaseAssetName: "decky-links-1.1.1-linux-x86_64.zip",
+		catalogReleaseUrl: "https://github.com/kmturley/decky-links/releases/download/v1.1.1/decky-links-1.1.1-linux-x86_64.zip",
+		releasePublishedAt: "2026-09-24T04:40:43Z",
+		firstPublishedAt: "2026-09-17T04:21:15Z",
+		updatedAt: "2026-09-24T04:40:43Z",
+		shortDescription: "Decky Links enables launching games and other URIs on SteamOS by tapping NFC cards.",
+		longDescription: "Decky Links enables launching games and other URIs on SteamOS by tapping NFC cards."
+	},
+	{
+		active: true,
+		name: "decky-chen",
+		installFolder: "decky-chen",
+		author: "evachxji",
+		repository: "evachxji/decky-chen",
+		repositoryUrl: "https://github.com/evachxji/decky-chen",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"decky-chen",
+			"evachxji/decky-chen"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "decky-chen.zip",
+		catalogReleaseUrl: "https://github.com/evachxji/decky-chen/releases/download/v1.0.0/decky-chen.zip",
+		releasePublishedAt: "2026-09-23T08:40:51Z",
+		firstPublishedAt: "2026-09-23T08:40:51Z",
+		updatedAt: "2026-09-23T08:40:51Z",
+		shortDescription: "Session Guardian: track your current game session, daily playtime, and get break reminders.",
+		longDescription: "Session Guardian: track your current game session, daily playtime, and get break reminders."
+	},
+	{
+		active: true,
+		name: "Game Presence",
+		installFolder: "GamePresence",
+		author: "YAHUkhannan",
+		repository: "YAHUkhannan/decky-game-presence",
+		repositoryUrl: "https://github.com/YAHUkhannan/decky-game-presence",
+		category: "Social e community",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Game Presence",
+			"GamePresence",
+			"YAHUkhannan/decky-game-presence"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.0",
+		releaseAssetName: "GamePresence.zip",
+		catalogReleaseUrl: "https://github.com/YAHUkhannan/decky-game-presence/releases/download/v2026.09.22/GamePresence.zip",
+		releasePublishedAt: "2026-09-21T18:00:43Z",
+		firstPublishedAt: "2026-09-21T03:36:48Z",
+		updatedAt: "2026-10-10T00:38:58Z",
+		shortDescription: "Show the game you are playing on Discord while in Game Mode.",
+		longDescription: "Show the game you are playing on Discord while in Game Mode."
+	},
+	{
+		active: true,
+		name: "WarpDeck",
+		installFolder: "WarpDeck",
+		author: "sonb",
+		repository: "sonck201/warp-deck",
+		repositoryUrl: "https://github.com/sonck201/warp-deck",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"WarpDeck",
+			"sonck201/warp-deck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.1",
+		releaseAssetName: "WarpDeck-v0.0.1.zip",
+		catalogReleaseUrl: "https://github.com/sonck201/warp-deck/releases/download/v0.0.1/WarpDeck-v0.0.1.zip",
+		releasePublishedAt: "2026-09-21T13:44:15Z",
+		firstPublishedAt: "2026-09-21T13:44:15Z",
+		updatedAt: "2026-09-21T13:44:15Z",
+		shortDescription: "Install, manage, and toggle Cloudflare 1.1.1.1 WARP VPN in SteamOS Game Mode.",
+		longDescription: "Install, manage, and toggle Cloudflare 1.1.1.1 WARP VPN in SteamOS Game Mode."
+	},
+	{
+		active: true,
+		name: "Decky OptiScaler",
+		installFolder: "Decky OptiScaler",
+		author: "kmilovm91722",
+		repository: "danielcamilo1/decky-optiscaler",
+		repositoryUrl: "https://github.com/danielcamilo1/decky-optiscaler",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decky OptiScaler",
+			"danielcamilo1/decky-optiscaler"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.7",
+		releaseAssetName: "Decky-OptiScaler-v0.0.7.zip",
+		catalogReleaseUrl: "https://github.com/danielcamilo1/decky-optiscaler/releases/download/v0.0.7/Decky-OptiScaler-v0.0.7.zip",
+		releasePublishedAt: "2026-09-18T18:32:34Z",
+		firstPublishedAt: "2026-08-20T18:12:28Z",
+		updatedAt: "2026-09-18T18:32:34Z",
+		shortDescription: "Install, configure and monitor OptiScaler per game from the Steam Deck UI, without using the in-game overlay.",
+		longDescription: "Install, configure and monitor OptiScaler per game from the Steam Deck UI, without using the in-game overlay."
+	},
+	{
+		active: true,
+		name: "Just Clock",
+		installFolder: "just-clock",
+		author: "herbz",
+		repository: "mysteriousHerb/just-clock",
+		repositoryUrl: "https://github.com/mysteriousHerb/just-clock",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Just Clock",
+			"just-clock",
+			"mysteriousHerb/just-clock"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "just-clock-v1.0.0.zip",
+		catalogReleaseUrl: "https://github.com/mysteriousHerb/just-clock/releases/download/v1.0.0/just-clock-v1.0.0.zip",
+		releasePublishedAt: "2026-09-17T20:07:30Z",
+		firstPublishedAt: "2026-09-17T20:07:30Z",
+		updatedAt: "2026-09-17T20:07:30Z",
+		shortDescription: "An always-visible clock overlay for SteamOS with customizable position, color, and opacity.",
+		longDescription: "An always-visible clock overlay for SteamOS with customizable position, color, and opacity."
+	},
+	{
+		active: true,
+		name: "Japanese Lookup",
+		installFolder: "japanese-lookup",
+		author: "Simon Callsen",
+		repository: "scallsen/japanese-lookup",
+		repositoryUrl: "https://github.com/scallsen/japanese-lookup",
+		category: "Social e community",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Japanese Lookup",
+			"japanese-lookup",
+			"scallsen/japanese-lookup"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.3.1",
+		releaseAssetName: "japanese-lookup-v0.3.1.zip",
+		catalogReleaseUrl: "https://github.com/scallsen/japanese-lookup/releases/download/v0.3.1/japanese-lookup-v0.3.1.zip",
+		releasePublishedAt: "2026-09-17T08:41:49Z",
+		firstPublishedAt: "2026-09-17T08:41:49Z",
+		updatedAt: "2026-09-17T08:41:49Z",
+		shortDescription: "Capture the current visual-novel text box, OCR it on-device, and send the line to Yomitan for lookup and Anki card creation — without leaving gaming mode.",
+		longDescription: "Capture the current visual-novel text box, OCR it on-device, and send the line to Yomitan for lookup and Anki card creation — without leaving gaming mode."
+	},
+	{
+		active: true,
+		name: "Decky Bazaar",
+		installFolder: "Decky Bazaar",
+		author: "Daniel Vergara",
+		repository: "danielcamilo1/decky-bazaar",
+		repositoryUrl: "https://github.com/danielcamilo1/decky-bazaar",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decky Bazaar",
+			"danielcamilo1/decky-bazaar"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.2.0",
+		releaseAssetName: "Decky-Bazaar-v1.2.0.zip",
+		catalogReleaseUrl: "https://github.com/danielcamilo1/decky-bazaar/releases/download/v1.2.0/Decky-Bazaar-v1.2.0.zip",
+		releasePublishedAt: "2026-09-14T01:24:45Z",
+		firstPublishedAt: "2026-08-22T12:22:49Z",
+		updatedAt: "2026-09-14T01:24:45Z",
+		shortDescription: "Manage every installed Decky plugin, including ones from outside the official store. Add a GitHub repo by owner/name, install the latest release zip from any branch, and keep track of updates.",
+		longDescription: "Manage every installed Decky plugin, including ones from outside the official store. Add a GitHub repo by owner/name, install the latest release zip from any branch, and keep track of updates."
+	},
+	{
+		active: true,
+		name: "DeckyShare",
+		installFolder: "DeckyShare",
+		author: "Gillrv",
+		repository: "gillrajvir950-wq/deckyshare",
+		repositoryUrl: "https://github.com/gillrajvir950-wq/deckyshare",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckyShare",
+			"gillrajvir950-wq/deckyshare"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "DeckyShare-v1.0.0.zip",
+		catalogReleaseUrl: "https://github.com/gillrajvir950-wq/deckyshare/releases/download/v1.0.0/DeckyShare-v1.0.0.zip",
+		releasePublishedAt: "2026-09-13T08:47:27Z",
+		firstPublishedAt: "2026-09-13T08:47:27Z",
+		updatedAt: "2026-10-14T15:12:16Z",
+		shortDescription: "DeckyShare: wireless two-way file transfer between Steam Deck and phone/PC.",
+		longDescription: "DeckyShare: wireless two-way file transfer between Steam Deck and phone/PC."
+	},
+	{
+		active: true,
+		name: "DeckyFileExplorer",
+		installFolder: "decky-file-explorer",
+		author: "Willyscoiote",
+		repository: "barrence01/decky-file-explorer",
+		repositoryUrl: "https://github.com/barrence01/decky-file-explorer",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckyFileExplorer",
+			"decky-file-explorer",
+			"barrence01/decky-file-explorer"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.0",
+		releaseAssetName: "decky-file-explorer.zip",
+		catalogReleaseUrl: "https://github.com/barrence01/decky-file-explorer/releases/download/v1.1.0/decky-file-explorer.zip",
+		releasePublishedAt: "2026-08-28T06:20:17Z",
+		firstPublishedAt: "2025-12-25T01:09:30Z",
+		updatedAt: "2026-08-28T06:20:17Z",
+		shortDescription: "Explore your Steam Deck files from your browser.",
+		longDescription: "Explore your Steam Deck files from your browser."
+	},
+	{
+		active: true,
+		name: "DeckyDiscordIntegration",
+		installFolder: "DeckyDiscordIntegration",
+		author: "safet",
+		repository: "SafetZahirovic/decky-discord-integration",
+		repositoryUrl: "https://github.com/SafetZahirovic/decky-discord-integration",
+		category: "Social e community",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckyDiscordIntegration",
+			"SafetZahirovic/decky-discord-integration"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.1",
+		releaseAssetName: "DeckyDiscordIntegration.zip",
+		catalogReleaseUrl: "https://github.com/SafetZahirovic/decky-discord-integration/releases/download/v0.1.1/DeckyDiscordIntegration.zip",
+		releasePublishedAt: "2026-08-24T06:30:16Z",
+		firstPublishedAt: "2026-08-24T06:18:57Z",
+		updatedAt: "2026-08-24T06:30:16Z",
+		shortDescription: "Discord voice chat integration for Steam Deck",
+		longDescription: "Discord voice chat integration for Steam Deck"
+	},
+	{
+		active: true,
+		name: "Close Games Remotely",
+		installFolder: "close-games-remotely",
+		author: "safetzahirovic",
+		repository: "SafetZahirovic/decky-close-games-remotely",
+		repositoryUrl: "https://github.com/SafetZahirovic/decky-close-games-remotely",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Close Games Remotely",
+			"close-games-remotely",
+			"SafetZahirovic/decky-close-games-remotely"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.0",
+		releaseAssetName: "close-games-remotely.zip",
+		catalogReleaseUrl: "https://github.com/SafetZahirovic/decky-close-games-remotely/releases/download/v1.1.0/close-games-remotely.zip",
+		releasePublishedAt: "2026-08-23T07:36:59Z",
+		firstPublishedAt: "2026-08-23T07:36:59Z",
+		updatedAt: "2026-08-23T07:36:59Z",
+		shortDescription: "Remotely close games on other Steam devices so Steam Cloud saves can sync.",
+		longDescription: "Remotely close games on other Steam devices so Steam Cloud saves can sync."
+	},
+	{
+		active: true,
+		name: "Deskflow Decky",
+		installFolder: "deskflow-decky",
+		author: "Bart Schelstraete",
+		repository: "bschelst/deskflow-decky",
+		repositoryUrl: "https://github.com/bschelst/deskflow-decky",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Deskflow Decky",
+			"deskflow-decky",
+			"bschelst/deskflow-decky"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.3.0",
+		releaseAssetName: "deskflow-decky.zip",
+		catalogReleaseUrl: "https://github.com/bschelst/deskflow-decky/releases/download/v0.3.0/deskflow-decky.zip",
+		releasePublishedAt: "2026-08-22T16:28:22Z",
+		firstPublishedAt: "2026-08-22T13:53:59Z",
+		updatedAt: "2026-08-22T16:28:22Z",
+		shortDescription: "Use a Deskflow-connected computer's keyboard and mouse in SteamOS Gaming Mode.",
+		longDescription: "Use a Deskflow-connected computer's keyboard and mouse in SteamOS Gaming Mode."
+	},
+	{
+		active: true,
+		name: "Steam Deck Checker",
+		installFolder: "SteamDeckChecker",
+		author: "Fabian Petrusky",
+		repository: "Steamdeckchecker/Steam-Deck-Checker-Video-Checker",
+		repositoryUrl: "https://github.com/Steamdeckchecker/Steam-Deck-Checker-Video-Checker",
+		category: "Social e community",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Steam Deck Checker",
+			"SteamDeckChecker",
+			"Steamdeckchecker/Steam-Deck-Checker-Video-Checker"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.1",
+		releaseAssetName: "SteamDeckChecker-v1.1.1.zip",
+		catalogReleaseUrl: "https://github.com/Steamdeckchecker/Steam-Deck-Checker-Video-Checker/releases/download/V110/SteamDeckChecker-v1.1.1.zip",
+		releasePublishedAt: "2026-08-20T17:41:30Z",
+		firstPublishedAt: "2026-08-20T17:41:30Z",
+		updatedAt: "2026-08-20T17:41:30Z",
+		shortDescription: "Prüft alle 30 Minuten auf neue Videos von @SteamDeckChecker.",
+		longDescription: "Prüft alle 30 Minuten auf neue Videos von @SteamDeckChecker."
+	},
+	{
+		active: true,
+		name: "ChatGPT Community",
+		installFolder: "decky-chatgpt-community",
+		author: "LBR88",
+		repository: "lbr88-labs/decky-chatgpt-community",
+		repositoryUrl: "https://github.com/lbr88-labs/decky-chatgpt-community",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"ChatGPT Community",
+			"decky-chatgpt-community",
+			"lbr88-labs/decky-chatgpt-community"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.2",
+		releaseAssetName: "decky-chatgpt-community-0.1.2.zip",
+		catalogReleaseUrl: "https://github.com/lbr88-labs/decky-chatgpt-community/releases/download/v0.1.2/decky-chatgpt-community-0.1.2.zip",
+		releasePublishedAt: "2026-08-20T14:01:17Z",
+		firstPublishedAt: "2026-08-20T09:12:56Z",
+		updatedAt: "2026-10-25T16:25:55Z",
+		shortDescription: "Control the installed ChatGPT Community app and its real Voice Mode.",
+		longDescription: "Control the installed ChatGPT Community app and its real Voice Mode."
+	},
+	{
+		active: true,
+		name: "Armada LSFG Adaptive",
+		installFolder: "ArmadaLSFGAdaptive",
+		author: "Andrew Assef",
+		repository: "drewano/armada-lsfg-adaptive",
+		repositoryUrl: "https://github.com/drewano/armada-lsfg-adaptive",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Armada LSFG Adaptive",
+			"ArmadaLSFGAdaptive",
+			"drewano/armada-lsfg-adaptive"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.2.2",
+		releaseAssetName: "ArmadaLSFGAdaptive-0.2.2.zip",
+		catalogReleaseUrl: "https://github.com/drewano/armada-lsfg-adaptive/releases/download/v0.2.2/ArmadaLSFGAdaptive-0.2.2.zip",
+		releasePublishedAt: "2026-08-17T06:00:15Z",
+		firstPublishedAt: "2026-08-17T04:00:44Z",
+		updatedAt: "2026-08-17T06:00:15Z",
+		shortDescription: "Adaptive LSFG-VK frame generation for Armada OS handhelds. Requires Lossless Scaling on Steam.",
+		longDescription: "Adaptive LSFG-VK frame generation for Armada OS handhelds. Requires Lossless Scaling on Steam."
+	},
+	{
+		active: true,
+		name: "Xray Decky",
+		installFolder: "xray-decky",
+		author: "VadimOnix",
+		repository: "VadimOnix/xray-decky",
+		repositoryUrl: "https://github.com/VadimOnix/xray-decky",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Xray Decky",
+			"xray-decky",
+			"VadimOnix/xray-decky"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "2.3.2",
+		releaseAssetName: "xray-decky-v2.3.2.zip",
+		catalogReleaseUrl: "https://github.com/VadimOnix/xray-decky/releases/download/v2.3.2/xray-decky-v2.3.2.zip",
+		releasePublishedAt: "2026-08-13T15:34:49Z",
+		firstPublishedAt: "2026-02-14T18:29:17Z",
+		updatedAt: "2026-08-13T15:34:49Z",
+		shortDescription: "VPN & proxy client for Steam Deck: VLESS (REALITY), VMess, Trojan, Shadowsocks, Hysteria2 and TUIC. TUN mode gives system-wide VPN coverage in Gaming Mode — subscriptions with a managed server list, kill switch, live traffic stats and a phone-friendly web admin panel.",
+		longDescription: "VPN & proxy client for Steam Deck: VLESS (REALITY), VMess, Trojan, Shadowsocks, Hysteria2 and TUIC. TUN mode gives system-wide VPN coverage in Gaming Mode — subscriptions with a managed server list, kill switch, live traffic stats and a phone-friendly web admin panel."
+	},
+	{
+		active: true,
+		name: "Add Non-Steam Games",
+		installFolder: "Add Non-Steam Games",
+		author: "Daniel Vergara",
+		repository: "danielcamilo1/decky-add-non-steam-games",
+		repositoryUrl: "https://github.com/danielcamilo1/decky-add-non-steam-games",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Add Non-Steam Games",
+			"danielcamilo1/decky-add-non-steam-games"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.7.13",
+		releaseAssetName: "Add-Non-Steam-Games-v1.7.13.zip",
+		catalogReleaseUrl: "https://github.com/danielcamilo1/decky-add-non-steam-games/releases/download/v1.7.13/Add-Non-Steam-Games-v1.7.13.zip",
+		releasePublishedAt: "2026-08-11T16:41:24Z",
+		firstPublishedAt: "2026-08-10T17:22:14Z",
+		updatedAt: "2026-08-11T16:41:24Z",
+		shortDescription: "Add non-Steam games to your Steam library without leaving Game Mode. Browse for the game's executable and it becomes a shortcut, with Proton selectable for Windows games and artwork downloaded from SteamGridDB.",
+		longDescription: "Add non-Steam games to your Steam library without leaving Game Mode. Browse for the game's executable and it becomes a shortcut, with Proton selectable for Windows games and artwork downloaded from SteamGridDB."
+	},
+	{
+		active: true,
+		name: "Web Terminal",
+		installFolder: "decky-webterm",
+		author: "annacode747",
+		repository: "annacode747/Deck-Web-Terminal",
+		repositoryUrl: "https://github.com/annacode747/Deck-Web-Terminal",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Web Terminal",
+			"decky-webterm",
+			"annacode747/Deck-Web-Terminal"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.0",
+		releaseAssetName: "decky-webterm.zip",
+		catalogReleaseUrl: "https://github.com/annacode747/Deck-Web-Terminal/releases/download/v1.1.0/decky-webterm.zip",
+		releasePublishedAt: "2026-08-10T16:33:43Z",
+		firstPublishedAt: "2026-08-09T16:08:10Z",
+		updatedAt: "2026-08-10T16:33:43Z",
+		shortDescription: "A full Steam Deck terminal in any browser, equivalent to SSH. Scan a QR code and you're in, no client to install. Sessions live in tmux, so disconnects, sleep and closing the browser don't interrupt anything. Drag files between your file manager and the Deck. Available in 7 languages.",
+		longDescription: "A full Steam Deck terminal in any browser, equivalent to SSH. Scan a QR code and you're in, no client to install. Sessions live in tmux, so disconnects, sleep and closing the browser don't interrupt anything. Drag files between your file manager and the Deck. Available in 7 languages."
+	},
+	{
+		active: true,
+		name: "DeckTune",
+		installFolder: "decktune",
+		author: "DeckTune Contributors",
+		repository: "Brick098TheFirst/Decktune",
+		repositoryUrl: "https://github.com/Brick098TheFirst/Decktune",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckTune",
+			"decktune",
+			"Brick098TheFirst/Decktune"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.3.0",
+		releaseAssetName: "decktune-v0.3-2026-08-09-c8b6853.zip",
+		catalogReleaseUrl: "https://github.com/Brick098TheFirst/Decktune/releases/download/Decktune-v0.3-2026-08-09-c8b6853/decktune-v0.3-2026-08-09-c8b6853.zip",
+		releasePublishedAt: "2026-08-09T09:28:51Z",
+		firstPublishedAt: "2026-08-08T16:03:28Z",
+		updatedAt: "2026-08-09T09:28:51Z",
+		shortDescription: "A game-aware music player for Steam Deck. Resolves complete OST albums in source/release order, verifies track counts, detects Steam, non-Steam, Proton, native and emulated games, and streams audio through a local cache. Powered by yt-dlp.",
+		longDescription: "A game-aware music player for Steam Deck. Resolves complete OST albums in source/release order, verifies track counts, detects Steam, non-Steam, Proton, native and emulated games, and streams audio through a local cache. Powered by yt-dlp."
+	},
+	{
+		active: true,
+		name: "Audio Switcher",
+		installFolder: "audio-switcher",
+		author: "Seth",
+		repository: "SethPDA/Decky-Audio-Switcher",
+		repositoryUrl: "https://github.com/SethPDA/Decky-Audio-Switcher",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Audio Switcher",
+			"audio-switcher",
+			"SethPDA/Decky-Audio-Switcher"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.2.0",
+		releaseAssetName: "audio-switcher-v1.2.0.zip",
+		catalogReleaseUrl: "https://github.com/SethPDA/Decky-Audio-Switcher/releases/download/1.2.0/audio-switcher-v1.2.0.zip",
+		releasePublishedAt: "2026-08-06T21:08:28Z",
+		firstPublishedAt: "2026-08-06T20:17:18Z",
+		updatedAt: "2026-08-06T21:08:28Z",
+		shortDescription: "Instantly switch the Steam Deck audio output from the Quick Access Menu. Auto-selects your preferred device (HDMI, then Bluetooth, then anything else) on load.",
+		longDescription: "Instantly switch the Steam Deck audio output from the Quick Access Menu. Auto-selects your preferred device (HDMI, then Bluetooth, then anything else) on load."
+	},
+	{
+		active: true,
+		name: "HV Launcher",
+		installFolder: "hv-launcher",
+		author: "afk-RightNow",
+		repository: "RemakeCode/hv-launcher",
+		repositoryUrl: "https://github.com/RemakeCode/hv-launcher",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"HV Launcher",
+			"hv-launcher",
+			"RemakeCode/hv-launcher"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.2.0",
+		releaseAssetName: "hv-launcher-v1.2.0.zip",
+		catalogReleaseUrl: "https://github.com/RemakeCode/hv-launcher/releases/download/v1.2.0/hv-launcher-v1.2.0.zip",
+		releasePublishedAt: "2026-08-04T12:12:54Z",
+		firstPublishedAt: "2026-07-17T16:31:30Z",
+		updatedAt: "2026-08-04T12:12:54Z",
+		shortDescription: "A quick readiness check and launch manager for those who need to manage the hypervisor",
+		longDescription: "A quick readiness check and launch manager for those who need to manage the hypervisor"
+	},
+	{
+		active: true,
+		name: "ROM Sync",
+		installFolder: "ROM Sync",
+		author: "hrhnick",
+		repository: "hrhnick/decky-romsync",
+		repositoryUrl: "https://github.com/hrhnick/decky-romsync",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"ROM Sync",
+			"hrhnick/decky-romsync"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.9.0",
+		releaseAssetName: "ROM-Sync-1.9.0.zip",
+		catalogReleaseUrl: "https://github.com/hrhnick/decky-romsync/releases/download/v1.9.0/ROM-Sync-1.9.0.zip",
+		releasePublishedAt: "2026-07-31T01:00:39Z",
+		firstPublishedAt: "2026-07-28T03:12:27Z",
+		updatedAt: "2026-07-31T01:00:39Z",
+		shortDescription: "Turns a ROM folder into Steam shortcuts with artwork and per-system collections. RetroArch-first, with per-folder launch commands you can point at any emulator.",
+		longDescription: "Turns a ROM folder into Steam shortcuts with artwork and per-system collections. RetroArch-first, with per-folder launch commands you can point at any emulator."
+	},
+	{
+		active: true,
+		name: "SteamLED",
+		installFolder: "SteamLED",
+		author: "Ryan",
+		repository: "thesirms/SteamLED",
+		repositoryUrl: "https://github.com/thesirms/SteamLED",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"SteamLED",
+			"thesirms/SteamLED"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "SteamLED.zip",
+		catalogReleaseUrl: "https://github.com/thesirms/SteamLED/releases/download/v1.0/SteamLED.zip",
+		releasePublishedAt: "2026-07-28T00:11:43Z",
+		firstPublishedAt: "2026-07-28T00:11:43Z",
+		updatedAt: "2026-07-28T00:11:43Z",
+		shortDescription: "Drive the Steam Machine's front light bar. Animated color motions, 27 flags, per-game palettes that switch when you launch a game, and a HAL 9000 eye.",
+		longDescription: "Drive the Steam Machine's front light bar. Animated color motions, 27 flags, per-game palettes that switch when you launch a game, and a HAL 9000 eye."
+	},
+	{
+		active: true,
+		name: "NetBird",
+		installFolder: "NetBird",
+		author: "Jonathan Hohimer",
+		repository: "JonathanHohimer/netbird-steamdeck",
+		repositoryUrl: "https://github.com/JonathanHohimer/netbird-steamdeck",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"NetBird",
+			"JonathanHohimer/netbird-steamdeck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.15",
+		releaseAssetName: "NetBird.zip",
+		catalogReleaseUrl: "https://github.com/JonathanHohimer/netbird-steamdeck/releases/download/v1.1.15/NetBird.zip",
+		releasePublishedAt: "2026-07-19T06:20:05Z",
+		firstPublishedAt: "2026-07-14T20:30:48Z",
+		updatedAt: "2026-07-19T06:20:05Z",
+		shortDescription: "Install and control NetBird on Steam Deck from Gaming Mode.",
+		longDescription: "Install and control NetBird on Steam Deck from Gaming Mode."
+	},
+	{
+		active: true,
+		name: "Decky AI Assistant",
+		installFolder: "Decky AI Assistant",
+		author: "Lorenzo Strambi",
+		repository: "Lukather/deck-ai-assistant",
+		repositoryUrl: "https://github.com/Lukather/deck-ai-assistant",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decky AI Assistant",
+			"Lukather/deck-ai-assistant"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.6",
+		releaseAssetName: "deck-ai-assistant.zip",
+		catalogReleaseUrl: "https://github.com/Lukather/deck-ai-assistant/releases/download/v0.0.6/deck-ai-assistant.zip",
+		releasePublishedAt: "2026-07-13T15:34:10Z",
+		firstPublishedAt: "2026-06-08T09:55:47Z",
+		updatedAt: "2026-07-13T15:34:10Z",
+		shortDescription: "AI assistant for the Steam Deck",
+		longDescription: "AI assistant for the Steam Deck"
+	},
+	{
+		active: true,
+		name: "Rocknix LED Control",
+		installFolder: "Rocknix_LED_Control",
+		author: "Javier Furus",
+		repository: "javierfurus/rocknix-led-control",
+		repositoryUrl: "https://github.com/javierfurus/rocknix-led-control",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Rocknix LED Control",
+			"Rocknix_LED_Control",
+			"javierfurus/rocknix-led-control"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.6",
+		releaseAssetName: "Rocknix_LED_Control.zip",
+		catalogReleaseUrl: "https://github.com/javierfurus/rocknix-led-control/releases/download/v0.0.6/Rocknix_LED_Control.zip",
+		releasePublishedAt: "2026-06-19T14:14:22Z",
+		firstPublishedAt: "2026-05-26T07:55:57Z",
+		updatedAt: "2026-06-19T14:14:22Z",
+		shortDescription: "Control your Rocknix based device's analog stick LEDs: on/off, brightness, RGB color, and independent left/right control.",
+		longDescription: "Control your Rocknix based device's analog stick LEDs: on/off, brightness, RGB color, and independent left/right control."
+	},
+	{
+		active: true,
+		name: "HA Deck",
+		installFolder: "ha-deck",
+		author: "Mark",
+		repository: "Marker284/ha-deck",
+		repositoryUrl: "https://github.com/Marker284/ha-deck",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"HA Deck",
+			"ha-deck",
+			"Marker284/ha-deck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.3.0",
+		releaseAssetName: "ha-deck-v1.3.0.zip",
+		catalogReleaseUrl: "https://github.com/Marker284/ha-deck/releases/download/v1.3.0/ha-deck-v1.3.0.zip",
+		releasePublishedAt: "2026-06-06T15:34:11Z",
+		firstPublishedAt: "2026-03-28T21:10:30Z",
+		updatedAt: "2026-06-06T15:34:11Z",
+		shortDescription: "Control Home Assistant from your Steam Deck",
+		longDescription: "Control Home Assistant from your Steam Deck"
+	},
+	{
+		active: true,
+		name: "Immich Uploader",
+		installFolder: "immichuploader",
+		author: "R. Schlensog + AI Support / KI Unterstützung",
+		repository: "Seruschl/immich-uploader-deck",
+		repositoryUrl: "https://github.com/Seruschl/immich-uploader-deck",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Immich Uploader",
+			"immichuploader",
+			"Seruschl/immich-uploader-deck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.2.0",
+		releaseAssetName: "immichuploader-v0.2.0.zip",
+		catalogReleaseUrl: "https://github.com/Seruschl/immich-uploader-deck/releases/download/v0.2.0/immichuploader-v0.2.0.zip",
+		releasePublishedAt: "2026-05-17T08:04:35Z",
+		firstPublishedAt: "2026-05-13T11:49:27Z",
+		updatedAt: "2026-05-17T08:04:35Z",
+		shortDescription: "Automatic screenshot uploader for the Steam Deck to an Immich instance",
+		longDescription: "Automatic screenshot uploader for the Steam Deck to an Immich instance"
+	},
+	{
+		active: true,
+		name: "Decky Status",
+		installFolder: "decky-status",
+		author: "pwn",
+		repository: "sadxpc/steamdeck-discord-status",
+		repositoryUrl: "https://github.com/sadxpc/steamdeck-discord-status",
+		category: "Social e community",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decky Status",
+			"decky-status",
+			"sadxpc/steamdeck-discord-status"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "decky-status.zip",
+		catalogReleaseUrl: "https://github.com/sadxpc/steamdeck-discord-status/releases/download/1.0.2/decky-status.zip",
+		releasePublishedAt: "2026-05-10T14:36:55Z",
+		firstPublishedAt: "2025-12-27T02:55:31Z",
+		updatedAt: "2026-05-10T14:36:55Z",
+		shortDescription: "Displays current Steam Deck game in Discord without needing Discord running in the background.",
+		longDescription: "Displays current Steam Deck game in Discord without needing Discord running in the background."
+	},
+	{
+		active: true,
+		name: "Copyparty",
+		installFolder: "Copyparty",
+		author: "Heyde Moura",
+		repository: "heydemoura/decky-copyparty",
+		repositoryUrl: "https://github.com/heydemoura/decky-copyparty",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Copyparty",
+			"heydemoura/decky-copyparty"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.1",
+		releaseAssetName: "Copyparty-v0.1.1.zip",
+		catalogReleaseUrl: "https://github.com/heydemoura/decky-copyparty/releases/download/v0.1.1/Copyparty-v0.1.1.zip",
+		releasePublishedAt: "2026-05-06T20:12:49Z",
+		firstPublishedAt: "2026-05-06T20:08:17Z",
+		updatedAt: "2026-05-06T20:12:49Z",
+		shortDescription: "Run copyparty (https://github.com/9001/copyparty) from your Steam Deck. Start/stop the file server, scan a QR code from your phone, and tweak port/folder/credentials.",
+		longDescription: "Run copyparty (https://github.com/9001/copyparty) from your Steam Deck. Start/stop the file server, scan a QR code from your phone, and tweak port/folder/credentials."
+	},
+	{
+		active: true,
+		name: "YouTube Cast Receiver",
+		installFolder: "YouTube Cast Receiver",
+		author: "artistro08",
+		repository: "artistro08/youtube-cast-receiver",
+		repositoryUrl: "https://github.com/artistro08/youtube-cast-receiver",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"YouTube Cast Receiver",
+			"artistro08/youtube-cast-receiver"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.5.0",
+		releaseAssetName: "youtube-cast-receiver.zip",
+		catalogReleaseUrl: "https://github.com/artistro08/youtube-cast-receiver/releases/download/v0.5.0/youtube-cast-receiver.zip",
+		releasePublishedAt: "2026-04-25T14:22:14Z",
+		firstPublishedAt: "2026-03-19T16:50:52Z",
+		updatedAt: "2026-04-25T14:50:39Z",
+		shortDescription: "Turn your Steam Deck into a YouTube Cast receiver.",
+		longDescription: "Turn your Steam Deck into a YouTube Cast receiver."
+	},
+	{
+		active: true,
+		name: "Ratings Decky",
+		installFolder: "ratings-decky",
+		author: "Matheus Silveira de Castilho",
+		repository: "mathdecastilho/ratings-decky",
+		repositoryUrl: "https://github.com/mathdecastilho/ratings-decky",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Ratings Decky",
+			"ratings-decky",
+			"mathdecastilho/ratings-decky"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.0",
+		releaseAssetName: "ratings-decky-v0.1.0.zip",
+		catalogReleaseUrl: "https://github.com/mathdecastilho/ratings-decky/releases/download/v0.1.0/ratings-decky-v0.1.0.zip",
+		releasePublishedAt: "2026-04-19T23:13:00Z",
+		firstPublishedAt: "2026-04-19T23:13:00Z",
+		updatedAt: "2026-04-19T23:13:00Z",
+		shortDescription: "Shows SteamDB, OpenCritic and Metacritic rating badges on game pages.",
+		longDescription: "Shows SteamDB, OpenCritic and Metacritic rating badges on game pages."
+	},
+	{
+		active: true,
+		name: "OMFG",
+		installFolder: "OMFG",
+		author: "Kurt Himebauch",
+		repository: "xXJSONDeruloXx/omfg-deck",
+		repositoryUrl: "https://github.com/xXJSONDeruloXx/omfg-deck",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"OMFG",
+			"xXJSONDeruloXx/omfg-deck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.4",
+		releaseAssetName: "OMFG.zip",
+		catalogReleaseUrl: "https://github.com/xXJSONDeruloXx/omfg-deck/releases/download/v0.1.4/OMFG.zip",
+		releasePublishedAt: "2026-04-06T01:26:08Z",
+		firstPublishedAt: "2026-04-05T17:45:56Z",
+		updatedAt: "2026-04-06T01:26:08Z",
+		shortDescription: "Enable OMFG (Open Multi Frame Generation) Vulkan layer on the Steam Deck.",
+		longDescription: "Enable OMFG (Open Multi Frame Generation) Vulkan layer on the Steam Deck."
+	},
+	{
+		active: true,
+		name: "Start In Library",
+		installFolder: "decky_boot_into_library_plugin",
+		author: "local",
+		repository: "hyprlande/decky_boot_into_library_plugin",
+		repositoryUrl: "https://github.com/hyprlande/decky_boot_into_library_plugin",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Start In Library",
+			"decky_boot_into_library_plugin",
+			"hyprlande/decky_boot_into_library_plugin"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "decky_boot_into_library_plugin.zip",
+		catalogReleaseUrl: "https://github.com/hyprlande/decky_boot_into_library_plugin/releases/download/1.0.0/decky_boot_into_library_plugin.zip",
+		releasePublishedAt: "2026-04-04T12:31:52Z",
+		firstPublishedAt: "2026-04-04T12:31:52Z",
+		updatedAt: "2026-04-04T12:31:52Z",
+		shortDescription: "Switches Steam Deck to Library shortly after startup.",
+		longDescription: "Switches Steam Deck to Library shortly after startup."
+	},
+	{
+		active: true,
+		name: "120 Hrtz Refresh Rate",
+		installFolder: "120 Hrtz Refresh Rate",
+		author: "xXJSONDeruloXx",
+		repository: "xXJSONDeruloXx/decky-refresh-rate-expander",
+		repositoryUrl: "https://github.com/xXJSONDeruloXx/decky-refresh-rate-expander",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"120 Hrtz Refresh Rate",
+			"xXJSONDeruloXx/decky-refresh-rate-expander"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.0-beta.1",
+		releaseAssetName: "120.Hrtz.Refresh.Rate.zip",
+		catalogReleaseUrl: "https://github.com/xXJSONDeruloXx/decky-refresh-rate-expander/releases/download/v1.1.0-beta.1/120.Hrtz.Refresh.Rate.zip",
+		releasePublishedAt: "2026-03-31T20:07:14Z",
+		firstPublishedAt: "2025-12-04T17:35:54Z",
+		updatedAt: "2026-03-31T20:07:14Z",
+		shortDescription: "Install or uninstall expanded refresh rate support for Steam Deck OLED.",
+		longDescription: "Install or uninstall expanded refresh rate support for Steam Deck OLED."
+	},
+	{
+		active: true,
+		name: "SteamDBButton",
+		installFolder: "steamdbbutton",
+		author: "kedMertens",
+		repository: "kedMertens/steamdbDeckyButton",
+		repositoryUrl: "https://github.com/kedMertens/steamdbDeckyButton",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"SteamDBButton",
+			"steamdbbutton",
+			"kedMertens/steamdbDeckyButton"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.1",
+		releaseAssetName: "steamdbbutton-v0.0.1.zip",
+		catalogReleaseUrl: "https://github.com/kedMertens/steamdbDeckyButton/releases/download/v0.0.1/steamdbbutton-v0.0.1.zip",
+		releasePublishedAt: "2026-03-31T19:41:08Z",
+		firstPublishedAt: "2026-03-31T19:41:08Z",
+		updatedAt: "2026-03-31T19:41:08Z",
+		shortDescription: "Adds a SteamDB price history shortcut while browsing the Steam store on Deck.",
+		longDescription: "Adds a SteamDB price history shortcut while browsing the Steam store on Deck."
+	},
+	{
+		active: true,
+		name: "GameThemeMusic-NG",
+		installFolder: "GameThemeMusic-NG",
+		author: "cmb",
+		repository: "cmerino01/GameThemeMusic-NG",
+		repositoryUrl: "https://github.com/cmerino01/GameThemeMusic-NG",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"GameThemeMusic-NG",
+			"cmerino01/GameThemeMusic-NG"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "GameThemeMusic-NG-v1.0.0.zip",
+		catalogReleaseUrl: "https://github.com/cmerino01/GameThemeMusic-NG/releases/download/v1.0.0/GameThemeMusic-NG-v1.0.0.zip",
+		releasePublishedAt: "2026-03-31T06:31:14Z",
+		firstPublishedAt: "2026-03-31T06:31:14Z",
+		updatedAt: "2026-03-31T06:31:14Z",
+		shortDescription: "Plays YouTube theme music on your game pages.",
+		longDescription: "Plays YouTube theme music on your game pages."
+	},
+	{
+		active: true,
+		name: "Video Uploader",
+		installFolder: "decky-video-uploader",
+		author: "SootyOwl",
+		repository: "SootyOwl/decky-video-uploader",
+		repositoryUrl: "https://github.com/SootyOwl/decky-video-uploader",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Video Uploader",
+			"decky-video-uploader",
+			"SootyOwl/decky-video-uploader"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.3",
+		releaseAssetName: "decky-video-uploader.zip",
+		catalogReleaseUrl: "https://github.com/SootyOwl/decky-video-uploader/releases/download/v0.0.3/decky-video-uploader.zip",
+		releasePublishedAt: "2026-03-30T07:48:20Z",
+		firstPublishedAt: "2026-03-24T13:09:28Z",
+		updatedAt: "2026-03-30T07:48:20Z",
+		shortDescription: "Export saved gameplay videos as MP4 and upload them to YouTube directly from Game Mode.",
+		longDescription: "Export saved gameplay videos as MP4 and upload them to YouTube directly from Game Mode."
+	},
+	{
+		active: true,
+		name: "YouTube Music",
+		installFolder: "youtube-music",
+		author: "artistro08",
+		repository: "artistro08/decky-youtube-music",
+		repositoryUrl: "https://github.com/artistro08/decky-youtube-music",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"YouTube Music",
+			"youtube-music",
+			"artistro08/decky-youtube-music"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.2",
+		releaseAssetName: "youtube-music.zip",
+		catalogReleaseUrl: "https://github.com/artistro08/decky-youtube-music/releases/download/v0.0.2/youtube-music.zip",
+		releasePublishedAt: "2026-03-15T04:00:13Z",
+		firstPublishedAt: "2026-03-14T02:46:49Z",
+		updatedAt: "2026-03-15T04:00:13Z",
+		shortDescription: "Control YouTube Music (th-ch/youtube-music) from your Steam Deck sidebar.",
+		longDescription: "Control YouTube Music (th-ch/youtube-music) from your Steam Deck sidebar."
+	},
+	{
+		active: true,
+		name: "potato-deals",
+		installFolder: "potato-deals",
+		author: "q2",
+		repository: "koffcheck/potato-deals",
+		repositoryUrl: "https://github.com/koffcheck/potato-deals",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"potato-deals",
+			"koffcheck/potato-deals"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "3.1.15",
+		releaseAssetName: "potato-deals-v3.1.15.zip",
+		catalogReleaseUrl: "https://github.com/koffcheck/potato-deals/releases/download/v3.1.15/potato-deals-v3.1.15.zip",
+		releasePublishedAt: "2026-02-28T19:53:06Z",
+		firstPublishedAt: "2026-02-28T19:53:06Z",
+		updatedAt: "2026-02-28T19:53:06Z",
+		shortDescription: "Stable Steam wishlist price monitor for Decky Loader.",
+		longDescription: "Stable Steam wishlist price monitor for Decky Loader."
+	},
+	{
+		active: true,
+		name: "Freedeck",
+		installFolder: "freedeck-plugin",
+		author: "Panyiwei",
+		repository: "YunGuiHe/freedeck-plugin-enhancements",
+		repositoryUrl: "https://github.com/YunGuiHe/freedeck-plugin-enhancements",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Freedeck",
+			"freedeck-plugin",
+			"YunGuiHe/freedeck-plugin-enhancements"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.2",
+		releaseAssetName: "freedeck.v.0.2.0-with-cache.zip",
+		catalogReleaseUrl: "https://github.com/YunGuiHe/freedeck-plugin-enhancements/releases/download/v0.2.0-with-cache/freedeck.v.0.2.0-with-cache.zip",
+		releasePublishedAt: "2026-02-27T13:15:38Z",
+		firstPublishedAt: "2026-02-27T13:15:38Z",
+		updatedAt: "2026-02-27T13:15:38Z",
+		shortDescription: "通过局域网在设备间传输文件到 Steam Deck",
+		longDescription: "通过局域网在设备间传输文件到 Steam Deck"
+	},
+	{
+		active: true,
+		name: "Snippets",
+		installFolder: "Snippets",
+		author: "xXJSONDeruloXx",
+		repository: "xXJSONDeruloXx/snippets",
+		repositoryUrl: "https://github.com/xXJSONDeruloXx/snippets",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Snippets",
+			"xXJSONDeruloXx/snippets"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "Snippets.zip",
+		catalogReleaseUrl: "https://github.com/xXJSONDeruloXx/snippets/releases/download/v1.0.0/Snippets.zip",
+		releasePublishedAt: "2026-02-17T02:09:27Z",
+		firstPublishedAt: "2026-02-17T02:09:27Z",
+		updatedAt: "2026-02-17T02:09:27Z",
+		shortDescription: "Save and paste custom launch arguments in Steam Deck game mode.",
+		longDescription: "Save and paste custom launch arguments in Steam Deck game mode."
+	},
+	{
+		active: true,
+		name: "Discord Lite",
+		installFolder: "Discord Lite",
+		author: "lopesleo",
+		repository: "lopesleo/Discord-Lite",
+		repositoryUrl: "https://github.com/lopesleo/Discord-Lite",
+		category: "Social e community",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Discord Lite",
+			"lopesleo/Discord-Lite"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.4.1",
+		releaseAssetName: "Discord-Lite-v1.4.1.zip",
+		catalogReleaseUrl: "https://github.com/lopesleo/Discord-Lite/releases/download/v1.4.1/Discord-Lite-v1.4.1.zip",
+		releasePublishedAt: "2026-01-29T23:29:00Z",
+		firstPublishedAt: "2026-01-19T03:02:35Z",
+		updatedAt: "2026-01-29T23:29:00Z",
+		shortDescription: "Discord Lite - Controle completo do Discord via Steam Deck",
+		longDescription: "Discord Lite - Controle completo do Discord via Steam Deck"
+	},
+	{
+		active: true,
+		name: "Second Screen Manager",
+		installFolder: "decky-second-screen",
+		author: "Misticenea",
+		repository: "Misticenea/decky-second-screen",
+		repositoryUrl: "https://github.com/Misticenea/decky-second-screen",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Second Screen Manager",
+			"decky-second-screen",
+			"Misticenea/decky-second-screen"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.1",
+		releaseAssetName: "decky-second-screen-v0.1.1.zip",
+		catalogReleaseUrl: "https://github.com/Misticenea/decky-second-screen/releases/download/v0.1.1/decky-second-screen-v0.1.1.zip",
+		releasePublishedAt: "2025-11-19T09:45:17Z",
+		firstPublishedAt: "2025-11-18T10:58:04Z",
+		updatedAt: "2025-11-19T09:45:17Z",
+		shortDescription: "Manage dual screen setup on Steam Deck. Move windows between screens and display performance stats on the secondary screen.",
+		longDescription: "Manage dual screen setup on Steam Deck. Move windows between screens and display performance stats on the secondary screen."
+	},
+	{
+		active: true,
+		name: "Colorblind",
+		installFolder: "Colorblind",
+		author: "John Conley",
+		repository: "jfrconley/decky-colorblind",
+		repositoryUrl: "https://github.com/jfrconley/decky-colorblind",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Colorblind",
+			"jfrconley/decky-colorblind"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.0",
+		releaseAssetName: "Colorblind.zip",
+		catalogReleaseUrl: "https://github.com/jfrconley/decky-colorblind/releases/download/v0.1.1/Colorblind.zip",
+		releasePublishedAt: "2025-11-10T02:40:39Z",
+		firstPublishedAt: "2025-11-09T22:58:43Z",
+		updatedAt: "2025-11-10T02:40:39Z",
+		shortDescription: "Apply colorblind correction filters directly through gamescope (no reshade performance hit!). Supports protanopia, deuteranopia, and tritanopia correction modes.",
+		longDescription: "Apply colorblind correction filters directly through gamescope (no reshade performance hit!). Supports protanopia, deuteranopia, and tritanopia correction modes."
+	},
+	{
+		active: true,
+		name: "decky-window-switcher",
+		installFolder: "decky-window-switcher",
+		author: "voidiz",
+		repository: "voidiz/decky-window-switcher",
+		repositoryUrl: "https://github.com/voidiz/decky-window-switcher",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"decky-window-switcher",
+			"voidiz/decky-window-switcher"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.1",
+		releaseAssetName: "decky-window-switcher.zip",
+		catalogReleaseUrl: "https://github.com/voidiz/decky-window-switcher/releases/download/v0.2.0/decky-window-switcher.zip",
+		releasePublishedAt: "2025-11-09T03:27:26Z",
+		firstPublishedAt: "2024-12-21T13:48:54Z",
+		updatedAt: "2025-11-09T03:27:26Z",
+		shortDescription: "Quick switching between windows using gamepad bindings.",
+		longDescription: "Quick switching between windows using gamepad bindings."
+	},
+	{
+		active: true,
+		name: "Nested Desktop",
+		installFolder: "Nested Desktop",
+		author: "Kurt Himebauch (xXJSONDeruloXx)",
+		repository: "xXJSONDeruloXx/decky-nested-desktop",
+		repositoryUrl: "https://github.com/xXJSONDeruloXx/decky-nested-desktop",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Nested Desktop",
+			"xXJSONDeruloXx/decky-nested-desktop"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.1",
+		releaseAssetName: "Nested.Desktop.zip",
+		catalogReleaseUrl: "https://github.com/xXJSONDeruloXx/decky-nested-desktop/releases/download/v0.0.1/Nested.Desktop.zip",
+		releasePublishedAt: "2025-10-30T18:11:53Z",
+		firstPublishedAt: "2025-10-30T18:11:53Z",
+		updatedAt: "2025-10-30T18:11:53Z",
+		shortDescription: "Create and launch nested desktop shortcuts for Steam Deck",
+		longDescription: "Create and launch nested desktop shortcuts for Steam Deck"
+	},
+	{
+		active: true,
+		name: "Croc Store",
+		installFolder: "croc-store",
+		author: "juliobonon",
+		repository: "juliobonon/croc-store",
+		repositoryUrl: "https://github.com/juliobonon/croc-store",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Croc Store",
+			"croc-store",
+			"juliobonon/croc-store"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "croc-store-dist.zip",
+		catalogReleaseUrl: "https://github.com/juliobonon/croc-store/releases/download/1.0.0/croc-store-dist.zip",
+		releasePublishedAt: "2025-09-29T13:58:51Z",
+		firstPublishedAt: "2025-09-29T13:58:51Z",
+		updatedAt: "2025-09-29T13:58:51Z",
+		shortDescription: "A ROM store for Steam Deck using CrocDB API with download management and emulator integration",
+		longDescription: "A ROM store for Steam Deck using CrocDB API with download management and emulator integration"
+	},
+	{
+		active: true,
+		name: "Bazzite Buddy",
+		installFolder: "Bazzite Buddy",
+		author: "xXJSONDeruloXx",
+		repository: "ublue-os/decky-bazzite-buddy",
+		repositoryUrl: "https://github.com/ublue-os/decky-bazzite-buddy",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Bazzite Buddy",
+			"ublue-os/decky-bazzite-buddy"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.2.0",
+		releaseAssetName: "Bazzite.Buddy.zip",
+		catalogReleaseUrl: "https://github.com/ublue-os/decky-bazzite-buddy/releases/download/v1.3.0/Bazzite.Buddy.zip",
+		releasePublishedAt: "2025-08-25T23:59:39Z",
+		firstPublishedAt: "2025-08-25T23:59:39Z",
+		updatedAt: "2025-08-25T23:59:39Z",
+		shortDescription: "View release notes for Bazzite.",
+		longDescription: "View release notes for Bazzite."
+	},
+	{
+		active: true,
+		name: "decky-optiscaler",
+		installFolder: "decky-optiscaler",
+		author: "JSON Derulo",
+		repository: "xXJSONDeruloXx/decky-optiscaler",
+		repositoryUrl: "https://github.com/xXJSONDeruloXx/decky-optiscaler",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"decky-optiscaler",
+			"xXJSONDeruloXx/decky-optiscaler"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.3.0",
+		releaseAssetName: "decky-optiscaler.zip",
+		catalogReleaseUrl: "https://github.com/xXJSONDeruloXx/decky-optiscaler/releases/download/v0.3.0/decky-optiscaler.zip",
+		releasePublishedAt: "2025-06-29T01:37:27Z",
+		firstPublishedAt: "2025-04-16T03:07:02Z",
+		updatedAt: "2025-06-29T01:37:27Z",
+		shortDescription: "Allows using FSR for upscaling and frame generation in games with DLSS support. Uses DLSS Enabler and Optiscaler.",
+		longDescription: "Allows using FSR for upscaling and frame generation in games with DLSS support. Uses DLSS Enabler and Optiscaler."
+	},
+	{
+		active: true,
+		name: "Sort by HLTB",
+		installFolder: "Sort by HLTB",
+		author: "Ava Johnson",
+		repository: "RedHatter/sort-by-hltb",
+		repositoryUrl: "https://github.com/RedHatter/sort-by-hltb",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Sort by HLTB",
+			"RedHatter/sort-by-hltb"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "Sort-by-HLTB.zip",
+		catalogReleaseUrl: "https://github.com/RedHatter/sort-by-hltb/releases/download/v1.0.0/Sort-by-HLTB.zip",
+		releasePublishedAt: "2025-04-01T20:03:49Z",
+		firstPublishedAt: "2025-04-01T20:03:49Z",
+		updatedAt: "2025-04-01T20:03:49Z",
+		shortDescription: "A plugin to sort the library by game length according to How Long To Beat",
+		longDescription: "A plugin to sort the library by game length according to How Long To Beat"
+	},
+	{
+		active: true,
+		name: "To Moon",
+		installFolder: "tomoon",
+		author: "Sayo Kurisu",
+		repository: "YukiCoco/ToMoon",
+		repositoryUrl: "https://github.com/YukiCoco/ToMoon",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"To Moon",
+			"tomoon",
+			"YukiCoco/ToMoon"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.2.8",
+		releaseAssetName: "tomoon-v0.2.8.zip",
+		catalogReleaseUrl: "https://github.com/YukiCoco/ToMoon/releases/download/v0.2.8/tomoon-v0.2.8.zip",
+		releasePublishedAt: "2025-03-17T13:57:09Z",
+		firstPublishedAt: "2022-10-01T04:34:16Z",
+		updatedAt: "2025-03-17T13:57:09Z",
+		shortDescription: "SteamOS Network Tools Box.",
+		longDescription: "SteamOS Network Tools Box."
+	},
+	{
+		active: true,
+		name: "Network Manager",
+		installFolder: "Network Manager",
+		author: "Erik Hasse",
+		repository: "erik-hasse/network-manager",
+		repositoryUrl: "https://github.com/erik-hasse/network-manager",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Network Manager",
+			"erik-hasse/network-manager"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.4",
+		releaseAssetName: "network-mananger-v0.0.4.zip",
+		catalogReleaseUrl: "https://github.com/erik-hasse/network-manager/releases/download/v0.0.4/network-mananger-v0.0.4.zip",
+		releasePublishedAt: "2025-01-15T03:44:46Z",
+		firstPublishedAt: "2024-10-05T16:13:08Z",
+		updatedAt: "2025-01-15T03:44:46Z",
+		shortDescription: "Select a specific mesh network access point without going to Desktop Mode. Root is required to apply network setting changes.",
+		longDescription: "Select a specific mesh network access point without going to Desktop Mode. Root is required to apply network setting changes."
+	},
+	{
+		active: true,
+		name: "TunUp",
+		installFolder: "TunUp",
+		author: "SErAphLi",
+		repository: "Seraphli/TunUp",
+		repositoryUrl: "https://github.com/Seraphli/TunUp",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"TunUp",
+			"Seraphli/TunUp"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.5.0",
+		releaseAssetName: "TunUp.zip",
+		catalogReleaseUrl: "https://github.com/Seraphli/TunUp/releases/download/0.5.0/TunUp.zip",
+		releasePublishedAt: "2024-12-16T19:34:31Z",
+		firstPublishedAt: "2024-05-02T05:28:31Z",
+		updatedAt: "2024-12-16T19:34:31Z",
+		shortDescription: "Decky network plugin.",
+		longDescription: "Decky network plugin."
+	},
+	{
+		active: true,
+		name: "Decky Script Runner",
+		installFolder: "decky-script-runner",
+		author: "Gr3gorywolf",
+		repository: "Gr3gorywolf/decky-script-runner",
+		repositoryUrl: "https://github.com/Gr3gorywolf/decky-script-runner",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decky Script Runner",
+			"decky-script-runner",
+			"Gr3gorywolf/decky-script-runner"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.1",
+		releaseAssetName: "decky-script-runner-v0.0.1.zip",
+		catalogReleaseUrl: "https://github.com/Gr3gorywolf/decky-script-runner/releases/download/v1.0.0-9/decky-script-runner-v0.0.1.zip",
+		releasePublishedAt: "2024-11-21T20:14:19Z",
+		firstPublishedAt: "2024-11-18T23:13:03Z",
+		updatedAt: "2024-11-21T20:14:19Z",
+		shortDescription: "Run, manage, and edit scripts. With a focus on flexibility, it supports running multiple scripts simultaneously, editing and uploading script through the integrated sideloader, and sharing scripts within a community-driven repository, Also supports multiple scripting languages such as Javascript (Node),Bash, Python, Perl, Lua, Ruby and PHP, this plugin is a must-have for any Steam Deck user.",
+		longDescription: "Run, manage, and edit scripts. With a focus on flexibility, it supports running multiple scripts simultaneously, editing and uploading script through the integrated sideloader, and sharing scripts within a community-driven repository, Also supports multiple scripting languages such as Javascript (Node),Bash, Python, Perl, Lua, Ruby and PHP, this plugin is a must-have for any Steam Deck user."
+	},
+	{
+		active: true,
+		name: "Decktation",
+		installFolder: "decktation",
+		author: "silverfoxy",
+		repository: "silverfoxy/decktation",
+		repositoryUrl: "https://github.com/silverfoxy/decktation",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decktation",
+			"decktation",
+			"silverfoxy/decktation"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.3.22",
+		releaseAssetName: "Decktation.zip",
+		catalogReleaseUrl: "https://github.com/silverfoxy/decktation/releases/download/v0.3.22/Decktation.zip",
+		releasePublishedAt: "2026-11-08T20:54:24Z",
+		firstPublishedAt: "2026-02-09T02:32:48Z",
+		updatedAt: "2026-11-08T20:54:24Z",
+		shortDescription: "Push-to-talk dictation for Steam Deck. Context-aware speech-to-text using whisper.cpp.",
+		longDescription: "Push-to-talk dictation for Steam Deck. Context-aware speech-to-text using whisper.cpp."
+	},
+	{
+		active: true,
+		name: "Apple Music",
+		installFolder: "apple-music-plugin",
+		author: "jeffmartinez",
+		repository: "BrielleG116/decky-apple-music",
+		repositoryUrl: "https://github.com/BrielleG116/decky-apple-music",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Apple Music",
+			"apple-music-plugin",
+			"BrielleG116/decky-apple-music"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.22",
+		releaseAssetName: "apple-music-plugin.zip",
+		catalogReleaseUrl: "https://github.com/BrielleG116/decky-apple-music/releases/download/v1.0.22/apple-music-plugin.zip",
+		releasePublishedAt: "2026-11-08T08:27:54Z",
+		firstPublishedAt: "2026-07-11T21:31:07Z",
+		updatedAt: "2026-11-08T08:27:54Z",
+		shortDescription: "Full-length Apple Music playback from the Steam Deck Quick Access Menu, with in-plugin Apple ID sign-in and Widevine DRM.",
+		longDescription: "Full-length Apple Music playback from the Steam Deck Quick Access Menu, with in-plugin Apple ID sign-in and Widevine DRM."
+	},
+	{
+		active: true,
+		name: "Decky Streamer",
+		installFolder: "decky-streamer",
+		author: "Deamos",
+		repository: "deamos/decky-streamer",
+		repositoryUrl: "https://github.com/deamos/decky-streamer",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decky Streamer",
+			"decky-streamer",
+			"deamos/decky-streamer"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.13",
+		releaseAssetName: "decky-streamer.zip",
+		catalogReleaseUrl: "https://github.com/deamos/decky-streamer/releases/download/v0.1.13/decky-streamer.zip",
+		releasePublishedAt: "2026-11-07T16:00:53Z",
+		firstPublishedAt: "2026-02-01T01:22:41Z",
+		updatedAt: "2026-11-07T16:00:53Z",
+		shortDescription: "Stream your Steam Deck gameplay to RTMP endpoints like Twitch, YouTube, etc.",
+		longDescription: "Stream your Steam Deck gameplay to RTMP endpoints like Twitch, YouTube, etc."
+	},
+	{
+		active: true,
+		name: "Colores",
+		installFolder: "Colores",
+		author: "Hooandee",
+		repository: "Hooandee/decky-colores",
+		repositoryUrl: "https://github.com/Hooandee/decky-colores",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Colores",
+			"Hooandee/decky-colores"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.35.0",
+		releaseAssetName: "Colores.zip",
+		catalogReleaseUrl: "https://github.com/Hooandee/decky-colores/releases/download/decky-colores-v0.35.0/Colores.zip",
+		releasePublishedAt: "2026-11-04T12:03:45Z",
+		firstPublishedAt: "2026-06-27T13:21:26Z",
+		updatedAt: "2026-11-10T08:30:28Z",
+		shortDescription: "Beautiful RGB LED control for handheld gaming PCs.",
+		longDescription: "Beautiful RGB LED control for handheld gaming PCs."
+	},
+	{
+		active: true,
+		name: "BC250 Toolkit",
+		installFolder: "BC250-Toolkit",
+		author: "Necrosiak",
+		repository: "Necrosiak/bc250-toolkit-decky",
+		repositoryUrl: "https://github.com/Necrosiak/bc250-toolkit-decky",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"BC250 Toolkit",
+			"BC250-Toolkit",
+			"Necrosiak/bc250-toolkit-decky"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.6.4",
+		releaseAssetName: "BC250-Toolkit.zip",
+		catalogReleaseUrl: "https://github.com/Necrosiak/bc250-toolkit-decky/releases/download/v0.6.4/BC250-Toolkit.zip",
+		releasePublishedAt: "2026-11-03T09:28:18Z",
+		firstPublishedAt: "2026-06-28T10:23:15Z",
+		updatedAt: "2026-11-03T09:28:18Z",
+		shortDescription: "Gaming optimizer for the ASRock BC-250 (AMD Ryzen Embedded V2000 / Cyan Skillfish). Community database of optimized launch options — apply Proton version and launch options in one click. Also features live CU (Compute Units) management, VRAM (UMA frame buffer) control from the panel, CPU/GPU temperatures, and system status.",
+		longDescription: "Gaming optimizer for the ASRock BC-250 (AMD Ryzen Embedded V2000 / Cyan Skillfish). Community database of optimized launch options — apply Proton version and launch options in one click. Also features live CU (Compute Units) management, VRAM (UMA frame buffer) control from the panel, CPU/GPU temperatures, and system status."
+	},
+	{
+		active: true,
+		name: "PowerDeck",
+		installFolder: "PowerDeck",
+		author: "Fewtarius",
+		repository: "fewtarius/PowerDeck",
+		repositoryUrl: "https://github.com/fewtarius/PowerDeck",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"PowerDeck",
+			"fewtarius/PowerDeck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.89",
+		releaseAssetName: "PowerDeck.zip",
+		catalogReleaseUrl: "https://github.com/fewtarius/PowerDeck/releases/download/v1.0.89/PowerDeck.zip",
+		releasePublishedAt: "2026-11-02T00:16:34Z",
+		firstPublishedAt: "2025-10-04T22:30:27Z",
+		updatedAt: "2026-11-02T00:16:34Z",
+		shortDescription: "Advanced power management for Steam Deck and handheld PCs - TDP, thermal controls, performance profiles",
+		longDescription: "Advanced power management for Steam Deck and handheld PCs - TDP, thermal controls, performance profiles"
+	},
+	{
+		active: true,
+		name: "DeckyHub",
+		installFolder: "DeckyHub",
+		author: "Andrii Shevchuk-Yuhanets",
+		repository: "mazillka/deckyhub-plugin",
+		repositoryUrl: "https://github.com/mazillka/deckyhub-plugin",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckyHub",
+			"mazillka/deckyhub-plugin"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "3.1.0",
+		releaseAssetName: "DeckyHub-v3.1.0.zip",
+		catalogReleaseUrl: "https://github.com/mazillka/deckyhub-plugin/releases/download/v3.1.0/DeckyHub-v3.1.0.zip",
+		releasePublishedAt: "2026-10-31T18:46:28Z",
+		firstPublishedAt: "2026-09-14T16:31:08Z",
+		updatedAt: "2026-11-07T08:00:05Z",
+		shortDescription: "Discover, track, and safely download GitHub releases for Steam Deck tools from Gaming Mode.",
+		longDescription: "Discover, track, and safely download GitHub releases for Steam Deck tools from Gaming Mode."
+	},
+	{
+		active: true,
+		name: "Quest Compendium",
+		installFolder: "Quest Compendium",
+		author: "Noah Minton",
+		repository: "TuriusX/Quest-Compendium-Decky",
+		repositoryUrl: "https://github.com/TuriusX/Quest-Compendium-Decky",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Quest Compendium",
+			"TuriusX/Quest-Compendium-Decky"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.16.0",
+		releaseAssetName: "quest-compendium-decky.zip",
+		catalogReleaseUrl: "https://github.com/TuriusX/Quest-Compendium-Decky/releases/download/v0.16.0/quest-compendium-decky.zip",
+		releasePublishedAt: "2026-10-31T02:39:35Z",
+		firstPublishedAt: "2026-09-20T22:40:23Z",
+		updatedAt: "2026-10-31T02:39:35Z",
+		shortDescription: "An AI game guide that can see your screen. Get hints, boss tips, or min-max help from the Quick Access menu, with a spoiler-friendly Roleplay mode.",
+		longDescription: "An AI game guide that can see your screen. Get hints, boss tips, or min-max help from the Quick Access menu, with a spoiler-friendly Roleplay mode."
+	},
+	{
+		active: true,
+		name: "VPN & Wake-on-LAN",
+		installFolder: "VPN-WoL",
+		author: "TochaRude",
+		repository: "TochaRude/VPN-WoL-Decky",
+		repositoryUrl: "https://github.com/TochaRude/VPN-WoL-Decky",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"VPN & Wake-on-LAN",
+			"VPN-WoL",
+			"TochaRude/VPN-WoL-Decky"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.6",
+		releaseAssetName: "VPN-WoL.zip",
+		catalogReleaseUrl: "https://github.com/TochaRude/VPN-WoL-Decky/releases/download/v1.1.6/VPN-WoL.zip",
+		releasePublishedAt: "2026-10-26T23:39:46Z",
+		firstPublishedAt: "2026-10-17T23:59:03Z",
+		updatedAt: "2026-10-26T23:39:46Z",
+		shortDescription: "Manage and toggle VPN connections (NetworkManager & WireGuard) and wake up PCs via Wake-on-LAN over VPN or local network.",
+		longDescription: "Manage and toggle VPN connections (NetworkManager & WireGuard) and wake up PCs via Wake-on-LAN over VPN or local network."
+	},
+	{
+		active: true,
+		name: "DNS Unblock",
+		installFolder: "decky-dns-unblock",
+		author: "Ch1mpleo",
+		repository: "Ch1mpleo/decky-dns-unblock",
+		repositoryUrl: "https://github.com/Ch1mpleo/decky-dns-unblock",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DNS Unblock",
+			"decky-dns-unblock",
+			"Ch1mpleo/decky-dns-unblock"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.2.0",
+		releaseAssetName: "decky-dns-unblock.zip",
+		catalogReleaseUrl: "https://github.com/Ch1mpleo/decky-dns-unblock/releases/download/v0.2.0/decky-dns-unblock.zip",
+		releasePublishedAt: "2026-10-17T17:43:23Z",
+		firstPublishedAt: "2026-10-12T21:25:24Z",
+		updatedAt: "2026-10-17T17:43:23Z",
+		shortDescription: "Bypass ISP DNS blocking on any Wi-Fi using encrypted DNS (DoH), with safe fallback to the network default.",
+		longDescription: "Bypass ISP DNS blocking on any Wi-Fi using encrypted DNS (DoH), with safe fallback to the network default."
+	},
+	{
+		active: true,
+		name: "Deck Live",
+		installFolder: "Deck Live",
+		author: "Vet",
+		repository: "VetTV-Studios/deck-live",
+		repositoryUrl: "https://github.com/VetTV-Studios/deck-live",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Deck Live",
+			"VetTV-Studios/deck-live"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "Deck-Live-1.0.0.zip",
+		catalogReleaseUrl: "https://github.com/VetTV-Studios/deck-live/releases/download/v1.0.0/Deck-Live-1.0.0.zip",
+		releasePublishedAt: "2026-10-13T04:49:06Z",
+		firstPublishedAt: "2026-10-13T04:49:06Z",
+		updatedAt: "2026-10-25T21:46:08Z",
+		shortDescription: "Live stream Game Mode gameplay to YouTube or Twitch from the Quick Access menu, with hardware H.264 encoding, game + mic audio, A/V sync control and auto-reconnect.",
+		longDescription: "Live stream Game Mode gameplay to YouTube or Twitch from the Quick Access menu, with hardware H.264 encoding, game + mic audio, A/V sync control and auto-reconnect."
+	},
+	{
+		active: true,
+		name: "BGFX",
+		installFolder: "BGFX",
+		author: "Borderless Gaming",
+		repository: "andrewmd5/decky-bgfx",
+		repositoryUrl: "https://github.com/andrewmd5/decky-bgfx",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"BGFX",
+			"andrewmd5/decky-bgfx"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.4.0",
+		releaseAssetName: "BGFX.zip",
+		catalogReleaseUrl: "https://github.com/andrewmd5/decky-bgfx/releases/download/v1.4.0/BGFX.zip",
+		releasePublishedAt: "2026-10-11T10:54:43Z",
+		firstPublishedAt: "2026-03-03T07:19:17Z",
+		updatedAt: "2026-10-11T10:54:43Z",
+		shortDescription: "Control BGFX effects and frame generation from Quick Access, with live status and FPS.",
+		longDescription: "Control BGFX effects and frame generation from Quick Access, with live status and FPS."
+	},
+	{
+		active: true,
+		name: "Ally Companion",
+		installFolder: "Ally Companion",
+		author: "bassobr",
+		repository: "bassobr/Decky-Ally-Companion",
+		repositoryUrl: "https://github.com/bassobr/Decky-Ally-Companion",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Ally Companion",
+			"bassobr/Decky-Ally-Companion"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.5.6",
+		releaseAssetName: "ally-companion-0.5.6.zip",
+		catalogReleaseUrl: "https://github.com/bassobr/Decky-Ally-Companion/releases/download/v0.5.6/ally-companion-0.5.6.zip",
+		releasePublishedAt: "2026-10-08T09:36:22Z",
+		firstPublishedAt: "2026-10-04T10:03:01Z",
+		updatedAt: "2026-10-08T09:36:22Z",
+		shortDescription: "Speaker DSP, hardware fixes, lighting and update news for the ROG Xbox Ally X and ROG Ally X on SteamOS.",
+		longDescription: "Speaker DSP, hardware fixes, lighting and update news for the ROG Xbox Ally X and ROG Ally X on SteamOS."
+	},
+	{
+		active: true,
+		name: "GameVault",
+		installFolder: "GameVault",
+		author: "Starkka15",
+		repository: "Starkka15/GameVault",
+		repositoryUrl: "https://github.com/Starkka15/GameVault",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"GameVault",
+			"Starkka15/GameVault"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.3.2",
+		releaseAssetName: "GameVault.zip",
+		catalogReleaseUrl: "https://github.com/Starkka15/GameVault/releases/download/v1.3.2/GameVault.zip",
+		releasePublishedAt: "2026-10-07T22:28:03Z",
+		firstPublishedAt: "2026-03-02T05:51:57Z",
+		updatedAt: "2026-10-07T22:28:03Z",
+		shortDescription: "An open and extensible multi-store game launcher for Steam Deck. Access Epic, GOG, Amazon, and itch.io games directly from Game Mode.",
+		longDescription: "An open and extensible multi-store game launcher for Steam Deck. Access Epic, GOG, Amazon, and itch.io games directly from Game Mode."
+	},
+	{
+		active: true,
+		name: "GyroParallax",
+		installFolder: "GyroParallax",
+		author: "GyroParallax Contributors",
+		repository: "kuchazefira-hub/GyroParallax-Decky-plugin",
+		repositoryUrl: "https://github.com/kuchazefira-hub/GyroParallax-Decky-plugin",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"GyroParallax",
+			"kuchazefira-hub/GyroParallax-Decky-plugin"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.0",
+		releaseAssetName: "GyroParallax-v.1.1.0.zip",
+		catalogReleaseUrl: "https://github.com/kuchazefira-hub/GyroParallax-Decky-plugin/releases/download/1.1.0/GyroParallax-v.1.1.0.zip",
+		releasePublishedAt: "2026-10-05T07:54:24Z",
+		firstPublishedAt: "2026-09-30T14:08:04Z",
+		updatedAt: "2026-10-05T07:54:24Z",
+		shortDescription: "Adds a smooth gyro-controlled 3D parallax effect to Steam Deck game pages.",
+		longDescription: "Adds a smooth gyro-controlled 3D parallax effect to Steam Deck game pages."
+	},
+	{
+		active: true,
+		name: "Decky RenoDX",
+		installFolder: "decky-renodx",
+		author: "Feelsrat",
+		repository: "Feelsrat/decky-renodx",
+		repositoryUrl: "https://github.com/Feelsrat/decky-renodx",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decky RenoDX",
+			"decky-renodx",
+			"Feelsrat/decky-renodx"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.7.0",
+		releaseAssetName: "decky-renodx.zip",
+		catalogReleaseUrl: "https://github.com/Feelsrat/decky-renodx/releases/download/v0.7.0/decky-renodx.zip",
+		releasePublishedAt: "2026-10-04T21:25:27Z",
+		firstPublishedAt: "2026-05-04T12:08:28Z",
+		updatedAt: "2026-10-04T21:25:27Z",
+		shortDescription: "Per-game HDR for the Steam Deck OLED: installs RenoDX mods, Special K or ReShade AutoHDR into Proton games and sets the launch options, with a clean, reversible uninstall.",
+		longDescription: "Per-game HDR for the Steam Deck OLED: installs RenoDX mods, Special K or ReShade AutoHDR into Proton games and sets the launch options, with a clean, reversible uninstall."
+	},
+	{
+		active: true,
+		name: "RustDeck",
+		installFolder: "decky-rustdeck",
+		author: "Hintay",
+		repository: "Hintay/decky-rustdeck",
+		repositoryUrl: "https://github.com/Hintay/decky-rustdeck",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"RustDeck",
+			"decky-rustdeck",
+			"Hintay/decky-rustdeck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.0",
+		releaseAssetName: "decky-rustdeck-v0.1.0.zip",
+		catalogReleaseUrl: "https://github.com/Hintay/decky-rustdeck/releases/download/v0.1.0/decky-rustdeck-v0.1.0.zip",
+		releasePublishedAt: "2026-10-04T20:12:08Z",
+		firstPublishedAt: "2026-10-04T20:12:08Z",
+		updatedAt: "2026-10-04T20:12:08Z",
+		shortDescription: "Run RustDesk in Game Mode: unattended remote access with a temporary or permanent password, your own ID/relay server, and mouse input through gamescope.",
+		longDescription: "Run RustDesk in Game Mode: unattended remote access with a temporary or permanent password, your own ID/relay server, and mouse input through gamescope."
+	},
+	{
+		active: true,
+		name: "Ally DSP",
+		installFolder: "Ally DSP",
+		author: "bassobr",
+		repository: "bassobr/decky-ally-dsp",
+		repositoryUrl: "https://github.com/bassobr/decky-ally-dsp",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Ally DSP",
+			"bassobr/decky-ally-dsp"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.10",
+		releaseAssetName: "ally-dsp-0.1.10.zip",
+		catalogReleaseUrl: "https://github.com/bassobr/decky-ally-dsp/releases/download/v0.1.10/ally-dsp-0.1.10.zip",
+		releasePublishedAt: "2026-10-03T22:00:28Z",
+		firstPublishedAt: "2026-09-19T07:40:47Z",
+		updatedAt: "2026-10-03T22:00:28Z",
+		shortDescription: "Dolby speaker tuning for ASUS ROG Ally handhelds on SteamOS as a PipeWire filter chain, with global or per-game presets.",
+		longDescription: "Dolby speaker tuning for ASUS ROG Ally handhelds on SteamOS as a PipeWire filter chain, with global or per-game presets."
+	},
+	{
+		active: true,
+		name: "Grid Menu",
+		installFolder: "decky-grid-menu",
+		author: "Nico",
+		repository: "D3SOX/decky-grid-menu",
+		repositoryUrl: "https://github.com/D3SOX/decky-grid-menu",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Grid Menu",
+			"decky-grid-menu",
+			"D3SOX/decky-grid-menu"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.2",
+		releaseAssetName: "decky-grid-menu-1.0.2.zip",
+		catalogReleaseUrl: "https://github.com/D3SOX/decky-grid-menu/releases/download/v1.0.2/decky-grid-menu-1.0.2.zip",
+		releasePublishedAt: "2026-09-30T21:21:34Z",
+		firstPublishedAt: "2026-09-30T21:03:43Z",
+		updatedAt: "2026-09-30T21:21:34Z",
+		shortDescription: "Show Decky plugins in a configurable grid. Three columns by default.",
+		longDescription: "Show Decky plugins in a configurable grid. Three columns by default."
+	},
+	{
+		active: true,
+		name: "SpinShare",
+		installFolder: "spinshare-decky",
+		author: "Vishwas",
+		repository: "RealDishwash/SpinshareDecky",
+		repositoryUrl: "https://github.com/RealDishwash/SpinshareDecky",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"SpinShare",
+			"spinshare-decky",
+			"RealDishwash/SpinshareDecky"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.2.0",
+		releaseAssetName: "spinshare-decky-0.2.0.zip",
+		catalogReleaseUrl: "https://github.com/RealDishwash/SpinshareDecky/releases/download/v0.2.0/spinshare-decky-0.2.0.zip",
+		releasePublishedAt: "2026-09-13T01:11:52Z",
+		firstPublishedAt: "2026-09-12T13:27:19Z",
+		updatedAt: "2026-09-13T01:11:52Z",
+		shortDescription: "Browse, download and manage Spin Rhythm XD custom songs from SpinShare.",
+		longDescription: "Browse, download and manage Spin Rhythm XD custom songs from SpinShare."
+	},
+	{
+		active: true,
+		name: "GeForce NOW",
+		installFolder: "decky-gfn",
+		author: "dimmkirr",
+		repository: "DimmKirr/decky-gfn",
+		repositoryUrl: "https://github.com/DimmKirr/decky-gfn",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"GeForce NOW",
+			"decky-gfn",
+			"DimmKirr/decky-gfn"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.0",
+		releaseAssetName: "decky-gfn.zip",
+		catalogReleaseUrl: "https://github.com/DimmKirr/decky-gfn/releases/download/v0.2.0/decky-gfn.zip",
+		releasePublishedAt: "2026-09-12T13:44:59Z",
+		firstPublishedAt: "2026-08-29T17:12:52Z",
+		updatedAt: "2026-09-12T13:44:59Z",
+		shortDescription: "Browse the GeForce NOW catalog and install games into your Steam library",
+		longDescription: "Browse the GeForce NOW catalog and install games into your Steam library"
+	},
+	{
+		active: true,
+		name: "RetroAchievements",
+		installFolder: "retroachievements",
+		author: "Mario Vieira",
+		repository: "MarioWork/retroachievements-decky",
+		repositoryUrl: "https://github.com/MarioWork/retroachievements-decky",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"RetroAchievements",
+			"retroachievements",
+			"MarioWork/retroachievements-decky"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.1",
+		releaseAssetName: "retroachievements.zip",
+		catalogReleaseUrl: "https://github.com/MarioWork/retroachievements-decky/releases/download/v0.1.1/retroachievements.zip",
+		releasePublishedAt: "2026-09-11T09:28:52Z",
+		firstPublishedAt: "2026-09-09T16:39:33Z",
+		updatedAt: "2026-09-11T09:28:52Z",
+		shortDescription: "Browse your RetroAchievements profile and per-game achievement progress without leaving Game Mode.",
+		longDescription: "Browse your RetroAchievements profile and per-game achievement progress without leaving Game Mode."
+	},
+	{
+		active: true,
+		name: "DeckyNatpierce",
+		installFolder: "decky-natpierce",
+		author: "honjow",
+		repository: "honjow/decky-natpierce",
+		repositoryUrl: "https://github.com/honjow/decky-natpierce",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckyNatpierce",
+			"decky-natpierce",
+			"honjow/decky-natpierce"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.2",
+		releaseAssetName: "decky-natpierce.zip",
+		catalogReleaseUrl: "https://github.com/honjow/decky-natpierce/releases/download/v1.1.2/decky-natpierce.zip",
+		releasePublishedAt: "2026-09-04T08:47:36Z",
+		firstPublishedAt: "2025-08-18T09:53:20Z",
+		updatedAt: "2026-09-04T08:47:36Z",
+		shortDescription: "True point-to-point direct connection for internal network penetration.",
+		longDescription: "True point-to-point direct connection for internal network penetration."
+	},
+	{
+		active: true,
+		name: "Decky Manager",
+		installFolder: "Decky-Manager",
+		author: "Ciphay",
+		repository: "Ciphay/Decky-File-Manager",
+		repositoryUrl: "https://github.com/Ciphay/Decky-File-Manager",
+		category: "Strumenti e utilità",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decky Manager",
+			"Decky-Manager",
+			"Ciphay/Decky-File-Manager"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "2.0.0",
+		releaseAssetName: "Decky-Manager.zip",
+		catalogReleaseUrl: "https://github.com/Ciphay/Decky-File-Manager/releases/download/2.0-Beta/Decky-Manager.zip",
+		releasePublishedAt: "2026-08-23T00:22:18Z",
+		firstPublishedAt: "2026-07-23T19:52:26Z",
+		updatedAt: "2026-08-23T00:22:18Z",
+		shortDescription: "Decky File Manager is a file manager designed specifically for SteamOS and devices using systems based on it, providing file management directly inside Steam Gaming Mode. The plugin is designed around a console-like experience, allowing users to browse, organize and manage their files using a game controller without needing to leave Steam or switch to Desktop Mode.",
+		longDescription: "Decky File Manager is a file manager designed specifically for SteamOS and devices using systems based on it, providing file management directly inside Steam Gaming Mode. The plugin is designed around a console-like experience, allowing users to browse, organize and manage their files using a game controller without needing to leave Steam or switch to Desktop Mode."
+	},
+	{
+		active: true,
+		name: "Codex Remote",
+		installFolder: "CodexRemote",
+		author: "Alishivec",
+		repository: "VovasaeXranitel/decky-codex-remote",
+		repositoryUrl: "https://github.com/VovasaeXranitel/decky-codex-remote",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Codex Remote",
+			"CodexRemote",
+			"VovasaeXranitel/decky-codex-remote"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.35",
+		releaseAssetName: "CodexRemote.zip",
+		catalogReleaseUrl: "https://github.com/VovasaeXranitel/decky-codex-remote/releases/download/v0.1.35/CodexRemote.zip",
+		releasePublishedAt: "2026-08-10T07:14:59Z",
+		firstPublishedAt: "2026-05-31T10:19:22Z",
+		updatedAt: "2026-08-10T07:14:59Z",
+		shortDescription: "Control a Codex App session from the Steam Deck quick access panel.",
+		longDescription: "Control a Codex App session from the Steam Deck quick access panel."
+	},
+	{
+		active: true,
+		name: "Spotify Connect",
+		installFolder: "Spotify Connect",
+		author: "Janley",
+		repository: "Janleyx/decky-spotify-connect",
+		repositoryUrl: "https://github.com/Janleyx/decky-spotify-connect",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Spotify Connect",
+			"Janleyx/decky-spotify-connect"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "spotify-connect-v1.0.0-decky-installer.zip",
+		catalogReleaseUrl: "https://github.com/Janleyx/decky-spotify-connect/releases/download/v1.0.0/spotify-connect-v1.0.0-decky-installer.zip",
+		releasePublishedAt: "2026-07-15T11:17:42Z",
+		firstPublishedAt: "2026-07-15T11:17:42Z",
+		updatedAt: "2026-07-15T11:17:42Z",
+		shortDescription: "Control spotifyd from Decky Loader and expose the Steam Deck as a Spotify Connect device.",
+		longDescription: "Control spotifyd from Decky Loader and expose the Steam Deck as a Spotify Connect device."
+	},
+	{
+		active: true,
+		name: "KDEck",
+		installFolder: "KDEck",
+		author: "RainsListener",
+		repository: "BRiAn3274/KDEck",
+		repositoryUrl: "https://github.com/BRiAn3274/KDEck",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"KDEck",
+			"BRiAn3274/KDEck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.9.6",
+		releaseAssetName: "KDEck.zip",
+		catalogReleaseUrl: "https://github.com/BRiAn3274/KDEck/releases/download/v0.9.6/KDEck.zip",
+		releasePublishedAt: "2026-06-29T06:13:10Z",
+		firstPublishedAt: "2026-05-28T11:24:09Z",
+		updatedAt: "2026-06-29T06:13:10Z",
+		shortDescription: "Receive and send KDE Connect clipboard text and files in SteamOS game mode.",
+		longDescription: "Receive and send KDE Connect clipboard text and files in SteamOS game mode."
+	},
+	{
+		active: true,
+		name: "Controller Changer",
+		installFolder: "Controller Changer",
+		author: "lonsdaleite",
+		repository: "lonsdaleite/steamos-controller-changer",
+		repositoryUrl: "https://github.com/lonsdaleite/steamos-controller-changer",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Controller Changer",
+			"lonsdaleite/steamos-controller-changer"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.2",
+		releaseAssetName: "steamos-controller-changer-v1.1.2.zip",
+		catalogReleaseUrl: "https://github.com/lonsdaleite/steamos-controller-changer/releases/download/v1.1.2/steamos-controller-changer-v1.1.2.zip",
+		releasePublishedAt: "2026-06-14T11:48:30Z",
+		firstPublishedAt: "2026-06-14T11:12:40Z",
+		updatedAt: "2026-06-14T11:48:30Z",
+		shortDescription: "Switch InputPlumber controller profile between native device, Lenovo Legion Go S, and PS5 DualSense Edge.",
+		longDescription: "Switch InputPlumber controller profile between native device, Lenovo Legion Go S, and PS5 DualSense Edge."
+	},
+	{
+		active: true,
+		name: "Twindeck",
+		installFolder: "twindeck",
+		author: "Andrew Baumbach <andrewb@twingate.com>",
+		repository: "Twingate-Community/twindeck",
+		repositoryUrl: "https://github.com/Twingate-Community/twindeck",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Twindeck",
+			"twindeck",
+			"Twingate-Community/twindeck"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.1.0",
+		releaseAssetName: "twindeck-v1.1.0.zip",
+		catalogReleaseUrl: "https://github.com/Twingate-Community/twindeck/releases/download/v1.1.0/twindeck-v1.1.0.zip",
+		releasePublishedAt: "2026-06-01T17:55:26Z",
+		firstPublishedAt: "2026-05-20T17:36:07Z",
+		updatedAt: "2026-06-01T17:55:26Z",
+		shortDescription: "Connect to Twingate Network from the Steam Deck quick-access menu.",
+		longDescription: "Connect to Twingate Network from the Steam Deck quick-access menu."
+	},
+	{
+		active: true,
+		name: "eGPUBridge",
+		installFolder: "eGPUBridge",
+		author: "Vova + GPT",
+		repository: "WowOne987/eGPUBridge",
+		repositoryUrl: "https://github.com/WowOne987/eGPUBridge",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"eGPUBridge",
+			"WowOne987/eGPUBridge"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.3.alfa",
+		releaseAssetName: "eGPUBridge-v0.3.alfa.zip",
+		catalogReleaseUrl: "https://github.com/WowOne987/eGPUBridge/releases/download/v0.3.alfa/eGPUBridge-v0.3.alfa.zip",
+		releasePublishedAt: "2026-05-21T18:25:34Z",
+		firstPublishedAt: "2026-05-05T18:05:56Z",
+		updatedAt: "2026-05-21T18:25:34Z",
+		shortDescription: "eGPU manager for SteamOS Game Mode",
+		longDescription: "eGPU manager for SteamOS Game Mode"
+	},
+	{
+		active: true,
+		name: "YouTube Music Player",
+		installFolder: "youtube-music-player",
+		author: "artistro08",
+		repository: "artistro08/decky-youtube-music-player",
+		repositoryUrl: "https://github.com/artistro08/decky-youtube-music-player",
+		category: "Personalizzazione e media",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"YouTube Music Player",
+			"youtube-music-player",
+			"artistro08/decky-youtube-music-player"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.1.0",
+		releaseAssetName: "youtube-music-player.zip",
+		catalogReleaseUrl: "https://github.com/artistro08/decky-youtube-music-player/releases/download/v0.2.1/youtube-music-player.zip",
+		releasePublishedAt: "2026-03-16T23:31:06Z",
+		firstPublishedAt: "2026-03-16T15:38:51Z",
+		updatedAt: "2026-03-16T23:31:06Z",
+		shortDescription: "Play YouTube Music directly on your Steam Deck — no external app required.",
+		longDescription: "Play YouTube Music directly on your Steam Deck — no external app required."
+	},
+	{
+		active: true,
+		name: "Renpy Installer",
+		installFolder: "decky-renpy-installer",
+		author: "Morgan Blackthorne, Winds of Storm",
+		repository: "jasmeralia/decky-renpy-installer",
+		repositoryUrl: "https://github.com/jasmeralia/decky-renpy-installer",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Renpy Installer",
+			"decky-renpy-installer",
+			"jasmeralia/decky-renpy-installer"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.25",
+		releaseAssetName: "decky-renpy-installer.zip",
+		catalogReleaseUrl: "https://github.com/jasmeralia/decky-renpy-installer/releases/download/v0.0.25/decky-renpy-installer.zip",
+		releasePublishedAt: "2026-03-04T13:51:46Z",
+		firstPublishedAt: "2026-03-04T13:51:46Z",
+		updatedAt: "2026-03-04T13:51:46Z",
+		shortDescription: "Starter scaffold for a Decky Loader plugin that: - copies a ZIP from USB to a destination root (SD/internal), - extracts it, - deletes the copied ZIP, - finds the Ren'Py launcher `.sh`, - adds a Steam Non-Steam shortcut (frontend uses `SteamClient.Apps.AddShortcut` when available).",
+		longDescription: "Starter scaffold for a Decky Loader plugin that: - copies a ZIP from USB to a destination root (SD/internal), - extracts it, - deletes the copied ZIP, - finds the Ren'Py launcher `.sh`, - adds a Steam Non-Steam shortcut (frontend uses `SteamClient.Apps.AddShortcut` when available)."
+	},
+	{
+		active: true,
+		name: "Decky-Achievement",
+		installFolder: "Decky-Achievement",
+		author: "bakadestroyer",
+		repository: "totallynotbakadestroyer/Decky-Achievement",
+		repositoryUrl: "https://github.com/totallynotbakadestroyer/Decky-Achievement",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decky-Achievement",
+			"totallynotbakadestroyer/Decky-Achievement"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.1",
+		releaseAssetName: "Decky-Achievement-0.0.1.zip",
+		catalogReleaseUrl: "https://github.com/totallynotbakadestroyer/Decky-Achievement/releases/download/v0.0.1/Decky-Achievement-0.0.1.zip",
+		releasePublishedAt: "2026-02-27T14:40:36Z",
+		firstPublishedAt: "2026-02-27T14:40:36Z",
+		updatedAt: "2026-02-27T14:40:36Z",
+		shortDescription: "An achievement manager for the Steam Deck",
+		longDescription: "An achievement manager for the Steam Deck"
+	},
+	{
+		active: true,
+		name: "Legion Go 2 Brightness fix CachyOS",
+		installFolder: "legion-go2-brightness",
+		author: "Community",
+		repository: "jorgemmsilva/decky-plugin-fix-lego2-brightness-cachyos",
+		repositoryUrl: "https://github.com/jorgemmsilva/decky-plugin-fix-lego2-brightness-cachyos",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Legion Go 2 Brightness fix CachyOS",
+			"legion-go2-brightness",
+			"jorgemmsilva/decky-plugin-fix-lego2-brightness-cachyos"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "legion-go2-brightness.zip",
+		catalogReleaseUrl: "https://github.com/jorgemmsilva/decky-plugin-fix-lego2-brightness-cachyos/releases/download/v1.0.0/legion-go2-brightness.zip",
+		releasePublishedAt: "2025-12-14T22:11:50Z",
+		firstPublishedAt: "2025-12-14T22:11:50Z",
+		updatedAt: "2025-12-14T22:11:50Z",
+		shortDescription: "Brightness control for Legion Go 2 (bypasses Steam's broken PWM control)",
+		longDescription: "Brightness control for Legion Go 2 (bypasses Steam's broken PWM control)"
+	},
+	{
+		active: true,
+		name: "EmuSync",
+		installFolder: "EmuSync",
+		author: "EmuSync team",
+		repository: "emu-sync/EmuSync-DeckyPlugin",
+		repositoryUrl: "https://github.com/emu-sync/EmuSync-DeckyPlugin",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"EmuSync",
+			"emu-sync/EmuSync-DeckyPlugin"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.0.0",
+		releaseAssetName: "EmuSync.zip",
+		catalogReleaseUrl: "https://github.com/emu-sync/EmuSync-DeckyPlugin/releases/download/v1.0.0/EmuSync.zip",
+		releasePublishedAt: "2025-12-13T18:28:51Z",
+		firstPublishedAt: "2025-12-13T18:28:51Z",
+		updatedAt: "2025-12-13T18:28:51Z",
+		shortDescription: "EmuSync decky plugin.",
+		longDescription: "EmuSync decky plugin."
+	},
+	{
+		active: true,
+		name: "EmuDeck Retro Library",
+		installFolder: "decky-rom-library",
+		author: "Dragoon Dorise",
+		repository: "EmuDeck/decky-rom-library",
+		repositoryUrl: "https://github.com/EmuDeck/decky-rom-library",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"EmuDeck Retro Library",
+			"decky-rom-library",
+			"EmuDeck/decky-rom-library"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.5.3",
+		releaseAssetName: "decky-rom-library.zip",
+		catalogReleaseUrl: "https://github.com/EmuDeck/decky-rom-library/releases/download/1.5.4/decky-rom-library.zip",
+		releasePublishedAt: "2025-11-20T09:24:57Z",
+		firstPublishedAt: "2024-06-13T13:03:29Z",
+		updatedAt: "2025-11-20T09:24:57Z",
+		shortDescription: "New Retro Library to play your favourite retro games",
+		longDescription: "New Retro Library to play your favourite retro games"
+	},
+	{
+		active: true,
+		name: "Decksight Brightness Fix",
+		installFolder: "Decksight Brightness Fix",
+		author: "Xnopyt",
+		repository: "Xnopyt/decksight-brightness-fix",
+		repositoryUrl: "https://github.com/Xnopyt/decksight-brightness-fix",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"Decksight Brightness Fix",
+			"Xnopyt/decksight-brightness-fix"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "1.3.0",
+		releaseAssetName: "Decksight.Brightness.Fix.zip",
+		catalogReleaseUrl: "https://github.com/Xnopyt/decksight-brightness-fix/releases/download/1.3.0/Decksight.Brightness.Fix.zip",
+		releasePublishedAt: "2025-10-11T16:17:54Z",
+		firstPublishedAt: "2025-10-05T20:51:21Z",
+		updatedAt: "2025-10-11T16:17:54Z",
+		shortDescription: "A plugin to fix the brightness slider on Steam Decks with the DeckSight OLED panel",
+		longDescription: "A plugin to fix the brightness slider on Steam Decks with the DeckSight OLED panel"
+	},
+	{
+		active: true,
+		name: "SDAchievement",
+		installFolder: "SDAchievement",
+		author: "Guilhem Mateo",
+		repository: "Wariie/SDAchievement",
+		repositoryUrl: "https://github.com/Wariie/SDAchievement",
+		category: "Libreria e giochi",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"SDAchievement",
+			"Wariie/SDAchievement"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.3.0",
+		releaseAssetName: "SDAchievement.zip",
+		catalogReleaseUrl: "https://github.com/Wariie/SDAchievement/releases/download/v0.3.0/SDAchievement.zip",
+		releasePublishedAt: "2025-09-11T09:59:06Z",
+		firstPublishedAt: "2025-08-23T19:19:22Z",
+		updatedAt: "2025-09-11T09:59:06Z",
+		shortDescription: "Decky plugin to track game progress and achievements",
+		longDescription: "Decky plugin to track game progress and achievements"
+	},
+	{
+		active: true,
+		name: "DeckyBatteryHealth",
+		installFolder: "DeckyBatteryHealth",
+		author: "koda-git",
+		repository: "koda-git/DeckyBatteryHealth",
+		repositoryUrl: "https://github.com/koda-git/DeckyBatteryHealth",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"DeckyBatteryHealth",
+			"koda-git/DeckyBatteryHealth"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.0.1",
+		releaseAssetName: "DeckyBatteryHealth.zip",
+		catalogReleaseUrl: "https://github.com/koda-git/DeckyBatteryHealth/releases/download/v1.0.0/DeckyBatteryHealth.zip",
+		releasePublishedAt: "2025-05-06T09:04:37Z",
+		firstPublishedAt: "2025-05-06T09:04:37Z",
+		updatedAt: "2025-05-06T09:04:37Z",
+		shortDescription: "Decky example plugin.",
+		longDescription: "Decky example plugin."
+	},
+	{
+		active: true,
+		name: "WiFi Optimizer",
+		installFolder: "WiFi Optimizer",
+		author: "Arcada Labs",
+		repository: "ArcadaLabs-Jason/WifiOptimizer",
+		repositoryUrl: "https://github.com/ArcadaLabs-Jason/WifiOptimizer",
+		category: "Sistema e hardware",
+		coverUrl: "",
+		keywords: [
+			"catalog-added:2026-11-10"
+		],
+		aliases: [
+			"WiFi Optimizer",
+			"ArcadaLabs-Jason/WifiOptimizer"
+		],
+		catalogStatus: "github",
+		compatibility: "Repository ufficiale del progetto.",
+		catalogSource: "outside-store",
+		catalogPluginId: 0,
+		version: "0.24.7",
+		releaseAssetName: "wifi-optimizer.zip",
+		catalogReleaseUrl: "https://github.com/ArcadaLabs-Jason/WifiOptimizer/releases/download/v0.24.7/wifi-optimizer.zip",
+		releasePublishedAt: "2026-11-07T07:38:16Z",
+		firstPublishedAt: "2026-04-15T23:46:37Z",
+		updatedAt: "2026-11-07T21:23:48Z",
+		shortDescription: "WiFi optimizations for game streaming and online play. Survives sleep and updates.",
+		longDescription: "WiFi optimizations for game streaming and online play. Survives sleep and updates."
 	}
 ];
-var catalogRevision = 11;
+var catalogRevision = 12;
 var bundledCatalogData = {
 	schemaVersion: schemaVersion,
 	verifiedAt: verifiedAt,
@@ -29135,7 +33949,7 @@ function tabEditorLocale(locale) {
 // Testi della sezione "Barra superiore" nelle impostazioni del plugin.
 // Ordine: titolo, data accanto all'ora, descrizione, sposta a sinistra,
 // descrizione, formato della data, automatico.
-const copy$1 = {
+const copy$2 = {
     en: ["Top bar", "Date next to the time", "Shows the date in Steam's top bar, before the weather and the current track.", "Move time and date to the left", "Moves the clock group, together with weather and music when shown.", "Date format", "Automatic"],
     it: ["Barra superiore", "Data accanto all'ora", "Mostra la data nella barra superiore di Steam, prima di meteo e brano corrente.", "Sposta ora e data a sinistra", "Sposta il gruppo dell’orologio, insieme a meteo e musica se presenti.", "Formato della data", "Automatico"],
     de: ["Obere Leiste", "Datum neben der Uhrzeit", "Zeigt das Datum in der oberen Leiste von Steam, vor Wetter und aktuellem Titel.", "Uhrzeit und Datum nach links", "Verschiebt die Uhrgruppe, zusammen mit Wetter und Musik, falls vorhanden.", "Datumsformat", "Automatisch"],
@@ -29154,10 +33968,10 @@ const tags = { en: "en-US", it: "it-IT", de: "de-DE", es: "es-ES", fr: "fr-FR", 
 function key(locale) {
     const lower = String(locale || "").toLowerCase();
     const k = aliases[lower] ?? lower.split(/[-_]/)[0];
-    return copy$1[k] ? k : "en";
+    return copy$2[k] ? k : "en";
 }
 function topbarDateCopy(locale) {
-    const [title, dateLabel, dateDescription, leftLabel, leftDescription, formatLabel, automatic] = copy$1[key(locale)];
+    const [title, dateLabel, dateDescription, leftLabel, leftDescription, formatLabel, automatic] = copy$2[key(locale)];
     return { title, dateLabel, dateDescription, leftLabel, leftDescription, formatLabel, automatic };
 }
 // Esempi calcolati come li scrive la barra superiore: stesse opzioni Intl e
@@ -29190,7 +34004,7 @@ function topbarDateOptions(locale, sample = new Date(2026, 8, 19)) {
             }
         }
         if (data === "auto")
-            label = `${copy$1[k][6]} (${label})`;
+            label = `${copy$2[k][6]} (${label})`;
         return { data, label };
     });
 }
@@ -29222,6 +34036,9 @@ function createScopedDeckyState(real) {
     };
     for (const key of delegates)
         state[key] = real[key].bind(real);
+    // Decky 3.3.1 binds this setter when mounting its provider. Older providers do not need it.
+    if (typeof real.setSortPlugins === "function")
+        state.setSortPlugins = real.setSortPlugins.bind(real);
     state.publicState();
     real.eventBus.addEventListener("update", notify);
     return { state, setVisible(next) {
@@ -29520,21 +34337,32 @@ function publish$1(next) {
         listeners$3.forEach(listener => listener());
 }
 function release() { releaseMount?.(); }
-/** The preference alone hides the native tab; mounting Playhub's tab is not a precondition. */
+/** Keep native Decky reachable until the embedded panel has committed. */
 function applyNativeSuppression() {
-    const effective = running && snapshot$1.enabled === true && nativeHidden && !projectionFailure;
+    const mounted = mountedLease;
+    const requested = running && snapshot$1.enabled && snapshot$1.available && snapshot$1.ready && nativeHidden &&
+        !failure && !projectionFailure && typeof mounted?.lease.setNativeHidden === "function";
+    if (mounted && mounted.hideRequested !== requested) {
+        mounted.hideRequested = requested;
+        try {
+            mounted.visibilityAccepted = mounted.lease.setNativeHidden?.(requested) === true;
+        }
+        catch {
+            mounted.visibilityAccepted = false;
+        }
+    }
+    const effective = requested && mounted === mountedLease && mounted?.visibilityAccepted === true;
     setNativeDeckyHidden(effective);
     try {
         capability?.setNativeHidden?.(effective);
     }
     catch { /* Leave the original Decky tab accessible. */ }
+    return mounted?.visibilityAccepted ?? true;
 }
 function setDeckyNativeHidden(hidden) {
     preferenceRevision += 1;
     nativeHidden = hidden === true;
-    const applied = mountedLease?.setNativeHidden?.(nativeHidden) ?? !mountedLease;
-    applyNativeSuppression();
-    return applied;
+    return applyNativeSuppression();
 }
 function reconcile() {
     let next;
@@ -29609,7 +34437,7 @@ function failDeckyHost(reason) {
 function mountDeckyHost(options) {
     if (!running || !snapshot$1.enabled || !snapshot$1.available || releaseMount || !capability)
         return null;
-    const lease = capability.acquire({ ...options, hideNative: nativeHidden, onRelease(reason) {
+    const lease = capability.acquire({ ...options, hideNative: false, onRelease(reason) {
             if (reason === "shortcuts_unloaded")
                 reason = "owner_changed";
             if (reason === "owner_changed") {
@@ -29630,18 +34458,20 @@ function mountDeckyHost(options) {
         alive = false;
         if (releaseMount === stop)
             releaseMount = undefined;
-        if (mountedLease === lease)
+        if (mountedLease?.lease === lease)
             mountedLease = undefined;
         publish$1({ ...snapshot$1, ready: false });
+        applyNativeSuppression();
     };
     releaseMount = stop;
-    mountedLease = lease;
+    mountedLease = { lease, hideRequested: false, visibilityAccepted: true };
     return { ...lease,
         release: stop,
         setReady() {
             // Legacy owners cannot separate hosting from suppression. Keep their native tab.
             const accepted = alive && (typeof lease.setNativeHidden !== "function" || lease.setReady());
             publish$1({ ...snapshot$1, ready: accepted });
+            applyNativeSuppression();
             return accepted;
         },
     };
@@ -29818,7 +34648,7 @@ function deckyIntegrationLocale(locale) {
     return { label: row[0], description: row[1] };
 }
 
-const copy = {
+const copy$1 = {
     en: ["Discover the new Playhub experience", "Open Quick Access to discover Playhub.", "Everything is here: your Playhub, in Quick Access.", "Decky is available here. You can restore its Quick Access tab in Playhub settings.", "Decky integration is optional. You can enable it in Playhub settings and restore its Quick Access tab at any time.", "Continue", "Pause guide", "Finish"],
     it: ["Scopri la nuova esperienza Playhub", "Apri l'accesso rapido per scoprire Playhub.", "Trovi tutto qui: il tuo Playhub, nell'accesso rapido.", "Decky è accessibile qui. Puoi ripristinare la sua scheda nell'accesso rapido dalle impostazioni di Playhub.", "L'integrazione di Decky è facoltativa. Puoi attivarla nelle impostazioni di Playhub e ripristinare la sua scheda nell'accesso rapido in qualsiasi momento.", "Continua", "Sospendi la guida", "Concludi"],
     es: ["Descubre la nueva experiencia Playhub", "Abre el acceso rápido para descubrir Playhub.", "Todo está aquí: tu Playhub, en el acceso rápido.", "Decky está disponible aquí. Puedes restaurar su pestaña de acceso rápido en los ajustes de Playhub.", "La integración de Decky es opcional. Puedes activarla en los ajustes de Playhub y restaurar su pestaña de acceso rápido cuando quieras.", "Continuar", "Pausar la guía", "Finalizar"],
@@ -29833,7 +34663,7 @@ const copy = {
     ru: ["Откройте новый Playhub", "Откройте быстрый доступ, чтобы познакомиться с Playhub.", "Всё здесь: ваш Playhub в быстром доступе.", "Decky доступен здесь. Его вкладку быстрого доступа можно восстановить в настройках Playhub.", "Интеграция Decky необязательна. Её можно включить в настройках Playhub и в любой момент восстановить вкладку быстрого доступа.", "Продолжить", "Приостановить руководство", "Завершить"],
 };
 function getOnboardingCopy(locale) {
-    const [, open, , decky, , next, pause, finish] = copy[normalizeStoreLocale(locale)];
+    const [, open, , decky, , next, pause, finish] = copy$1[normalizeStoreLocale(locale)];
     nativeDeckyCopy[normalizeStoreLocale(locale)];
     const [title] = welcome[normalizeStoreLocale(locale)];
     const text = presentation[normalizeStoreLocale(locale)];
@@ -31658,98 +36488,52 @@ function ControlCenter({ locale, origin, session, store, controller, settings, h
                                             const Icon = icons[id];
                                             return SP_JSX.jsx(DialogButton$1, { className: "ph-control-icon", role: "tab", "aria-selected": active === id, "aria-label": copy[id], onOKActionDescription: copy[id], disabled: !ready, "data-playhub-onboarding": origin === "qam" ? id : undefined, onClick: () => choose(id), children: SP_JSX.jsx(Icon, {}) }, id);
                                         }), SP_JSX.jsx(DialogButton$1, { className: "ph-control-icon", "data-playhub-onboarding": origin === "qam" ? "customize" : undefined, "aria-label": copy.settings, onOKActionDescription: copy.settings, disabled: !ready, onClick: () => setCustomizing(true), children: SP_JSX.jsx(TbSettings, {}) })] }) }), active !== "decky" && (active !== "home" || homeTitle) && SP_JSX.jsx("h2", { className: "ph-control-heading", children: active === "home" ? homeTitle : copy[active] }), !hostActive && SP_JSX.jsx(ScrollPanel, { children: SP_JSX.jsx("div", { "data-playhub-onboarding-content": origin === "qam" ? active : undefined, children: active === "home" ? SP_JSX.jsx("div", { "data-playhub-onboarding-content": origin === "qam" ? "home" : undefined, children: session }) : active === "store" ? SP_JSX.jsx("div", { "data-playhub-onboarding-content": origin === "qam" ? "store" : undefined, children: store }) : active === "controller" ? SP_JSX.jsx(SP_JSX.Fragment, { children: controller }) :
-                                        SP_JSX.jsx(QuickSettingsContent, { page: active === "decky" ? "home" : active, locale: locale, collapsed: state.collapsed, onToggle: toggleSection }) }) })] })] }), origin === "qam" && SP_JSX.jsx(DeckyHost, { active: hostActive })] });
+                                        SP_JSX.jsx(QuickSettingsContent, { page: active === "decky" ? "home" : active, locale: locale, collapsed: state.collapsed, onToggle: toggleSection }) }) })] })] }), origin === "qam" && !state.hidden.includes("decky") && SP_JSX.jsx(DeckyHost, { active: hostActive })] });
 }
 
-const style = `
-.ph-store-intro{isolation:isolate;width:100%;min-width:0;padding:0 0 14px;box-sizing:border-box}
-.ph-store-launch{position:relative;z-index:1}
-.ph-store-download{position:relative;z-index:0;width:100%;overflow:hidden;pointer-events:none}
-.ph-store-download-viewport{position:absolute;left:0;width:100%;pointer-events:none}
-.ph-store-download-stage{position:absolute;inset:0;margin:auto;width:174px;height:84px;transform:scale(var(--ph-store-animation-scale,2))}
-.ph-store-app{position:absolute;top:7px;left:75px;width:25px;height:25px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.5);border-radius:6px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.88);opacity:0;animation:phStoreAppSave 5.4s cubic-bezier(.3,0,.2,1) infinite;will-change:transform,opacity}
-.ph-store-app svg{width:15px;height:15px}
-.ph-store-app:nth-child(1){--ph-slot:-38px;animation-delay:-3.6s}
-.ph-store-app:nth-child(2){--ph-slot:0px;animation-delay:-1.8s}
-.ph-store-app:nth-child(3){--ph-slot:38px;animation-delay:0s}
-.ph-store-shelf{position:absolute;left:20px;right:20px;bottom:8px;height:13px;border:1px solid rgba(255,255,255,.24);border-top:0;border-radius:0 0 7px 7px}
-.ph-store-saved{position:absolute;right:3px;bottom:8px;width:14px;height:14px;color:rgba(255,255,255,.65);animation:phStoreSaved 1.8s ease infinite}
-.ph-store-intro-copy{width:calc(100% - 42px);max-width:278px;margin:6px auto 0;text-align:center;color:rgba(255,255,255,.58);font-size:12px;line-height:1.4}
-@keyframes phStoreAppSave{
-  0%{opacity:0;transform:translate3d(0,-15px,0) scale(.85)}
-  12%{opacity:1;transform:translate3d(0,0,0) scale(1)}
-  30%{opacity:1;transform:translate3d(var(--ph-slot),38px,0) scale(1)}
-  36%,73%{opacity:.8;transform:translate3d(var(--ph-slot),36px,0) scale(.94)}
-  90%,100%{opacity:0;transform:translate3d(var(--ph-slot),36px,0) scale(.94)}
-}
-@keyframes phStoreSaved{0%,66%,100%{opacity:0;transform:scale(.8)}78%,88%{opacity:.8;transform:scale(1)}}
-@media(prefers-reduced-motion:reduce){.ph-store-app{animation:none;opacity:.8;transform:translate3d(var(--ph-slot),36px,0)}.ph-store-saved{animation:none;opacity:.7}}
-`;
-function PluginStoreIntro({ description, button }) {
-    const container = _global_SP_REACT.useRef(null);
-    const launcher = _global_SP_REACT.useRef(null);
-    const [height, setHeight] = _global_SP_REACT.useState(168);
-    const [overlap, setOverlap] = _global_SP_REACT.useState(0);
-    const [wrapperGap, setWrapperGap] = _global_SP_REACT.useState(0);
-    _global_SP_REACT.useLayoutEffect(() => {
-        const node = container.current;
-        if (!node)
+const { ButtonItem: ButtonItem$1, PanelSection: PanelSection$1, PanelSectionRow: PanelSectionRow$1 } = _global_DFL;
+const copy = {
+    en: ["Frame timing", "Measure FPS", "Measuring…", "Four-second sample of the current game.", "Presented FPS", "Frame time", "No game frames captured. Try during play.", "Frame measurement is unavailable.", "Windows denied access to frame data."],
+    it: ["Tempi dei fotogrammi", "Misura FPS", "Misurazione…", "Campione di quattro secondi del gioco in corso.", "FPS presentati", "Tempo per fotogramma", "Nessun fotogramma rilevato. Riprova durante il gioco.", "Misurazione dei fotogrammi non disponibile.", "Windows ha negato l’accesso ai dati dei fotogrammi."],
+    de: ["Framezeiten", "FPS messen", "Messung läuft…", "Vier Sekunden aus dem laufenden Spiel.", "Ausgegebene FPS", "Framezeit", "Keine Frames erfasst. Versuche es im Spiel erneut.", "Frame-Messung nicht verfügbar.", "Windows hat den Zugriff auf Frame-Daten verweigert."],
+    es: ["Tiempo de fotogramas", "Medir FPS", "Midiendo…", "Muestra de cuatro segundos del juego actual.", "FPS presentados", "Tiempo por fotograma", "No se capturaron fotogramas. Prueba durante la partida.", "La medición de fotogramas no está disponible.", "Windows denegó el acceso a los datos de fotogramas."],
+    fr: ["Temps d’image", "Mesurer les FPS", "Mesure en cours…", "Échantillon de quatre secondes du jeu en cours.", "FPS présentées", "Temps par image", "Aucune image capturée. Réessayez en jeu.", "La mesure des images est indisponible.", "Windows a refusé l’accès aux données d’image."],
+    pt: ["Tempos dos quadros", "Medir FPS", "A medir…", "Amostra de quatro segundos do jogo em curso.", "FPS apresentados", "Tempo por quadro", "Nenhum quadro capturado. Tente durante o jogo.", "A medição de quadros não está disponível.", "O Windows negou acesso aos dados dos quadros."],
+    uk: ["Час кадрів", "Виміряти FPS", "Вимірювання…", "Чотирисекундний зразок поточної гри.", "Подані FPS", "Час кадру", "Кадри не зафіксовано. Повторіть під час гри.", "Вимірювання кадрів недоступне.", "Windows відхилила доступ до даних кадрів."],
+    ru: ["Время кадра", "Измерить FPS", "Измерение…", "Четыре секунды текущей игры.", "Переданные FPS", "Время кадра", "Кадры не получены. Повторите во время игры.", "Измерение кадров недоступно.", "Windows отказала в доступе к данным кадров."],
+    ja: ["フレーム時間", "FPS を測定", "測定中…", "実行中のゲームを4秒間測定します。", "提示 FPS", "フレーム時間", "フレームを取得できませんでした。プレイ中にお試しください。", "フレーム測定を利用できません。", "Windows がフレームデータへのアクセスを拒否しました。"],
+    ko: ["프레임 시간", "FPS 측정", "측정 중…", "실행 중인 게임을 4초간 측정합니다.", "제출 FPS", "프레임 시간", "프레임을 캡처하지 못했습니다. 플레이 중 다시 시도하세요.", "프레임을 측정할 수 없습니다.", "Windows가 프레임 데이터 접근을 거부했습니다."],
+    zh: ["影格時間", "測量 FPS", "測量中…", "擷取目前遊戲的四秒樣本。", "提交的 FPS", "每格耗時", "未擷取到影格。請在遊玩時再試。", "無法測量影格。", "Windows 拒絕存取影格資料。"],
+    hi: ["फ़्रेम का समय", "FPS मापें", "माप जारी है…", "चल रहे गेम का चार सेकंड का नमूना।", "प्रस्तुत FPS", "प्रति फ़्रेम समय", "कोई फ़्रेम नहीं मिला। खेलते समय फिर कोशिश करें।", "फ़्रेम का माप उपलब्ध नहीं है।", "Windows ने फ़्रेम डेटा की अनुमति नहीं दी।"],
+};
+function GameFrameTiming({ appId, locale }) {
+    const [pending, setPending] = _global_SP_REACT.useState(false);
+    const [result, setResult] = _global_SP_REACT.useState(null);
+    const operation = _global_SP_REACT.useRef(0);
+    _global_SP_REACT.useEffect(() => () => { operation.current++; }, []);
+    const [title, measure, measuring, hint, fps, frame, empty, unavailable, denied] = copy[locale.split(/[-_]/)[0]] ?? copy.en;
+    const ready = result?.status === "Ready" && Number.isFinite(result.presentedFps) && Number.isFinite(result.medianFrameTimeMs);
+    const measureFrames = async () => {
+        if (pending)
             return;
-        const resize = () => {
-            const scale = node.clientWidth / 174;
-            if (scale <= 0)
-                return;
-            node.style.setProperty('--ph-store-animation-scale', String(scale));
-            setHeight(Math.ceil(84 * scale));
-            const launch = launcher.current;
-            const target = launch?.querySelector('button');
-            if (launch && target) {
-                const bounds = target.getBoundingClientRect();
-                // Clip at the actual button edge, excluding native ButtonItem bottom padding.
-                setWrapperGap(Math.max(0, launch.getBoundingClientRect().bottom - bounds.bottom));
-                setOverlap(bounds.height / 2);
-            }
-        };
-        resize();
-        const observer = new ResizeObserver(resize);
-        observer.observe(node);
-        if (launcher.current)
-            observer.observe(launcher.current);
-        const target = launcher.current?.querySelector('button');
-        if (target)
-            observer.observe(target);
-        return () => observer.disconnect();
-    }, []);
-    return SP_JSX.jsxs("div", { className: "ph-store-intro", ref: container, children: [SP_JSX.jsx("style", { children: style }), SP_JSX.jsx("div", { className: "ph-store-launch", ref: launcher, children: button }), SP_JSX.jsx("div", { className: "ph-store-download", style: { height: Math.max(0, height - overlap), marginTop: -wrapperGap }, "aria-hidden": "true", children: SP_JSX.jsx("div", { className: "ph-store-download-viewport", style: { height, top: -overlap }, children: SP_JSX.jsxs("div", { className: "ph-store-download-stage", children: [SP_JSX.jsx("span", { className: "ph-store-app", children: SP_JSX.jsx(TbPhoto, {}) }), SP_JSX.jsx("span", { className: "ph-store-app", children: SP_JSX.jsx(TbMusic, {}) }), SP_JSX.jsx("span", { className: "ph-store-app", children: SP_JSX.jsx(TbDeviceGamepad2, {}) }), SP_JSX.jsx("span", { className: "ph-store-shelf" }), SP_JSX.jsx(TbCheck, { className: "ph-store-saved" })] }) }) }), SP_JSX.jsx("div", { className: "ph-store-intro-copy", children: description })] });
-}
-
-/** Three startup checks only. Evidence and the durable session claim live in Python. */
-function installDeckyIpcRecovery(options) {
-    let alive = true;
-    const attempted = new Set();
-    async function check() {
+        const id = ++operation.current;
+        setPending(true);
+        setResult(null);
+        let response;
         try {
-            const failures = await options.scan();
-            for (const failure of failures) {
-                if (!alive)
-                    return;
-                const key = `${failure.session}:${failure.folder}`;
-                if (attempted.has(key))
-                    continue;
-                attempted.add(key);
-                const claim = await options.claim(failure);
-                if (alive && claim.ok && claim.name === failure.name)
-                    await options.reload(claim.name);
-            }
+            response = await call("measure_game_frames", appId);
         }
-        catch (error) {
-            if (alive)
-                options.warn(error);
+        catch {
+            response = { status: "ProviderUnavailable" };
         }
-    }
-    const timers = [3000, 10000, 25000].map(delay => options.schedule(() => { if (alive)
-        void check(); }, delay));
-    return () => { alive = false; timers.forEach(options.cancel); };
+        if (id !== operation.current)
+            return;
+        setPending(false);
+        setResult(response);
+    };
+    const format = (value) => value?.toLocaleString(locale.replace(/_/g, "-"), { maximumFractionDigits: 1 });
+    return SP_JSX.jsxs(PanelSection$1, { title: title, children: [SP_JSX.jsx(PanelSectionRow$1, { children: SP_JSX.jsx(ButtonItem$1, { layout: "below", bottomSeparator: "none", disabled: pending, onClick: () => void measureFrames(), children: SP_JSX.jsx("span", { style: { whiteSpace: "normal", overflowWrap: "anywhere" }, children: pending ? measuring : measure }) }) }), SP_JSX.jsx("div", { role: "status", style: { padding: "4px 16px 12px", fontSize: 13, lineHeight: 1.5, overflowWrap: "anywhere" }, children: ready ? SP_JSX.jsxs("dl", { style: { margin: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 120px), 1fr))", gap: 8 }, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsx("dt", { children: fps }), SP_JSX.jsx("dd", { style: { margin: 0, fontWeight: 650 }, children: format(result.presentedFps) })] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("dt", { children: frame }), SP_JSX.jsxs("dd", { style: { margin: 0, fontWeight: 650 }, children: [format(result.medianFrameTimeMs), " ms"] }), Number.isFinite(result.p95FrameTimeMs) && SP_JSX.jsxs("dd", { style: { margin: 0, opacity: .72 }, children: ["P95 \u00B7 ", format(result.p95FrameTimeMs), " ms"] })] })] }) : !result ? hint : result.status === "PermissionDenied" ? denied :
+                    ["NoData", "TargetUnavailable"].includes(result.status) ? empty : unavailable })] });
 }
 
 function steamAppId(value) {
@@ -31904,6 +36688,97 @@ function createControlledQamFocus(deps) {
         applicationSelected() { invalidate(false); },
         dispose() { disposed = true; invalidate(false); },
     };
+}
+
+const style = `
+.ph-store-intro{isolation:isolate;width:100%;min-width:0;padding:0 0 14px;box-sizing:border-box}
+.ph-store-launch{position:relative;z-index:1}
+.ph-store-download{position:relative;z-index:0;width:100%;overflow:hidden;pointer-events:none}
+.ph-store-download-viewport{position:absolute;left:0;width:100%;pointer-events:none}
+.ph-store-download-stage{position:absolute;inset:0;margin:auto;width:174px;height:84px;transform:scale(var(--ph-store-animation-scale,2))}
+.ph-store-app{position:absolute;top:7px;left:75px;width:25px;height:25px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.5);border-radius:6px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.88);opacity:0;animation:phStoreAppSave 5.4s cubic-bezier(.3,0,.2,1) infinite;will-change:transform,opacity}
+.ph-store-app svg{width:15px;height:15px}
+.ph-store-app:nth-child(1){--ph-slot:-38px;animation-delay:-3.6s}
+.ph-store-app:nth-child(2){--ph-slot:0px;animation-delay:-1.8s}
+.ph-store-app:nth-child(3){--ph-slot:38px;animation-delay:0s}
+.ph-store-shelf{position:absolute;left:20px;right:20px;bottom:8px;height:13px;border:1px solid rgba(255,255,255,.24);border-top:0;border-radius:0 0 7px 7px}
+.ph-store-saved{position:absolute;right:3px;bottom:8px;width:14px;height:14px;color:rgba(255,255,255,.65);animation:phStoreSaved 1.8s ease infinite}
+.ph-store-intro-copy{width:calc(100% - 42px);max-width:278px;margin:6px auto 0;text-align:center;color:rgba(255,255,255,.58);font-size:12px;line-height:1.4}
+@keyframes phStoreAppSave{
+  0%{opacity:0;transform:translate3d(0,-15px,0) scale(.85)}
+  12%{opacity:1;transform:translate3d(0,0,0) scale(1)}
+  30%{opacity:1;transform:translate3d(var(--ph-slot),38px,0) scale(1)}
+  36%,73%{opacity:.8;transform:translate3d(var(--ph-slot),36px,0) scale(.94)}
+  90%,100%{opacity:0;transform:translate3d(var(--ph-slot),36px,0) scale(.94)}
+}
+@keyframes phStoreSaved{0%,66%,100%{opacity:0;transform:scale(.8)}78%,88%{opacity:.8;transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.ph-store-app{animation:none;opacity:.8;transform:translate3d(var(--ph-slot),36px,0)}.ph-store-saved{animation:none;opacity:.7}}
+`;
+function PluginStoreIntro({ description, button }) {
+    const container = _global_SP_REACT.useRef(null);
+    const launcher = _global_SP_REACT.useRef(null);
+    const [height, setHeight] = _global_SP_REACT.useState(168);
+    const [overlap, setOverlap] = _global_SP_REACT.useState(0);
+    const [wrapperGap, setWrapperGap] = _global_SP_REACT.useState(0);
+    _global_SP_REACT.useLayoutEffect(() => {
+        const node = container.current;
+        if (!node)
+            return;
+        const resize = () => {
+            const scale = node.clientWidth / 174;
+            if (scale <= 0)
+                return;
+            node.style.setProperty('--ph-store-animation-scale', String(scale));
+            setHeight(Math.ceil(84 * scale));
+            const launch = launcher.current;
+            const target = launch?.querySelector('button');
+            if (launch && target) {
+                const bounds = target.getBoundingClientRect();
+                // Clip at the actual button edge, excluding native ButtonItem bottom padding.
+                setWrapperGap(Math.max(0, launch.getBoundingClientRect().bottom - bounds.bottom));
+                setOverlap(bounds.height / 2);
+            }
+        };
+        resize();
+        const observer = new ResizeObserver(resize);
+        observer.observe(node);
+        if (launcher.current)
+            observer.observe(launcher.current);
+        const target = launcher.current?.querySelector('button');
+        if (target)
+            observer.observe(target);
+        return () => observer.disconnect();
+    }, []);
+    return SP_JSX.jsxs("div", { className: "ph-store-intro", ref: container, children: [SP_JSX.jsx("style", { children: style }), SP_JSX.jsx("div", { className: "ph-store-launch", ref: launcher, children: button }), SP_JSX.jsx("div", { className: "ph-store-download", style: { height: Math.max(0, height - overlap), marginTop: -wrapperGap }, "aria-hidden": "true", children: SP_JSX.jsx("div", { className: "ph-store-download-viewport", style: { height, top: -overlap }, children: SP_JSX.jsxs("div", { className: "ph-store-download-stage", children: [SP_JSX.jsx("span", { className: "ph-store-app", children: SP_JSX.jsx(TbPhoto, {}) }), SP_JSX.jsx("span", { className: "ph-store-app", children: SP_JSX.jsx(TbMusic, {}) }), SP_JSX.jsx("span", { className: "ph-store-app", children: SP_JSX.jsx(TbDeviceGamepad2, {}) }), SP_JSX.jsx("span", { className: "ph-store-shelf" }), SP_JSX.jsx(TbCheck, { className: "ph-store-saved" })] }) }) }), SP_JSX.jsx("div", { className: "ph-store-intro-copy", children: description })] });
+}
+
+/** Three startup checks only. Evidence and the durable session claim live in Python. */
+function installDeckyIpcRecovery(options) {
+    let alive = true;
+    const attempted = new Set();
+    async function check() {
+        try {
+            const failures = await options.scan();
+            for (const failure of failures) {
+                if (!alive)
+                    return;
+                const key = `${failure.session}:${failure.folder}`;
+                if (attempted.has(key))
+                    continue;
+                attempted.add(key);
+                const claim = await options.claim(failure);
+                if (alive && claim.ok && claim.name === failure.name)
+                    await options.reload(claim.name);
+            }
+        }
+        catch (error) {
+            if (alive)
+                options.warn(error);
+        }
+    }
+    const timers = [3000, 10000, 25000].map(delay => options.schedule(() => { if (alive)
+        void check(); }, delay));
+    return () => { alive = false; timers.forEach(options.cancel); };
 }
 
 function installControlledQamFocus() {
@@ -32565,8 +37440,9 @@ function Content({ origin = "decky" }) {
         });
         return () => { alive = false; stopStatus(); };
     }, []);
+    const gameAppId = steamAppId(window.SteamUIStore?.MainRunningAppID ?? _global_DFL.Router?.MainRunningAppID);
     return (SP_JSX.jsx(ControlCenter, { locale: locale, origin: origin, homeTitle: local.controlCentre, session: SP_JSX.jsxs(SP_JSX.Fragment, { children: [!status && SP_JSX.jsx(PanelSection, { children: SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsxs("div", { role: "status", style: { margin: "8px 0 16px", padding: "16px", borderRadius: 10,
-                                background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.12)" }, children: [SP_JSX.jsx("div", { style: { fontSize: 16, fontWeight: 650, marginBottom: 8 }, children: optional.Title }), SP_JSX.jsx("div", { style: { fontSize: 13, lineHeight: 1.5, opacity: .8 }, children: optional.AgentRequired })] }) }) }), SP_JSX.jsxs(PanelSection, { children: [SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ButtonItem, { disabled: !dashboardEnabled || !status, bottomSeparator: "none", layout: "below", onClick: () => openDashboard(), children: "Playhub Dashboard" }) }), SP_JSX.jsxs(PanelSectionRow, { children: [SP_JSX.jsx("style", { children: `
+                                background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.12)" }, children: [SP_JSX.jsx("div", { style: { fontSize: 16, fontWeight: 650, marginBottom: 8 }, children: optional.Title }), SP_JSX.jsx("div", { style: { fontSize: 13, lineHeight: 1.5, opacity: .8 }, children: optional.AgentRequired })] }) }) }), origin === "qam" && status && gameAppId !== 0 && SP_JSX.jsx(GameFrameTiming, { appId: gameAppId, locale: locale }, gameAppId), SP_JSX.jsxs(PanelSection, { children: [SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ButtonItem, { disabled: !dashboardEnabled || !status, bottomSeparator: "none", layout: "below", onClick: () => openDashboard(), children: "Playhub Dashboard" }) }), SP_JSX.jsxs(PanelSectionRow, { children: [SP_JSX.jsx("style", { children: `
             @keyframes phShortcutPulse { 0%,100% { opacity:.62; transform:scale(.96); } 50% { opacity:1; transform:scale(1); } }
             @keyframes phShortcutTravel { 0%,100% { transform:translateX(-3px); opacity:.35; } 50% { transform:translateX(3px); opacity:1; } }
             .ph-dashboard-shortcut { box-sizing:border-box; width:100%; padding:9px 16px 14px; color:rgba(255,255,255,.88); }

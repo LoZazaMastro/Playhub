@@ -85,6 +85,8 @@ public sealed partial class MainWindow
             _settings.DeckyPluginsPath = Path.Combine(privateRoot, "installed");
             Directory.CreateDirectory(_settings.PluginRoot); Directory.CreateDirectory(_settings.DeckyPluginsPath);
             _densityReady = false;
+            var cover = Path.Combine(AppContext.BaseDirectory, "Assets", "Brand", "DeckyStoreBadge.png");
+            var popularIds = PopularDeckyPluginIds.Order().ToArray();
             var fixtures = new List<(DeckyPluginInfo Plugin, DateTimeOffset? First, DateTimeOffset? Updated)>();
             for (int index = 0; index < 125; index++)
             {
@@ -96,12 +98,20 @@ public sealed partial class MainWindow
                     RepositoryName = $"Chronology{index:00}", RepositorySlug = $"private-fixture/Chronology{index:00}",
                     RepositoryUrl = $"https://github.com/private-fixture/Chronology{index:00}",
                     SourceFolder = Path.Combine(_settings.PluginRoot, $"Chronology{index:00}"),
+                    CoverImage = cover,
                     Version = "1.0.0", Category = "Personalizzazione e media", IsPlayhubPlugin = index < 20,
                     CatalogSource = index < 20 ? "playhub" : "decky-store", CatalogPluginId = 7000 + index,
                     ShortDescription = "Fixture privata per verificare date, ordinamento e navigazione native.", HasUpdate = index % 3 == 0,
                     FirstPublishedAt = first.Value.ToString("O", CultureInfo.InvariantCulture),
                     UpdatedAt = updated.Value.ToString("O", CultureInfo.InvariantCulture)
                 };
+                if (index >= 20 && index < 20 + popularIds.Length)
+                    plugin.CatalogPluginId = popularIds[index - 20];
+                if (index == 36)
+                {
+                    plugin.CatalogSource = "outside-store";
+                    plugin.CatalogPluginId = popularIds[0];
+                }
                 if (index == 0)
                 {
                     plugin.Name = "Legacy plugin, updated today"; plugin.HasUpdate = false;
@@ -191,6 +201,31 @@ public sealed partial class MainWindow
                 "an old project updated today retains its original publication date");
             Check(expectedNews[0] == fixtures[1].Plugin && !expectedNews.Contains(fixtures[0].Plugin) && expectedNews.Contains(fixtures[2].Plugin),
                 "News uses first publication: old projects updated today stay out, genuinely new projects remain included");
+
+            var featured = GetFeaturedPlugins();
+            var featuredKeys = featured.Select(PluginStoreKey).ToArray();
+            Check(featured.Count == 8 && featuredKeys.Distinct(StringComparer.OrdinalIgnoreCase).Count() == 8 &&
+                featured.Count(plugin => plugin.IsPlayhubPlugin) == 3 && featured.Where(plugin => !plugin.IsPlayhubPlugin)
+                    .All(plugin => plugin.CatalogSource == "decky-store" && PopularDeckyPluginIds.Contains(plugin.CatalogPluginId)),
+                "native carousel includes three Playhub plugins and five unique established official plugins");
+            var carouselHost = _pluginFeaturedCarouselHost;
+            var carouselCacheVersion = _featuredFrameCacheVersion;
+            var external = fixtures[36].Plugin;
+            var priorUpdated = external.UpdatedAt;
+            for (var batch = 1; batch <= 3; batch++)
+            {
+                PublishPluginPublicationDates(new Dictionary<string, string>
+                {
+                    [external.RepositorySlug] = $"2026-10-19T14:00:0{batch}.0000000Z"
+                });
+            }
+            await Settle();
+            Check(ReferenceEquals(_pluginFeaturedCarouselHost, carouselHost) && _featuredFrameCacheVersion == carouselCacheVersion &&
+                GetFeaturedPlugins().Select(PluginStoreKey).SequenceEqual(featuredKeys, StringComparer.OrdinalIgnoreCase) &&
+                external.UpdatedAt == "2026-10-19T14:00:03.0000000Z",
+                "publication batches update dates without rerolling or remounting the native carousel");
+            external.UpdatedAt = priorUpdated;
+            _pluginPublicationDates.Remove(external.RepositorySlug);
 
             foreach (int width in new[] { 1280, 960 })
             {

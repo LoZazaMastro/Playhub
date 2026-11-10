@@ -147,7 +147,9 @@ public static class AgentHost
 				// Schermo nero con l'audio dopo aver acceso la TV: vedi SteamDisplayRecoveryService.
 				// Parte prima della modalita' di avvio, cosi' la fotografia iniziale dei monitor
 				// e' quella dell'accensione, TV spenta compresa.
-				using SteamDisplayRecoveryService displayRecovery = new SteamDisplayRecoveryService(logger, () => store.LoadState().CurrentMode == ModeKind.Gaming);
+				using SteamDisplayRecoveryService displayRecovery = new SteamDisplayRecoveryService(logger,
+					() => store.LoadState().CurrentMode == ModeKind.Gaming,
+					() => processTools.GetSteamFallbackPaths().Prepend(store.LoadConfig().Gaming.SteamPath).FirstOrDefault(File.Exists));
 				displayRecovery.Start();
 				// Chain Free Engine is suspended for this release: Decky remains the host.
 				// Do not create its watcher, even for an existing opt-in descriptor.
@@ -271,6 +273,29 @@ public static class AgentHost
 						? Results.Json(new { ok = true }) : Results.StatusCode(401);
 				}));
 				var gameBarGuide = new GameBarGuideService(WindowsXboxGameBar.ToggleVerified, () => Environment.TickCount64);
+				var frameCollector = new PresentMonFrameCollector(Path.Combine(AppContext.BaseDirectory, "PresentMon", "PresentMon.exe"));
+				app.MapPost("/session/frame-measurement", (Func<HttpContext, Task<IResult>>)(async context =>
+				{
+					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString())) return Results.StatusCode(401);
+					if (!uint.TryParse(context.Request.Query["appId"], out uint appId) || appId == 0) return Results.StatusCode(400);
+					if (store.LoadState().CurrentMode != ModeKind.Gaming || !windowFocus.TryGetQamSource(out _, out uint gamePid))
+						return Results.Json(new FrameMeasurement(FrameMeasurementStatus.TargetUnavailable));
+					PresentMonTarget measurementTarget;
+					try
+					{
+						using var process = System.Diagnostics.Process.GetProcessById((int)gamePid);
+						long birth = process.StartTime.ToFileTimeUtc();
+						if (!OverlaySteamArtworkResolver.IsTrackedAppProcess(process.Id, appId) && UwpSteamSessionAssociation.Find(gamePid, appId) is null)
+							return Results.Json(new FrameMeasurement(FrameMeasurementStatus.TargetUnavailable));
+						measurementTarget = new PresentMonTarget(process.Id, birth);
+					}
+					catch (Exception error) when (error is InvalidOperationException or ArgumentException or System.ComponentModel.Win32Exception)
+					{
+						return Results.Json(new FrameMeasurement(FrameMeasurementStatus.TargetUnavailable));
+					}
+					using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted, app.Lifetime.ApplicationStopping);
+					return Results.Json(await frameCollector.CaptureAsync(measurementTarget, cancellation.Token));
+				}));
 				app.MapPost("/session/uwp/gamebar", (Func<HttpContext, Task<IResult>>)(async context =>
 				{
 					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString())) return Results.StatusCode(401);

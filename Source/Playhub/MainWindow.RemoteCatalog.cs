@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Playhub.Models;
 using Playhub.Services;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -25,7 +26,7 @@ public sealed partial class MainWindow
     private Task _remotePluginReleaseRefreshCompletion = Task.CompletedTask;
     private Task _remotePluginPublicationRefreshCompletion = Task.CompletedTask;
     private CancellationTokenSource? _remotePluginPublicationLifetime;
-    private bool _publicationRenderQueued;
+    private readonly Dictionary<string, string> _pluginPublicationDates = new(StringComparer.OrdinalIgnoreCase);
     private bool _pluginCatalogRefreshDeferred;
     private TimeSpan _remotePluginReleaseRefreshTimeout = TimeSpan.FromSeconds(20);
 #if PLAYHUB_UI_REVIEW
@@ -78,6 +79,7 @@ public sealed partial class MainWindow
                 return;
             }
             _pluginCatalogRefreshDeferred = false;
+            PluginCatalogService.ApplyPublicationDates(loaded, _pluginPublicationDates);
             InvalidatePluginAllViews();
             InvalidateFeaturedFrames();
             _plugins.Clear();
@@ -176,8 +178,9 @@ public sealed partial class MainWindow
         // Native fixtures remain offline, including source publication discovery.
         return;
 #else
-        if (_currentPageTag is not ("plugins" or "plugin-detail") ||
-            _remotePluginCatalogLifetime.IsCancellationRequested || !_remotePluginPublicationRefreshCompletion.IsCompleted) return;
+        if (_currentPageTag is not ("plugins" or "plugin-detail") || _remotePluginCatalogLifetime.IsCancellationRequested) return;
+        UpdatePluginPublicationOrder();
+        if (!_remotePluginPublicationRefreshCompletion.IsCompleted) return;
         _remotePluginPublicationLifetime?.Dispose();
         var lifetime = CancellationTokenSource.CreateLinkedTokenSource(_remotePluginCatalogLifetime.Token);
         _remotePluginPublicationLifetime = lifetime;
@@ -188,9 +191,12 @@ public sealed partial class MainWindow
             await Task.Yield();
             try
             {
-                await _catalog.RefreshPublicationDatesAsync(plugins, () =>
+                await _catalog.RefreshPublicationDatesAsync(plugins, dates =>
                 {
-                    DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () => PublishBatch());
+                    DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+                    {
+                        if (!lifetime.IsCancellationRequested) PublishPluginPublicationDates(dates);
+                    });
                 }, lifetime.Token);
             }
             catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
@@ -202,16 +208,20 @@ public sealed partial class MainWindow
                     DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, QueuePluginPublicationRefresh);
             }
         }
-        async void PublishBatch()
-        {
-            if (lifetime.IsCancellationRequested || _publicationRenderQueued || PluginCatalogOperationsActive ||
-                !ReferenceEquals(_remotePluginPublicationLifetime, lifetime)) return;
-            _publicationRenderQueued = true;
-            try { await RefreshRemoteAwarePluginsAsync(queueRemote: false); }
-            catch (Exception error) { Diag.Step("Plugin publication date rendering: " + error.GetType().Name); }
-            finally { _publicationRenderQueued = false; }
-        }
 #endif
+    }
+
+    private void PublishPluginPublicationDates(IReadOnlyDictionary<string, string> dates)
+    {
+        if (_remotePluginCatalogLifetime.IsCancellationRequested || _currentPageTag is not ("plugins" or "plugin-detail")) return;
+        foreach (var (repository, date) in dates)
+        {
+            // The service supplies fixed-width UTC timestamps. A delayed batch
+            // must not supersede a newer timestamp already received this session.
+            if (!_pluginPublicationDates.TryGetValue(repository, out var previous) || string.CompareOrdinal(date, previous) > 0)
+                _pluginPublicationDates[repository] = date;
+        }
+        if (PluginCatalogService.ApplyPublicationDates(_plugins, dates)) UpdatePluginPublicationOrder();
     }
 
 #if PLAYHUB_UI_REVIEW

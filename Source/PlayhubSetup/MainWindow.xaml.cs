@@ -79,7 +79,6 @@ public partial class MainWindow : Window
         BtnDone.Click += (_, _) => Finish();
         BtnLangNext.Click += (_, _) => ContinueFromLanguage();
         BtnAccept.Click += (_, _) => AcceptAgreement();
-        BtnMergeNext.Click += (_, _) => ContinueFromMerge();
         BtnDecline.Click += (_, _) => Close();
 
         ApplyLanguage();
@@ -101,26 +100,15 @@ public partial class MainWindow : Window
     private void AcceptAgreement()
     {
         PanelAgreement.Visibility = Visibility.Collapsed;
-        PanelMerge.Visibility = Visibility.Visible;
+        PanelReady.Visibility = Visibility.Visible;
         BtnDecline.Visibility = Visibility.Collapsed;
         BtnAccept.Visibility = Visibility.Collapsed;
         BtnCancel.Visibility = Visibility.Visible;
-        BtnMergeNext.Visibility = Visibility.Visible;
-    }
-
-    private void ContinueFromMerge()
-    {
-        PanelMerge.Visibility = Visibility.Collapsed;
-        PanelReady.Visibility = Visibility.Visible;
-        BtnMergeNext.Visibility = Visibility.Collapsed;
         BtnPrimary.Visibility = Visibility.Visible;
     }
 
     private void ApplyLanguage()
     {
-        MergeTitle.Text = Loc.T("MergeTitle");
-        MergeBody.Text = Loc.T("MergeBody");
-        BtnMergeNext.Content = Loc.T("Continue");
         VersionText.Text = Loc.T("Version") + " " + Installer.AppVersion;
 
         AgreeTitle.Text = Loc.T("AgreeTitle");

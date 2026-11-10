@@ -14,6 +14,13 @@ if ($ReuseStage) {
 }
 $output = Join-Path $setupRoot 'Output'
 $agentDir = Join-Path $stage 'agent'
+$tutorialAssets = @(
+    'Assets/Tutorials/Decky-Store.mp4',
+    'Assets/Tutorials/DeckyLoader-QAM.mp4',
+    'Assets/Tutorials/Gaming-Mode-Plugin.mp4',
+    'Assets/Tutorials/Big Picture Mode tutorial.png',
+    'Assets/Extra/css-theme-preview.png'
+)
 
 function Assert-PackagingDirectory([string]$directory, [string]$parent) {
     $absolute = [IO.Path]::GetFullPath($directory)
@@ -68,6 +75,9 @@ function Get-ReleaseSourceManifest {
     $files += Get-ChildItem -LiteralPath $setupRoot -File | Where-Object { $_.Extension -in '.cs', '.csproj', '.xaml', '.manifest', '.ps1' }
     $files += Get-ChildItem -LiteralPath (Join-Path $setupRoot 'Assets') -Recurse -File
     $files += Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'Playhub\Assets\Localization') -File -Filter '*.json'
+    foreach ($asset in $tutorialAssets) {
+        $files += Get-Item -LiteralPath (Join-Path $sourceRoot ("Playhub/" + $asset))
+    }
     foreach ($helper in @('focus-rescue.ps1', 'xbox-gamebar.ps1')) {
         $files += Get-Item -LiteralPath (Join-Path $sourceRoot ('Playhub\Assets\GamingMode\' + $helper))
     }
@@ -219,6 +229,16 @@ try {
             'Plugins/Gaming Mode/gaming-mode-win-x64/owned-helpers.ps1' = Join-Path $setupRoot '..\Playhub\Plugins\Gaming Mode\gaming-mode-win-x64\owned-helpers.ps1'
             'Plugins/Gaming Mode/gaming-mode-win-x64/install.ps1' = Join-Path $setupRoot '..\Playhub\Plugins\Gaming Mode\gaming-mode-win-x64\install.ps1'
             'Plugins/Gaming Mode/gaming-mode-win-x64/uninstall.ps1' = Join-Path $setupRoot '..\Playhub\Plugins\Gaming Mode\gaming-mode-win-x64\uninstall.ps1'
+        }
+        foreach ($file in @('PresentMon.exe', 'LICENSE.txt', 'THIRD_PARTY.txt')) {
+            $asset = "Plugins/Gaming Mode/gaming-mode-win-x64/PresentMon/$file"
+            $dataAssets[$asset] = Join-Path $setupRoot ("../Playhub/" + $asset)
+        }
+        foreach ($asset in $tutorialAssets) {
+            $dataAssets[$asset] = Join-Path $setupRoot ("../Playhub/" + $asset)
+        }
+        if (@($archive.Entries | Where-Object { $_.FullName -match '^Assets/Welcome/welcome-(?:[0-5]|bg)\.mp4$' }).Count) {
+            throw 'Obsolete onboarding video found in the release.'
         }
         $xboxSourceRoot = [IO.Path]::GetFullPath((Join-Path $setupRoot '..\Playhub.XboxSession'))
         $xboxSources = @(Get-ChildItem -LiteralPath $xboxSourceRoot -Recurse -File |

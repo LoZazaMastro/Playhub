@@ -147,14 +147,58 @@ test("successful module discovery is cached through 100 pending mount retries an
   assert.equal(installs, 2); fresh.stop(); assert.equal(removals, 2);
 });
 
+function loadInstalledSteamTabList(t, jsx) {
+  const snapshot = process.env.PLAYHUB_STEAM_QAM_SOURCE;
+  const steamUi = "C:/Program Files (x86)/Steam/steamui";
+  const paths = snapshot ? [snapshot] : [`${steamUi}/sp.js`, `${steamUi}/chunk~2dcc5aaf7.js`];
+  let foundSource = false;
+  for (const path of paths) {
+    let steam;
+    try { steam = readFileSync(path, "utf8"); }
+    catch (error) { if (!snapshot && error.code === "ENOENT") continue; throw error; }
+    foundSource = true;
+
+    // Preserve the earlier captured fixture as an explicit snapshot option.
+    const legacyStart = steam.indexOf("function at(e){let{tabs:");
+    const legacyEnd = steam.indexOf("function ot(", legacyStart);
+    if (legacyStart >= 0 && legacyEnd > legacyStart) {
+      return vm.runInNewContext(`(${steam.slice(legacyStart, legacyEnd)})`, {
+        i: { jsx }, st: "NativeTab", d: { qE: {} }, M: { Z: "NativeTabList" }, Y: () => ({}), x: { iU: {} },
+      });
+    }
+
+    // Current Steam ships the QAM in sp.js. Capture its native tablist using
+    // the tab props and ARIA role, since webpack's local names can change.
+    const marker = steam.indexOf('"QuickAccessMenuBrowserView"');
+    if (marker < 0) continue;
+    const qam = steam.slice(marker, marker + 24_000);
+    const signature = /function [\w$]+\((?<props>[\w$]+)\)\{let\{tabs:(?<tabs>[\w$]+),activeTab:[\w$]+,vr:[\w$]+\}=\k<props>,[\w$]+=\k<tabs>\.map\([\w$]+=>\(0,(?<jsx>[\w$]+)\.jsx\)\((?<tab>[\w$]+),\{tab:/.exec(qam);
+    if (!signature) continue;
+    const end = qam.indexOf("}function ", signature.index + signature[0].length);
+    if (end < 0) continue;
+    const source = qam.slice(signature.index, end + 1);
+    const hooks = /const [\w$]+=\(0,([\w$]+)\.AA\)\(\);([\w$]+)\.useLayoutEffect/.exec(source);
+    const element = /return\(0,[\w$]+\.jsx\)\(([\w$]+)\.Z,\{role:"tablist"[^}]*className:([\w$]+)\(\)\.TabList[^}]*navEntryPreferPosition:([\w$]+)\.iU\.PREFERRED_CHILD/.exec(source);
+    if (!hooks || !element) continue;
+    return vm.runInNewContext(`(${source})`, {
+      [signature.groups.jsx]: { jsx },
+      [signature.groups.tab]: "NativeTab",
+      [hooks[1]]: { AA: () => 0 },
+      [hooks[2]]: { useLayoutEffect() {} },
+      [element[1]]: { Z: "NativeTabList" },
+      [element[2]]: () => ({ TabList: "native-tablist" }),
+      [element[3]]: { iU: { PREFERRED_CHILD: 0 } },
+    });
+  }
+  t.skip(foundSource
+    ? "Steam source does not contain a supported QAM tablist shape. Set PLAYHUB_STEAM_QAM_SOURCE to a supported snapshot."
+    : "Steam QAM source is not installed at the default path. Set PLAYHUB_STEAM_QAM_SOURCE to the source file.");
+}
+
 test("installed Steam tab consumer mounts subscription through retained QAM fiber and actual DFL tree patcher", async (t) => {
-  const steam = readFileSync(process.env.PLAYHUB_STEAM_QAM_SOURCE || "C:/Program Files (x86)/Steam/steamui/chunk~2dcc5aaf7.js", "utf8");
-  const start = steam.indexOf("function at(e){let{tabs:");
-  if (start < 0) { t.skip("Installed Steam QAM chunk changed; provide matching PLAYHUB_STEAM_QAM_SOURCE snapshot to run this captured integration adapter"); return; }
-  const source = steam.slice(start, steam.indexOf("function ot(", start));
   const jsx = (type, props, key) => ({ type, props, key });
-  const native = vm.runInNewContext(`(${source})`, { i: { jsx }, st: "NativeTab", d: { qE: {} },
-    M: { Z: "NativeTabList" }, Y: () => ({}), x: { iU: {} } });
+  const native = loadInstalledSteamTabList(t, jsx);
+  if (!native) return;
   const loadDFL = (path, require = () => ({})) => {
     const exports = {};
     const code = ts.transpileModule(readFileSync(new URL(`../node_modules/@decky/ui/dist/${path}`, import.meta.url), "utf8"), {
@@ -217,13 +261,9 @@ test("installed Steam tab consumer mounts subscription through retained QAM fibe
 /** The reported defect: with the preference on, native Decky stayed visible until the
  *  user physically opened Playhub's tab. No lease may be required to honour it. */
 test("installed Steam tab consumer drops native Decky on preference alone, with no lease acquired", (t) => {
-  const steam = readFileSync(process.env.PLAYHUB_STEAM_QAM_SOURCE || "C:/Program Files (x86)/Steam/steamui/chunk~2dcc5aaf7.js", "utf8");
-  const start = steam.indexOf("function at(e){let{tabs:");
-  if (start < 0) { t.skip("Installed Steam QAM chunk changed; provide matching PLAYHUB_STEAM_QAM_SOURCE snapshot to run this captured integration adapter"); return; }
-  const source = steam.slice(start, steam.indexOf("function ot(", start));
   const jsx = (type, props, key) => ({ type, props, key });
-  const native = vm.runInNewContext(`(${source})`, { i: { jsx }, st: "NativeTab", d: { qE: {} },
-    M: { Z: "NativeTabList" }, Y: () => ({}), x: { iU: {} } });
+  const native = loadInstalledSteamTabList(t, jsx);
+  if (!native) return;
   const loadDFL = (path, require = () => ({})) => {
     const exports = {};
     const code = ts.transpileModule(readFileSync(new URL(`../node_modules/@decky/ui/dist/${path}`, import.meta.url), "utf8"), {

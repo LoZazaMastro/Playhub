@@ -1,6 +1,8 @@
 using GamingMode.Services;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
+using Playhub.DeckyHost;
 
 var tests = new (string Name, Action Run)[]
 {
@@ -20,6 +22,17 @@ var tests = new (string Name, Action Run)[]
 	("Display: recovery decision", TestDisplayRecoveryDecision),
 	("Display: black screen sampling", TestDisplayBlackSampling),
 	("Display: Chromium process roles", TestDisplayProcessRoles),
+	("Display: recovery only accepts helpers descended from the expected Steam process", TestDisplayRecoveryOwner),
+	("Display: only a current Steam tracking log can confirm an idle client", TestDisplayRecoveryActiveGame),
+	("Display: a context change aborts recovery before another process is restarted", TestDisplayRecoveryContextChange),
+	("Display: browser fallback requires a confirmed black screen", TestDisplayRecoveryFallback),
+	("Frame measurement: verifies Windows process creation identity", PresentMonFrameCollectorTests.VerifyNativeIdentity),
+	("Frame measurement: reports separate presentation and display cadence", PresentMonFrameCollectorTests.VerifyMetrics),
+	("Frame measurement: rejects sparse and ambiguous swapchains", PresentMonFrameCollectorTests.VerifyUnreliableMetrics),
+	("Frame measurement: single active request and exact graceful cancellation", PresentMonFrameCollectorTests.VerifyCancellation),
+	("Frame measurement: observes target exit and bounds stuck capture", PresentMonFrameCollectorTests.VerifyTargetExitAndWatchdog),
+	("Frame measurement: cleanup blocks new sessions until exact previous stop", PresentMonFrameCollectorTests.VerifyCleanup),
+	("Frame measurement: refuses unavailable providers and foreign sessions", PresentMonFrameCollectorTests.VerifyFailures),
 	("Foreground cache bounds identity reads and disposes expired handles", TestForegroundCacheExpiry),
 	("Foreground cache invalidates on PID changes and no foreground", TestForegroundCacheChanges),
 	("Foreground cache rejects a dead handle even when PID is reused", TestForegroundCacheReuse),
@@ -209,6 +222,91 @@ static void TestDisplayProcessRoles()
 	Equal(false, DisplayChangePolicy.IsGpuProcess(null));
 	Equal(false, DisplayChangePolicy.IsBrowserProcess(null));
 	Equal(false, DisplayChangePolicy.IsBrowserProcess(""));
+}
+
+static void TestDisplayRecoveryOwner()
+{
+	const string steamExe = @"C:\Example\Steam\steam.exe";
+	const string helperExe = @"C:\Example\Steam\bin\cef\cef.win64\steamwebhelper.exe";
+	var root = new DeckyProcessTree.Identity(10, 1, 10, steamExe, "fixture-sid", 2);
+	var browser = new DeckyProcessTree.Identity(11, 10, 11, helperExe, root.Sid, root.Session);
+	var gpu = new DeckyProcessTree.Identity(12, 11, 12, helperExe, root.Sid, root.Session);
+	var processes = new Dictionary<int, DeckyProcessTree.Identity> { [root.Pid] = root, [browser.Pid] = browser };
+	DeckyProcessTree.Identity? Owner(DeckyProcessTree.Identity candidate) =>
+		SteamDisplayRecoveryService.FindSteamOwner(candidate, steamExe, pid => processes.GetValueOrDefault(pid));
+	Equal(root, Owner(root));
+	Equal(root, Owner(gpu));
+	Equal<DeckyProcessTree.Identity?>(null, Owner(gpu with { Sid = "different-sid" }));
+	Equal<DeckyProcessTree.Identity?>(null, Owner(gpu with { Session = 3 }));
+	Equal<DeckyProcessTree.Identity?>(null, Owner(gpu with { Path = @"C:\Other\steamwebhelper.exe" }));
+	Equal<DeckyProcessTree.Identity?>(null, Owner(gpu with { Path = @"C:\Example\Steam\bin\cefake\steamwebhelper.exe" }));
+	processes[root.Pid] = root with { Path = @"C:\Other\steam.exe" };
+	Equal<DeckyProcessTree.Identity?>(null, Owner(gpu));
+	processes[root.Pid] = root with { Birth = 20 };
+	Equal<DeckyProcessTree.Identity?>(null, Owner(gpu));
+}
+
+static void TestDisplayRecoveryActiveGame()
+{
+	string root = MakeSteamFixture();
+	try
+	{
+		using Process current = Process.GetCurrentProcess();
+		var clientBirth = current.StartTime.AddSeconds(-5);
+		string log = Path.Combine(root, "logs", "gameprocess_log.txt");
+		Equal<bool?>(null, OverlaySteamArtworkResolver.HasActiveGameForRecovery(root, clientBirth));
+		File.WriteAllText(log, $"[{clientBirth.AddMinutes(-1):yyyy-MM-dd HH:mm:ss}] Client version: 1\n");
+		Equal<bool?>(null, OverlaySteamArtworkResolver.HasActiveGameForRecovery(root, clientBirth));
+		File.WriteAllText(log, $"[{clientBirth.AddSeconds(1):yyyy-MM-dd HH:mm:ss}] Client version: 1000\n");
+		Equal<bool?>(false, OverlaySteamArtworkResolver.HasActiveGameForRecovery(root, clientBirth));
+		File.AppendAllText(log, $"[{current.StartTime:yyyy-MM-dd HH:mm:ss}] AppID 123 adding PID {current.Id}\n");
+		Equal<bool?>(true, OverlaySteamArtworkResolver.HasActiveGameForRecovery(root, clientBirth));
+		File.AppendAllText(log, $"[{current.StartTime:yyyy-MM-dd HH:mm:ss}] AppID 123 no longer tracking PID {current.Id}\n");
+		Equal<bool?>(false, OverlaySteamArtworkResolver.HasActiveGameForRecovery(root, clientBirth));
+		File.AppendAllText(log, $"[invalid timestamp] AppID 123 adding PID {current.Id}\n");
+		Equal<bool?>(null, OverlaySteamArtworkResolver.HasActiveGameForRecovery(root, clientBirth));
+		File.Delete(log);
+		Equal<bool?>(null, OverlaySteamArtworkResolver.HasActiveGameForRecovery(root, clientBirth));
+	}
+	finally { DeleteSteamFixture(root); }
+}
+
+static void TestDisplayRecoveryContextChange()
+{
+	bool safe = false;
+	int gpu = 0;
+	int browser = 0;
+	int samples = 0;
+	SteamDisplayRecoveryService.RecoveryOutcome Run(Func<TimeSpan, CancellationToken, Task> wait) =>
+		SteamDisplayRecoveryService.RecoverWhileSafeAsync(() => safe, () => { gpu++; return true; },
+			() => { browser++; return true; }, () => { samples++; safe = false; return true; },
+			wait, CancellationToken.None).GetAwaiter().GetResult();
+	Equal(SteamDisplayRecoveryService.RecoveryOutcome.ContextChanged, Run((_, _) => Task.CompletedTask));
+	Equal(0, gpu);
+	safe = true;
+	Equal(SteamDisplayRecoveryService.RecoveryOutcome.ContextChanged,
+		Run((_, _) => { safe = false; return Task.CompletedTask; }));
+	Equal(1, gpu);
+	Equal(0, samples);
+	safe = true;
+	Equal(SteamDisplayRecoveryService.RecoveryOutcome.ContextChanged, Run((_, _) => Task.CompletedTask));
+	Equal(1, samples);
+	Equal(0, browser);
+}
+
+static void TestDisplayRecoveryFallback()
+{
+	int browser = 0;
+	SteamDisplayRecoveryService.RecoveryOutcome Run(bool gpu, bool? black) =>
+		SteamDisplayRecoveryService.RecoverWhileSafeAsync(() => true, () => gpu,
+			() => { browser++; return true; }, () => black,
+			(_, _) => Task.CompletedTask, CancellationToken.None).GetAwaiter().GetResult();
+	Equal(SteamDisplayRecoveryService.RecoveryOutcome.ScreenUnconfirmed, Run(false, null));
+	Equal(SteamDisplayRecoveryService.RecoveryOutcome.GpuRestarted, Run(true, false));
+	Equal(SteamDisplayRecoveryService.RecoveryOutcome.GpuRestarted, Run(true, null));
+	Equal(0, browser);
+	Equal(SteamDisplayRecoveryService.RecoveryOutcome.BrowserRestarted, Run(true, true));
+	Equal(1, browser);
 }
 
 static void Equal<T>(T expected, T actual)

@@ -298,6 +298,6 @@ export function ControlCenter({ locale, origin, session, store, controller, sett
         <QuickSettingsContent page={active === "decky" ? "home" : active} locale={locale} collapsed={state.collapsed} onToggle={toggleSection} />}</div></ScrollPanel>}
     </>}
     </div>
-    {origin === "qam" && <DeckyHost active={hostActive} />}
+    {origin === "qam" && !state.hidden.includes("decky") && <DeckyHost active={hostActive} />}
   </Focusable>;
 }

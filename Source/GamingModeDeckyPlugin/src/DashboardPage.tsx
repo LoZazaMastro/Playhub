@@ -1,6 +1,7 @@
 import { DFL, SP_REACT as React } from "./decky";
 import { createPortal } from "react-dom";
 import { createDashboardExit, consumeDashboardCancel } from "./dashboardExit";
+import { createDashboardPoll, dashboardSystemVisible } from "./dashboardPolling";
 import { windowCloseCopy } from "./windowCloseCopy";
 import { findOverlayWindow, selectOverlay, waitForOverlay, OverlayIdentity } from "./dashboardOverlay";
 import {
@@ -190,6 +191,7 @@ let dashboardOverlayGameId = "";
 let dashboardOverlayIdentity: OverlayIdentity | null = null;
 let dashboardOverlayGeneration = 0;
 let dashboardOverlayRegistration: { unregister?: () => void } | undefined;
+const dashboardOverlayClosedListeners = new Set<() => void>();
 
 function overlayDocument(): Document | null {
   const store = (DFL as any)?.Router?.WindowStore;
@@ -237,6 +239,7 @@ export function closeDashboardOverlay(hide = true): void {
   dashboardOverlayIdentity = null;
   try { dashboardOverlayRegistration?.unregister?.(); } catch {}
   dashboardOverlayRegistration = undefined;
+  if (gameId) dashboardOverlayClosedListeners.forEach((listener) => listener());
   if (!gameId || !hide) return;
   try { Promise.resolve((window as any).SteamClient?.Overlay?.SetOverlayState?.(gameId, 0)).catch(() => {}); } catch {}
 }
@@ -1498,7 +1501,9 @@ function formatRate(value: number): string {
   return `${Math.round(value)} B/s`;
 }
 
-function HistoryMetric({ title, value, detail, series, fixedPeak, index }: { title: string; value: string; detail: string; series: number[]; fixedPeak?: number; index: number }) {
+function HistoryMetric({ title, value, detail, series, fixedPeak, index, active }: {
+  title: string; value: string; detail: string; series: number[]; fixedPeak?: number; index: number; active: boolean;
+}) {
   const lineRef = useRef<SVGPolylineElement | null>(null);
   const samplesRef = useRef<Array<{ value: number; at: number }>>([]);
   const targetRef = useRef(0);
@@ -1513,14 +1518,17 @@ function HistoryMetric({ title, value, detail, series, fixedPeak, index }: { tit
       displayedRef.current = next;
       return;
     }
-    samplesRef.current.push({ value: displayedRef.current, at: performance.now() });
+    const clock = lineRef.current?.ownerDocument.defaultView?.performance ?? performance;
+    samplesRef.current.push({ value: displayedRef.current, at: clock.now() });
     targetRef.current = next;
     if (samplesRef.current.length > 32) samplesRef.current.splice(0, samplesRef.current.length - 32);
   }, [series]);
   useEffect(() => {
+    const view = lineRef.current?.ownerDocument.defaultView;
+    if (!active || !view || view.closed) return;
     const windowMs = 65000;
     let frame = 0;
-    let previousFrame = performance.now();
+    let previousFrame = view.performance.now();
     const paint = (now: number) => {
       const elapsed = Math.min(50, now - previousFrame);
       previousFrame = now;
@@ -1537,11 +1545,11 @@ function HistoryMetric({ title, value, detail, series, fixedPeak, index }: { tit
       const liveY = 38 - Math.min(1, displayedRef.current / peak) * 34;
       const points = historyPoints.length ? [...historyPoints, `182.00,${liveY.toFixed(2)}`].join(" ") : "";
       lineRef.current?.setAttribute("points", points);
-      frame = window.requestAnimationFrame(paint);
+      frame = view.requestAnimationFrame(paint);
     };
-    frame = window.requestAnimationFrame(paint);
-    return () => window.cancelAnimationFrame(frame);
-  }, [fixedPeak]);
+    frame = view.requestAnimationFrame(paint);
+    return () => view.cancelAnimationFrame(frame);
+  }, [active, fixedPeak]);
   return (
     <FocusItem
       className="ph-history-card"
@@ -1580,27 +1588,48 @@ function SystemTab({ copy, extra, onConfirm }: { copy: Copy; extra: ExtraCopy; o
   const [history, setHistory] = useState<Record<string, number[]>>({});
   const [deckyRestarting, setDeckyRestarting] = useState(false);
   const deckyRestartingRef = useRef(false);
-  const refreshing = useRef(false);
-  const refresh = useCallback(async () => {
-    if (refreshing.current) return;
-    refreshing.current = true;
-    try {
-      const [nextUsage, nextProcesses] = await Promise.all([readUsage(), listProcesses()]);
+  const surfaceRef = useRef<HTMLDivElement | null>(null);
+  const processPollRef = useRef<ReturnType<typeof createDashboardPoll<ProcessEntry[]>> | null>(null);
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    const ownerDocument = surface?.ownerDocument;
+    const ownerWindow = ownerDocument?.defaultView as (Window & typeof globalThis) | null | undefined;
+    if (!surface || !ownerDocument || !ownerWindow) return;
+
+    const overlayGame = dashboardOverlayGameId;
+    const store = (DFL as any)?.Router?.WindowStore;
+    const overlay = overlayGame ? findOverlayWindow(store?.OverlayWindows, dashboardOverlayIdentity) : null;
+    // A portal may be hosted in a different window from the React route.
+    // Observe the Steam history that currently owns the Dashboard route.
+    const histories = [overlay, store?.GamepadUIMainWindowInstance, ...(store?.SteamUIWindows ?? [])];
+    const routeMatches = (pathname: string | undefined) => pathname?.replace(/\/$/, "") === DASHBOARD_ROUTE;
+    const history = histories.map((entry) => entry?.m_history).find((entry) => routeMatches(entry?.location?.pathname));
+    const canObserve = typeof ownerWindow.IntersectionObserver === "function";
+    let intersects = !canObserve;
+    let pagePresent = true;
+    let mounted = true;
+    const visible = () => dashboardSystemVisible(surface, pagePresent &&
+      (!history || routeMatches(history.location?.pathname)) && (!overlayGame || dashboardOverlayGameId === overlayGame), intersects);
+
+    const usagePoll = createDashboardPoll({ read: readUsage, interval: 2500, visible, publish: (nextUsage) => {
+      if (!Array.isArray(nextUsage.disks)) return;
       setUsage(nextUsage);
-      if (nextUsage) {
-        const samples: Record<string, number> = {
-          cpu: nextUsage.cpuPercent,
-          gpu: nextUsage.gpuAvailable ? nextUsage.gpuPercent : 0,
-          memory: nextUsage.memoryPercent,
-          network: nextUsage.networkBytesPerSecond,
-        };
-        nextUsage.disks.forEach((disk) => { samples[`disk:${disk.name}`] = disk.bytesPerSecond; });
-        setHistory((current) => {
-          const next = { ...current };
-          Object.entries(samples).forEach(([key, value]) => { next[key] = [...(current[key] ?? []), value].slice(-28); });
-          return next;
-        });
-      }
+      const samples: Record<string, number> = {
+        cpu: nextUsage.cpuPercent,
+        gpu: nextUsage.gpuAvailable ? nextUsage.gpuPercent : 0,
+        memory: nextUsage.memoryPercent,
+        network: nextUsage.networkBytesPerSecond,
+      };
+      nextUsage.disks.forEach((disk) => { samples[`disk:${disk.name}`] = disk.bytesPerSecond; });
+      setHistory((current) => {
+        const next = { ...current };
+        Object.entries(samples).forEach(([key, value]) => { next[key] = [...(current[key] ?? []), value].slice(-28); });
+        return next;
+      });
+    } });
+    const processPoll = createDashboardPoll({ read: listProcesses, interval: 8000, visible, publish: (nextProcesses) => {
       setProcesses((current) => {
         if (current.length === 0) return nextProcesses;
         const incoming = new Map(nextProcesses.map((entry) => [entry.id, entry]));
@@ -1610,11 +1639,51 @@ function SystemTab({ copy, extra, onConfirm }: { copy: Copy; extra: ExtraCopy; o
           ...nextProcesses.filter((entry) => !known.has(entry.id)),
         ];
       });
-    } finally {
-      refreshing.current = false;
+    } });
+    processPollRef.current = processPoll;
+
+    const syncVisibility = () => {
+      if (!mounted) return;
+      const next = visible();
+      usagePoll.setActive(next);
+      processPoll.setActive(next);
+      setActive(next);
+    };
+    const onPageHide = () => { pagePresent = false; syncVisibility(); };
+    const onPageShow = () => { pagePresent = true; syncVisibility(); };
+    const observer = canObserve
+      ? new ownerWindow.IntersectionObserver(([entry]) => {
+        intersects = entry?.isIntersecting ?? false;
+        syncVisibility();
+      }) : null;
+    observer?.observe(surface);
+    // IntersectionObserver tracks layout but can miss visibility-only changes.
+    // Observe the hosting chain, without subscribing to changes in the content.
+    const styles = typeof ownerWindow.MutationObserver === "function"
+      ? new ownerWindow.MutationObserver(syncVisibility) : null;
+    for (let node: HTMLElement | null = surface; styles && node; node = node.parentElement) {
+      styles.observe(node, { attributes: true, attributeFilter: ["class", "hidden", "style"] });
     }
+    ownerDocument.addEventListener("visibilitychange", syncVisibility);
+    ownerWindow.addEventListener("pagehide", onPageHide);
+    ownerWindow.addEventListener("pageshow", onPageShow);
+    if (overlayGame) dashboardOverlayClosedListeners.add(syncVisibility);
+    const unlisten = history?.listen?.(syncVisibility);
+    syncVisibility();
+    return () => {
+      mounted = false;
+      usagePoll.dispose();
+      processPoll.dispose();
+      processPollRef.current = null;
+      observer?.disconnect();
+      styles?.disconnect();
+      ownerDocument.removeEventListener("visibilitychange", syncVisibility);
+      ownerWindow.removeEventListener("pagehide", onPageHide);
+      ownerWindow.removeEventListener("pageshow", onPageShow);
+      dashboardOverlayClosedListeners.delete(syncVisibility);
+      if (typeof unlisten === "function") unlisten();
+    };
   }, []);
-  useEffect(() => { void refresh(); const timer = window.setInterval(() => void refresh(), 2500); return () => window.clearInterval(timer); }, [refresh]);
 
   const requestDeckyRestart = useCallback(() => {
     if (deckyRestartingRef.current) return;
@@ -1627,14 +1696,14 @@ function SystemTab({ copy, extra, onConfirm }: { copy: Copy; extra: ExtraCopy; o
   }, []);
 
   return (
-    <div className="ph-page ph-page-scroll ph-system-page">
+    <div ref={surfaceRef} className="ph-page ph-page-scroll ph-system-page">
       <div className="ph-system-stack">
         <FocusGrid className="ph-metrics-rail" onWheel={(event: any) => { if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) event.currentTarget.scrollLeft += event.deltaY; }}>
-          <HistoryMetric index={0} title={copy.cpu} value={`${Math.round(usage?.cpuPercent ?? 0)}%`} detail={`${navigator.hardwareConcurrency || "--"} core`} series={history.cpu ?? []} fixedPeak={100} />
-          <HistoryMetric index={1} title={copy.gpu} value={usage?.gpuAvailable ? `${Math.round(usage.gpuPercent)}%` : "--"} detail={usage?.gpuAvailable ? "GPU" : "--"} series={history.gpu ?? []} fixedPeak={100} />
-          <HistoryMetric index={2} title={copy.memory} value={`${Math.round(usage?.memoryPercent ?? 0)}%`} detail={`${((usage?.memoryUsedMb ?? 0) / 1024).toFixed(1)} / ${((usage?.memoryTotalMb ?? 0) / 1024).toFixed(1)} GB`} series={history.memory ?? []} fixedPeak={100} />
-          <HistoryMetric index={3} title={extra.network} value={formatRate(usage?.networkBytesPerSecond ?? 0)} detail={extra.network} series={history.network ?? []} />
-          {(usage?.disks ?? []).map((disk, diskIndex) => <HistoryMetric index={4 + diskIndex} key={disk.name} title={`${extra.disk} ${disk.name}`} value={formatRate(disk.bytesPerSecond)} detail={disk.kind ? disk.kind.toUpperCase() : extra.disk} series={history[`disk:${disk.name}`] ?? []} />)}
+          <HistoryMetric active={active} index={0} title={copy.cpu} value={`${Math.round(usage?.cpuPercent ?? 0)}%`} detail={`${navigator.hardwareConcurrency || "--"} core`} series={history.cpu ?? []} fixedPeak={100} />
+          <HistoryMetric active={active} index={1} title={copy.gpu} value={usage?.gpuAvailable ? `${Math.round(usage.gpuPercent)}%` : "--"} detail={usage?.gpuAvailable ? "GPU" : "--"} series={history.gpu ?? []} fixedPeak={100} />
+          <HistoryMetric active={active} index={2} title={copy.memory} value={`${Math.round(usage?.memoryPercent ?? 0)}%`} detail={`${((usage?.memoryUsedMb ?? 0) / 1024).toFixed(1)} / ${((usage?.memoryTotalMb ?? 0) / 1024).toFixed(1)} GB`} series={history.memory ?? []} fixedPeak={100} />
+          <HistoryMetric active={active} index={3} title={extra.network} value={formatRate(usage?.networkBytesPerSecond ?? 0)} detail={extra.network} series={history.network ?? []} />
+          {(usage?.disks ?? []).map((disk, diskIndex) => <HistoryMetric active={active} index={4 + diskIndex} key={disk.name} title={`${extra.disk} ${disk.name}`} value={formatRate(disk.bytesPerSecond)} detail={disk.kind ? disk.kind.toUpperCase() : extra.disk} series={history[`disk:${disk.name}`] ?? []} />)}
         </FocusGrid>
         <div className="ph-system-lower">
         <div className="ph-tile ph-process-panel">
@@ -1701,12 +1770,12 @@ function SystemTab({ copy, extra, onConfirm }: { copy: Copy; extra: ExtraCopy; o
           onClose={() => {
             const current = selectedProcess;
             setSelectedProcess(null);
-            void closeProcess(current.id).then(() => window.setTimeout(refresh, 450));
+            void closeProcess(current.id).then(() => processPollRef.current?.refresh(450));
           }}
           onKill={() => {
             const current = selectedProcess;
             setSelectedProcess(null);
-            void killProcess(current.id).then(() => window.setTimeout(refresh, 450));
+            void killProcess(current.id).then(() => processPollRef.current?.refresh(450));
           }}
         />
       ) : null}

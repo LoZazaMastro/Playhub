@@ -4,16 +4,25 @@
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
 	<Compile Include="Program.cs" />
+	<Compile Include="PresentMonFrameCollectorTests.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\PresentMonFrameCollector.cs" Link="PresentMonFrameCollector.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\PresentMonFrameMetrics.cs" Link="PresentMonFrameMetrics.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\PresentMonWindowsCapture.cs" Link="PresentMonWindowsCapture.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\SteamGameIdentityPolicy.cs" Link="SteamGameIdentityPolicy.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\BackgroundProcessPolicy.cs" Link="BackgroundProcessPolicy.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\ControllerHapticPatterns.cs" Link="ControllerHapticPatterns.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\SteamUiHapticsGate.cs" Link="SteamUiHapticsGate.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\DisplayChangePolicy.cs" Link="DisplayChangePolicy.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\SteamDisplayRecoveryService.cs" Link="SteamDisplayRecoveryService.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\BackgroundWorkSignal.cs" Link="BackgroundWorkSignal.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\FileLogger.cs" Link="FileLogger.cs" />
+	<Compile Include="..\Playhub.DeckyHost\DeckyProcessTree.cs" Link="DeckyProcessTree.cs" />
 	<Compile Include="SteamForegroundStub.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\ForegroundProcessIdentity.cs" Link="ForegroundProcessIdentity.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\FullscreenWindowGeometry.cs" Link="FullscreenWindowGeometry.cs" />

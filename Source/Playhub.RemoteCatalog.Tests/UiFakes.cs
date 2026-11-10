@@ -47,8 +47,9 @@ namespace Playhub
         {
             public Func<Task<bool>> ReleaseRefresher = () => Task.FromResult(false);
             public Task<bool> RefreshReleasesAsync(IReadOnlyList<DeckyPluginInfo> plugins, CancellationToken cancellationToken = default) => ReleaseRefresher().WaitAsync(cancellationToken);
-            public Func<IReadOnlyList<DeckyPluginInfo>, Action, CancellationToken, Task> PublicationRefresher = (_, _, _) => Task.CompletedTask;
-            public Task RefreshPublicationDatesAsync(IReadOnlyList<DeckyPluginInfo> plugins, Action onBatchChanged, CancellationToken cancellationToken = default) =>
+            public Func<IReadOnlyList<DeckyPluginInfo>, Action<IReadOnlyDictionary<string, string>>, CancellationToken, Task> PublicationRefresher = (_, _, _) => Task.CompletedTask;
+            public Task RefreshPublicationDatesAsync(IReadOnlyList<DeckyPluginInfo> plugins,
+                Action<IReadOnlyDictionary<string, string>> onBatchChanged, CancellationToken cancellationToken = default) =>
                 PublicationRefresher(plugins, onBatchChanged, cancellationToken);
             public Func<string, string, RemotePluginCatalog, Task<IReadOnlyList<DeckyPluginInfo>>> Loader =
                 (root, installed, catalog) => new PluginCatalogService().LoadAsync(root, installed, catalog);
@@ -59,6 +60,7 @@ namespace Playhub
         private void SetStatus(string message, Microsoft.UI.Xaml.Controls.InfoBarSeverity severity) => _errors++;
         private static void InvalidatePluginAllViews() { }
         private static void InvalidateFeaturedFrames() { }
+        private static void UpdatePluginPublicationOrder() { }
         private void RenderVisiblePluginView()
         {
             IntegrationTests.Check(_pluginCardsDirty && _pluginManagementDirty, "Views not invalidated.");
@@ -77,11 +79,10 @@ namespace Playhub
                 "Publication work must begin outside the Store without deferred catalog work in ordinary fixtures.");
 #if PLAYHUB_UI_REVIEW
             window._currentPageTag = "plugins";
-            window._publicationRenderQueued = false;
             window._remotePluginPublicationLifetime = new CancellationTokenSource();
             window._catalog.PublicationRefresher = (_, _, _) => throw new InvalidOperationException("Review started live publication discovery.");
             window.QueuePluginPublicationRefresh();
-            IntegrationTests.Check(window._remotePluginPublicationRefreshCompletion.IsCompleted && !window._publicationRenderQueued &&
+            IntegrationTests.Check(window._remotePluginPublicationRefreshCompletion.IsCompleted && window._pluginPublicationDates.Count == 0 &&
                 !window._remotePluginPublicationLifetime.IsCancellationRequested, "UI Review changed the publication queue despite its offline guard.");
             window._remotePluginPublicationLifetime.Dispose(); window._remotePluginPublicationLifetime = null;
             window._currentPageTag = "welcome";
@@ -226,12 +227,22 @@ namespace Playhub
             window._settings.PluginRoot = files.PluginRoot; window._settings.DeckyPluginsPath = files.InstalledRoot;
             window._remotePluginCatalog = fixture.Service;
             window._bundledPluginCatalogTask = Task.FromResult(new RemotePluginCatalog { CatalogRevision = 1 });
-            var original = new DeckyPluginInfo { Name = "Publication fixture", RepositorySlug = "fixture/publication" };
+            var original = new DeckyPluginInfo { Name = "Publication fixture", RepositorySlug = "fixture/publication",
+                CatalogSource = "outside-store", FirstPublishedAt = "2020-01-01T00:00:00.0000000Z" };
             window._plugins.Add(original);
-            window._catalog.Loader = (_, _, _) => Task.FromResult<IReadOnlyList<DeckyPluginInfo>>(new[] { original });
+            var loads = 0;
+            window._catalog.Loader = (_, _, _) =>
+            {
+                loads++;
+                return Task.FromResult<IReadOnlyList<DeckyPluginInfo>>(new[] { new DeckyPluginInfo
+                {
+                    Name = original.Name, CatalogSource = original.CatalogSource, RepositorySlug = original.RepositorySlug
+                } });
+            };
             var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            Action? publish = null; int calls = 0, cancelled = 0;
+            Action<IReadOnlyDictionary<string, string>>? publish = null;
+            int calls = 0, cancelled = 0;
             window._catalog.PublicationRefresher = async (_, changed, token) =>
             {
                 calls++; publish = changed; entered.TrySetResult();
@@ -244,14 +255,22 @@ namespace Playhub
             for (int index = 0; index < 6; index++) window.QueuePluginPublicationRefresh();
             await entered.Task;
             IntegrationTests.Check(calls == 1, "Publication requests did not coalesce into one active wave.");
-            window._pluginInstallOperations.Add("busy", new object()); publish!();
-            window.DispatcherQueue.RunNext();
-            IntegrationTests.Check(window._renders == 0 && ReferenceEquals(window._plugins[0], original),
-                "Publication callback replaced a plugin owned by an installation operation.");
-            window._pluginInstallOperations.Clear(); publish(); window.DispatcherQueue.RunNext();
-            await WaitFor(() => window._renders == 1);
-            IntegrationTests.Check(fixture.Handler.Calls == 0 && calls == 1,
-                "Publication rendering triggered a remote membership fetch or duplicated its active wave.");
+            window._pluginInstallOperations.Add("busy", new object());
+            for (var batch = 1; batch <= 6; batch++)
+            {
+                window._currentPageTag = batch < 4 ? "plugins" : "plugin-detail";
+                var date = $"2025-10-19T23:30:0{batch}.0000000Z";
+                publish!(new Dictionary<string, string> { [original.RepositorySlug] = date });
+                window.DispatcherQueue.RunNext();
+                IntegrationTests.Check(window._renders == 0 && loads == 0 && ReferenceEquals(window._plugins[0], original) &&
+                    original.UpdatedAt == date && original.FirstPublishedAt == "2020-01-01T00:00:00.0000000Z",
+                    "Publication changed first-publication data, replaced the active plugin, or rebuilt the catalog.");
+            }
+            window._pluginInstallOperations.Clear(); window._currentPageTag = "plugins";
+            await window.RefreshRemoteAwarePluginsAsync(queueRemote: false);
+            IntegrationTests.Check(window._renders == 1 && loads == 1 && window._plugins[0].UpdatedAt == original.UpdatedAt &&
+                fixture.Handler.Calls == 0 && calls == 1,
+                "An independent catalog reload lost the date already received during the active publication wave.");
             window._currentPageTag = "welcome"; window.CancelPluginPublicationRefresh();
             await window._remotePluginPublicationRefreshCompletion;
             while (window.DispatcherQueue.Pending.Count > 0) window.DispatcherQueue.RunNext();
@@ -260,7 +279,7 @@ namespace Playhub
             window._remotePluginCatalogLifetime.Cancel(); window._currentPageTag = "plugins";
             window.QueuePluginPublicationRefresh();
             IntegrationTests.Check(calls == 1, "Shutdown allowed publication discovery to restart.");
-            Console.WriteLine("PASS 6 actual publication queue guards: visibility, coalescing, install ownership, local rendering, cancellation and shutdown.");
+            Console.WriteLine("PASS publication queue: six incremental batches preserve model identity in Browse and detail, and survive independent catalog reload.");
         }
 #endif
 

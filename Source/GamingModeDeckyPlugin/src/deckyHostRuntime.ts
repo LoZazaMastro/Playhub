@@ -44,7 +44,7 @@ let failure: string | undefined;
 let projectionFailure: string | undefined;
 let nativeHidden = true;
 let preferenceRevision = 0;
-let mountedLease: DeckyHostLease | undefined;
+let mountedLease: { lease: DeckyHostLease; hideRequested: boolean; visibilityAccepted: boolean } | undefined;
 let batching = false;
 let legacyHost: ReturnType<typeof createLegacyShortcutsDeckyHost> = null;
 let legacyBridge: unknown;
@@ -61,18 +61,25 @@ function publish(next: DeckyHostSnapshot) {
   if (!batching) listeners.forEach(listener => listener());
 }
 function release() { releaseMount?.(); }
-/** The preference alone hides the native tab; mounting Playhub's tab is not a precondition. */
+/** Keep native Decky reachable until the embedded panel has committed. */
 function applyNativeSuppression() {
-  const effective = running && snapshot.enabled === true && nativeHidden && !projectionFailure;
+  const mounted = mountedLease;
+  const requested = running && snapshot.enabled && snapshot.available && snapshot.ready && nativeHidden &&
+    !failure && !projectionFailure && typeof mounted?.lease.setNativeHidden === "function";
+  if (mounted && mounted.hideRequested !== requested) {
+    mounted.hideRequested = requested;
+    try { mounted.visibilityAccepted = mounted.lease.setNativeHidden?.(requested) === true; }
+    catch { mounted.visibilityAccepted = false; }
+  }
+  const effective = requested && mounted === mountedLease && mounted?.visibilityAccepted === true;
   setNativeDeckyHidden(effective);
   try { capability?.setNativeHidden?.(effective); } catch { /* Leave the original Decky tab accessible. */ }
+  return mounted?.visibilityAccepted ?? true;
 }
 export function setDeckyNativeHidden(hidden: boolean) {
   preferenceRevision += 1;
   nativeHidden = hidden === true;
-  const applied = mountedLease?.setNativeHidden?.(nativeHidden) ?? !mountedLease;
-  applyNativeSuppression();
-  return applied;
+  return applyNativeSuppression();
 }
 function reconcile() {
   let next: Capability | undefined;
@@ -136,7 +143,7 @@ export function failDeckyHost(reason: string) {
 }
 export function mountDeckyHost(options: Parameters<Capability["acquire"]>[0]): DeckyHostLease | null {
   if (!running || !snapshot.enabled || !snapshot.available || releaseMount || !capability) return null;
-  const lease = capability.acquire({ ...options, hideNative: nativeHidden, onRelease(reason) {
+  const lease = capability.acquire({ ...options, hideNative: false, onRelease(reason) {
     if (reason === "shortcuts_unloaded") reason = "owner_changed";
     if (reason === "owner_changed") {
       publish({ ...snapshot, available: false, ready: false, ownerRevision: (snapshot.ownerRevision ?? 0) + 1 });
@@ -154,17 +161,19 @@ export function mountDeckyHost(options: Parameters<Capability["acquire"]>[0]): D
     lease.release("host_unmounted");
     alive = false;
     if (releaseMount === stop) releaseMount = undefined;
-    if (mountedLease === lease) mountedLease = undefined;
+    if (mountedLease?.lease === lease) mountedLease = undefined;
     publish({ ...snapshot, ready: false });
+    applyNativeSuppression();
   };
   releaseMount = stop;
-  mountedLease = lease;
+  mountedLease = { lease, hideRequested: false, visibilityAccepted: true };
   return { ...lease,
     release: stop,
     setReady() {
       // Legacy owners cannot separate hosting from suppression. Keep their native tab.
       const accepted = alive && (typeof lease.setNativeHidden !== "function" || lease.setReady());
       publish({ ...snapshot, ready: accepted });
+      applyNativeSuppression();
       return accepted;
     },
   };

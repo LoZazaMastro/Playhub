@@ -196,6 +196,13 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -------------------------------------------------------------------------------
+PresentMon 2.6.0 - https://github.com/GameTechDev/PresentMon/releases/tag/v2.6.0
+Gaming Mode includes Intel's unmodified x64 command-line release to measure
+frame timing on demand. The MIT license and upstream third-party notices are
+shipped beside the executable as PresentMon/LICENSE.txt and
+PresentMon/THIRD_PARTY.txt.
+
+-------------------------------------------------------------------------------
 Html Agility Pack 1.13.0 - https://github.com/zzzprojects/html-agility-pack
 Used to interpret supported project HTML in memory without a browser.
 

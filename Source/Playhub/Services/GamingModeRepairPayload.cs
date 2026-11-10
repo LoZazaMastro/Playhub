@@ -16,6 +16,13 @@ internal enum GamingModeStartupRepair { Healthy, Repaired, Unresolved }
 // Used only by the explicitly invoked repair operation, never by startup sync.
 internal static class GamingModeRepairPayload
 {
+    private static readonly HashSet<string> PresentMonFiles = new(StringComparer.OrdinalIgnoreCase)
+    {
+        Path.Combine("PresentMon", "PresentMon.exe"),
+        Path.Combine("PresentMon", "LICENSE.txt"),
+        Path.Combine("PresentMon", "THIRD_PARTY.txt"),
+    };
+
     internal static bool IsCurrent(string package, string installed)
     {
         var files = PayloadFiles(package);
@@ -55,6 +62,7 @@ internal static class GamingModeRepairPayload
                 // Copy runtime content only, never installers, shortcuts or user configuration.
                 if (relative.StartsWith("assets" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(relative, "GamingMode.exe", StringComparison.OrdinalIgnoreCase) ||
+                    PresentMonFiles.Contains(relative) ||
                     (!relative.Contains(Path.DirectorySeparatorChar) &&
                      (relative.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
                       relative.EndsWith(".deps.json", StringComparison.OrdinalIgnoreCase) ||

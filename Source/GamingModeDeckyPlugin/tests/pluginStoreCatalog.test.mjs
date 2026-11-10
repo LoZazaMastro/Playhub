@@ -36,9 +36,14 @@ test("canonical catalog parses without duplicating content and hides the integra
   assert.equal(featured.filter((plugin) => plugin.name === "CSS Loader").length, 1);
   assert.equal(featured.find((plugin) => plugin.name === "CSS Loader").catalogSource, "decky-store");
 
-  const cheevoDeck = parsed.plugins.find((plugin) => plugin.repository === "FAILINATOR5000/decky-cheevodeck");
+  const cheevoDeckRepository = "FAILINATOR5000/decky-cheevodeck";
+  const cheevoDeck = parsed.plugins.find((plugin) => plugin.repository === cheevoDeckRepository);
+  const declaredRelease = original.find((plugin) => plugin.repository === cheevoDeckRepository);
   assert.equal(cheevoDeck?.name, "CheevoDeck");
-  assert.equal(exports.resolveInstallArtifact(cheevoDeck)?.name, "CheevoDeck-0.8.8.zip");
+  assert.ok(declaredRelease?.releaseAssetName && declaredRelease?.catalogReleaseUrl);
+  const artifact = exports.resolveInstallArtifact(cheevoDeck);
+  assert.equal(artifact?.name, declaredRelease.releaseAssetName);
+  assert.equal(artifact?.url, declaredRelease.catalogReleaseUrl);
 });
 
 test("unsafe catalog entries and download URLs fail closed", () => {

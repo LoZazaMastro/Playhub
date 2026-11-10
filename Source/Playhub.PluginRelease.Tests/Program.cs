@@ -51,19 +51,20 @@ internal static class Program
 
     private static async Task BundledReleaseInfo()
     {
+        const string fixtureVersion = "99.8.3";
         using var fixture = new Fixture();
         var root = Directory.GetParent(fixture.CacheRoot)!.FullName;
         var bundled = Path.Combine(root, "bundled");
         var folder = Path.Combine(bundled, "Metadata");
         Directory.CreateDirectory(folder);
-        File.WriteAllText(Path.Combine(folder, "release-info.json"), "{\"version\":\"1.8.3\"}");
-        var archive = Path.Combine(folder, "Playhub-Metadata_1.8.3_Installer.zip");
+        File.WriteAllText(Path.Combine(folder, "release-info.json"), JsonSerializer.Serialize(new { version = fixtureVersion }));
+        var archive = Path.Combine(folder, $"Playhub-Metadata_{fixtureVersion}_Installer.zip");
         File.WriteAllText(archive, "catalog fixture; archive byte validation has separate tests");
         var entries = new[] { new RemotePluginCatalogEntry { Name = "Playhub Metadata", InstallFolder = "Playhub Metadata",
             Repository = "LoZazaMastro/Playhub-Metadata", Version = "1.8.0", CatalogSource = "playhub", CatalogStatus = "playhub" } };
         var plugin = (await fixture.Service.LoadAsync(bundled, Path.Combine(root, "installed"),
             new RemotePluginCatalog { Plugins = entries })).Single();
-        Check(plugin.Version == "1.8.3" && plugin.InstallerZip == archive && !plugin.IsInstalled,
+        Check(plugin.Version == fixtureVersion && plugin.InstallerZip == archive && !plugin.IsInstalled,
             "Bundled provenance did not hydrate the current ZIP-only release.");
         Check(fixture.Handler.Requests.IsEmpty, "Bundled release hydration must remain offline.");
     }
@@ -138,6 +139,7 @@ internal static class Program
             "Equal Decky version, artifact metadata, or matching notes were lost.");
         Check(fixture.Handler.Requests.Count(url => url == DeckyUrl) == 1, "Decky catalog was fetched once per plugin instead of once per refresh.");
         Check(fixture.Handler.Requests.Count == 3, "Unexpected network requests beyond one catalog and two notes requests.");
+        Check(!await fixture.Service.RefreshReleasesAsync(plugins, force: true), "Identical forced Decky refresh reported a change.");
         fixture.Handler.Offline = true;
         Check(!await fixture.Service.RefreshReleasesAsync(plugins, force: true), "Offline Decky refresh reported a change.");
         var offline = await fixture.Load(first, second);

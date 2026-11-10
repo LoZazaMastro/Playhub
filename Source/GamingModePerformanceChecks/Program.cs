@@ -60,7 +60,7 @@ using var self = Process.GetCurrentProcess();
 string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 string added = $"[{timestamp}] AppID 123 adding PID {self.Id}\n";
 MethodInfo find = typeof(OverlaySteamArtworkResolver).GetMethod("FindActiveGame", BindingFlags.NonPublic | BindingFlags.Static)!;
-object? Find() => find.Invoke(null, [root, self.Id]);
+object? Find() => find.Invoke(null, [root, self.Id, null]);
 try
 {
     await Check("Tracked live process resolves from Steam log", () =>

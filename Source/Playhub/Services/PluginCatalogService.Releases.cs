@@ -112,10 +112,8 @@ public sealed partial class PluginCatalogService
                     finally { concurrency.Release(); }
                 }
                 release = PreserveCachedNotes(key, release);
-                if (before == release) return;
                 cancellationToken.ThrowIfCancellationRequested();
-                SaveReleaseCache(key, release);
-                changed();
+                if (before != SaveReleaseCache(key, release)) changed();
             }));
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
@@ -199,8 +197,9 @@ public sealed partial class PluginCatalogService
     }
 
     // The Store owns cancellation. This separate scan has no release-notes wave deadline.
-    // Publish each completed batch so the UI need not wait for all repositories.
-    public Task RefreshPublicationDatesAsync(IReadOnlyList<DeckyPluginInfo> plugins, Action onBatchChanged, CancellationToken cancellationToken = default)
+    // Send only the changed upstream dates so a batch need not reload the Store.
+    public Task RefreshPublicationDatesAsync(IReadOnlyList<DeckyPluginInfo> plugins,
+        Action<IReadOnlyDictionary<string, string>> onBatchChanged, CancellationToken cancellationToken = default)
     {
         var snapshot = plugins.ToArray();
         return Task.Run(async () =>
@@ -216,7 +215,24 @@ public sealed partial class PluginCatalogService
         }, cancellationToken);
     }
 
-    private async Task<bool> RefreshPublicPublicationDateBatchAsync(IReadOnlyList<DeckyPluginInfo> plugins, SemaphoreSlim concurrency, Action changed, CancellationToken token)
+    internal static bool ApplyPublicationDates(IEnumerable<DeckyPluginInfo> plugins,
+        IReadOnlyDictionary<string, string> dates)
+    {
+        var changed = false;
+        foreach (var plugin in plugins)
+        {
+            if (plugin.CatalogSource != "outside-store" ||
+                !dates.TryGetValue(plugin.RepositorySlug, out var date)) continue;
+            var updated = LatestPublicationTimestamp(plugin.UpdatedAt, date);
+            if (updated == plugin.UpdatedAt) continue;
+            plugin.UpdatedAt = updated;
+            changed = true;
+        }
+        return changed;
+    }
+
+    private async Task<bool> RefreshPublicPublicationDateBatchAsync(IReadOnlyList<DeckyPluginInfo> plugins,
+        SemaphoreSlim concurrency, Action<IReadOnlyDictionary<string, string>> changed, CancellationToken token)
     {
         var candidates = plugins.Where(plugin => plugin.CatalogSource == "outside-store" && !plugin.IsInstalled && IsValidRepositorySlug(plugin.RepositorySlug))
             .GroupBy(plugin => plugin.RepositorySlug, StringComparer.OrdinalIgnoreCase).Select(group => group.First()).ToArray();
@@ -228,7 +244,7 @@ public sealed partial class PluginCatalogService
             .Take(6).ToArray();
         _publicationCursor = (_publicationCursor + Math.Max(selected.Length, 1)) % candidates.Length;
         if (selected.Length == 0) return false;
-        var batchChanged = 0;
+        var updatedDates = new System.Collections.Concurrent.ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         await Task.WhenAll(selected.Select(async plugin =>
         {
             await concurrency.WaitAsync(token);
@@ -265,7 +281,7 @@ public sealed partial class PluginCatalogService
                     PublicationCheckedAt = DateTimeOffset.UtcNow.ToString("O") };
                 SaveReleaseCache(key, release);
                 _publicationRetryAt[plugin.RepositorySlug] = DateTimeOffset.UtcNow.AddHours(6);
-                if (updated != visibleUpdated) Interlocked.Exchange(ref batchChanged, 1);
+                if (updated != visibleUpdated) updatedDates[plugin.RepositorySlug] = updated;
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
@@ -276,7 +292,7 @@ public sealed partial class PluginCatalogService
             { _publicationRetryAt[plugin.RepositorySlug] = DateTimeOffset.UtcNow.AddMinutes(5); }
             finally { concurrency.Release(); }
         }));
-        if (batchChanged != 0) changed();
+        if (!updatedDates.IsEmpty) changed(updatedDates);
         return true;
     }
 }

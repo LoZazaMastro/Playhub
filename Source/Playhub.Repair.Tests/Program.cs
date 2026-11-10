@@ -35,6 +35,28 @@ try
     GamingModeRepairPayload.Restore(package, installed, () => false);
     Check(GamingModeRepairPayload.IsCurrent(package, installed), "runtime payload restored and verified");
     Check(!File.Exists(Path.Combine(installed, "install.ps1")) && !File.Exists(Path.Combine(installed, "GamingMode.UI.exe")), "no standalone installer or UI restored");
+
+    var presentMonBundle = Path.Combine(package, "PresentMon");
+    var presentMonInstalled = Path.Combine(installed, "PresentMon");
+    Directory.CreateDirectory(presentMonBundle);
+    Directory.CreateDirectory(presentMonInstalled);
+    var presentMonFiles = new[] { "PresentMon.exe", "LICENSE.txt", "THIRD_PARTY.txt" };
+    foreach (var file in presentMonFiles) File.WriteAllText(Path.Combine(presentMonBundle, file), file);
+    File.WriteAllText(Path.Combine(presentMonBundle, "preferences.json"), "defaults");
+    File.WriteAllText(Path.Combine(presentMonInstalled, "preferences.json"), "user settings");
+    Directory.CreateDirectory(Path.Combine(presentMonBundle, "extras"));
+    File.WriteAllText(Path.Combine(presentMonBundle, "extras", "PresentMon.exe"), "unrelated tool");
+
+    Check(!GamingModeRepairPayload.IsCurrent(package, installed), "missing PresentMon payload requires repair");
+    GamingModeRepairPayload.Restore(package, installed, () => false);
+    Check(GamingModeRepairPayload.IsCurrent(package, installed), "PresentMon payload restored and verified");
+    foreach (var file in presentMonFiles)
+        Check(File.ReadAllText(Path.Combine(presentMonInstalled, file)) == file, "restored PresentMon file: " + file);
+    Check(File.ReadAllText(Path.Combine(presentMonInstalled, "preferences.json")) == "user settings", "unrelated PresentMon file preserved");
+    Check(!Directory.Exists(Path.Combine(presentMonInstalled, "extras")), "nested PresentMon names are outside the allowlist");
+    File.WriteAllText(Path.Combine(presentMonInstalled, "THIRD_PARTY.txt"), "corrupted notice");
+    Check(!GamingModeRepairPayload.IsCurrent(package, installed), "corrupted PresentMon notice requires repair");
+
     Check(GamingModeRepairPayload.ReadApiPort(config) == 48123, "configured API port");
     Check(File.ReadAllText(config) == preferences && File.ReadAllText(config + ".bak") == "backup", "all preferences and backup preserved byte-for-byte");
     foreach (var invalid in new[] { "null", "{}", "{", "{\"defaultMode\":\"Gaming\",\"gaming\":{},\"safety\":{\"apiPort\":70000}}" })

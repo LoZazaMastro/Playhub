@@ -161,9 +161,11 @@ export interface LearnState {
 async function request<T>(path: string, init?: RequestInit, timeoutMs = 4000): Promise<T | null> {
   // An explicit click must be able to recover immediately after a transient
   // outage. Only passive polling shares the cooldown.
-  if ((!init?.method || init.method === "GET") && !agentAvailability.canRequest()) return null;
+  if (init?.signal?.aborted || ((!init?.method || init.method === "GET") && !agentAvailability.canRequest())) return null;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const abort = () => controller.abort();
+  init?.signal?.addEventListener("abort", abort, { once: true });
+  const timer = setTimeout(abort, timeoutMs);
   try {
     const response = await fetch(`${API_BASE}${path}`, { ...init, signal: controller.signal });
     if (!response.ok) return null;
@@ -177,6 +179,7 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs = 4000): P
     return null;
   } finally {
     clearTimeout(timer);
+    init?.signal?.removeEventListener("abort", abort);
   }
 }
 
@@ -330,8 +333,9 @@ export async function pickProgramFile(): Promise<string> {
 
 // Il consumo di processore si misura fra due chiamate: la prima torna con gli
 // zeri ed e' normale. Dalla seconda in poi i numeri sono veri.
-export async function listProcesses(): Promise<ProcessEntry[]> {
-  return (await request<ProcessEntry[]>("/dash/processes", undefined, 8000)) ?? [];
+export async function listProcesses(signal?: AbortSignal): Promise<ProcessEntry[] | null> {
+  const result = await request<ProcessEntry[]>("/dash/processes", { signal }, 8000);
+  return Array.isArray(result) ? result : null;
 }
 
 export function closeProcess(id: number) {
@@ -344,8 +348,8 @@ export function killProcess(id: number) {
 
 // ---------- sistema ----------
 
-export function readUsage(): Promise<UsageReport | null> {
-  return request<UsageReport>("/dash/usage");
+export function readUsage(signal?: AbortSignal): Promise<UsageReport | null> {
+  return request<UsageReport>("/dash/usage", { signal });
 }
 
 export function readEnvironment(): Promise<DashboardEnvironment | null> {

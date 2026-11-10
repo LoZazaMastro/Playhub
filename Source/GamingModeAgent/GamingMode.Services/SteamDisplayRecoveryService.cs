@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
+using Playhub.DeckyHost;
 
 namespace GamingMode.Services;
 
@@ -39,6 +43,7 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 	private readonly List<DateTime> _gpuRestarts = new();
 	private readonly FileLogger _logger;
 	private readonly Func<bool> _isGamingMode;
+	private readonly Func<string?> _readSteamExecutable;
 	private readonly object _sync = new();
 	private CancellationTokenSource? _cancellation;
 	private Task? _worker;
@@ -47,10 +52,11 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 	private long _snapshotCount;
 	internal long SnapshotCount => Interlocked.Read(ref _snapshotCount);
 
-	public SteamDisplayRecoveryService(FileLogger logger, Func<bool> isGamingMode)
+	public SteamDisplayRecoveryService(FileLogger logger, Func<bool> isGamingMode, Func<string?> readSteamExecutable)
 	{
 		_logger = logger;
 		_isGamingMode = isGamingMode;
+		_readSteamExecutable = readSteamExecutable;
 	}
 
 	public void Start()
@@ -191,13 +197,12 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 				// Nessun monitor: non c'e' niente su cui ridisegnare. Si aspetta
 				// che ne arrivi uno (sara' un nuovo hotplug).
 				if (current.Monitors.Count == 0) continue;
-				// Se c'e' un gioco in primo piano non si tocca nulla: il recupero
-				// avviene quando si torna a Steam.
-				if (!SteamFullscreenDetector.IsForegroundSteam())
+				var owner = ReadRecoveryOwner();
+				if (owner is null)
 				{
 					if (!waitingLogged)
 					{
-						_logger.Info("Display recovery waiting: Steam is not in the foreground.");
+						_logger.Info("Display recovery waiting for a verified idle Steam foreground.");
 						waitingLogged = true;
 					}
 					continue;
@@ -215,7 +220,7 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 				DisplayChangeKind reason = pending;
 				pending = DisplayChangeKind.None;
 				lastRecovery = now;
-				await RecoverAsync(reason, black, token);
+				await RecoverAsync(reason, black, owner, token);
 				lastRecovery = DateTime.UtcNow;
 			}
 			catch (OperationCanceledException)
@@ -229,86 +234,108 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 		}
 	}
 
-	private async Task RecoverAsync(DisplayChangeKind reason, bool? blackBefore, CancellationToken token)
+	private async Task RecoverAsync(DisplayChangeKind reason, bool? blackBefore, DeckyProcessTree.Identity owner, CancellationToken token)
 	{
 		_logger.Info($"Display recovery started ({reason}, black={Describe(blackBefore)}).");
-
-		// 1) Solo il processo grafico di Steam. Chromium lo rilancia e ricrea
-		//    tutte le superfici; Steam, Decky e la sessione restano in piedi.
-		//    Chromium conta ogni riavvio della GPU come un crash e dopo alcuni
-		//    passa al disegno software: oltre due riavvii in un'ora si salta
-		//    direttamente al passo 2, che riparte da un processo pulito.
 		DateTime now = DateTime.UtcNow;
 		_gpuRestarts.RemoveAll(time => now - time > GpuRestartWindow);
-		int killed = 0;
-		if (_gpuRestarts.Count < MaxGpuRestartsPerWindow)
-		{
-			killed = KillSteamWebHelpers(DisplayChangePolicy.IsGpuProcess, entireTree: false, "GPU process");
-			if (killed > 0) _gpuRestarts.Add(now);
-		}
-		else
-		{
-			_logger.Info("Steam graphics were already restarted recently; restarting the Steam interface instead.");
-		}
-		if (killed > 0)
-		{
-			await Task.Delay(TimeSpan.FromSeconds(5), token);
-			SteamFullscreenDetector.TryFocusSteamWindow(_logger);
-			await Task.Delay(TimeSpan.FromSeconds(3), token);
-			bool? after = SampleScreenBlack();
-			if (after != true)
-			{
-				_logger.Info($"Display recovery completed: Steam graphics restarted (black={Describe(after)}).");
-				return;
-			}
-			_logger.Info("Screen still black after the GPU restart; restarting the Steam interface.");
-		}
-		else
-		{
-			_logger.Info("Steam GPU process not found; restarting the Steam interface.");
-		}
+		bool StillSafe() => !token.IsCancellationRequested && ReadRecoveryOwner() == owner;
+		var outcome = await RecoverWhileSafeAsync(StillSafe, RestartGpu,
+			() => RestartHelper(owner, DisplayChangePolicy.IsBrowserProcess, StillSafe),
+			SampleScreenBlack, Task.Delay, token);
+		if (outcome == RecoveryOutcome.BrowserRestarted) _gpuRestarts.Clear();
+		_logger.Info($"Display recovery result: {outcome}.");
 
-		// 2) Ultima risorsa: l'interfaccia di Steam (steamwebhelper). Steam.exe
-		//    non viene chiuso e la rilancia da solo in pochi secondi.
-		int restarted = KillSteamWebHelpers(DisplayChangePolicy.IsBrowserProcess, entireTree: true, "interface");
-		if (restarted == 0)
+		bool RestartGpu()
 		{
-			_logger.Info("Display recovery: no Steam interface process found, nothing else to do.");
-			return;
+			if (_gpuRestarts.Count >= MaxGpuRestartsPerWindow) return false;
+			if (!RestartHelper(owner, DisplayChangePolicy.IsGpuProcess, StillSafe)) return false;
+			_gpuRestarts.Add(now);
+			return true;
 		}
-		_gpuRestarts.Clear();
-		await Task.Delay(TimeSpan.FromSeconds(10), token);
-		SteamFullscreenDetector.TryFocusSteamWindow(_logger);
-		_logger.Info("Display recovery completed: Steam interface restarted.");
 	}
 
-	private int KillSteamWebHelpers(Func<string?, bool> match, bool entireTree, string label)
+	internal enum RecoveryOutcome { ContextChanged, GpuRestarted, BrowserRestarted, NoVerifiedHelper, ScreenUnconfirmed }
+
+	internal static async Task<RecoveryOutcome> RecoverWhileSafeAsync(Func<bool> stillSafe, Func<bool> restartGpu,
+		Func<bool> restartBrowser, Func<bool?> readBlack, Func<TimeSpan, CancellationToken, Task> delay, CancellationToken token)
 	{
-		int count = 0;
-		foreach (Process process in Process.GetProcessesByName("steamwebhelper"))
+		token.ThrowIfCancellationRequested();
+		if (!stillSafe()) return RecoveryOutcome.ContextChanged;
+		bool gpuRestarted = restartGpu();
+		if (gpuRestarted) await delay(TimeSpan.FromSeconds(8), token);
+		token.ThrowIfCancellationRequested();
+		if (!stillSafe()) return RecoveryOutcome.ContextChanged;
+		// Never escalate to the browser when there is no fresh evidence of a black screen.
+		if (readBlack() != true) return gpuRestarted ? RecoveryOutcome.GpuRestarted : RecoveryOutcome.ScreenUnconfirmed;
+		if (!stillSafe()) return RecoveryOutcome.ContextChanged;
+		return restartBrowser() ? RecoveryOutcome.BrowserRestarted : RecoveryOutcome.NoVerifiedHelper;
+	}
+
+	private DeckyProcessTree.Identity? ReadRecoveryOwner()
+	{
+		if (!_isGamingMode() || _readSteamExecutable() is not string executable) return null;
+		executable = Path.GetFullPath(executable);
+		nint foreground = GetForegroundWindow();
+		if (foreground == 0 || GetWindowThreadProcessId(foreground, out uint pid) == 0) return null;
+		var owner = FindSteamOwner(DeckyProcessTree.Read((int)pid), executable, DeckyProcessTree.Read);
+		using var currentUser = WindowsIdentity.GetCurrent();
+		if (owner is null || owner.Sid != currentUser.User?.Value) return null;
+		bool? active = OverlaySteamArtworkResolver.HasActiveGameForRecovery(Path.GetDirectoryName(owner.Path)!,
+			DateTime.FromFileTime(owner.Birth));
+		return active == false && _isGamingMode() && GetForegroundWindow() == foreground &&
+			GetWindowThreadProcessId(foreground, out uint currentPid) != 0 && currentPid == pid ? owner : null;
+	}
+
+	internal static DeckyProcessTree.Identity? FindSteamOwner(DeckyProcessTree.Identity? process, string executable,
+		Func<int, DeckyProcessTree.Identity?> read)
+	{
+		string cefRoot = Path.Combine(Path.GetDirectoryName(executable)!, "bin", "cef") + Path.DirectorySeparatorChar;
+		if (!Path.GetFileName(executable).Equals("steam.exe", StringComparison.OrdinalIgnoreCase)) return null;
+		for (int hop = 0; process is not null && hop < 4; hop++)
 		{
-			using (process)
+			if (process.Path.Equals(executable, StringComparison.OrdinalIgnoreCase)) return process;
+			if (!process.Path.StartsWith(cefRoot, StringComparison.OrdinalIgnoreCase) ||
+				!Path.GetFileName(process.Path).Equals("steamwebhelper.exe", StringComparison.OrdinalIgnoreCase)) return null;
+			var parent = read(process.ParentPid);
+			if (parent is null || parent.Pid == process.Pid || parent.Birth > process.Birth ||
+				parent.Sid != process.Sid || parent.Session != process.Session) return null;
+			process = parent;
+		}
+		return null;
+	}
+
+	private static bool RestartHelper(DeckyProcessTree.Identity owner, Func<string?, bool> match, Func<bool> stillSafe)
+	{
+		var helpers = Process.GetProcessesByName("steamwebhelper");
+		try
+		{
+			Process? selected = null;
+			DeckyProcessTree.Identity? selectedIdentity = null;
+			foreach (var helper in helpers)
 			{
 				try
 				{
-					string? commandLine = ReadCommandLine(process);
-					if (!match(commandLine)) continue;
-					process.Kill(entireTree);
-					count++;
-					_logger.Info($"Display recovery: Steam {label} restarted (pid {process.Id}).");
+					var identity = DeckyProcessTree.Read(helper.SafeHandle, helper.Id);
+					if (FindSteamOwner(identity, owner.Path, DeckyProcessTree.Read) != owner ||
+						!match(ReadCommandLine(helper.SafeHandle.DangerousGetHandle()))) continue;
+					if (selected is not null) return false;
+					selected = helper;
+					selectedIdentity = identity;
 				}
-				catch (Exception exception)
+				catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception)
 				{
-					_logger.Error($"Display recovery: could not restart Steam {label} (pid {SafeId(process)}).", exception);
+					// Processes can exit while Chromium is rebuilding its UI.
 				}
 			}
+			// Recheck both context and identity immediately before terminating the retained handle.
+			return selected is not null && stillSafe() && DeckyProcessTree.Read(selected.SafeHandle, selected.Id) == selectedIdentity &&
+				TerminateProcess(selected.SafeHandle, uint.MaxValue);
 		}
-		return count;
-	}
-
-	private static int SafeId(Process process)
-	{
-		try { return process.Id; } catch { return -1; }
+		finally
+		{
+			foreach (var helper in helpers) helper.Dispose();
+		}
 	}
 
 	private static string Describe(bool? value) => value.HasValue ? (value.Value ? "si" : "no") : "non verificabile";
@@ -417,8 +444,14 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 				// Una tendina nera voluta (avvio di un gioco) non e' un guasto.
 				if (cover != 0 && IsWindowVisible(cover)) return false;
 			}
-			int width = GetSystemMetrics(0);
-			int height = GetSystemMetrics(1);
+			using var dpi = PhysicalDpiScope.Enter();
+			if (dpi is null) return null;
+			nint foreground = GetForegroundWindow();
+			nint monitor = MonitorFromWindow(foreground, 0);
+			var info = MonitorInfoEx.Create();
+			if (monitor == 0 || !GetMonitorInfoW(monitor, ref info)) return null;
+			int width = info.rcMonitor.Right - info.rcMonitor.Left;
+			int height = info.rcMonitor.Bottom - info.rcMonitor.Top;
 			if (width <= 0 || height <= 0) return null;
 			nint dc = GetDC(0);
 			if (dc == 0) return null;
@@ -429,10 +462,12 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 				{
 					for (int column = 1; column <= 9; column++)
 					{
-						samples.Add(GetPixel(dc, width * column / 10, height * row / 6));
+						samples.Add(GetPixel(dc, info.rcMonitor.Left + width * column / 10,
+							info.rcMonitor.Top + height * row / 6));
 					}
 				}
-				return DisplayChangePolicy.IsBlack(samples);
+				return GetForegroundWindow() == foreground && MonitorFromWindow(foreground, 0) == monitor
+					? DisplayChangePolicy.IsBlack(samples) : null;
 			}
 			finally
 			{
@@ -449,39 +484,30 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 	// Riga di comando di un processo (per distinguere i processi Chromium).
 	// ------------------------------------------------------------------
 
-	internal static string? ReadCommandLine(Process process)
+	private static string? ReadCommandLine(nint handle)
 	{
-		nint handle = OpenProcess(ProcessQueryLimitedInformation, false, (uint)process.Id);
-		if (handle == 0) return null;
-		try
+		int size = 4096;
+		for (int attempt = 0; attempt < 4; attempt++)
 		{
-			int size = 4096;
-			for (int attempt = 0; attempt < 4; attempt++)
+			nint buffer = Marshal.AllocHGlobal(size);
+			try
 			{
-				nint buffer = Marshal.AllocHGlobal(size);
-				try
+				int status = NtQueryInformationProcess(handle, ProcessCommandLineInformation, buffer, size, out int needed);
+				if (status == 0)
 				{
-					int status = NtQueryInformationProcess(handle, ProcessCommandLineInformation, buffer, size, out int needed);
-					if (status == 0)
-					{
-						ushort length = (ushort)Marshal.ReadInt16(buffer);
-						nint text = Marshal.ReadIntPtr(buffer, IntPtr.Size);
-						return text == 0 || length == 0 ? "" : Marshal.PtrToStringUni(text, length / 2);
-					}
-					if (needed <= size) return null;
-					size = needed;
+					ushort length = (ushort)Marshal.ReadInt16(buffer);
+					nint text = Marshal.ReadIntPtr(buffer, IntPtr.Size);
+					return text == 0 || length == 0 ? "" : Marshal.PtrToStringUni(text, length / 2);
 				}
-				finally
-				{
-					Marshal.FreeHGlobal(buffer);
-				}
+				if (needed <= size) return null;
+				size = needed;
 			}
-			return null;
+			finally
+			{
+				Marshal.FreeHGlobal(buffer);
+			}
 		}
-		finally
-		{
-			CloseHandle(handle);
-		}
+		return null;
 	}
 
 	// ------------------------------------------------------------------
@@ -492,7 +518,6 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 	private const int ErrorInsufficientBuffer = 122;
 	private const uint DisplayConfigDeviceInfoGetSourceName = 1;
 	private const uint DisplayConfigDeviceInfoGetAdvancedColorInfo = 9;
-	private const uint ProcessQueryLimitedInformation = 0x1000;
 	private const int ProcessCommandLineInformation = 60;
 
 	[StructLayout(LayoutKind.Sequential)]
@@ -624,7 +649,7 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 	private static extern bool IsWindowVisible(nint window);
 
 	[DllImport("user32.dll")]
-	private static extern int GetSystemMetrics(int index);
+	private static extern nint MonitorFromWindow(nint window, uint flags);
 
 	[DllImport("user32.dll")]
 	private static extern nint GetDC(nint window);
@@ -635,11 +660,14 @@ public sealed class SteamDisplayRecoveryService : IDisposable
 	[DllImport("gdi32.dll")]
 	private static extern uint GetPixel(nint dc, int x, int y);
 
-	[DllImport("kernel32.dll", SetLastError = true)]
-	private static extern nint OpenProcess(uint access, bool inherit, uint processId);
+	[DllImport("user32.dll")]
+	private static extern nint GetForegroundWindow();
+
+	[DllImport("user32.dll")]
+	private static extern uint GetWindowThreadProcessId(nint window, out uint processId);
 
 	[DllImport("kernel32.dll")]
-	private static extern bool CloseHandle(nint handle);
+	private static extern bool TerminateProcess(SafeProcessHandle handle, uint exitCode);
 
 	[DllImport("ntdll.dll")]
 	private static extern int NtQueryInformationProcess(nint process, int informationClass, nint information, int length, out int returnLength);

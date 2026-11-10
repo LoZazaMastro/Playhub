@@ -14,7 +14,7 @@
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>2.5.0</Version>
+    <Version>2.5.5</Version>
     <DebugType>none</DebugType>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);dist_publish\**</DefaultItemExcludes>
@@ -52,6 +52,7 @@
     <Content Include="Assets\**\*.*" Exclude="Assets\GamingModeDeckyPlugin\**\cpu_power\**;Assets\**\__pycache__\**;Assets\**\*.pyc">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Remove="Assets\GamingModeDeckyPlugin\**\history_imported.json.before-*" />
     <Content Include="..\..\catalog\plugins.json" Link="Assets\PluginCatalog\store-catalog.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

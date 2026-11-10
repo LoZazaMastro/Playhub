@@ -34,9 +34,14 @@ test("Explorer autostart and agent launches share a Decky startup lock", () => {
   const processes = read("../../GamingModeAgent/GamingMode.Services/ProcessTools.cs");
   const installer = read("../../Playhub/Services/DeckyInstallerService.cs");
   const explorer = processes.split("public bool StartExplorer()")[1].split("public int RunUserStartupApps()")[0];
+  const install = installer.split("private async Task<string> InstallWindowsReleaseCoreAsync")[1].split("public Task<string> RemoveAsync")[0];
+  const restart = installer.split("private bool SetupAutostartAndLaunch()")[1].split("private static")[0];
   assert.ok(explorer.indexOf("UpgradeExistingAutostart()") < explorer.indexOf("Process.Start("));
   assert.match(processes, /DeckyStartupGuard.RunExclusive\(\(\) => EnsureProcessUnlocked/);
-  assert.match(installer, /SetValue\("DeckyLoader", Playhub.Shared.DeckyStartupGuard.CreateCommand\(loader\)\)/);
+  assert.match(install, /DeckyStartupGuard\.RunExclusive\(\(\) =>[\s\S]*startupCommand = PrepareAutostart\(loader\);[\s\S]*StartVerified\(loader\);\s*SetAutostart\(startupCommand!\);/);
+  assert.match(restart, /DeckyStartupGuard\.RunExclusive\(\(\) =>[\s\S]*string command = PrepareAutostart\(loader\);\s*StartVerified\(loader\);\s*SetAutostart\(command\);/);
+  assert.match(installer, /private static string PrepareAutostart\(string loader\)\s*\{[^}]*return DeckyStartupGuard\.CreateCommand\(loader\);/);
+  assert.match(installer, /private static void SetAutostart\(string command\)\s*\{[^}]*run\.SetValue\("DeckyLoader", command, RegistryValueKind\.String\);/);
   assert.match(guard, /Get-Process -Name PluginLoader,PluginLoader_noconsole/);
   assert.equal(guard.split("Global\\Playhub.Decky.Start").length - 1, 2);
   assert.ok(guard.indexOf("$mutex.WaitOne") < guard.indexOf("Get-Process -Name"));
