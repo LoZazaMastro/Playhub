@@ -254,12 +254,23 @@ p { max-width: 64ch; }
 .suite { padding: 0; }
 .suite-intro { padding-block: clamp(3rem, 7vw, 6rem); margin-bottom: 0; }
 .plugin-band {
+  --plugin-color: #FFCC00;
+  --plugin-light-share: 70%;
+  --plugin-dark-share: 22%;
+  --plugin-band-light: color-mix(in srgb, var(--plugin-color) var(--plugin-light-share), #ffffff);
+  --plugin-band-dark: color-mix(in srgb, var(--plugin-color) var(--plugin-dark-share), #161616);
   --text: #202020;
-  --secondary: #414141;
+  --secondary: #303030;
   --border: #00000026;
   color: var(--text);
   background: var(--plugin-band-light, var(--band-light));
   padding-block: clamp(3.5rem, 7vw, 6.5rem);
+}
+.plugin-band:is([aria-labelledby="metadata-title"], [aria-labelledby="launch-curtain-title"], [aria-labelledby="proton-vpn-title"]) {
+  --text: #f4f4f4;
+  --secondary: #f4f4f4;
+  --border: #ffffff40;
+  --focus: #ffffff;
 }
 [data-theme="dark"] .plugin-band {
   --text: #f4f4f4;
@@ -267,26 +278,20 @@ p { max-width: 64ch; }
   --border: #ffffff2b;
   background: var(--plugin-band-dark, var(--band-dark));
 }
-/* Each plugin has a distinct colour field; neutral page surfaces retain the
-   neutral theme tokens. Playhub's yellow remains vivid in both themes. */
-.plugin-band[aria-labelledby="playhub-plugin-title"] { --plugin-band-light: #ffdc58; --plugin-band-dark: #ffcf23; }
-.plugin-band[aria-labelledby="metadata-title"] { --plugin-band-light: #d6c4fb; --plugin-band-dark: #30234b; }
-.plugin-band[aria-labelledby="artworks-title"] { --plugin-band-light: #b7e6f4; --plugin-band-dark: #133844; }
-.plugin-band[aria-labelledby="trailerhero-title"] { --plugin-band-light: #f2c0ea; --plugin-band-dark: #362040; }
-.plugin-band[aria-labelledby="themedeck-title"] { --plugin-band-light: #d0eaa5; --plugin-band-dark: #24391d; }
-.plugin-band[aria-labelledby="launch-curtain-title"] { --plugin-band-light: #c6d1ff; --plugin-band-dark: #222b50; }
-.plugin-band[aria-labelledby="now-playing-title"] { --plugin-band-light: #afe3d3; --plugin-band-dark: #12392e; }
-.plugin-band[aria-labelledby="notifications-title"] { --plugin-band-light: #ffc6d9; --plugin-band-dark: #421f39; }
-.plugin-band[aria-labelledby="surround-title"] { --plugin-band-light: #bfd8f7; --plugin-band-dark: #1e3251; }
-.plugin-band[aria-labelledby="news-title"] { --plugin-band-light: #fac5bf; --plugin-band-dark: #3a223b; }
-.plugin-band[aria-labelledby="weather-title"] { --plugin-band-light: #c3e9ff; --plugin-band-dark: #17374b; }
-.plugin-band[aria-labelledby="proton-vpn-title"] { --plugin-band-light: #ddceff; --plugin-band-dark: #2c2250; }
-[data-theme="dark"] .plugin-band[aria-labelledby="playhub-plugin-title"] {
-  --text: #202020;
-  --secondary: #393939;
-  --border: #20202033;
-  --focus: #202020;
-}
+/* Section colours use the five brand colours, mixed only with neutral tones. */
+.plugin-band[aria-labelledby="playhub-plugin-title"] { --plugin-color: #FFCC00; --plugin-light-share: 28%; --plugin-band-dark: #262626; }
+.plugin-band[aria-labelledby="metadata-title"] { --plugin-color: #5E2BFF; --plugin-light-share: 96%; --plugin-dark-share: 28%; }
+.plugin-band[aria-labelledby="artworks-title"] { --plugin-color: #00C7FF; --plugin-light-share: 78%; --plugin-dark-share: 22%; }
+.plugin-band[aria-labelledby="trailerhero-title"] { --plugin-color: #FF3B30; --plugin-light-share: 72%; --plugin-dark-share: 22%; }
+.plugin-band[aria-labelledby="themedeck-title"] { --plugin-color: #34C759; --plugin-light-share: 76%; --plugin-dark-share: 24%; }
+.plugin-band[aria-labelledby="launch-curtain-title"] { --plugin-color: #5E2BFF; --plugin-light-share: 92%; --plugin-dark-share: 24%; }
+.plugin-band[aria-labelledby="now-playing-title"] { --plugin-color: #34C759; --plugin-light-share: 88%; --plugin-dark-share: 20%; }
+.plugin-band[aria-labelledby="notifications-title"] { --plugin-color: #FF3B30; --plugin-light-share: 62%; --plugin-dark-share: 18%; }
+.plugin-band[aria-labelledby="surround-title"] { --plugin-color: #00C7FF; --plugin-light-share: 88%; --plugin-dark-share: 26%; }
+.plugin-band[aria-labelledby="news-title"] { --plugin-color: #FF3B30; --plugin-light-share: 68%; --plugin-dark-share: 24%; }
+.plugin-band[aria-labelledby="weather-title"] { --plugin-color: #00C7FF; --plugin-light-share: 64%; --plugin-dark-share: 18%; }
+.plugin-band[aria-labelledby="proton-vpn-title"] { --plugin-color: #5E2BFF; --plugin-light-share: 100%; --plugin-dark-share: 30%; }
+[data-theme="dark"] .plugin-band[aria-labelledby="playhub-plugin-title"] #playhub-plugin-title { color: #FFCC00; }
 .plugin-band.copy-first > .wrap > .plugin-card, .plugin-card.copy-first { grid-template-columns: minmax(0, .83fr) minmax(0, 1.17fr); }
 .plugin-band.copy-first > .wrap > .plugin-card > .plugin-copy, .plugin-card.copy-first > .plugin-copy { order: -1; }
 
