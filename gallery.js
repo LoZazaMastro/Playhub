@@ -16,272 +16,236 @@
   function initSlideshow(gallery) {
     const slides = Array.from(gallery.querySelectorAll("[data-slide]"));
     const stage = gallery.querySelector("[data-slideshow-stage]");
+    if (!stage || slides.length < 2) return;
     const previous = gallery.querySelector("[data-action-previous]");
     const next = gallery.querySelector("[data-action-next]");
-    const playback = gallery.querySelector("[data-slideshow-playback]");
-    const selectors = gallery.querySelector(".slide-selectors");
+    const isAction = !!(previous && next);
     const status = gallery.querySelector(".slideshow-status");
     const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const interval = 2000;
-    let current = 0;
-    let playing = !motionPreference.matches;
-    let inView = false;
-    let hovering = false;
-    let timer;
-    let actionMotion;
-    let cardFade;
-    let gesture;
-    let cancelPointerGesture = () => {};
+    let current = 0, revision = 0, settling = 0;
+    let inView = false, hovering = false, focused = false;
+    let timer, motion, gesture;
     let suppressClickUntil = 0;
 
-    const dots = selectors ? slides.map((slide, index) => {
-      const button = document.createElement("button");
-      const label = "Show " + slide.dataset.slide;
-      button.type = "button";
-      button.setAttribute("aria-label", label);
-      button.title = label;
-      button.addEventListener("click", () => show(index, true, index - current));
-      selectors.append(button);
-      return button;
-    }) : [];
+    // Screens remain the complete image. Motion uses a temporary horizontal
+    // reel above the settled image, including the full-size adjacent previews.
+    gallery.querySelector(".slide-toolbar")?.remove();
+    stage.tabIndex = 0;
+    if (!stage.hasAttribute("role")) stage.setAttribute("role", "group");
+    if (!stage.hasAttribute("aria-label")) stage.setAttribute("aria-label", gallery.getAttribute("aria-label") || "Screenshots");
+    stage.setAttribute("aria-keyshortcuts", "ArrowLeft ArrowRight");
+    for (const image of stage.querySelectorAll("img")) image.draggable = false;
 
-    function slideAt(offset) {
-      return (current + offset + slides.length) % slides.length;
-    }
-
-    function updatePreview(button, offset) {
-      if (!button) return;
-      const slide = slides[slideAt(offset)];
-      button.querySelector("img").src = slide.querySelector("img").src;
-      button.setAttribute("aria-label", "Show " + slide.dataset.slide);
-    }
-
-    function updateControls() {
-      updatePreview(previous, -1);
-      updatePreview(next, 1);
-      dots.forEach((dot, index) => dot.setAttribute("aria-current", String(index === current)));
-    }
-
+    const slideAt = offset => (current + offset + slides.length) % slides.length;
+    const canPlay = () => inView && !hovering && !focused && !gesture && !settling && !document.hidden && !motionPreference.matches;
+    function stopTimer() { clearTimeout(timer); timer = undefined; }
     function schedule() {
-      clearTimeout(timer);
-      if (playing && inView && !hovering && !document.hidden) {
-        timer = setTimeout(() => show(slideAt(1)), interval);
-      }
+      stopTimer();
+      if (canPlay()) timer = setTimeout(() => { timer = undefined; void show(slideAt(1)); }, interval);
     }
-
-    function setPlaying(value) {
-      playing = value;
-      const label = playing ? "Pause slideshow" : "Start slideshow";
-      if (playback) {
-        playback.setAttribute("aria-label", label);
-        playback.title = label;
-        playback.querySelector("use").setAttribute("href", playing ? "#pause" : "#play");
-      }
-      schedule();
+    function finishMotion() {
+      if (!motion) return;
+      const old = motion; motion = undefined;
+      for (const animation of old.animations || []) animation.cancel();
+      old.element.remove();
     }
-
-    function makeActionTrack() {
-      actionMotion?.remove();
-      const motion = document.createElement("div");
-      motion.className = "action-motion";
-      motion.setAttribute("aria-hidden", "true");
+    function updateControls() {
+      for (const [button, offset] of [[previous, -1], [next, 1]]) {
+        if (!button) continue;
+        const slide = slides[slideAt(offset)];
+        const image = button.querySelector("img");
+        if (image) image.src = slide.querySelector("img").src;
+        button.setAttribute("aria-label", "Show " + slide.dataset.slide);
+      }
+      stage.dataset.currentSlide = String(current);
+    }
+    function commit(index, manual) {
+      slides[current].hidden = true;
+      current = index;
+      slides[current].hidden = false;
+      updateControls();
+      if (manual && status) status.textContent = slides[current].dataset.slide + ", " + (current + 1) + " of " + slides.length;
+    }
+    async function readyImage(image) {
+      image.loading = "eager";
+      try { await image.decode(); } catch { /* Keep the settled image when a requested image is unavailable. */ }
+      return image.complete && image.naturalWidth > 0;
+    }
+    const ready = index => readyImage(slides[index].querySelector("img"));
+    function makeTrack() {
+      finishMotion();
+      const element = document.createElement("div");
       const track = document.createElement("div");
-      track.className = "action-track";
-      for (let offset = -2; offset <= 2; offset++) {
+      element.className = isAction ? "action-motion" : "card-motion";
+      track.className = isAction ? "action-track" : "card-track";
+      element.setAttribute("aria-hidden", "true");
+      element.style.visibility = "hidden";
+      const center = isAction ? 2 : 1;
+      for (let offset = -center; offset <= center; offset++) {
         const image = slides[slideAt(offset)].querySelector("img").cloneNode();
-        image.loading = "eager";
-        image.draggable = false;
+        image.alt = ""; image.loading = "eager"; image.draggable = false;
         track.append(image);
       }
-      track.children[2].style.opacity = "1";
-      motion.append(track);
-      stage.append(motion);
-      actionMotion = motion;
+      if (isAction) track.children[center].style.opacity = "1";
+      element.append(track); stage.append(element);
       const width = slides[current].getBoundingClientRect().width;
-      const gap = Number.parseFloat(getComputedStyle(stage).columnGap) || 0;
-      return { motion, track, distance: width + gap };
+      const gap = isAction ? Number.parseFloat(getComputedStyle(stage).columnGap) || 0 : 0;
+      const reel = { element, track, center, distance: width + gap };
+      reel.ready = Promise.all(Array.from(track.children, readyImage)).then(loaded => {
+        const decoded = loaded.every(Boolean);
+        if (decoded && motion === reel) element.style.visibility = "";
+        return decoded;
+      });
+      motion = reel;
+      return reel;
     }
-
-    function slideAction(direction) {
-      const { motion, track, distance } = makeActionTrack();
-      const timing = { duration: 440, easing: "cubic-bezier(.25,.7,.3,1)" };
-      track.children[2].animate([{ opacity: 1 }, { opacity: .82 }], timing);
-      track.children[2 + direction].animate([{ opacity: .82 }, { opacity: 1 }], timing);
-      const animation = track.animate([
-        { transform: "translateX(0)" },
-        { transform: "translateX(" + -distance * direction + "px)" }
+    function updateTrackOpacity(reel, travel) {
+      if (!isAction) return;
+      const progress = Math.min(1, Math.abs(travel) / reel.distance);
+      reel.track.children[reel.center].style.opacity = String(1 - progress * .18);
+      reel.track.children[reel.center + (travel < 0 ? 1 : -1)].style.opacity = String(.82 + progress * .18);
+    }
+    function animateTrack(reel, from, to, duration = 440) {
+      const timing = { duration, easing: "cubic-bezier(.25,.7,.3,1)", fill: "forwards" };
+      reel.animations = [];
+      if (isAction) {
+        const center = reel.track.children[reel.center];
+        const adjacent = reel.track.children[reel.center + ((to || from) < 0 ? 1 : -1)];
+        reel.animations.push(center.animate([{ opacity: center.style.opacity || 1 }, { opacity: to === 0 ? 1 : .82 }], timing));
+        reel.animations.push(adjacent.animate([{ opacity: adjacent.style.opacity || .82 }, { opacity: to === 0 ? .82 : 1 }], timing));
+      }
+      const animation = reel.track.animate([
+        { transform: "translateX(" + from + "px)" },
+        { transform: "translateX(" + to + "px)" }
       ], timing);
-      animation.finished.then(() => motion.remove(), () => motion.remove());
+      reel.animations.push(animation);
+      animation.finished.then(() => {
+        if (motion === reel) motion = undefined;
+        reel.element.remove();
+      }, () => reel.element.remove());
     }
-
-    function fadeCard(outgoing, incoming) {
-      cardFade?.remove();
-      const overlay = outgoing.querySelector("img").cloneNode();
-      overlay.className = "card-fade-out";
-      overlay.alt = "";
-      overlay.setAttribute("aria-hidden", "true");
-      overlay.loading = "eager";
-      outgoing.parentElement.append(overlay);
-      cardFade = overlay;
-
-      const image = incoming.querySelector("img");
-      image.loading = "eager";
-      image.decode().then(() => {
-        if (!overlay.isConnected) return;
-        const animation = overlay.animate([{ opacity: 1 }, { opacity: 0 }], {
-          duration: 420, easing: "ease-in-out", fill: "forwards"
-        });
-        animation.finished.then(() => overlay.remove(), () => overlay.remove());
-      }, () => overlay.remove());
+    function release(pointerId) {
+      try { if (stage.hasPointerCapture(pointerId)) stage.releasePointerCapture(pointerId); } catch {}
     }
-
-    function show(index, manual = false, direction = 1, dragRelease = false) {
-      if (gesture && !dragRelease) cancelPointerGesture();
+    function cancelGesture() {
+      if (!gesture) return;
+      const old = gesture; gesture = undefined;
+      stage.classList.remove("is-dragging");
+      release(old.pointerId); finishMotion(); schedule();
+    }
+    async function show(index, manual = false, direction = 1) {
+      if (gesture) cancelGesture();
+      if (settling) finishMotion();
+      stopTimer();
+      const request = ++revision;
+      settling = request;
+      const decoded = await ready(index);
+      if (request !== revision) return;
+      const reel = decoded && index !== current && !motionPreference.matches ? makeTrack() : undefined;
+      const reelReady = !reel || await reel.ready;
+      if (request !== revision) return;
+      settling = 0;
+      if (!decoded || !reelReady || (!manual && !canPlay())) { finishMotion(); schedule(); return; }
       if (index !== current) {
-        if (!motionPreference.matches && !dragRelease) {
-          if (previous) slideAction(direction);
-          else fadeCard(slides[current], slides[index]);
-        }
-        slides[current].hidden = true;
-        current = index;
-        slides[current].hidden = false;
-        updateControls();
+        commit(index, manual);
+        if (reel) animateTrack(reel, 0, -Math.sign(direction) * reel.distance);
       }
-      if (manual) {
-        status.textContent = slides[current].dataset.slide + ", " + (current + 1) + " of " + slides.length;
-        setPlaying(false);
-      } else {
-        schedule();
-      }
+      schedule();
     }
 
-    // Touch and pointer dragging move the same full horizontal track used by
-    // the controls. Vertical gestures remain native page scrolling.
-    if (previous && next) {
-      const release = pointerId => {
-        try { if (stage.hasPointerCapture(pointerId)) stage.releasePointerCapture(pointerId); } catch {}
-      };
-      const cancelGesture = () => {
-        if (!gesture) return;
-        const old = gesture;
-        gesture = undefined;
-        old.motion?.remove();
-        stage.classList.remove("is-dragging");
-        release(old.pointerId);
+    // Only an established horizontal gesture is captured. A vertical gesture
+    // remains normal page scrolling; a tap keeps its original click behavior.
+    stage.addEventListener("pointerdown", event => {
+      if (!event.isPrimary || event.button !== 0 || event.target.closest("a,input,select,textarea")) return;
+      cancelGesture(); stopTimer(); ++revision; settling = 0; finishMotion();
+      gesture = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY,
+        startTime: performance.now(), dx: 0, horizontal: false };
+    });
+    stage.addEventListener("pointermove", event => {
+      if (!gesture || gesture.pointerId !== event.pointerId) return;
+      const dx = event.clientX - gesture.startX, dy = event.clientY - gesture.startY;
+      if (!gesture.horizontal) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) return;
+        if (Math.abs(dx) <= Math.abs(dy) * 1.15) { cancelGesture(); return; }
+        gesture.horizontal = true;
+        stage.setPointerCapture(event.pointerId); stage.classList.add("is-dragging");
+        if (!motionPreference.matches) gesture.reel = makeTrack();
+      }
+      event.preventDefault(); gesture.dx = dx;
+      if (gesture.reel) {
+        const travel = Math.max(-gesture.reel.distance, Math.min(gesture.reel.distance, dx));
+        gesture.reel.track.style.transform = "translateX(" + travel + "px)";
+        updateTrackOpacity(gesture.reel, travel);
+      }
+    }, { passive: false });
+    stage.addEventListener("pointerup", event => {
+      if (!gesture || gesture.pointerId !== event.pointerId) return;
+      const drag = gesture; gesture = undefined;
+      stage.classList.remove("is-dragging"); release(drag.pointerId);
+      if (!drag.horizontal) { schedule(); return; }
+      suppressClickUntil = performance.now() + 500;
+      const width = slides[current].getBoundingClientRect().width;
+      const elapsed = Math.max(1, performance.now() - drag.startTime);
+      const advance = Math.abs(drag.dx) >= Math.min(80, width * .16)
+        || (Math.abs(drag.dx) > 24 && Math.abs(drag.dx) / elapsed > .4);
+      const direction = drag.dx < 0 ? 1 : -1;
+      const target = slideAt(direction), request = ++revision;
+      settling = request; stopTimer();
+      void (async () => {
+        const decoded = !advance || await ready(target);
+        const reelReady = !drag.reel || await drag.reel.ready;
+        if (request !== revision) return;
+        settling = 0;
+        const accepted = advance && decoded && reelReady;
+        if (accepted) commit(target, true);
+        if (drag.reel && reelReady && !motionPreference.matches) {
+          const travel = Math.max(-drag.reel.distance, Math.min(drag.reel.distance, drag.dx));
+          animateTrack(drag.reel, travel, accepted ? -direction * drag.reel.distance : 0, accepted ? 300 : 180);
+        } else finishMotion();
         schedule();
-      };
-      cancelPointerGesture = cancelGesture;
-      stage.addEventListener("pointerdown", event => {
-        if (!event.isPrimary || event.button !== 0 || event.target.closest("a,input,select,textarea")) return;
-        cancelGesture();
-        clearTimeout(timer);
-        gesture = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY,
-          startTime: performance.now(), dx: 0, horizontal: false };
-      });
-      stage.addEventListener("pointermove", event => {
-        if (!gesture || gesture.pointerId !== event.pointerId) return;
-        const dx = event.clientX - gesture.startX;
-        const dy = event.clientY - gesture.startY;
-        if (!gesture.horizontal) {
-          if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) return;
-          if (Math.abs(dx) <= Math.abs(dy) * 1.15) { cancelGesture(); return; }
-          gesture.horizontal = true;
-          stage.setPointerCapture(event.pointerId);
-          stage.classList.add("is-dragging");
-          if (!motionPreference.matches) Object.assign(gesture, makeActionTrack());
-        }
-        event.preventDefault();
-        gesture.dx = dx;
-        if (gesture.track) {
-          const travel = Math.max(-gesture.distance, Math.min(gesture.distance, dx));
-          gesture.track.style.transform = "translateX(" + travel + "px)";
-          const progress = Math.min(1, Math.abs(travel) / gesture.distance);
-          gesture.track.children[2].style.opacity = String(1 - progress * .18);
-          gesture.track.children[dx < 0 ? 3 : 1].style.opacity = String(.82 + progress * .18);
-        }
-      }, { passive: false });
-      stage.addEventListener("pointerup", event => {
-        if (!gesture || gesture.pointerId !== event.pointerId) return;
-        const drag = gesture;
-        gesture = undefined;
-        stage.classList.remove("is-dragging");
-        release(drag.pointerId);
-        if (!drag.horizontal) { schedule(); return; }
-        suppressClickUntil = performance.now() + 500;
-        setPlaying(false);
-        const width = slides[current].getBoundingClientRect().width;
-        const elapsed = Math.max(1, performance.now() - drag.startTime);
-        const advance = Math.abs(drag.dx) >= Math.min(80, width * .16)
-          || (Math.abs(drag.dx) > 24 && Math.abs(drag.dx) / elapsed > .4);
-        const direction = drag.dx < 0 ? 1 : -1;
-        if (advance) show(slideAt(direction), true, direction, true);
-        if (!drag.track || motionPreference.matches) { drag.motion?.remove(); return; }
-        const destination = advance ? -direction * drag.distance : 0;
-        const timing = { duration: advance ? 300 : 180, easing: "cubic-bezier(.25,.7,.3,1)", fill: "forwards" };
-        drag.track.children[2].animate([{ opacity: drag.track.children[2].style.opacity || 1 }, { opacity: advance ? .82 : 1 }], timing);
-        drag.track.children[2 + direction].animate([{ opacity: drag.track.children[2 + direction].style.opacity || .82 }, { opacity: advance ? 1 : .82 }], timing);
-        const animation = drag.track.animate([
-          { transform: drag.track.style.transform || "translateX(0)" },
-          { transform: "translateX(" + destination + "px)" }
-        ], timing);
-        animation.finished.then(() => drag.motion.remove(), () => drag.motion.remove());
-      });
-      stage.addEventListener("pointercancel", cancelGesture);
-      stage.addEventListener("lostpointercapture", event => {
-        if (event.target === stage && gesture?.pointerId === event.pointerId) cancelGesture();
-      });
-      stage.addEventListener("click", event => {
-        if (performance.now() < suppressClickUntil) { event.preventDefault(); event.stopImmediatePropagation(); }
-      }, true);
-      window.addEventListener("resize", cancelGesture);
-      for (const image of stage.querySelectorAll("img")) image.draggable = false;
-    }
-
-    previous?.addEventListener("click", () => show(slideAt(-1), true, -1));
-    next?.addEventListener("click", () => show(slideAt(1), true));
-    playback?.addEventListener("click", () => setPlaying(!playing));
+      })();
+    });
+    stage.addEventListener("pointercancel", cancelGesture);
+    stage.addEventListener("lostpointercapture", event => {
+      if (event.target === stage && gesture?.pointerId === event.pointerId) cancelGesture();
+    });
+    stage.addEventListener("click", event => {
+      if (performance.now() < suppressClickUntil) { event.preventDefault(); event.stopImmediatePropagation(); }
+    }, true);
+    previous?.addEventListener("click", () => { void show(slideAt(-1), true, -1); });
+    next?.addEventListener("click", () => { void show(slideAt(1), true, 1); });
     stage.addEventListener("keydown", event => {
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      if (event.target.closest("input,select,textarea")) return;
       event.preventDefault();
       const direction = event.key === "ArrowLeft" ? -1 : 1;
-      show(slideAt(direction), true, direction);
-      if (dots.includes(event.target)) dots[current].focus();
+      void show(slideAt(direction), true, direction);
     });
     stage.addEventListener("pointerenter", event => {
-      if (event.pointerType === "touch") return;
-      hovering = true;
+      if (event.pointerType !== "touch") { hovering = true; schedule(); }
+    });
+    stage.addEventListener("pointerleave", () => { hovering = false; schedule(); });
+    gallery.addEventListener("focusin", () => { focused = true; schedule(); });
+    gallery.addEventListener("focusout", () => {
+      queueMicrotask(() => { focused = gallery.contains(document.activeElement); schedule(); });
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) { ++revision; settling = 0; cancelGesture(); finishMotion(); }
       schedule();
     });
-    stage.addEventListener("pointerleave", () => {
-      hovering = false;
-      schedule();
+    motionPreference.addEventListener("change", () => {
+      ++revision; settling = 0; cancelGesture(); finishMotion(); schedule();
     });
-    gallery.addEventListener("focusin", event => {
-      if (event.target !== playback || playback.matches(":focus-visible")) setPlaying(false);
-    });
-    document.addEventListener("visibilitychange", schedule);
-    motionPreference.addEventListener("change", event => {
-      if (event.matches) {
-        cancelPointerGesture();
-        actionMotion?.remove();
-        cardFade?.remove();
-        setPlaying(false);
-      }
-    });
+    window.addEventListener("resize", () => { ++revision; settling = 0; cancelGesture(); finishMotion(); schedule(); });
     new IntersectionObserver(([entry]) => {
       inView = entry.intersectionRatio >= .25;
-      if (inView) {
-        for (const slide of slides) slide.querySelector("img").loading = "eager";
-      }
+      if (!inView) { ++revision; settling = 0; cancelGesture(); finishMotion(); }
+      if (inView) for (const slide of slides) slide.querySelector("img").loading = "eager";
       schedule();
     }, { threshold: .25 }).observe(stage);
-
-    updateControls();
-    setPlaying(playing);
-    if (previous && next) previous.hidden = next.hidden = false;
-    const toolbar = gallery.querySelector(".slide-toolbar");
-    if (toolbar) toolbar.hidden = false;
-    if (playback) playback.hidden = false;
+    updateControls(); schedule();
+    if (isAction) previous.hidden = next.hidden = false;
   }
 
   applyTheme(saved ?? (preference.matches ? "dark" : "light"));
