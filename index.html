@@ -6,13 +6,14 @@
   <meta name="theme-color" content="#ffcf23">
   <meta name="description" content="Playhub brings Steam Big Picture, your PC games, and Decky plugins together on Windows.">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Playhub — PC gaming. Couch mode.">
-  <meta property="og:description" content="Bring your games into Steam, make Big Picture yours, and pick up a controller.">
-  <title>Playhub — PC gaming. Couch mode.</title>
+  <meta property="og:title" content="Playhub for Windows">
+  <meta property="og:description" content="A Windows app for bringing your games, plugins and everyday controls into Steam Big Picture.">
+  <title>Playhub for Windows</title>
+  <link rel="canonical" href="https://lozazamastro.github.io/Playhub">
   <link rel="icon" href="./assets/cube.webp" type="image/webp">
   <link rel="preload" href="./assets/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
-  <script src="./gallery.js?v=136026332457"></script>
-  <link rel="stylesheet" href="./styles.css?v=4a4512bf7f34">
+  <script src="./gallery.js?v=203a46cd46b3"></script>
+  <link rel="stylesheet" href="./styles.css?v=1b25c1759aba">
 </head>
 <body>
   <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -33,11 +34,6 @@
         <img src="./assets/cube.webp" alt="" width="88" height="96">
         <img class="wordmark" src="./assets/wordmark.png" alt="Playhub" width="500" height="132">
       </a>
-      <nav aria-label="Main">
-        <a href="#experience">Experience</a>
-        <a href="#plugins">Plugins</a>
-        <a href="https://github.com/LoZazaMastro/Playhub/issues">Support</a>
-      </nav>
       <div class="header-actions">
         <button class="theme-toggle" type="button" aria-label="Dark mode" aria-pressed="false" title="Dark mode" hidden>
           <svg class="icon theme-moon" aria-hidden="true"><use href="#moon"/></svg>
@@ -54,7 +50,7 @@
       <div class="wrap hero-layout">
         <div class="hero-copy">
           <h1 id="hero-title">PC gaming.<br>Couch mode.</h1>
-          <p class="hero-lead">Bring your games into Steam, make Big Picture yours, and pick up a controller.</p>
+          <p class="hero-lead">Playhub is a Windows app that brings your games and everyday controls into Steam Big Picture. Shape your library, choose the plugins you need and make your PC comfortable to use with a controller.</p>
           <a class="button hero-download" href="https://github.com/LoZazaMastro/Playhub/releases/latest/download/Playhub-Setup.exe">Download Playhub <svg class="icon" aria-hidden="true"><use href="#arrow-down"/></svg></a>
           <p class="platform-note">Compatible with Windows</p>
         </div>
@@ -65,15 +61,15 @@
     <section id="experience" class="experience" aria-labelledby="experience-title">
       <div class="wrap">
         <div class="section-intro">
-          <h2 id="experience-title">Made for the sofa.</h2>
-          <p>Start in Steam Big Picture, bring in your games from other stores, and tailor the interface to your setup.</p>
+          <h2 id="experience-title">Make room for your games.</h2>
+          <p>Whether you play at a desk, on a handheld or from the sofa, Playhub helps bring the experience together around your games.</p>
         </div>
 
         <article class="gaming-scene">
           <div class="gaming-copy">
             <p class="eyebrow">Gaming Mode</p>
-            <h3>From desktop<br>to Big Picture.</h3>
-            <p>Start Windows in a controller-friendly Steam interface and return to the desktop with Switch Mode.</p>
+            <h3>Start with your<br>games in view.</h3>
+            <p>Choose Gaming Mode to open Steam Big Picture with your library in reach of the controller. Switch Mode brings you back to the desktop whenever you need it.</p>
           </div>
           <img class="gaming-visual" src="./assets/gaming-mode.webp?v=3bb102abcc36" alt="" width="1254" height="621" loading="lazy" decoding="async">
         </article>
@@ -82,16 +78,16 @@
           <article class="feature">
             <div>
               <p class="eyebrow">Import Games</p>
-              <h3>One library.</h3>
-              <p>Add games from Xbox, Microsoft Store, Epic and GOG to Steam, then choose the artwork for your library.</p>
+              <h3>Bring the games<br>you already own.</h3>
+              <p>Add your games from Xbox, Microsoft Store, Epic and GOG to Steam, then choose artwork that makes them feel part of the collection.</p>
             </div>
             <img src="./assets/library.webp" alt="" width="248" height="440" loading="lazy" decoding="async">
           </article>
           <article class="feature">
             <div>
               <p class="eyebrow">Plugin Store</p>
-              <h3>Make Steam yours.</h3>
-              <p>Set up Decky and discover, install and manage plugins from Playhub, the Decky Store and independent projects.</p>
+              <h3>Find the extras<br>that suit you.</h3>
+              <p>Playhub sets up Decky and gives you a place to discover and manage plugins from its own collection, the Decky Store and independent projects.</p>
             </div>
             <img src="./assets/store.webp" alt="" width="259" height="460" loading="lazy" decoding="async">
           </article>
@@ -100,8 +96,8 @@
         <article class="styler">
           <div>
             <p class="eyebrow">Big Picture Styler</p>
-            <h3>Give Steam your look.</h3>
-            <p>Choose a Playhub theme and apply its CSS Loader profile to the Steam Big Picture home screen.</p>
+            <h3>Find a look<br>that feels right.</h3>
+            <p>Preview the Playhub themes, then apply the CSS Loader profile you like to your Steam Big Picture home screen.</p>
           </div>
           <img src="./assets/screens/steam-big-picture.webp" alt="Steam Big Picture home showing the game library and the Steam Controller button hints" width="2400" height="1349" loading="lazy" decoding="async">
         </article>
@@ -124,13 +120,12 @@
     </section>
 
     <section id="plugins" class="suite" aria-labelledby="suite-title">
-      <div class="wrap">
-        <div class="section-intro">
-          <h2 id="suite-title">Good things<br>come in plugins.</h2>
-          <p>Start with Playhub’s Quick Access controls. Then make the library, the moment a game starts, and the time between sessions your own.</p>
-        </div>
-
-        <div class="plugin-list">
+      <div class="wrap section-intro suite-intro">
+        <h2 id="suite-title">Good things<br>come in plugins.</h2>
+        <p>The Playhub plugins each take care of a different part of the experience, from finding a game in your library to listening to music between sessions.</p>
+      </div>
+      <section class="plugin-band" aria-labelledby="playhub-plugin-title" style="--band-light:#fff8d9;--band-dark:#202020">
+        <div class="wrap">
           <article class="playhub-suite" id="playhub" aria-labelledby="playhub-plugin-title">
             <div class="plugin-card playhub-feature">
               <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Playhub Quick Access screenshots">
@@ -148,15 +143,15 @@
                 <span class="slideshow-status" role="status"></span>
               </div>
               <div class="plugin-copy">
-                <h3 id="playhub-plugin-title"><a href="https://github.com/LoZazaMastro/Playhub/tree/main/Source/GamingModeDeckyPlugin">Playhub <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-                <p>Set volume and microphone levels, pick your audio device, and change refresh rate, resolution or HDR from Steam’s Quick Access Menu. Playhub shows the controls your hardware supports.</p>
-                <p>Tune controller settings and access graphics options such as Radeon controls or Lossless Scaling when available. Reorder Quick Access tabs, pin plugin shortcuts, or open Decky and the Plugin Store from the same panel.</p>
-              </div>
+              <h2 id="playhub-plugin-title"><a href="https://github.com/LoZazaMastro/Playhub/tree/main/Source/GamingModeDeckyPlugin">Playhub <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h2>
+              <p>Playhub brings the controls you reach for most into Steam’s Quick Access Menu, so you can change your setup with the controller still in your hands. Adjust sound and display settings, open Decky or browse the Plugin Store from one place.</p>
+              <p>You can arrange the Quick Access tabs and add shortcuts to the plugins you use most, giving your setup a layout that makes sense to you.</p>
+            </div>
             </div>
 
             <section class="playhub-features" aria-labelledby="playhub-features-title">
-              <h4 id="playhub-features-title" class="playhub-features-title">Included in Playhub</h4>
-              <section class="plugin-card playhub-feature" id="playhub-dashboard" aria-labelledby="playhub-dashboard-title">
+              <p id="playhub-features-title" class="playhub-features-title">Inside the Playhub plugin</p>
+              <section class="plugin-card playhub-feature copy-first" id="playhub-dashboard" aria-labelledby="playhub-dashboard-title">
                 <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Playhub Dashboard screenshots">
                   <div class="card-stage" data-slideshow-stage>
                     <div class="card-frames">
@@ -172,36 +167,55 @@
                   <span class="slideshow-status" role="status"></span>
                 </div>
                 <div class="plugin-copy">
-                  <h5 id="playhub-dashboard-title">Dashboard</h5>
-                  <p>Pick up an open game or app from its window preview. Save the apps you launch often as shortcuts and open them with the controller from the Apps tab.</p>
-                  <p>Check CPU, GPU and memory use from System, or use Switch Mode when you want to return to the Windows desktop.</p>
-                </div>
+              <h3 id="playhub-dashboard-title">Dashboard</h3>
+              <p>Dashboard keeps your open games and apps within reach. Pick a window from its preview or save an app as a shortcut, then open it from the Apps tab with your controller.</p>
+              <p>The System tab gives you a clear view of CPU, GPU and memory use, with Switch Mode close by when you want to return to Windows.</p>
+            </div>
               </section>
 
-              <section class="plugin-card playhub-feature" id="playhub-discover" aria-labelledby="playhub-discover-title">
-                <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Playhub home features screenshots">
-                  <div class="card-stage" data-slideshow-stage>
-                    <div class="card-frames">
-                      <figure class="media-frame" data-slide="What’s New"><img src="./assets/screens/app-whats-new.webp" alt="Gaming headlines in Playhub’s What’s New section" width="1280" height="648" loading="lazy" decoding="async"></figure>
-                      <figure class="media-frame" data-slide="On this day" hidden><img src="./assets/screens/app-on-this-day.webp" alt="On this day in Steam Big Picture featuring Fallout 4" width="1600" height="810" loading="lazy" decoding="async"></figure>
-                      <figure class="media-frame" data-slide="Screensaver" hidden><img src="./assets/screens/app-screensaver.webp" alt="The Playhub Circles screensaver with its clock and weather" width="1280" height="721" loading="lazy" decoding="async"></figure>
-                    </div>
-                    <div class="slide-toolbar" hidden>
-                      <button type="button" data-slideshow-playback aria-label="Pause slideshow" title="Pause slideshow"><svg class="icon" aria-hidden="true"><use href="#pause"/></svg></button>
-                      <div class="slide-selectors" role="group" aria-label="Choose a screenshot"></div>
-                    </div>
-                  </div>
-                  <span class="slideshow-status" role="status"></span>
-                </div>
+              <section class="plugin-card playhub-feature" id="playhub-whats-new" aria-labelledby="playhub-whats-new-title">
+                <div class="card-media"><figure class="media-frame"><img src="./assets/screens/app-whats-new.webp" alt="Gaming headlines in Playhub’s What’s New section" width="1280" height="648" loading="lazy" decoding="async"></figure></div>
                 <div class="plugin-copy">
-                  <h5 id="playhub-discover-title">What’s New, On this day and Screensaver</h5>
-                  <p>Browse gaming headlines in What’s New, then open On this day for a story about a release, studio or creator from that date in gaming history.</p>
-                  <p>Set a screensaver for when you step away from Big Picture. Playhub Circles shows the time, date and weather alongside its animation.</p>
-                </div>
+              <h3 id="playhub-whats-new-title">What’s New</h3>
+              <p>Catch up on gaming while you browse your library. What’s New brings headlines into the home screen, so a quick look through the latest stories fits naturally between sessions.</p>
+            </div>
+              </section>
+              <section class="plugin-card playhub-feature copy-first" id="playhub-on-this-day" aria-labelledby="playhub-on-this-day-title">
+                <div class="card-media"><figure class="media-frame"><img src="./assets/screens/app-on-this-day.webp" alt="Gaming history in Playhub’s On this day section" width="1600" height="810" loading="lazy" decoding="async"></figure></div>
+                <div class="plugin-copy">
+              <h3 id="playhub-on-this-day-title">On this day</h3>
+              <p>There’s a little piece of gaming history waiting each day. On this day revisits a release, studio or creator connected to that date, with a story to explore before the next game.</p>
+            </div>
+              </section>
+              <section class="plugin-card playhub-feature" id="playhub-screensaver" aria-labelledby="playhub-screensaver-title">
+                <div class="card-media"><figure class="media-frame"><img src="./assets/screens/app-screensaver.webp" alt="Playhub Circles with the time, date and weather" width="1280" height="721" loading="lazy" decoding="async"></figure></div>
+                <div class="plugin-copy">
+              <h3 id="playhub-screensaver-title">Screensaver</h3>
+              <p>When you step away, Playhub can turn Big Picture into a calm screensaver. Choose an animation such as Circles, with the time, date and weather kept in view.</p>
+            </div>
               </section>
             </section>
           </article>
-
+        </div>
+      </section>
+      <section class="plugin-band copy-first" aria-labelledby="metadata-title" style="--band-light:#f0effb;--band-dark:#232325">
+        <div class="wrap">
+          <article class="plugin-card" id="metadata">
+            <div class="card-media">
+              <figure class="media-frame">
+                <img src="./assets/screens/metadata.webp?v=39f618ad96de" alt="The Forza Horizon 2 Game Info tab populated by Playhub Metadata" width="2400" height="1350" loading="lazy" decoding="async">
+              </figure>
+            </div>
+            <div class="plugin-copy">
+              <h2 id="metadata-title"><a href="https://github.com/LoZazaMastro/Playhub-Metadata">Playhub Metadata <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h2>
+              <p>Give the games you add to Steam a fuller library page. Playhub Metadata brings together descriptions and release details, so you can read about a game before you launch it.</p>
+              <p>Match the game automatically or choose the right result yourself, then translate its description into your preferred language. Supported games can also show community content, Steam Activity and achievements from RetroAchievements, Xbox through OpenXBL, or local RPCS3 trophies.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+      <section class="plugin-band" aria-labelledby="artworks-title" style="--band-light:#e9f3f7;--band-dark:#222425">
+        <div class="wrap">
           <article class="plugin-card" id="artworks">
             <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Playhub Artworks screenshots">
               <div class="card-stage" data-slideshow-stage>
@@ -218,25 +232,15 @@
               <span class="slideshow-status" role="status"></span>
             </div>
             <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/Playhub-Artworks">Playhub Artworks <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>Open a game’s options in Big Picture to search for covers, banners, backgrounds, logos and icons. Look through SteamGridDB, PlayStation, Nintendo, Xbox, IGDB, AlphaCoders, iiDB and IGN from one editor. You can switch sources for the same game and pick each asset separately.</p>
-              <p>Use Perfect Hero for a game page or Perfect Banner for a wide library tile. Both combine a background and a logo into one high-resolution image. Adjust the logo’s position, scale, opacity and shadow with your controller, then apply the composition. The batch tools can also fill missing artwork across your library.</p>
+              <h2 id="artworks-title"><a href="https://github.com/LoZazaMastro/Playhub-Artworks">Playhub Artworks <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h2>
+              <p>Make your library look like a collection you chose. Pick covers, wide banners, backgrounds, logos and icons from one editor, with searches across SteamGridDB, PlayStation, Nintendo, Xbox, IGDB, AlphaCoders, iiDB and IGN.</p>
+              <p>Perfect Hero and Perfect Banner give you a way to finish the composition yourself. Combine a background and logo, adjust its position, scale, opacity and shadow, then apply the result with your controller.</p>
             </div>
           </article>
-
-          <article class="plugin-card" id="metadata">
-            <div class="card-media">
-              <figure class="media-frame">
-                <img src="./assets/screens/metadata.webp?v=39f618ad96de" alt="The Forza Horizon 2 Game Info tab populated by Playhub Metadata" width="2400" height="1350" loading="lazy" decoding="async">
-              </figure>
-            </div>
-            <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/Playhub-Metadata">Playhub Metadata <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>Give a non-Steam shortcut its own description, developer, publisher and release details in the usual Big Picture page. Search for missing details automatically or fix a match by hand. Shortcuts linked to a Steam Store page can also show that game’s news in Activity.</p>
-              <p>Show progress from RetroAchievements, Xbox via OpenXBL on supported shortcuts, or trophies from local RPCS3 data. Choose the source for each game and refresh its progress after playing.</p>
-            </div>
-          </article>
-
+        </div>
+      </section>
+      <section class="plugin-band copy-first" aria-labelledby="trailerhero-title" style="--band-light:#f6eef5;--band-dark:#252325">
+        <div class="wrap">
           <article class="plugin-card" id="trailerhero">
             <div class="card-media">
               <figure class="media-frame">
@@ -244,12 +248,15 @@
               </figure>
             </div>
             <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/TrailerHero">TrailerHero <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>Open a game page and its artwork gives way to a muted trailer in the same space. TrailerHero can play the Steam trailer first and look for a match on YouTube when needed.</p>
-              <p>Choose a different Steam video, save a specific YouTube trailer or use your own clip. Trim the beginning and end per game, and switch from ThemeDeck music to trailer audio with the controller.</p>
+              <h2 id="trailerhero-title"><a href="https://github.com/LoZazaMastro/TrailerHero">TrailerHero <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h2>
+              <p>Get a feel for a game as you open its page. TrailerHero plays a muted trailer in the artwork area, using a Steam video or a match from YouTube to bring the page to life.</p>
+              <p>Search YouTube and choose the trailer you want to stream directly in the page. You can set the beginning and end for each game, use a local clip, or switch to trailer audio when you want to listen.</p>
             </div>
           </article>
-
+        </div>
+      </section>
+      <section class="plugin-band" aria-labelledby="themedeck-title" style="--band-light:#edf4e8;--band-dark:#232522">
+        <div class="wrap">
           <article class="plugin-card" id="themedeck">
             <div class="card-media">
               <figure class="media-frame">
@@ -257,12 +264,15 @@
               </figure>
             </div>
             <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/ThemeDeck-Windows">ThemeDeck <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>Give a game its own music when you open its library page. Preview a YouTube search result or pick a local track, then set the starting point, loop and volume for that game.</p>
-              <p>Choose separate ambient music for the Steam interface and Store. Game-page themes stop when you launch the game.</p>
+              <h2 id="themedeck-title"><a href="https://github.com/LoZazaMastro/ThemeDeck-Windows">ThemeDeck <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h2>
+              <p>Let a game bring its music with it. ThemeDeck starts a theme when you open that game’s library page, then gives way to the game as you launch it.</p>
+              <p>Preview tracks from YouTube or your own folders, set where they begin and loop, and adjust the volume to suit the moment. You can also choose separate ambient music for the Steam interface and Store.</p>
             </div>
           </article>
-
+        </div>
+      </section>
+      <section class="plugin-band copy-first" aria-labelledby="launch-curtain-title" style="--band-light:#eeedf8;--band-dark:#232325">
+        <div class="wrap">
           <article class="plugin-card" id="launch-curtain">
             <div class="card-media">
               <figure class="media-frame">
@@ -270,12 +280,15 @@
               </figure>
             </div>
             <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/Launch-Curtain">Launch Curtain <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>When you launch a game from Big Picture, a full-screen transition covers the desktop and launcher windows while the game opens.</p>
-              <p>Choose artwork and a logo, adjust how they appear, and add a short soundbite with its own volume. Preview your changes for each game before you play.</p>
+              <h2 id="launch-curtain-title"><a href="https://github.com/LoZazaMastro/Launch-Curtain">Launch Curtain <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h2>
+              <p>Make the start of a game feel like part of your library. Launch Curtain uses its artwork for a full-screen transition while the game opens, giving the desktop and launcher windows a quieter handover.</p>
+              <p>Choose a background and logo, then look for a short soundbite to accompany the transition. Adjust its timing and volume, preview the result and keep a different composition for each game.</p>
             </div>
           </article>
-
+        </div>
+      </section>
+      <section class="plugin-band" aria-labelledby="now-playing-title" style="--band-light:#e7f3ee;--band-dark:#222524">
+        <div class="wrap">
           <article class="plugin-card" id="now-playing">
             <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Now Playing screenshots">
               <div class="card-stage" data-slideshow-stage>
@@ -293,12 +306,15 @@
               <span class="slideshow-status" role="status"></span>
             </div>
             <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/Now-Playing">Now Playing <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>Pause, skip or change volume from Quick Access, then open the full-screen player to browse albums, playlists and artists with a controller.</p>
-              <p>Play Spotify, YouTube Music and music from your own folders, or control compatible Windows media players. The full-screen player adds audio-reactive visualizers.</p>
+              <h2 id="now-playing-title"><a href="https://github.com/LoZazaMastro/Now-Playing">Now Playing <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h2>
+              <p>Keep your music close while you play. Now Playing puts Spotify, YouTube Music and local tracks in Quick Access, with playback and volume controls you can reach from your controller.</p>
+              <p>Open the full-screen player to browse albums, playlists or an artist’s page. Visualizers give the music room to move, while compatible Windows media players can be controlled from the same panel.</p>
             </div>
           </article>
-
+        </div>
+      </section>
+      <section class="plugin-band copy-first" aria-labelledby="notifications-title" style="--band-light:#f8edf0;--band-dark:#252324">
+        <div class="wrap">
           <article class="plugin-card" id="notifications">
             <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Playhub Notifications screenshots">
               <div class="card-stage" data-slideshow-stage>
@@ -314,12 +330,15 @@
               <span class="slideshow-status" role="status"></span>
             </div>
             <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/Playhub-Notifications">Playhub Notifications <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>Choose how achievements, messages and invites appear in Big Picture. Themes have their own shapes, animation and sounds, which you can preview before applying.</p>
-              <p>Set which notifications appear and adjust their sound volume. The Gaming Mode volume indicator can follow the same theme, while Steam retains your notification history.</p>
+              <h2 id="notifications-title"><a href="https://github.com/LoZazaMastro/Playhub-Notifications">Playhub Notifications <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h2>
+              <p>Choose how Steam lets you know a friend is online or an invitation arrives. Playhub Notifications brings together layouts, sounds and animations you can preview before applying.</p>
+              <p>Choose which notifications you see and how loudly they play. Your selection can also style the Gaming Mode volume indicator, keeping the on-screen details consistent.</p>
             </div>
           </article>
-
+        </div>
+      </section>
+      <section class="plugin-band" aria-labelledby="surround-title" style="--band-light:#edf1f7;--band-dark:#232425">
+        <div class="wrap">
           <article class="plugin-card" id="surround">
             <div class="card-media">
               <figure class="media-frame">
@@ -327,12 +346,15 @@
               </figure>
             </div>
             <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/Playhub-Surround">Playhub Surround <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>Check where your audio is going before you play. Choose stereo, 5.1 or 7.1 on the speaker map, then select one channel or run the whole test sequence.</p>
-              <p>Pick a test signal and adjust the volume from the controller. Multichannel playback follows the channels exposed by your Windows audio device.</p>
+              <h2 id="surround-title"><a href="https://github.com/LoZazaMastro/Playhub-Surround">Playhub Surround <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h2>
+              <p>Hear where every sound should come from. Playhub Surround gives you a speaker map for stereo, 5.1 and 7.1 setups, so you can check each channel from your controller before starting a game.</p>
+              <p>Test one speaker or run the full sequence, choosing the signal and volume as you go. The available channels follow your Windows audio device.</p>
             </div>
           </article>
-
+        </div>
+      </section>
+      <section class="plugin-band copy-first" aria-labelledby="news-title" style="--band-light:#f4f2e8;--band-dark:#252524">
+        <div class="wrap">
           <article class="plugin-card" id="news">
             <div class="card-media">
               <figure class="media-frame">
@@ -340,12 +362,15 @@
               </figure>
             </div>
             <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/News">News <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>Read the latest headlines in Quick Access or open the full-screen Newsstand to browse a magazine built from the publishers you follow.</p>
-              <p>Choose sources by country, search for a publisher, or add a website, an RSS feed or an Atom feed. Organize the Newsstand into tabs and open stories in Reader Mode when the source provides the article.</p>
+              <h2 id="news-title"><a href="https://github.com/LoZazaMastro/News">News <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h2>
+              <p>Settle into a few good reads between games. News brings the publishers you follow into Quick Access and a full-screen Newsstand, with tabs for organizing the stories you care about.</p>
+              <p>Find sources by country, search for a publisher or add an RSS or Atom feed. Open an article in Reader Mode when the source makes its full text available.</p>
             </div>
           </article>
-
+        </div>
+      </section>
+      <section class="plugin-band" aria-labelledby="weather-title" style="--band-light:#eaf4f8;--band-dark:#222425">
+        <div class="wrap">
           <article class="plugin-card" id="weather">
             <div class="card-media">
               <figure class="media-frame">
@@ -353,12 +378,15 @@
               </figure>
             </div>
             <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/Weather">Weather <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>Check current conditions, the next 24 hours and the five-day forecast from Quick Access. Search for a city or enter coordinates, then choose metric or imperial units.</p>
-              <p>Add the temperature or a weather icon next to Steam’s clock for a quick glance. Forecasts come from Open-Meteo.</p>
+              <h2 id="weather-title"><a href="https://github.com/LoZazaMastro/Weather">Weather <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h2>
+              <p>A quick glance at the forecast fits right beside your games. Weather shows current conditions, hourly changes and the days ahead in Quick Access, using forecasts from Open-Meteo.</p>
+              <p>Choose your location and units, then add an icon or temperature beside Steam’s clock when you want the weather to stay in view.</p>
             </div>
           </article>
-
+        </div>
+      </section>
+      <section class="plugin-band copy-first" aria-labelledby="proton-vpn-title" style="--band-light:#efedf8;--band-dark:#232325">
+        <div class="wrap">
           <article class="plugin-card" id="proton-vpn">
             <div class="card-media">
               <figure class="media-frame">
@@ -366,13 +394,13 @@
               </figure>
             </div>
             <div class="plugin-copy">
-              <h3><a href="https://github.com/LoZazaMastro/Proton-VPN">Proton VPN <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h3>
-              <p>Connect or disconnect Proton VPN, check your tunnel status and pick a country from Steam’s Quick Access Menu. Recent connections make it easy to return to a country you used before.</p>
-              <p>The plugin works with the installed Proton VPN client for Windows after you sign in to it. When you change countries, the tunnel reconnects to apply your choice.</p>
+              <h2 id="proton-vpn-title"><a href="https://github.com/LoZazaMastro/Proton-VPN">Proton VPN <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></a></h2>
+              <p>Keep your VPN within reach of the controller. Proton VPN lets you connect, disconnect and choose a country from Quick Access, with the connection status shown in the panel.</p>
+              <p>It works with the Proton VPN client for Windows after you sign in. Recent locations make it easy to return to a familiar connection.</p>
             </div>
           </article>
         </div>
-      </div>
+      </section>
     </section>
     <img class="footer-mascots" src="./assets/footer-mascots.webp" alt="" width="1672" height="941" loading="lazy" decoding="async">
   </main>
