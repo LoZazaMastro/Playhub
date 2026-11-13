@@ -15,6 +15,7 @@ Playhub 2.6.0 brings more of your PC within reach of the controller, with new mo
 
 ### Improvements
 
+- Improved Steam overlay and Quick Access Menu access in non-Steam games, along with the transition back to the game.
 - Improved Epic Games and GOG discovery, including newer Epic installation records and GOG launch settings.
 - Improved Xbox game tracking, game focus handoff and the return to Big Picture.
 - Improved Decky startup and recovery when Steam closes or reopens.
