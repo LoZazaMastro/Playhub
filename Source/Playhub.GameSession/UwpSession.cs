@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -23,6 +24,7 @@ internal interface IUwpRuntime
     IUwpProcess Activate(string aumid, string arguments);
     IUwpProcess? FindGame(string family, string executable);
     void Log(string message);
+    IDisposable? PrepareLaunch(string aumid, string executable) => null;
     IDisposable? PublishIdentity(string aumid, IUwpProcess game) => null;
 }
 
@@ -50,9 +52,10 @@ internal static class UwpLifetime
             runtime.Delay(100);
         }
         runtime.Log($"shell-ready restored={!ready}; activating {aumid}");
+        using var preparation = runtime.PrepareLaunch(aumid, executable);
         using var activated = runtime.Activate(aumid, arguments);
         runtime.Log($"activated pid={activated.Id} executable={activated.Executable}");
-        if (string.Equals(Path.GetFileName(activated.Executable), Path.GetFileName(executable), StringComparison.OrdinalIgnoreCase))
+        if (IsGame(activated.PackageFamily, activated.Executable, family, executable))
             return Wait(activated, runtime, aumid);
         if (!string.Equals(Path.GetFileName(activated.Executable), "GameLaunchHelper.exe", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Xbox activation returned an unexpected process; game tracking was not attached.");
@@ -86,6 +89,8 @@ internal static class UwpLifetime
 
 internal sealed class WindowsUwpRuntime : IUwpRuntime
 {
+    private UwpCompanionPreparation? _companion;
+    private long _activation;
     public long Now => Environment.TickCount64;
     public bool ShellReady
     {
@@ -111,17 +116,120 @@ internal sealed class WindowsUwpRuntime : IUwpRuntime
 
     public void Delay(int milliseconds) => Thread.Sleep(milliseconds);
     public void Log(string message) => UwpSessionLog.Write(message);
-    public IDisposable? PublishIdentity(string aumid, IUwpProcess game) => UwpIdentityPublication.Publish(aumid, game);
+    public IDisposable? PrepareLaunch(string aumid, string executable) =>
+        _companion = UwpCompanionPreparation.TryStart(aumid, executable, Log);
+    public IDisposable? PublishIdentity(string aumid, IUwpProcess game)
+    {
+        _companion?.Complete(aumid, game, _activation);
+        return UwpIdentityPublication.Publish(aumid, game);
+    }
 
     public IUwpProcess Activate(string aumid, string arguments)
     {
+        using var overlay = _companion is null ? TryStartCupheadOverlay(aumid) : null;
         var manager = (IApplicationActivationManager)(object)new ApplicationActivationManager();
         try
         {
+            long activationTime = DateTime.UtcNow.ToFileTimeUtc();
+            _activation = activationTime;
             Marshal.ThrowExceptionForHR(manager.ActivateApplication(aumid, arguments, 0, out var pid));
-            return WindowsUwpProcess.TryOpen(pid) ?? throw new InvalidOperationException("Xbox game exited before its process could be tracked.");
+            var game = WindowsUwpProcess.TryOpen(pid) ?? throw new InvalidOperationException("Xbox game exited before its process could be tracked.");
+            if (overlay is not null)
+            {
+                try
+                {
+                    long birth = game.Birth;
+                    if (birth >= activationTime && UwpLifetime.IsGame(game.PackageFamily, game.Executable, aumid.Split('!')[0], "Cuphead.exe"))
+                        overlay.StandardInput.WriteLine(System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            pid, creationFileTime = birth, activationFileTime = activationTime
+                        }));
+                }
+                catch (IOException error) { Log("Cuphead overlay handoff failed: " + error.Message); }
+                finally
+                {
+                    try { overlay.StandardInput.Close(); }
+                    catch (IOException error) { Log("Cuphead overlay input closed early: " + error.Message); }
+                }
+            }
+            return game;
         }
         finally { Marshal.FinalReleaseComObject(manager); }
+    }
+
+    private Process? TryStartCupheadOverlay(string aumid)
+    {
+        const string cuphead = "StudioMDHR.20872A364DAA1_tm1s6a95559gt!App";
+        if (!string.Equals(aumid, cuphead, StringComparison.OrdinalIgnoreCase)
+            || !ulong.TryParse(Environment.GetEnvironmentVariable("SteamGameId"), out ulong gameId)
+            || (uint)gameId != 0x02000000 || (gameId >> 32) < 0x80000000) return null;
+
+        var flags = typeof(WindowsUwpRuntime).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+            .Where(metadata => metadata.Value == "true").Select(metadata => metadata.Key).ToHashSet();
+        bool companion = flags.Contains("PlayhubCupheadSteamCompanion");
+        if (!companion && !flags.Contains("PlayhubCupheadOverlayPilot")) return null;
+        bool prepareWindow = companion && flags.Contains("PlayhubCupheadWindowedPreference");
+
+        string directory = AppContext.BaseDirectory;
+        string helper = Path.Combine(directory, "Playhub.XboxSession.exe");
+        string component = companion ? "PlayhubSteamCompanion.dll" : "WsgmUwpBridge.dll";
+        if (!File.Exists(helper) || !File.Exists(Path.Combine(directory, component))) return null;
+        try
+        {
+            using var existing = FindGame(cuphead.Split('!')[0], "Cuphead.exe");
+            if (existing is not null) return null;
+            var child = Process.Start(new ProcessStartInfo(helper, companion ? "--steam-companion-sidecar" : "--appcontainer-sidecar")
+            {
+                WorkingDirectory = directory,
+                UseShellExecute = false,
+                RedirectStandardInput = true,
+                StandardInputEncoding = new UTF8Encoding(false),
+                RedirectStandardOutput = prepareWindow,
+                CreateNoWindow = true
+            });
+            // While Steam's launch still owns the foreground allowance, grant
+            // it only to this child. Windows can revoke it on the next input.
+            if (companion && child is not null)
+            {
+                bool granted = AllowSetForegroundWindow((uint)child.Id);
+                Log($"Steam companion foreground allowance: {granted}.");
+                if (prepareWindow && !WaitForCupheadPreference(child))
+                {
+                    child.Dispose();
+                    return null;
+                }
+            }
+            return child;
+        }
+        catch (Exception error) when (error is Win32Exception or IOException or InvalidOperationException)
+        {
+            Log("Cuphead overlay unavailable: " + error.Message);
+            return null;
+        }
+    }
+
+    private bool WaitForCupheadPreference(Process child)
+    {
+        try
+        {
+            var reply = child.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(5))
+                .GetAwaiter().GetResult();
+            if (string.Equals(reply, "playhub-cuphead-ready", StringComparison.Ordinal)) return true;
+        }
+        catch (Exception error) when (error is IOException or TimeoutException)
+        {
+            Log($"Cuphead overlay preparation interrupted: {error.GetType().Name}.");
+        }
+
+        // Close the handoff and allow the sidecar to unwind its preference
+        // transaction before starting the game through the ordinary path.
+        child.StandardInput.Close();
+        if (!child.WaitForExit(2500))
+        {
+            child.Dispose();
+            throw new TimeoutException("The Cuphead display preparation did not finish.");
+        }
+        return false;
     }
 
     public IUwpProcess? FindGame(string family, string executable)
@@ -158,6 +266,8 @@ internal sealed class WindowsUwpRuntime : IUwpRuntime
     }
 
     [DllImport("user32.dll")] private static extern IntPtr GetShellWindow();
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool AllowSetForegroundWindow(uint processId);
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
     [DllImport("user32.dll")] private static extern IntPtr SendMessageTimeout(IntPtr window, uint message, IntPtr wParam, IntPtr lParam, uint flags, uint timeout, out IntPtr result);
 
@@ -223,11 +333,19 @@ internal sealed class WindowsUwpProcess : IUwpProcess
 
 internal static class UwpSessionLog
 {
+#if PLAYHUB_TEST_FIXTURE
+    internal static string? FixtureDirectory;
+#endif
     internal static void Write(string message)
     {
         try
         {
+#if PLAYHUB_TEST_FIXTURE
+            string? directory = FixtureDirectory;
+            if (directory is null) return;
+#else
             var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Playhub", "logs");
+#endif
             Directory.CreateDirectory(directory);
             File.AppendAllText(Path.Combine(directory, "game-session.log"), $"{DateTimeOffset.Now:O} {message}\n");
         }

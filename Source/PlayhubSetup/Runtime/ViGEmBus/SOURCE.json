@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "project": "ViGEmBus",
+  "publisher": "Nefarius Software Solutions e.U.",
+  "setupVersion": "1.22.0",
+  "driverVersion": "1.21.442.0",
+  "release": "https://github.com/nefarius/ViGEmBus/releases/tag/v1.22.0",
+  "download": "https://github.com/nefarius/ViGEmBus/releases/download/v1.22.0/ViGEmBus_1.22.0_x64_x86_arm64.exe",
+  "sha256": "89220A7865076B342892F98865F3499FB7C4CFD673159E89D352C360FD014C6A",
+  "license": "BSD-3-Clause",
+  "licenseSource": "https://github.com/nefarius/ViGEmBus/blob/v1.22.0/LICENSE",
+  "licenseSha256": "3959F6CA50466675190590DFD024585744B6456AE7D39A3222E6550D62882586",
+  "signatureSubject": "Nefarius Software Solutions e.U.",
+  "x64DriverSha256": "B6D6FA5CA8334368FC366A3E78552EFB74EEF657061371B2DE407AA158B0A11C",
+  "driverDigestEvidence": "Catalog-verified installed x64 driver; official 1.22.0 release explicitly retains the 1.21.442.0 driver. The final EXE was not executed for extraction or installation during packaging review.",
+  "relayArchitectures": [
+    "x64"
+  ],
+  "upstreamDriverArchitectures": [
+    "x86",
+    "x64",
+    "arm64"
+  ]
+}

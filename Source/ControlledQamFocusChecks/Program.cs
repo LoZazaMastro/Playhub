@@ -1,5 +1,8 @@
 using GamingMode.Services;
 
+if (args.Contains("--native-return-window")) return NativeReturnChecks.WindowChild();
+if (args.Contains("--native-return-game")) { Thread.Sleep(350); return 37; }
+
 int passed = 0;
 void Check(string name, Action<FakeWindows, ControlledQamFocusService> test)
 {
@@ -11,57 +14,62 @@ void Check(string name, Action<FakeWindows, ControlledQamFocusService> test)
 }
 static void Expect(bool value) { if (!value) throw new Exception("Assertion failed"); }
 Check("one chosen Steam layer and exact game restore", (w,s) => {
-    Expect(s.Acquire("a").Ok && w.Foreground == w.Steam.Handle);
+    Expect(s.Acquire("a", 42).Ok && w.Foreground == w.Steam.Handle);
     Expect(w.Layers.SequenceEqual(new[] {(w.Steam.Handle, true)}));
     Expect(s.Close("a").Ok && w.Foreground == w.Game.Handle);
     Expect(w.Activations.SequenceEqual(new[] {w.Steam.Handle, w.Game.Handle}));
     Expect(w.Layers.Last() == (w.Steam.Handle, false));
 });
 Check("already topmost Steam retains original layer", (w,s) => {
-    w.Topmost = true; Expect(s.Acquire("a").Ok); s.Close("a");
+    w.Topmost = true; Expect(s.Acquire("a", 42).Ok); s.Close("a");
     Expect(w.Layers.Last() == (w.Steam.Handle, true));
 });
 Check("activation request without actual foreground fails", (w,s) => {
-    w.RefuseActivation = true; Expect(!s.Acquire("a").Ok);
+    w.RefuseActivation = true; Expect(!s.Acquire("a", 42).Ok);
     Expect(w.Foreground == w.Game.Handle && w.Layers.Last() == (w.Steam.Handle, false));
 });
 Check("duplicate acquire and duplicate close do not steal focus", (w,s) => {
-    Expect(s.Acquire("a").Ok && s.Acquire("a").Ok && !s.Acquire("b").Ok);
+    Expect(s.Acquire("a", 42).Ok && s.Acquire("a", 42).Ok && !s.Acquire("b", 42).Ok);
+    Expect(!s.Acquire("a", 43).Ok);
     Expect(w.Activations.Count == 1); s.Close("a"); s.Close("a"); Expect(w.Activations.Count == 2);
 });
-Check("close before delayed acquire cancels it", (w,s) => { s.Close("a"); Expect(!s.Acquire("a").Ok && w.Activations.Count == 0); });
-Check("release before delayed acquire cancels it", (w,s) => { s.Release("a"); Expect(!s.Acquire("a").Ok && w.Activations.Count == 0); });
+Check("an older Steam app ID cannot acquire focus for a different foreground game", (w,s) => {
+    Expect(!s.Acquire("missing", 0).Ok && !s.Acquire("stale", 43).Ok);
+    Expect(w.Activations.Count == 0 && w.Layers.Count == 0 && w.Foreground == w.Game.Handle);
+});
+Check("close before delayed acquire cancels it", (w,s) => { s.Close("a"); Expect(!s.Acquire("a", 42).Ok && w.Activations.Count == 0); });
+Check("release before delayed acquire cancels it", (w,s) => { s.Release("a"); Expect(!s.Acquire("a", 42).Ok && w.Activations.Count == 0); });
 Check("Desktop invalidates generation before mode state changes", (w,s) => {
-    Expect(s.Acquire("a").Ok); s.ModeChanging(); Expect(!s.Acquire("b").Ok); s.ModeCompleted(true);
-    Expect(!s.Close("a").Ok && w.Activations.Count == 1 && !s.Acquire("a").Ok);
+    Expect(s.Acquire("a", 42).Ok); s.ModeChanging(); Expect(!s.Acquire("b", 42).Ok); s.ModeCompleted(true);
+    Expect(!s.Close("a").Ok && w.Activations.Count == 1 && !s.Acquire("a", 42).Ok);
 });
 Check("application selection releases without restoring old game", (w,s) => {
-    Expect(s.Acquire("a").Ok); w.Foreground = 777; s.WindowChanged(); s.Close("a");
+    Expect(s.Acquire("a", 42).Ok); w.Foreground = 777; s.WindowChanged(); s.Close("a");
     Expect(w.Foreground == 777 && w.Activations.Count == 1 && !w.Topmost);
 });
 Check("same HWND with recycled owner birth does not receive writes", (w,s) => {
-    Expect(s.Acquire("a").Ok); w.Steam = w.Steam with {OwnerBirth = 999}; s.Close("a");
+    Expect(s.Acquire("a", 42).Ok); w.Steam = w.Steam with {OwnerBirth = 999}; s.Close("a");
     Expect(w.Layers.Count == 1 && w.Activations.Count == 1);
 });
 Check("UWP frame surviving hosted game exit is not restored", (w,s) => {
-    Expect(s.Acquire("a").Ok); w.Game = w.Game with {GameBirth = 999}; s.Close("a");
+    Expect(s.Acquire("a", 42).Ok); w.Game = w.Game with {GameBirth = 999}; s.Close("a");
     Expect(w.Activations.Count == 1 && !w.Topmost);
 });
 Check("returning directly to game releases Steam layer without activation", (w,s) => {
-    Expect(s.Acquire("a").Ok); w.Foreground = w.Game.Handle; s.WindowChanged(); s.Close("a");
+    Expect(s.Acquire("a", 42).Ok); w.Foreground = w.Game.Handle; s.WindowChanged(); s.Close("a");
     Expect(w.Foreground == w.Game.Handle && w.Activations.Count == 1 && !w.Topmost);
 });
 Check("foreign Steam layer write is preserved on release", (w,s) => {
-    w.Topmost = true; Expect(s.Acquire("a").Ok); w.Topmost = false; s.Release("a");
+    w.Topmost = true; Expect(s.Acquire("a", 42).Ok); w.Topmost = false; s.Release("a");
     Expect(w.Layers.Count == 1 && !w.Topmost);
 });
 Check("missing source never changes Steam layer", (w,s) => {
-    w.NoGame = true; Expect(!s.Acquire("a").Ok && w.Layers.Count == 0 && w.Activations.Count == 0);
+    w.NoGame = true; Expect(!s.Acquire("a", 42).Ok && w.Layers.Count == 0 && w.Activations.Count == 0);
 });
 Check("idle events perform no window queries", (w,s) => {
     for (int i=0; i<1000; i++) s.WindowChanged(); Expect(w.Validations == 0 && w.Activations.Count == 0 && w.Layers.Count == 0);
 });
-Check("normal UWP delegates to Game Bar without Steam focus or layer writes", (w,s) => {
+Check("normal UWP does not fall through to a Steam main-window handoff", (w,s) => {
     w.NormalUwp = true; w.SteamTree = false;
     Expect(!s.Acquire("bar", 42).Ok && w.Layers.Count == 0 && w.Activations.Count == 0);
     Expect(w.Foreground == w.Game.Handle);
@@ -79,6 +87,8 @@ Check("unverified non-tree window remains rejected", (w,s) => {
     Expect(!s.Acquire("foreign", 42).Ok && w.Layers.Count == 0 && w.Activations.Count == 0);
 });
 Console.WriteLine($"Controlled QAM focus: {passed} checks passed.");
+NativeReturnChecks.Run();
+return 0;
 
 sealed class FakeWindows : IQamFocusWindows
 {
@@ -89,7 +99,7 @@ sealed class FakeWindows : IQamFocusWindows
     public int Validations;
     public List<(nint,bool)> Layers = new();
     public List<nint> Activations = new();
-    public QamWindowIdentity? CaptureGame(uint appId) => NoGame || !ControlledQamFocusService.AllowsAutomaticGame(SteamTree, NormalUwp) ? null : Game;
+    public QamWindowIdentity? CaptureGame(uint appId) => NoGame || !ControlledQamFocusService.AllowsAutomaticGame(SteamTree && appId == 42, NormalUwp) ? null : Game;
     public QamWindowIdentity? CaptureSteam() => Steam;
     public bool IsValid(QamWindowIdentity identity) { Validations++; return identity == Game || identity == Steam; }
     public bool IsSteamForeground(QamWindowIdentity identity) => identity == Steam && Foreground == Steam.Handle;

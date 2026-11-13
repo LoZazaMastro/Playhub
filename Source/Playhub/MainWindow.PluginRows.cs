@@ -48,6 +48,11 @@ public sealed partial class MainWindow
         }
 
         SaveNavigationPosition();
+        if (RefreshPluginResults(repeater, ordered))
+        {
+            RestoreNavigationPosition();
+            return;
+        }
         var replacement = listLayout ? BuildPluginStoreListRepeater(ordered) : BuildPluginStoreGrid(ordered);
         owner.Children.Remove(repeater);
         PluginViewOwners.Remove(repeater);
@@ -84,7 +89,9 @@ public sealed partial class MainWindow
         presenter.HorizontalContentAlignment = HorizontalAlignment.Stretch;
         DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
-            if (!ReferenceEquals(presenter.Tag, ticket) || repeater.GetElementIndex(presenter) != index) return;
+            // A collection Move keeps the presenter and its captured item. Its
+            // current index may legitimately differ from ElementPrepared's index.
+            if (!ReferenceEquals(presenter.Tag, ticket) || repeater.GetElementIndex(presenter) < 0) return;
             var content = createContent();
             if (!ReferenceEquals(presenter.Tag, ticket)) return;
             presenter.Content = content;

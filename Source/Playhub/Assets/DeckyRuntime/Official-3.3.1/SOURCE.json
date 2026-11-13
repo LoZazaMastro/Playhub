@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "version": "3.3.1",
+  "upstreamTag": "v3.3.1",
+  "repository": "https://github.com/SteamDeckHomebrew/decky-loader",
+  "commit": "ffd103b9c1a4ce5bf305e7c0998eda6e05457dad",
+  "releaseUrl": "https://github.com/SteamDeckHomebrew/decky-loader/releases/tag/v3.3.1",
+  "sourceUrl": "https://codeload.github.com/SteamDeckHomebrew/decky-loader/zip/ffd103b9c1a4ce5bf305e7c0998eda6e05457dad",
+  "sourceSha256": "abef6c5cfc9ace34de059e46886228cf2fe8a854ad542120ed23852296df494a",
+  "modified": false
+}

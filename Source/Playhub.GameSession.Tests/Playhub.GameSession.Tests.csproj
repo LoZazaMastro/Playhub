@@ -5,10 +5,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <StartupObject>SessionTests</StartupObject>
+    <DefineConstants>$(DefineConstants);PLAYHUB_TEST_FIXTURE</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../Shared/UwpSessionIdentity.cs" Link="UwpSessionIdentity.cs" />
     <Compile Include="..\Playhub.GameSession\*.cs" Link="%(Filename)%(Extension)" />
     <Compile Include="..\GamingModeAgent\GamingMode.Services\XboxShellBroker.cs" Link="XboxShellBroker.cs" />
+    <Compile Include="..\Shared\SessionFixtureLogs.cs" Link="SessionFixtureLogs.cs" />
   </ItemGroup>
 </Project>

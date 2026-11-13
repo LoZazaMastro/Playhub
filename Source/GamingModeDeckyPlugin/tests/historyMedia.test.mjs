@@ -50,6 +50,22 @@ test('all chapter images being reserved does not silently duplicate them for the
  assert.equal(orderHistoryImages(all,undefined,0,chapters).length,0);
 });
 
+test('different catalog names with the same verified content are shown once per story',()=>{
+ const alias={...all[2],file:'second-name.png',url:'mirror'};
+ const chapters=[{image_file:'game.png'},{image_file:alias.file}];
+ const digest=image=>image.url==='game'||image.url==='mirror'?'same-content':undefined;
+ assert.equal(orderHistoryImages([...all,alias],chapters[0],1,chapters,undefined,digest)[0].file,'game.png');
+ assert.equal(orderHistoryImages([...all,alias],chapters[1],2,chapters,undefined,digest).length,0);
+});
+
+test('an unassigned opening image cannot take a later chapter’s photo under another name',()=>{
+ const alias={...all[2],file:'second-name.png',url:'mirror'};
+ const chapters=[{image_file:'game.png'}];
+ const digest=image=>image.url==='game'||image.url==='mirror'?'same-content':undefined;
+ assert.equal(orderHistoryImages([alias,all[2]],undefined,0,chapters,undefined,digest).length,0);
+ assert.equal(orderHistoryImages([alias,all[2]],chapters[0],1,chapters,undefined,digest)[0].file,'game.png');
+});
+
 test('game release heading uses its explicit cover independently from story media',()=>{
  assert.equal(exports.historyHeadingCover(all,'game','cover.png').file,'cover.png');
  assert.equal(exports.historyHeadingCover(all,'game').file,'cover.png');

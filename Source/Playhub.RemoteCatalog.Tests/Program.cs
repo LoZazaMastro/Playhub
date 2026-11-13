@@ -14,6 +14,8 @@ if (args.Contains("--live-official")) { await OfficialTests.LiveAsync(); return;
 if (args.Contains("--official-checks")) { await OfficialTests.RunAsync(); return; }
 if (args.Contains("--chronology-checks")) { await ChronologyPipelineTests.RunAsync(); return; }
 if (args.Contains("--publication-checks")) { await PublicationRefreshTests.RunAsync(); return; }
+if (args.Contains("--store-refresh-checks")) { await StoreRefreshTests.RunAsync(); await Playhub.MainWindow.RunStoreNoOpRefreshTests(); return; }
+if (args.Contains("--ui-refresh-checks")) { await Playhub.MainWindow.RunCatalogUiTests(); return; }
 if (args.Length == 2 && args[0] == "--validate-manifest")
 {
     var manifest = RemotePluginCatalogService.Parse(File.ReadAllBytes(args[1]));
@@ -42,6 +44,8 @@ var tests = new (string Name, Func<Task> Run)[]
     ,("upstream chronology ingestion, hydration and durable caches", ChronologyPipelineTests.RunAsync)
     ,("publication scans terminate without a writable release cache", PublicationRefreshTests.RunAsync)
     ,("external descriptions preserve original publisher language", OriginalDescriptionTests.RunAsync)
+    ,("stable Store snapshots and actual deferred presenter updates", StoreRefreshTests.RunAsync)
+    ,("production remote refresh keeps unchanged models and views", Playhub.MainWindow.RunStoreNoOpRefreshTests)
 };
 foreach (var test in tests)
 {

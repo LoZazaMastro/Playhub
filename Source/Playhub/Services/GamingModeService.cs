@@ -130,6 +130,7 @@ public sealed class GamingModeService
             return new(false, warning);
         }
 
+        await DeckyPluginReload.TryPendingAsync(companionPath, Playhub.Integrations.SteamPluginBridge.EvaluateAsync);
         return new(true, "GamingMode.Optional.Ready");
     }
 
@@ -188,7 +189,7 @@ public sealed class GamingModeService
 
     /// <summary>
     /// Dice se l'agente richiede un aggiornamento automatico al pacchetto.
-    /// Conserva una versione o build valida installata piu' recente.
+    /// Conserva una versione valida installata piu' recente.
     /// </summary>
     /// <remarks>
     /// Serve perché senza questo controllo l'agente restava indietro in
@@ -226,6 +227,12 @@ public sealed class GamingModeService
     {
         try
         {
+            // A replaced PS1 does not replace code already loaded by an older agent.
+            // Retire only our exact obsolete watcher, even when the agent is current.
+            var retire = Path.Combine(AppContext.BaseDirectory, "Assets", "GamingMode", "retire-gamebar-watcher.ps1");
+            if (File.Exists(retire))
+                await ProcessService.RunAsync(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe"),
+                    $"-NoProfile -ExecutionPolicy Bypass -File \"{retire}\"");
             if (!NeedsAgentUpdate()) return false;
 
             var script = Path.Combine(AppPaths.GamingModePackage, "install.ps1");
@@ -307,16 +314,24 @@ public sealed class GamingModeService
     /// "Installa o aggiorna", quindi chi non lo premeva restava con la
     /// versione vecchia del plugin per sempre.
     /// </remarks>
-    public Task<bool> SyncDeckyPluginAsync(string deckyPluginsPath) => Task.Run(() =>
+    public Task<bool> SyncDeckyPluginAsync(string deckyPluginsPath) => Task.Run(async () =>
     {
         try
         {
-            if (!NeedsDeckyPluginUpdate(deckyPluginsPath))
+            bool copied = false;
+            if (NeedsDeckyPluginUpdate(deckyPluginsPath))
             {
-                return false;
+                copied = InstallDeckyPlugin(deckyPluginsPath).Success;
+                if (!copied) return false;
             }
-
-            return InstallDeckyPlugin(deckyPluginsPath).Success;
+            // A previous sync may have happened during a game, or while CEF was
+            // unavailable. Equal file hashes do not mean its JS was reloaded.
+            if (!copied)
+                await DeckyPluginReload.DetectLegacyLoadedAsync(ResolveDeckyPluginPath(deckyPluginsPath), DeckyPluginSource,
+                    Playhub.Integrations.SteamPluginBridge.EvaluateAsync);
+            await DeckyPluginReload.TryPendingAsync(ResolveDeckyPluginPath(deckyPluginsPath),
+                Playhub.Integrations.SteamPluginBridge.EvaluateAsync);
+            return copied;
         }
         catch
         {
@@ -325,9 +340,13 @@ public sealed class GamingModeService
     });
 
     /// <summary>Installs (or updates) the Gaming Mode Decky companion plugin into homebrew/plugins.</summary>
-    public Task<string> InstallDeckyPluginAsync(string deckyPluginsPath)
+    public async Task<string> InstallDeckyPluginAsync(string deckyPluginsPath)
     {
-        return Task.FromResult(InstallDeckyPlugin(deckyPluginsPath).Message);
+        var result = await Task.Run(() => InstallDeckyPlugin(deckyPluginsPath));
+        if (result.Success && await DeckyPluginReload.TryPendingAsync(ResolveDeckyPluginPath(deckyPluginsPath),
+            Playhub.Integrations.SteamPluginBridge.EvaluateAsync))
+            return "GamingMode.Optional.Ready";
+        return result.Message;
     }
 
     private static GamingModeOperationResult InstallDeckyPlugin(string deckyPluginsPath)
@@ -349,6 +368,7 @@ public sealed class GamingModeService
             CopyDirectory(DeckyPluginSource, dest, GamingModePayloadSync.RequiredPluginFiles(AppContext.BaseDirectory, DeckyPluginSource));
             Playhub.Shared.EditorialPhotoMigration.PrunePlugin(AppContext.BaseDirectory, dest);
             MigrateStandaloneQuickSettings(deckyPluginsPath);
+            DeckyPluginReload.MarkPending(dest);
             return new(true, "Gaming Mode è pronto. Riavvia Steam per trovarlo nel menu rapido.");
         }
         catch (Exception ex)
@@ -511,6 +531,35 @@ public sealed class GamingModeService
     // Switch IMMEDIATO di modalità tramite l'agente locale, esattamente come fa
     // il plugin DeckyLoader (POST http://127.0.0.1:PORT/mode/<mode>/switch).
     // The agent applies the current-session mode without changing startup preferences.
+    public async Task<bool> OpenSteamBigPictureAsync(int port = 47991)
+    {
+        if (port is < 1 or > 65535 || !File.Exists(InstalledExe)) return false;
+        try
+        {
+            // Starting the existing agent does not change the session mode. A
+            // failed or late request never falls back to an unguarded URI.
+            using var health = new HttpClient { Timeout = TimeSpan.FromMilliseconds(500) };
+            bool available = false;
+            try { using var check = await health.GetAsync($"http://127.0.0.1:{port}/health"); available = check.IsSuccessStatusCode; } catch { }
+            if (!available)
+            {
+                StartAgent();
+                for (int attempt = 0; attempt < 4 && !available; attempt++)
+                {
+                    await Task.Delay(200);
+                    try { using var check = await health.GetAsync($"http://127.0.0.1:{port}/health"); available = check.IsSuccessStatusCode; } catch { }
+                }
+            }
+            if (!available) return false;
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            using var response = await client.PostAsync($"http://127.0.0.1:{port}/steam/bigpicture/open", null);
+            if (!response.IsSuccessStatusCode) return false;
+            using var result = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            return result.RootElement.TryGetProperty("ok", out var ok) && ok.ValueKind == JsonValueKind.True;
+        }
+        catch (Exception error) { Diag.Crash("GamingMode.OpenSteamBigPictureAsync", error); return false; }
+    }
+
     public async Task<bool> SwitchModeAsync(string mode, int port = 47991)
     {
         var path = string.Equals(mode, "Gaming", StringComparison.OrdinalIgnoreCase)
@@ -896,7 +945,8 @@ public sealed class GamingModeService
 
         changed |= EnsureSafetyWatcher(config);
         changed |= EnsureFocusRescueWatcher(config);
-        changed |= EnsureGameBarWatcher(config);
+        changed |= config.Gaming.CustomStartupApps.RemoveAll(app =>
+            LegacyXboxGameBarWatcher.Matches(app.Name, app.ProcessName, app.Arguments)) > 0;
 
         return changed;
     }
@@ -1024,74 +1074,4 @@ public sealed class GamingModeService
         return false;
     }
 
-    private const string GameBarWatcherName = "Playhub Xbox Game Bar";
-
-    // Registra (o rimuove) il watcher della Xbox Game Bar. Se il supporto Steam
-    // Controller è attivo, la Game Bar resta fuori: il controller non espone un vero tasto Nexus
-    // e Windows/Steam possono mostrare errori o interferire con l'avvio dei giochi.
-    private static bool EnsureGameBarWatcher(GamingModeConfig config)
-    {
-        var existing = config.Gaming.CustomStartupApps
-            .FirstOrDefault(a => string.Equals(a.Name, GameBarWatcherName, StringComparison.OrdinalIgnoreCase));
-
-        // Toggle OFF: rimuovi la voce se presente.
-        if (!config.Gaming.EnableXboxGameBar)
-        {
-            if (existing is not null)
-            {
-                config.Gaming.CustomStartupApps.Remove(existing);
-                return true;
-            }
-            return false;
-        }
-
-        string scriptPath;
-        try
-        {
-            scriptPath = Path.Combine(AppContext.BaseDirectory, "Assets", "GamingMode", "xbox-gamebar.ps1");
-        }
-        catch
-        {
-            return false;
-        }
-
-        // Percorso COMPLETO di powershell.exe: l'agente non cerca nel PATH.
-        string powershellPath;
-        try
-        {
-            powershellPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.System),
-                "WindowsPowerShell", "v1.0", "powershell.exe");
-        }
-        catch
-        {
-            powershellPath = @"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe";
-        }
-
-        var args = $"-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{scriptPath}\"";
-
-        if (existing is null)
-        {
-            config.Gaming.CustomStartupApps.Add(new StartupAppConfig
-            {
-                Name = GameBarWatcherName,
-                Path = powershellPath,
-                Arguments = args,
-                ProcessName = "playhub-gm-gamebar",
-                Enabled = true,
-                StartMinimized = true
-            });
-            return true;
-        }
-
-        if (existing.Arguments != args || existing.Path != powershellPath || !existing.Enabled)
-        {
-            existing.Path = powershellPath;
-            existing.Arguments = args;
-            existing.Enabled = true;
-            return true;
-        }
-
-        return false;
-    }
 }

@@ -20,7 +20,8 @@ public sealed record InstallOptions(
     bool PreserveExistingShortcuts = false);
 
 /// <summary>
-/// Logica di installazione/disinstallazione di Playhub (per-utente, niente UAC).
+/// Installazione/disinstallazione per-utente. Le dipendenze macchina incluse
+/// usano separatamente il loro setup firmato e il consenso Windows.
 /// Registra l'app in "App installate" così è disinstallabile dal menu Start.
 /// </summary>
 public static class Installer
@@ -48,9 +49,9 @@ public static class Installer
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), AppName + ".lnk");
 
     // ----------------------------------------------------------------- INSTALL
-    public static async Task InstallAsync(InstallOptions options, IProgress<(double Percent, string Status)> progress)
+    public static async Task<ControllerDriverInstallResult> InstallAsync(InstallOptions options, IProgress<(double Percent, string Status)> progress)
     {
-        await Task.Run(() =>
+        return await Task.Run(() =>
         {
             progress.Report((0.02, Loc.T("Preparing")));
             StopRunningPlayhub();
@@ -59,6 +60,9 @@ public static class Installer
             ExtractPayload(options.InstallDir, progress);
             Playhub.Shared.EditorialPhotoMigration.Prune(options.InstallDir, message => Debug.WriteLine(message));
 
+            var controller = ControllerDriverDependency.Ensure(options.InstallDir,
+                () => progress.Report((0.85, Loc.T("InstallingControllerSupport"))));
+
             progress.Report((0.87, Loc.T("InstallingUWPHook")));
             InstallUWPHookSilently(options.InstallDir);
 
@@ -66,8 +70,12 @@ public static class Installer
             PreserveChainFreeOptIn();
             InstallOrUpdateGamingModeSilently(options.InstallDir);
 
+            BundledLaunchCurtainMaintenance.MaintainInstalledAsync(options.InstallDir)
+                .GetAwaiter().GetResult();
+
             var exePath = Path.Combine(options.InstallDir, AppExeName);
-            var iconPath = exePath;
+            var iconPath = Path.Combine(options.InstallDir, "Assets", "Brand", "Playhub.ico");
+            if (!File.Exists(iconPath)) iconPath = exePath;
 
             progress.Report((0.90, Loc.T("CreatingShortcuts")));
             if (!options.PreserveExistingShortcuts)
@@ -77,6 +85,9 @@ public static class Installer
                 if (options.DesktopShortcut)
                     Shortcuts.Create(DesktopShortcut, exePath, options.InstallDir, iconPath);
             }
+            // Updates preserve shortcut choices and arguments while repairing only owned app identity/icon metadata.
+            Playhub.Shared.ShellIdentity.UpdateOwnedShortcut(StartMenuShortcut, exePath, iconPath, message => Debug.WriteLine(message));
+            Playhub.Shared.ShellIdentity.UpdateOwnedShortcut(DesktopShortcut, exePath, iconPath, message => Debug.WriteLine(message));
 
             progress.Report((0.95, Loc.T("Registering")));
             CopySelfAsUninstaller(options.InstallDir);
@@ -84,6 +95,7 @@ public static class Installer
             SetAppLanguage(options.Language);
 
             progress.Report((1.0, Loc.T("DoneTitle")));
+            return controller;
         });
     }
 
@@ -561,55 +573,23 @@ public static class Installer
     // avvio automatico e riavvio dell'agente in modo idempotente).
     private static void InstallOrUpdateGamingModeSilently(string installDir)
     {
-        try
-        {
-            var existingExe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "GamingMode", "GamingMode.exe");
-            if (!Playhub.Shared.GamingModeInstallationPolicy.ShouldMaintainInstallation(existingExe,
-                Playhub.Shared.GamingModeInstallationPolicy.DisabledMarker)) return;
-            var packageDir = Path.Combine(installDir, "Plugins", "Gaming Mode", "gaming-mode-win-x64");
-            var packageExe = Path.Combine(packageDir, "GamingMode.exe");
-            var script = Path.Combine(packageDir, "install.ps1");
-            if (!File.Exists(packageExe) || !File.Exists(script)) return;
-
-            // Se l'agente installato è già identico a quello nel pacchetto, salta.
-            var installedExe = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "GamingMode", "GamingMode.exe");
-            if (File.Exists(installedExe))
+        var existingExe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "GamingMode", "GamingMode.exe");
+        if (!Playhub.Shared.GamingModeInstallationPolicy.ShouldMaintainInstallation(existingExe,
+            Playhub.Shared.GamingModeInstallationPolicy.DisabledMarker)) return;
+        var packageDir = Path.Combine(installDir, "Plugins", "Gaming Mode", "gaming-mode-win-x64");
+        var packageExe = Path.Combine(packageDir, "GamingMode.exe");
+        var script = Path.Combine(packageDir, "install.ps1");
+        GamingModeAgentUpdate.Ensure(packageExe, existingExe, script, () => GamingModeAgentUpdate.Start(new ProcessStartInfo
             {
-                try
-                {
-                    var installedInfo = FileVersionInfo.GetVersionInfo(installedExe);
-                    var packageInfo = FileVersionInfo.GetVersionInfo(packageExe);
-                    if (!string.IsNullOrWhiteSpace(installedInfo.FileVersion) &&
-                        string.Equals(installedInfo.FileVersion, packageInfo.FileVersion, StringComparison.OrdinalIgnoreCase) &&
-                        new FileInfo(installedExe).Length == new FileInfo(packageExe).Length)
-                    {
-                        return;
-                    }
-                }
-                catch
-                {
-                    // In dubbio, reinstalla.
-                }
-            }
-
-            using var process = Process.Start(new ProcessStartInfo
-            {
-                FileName = "powershell.exe",
+                FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),
+                    "WindowsPowerShell", "v1.0", "powershell.exe"),
                 Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{script}\" -SourceDir \"{packageDir}\"",
                 WorkingDirectory = packageDir,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden
-            });
-            process?.WaitForExit(180000);
-        }
-        catch
-        {
-            // L'installazione di Playhub non deve fallire per il companion Gaming Mode.
-        }
+            }));
     }
 
     private static void RemoveUWPHook()
@@ -648,6 +628,7 @@ public static class Installer
     {
         return ex switch
         {
+            GamingModeAgentUpdateException => Loc.T("GamingModeUpdateIncomplete"),
             UnauthorizedAccessException => Loc.T("AccessDenied"),
             FileNotFoundException => Loc.T("PackageError"),
             IOException => Loc.T("FilesInUse"),

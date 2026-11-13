@@ -61,8 +61,24 @@ import { installLosslessGameIntegration } from "./losslessProfiles";
 import { Strings, t } from "./translations";
 import { ControlSection } from "../ControlSection";
 import type { ControlTab } from "../controlCenterState";
-import { controlLocale, controlStatus } from "../controlCenterLocale";
+import { controlLocale } from "../controlCenterLocale";
 import { createSettledWriter } from "../panelIntegration/settledWriter";
+import { PerformanceSettings } from "./PerformanceSettings";
+import { ShaderCompatibility } from "./ShaderCompatibility";
+import { PowerProfile } from "./PowerProfile";
+import { ProcessorBoost } from "./ProcessorBoost";
+import { HandheldPowerMode } from "./HandheldPowerMode";
+import { HandheldPowerLimits } from "./HandheldPowerLimits";
+import { MsiPowerControls } from "./MsiPowerControls";
+import { AsusPerformanceActions } from "./AsusPerformanceActions";
+import { AsusFanStatus } from "./AsusFanStatus";
+import { OneXFanControls } from "./OneXFanControls";
+import { LenovoPowerLimits } from "./LenovoPowerLimits";
+import { GameExecutionProfile } from "./GameExecutionProfile";
+import { SteamDownloadPower, stopSteamDownloadPower } from "./SteamDownloadPower";
+import { GameAudioVolume } from "./GameAudioVolume";
+import { PanelBrightness, softwareBrightnessLabel } from "./PanelBrightness";
+import { quickSettingsGroups } from "./groups";
 
 const REFRESH_INTERVAL = 15000;
 const SLIDER_DEBOUNCE = 260;
@@ -375,10 +391,11 @@ export function disposeDisplayConfirmation() {
   current?.modal?.Close?.();
 }
 
-export function QuickSettingsContent({ page, collapsed, onToggle, locale }: {
-  page: ControlTab | "tools"; collapsed: string[]; onToggle: (id: string) => void; locale: string;
+export function QuickSettingsContent({ page, expanded = [], onToggle, locale, gameAppId = 0, gamingMode = false }: {
+  page: ControlTab | "tools"; expanded?: string[]; onToggle: (id: string) => void; locale: string; gameAppId?: number; gamingMode?: boolean;
 }) {
   const local = t(locale);
+  const groups = quickSettingsGroups(locale);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
 
@@ -870,28 +887,6 @@ export function QuickSettingsContent({ page, collapsed, onToggle, locale }: {
     setLossless((c) => (c ? { ...c, multiplier: n } : c));
     commitMultiplier(n);
   };
-  const onDrawFps = (enabled: boolean) => {
-    setLossless((current) => current ? {
-      ...current,
-      settings: current.settings
-        ? { ...current.settings, draw_fps: enabled }
-        : current.settings,
-    } : current);
-    void setLosslessSetting("draw_fps", enabled)
-      .then((result: any) => {
-        if (result?.settings) {
-          setLossless((current) => current ? {
-            ...current,
-            settings: result.settings,
-            runtime: result.runtime ?? current.runtime,
-          } : current);
-        }
-        if (result?.ok === false && result?.message) notify(result.message);
-      })
-      .catch(() => notify(local.notConnected))
-      .finally(() => window.setTimeout(() => void loadLossless(), 250));
-  };
-
   // ADLX writes are comparatively expensive. Keep the control fully optimistic,
   // coalesce repeated notches and allow at most one write plus the final value.
   const onAmdToggle = (feature: string, enabled: boolean) => {
@@ -936,17 +931,16 @@ export function QuickSettingsContent({ page, collapsed, onToggle, locale }: {
     { data: "LSFG1", label: "LSFG 1.1" },
   ];
 
-  const section = (icon: ReactNode, title: string, children: ReactNode) => {
+  const section = (icon: ReactNode, title: string, children: ReactNode, location?: [ControlTab | "tools", string]) => {
     const sections: Record<string, [ControlTab | "tools", string]> = {
       [local.audio]: ["performance", "audio"], [local.display]: ["audio", "display"],
       [local.lossless]: ["graphics", "lossless"], [local.amd]: ["graphics", "radeon"],
       [local.advanced]: ["tools", "agent"],
     };
-    const [tab, id] = sections[title];
+    const [tab, id] = location ?? sections[title];
     if (tab !== page) return null;
-    if (tab === "audio" || tab === "performance") return <div key={id} className="qsCardBody">{children}</div>;
     return <ControlSection key={id} id={id} title={title} icon={icon} locale={locale}
-      collapsed={collapsed.includes(id)} onToggle={onToggle}>
+      collapsed={!expanded.includes(id)} onToggle={onToggle}>
       <div className="qsCardBody">{children}</div>
     </ControlSection>;
   };
@@ -974,43 +968,42 @@ export function QuickSettingsContent({ page, collapsed, onToggle, locale }: {
         {!caps && <div className="qsMeta">{loadFailed ? local.notConnected : controlLocale(locale).loading}
           {loadFailed && <DialogButton onClick={() => { setLoadFailed(false); setLoadAttempt(value => value + 1); }}>{controlLocale(locale).retry}</DialogButton>}
         </div>}
-        {caps && (page === "graphics" && !caps.lossless && !caps.amd_radeon) &&
-          <div className="qsMeta">{controlStatus(locale)[2]}</div>}
+        {section(<FaBolt />, groups.power, <>
+          <HandheldPowerLimits locale={locale} />
+          <LenovoPowerLimits locale={locale} />
+          <PowerProfile locale={locale} />
+          <HandheldPowerMode locale={locale} />
+          <MsiPowerControls locale={locale} />
+          <AsusFanStatus locale={locale} />
+          <OneXFanControls locale={locale} />
+          <AsusPerformanceActions locale={locale} />
+          <ProcessorBoost locale={locale} />
+        </>, ["graphics", "power"])}
+        {gamingMode && gameAppId !== 0 && section(<FaPlay />, groups.game, <>
+          <GameExecutionProfile key={gameAppId} appId={gameAppId} locale={locale} />
+        </>, ["graphics", "game"])}
+        {section(<FaMicrochip />, groups.shaders, <>
+          <ShaderCompatibility key={gameAppId} appId={gameAppId} locale={locale} />
+        </>, ["graphics", "shaders"])}
 
-        {section(<FaVolumeUp />, local.audio, <>
+        {section(<FaVolumeUp />, groups.mixer, <>
           <QuickSlider label={local.volume} value={volume.level} min={0} max={100} suffix="%" disabled={!volume.available} onChange={onVolume} />
+          {gameAppId !== 0 && <GameAudioVolume key={gameAppId} appId={gameAppId} locale={locale} />}
           <QuickSlider label={local.microphoneVolume} value={clampPercent(audio.input_volume)} min={0} max={100} suffix="%" disabled={!audio.ok} onChange={onMicVolume} />
+        </>, ["performance", "mixer"])}
+        {section(<FaVolumeUp />, groups.devices, <>
           <QuickDropdown fullWidth label={local.audioOutput} options={outputOptions} value={audio.default_output_id || ""} disabled={!audio.ok || audio.outputs.length === 0} onChange={onOutput} />
           <QuickDropdown fullWidth label={local.microphoneInput} options={inputOptions} value={audio.default_input_id || ""} disabled={!audio.ok || audio.inputs.length === 0} onChange={onInput} />
-        </>)}
+        </>, ["performance", "devices"])}
 
         {section(<FaDesktop />, local.display, <>
-          <QuickSlider label={local.brightness} value={dimmerToBrightness(dimmer.level)} min={0} max={100} suffix="%" onChange={onBrightness} />
+          <PanelBrightness locale={locale} />
+          <QuickSlider label={softwareBrightnessLabel(locale)} value={dimmerToBrightness(dimmer.level)} min={0} max={100} suffix="%" onChange={onBrightness} />
           {caps?.display && resolutionOptions.length > 0 && <QuickDropdown fullWidth key={`res-${currentResolution}`} label={local.resolution} options={resolutionOptions} value={currentResolution} onChange={onResolution} />}
           {caps?.display && refreshOptions.length > 0 && <QuickDropdown fullWidth key={`hz-${currentRefresh}`} label={local.refreshRate} options={refreshOptions} value={currentRefresh} onChange={onRefresh} />}
           <ToggleField bottomSeparator="none" label={local.hdr} checked={Boolean(hdr.enabled)} onChange={onHdr} />
-        </>)}
-
-        {caps?.lossless && section(<FaPlay />, local.lossless, <>
-          <ToggleField
-            bottomSeparator="none"
-            label={local.losslessScaling}
-            disabled={!lossless?.installed || !lossless?.can_scale}
-            checked={Boolean(lossless?.scaling_active)}
-            onChange={onScalingToggle}
-          />
-          <QuickDropdown key={`fg-${lossless?.frame_gen ?? "Off"}`} label={local.losslessFrameGen} options={frameGenOptions} value={lossless?.frame_gen ?? "Off"} onChange={onFrameGen} />
-          <QuickSlider label={local.losslessMultiplier} value={Math.max(2, Math.min(4, lossless?.multiplier ?? 2))} min={2} max={4} suffix="x" onChange={onMultiplier} />
-          <ToggleField
-            bottomSeparator="none"
-            label={local.drawFps}
-            description={local.drawFpsDesc}
-            checked={Boolean(lossless?.settings?.draw_fps)}
-            onChange={onDrawFps}
-          />
-          <div className="qsMeta">
-            {lossless?.can_scale ? local.losslessManagedHint : local.losslessGameOnlyHint}
-          </div>
+          <PerformanceSettings locale={locale} appId={gameAppId} />
+          {gamingMode && gameAppId === 0 && <SteamDownloadPower locale={locale} />}
         </>)}
 
         {caps?.amd_radeon && amd?.available && section(<FaMicrochip />, local.amd, <>
@@ -1032,6 +1025,21 @@ export function QuickSettingsContent({ page, collapsed, onToggle, locale }: {
           {amd.display_color?.contrast?.supported && <QuickSlider label={local.amdDisplayContrast} value={amd.display_color.contrast.value ?? 100} min={amd.display_color.contrast.min ?? 0} max={amd.display_color.contrast.max ?? 200} onChange={(v: number) => queueAmdWrite("display_contrast", v, AMD_SLIDER_SETTLE)} />}
           {amd.display_color?.saturation?.supported && <QuickSlider label={local.amdDisplaySaturation} value={amd.display_color.saturation.value ?? 100} min={amd.display_color.saturation.min ?? 0} max={amd.display_color.saturation.max ?? 200} onChange={(v: number) => queueAmdWrite("display_saturation", v, AMD_SLIDER_SETTLE)} />}
           {amd.display_color?.temperature?.supported && <QuickSlider label={local.amdDisplayTemperature} value={amd.display_color.temperature.value ?? 6500} min={amd.display_color.temperature.min ?? 4000} max={amd.display_color.temperature.max ?? 10000} step={100} suffix=" K" onChange={(v: number) => queueAmdWrite("display_temperature", v, AMD_SLIDER_SETTLE)} />}
+        </>)}
+
+        {caps?.lossless && section(<FaPlay />, local.lossless, <>
+          <ToggleField
+            bottomSeparator="none"
+            label={local.losslessScaling}
+            disabled={!lossless?.installed || !lossless?.can_scale}
+            checked={Boolean(lossless?.scaling_active)}
+            onChange={onScalingToggle}
+          />
+          <QuickDropdown key={`fg-${lossless?.frame_gen ?? "Off"}`} label={local.losslessFrameGen} options={frameGenOptions} value={lossless?.frame_gen ?? "Off"} onChange={onFrameGen} />
+          <QuickSlider label={local.losslessMultiplier} value={Math.max(2, Math.min(4, lossless?.multiplier ?? 2))} min={2} max={4} suffix="x" onChange={onMultiplier} />
+          <div className="qsMeta">
+            {lossless?.can_scale ? local.losslessManagedHint : local.losslessGameOnlyHint}
+          </div>
         </>)}
 
         {section(<FaTools />, local.advanced, <>
@@ -1084,6 +1092,7 @@ export function installQuickSettings() {
     /* ignore */
   }
   return () => {
+    stopSteamDownloadPower();
       cleanupGameIntegration?.();
       try {
         registration?.unregister?.();

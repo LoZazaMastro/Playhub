@@ -132,8 +132,9 @@ public sealed partial class MainWindow
             check(ReferenceEquals(ranked, VisibleRepeater()) && ReferenceEquals(FocusManager.GetFocusedElement(ranked.XamlRoot), focusTarget),
                 "a genuine update-date reorder waits while a card holds focus");
             _pluginDiscoverButton.Focus(FocusState.Programmatic);
-            check(await ReviewWaitUntilAsync(() => !ReferenceEquals(ranked, VisibleRepeater())),
-                "changing focus releases the pending reorder of updated results");
+            check(await ReviewWaitUntilAsync(() => ReferenceEquals(ranked, VisibleRepeater()) &&
+                ReviewPluginItems(VisibleRepeater()).FirstOrDefault() == selected),
+                "changing focus reorders the retained results repeater");
             check(ReferenceEquals(headingRoot, section.Children[0]) && ReviewPluginItems(VisibleRepeater()).FirstOrDefault() == selected &&
                 ReferenceEquals(FocusManager.GetFocusedElement(_pluginDiscoverButton.XamlRoot), _pluginDiscoverButton),
                 "the latest upstream date reorders only the results and preserves the heading and focus");
@@ -202,8 +203,8 @@ public sealed partial class MainWindow
             var visible = ReviewPluginItems(_pluginAllLayout == "list" ? _pluginAllListCache : _pluginAllCardsCache);
             check(_pluginCategoryFilter == "Novità" && visible.Count == 3 && visible.Any(plugin => plugin.RepositorySlug == "private-fixture/NewestDeferred"),
                 "return from external detail shows all newly published projects rather than an empty catalog");
-            check(_pluginCatalogLoadGeneration == generationBeforeBack + 1 && collectionResets == 1 && unloaded == 1,
-                "Back applies exactly one deferred catalog load and unloads the selected detail only once");
+            check(_pluginCatalogLoadGeneration == generationBeforeBack + 1 && collectionResets == 0 && unloaded == 1,
+                "Back reconciles one deferred catalog without a collection reset and unloads the selected detail only once");
             check(handler.UnexpectedRequests.Count == 0, "external enrichment uses only the fake README HTTP response and no live network");
         }
         finally

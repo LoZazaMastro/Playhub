@@ -11,6 +11,10 @@ public sealed class CssLoaderInstallService
     private const long MaximumPackageBytes = 50L * 1024 * 1024;
     private const string Repository = "DeckThemes/SDH-CssLoader";
     private const string AssetName = "SDH-CSSLoader-Decky.zip";
+    private const string BundledVersion = "2.1.5";
+    private const string BundledSha256 = "ab4fabc15799f3151e257dc260135163d9a88abbced6439837d744011ff53463";
+    private const long BundledSize = 1335526;
+    private static string BundledPackage => Path.Combine(AppContext.BaseDirectory, "Plugins", "CSS Loader", "CSS-Loader-Startup-2.1.5.zip");
     private static readonly IReadOnlyDictionary<string, string> PinnedReleaseHashes =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -21,7 +25,15 @@ public sealed class CssLoaderInstallService
 
     public sealed record CssLoaderStatus(bool Installed, string Version, string PluginFolder, string Message);
     public sealed record CssLoaderInstallResult(bool Success, string Message, string? Version = null);
-    private sealed record Release(string Version, string AssetName, string DownloadUrl, string Sha256, long Size);
+    private sealed record Release(string Version, string AssetName, string DownloadUrl, string Sha256, long Size, string? LocalFile = null);
+
+    public bool HasBundledUpdate(string? deckyPluginsPath)
+    {
+        var installed = GetStatus(deckyPluginsPath);
+        return installed.Installed && File.Exists(BundledPackage)
+            && Version.TryParse(NormalizeVersion(installed.Version), out var current)
+            && current < Version.Parse(BundledVersion);
+    }
 
     public CssLoaderStatus GetStatus(string? deckyPluginsPath)
     {
@@ -76,6 +88,10 @@ public sealed class CssLoaderInstallService
             DeleteFile(partial);
             progress?.Report((0.02, "Cerco l'ultima versione…"));
             var release = await ResolveLatestAsync(cancellationToken).ConfigureAwait(false);
+            var installed = GetStatus(deckyPluginsPath);
+            if (installed.Installed && Version.TryParse(NormalizeVersion(installed.Version), out var current)
+                && Version.TryParse(NormalizeVersion(release.Version), out var selected) && current > selected)
+                return new(true, $"CSS Loader {installed.Version} è pronto.", installed.Version);
             if (!IsSha256(release.Sha256))
             {
                 Diag.Crash("CssLoaderInstallService.InstallLatestAsync", "Hash SHA-256 della release non verificabile.");
@@ -538,6 +554,10 @@ public sealed class CssLoaderInstallService
 
     private static async Task<Release> ResolveLatestAsync(CancellationToken cancellationToken)
     {
+        // The Windows compatibility build and its complete preferred source are
+        // part of the setup. Initial installation needs no extra download.
+        if (File.Exists(BundledPackage))
+            return new(BundledVersion, Path.GetFileName(BundledPackage), "", BundledSha256, BundledSize, BundledPackage);
         using var request = new HttpRequestMessage(
             HttpMethod.Get,
             "https://api.github.com/repos/DeckThemes/SDH-CssLoader/releases/latest");
@@ -600,6 +620,27 @@ public sealed class CssLoaderInstallService
         IProgress<(double Percent, string Status)>? progress,
         CancellationToken cancellationToken)
     {
+        if (release.LocalFile is not null)
+        {
+            await using var bundledInput = new FileStream(release.LocalFile, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, true);
+            if (bundledInput.Length != release.Size || bundledInput.Length > MaximumPackageBytes)
+                throw new InvalidDataException("Dimensione del pacchetto CSS Loader non valida.");
+            await using var bundledOutput = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None, 65536, true);
+            using var bundledHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            var bundledBuffer = new byte[65536];
+            int bundledRead;
+            while ((bundledRead = await bundledInput.ReadAsync(bundledBuffer, cancellationToken).ConfigureAwait(false)) != 0)
+            {
+                bundledHash.AppendData(bundledBuffer, 0, bundledRead);
+                await bundledOutput.WriteAsync(bundledBuffer.AsMemory(0, bundledRead), cancellationToken).ConfigureAwait(false);
+            }
+            if (!CryptographicOperations.FixedTimeEquals(bundledHash.GetHashAndReset(), Convert.FromHexString(release.Sha256)))
+                throw new CryptographicException("Hash del pacchetto CSS Loader non valido.");
+            await bundledOutput.FlushAsync(cancellationToken).ConfigureAwait(false);
+            bundledOutput.Flush(true);
+            progress?.Report((0.58, "Preparo CSS Loader…"));
+            return;
+        }
         using var response = await SendDownloadRequestAsync(release.DownloadUrl, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         var declared = response.Content.Headers.ContentLength ?? release.Size;

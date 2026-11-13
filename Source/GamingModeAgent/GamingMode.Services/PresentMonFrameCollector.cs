@@ -13,6 +13,7 @@ internal enum FrameMeasurementStatus
     Ready,
     Busy,
     TargetUnavailable,
+    GameNotForeground,
     PermissionDenied,
     ProviderUnavailable,
     NoData,
@@ -52,7 +53,8 @@ internal sealed class PresentMonFrameCollector
         _exitGrace = exitGrace;
     }
 
-    internal async Task<FrameMeasurement> CaptureAsync(PresentMonTarget target, CancellationToken cancellationToken)
+    internal async Task<FrameMeasurement> CaptureAsync(PresentMonTarget target, CancellationToken cancellationToken,
+        TimeSpan preparationDelay = default, Func<bool>? isGameForeground = null)
     {
         if (cancellationToken.IsCancellationRequested) return new(FrameMeasurementStatus.Canceled);
         if (!_singleFlight.Wait(0)) return new(FrameMeasurementStatus.Busy);
@@ -71,6 +73,14 @@ internal sealed class PresentMonFrameCollector
             if (executable is null) return new(FrameMeasurementStatus.ProviderUnavailable);
             if (cancellationToken.IsCancellationRequested) return new(FrameMeasurementStatus.Canceled);
             if (observed.HasExited) return new(FrameMeasurementStatus.TargetUnavailable);
+            if (preparationDelay > TimeSpan.Zero)
+            {
+                Task delay = Task.Delay(preparationDelay, cancellationToken);
+                if (await Task.WhenAny(delay, observed.Exited).ConfigureAwait(false) == observed.Exited || observed.HasExited)
+                    return new(FrameMeasurementStatus.TargetUnavailable);
+                if (cancellationToken.IsCancellationRequested) return new(FrameMeasurementStatus.Canceled);
+            }
+            if (isGameForeground is not null && !isGameForeground()) return new(FrameMeasurementStatus.GameNotForeground);
 
             string session = PresentMonWindowsCapture.SessionPrefix + Guid.NewGuid().ToString("N");
             using var capture = _platform.Start(_executablePath, target.ProcessId, session);

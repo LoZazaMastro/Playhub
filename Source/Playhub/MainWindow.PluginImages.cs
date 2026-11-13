@@ -90,6 +90,10 @@ public sealed partial class MainWindow
             // Defer so a synchronous cached failure cannot re-enter source assignment.
             DispatcherQueue.TryEnqueue(async () => await ResolveAsync());
         };
+        // A metadata-only card refresh can reuse an already decoded bitmap
+        // immediately, rather than clearing its image until another Loaded turn.
+        if (path is not null && _pluginBitmapCache.TryGetValue((path, width), out var cached))
+            image.Source = cached;
         return image;
     }
 

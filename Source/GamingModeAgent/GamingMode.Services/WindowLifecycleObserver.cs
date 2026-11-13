@@ -17,19 +17,21 @@ internal sealed class WindowLifecycleObserver : IDisposable
     private Dispatcher? _dispatcher;
     private int _disposed;
 
-    public WindowLifecycleObserver(Action changed)
+    public WindowLifecycleObserver(Action changed, Action<nint>? foregroundChanged = null, bool watchLifecycle = true)
     {
         _callback = (_, eventId, window, objectId, childId, _, _) =>
         {
             // Ignore accessibility events for controls and menus inside a window.
-            if (window != 0 && (eventId == 3 || (objectId == 0 && childId == 0))) changed();
+            if (window == 0) return;
+            if (eventId == 3) foregroundChanged?.Invoke(window);
+            if (eventId == 3 || (objectId == 0 && childId == 0)) changed();
         };
-        _thread = new Thread(Run) { IsBackground = true, Name = "Playhub window events" };
+        _thread = new Thread(() => Run(watchLifecycle)) { IsBackground = true, Name = "Playhub window events" };
         _thread.SetApartmentState(ApartmentState.STA);
         _thread.Start();
     }
 
-    private void Run()
+    private void Run(bool watchLifecycle)
     {
         _dispatcher = Dispatcher.CurrentDispatcher;
         if (Volatile.Read(ref _disposed) != 0) return;
@@ -37,7 +39,7 @@ internal sealed class WindowLifecycleObserver : IDisposable
         try
         {
             hooks.Add(SetWinEventHook(3, 3, 0, _callback, 0, 0, 2)); // foreground, skip this process
-            hooks.Add(SetWinEventHook(0x8000, 0x8003, 0, _callback, 0, 0, 2)); // create/destroy/show/hide
+            if (watchLifecycle) hooks.Add(SetWinEventHook(0x8000, 0x8003, 0, _callback, 0, 0, 2)); // create/destroy/show/hide
             Dispatcher.Run();
         }
         finally { foreach (nint hook in hooks) if (hook != 0) UnhookWinEvent(hook); }

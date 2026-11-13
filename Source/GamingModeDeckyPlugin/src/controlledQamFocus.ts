@@ -6,7 +6,6 @@ export function steamAppId(value: unknown): number {
 export interface QamFocusDependencies {
   runningApp(): number;
   nativeOverlayAvailable(appId: number): Promise<boolean>;
-  gameBar?(requestId: string, appId: number, pressed: boolean): Promise<{ ok: boolean }>;
   mainMenu(): { GetOpenSideMenu(): number; OpenQuickAccessMenu(tab?: number): void; OpenSideMenu?(side: number): void } | undefined;
   acquire(requestId: string, appId: number): Promise<{ ok: boolean }>;
   close(requestId: string): Promise<unknown>;
@@ -22,7 +21,6 @@ export function createControlledQamFocus(deps: QamFocusDependencies) {
   let disposed = false;
   let openingMain = false;
   let closedAt = -Infinity, closedApp = 0;
-  let delegatedAt = -Infinity, delegatedApp = 0;
   const systemKeys = new Map<string, number>();
   const now = deps.now ?? (() => Date.now());
   const report = (promise: Promise<unknown>) => { void promise.catch(deps.warn); };
@@ -37,18 +35,10 @@ export function createControlledQamFocus(deps: QamFocusDependencies) {
       if (pending) { pending.side = side; return; }
       const app = deps.runningApp();
       if (!(app > 0) || !deps.mainMenu()) return;
-      if (app === delegatedApp && now() - delegatedAt < 220) return;
       const request = { id: deps.requestId(), app, side, acquired: false };
       pending = request;
       void (async () => {
         try {
-          if (deps.gameBar) {
-            let delegated = false;
-            try { delegated = (await deps.gameBar(request.id, app, true)).ok === true; }
-            finally { try { await deps.gameBar(request.id, app, false); } catch (error) { deps.warn(error); } }
-            if (disposed || pending !== request) return;
-            if (delegated) { delegatedApp = app; delegatedAt = now(); pending = undefined; return; }
-          }
           // Unknown/failed native-overlay enumeration fails closed: it cannot
           // justify moving the user's foreground away from a working overlay.
           if (await deps.nativeOverlayAvailable(app)) {
@@ -59,8 +49,8 @@ export function createControlledQamFocus(deps: QamFocusDependencies) {
           if (deps.runningApp() !== app) { invalidate(false); return; }
           const main = deps.mainMenu();
           if (!main) { invalidate(false); return; }
-          // Ask native policy before opening anything in Steam. A delegated
-          // UWP/Game Bar session must not receive a forced main-menu open.
+          // Ask native policy before opening anything in Steam. COM-activated
+          // UWP sessions outside the Steam process tree are not eligible.
           const acquired = await deps.acquire(request.id, app);
           if (disposed || pending !== request || deps.runningApp() !== app) {
             if (pending === request) pending = undefined;

@@ -85,6 +85,8 @@ public sealed class AgentClient
 		return PostAsync("/mode/gaming");
 	}
 
+	public Task<ApiResult?> OpenSteamBigPictureAsync() => PostAsync("/steam/bigpicture/open");
+
 	public Task<ApiResult?> ApplyDesktopModeAsync()
 	{
 		return PostAsync("/mode/desktop");

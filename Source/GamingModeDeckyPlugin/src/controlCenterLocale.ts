@@ -18,7 +18,7 @@ export function controlLocale(locale: string) {
   const row = copy[key as keyof typeof copy] ?? copy.en;
   const tabs = tabCopy[key] ?? tabCopy.en;
   const video: Record<string, string> = { en: "Video", it: "Video", de: "Video", es: "Vídeo", fr: "Vidéo", pt: "Vídeo", ru: "Видео", uk: "Відео", ja: "映像", ko: "비디오", zh: "视频", hi: "वीडियो" };
-  return { home: row[0], audio: video[key] ?? video.en, display: row[2], performance: row[1], graphics: row[4], controller: row[5], tools: row[6], store: 'Plugin Store', decky: 'Decky', settings: row[7], customize: tabs[1], show: tabs[4], up: tabs[2], down: tabs[3], reset: row[12], back: row[13], hint: row[14], expand: row[15], collapse: row[16], switchTab: row[17], saveError: row[18], device: tabs[5], unavailable: tabs[6], loading: tabs[7], retry: tabs[8] };
+  return { home: row[0], audio: video[key] ?? video.en, display: row[2], performance: row[1], graphics: row[3], controller: row[5], tools: row[6], store: 'Plugin Store', decky: 'Decky', settings: row[7], customize: tabs[1], show: tabs[4], up: tabs[2], down: tabs[3], reset: row[12], back: row[13], hint: row[14], expand: row[15], collapse: row[16], switchTab: row[17], saveError: row[18], device: tabs[5], unavailable: tabs[6], loading: tabs[7], retry: tabs[8] };
 }
 
 const tabCopy: Record<string, string[]> = {

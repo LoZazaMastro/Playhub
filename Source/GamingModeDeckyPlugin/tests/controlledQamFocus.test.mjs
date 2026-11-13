@@ -14,7 +14,7 @@ test("Steam signed shortcut IDs retain exact unsigned identity at native boundar
   assert.equal(exports.steamAppId(620),620);
   for(const value of [undefined,NaN,Infinity,10674787038353424384,1.5])assert.equal(exports.steamAppId(value),0);
 });
-function fixture(gameBar) {
+function fixture() {
   const calls = []; let app = 42, visible = 2, native = false, serial = 0, clock = 1000;
   let probe = async () => native, acquire = async () => ({ok:true});
   const main = { GetOpenSideMenu: () => visible, OpenQuickAccessMenu: tab => { calls.push(["main",tab]); visible=2; },
@@ -24,31 +24,11 @@ function fixture(gameBar) {
     acquire: id => { calls.push(["acquire",id]); return acquire(id); },
     close: async id => calls.push(["close",id]), release: async id => calls.push(["release",id]),
     requestId: () => `r${++serial}`, warn: () => {}, now:()=>clock,
-    gameBar,
   });
   return {control,calls,setNative: value=>native=value,setVisible:value=>visible=value,setApp:value=>app=value,
     probe: fn=>probe=fn, acquire: fn=>acquire=fn, main, advance:ms=>clock+=ms};
 }
 
-test("separate completed Guide presses get separate paired pulses without held repeats or B",async()=>{
-  const pulses=[];
-  const f=fixture(async(id,app,pressed)=>{pulses.push([id,app,pressed]);return{ok:true};});
-  f.control.systemKey({eKey:0,nControllerIndex:1});await settle();
-  f.control.systemKey({eKey:0,nControllerIndex:1});await settle();
-  assert.deepEqual(pulses,[["r1",42,true],["r1",42,false]]);
-  f.control.closed();f.advance(500);
-  f.control.systemKey({eKey:0,nControllerIndex:1});await settle();
-  assert.deepEqual(pulses.slice(2),[["r2",42,true],["r2",42,false]]);
-  assert.deepEqual(f.calls,[]);
-});
-
-test("failed Game Bar request still releases paired edge and cannot open QAM",async()=>{
-  const pulses=[];
-  const f=fixture(async(id,app,pressed)=>{pulses.push(pressed);if(pressed)throw Error("offline");return{ok:false};});
-  f.control.systemKey({eKey:0});await settle();
-  assert.deepEqual(pulses,[true,false]);
-  assert.equal(f.calls.some(x=>x[0]==="main"||x[0]==="side"||x[0]==="acquire"),false);
-});
 test("working native overlay receives no main-window/focus operations", async () => {
   const f=fixture(); f.setNative(true); f.setVisible(0); f.control.opened(4); await settle(); f.control.closed();
   assert.deepEqual(f.calls,[]);
@@ -105,7 +85,7 @@ test("app switch while raw key checks native identity cannot acquire old game",a
   const f=fixture();let resolve;f.probe(()=>new Promise(r=>resolve=r));f.setVisible(0);f.control.systemKey({eKey:1,nControllerIndex:5});
   f.setApp(99);f.control.applicationSelected();resolve(false);await settle();assert.deepEqual(f.calls,[["release","r1"]]);
 });
-test("native UWP/Game Bar denial never force-opens Guide or quick menu",async()=>{
+test("native focus denial never force-opens Guide or quick menu",async()=>{
   for(const eKey of [0,1]){
     const f=fixture();f.setVisible(0);f.acquire(async()=>({ok:false}));
     f.control.systemKey({eKey,nControllerIndex:5});await settle();

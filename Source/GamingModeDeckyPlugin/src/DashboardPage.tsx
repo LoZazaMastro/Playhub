@@ -4,6 +4,7 @@ import { createDashboardExit, consumeDashboardCancel } from "./dashboardExit";
 import { createDashboardPoll, dashboardSystemVisible } from "./dashboardPolling";
 import { windowCloseCopy } from "./windowCloseCopy";
 import { findOverlayWindow, selectOverlay, waitForOverlay, OverlayIdentity } from "./dashboardOverlay";
+import { steamAppId } from "./controlledQamFocus";
 import {
   DashboardEnvironment,
   ProcessEntry,
@@ -207,7 +208,9 @@ export async function prepareDashboardOverlay(): Promise<boolean> {
     if (typeof overlay?.SetOverlayState !== "function") return false;
     const infos = await overlay.GetOverlayBrowserInfo?.();
     if (generation !== dashboardOverlayGeneration) return false;
-    const current = selectOverlay(infos, Number((DFL as any)?.Router?.MainRunningAppID) || undefined);
+    const running = steamAppId((window as any).SteamUIStore?.MainRunningAppID ?? (DFL as any)?.Router?.MainRunningAppID);
+    if (!running) return false;
+    const current = selectOverlay(infos, running);
     if (!current) return false;
     dashboardOverlayIdentity = current;
     dashboardOverlayGameId = current.gameID;
@@ -215,8 +218,9 @@ export async function prepareDashboardOverlay(): Promise<boolean> {
     // suspend its own Lossless Scaling capture. Do not duplicate its ownership.
     dashboardOverlayRegistration = overlay.RegisterForOverlayActivated?.(
       (pid: number, appId: number, active: boolean) => {
-        if (generation !== dashboardOverlayGeneration || Number(pid) !== current.unPID ||
-            Number(appId) !== current.appID || active) return;
+        if (generation !== dashboardOverlayGeneration || Number(pid) !== current.unPID || active) return;
+        const reportedAppId = steamAppId(appId);
+        if (reportedAppId !== current.appID && reportedAppId !== running) return;
         closeDashboardOverlay(false);
       });
     await overlay.SetOverlayState(current.gameID, 2);

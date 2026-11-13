@@ -1,0 +1,23 @@
+AYANEO 3 Windows RGB/vibration controller adapter
+
+Wire format and color handling derived from Rayekkk/Ayaneo3Companion
+controller_backend.py, commit bed273c04ccf1c9bfd31caf1ecc4c4c6b20e23c7.
+Copyright (c) 2026 Rayekkk. BSD-3-Clause; full license supplied alongside.
+https://github.com/Rayekkk/Ayaneo3Companion
+
+Changes: native Windows HID-class transport and exact parent-chain binding,
+retained exclusive collection, narrow RGB/vibration-only command allowlist,
+private baseline ownership, fresh token and final dispatch guards, conditional
+restore, no NVRAM/mode switch/reset/eject/button map/controller emulation.
+The new Windows transport uses public Microsoft Windows APIs and no custom
+driver. Hardware operation on Windows has not been tested by Playhub.
+
+Upstream identifies HHD as protocol prior art (LGPL-2.1-or-later) and states
+that its implementation includes no HHD source. No HHD or Handheld Companion
+source is copied into this adapter.
+
+Microsoft protocol/API references:
+https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/hidpi/ns-hidpi-_hidp_caps
+https://learn.microsoft.com/en-us/windows-hardware/drivers/hid/sending-hid-reports
+https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/hidsdi/nf-hidsdi-hidd_getattributes
+https://learn.microsoft.com/en-us/windows/win32/api/ioapiset/nf-ioapiset-cancelioex

@@ -5,6 +5,7 @@ import datetime
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 import tempfile
@@ -123,6 +124,7 @@ _AUDIO_CACHE_VALUE = None
 _AUDIO_CACHE_EXPIRES_AT = 0.0
 _LOSSLESS_PATH_CACHE = {"value": "", "checked_at": 0.0}
 _LS_CONTROL_LOCK = threading.RLock()
+_LS_OWNED_UI = None
 _LS_CORE_EVENT = threading.Event()
 _LS_CORE = {
     "dll": None,
@@ -944,6 +946,17 @@ class Plugin:
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, _get_display_status_sync)
 
+    async def get_panel_brightness(self):
+        return await asyncio.to_thread(_panel_brightness_sync)
+
+    async def set_panel_brightness(self, request):
+        if not isinstance(request, dict):
+            return {"ok": False, "code": "invalid_request"}
+        token, level = request.get("token"), request.get("level")
+        if token is None or level is None:
+            return {"ok": False, "code": "invalid_request"}
+        return await asyncio.to_thread(_panel_brightness_sync, token, level)
+
     async def set_display_mode(self, request):
         width = int(_arg(request, "width", 0) or 0)
         height = int(_arg(request, "height", 0) or 0)
@@ -1368,17 +1381,26 @@ class Plugin:
             return {"ok": all(value.get("ok") for value in results.values()) if results else True,
                     "active": False, "components": results}
 
-        profile = self._get_lossless_profile_sync(str(app_id), title, False)
-        if not profile.get("auto_enabled"):
+        with self._settings_lock:
+            stored = self._settings.get("lossless_profiles", {}).get(str(app_id))
+            stored = stored if isinstance(stored, dict) else {}
+            auto_lossless = bool(stored.get("auto_enabled"))
+            auto_amd = bool(stored.get("amd_auto_enabled"))
+            lossless_settings = copy.deepcopy(stored.get("settings")) if auto_lossless else None
+            lossless_filters = copy.deepcopy(stored.get("lossless_filters")) if auto_lossless else None
+            amd_settings = copy.deepcopy(stored.get("amd_settings")) if auto_amd else None
+
+        def active_lossless_settings():
+            settings = lossless_settings
+            if not isinstance(settings, dict):
+                settings = _read_lossless_settings().get("settings", {})
+            return _normalize_lossless_profile(settings)
+
+        if not auto_lossless:
             if _LS_RUNTIME.get("active") and int(_LS_RUNTIME.get("active_app_id", 0)) != int(app_id):
                 results["lossless"] = _stop_lossless_managed_sync("unmanaged_game_started")
         else:
-            filters = _lossless_profile_filters(
-                title,
-                self._settings.get("lossless_profiles", {})
-                .get(str(app_id), {})
-                .get("lossless_filters"),
-            )
+            filters = _lossless_profile_filters(title, lossless_filters)
             if int(_LS_SESSION_CONTROL.get("manual_disabled_app_id", 0) or 0) == int(app_id):
                 results["lossless"] = {
                     "ok": True,
@@ -1394,7 +1416,7 @@ class Plugin:
                 )
                 if not pending_same_app:
                     _queue_lossless_overlay_resume(
-                        profile.get("settings", {}), int(app_id), title, filters
+                        active_lossless_settings(), int(app_id), title, filters
                     )
                 results["lossless"] = {
                     "ok": True,
@@ -1406,7 +1428,7 @@ class Plugin:
                 }
             else:
                 results["lossless"] = _schedule_lossless_autostart(
-                    profile.get("settings", {}),
+                    active_lossless_settings(),
                     int(app_id),
                     title,
                     filters,
@@ -1420,17 +1442,17 @@ class Plugin:
                     result=_compact_lossless_result(results["lossless"]),
                 )
 
-        if profile.get("amd_auto_enabled"):
+        if auto_amd:
             results["amd"] = self._activate_amd_profile_sync(
-                profile.get("amd_settings", {}), int(app_id), title, force=False
+                _normalize_amd_profile(amd_settings), int(app_id), title, force=False
             )
         elif _AMD_PROFILE_RUNTIME.get("active"):
             results["amd"] = self._restore_amd_profile_sync("game_without_amd_profile")
         return {
             "ok": all(bool(value.get("ok")) for value in results.values()) if results else True,
             "active": bool(_LS_RUNTIME.get("active") or _AMD_PROFILE_RUNTIME.get("active")),
-            "auto_enabled": bool(profile.get("auto_enabled")),
-            "amd_auto_enabled": bool(profile.get("amd_auto_enabled")),
+            "auto_enabled": auto_lossless,
+            "amd_auto_enabled": auto_amd,
             "components": results,
         }
 
@@ -1953,6 +1975,81 @@ def _powershell_path():
         if os.path.exists(candidate):
             return candidate
     return "powershell"
+
+
+_PANEL_BRIGHTNESS_LOCK = threading.Lock()
+_PANEL_BRIGHTNESS_SCRIPT = r'''
+$ErrorActionPreference = 'Stop'
+function Read-Panels {
+    Get-CimInstance -Namespace root/wmi -ClassName WmiMonitorBrightness -OperationTimeoutSec 2 |
+        Where-Object Active
+}
+$panels = @(Read-Panels)
+if ($panels.Count -ne 1) { '{"available":false}'; return }
+$panel = $panels[0]
+$setters = @(Get-CimInstance -Namespace root/wmi -ClassName WmiMonitorBrightnessMethods -OperationTimeoutSec 2 |
+    Where-Object { $_.Active -and $_.InstanceName -ceq $panel.InstanceName })
+$levels = @($panel.Level | Sort-Object -Unique)
+if ($setters.Count -ne 1 -or $levels.Count -lt 2 -or $levels -notcontains $panel.CurrentBrightness) {
+    '{"available":false}'; return
+}
+$sha = [System.Security.Cryptography.SHA256]::Create()
+try { $token = [Convert]::ToBase64String($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($panel.InstanceName))) }
+finally { $sha.Dispose() }
+$result = @{available=$true; token=$token; levels=$levels; level=[int]$panel.CurrentBrightness; ok=$true}
+if ($null -ne $desired) {
+    if ($token -cne $expected) { '{"available":false,"ok":false,"code":"panel_changed"}'; return }
+    if ($levels -notcontains $desired) { $result.ok=$false; $result.code='unsupported_level' }
+    elseif ($result.level -ne $desired) {
+        $write = Invoke-CimMethod -InputObject $setters[0] -MethodName WmiSetBrightness -OperationTimeoutSec 2 `
+            -Arguments @{Timeout=[uint32]0; Brightness=[byte]$desired}
+        if ($write.ReturnValue -ne 0) { $result.ok=$false; $result.code='write_failed' }
+        else {
+            for ($i=0; $i -lt 3; $i++) {
+                $observed = @(Read-Panels)
+                if ($observed.Count -ne 1 -or $observed[0].InstanceName -cne $panel.InstanceName) {
+                    '{"available":false,"ok":false,"code":"panel_changed"}'; return
+                }
+                $result.level = [int]$observed[0].CurrentBrightness
+                if ($result.level -eq $desired) { break }
+                if ($i -lt 2) { Start-Sleep -Milliseconds 100 }
+            }
+            if ($result.level -ne $desired) { $result.ok=$false; $result.code='not_confirmed' }
+        }
+    }
+}
+$result | ConvertTo-Json -Compress
+'''
+
+
+def _panel_brightness_sync(token=None, level=None):
+    unavailable = {"available": False, "ok": False, "code": "unavailable"}
+    writing = token is not None or level is not None
+    if writing and (not isinstance(token, str) or not re.fullmatch(r"[A-Za-z0-9+/]{43}=", token)
+                    or type(level) is not int or not 0 <= level <= 100):
+        return {"ok": False, "code": "invalid_request"}
+    if os.name != "nt":
+        return unavailable
+    preamble = f"$expected = '{token or ''}'; $desired = {level if level is not None else '$null'}\n"
+    with _PANEL_BRIGHTNESS_LOCK:
+        code, output, _ = _run_cmd([_powershell_path(), "-NoProfile", "-NonInteractive", "-Command",
+                                   preamble + _PANEL_BRIGHTNESS_SCRIPT], timeout=6)
+    if code != 0:
+        return {"ok": False, "code": "write_failed"} if writing else unavailable
+    try:
+        result = json.loads(output.lstrip("\ufeff"))
+    except (TypeError, ValueError):
+        return unavailable
+    if not isinstance(result, dict) or result.get("available") is not True:
+        return {**unavailable, "code": "panel_changed"} if isinstance(result, dict) and result.get("code") == "panel_changed" else unavailable
+    levels = result.get("levels")
+    if (not isinstance(levels, list) or not all(type(item) is int and 0 <= item <= 100 for item in levels)
+            or len(levels) < 2 or levels != sorted(set(levels)) or type(result.get("level")) is not int
+            or result["level"] not in levels or not isinstance(result.get("token"), str)
+            or not re.fullmatch(r"[A-Za-z0-9+/]{43}=", result["token"])):
+        return unavailable
+    return {"available": True, "ok": result.get("ok") is True, "token": result["token"], "levels": levels,
+            "level": result["level"], "code": result.get("code")}
 
 
 _AUDIO_HELPER_SCRIPT = r'''
@@ -2862,6 +2959,82 @@ def _get_power_overlay():
     return None
 
 
+_WINDOWS_POWER_PROFILE_LOCK = threading.Lock()
+_WINDOWS_POWER_MODES = {"efficiency": POWER_OVERLAYS["efficiency"], "balanced": POWER_OVERLAYS["balanced"],
+                        "performance": POWER_OVERLAYS["best"]}
+_WINDOWS_POWER_SOURCES = {"ac": "AC", "battery": "DC"}
+
+
+def _windows_power_mode_functions(source):
+    # Windows 11's user settings have independent AC/DC values. The legacy
+    # overlay setter does not express which one the user selected in the UI.
+    kind = _WINDOWS_POWER_SOURCES[source]
+    powrprof = ctypes.windll.powrprof
+    read = getattr(powrprof, f"PowerGetUserConfigured{kind}PowerMode")
+    write = getattr(powrprof, f"PowerSetUserConfigured{kind}PowerMode")
+    for function in (read, write):
+        function.argtypes = [ctypes.POINTER(_GUID)]
+        function.restype = wintypes.DWORD
+    return read, write
+
+
+def _read_windows_power_mode(read):
+    guid = _GUID()
+    if read(ctypes.byref(guid)) != 0:
+        return None
+    observed = _guid_to_string(guid)
+    return next((mode for mode, value in _WINDOWS_POWER_MODES.items() if value == observed), None)
+
+
+def _windows_power_profile_snapshot(read_power):
+    if os.name != "nt":
+        return {"available": False}
+    source = read_power().get("source")
+    if source not in _WINDOWS_POWER_SOURCES:
+        return {"available": False}
+    try:
+        read, _ = _windows_power_mode_functions(source)
+        mode = _read_windows_power_mode(read)
+    except (AttributeError, OSError):
+        return {"available": False}
+    if mode is None:
+        return {"available": False}
+    return {"available": True, "source": source, "mode": mode}
+
+
+def _get_windows_power_profile_sync(read_power):
+    with _WINDOWS_POWER_PROFILE_LOCK:
+        return _windows_power_profile_snapshot(read_power)
+
+
+def _set_windows_power_profile_sync(read_power, request):
+    if not isinstance(request, dict):
+        return {"ok": False, "code": "invalid_profile"}
+    source, mode = request.get("source"), request.get("mode")
+    if (not isinstance(source, str) or source not in _WINDOWS_POWER_SOURCES or
+            not isinstance(mode, str) or mode not in _WINDOWS_POWER_MODES):
+        return {"ok": False, "code": "invalid_profile"}
+    with _WINDOWS_POWER_PROFILE_LOCK:
+        current = _windows_power_profile_snapshot(read_power)
+        if not current["available"]:
+            return {**current, "ok": False, "code": "unavailable"}
+        if current["source"] != source:
+            return {**current, "ok": False, "code": "source_changed"}
+        if current["mode"] == mode:
+            return {**current, "ok": True}
+        code = "write_failed"
+        try:
+            read, write = _windows_power_mode_functions(source)
+            if read_power().get("source") != source:
+                code = "source_changed"
+            elif write(ctypes.byref(_guid_from_string(_WINDOWS_POWER_MODES[mode]))) == 0:
+                code = None if _read_windows_power_mode(read) == mode else "not_confirmed"
+        except (AttributeError, OSError):
+            pass
+        observed = _windows_power_profile_snapshot(read_power)
+        return {**observed, "ok": code is None, **({"code": code} if code else {})}
+
+
 def _set_power_overlay_sync(mode):
     if os.name != "nt":
         return {"ok": False, "message": "Power mode is only available on Windows."}
@@ -3151,12 +3324,11 @@ def _restore_cpu_ppt_sync(*args, **kwargs):
 
 LOSSLESS_APPID = "993090"
 _LS_SCALING_ACTIVE = {"on": False}
-# While True, the launch helper keeps Lossless Scaling's control window hidden.
-# It is switched off the moment scaling is armed so the actual scaling OVERLAY
-# (also owned by LosslessScaling.exe) is never hidden - hiding it was why the
-# game looked like it was "active but not scaled".
-_LS_HIDE_ACTIVE = {"on": False}
 _LS_ACTIVATION_SETTLE_SECONDS = 1.2
+_LS_EXTERNAL_UI_MESSAGE = (
+    "Lossless Scaling is already open outside Playhub. "
+    "Close it before enabling Playhub-managed scaling."
+)
 
 _MODIFIER_VK = {"control": 0x11, "ctrl": 0x11, "alt": 0x12, "menu": 0x12, "shift": 0x10, "win": 0x5B}
 
@@ -4500,20 +4672,63 @@ def _lossless_running():
     return bool(_process_ids_by_name("LosslessScaling.exe"))
 
 
-def _hide_lossless_windows(pid):
-    if os.name != "nt" or not pid:
-        return
-    user32 = ctypes.windll.user32
+def _lossless_process_creation_time(pid):
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel.OpenProcess.restype = wintypes.HANDLE
+    kernel.GetProcessTimes.argtypes = [wintypes.HANDLE] + [ctypes.POINTER(wintypes.FILETIME)] * 4
+    kernel.GetProcessTimes.restype = wintypes.BOOL
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel.CloseHandle.restype = wintypes.BOOL
+    handle = kernel.OpenProcess(0x1000, False, pid)
+    if not handle:
+        return None
+    try:
+        created, exited, system, user = (wintypes.FILETIME() for _ in range(4))
+        if kernel.GetProcessTimes(handle, ctypes.byref(created), ctypes.byref(exited), ctypes.byref(system), ctypes.byref(user)):
+            return (created.dwHighDateTime << 32) | created.dwLowDateTime
+        return None
+    finally:
+        kernel.CloseHandle(handle)
 
-    def callback(hwnd, _lparam):
-        window_pid = wintypes.DWORD()
-        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(window_pid))
-        if int(window_pid.value) == int(pid):
-            user32.ShowWindow(hwnd, 0)
-        return True
 
-    for _hwnd in _enum_top_level_windows():
-        callback(_hwnd, 0)
+def _owned_lossless_ui():
+    global _LS_OWNED_UI
+    with _LS_CONTROL_LOCK:
+        if _LS_OWNED_UI is None:
+            return None
+        process, birth = _LS_OWNED_UI
+        if process.poll() is not None:
+            _LS_OWNED_UI = None
+            return None
+        if _lossless_process_creation_time(process.pid) != birth:
+            return None
+        return process
+
+
+def _external_lossless_ui_pids():
+    owned = _owned_lossless_ui()
+    return [
+        pid for pid in _process_ids_by_name("LosslessScaling.exe")
+        if owned is None or pid != owned.pid
+    ]
+
+
+def _stop_owned_lossless_ui():
+    global _LS_OWNED_UI
+    with _LS_CONTROL_LOCK:
+        owned = _owned_lossless_ui()
+        if owned is None:
+            return ""
+        try:
+            # The retained CreateProcess handle also prevents termination of a
+            # different process if the PID changes after this identity check.
+            owned.terminate()
+            owned.wait(timeout=4)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            return f"Could not stop the Lossless Scaling instance opened by Playhub: {error}"
+        _LS_OWNED_UI = None
+        return ""
 
 
 def _lossless_output_windows():
@@ -4762,32 +4977,7 @@ def _set_steam_overlay_active_sync(
     }
 
 
-def _keep_lossless_hidden(pid, previous_foreground=0):
-    def worker():
-        user32 = ctypes.windll.user32
-        for _ in range(40):
-            # Stop as soon as scaling is armed: after that point Lossless creates
-            # its scaling overlay (owned by the same pid), and hiding it would make
-            # the game look un-scaled. Only the pre-activation control window is
-            # hidden.
-            if not _LS_HIDE_ACTIVE.get("on"):
-                break
-            if pid not in _process_ids_by_name("LosslessScaling.exe"):
-                break
-            _hide_lossless_windows(pid)
-            current = int(user32.GetForegroundWindow() or 0)
-            current_pid = wintypes.DWORD()
-            if current:
-                user32.GetWindowThreadProcessId(current, ctypes.byref(current_pid))
-            if int(current_pid.value) == int(pid) and previous_foreground and user32.IsWindow(previous_foreground):
-                user32.SetForegroundWindow(previous_foreground)
-            time.sleep(0.1)
-    threading.Thread(target=worker, name="QuickSettingsLosslessHide", daemon=True).start()
-
-
 def _start_lossless_hidden(path):
-    _LS_HIDE_ACTIVE["on"] = True
-    previous_foreground = int(ctypes.windll.user32.GetForegroundWindow() or 0) if os.name == "nt" else 0
     startupinfo = None
     creation_flags = _NO_WINDOW
     if os.name == "nt":
@@ -4796,14 +4986,12 @@ def _start_lossless_hidden(path):
         startupinfo.wShowWindow = 0
         creation_flags |= getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
     with _independent_process_dll_directory():
-        process = subprocess.Popen(
+        return subprocess.Popen(
             [path, "-StartMinimized"], cwd=os.path.dirname(path), stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             startupinfo=startupinfo, creationflags=creation_flags, close_fds=True,
             env=_independent_process_environment(),
         )
-    _keep_lossless_hidden(process.pid, previous_foreground)
-    return process
 
 
 def _lossless_settings_path():
@@ -5247,36 +5435,34 @@ def _get_lossless_status_sync():
 
 
 def _launch_lossless_sync():
+    global _LS_OWNED_UI
     if os.name != "nt":
         return {"ok": False, "running": False, "message": "Windows only."}
-    if _lossless_running():
-        return {"ok": True, "running": True, "message": "", "pid": _process_ids_by_name("LosslessScaling.exe")[0]}
-    path = _find_lossless()
-    try:
-        if path:
-            process = _start_lossless_hidden(path)
-        else:
+    with _LS_CONTROL_LOCK:
+        owned = _owned_lossless_ui()
+        if owned is not None:
+            return {"ok": True, "running": True, "message": "", "pid": owned.pid}
+        external = _external_lossless_ui_pids()
+        if external:
+            return {"ok": True, "running": True, "message": "", "pid": external[0]}
+        path = _find_lossless()
+        if not path:
             return {"ok": False, "running": False, "message": "Lossless Scaling executable was not found."}
-        deadline = time.time() + 6
-        while not _lossless_running() and time.time() < deadline:
-            time.sleep(0.1)
-        running = _lossless_running()
-        return {"ok": running, "running": running, "message": "" if running else "Lossless Scaling did not start.", "pid": process.pid}
-    except Exception as error:
-        return {"ok": False, "running": False, "message": str(error)}
-
-
-def _terminate_process_pid(pid):
-    if os.name != "nt" or not pid:
-        return False
-    PROCESS_TERMINATE = 0x0001
-    handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False, int(pid))
-    if not handle:
-        return False
-    try:
-        return bool(ctypes.windll.kernel32.TerminateProcess(handle, 0))
-    finally:
-        ctypes.windll.kernel32.CloseHandle(handle)
+        try:
+            process = _start_lossless_hidden(path)
+            birth = _lossless_process_creation_time(process.pid)
+            if birth is not None and process.poll() is None:
+                _LS_OWNED_UI = process, birth
+            deadline = time.monotonic() + 6
+            while time.monotonic() < deadline:
+                pids = _process_ids_by_name("LosslessScaling.exe")
+                if pids:
+                    pid = process.pid if process.pid in pids and process.poll() is None else pids[0]
+                    return {"ok": True, "running": True, "message": "", "pid": pid}
+                time.sleep(0.1)
+            return {"ok": False, "running": False, "message": "Lossless Scaling did not start."}
+        except Exception as error:
+            return {"ok": False, "running": False, "message": str(error)}
 
 
 def _deactivate_lossless_capture_sync(reason="disabled", preserve_runtime=False):
@@ -5321,7 +5507,6 @@ def _deactivate_lossless_capture_sync(reason="disabled", preserve_runtime=False)
             })
         _LS_RUNTIME.update(runtime_update)
         _LS_SCALING_ACTIVE["on"] = False
-        _LS_HIDE_ACTIVE["on"] = False
         return {
             "ok": not errors,
             "active": False,
@@ -5349,17 +5534,11 @@ def _stop_lossless_managed_sync(reason="disabled", uninitialize=False):
                 _LS_CORE["last_status"] = {}
                 _LS_CORE["target_monitor"] = {}
 
-        pids = _process_ids_by_name("LosslessScaling.exe")
-        for pid in pids:
-            if not _terminate_process_pid(pid):
-                errors.append(f"PID {pid}")
-        deadline = time.time() + 4
-        while _lossless_running() and time.time() < deadline:
-            time.sleep(0.08)
+        stop_error = _stop_owned_lossless_ui()
+        if stop_error:
+            errors.append(stop_error)
         still_running = _lossless_running()
-        if still_running:
-            errors.append("Lossless Scaling is still running.")
-        cleanup = _remove_lossless_autoscale_profiles()
+        cleanup = {"ok": True, "removed": 0} if still_running else _remove_lossless_autoscale_profiles()
         if not cleanup.get("ok"):
             errors.append(str(cleanup.get("message", "profile cleanup failed")))
         _LS_RUNTIME.update({
@@ -5376,9 +5555,8 @@ def _stop_lossless_managed_sync(reason="disabled", uninitialize=False):
             "last_transition_at": _session_timestamp(),
         })
         _LS_SCALING_ACTIVE["on"] = False
-        _LS_HIDE_ACTIVE["on"] = False
         return {
-            "ok": not still_running and bool(cleanup.get("ok")) and not errors,
+            "ok": bool(cleanup.get("ok")) and not errors,
             "active": False,
             "running": still_running,
             "message": _LS_RUNTIME["last_error"],
@@ -5400,6 +5578,9 @@ def _activate_lossless_managed_sync(
         path = _find_lossless()
         if not path:
             return {"ok": False, "active": False, "running": False, "message": "Lossless Scaling is not installed."}
+        if _external_lossless_ui_pids():
+            return {"ok": False, "active": bool(_LS_RUNTIME.get("active")), "running": True,
+                    "code": "lossless_external_instance", "message": _LS_EXTERNAL_UI_MESSAGE}
         normalized = _normalize_lossless_profile(settings or _read_lossless_settings().get("settings", {}))
         previous_target = _LS_RUNTIME.get("activation_focus", {}).get("target", {})
         same_target = (
@@ -5419,14 +5600,6 @@ def _activate_lossless_managed_sync(
 
         if _LS_RUNTIME.get("active"):
             _deactivate_lossless_capture_sync("native_core_restart")
-
-        loaded = _load_lossless_core()
-        if not loaded.get("ok"):
-            _LS_RUNTIME["last_error"] = str(loaded.get("message", ""))
-            return {
-                "ok": False, "active": False, "running": False,
-                "message": _LS_RUNTIME["last_error"],
-            }
 
         target = _lossless_core_target(filters)
         if not target:
@@ -5473,18 +5646,15 @@ def _activate_lossless_managed_sync(
         _LS_RUNTIME["target_monitor"] = copy.deepcopy(target_monitor)
         _LS_RUNTIME["dpi_awareness"] = _dpi_awareness_snapshot()
 
-        # A running UI instance owns another Lossless core. Close only that
-        # process before initializing the in-process engine.
-        for pid in _process_ids_by_name("LosslessScaling.exe"):
-            _terminate_process_pid(pid)
-        deadline = time.time() + 4.0
-        while _lossless_running() and time.time() < deadline:
-            time.sleep(0.08)
-        if _lossless_running():
+        stop_error = _stop_owned_lossless_ui()
+        if stop_error:
             return {
                 "ok": False, "active": False, "running": True,
-                "message": "Lossless Scaling could not be prepared.",
+                "message": stop_error,
             }
+        if _external_lossless_ui_pids():
+            return {"ok": False, "active": False, "running": True,
+                    "code": "lossless_external_instance", "message": _LS_EXTERNAL_UI_MESSAGE}
         _remove_lossless_autoscale_profiles()
 
         initialized = _initialize_lossless_core()

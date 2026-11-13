@@ -12,6 +12,7 @@ internal static class IdentityChecks
     private static void Check(bool value, string name) { if (!value) throw new Exception(name); _passed++; Console.WriteLine("PASS " + name); }
     private static async Task Main()
     {
+        using var logs = SessionFixtureLogs.Start();
         foreach (string bootstrap in new[] { "gamingservicesui", "GamingServicesUI.EXE", "gamelaunchhelper.exe", "gamingservices", "gamingservicesnet" })
             Check(SteamGameIdentityPolicy.IsXboxLaunchHelper(bootstrap), "Xbox bootstrap excluded: " + bootstrap);
         foreach (string game in new[] { "DOOM64_x64.exe", "Cuphead.exe", "Rustler.exe", "DREDGE.exe" })
@@ -74,21 +75,41 @@ internal static class IdentityChecks
         interactionReads = 0;
         var failedRecheck = GameBarInteractionGuard.Run(true, () => true, () => { if (++interactionReads == 2) throw new Exception("fixture"); return false; }, SendChord);
         Check(!failedRecheck.Ok && sends == 2, "Second state read failure also sends no chord");
-        string helper = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "Playhub", "Playhub.GameSession.exe");
+        const string defaultLocation = @"C:\Users\Fixture\AppData\Local\Programs\Playhub";
+        const string customLocation = @"F:\Custom Programs\Playhub";
+        var defaultImages = UwpSteamSessionAssociation.ResolveInstalledImages(false, null, defaultLocation)
+            ?? throw new Exception("Default installation path not resolved");
+        var customImages = UwpSteamSessionAssociation.ResolveInstalledImages(true, customLocation + "\\", defaultLocation)
+            ?? throw new Exception("Registered custom installation path not resolved");
+        Check(defaultImages.Wrapper == Path.Combine(defaultLocation, "Playhub.GameSession.exe") &&
+            defaultImages.Companion == Path.Combine(defaultLocation, "Playhub.XboxSession.exe"), "Absent registry value uses the default executable pair");
+        Check(customImages.Wrapper == Path.Combine(customLocation, "Playhub.GameSession.exe") &&
+            customImages.Companion == Path.Combine(customLocation, "Playhub.XboxSession.exe"), "Registered installation supplies both exact executable paths");
+        foreach (string? invalid in new[] { null, "", @"F:Playhub", @"\Playhub", @"\\server\share\Playhub", @"\\?\F:\Playhub", @"F:\", @"F:\Other\..\Playhub", @"F:\Playhub.", @"F:\Playhub:alternate" })
+            Check(UwpSteamSessionAssociation.ResolveInstalledImages(true, invalid, defaultLocation) is null,
+                $"Invalid registered path never falls back to the default: {invalid ?? "missing string value"}");
+        string helper = customImages.Wrapper;
         DateTime trackedAt = DateTime.Now;
         long wrapperBirth = trackedAt.AddMilliseconds(-100).ToUniversalTime().ToFileTimeUtc();
         long gameBirth = wrapperBirth + 1;
         var session = new UwpSteamSessionAssociation.Tracked(10, 10674787038353424384, trackedAt, helper, "Fixture_abc!App", "Cuphead.exe");
         var identity = new UwpSessionIdentity(10, wrapperBirth, 20, gameBirth, session.Aumid, "Fixture_abc", @"C:\Fixture\Cuphead.exe");
-        bool Match(UwpSessionIdentity? value=null, uint server=10, uint game=20, uint app=2485417537, long? wb=null, long? gb=null, string? image=null, string? package=null) =>
-            UwpSteamSessionAssociation.Matches(session, value??identity, server, game, app, wb??wrapperBirth, gb??gameBirth, image??helper, package??identity.PackageFamily, identity.Executable);
+        bool Match(UwpSessionIdentity? value=null, uint server=10, uint game=20, uint app=2485417537, long? wb=null, long? gb=null, string? image=null, string? package=null,
+            UwpSteamSessionAssociation.Tracked? tracked=null) =>
+            UwpSteamSessionAssociation.Matches(tracked??session, value??identity, server, game, app, wb??wrapperBirth, gb??gameBirth, image??helper, package??identity.PackageFamily, identity.Executable, customImages);
         Check(Match(), "exact Steam wrapper app AUMID package and both births accepted");
+        Check(Match(tracked:session with { Executable=@"Binaries\Cuphead.exe" }), "Manifest subdirectory preserves exact basename association and full actual image proof");
+        Check(!Match(tracked:session with { Executable=@"Binaries\Other.exe" }), "A different manifest basename remains refused");
+        Check(!Match(identity with { Executable=@"C:\Other\Cuphead.exe" }, tracked:session with { Executable=@"Binaries\Cuphead.exe" }),
+            "Relative manifest image cannot replace the actual complete process path");
         Check(!Match(server:11), "another pipe server PID rejected");
         Check(!Match(wb:wrapperBirth+1), "recycled wrapper PID birth rejected");
         Check(!Match(gb:gameBirth+1), "recycled game PID birth rejected");
         Check(!Match(game:21), "different actual game PID rejected");
         Check(!Match(app:620), "different selected Steam app rejected");
         Check(!Match(image:@"C:\Fixture\Playhub.GameSession.exe"), "same helper basename at untrusted path rejected");
+        Check(!Match(image:defaultImages.Wrapper, tracked:session with { Image=defaultImages.Wrapper }), "A custom installation does not also trust the default copy");
+        Check(!Match(tracked:session with { Image=@"F:\Custom Programs\Other\..\Playhub\Playhub.GameSession.exe" }), "Steam log must name the exact installed wrapper path");
         Check(!Match(package:"Other_abc"), "same executable in different package rejected");
         Check(!Match(identity with { Aumid="Fixture_abc!Other" }), "different AUMID in same package rejected");
         Check(!Match(identity with { WrapperPid=11 }), "response wrapper identity cannot override OS pipe owner");
@@ -125,6 +146,7 @@ internal static class IdentityChecks
         var runtime=new FixtureRuntime();
         Check(UwpLifetime.Run("Fixture_abc!App","Cuphead.exe","raw",runtime)==7&&runtime.Publications==1&&runtime.PublicationDisposed,
             "identity publication is exactly once and disposed by unchanged game wait lifecycle");
+        RegisteredDesktopAssociationChecks.Run(Check);
         Console.WriteLine($"UWP identity checks: {_passed} passed.");
     }
     private sealed class FixtureRuntime : IUwpRuntime

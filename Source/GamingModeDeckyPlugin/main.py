@@ -17,6 +17,7 @@ import socket
 import struct
 import urllib.parse
 import urllib.request
+import urllib.error
 from ctypes import wintypes
 
 _ipc_spec = importlib.util.spec_from_file_location("playhub_decky_ipc_health", os.path.join(os.path.dirname(__file__), "decky_ipc_health.py"))
@@ -31,6 +32,59 @@ QuickSettingsPlugin = _runtime.Plugin
 _qam_spec = importlib.util.spec_from_file_location("playhub_qam_preferences", os.path.join(os.path.dirname(__file__), "quick_settings", "qam_preferences.py"))
 _qam_module = importlib.util.module_from_spec(_qam_spec)
 _qam_spec.loader.exec_module(_qam_module)
+_device_spec = importlib.util.spec_from_file_location("playhub_device_profile", os.path.join(os.path.dirname(__file__), "quick_settings", "device_profile.py"))
+_device_module = importlib.util.module_from_spec(_device_spec)
+_device_spec.loader.exec_module(_device_module)
+_device_capabilities_spec = importlib.util.spec_from_file_location("playhub_device_capabilities", os.path.join(os.path.dirname(__file__), "quick_settings", "device_capabilities.py"))
+_device_capabilities_module = importlib.util.module_from_spec(_device_capabilities_spec)
+_device_capabilities_spec.loader.exec_module(_device_capabilities_module)
+_battery_spec = importlib.util.spec_from_file_location("playhub_battery_health", os.path.join(os.path.dirname(__file__), "quick_settings", "battery_health.py"))
+_battery_module = importlib.util.module_from_spec(_battery_spec)
+_battery_spec.loader.exec_module(_battery_module)
+_boost_spec = importlib.util.spec_from_file_location("playhub_processor_boost", os.path.join(os.path.dirname(__file__), "quick_settings", "processor_boost.py"))
+_boost_module = importlib.util.module_from_spec(_boost_spec)
+_boost_spec.loader.exec_module(_boost_module)
+_handheld_power_spec = importlib.util.spec_from_file_location("playhub_lenovo_power_mode", os.path.join(os.path.dirname(__file__), "quick_settings", "lenovo_power_mode.py"))
+_handheld_power_module = importlib.util.module_from_spec(_handheld_power_spec)
+_handheld_power_spec.loader.exec_module(_handheld_power_module)
+_msi_firmware_spec = importlib.util.spec_from_file_location("playhub_msi_claw_firmware", os.path.join(os.path.dirname(__file__), "quick_settings", "msi_claw_firmware.py"))
+_msi_firmware_module = importlib.util.module_from_spec(_msi_firmware_spec)
+_msi_firmware_spec.loader.exec_module(_msi_firmware_module)
+_asus_commands_spec = importlib.util.spec_from_file_location("playhub_asus_performance_commands", os.path.join(os.path.dirname(__file__), "quick_settings", "asus_performance_commands.py"))
+_asus_commands_module = importlib.util.module_from_spec(_asus_commands_spec)
+_asus_commands_spec.loader.exec_module(_asus_commands_module)
+_asus_controls_spec = importlib.util.spec_from_file_location("playhub_asus_device_controls", os.path.join(os.path.dirname(__file__), "quick_settings", "asus_device_controls.py"))
+_asus_controls_module = importlib.util.module_from_spec(_asus_controls_spec)
+_asus_controls_spec.loader.exec_module(_asus_controls_module)
+_handheld_tdp_spec = importlib.util.spec_from_file_location("playhub_asus_handheld_tdp", os.path.join(os.path.dirname(__file__), "quick_settings", "asus_handheld_tdp.py"))
+_handheld_tdp_module = importlib.util.module_from_spec(_handheld_tdp_spec)
+_handheld_tdp_spec.loader.exec_module(_handheld_tdp_module)
+_onex_fan_spec = importlib.util.spec_from_file_location("playhub_onex_type2_fan", os.path.join(os.path.dirname(__file__), "quick_settings", "onex_type2_fan.py"))
+_onex_fan_module = importlib.util.module_from_spec(_onex_fan_spec)
+_onex_fan_spec.loader.exec_module(_onex_fan_module)
+_lenovo_tdp_spec = importlib.util.spec_from_file_location("playhub_lenovo_other_tdp", os.path.join(os.path.dirname(__file__), "quick_settings", "lenovo_other_tdp.py"))
+_lenovo_tdp_module = importlib.util.module_from_spec(_lenovo_tdp_spec)
+_lenovo_tdp_spec.loader.exec_module(_lenovo_tdp_module)
+_ayaneo3_spec = importlib.util.spec_from_file_location("playhub_ayaneo3_controller", os.path.join(os.path.dirname(__file__), "quick_settings", "ayaneo3_controller.py"))
+_ayaneo3_module = importlib.util.module_from_spec(_ayaneo3_spec)
+sys.modules[_ayaneo3_spec.name] = _ayaneo3_module
+_ayaneo3_spec.loader.exec_module(_ayaneo3_module)
+_gpd_v1_spec = importlib.util.spec_from_file_location("playhub_gpd_v1_controller", os.path.join(os.path.dirname(__file__), "quick_settings", "gpd_v1_controller.py"))
+_gpd_v1_module = importlib.util.module_from_spec(_gpd_v1_spec)
+sys.modules[_gpd_v1_spec.name] = _gpd_v1_module
+_gpd_v1_spec.loader.exec_module(_gpd_v1_module)
+_shader_spec = importlib.util.spec_from_file_location("playhub_shader_preflight", os.path.join(os.path.dirname(__file__), "quick_settings", "shader_preflight.py"))
+_shader_module = importlib.util.module_from_spec(_shader_spec)
+_shader_spec.loader.exec_module(_shader_module)
+_shader_cache_spec = importlib.util.spec_from_file_location("playhub_shader_cache", os.path.join(os.path.dirname(__file__), "quick_settings", "shader_cache.py"))
+_shader_cache_module = importlib.util.module_from_spec(_shader_cache_spec)
+_shader_cache_spec.loader.exec_module(_shader_cache_module)
+
+def _firmware_board(identity):
+    return {"manufacturer": identity.get("board_manufacturer"), "product": identity.get("board_model")}
+_execution_spec = importlib.util.spec_from_file_location("playhub_game_execution_profiles", os.path.join(os.path.dirname(__file__), "quick_settings", "game_execution_profiles.py"))
+_execution_module = importlib.util.module_from_spec(_execution_spec)
+_execution_spec.loader.exec_module(_execution_module)
 
 
 # Retrying the restore forever re-toggles the panel every 30 s, which on an
@@ -44,7 +98,307 @@ _TOPBAR_CLOCK_SELECTORS = ["#header ._1HhLUvHH6BZLIOyOE80TVh", "._1HhLUvHH6BZLIO
 
 
 class Plugin(QuickSettingsPlugin):
-    def _measure_game_frames(self, app_id):
+    @staticmethod
+    def _native_session_post(path, query, body=None, *, timeout=2.5, maximum=2048):
+        try:
+            token_path = os.path.join(os.environ["APPDATA"], "GamingMode", "xbox-shell-token")
+            with open(token_path, "r", encoding="utf-8") as token_file:
+                token = token_file.read(513).strip()
+            if not token or len(token) > 512:
+                return {}
+            uri = "http://127.0.0.1:47991" + path
+            if query:
+                uri += "?" + urllib.parse.urlencode(query)
+            headers = {"X-Playhub-Shell-Token": token}
+            data = b""
+            if body is not None:
+                headers["Content-Type"] = "application/json"
+                data = json.dumps(body).encode("utf-8")
+            request = urllib.request.Request(uri, data=data, method="POST", headers=headers)
+            client = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            with client.open(request, timeout=timeout) as response:
+                data = json.loads(response.read(maximum))
+            return data if isinstance(data, dict) else {}
+        except (OSError, ValueError, KeyError):
+            return {}
+
+    def _game_execution_state(self, result):
+        return {**result, "available": os.name == "nt" and sys.getwindowsversion().build >= 22000,
+                "batteryAvailable": self._get_power_status_sync().get("battery") is True}
+
+    async def get_game_execution_profile(self, app_id):
+        return await asyncio.to_thread(lambda: self._game_execution_state(self._execution_profiles.get(app_id)))
+
+    async def set_game_execution_profile(self, app_id, ac, battery):
+        return await asyncio.to_thread(lambda: self._game_execution_state(self._execution_profiles.save(app_id, ac, battery)))
+
+    async def game_audio_volume(self, app_id, level=None, token=None):
+        if not _execution_module.valid_app(app_id):
+            return {"status": "Unavailable"}
+        query = {"appId": app_id}
+        if level is not None:
+            if (type(level) is not int or not 0 <= level <= 100 or
+                    type(token) is not str or len(token) != 64 or any(char not in "0123456789abcdef" for char in token)):
+                return {"status": "Unavailable"}
+            query.update(level=level, token=token)
+        elif token is not None:
+            return {"status": "Unavailable"}
+        result = await asyncio.to_thread(self._native_session_post, "/session/steam/game-audio", query)
+        return result or {"status": "Unavailable"}
+
+    async def set_steam_download_power(self, request):
+        if not isinstance(request, dict):
+            return {"ok": False}
+        action, app_id, lease = request.get("action"), request.get("appId"), request.get("lease")
+        if action not in ("start", "renew", "stop") or not _execution_module.valid_app(app_id):
+            return {"ok": False}
+        query = {"action": action, "appId": app_id}
+        if action != "start":
+            if not isinstance(lease, str) or len(lease) != 32 or any(char not in "0123456789abcdef" for char in lease):
+                return {"ok": False}
+            query["lease"] = lease
+        result = await asyncio.to_thread(self._native_session_post, "/session/steam/download-power", query)
+        return result or {"ok": False}
+
+    async def game_runtime_changed(self, request):
+        app_id = _runtime._arg(request, "app_id", 0)
+        result, _ = await asyncio.gather(super().game_runtime_changed(request),
+            asyncio.to_thread(self._execution_profiles.observe, app_id))
+        return result
+
+    async def get_shader_preflight(self, app_id=0):
+        return await asyncio.to_thread(self._shader_preflight.get, app_id)
+
+    async def get_shader_cache(self, app_id=0):
+        return await asyncio.to_thread(self._shader_cache.get, app_id)
+
+    async def set_nvidia_shader_cache(self, request):
+        return await asyncio.to_thread(self._shader_cache.set_nvidia, request)
+
+    def _arm_big_picture_return(self, app_id):
+        if type(app_id) is not int or not 0 < app_id <= 0xffffffff:
+            return {"ok": False}
+        try:
+            token_path = os.path.join(os.environ["APPDATA"], "GamingMode", "xbox-shell-token")
+            with open(token_path, "r", encoding="utf-8") as token_file:
+                token = token_file.read(513).strip()
+            if not token or len(token) > 512:
+                return {"ok": False}
+            request = urllib.request.Request(f"http://127.0.0.1:47991/session/steam/arm-return?appId={app_id}",
+                data=b"", headers={"X-Playhub-Shell-Token": token}, method="POST")
+            local_client = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            with local_client.open(request, timeout=0.8) as response:
+                result = json.loads(response.read(1024))
+            return {"ok": isinstance(result, dict) and result.get("ok") is True}
+        except (OSError, ValueError, KeyError):
+            return {"ok": False}
+
+    async def arm_big_picture_return(self, app_id):
+        return await asyncio.to_thread(self._arm_big_picture_return, app_id)
+
+    async def resume_xbox_game(self, app_id):
+        if not _execution_module.valid_app(app_id) or app_id < 0x80000000:
+            return {"ok": False}
+        result = await asyncio.to_thread(self._native_session_post, "/session/uwp/resume", {"appId": app_id})
+        return {"ok": result.get("ok") is True}
+
+    async def verify_xbox_steam_overlay(self, app_id, overlay_pid, keyboard, menu=False):
+        if (not _execution_module.valid_app(app_id) or app_id < 0x80000000
+                or type(overlay_pid) is not int or not 0 <= overlay_pid <= 0xffffffff
+                or type(keyboard) is not bool or type(menu) is not bool or (overlay_pid == 0 and (keyboard or menu))):
+            return {"ok": False}
+        result = await asyncio.to_thread(self._native_session_post, "/session/uwp/steam-overlay",
+            {"appId": app_id, "overlayPid": overlay_pid, "keyboard": str(keyboard).lower(), "menu": str(menu).lower()})
+        return result or {"ok": False}
+
+    async def read_xbox_steam_overlay(self, app_id, overlay_pid):
+        if (not _execution_module.valid_app(app_id) or app_id < 0x80000000
+                or type(overlay_pid) is not int or not 0 < overlay_pid <= 0xffffffff):
+            return {"ok": False, "kind": "owned-session"}
+        result = await asyncio.to_thread(self._native_session_post, "/session/uwp/steam-overlay/snapshot",
+            {"appId": app_id, "overlayPid": overlay_pid})
+        return result if result.get("kind") == "owned-session" else {"ok": False, "kind": "owned-session"}
+
+    async def request_xbox_steam_overlay(self, app_id):
+        if not _execution_module.valid_app(app_id) or app_id < 0x80000000:
+            return {"ok": False}
+        result = await asyncio.to_thread(self._native_session_post, "/session/uwp/steam-overlay/open", None,
+            {"appId": app_id})
+        return result if result.get("ok") is True else {"ok": False}
+
+    async def get_owned_game_route(self, observed_app_id, candidate_app_id=None):
+        if observed_app_id is not None and (type(observed_app_id) is not int or not 0 <= observed_app_id <= 0xffffffff):
+            return {"ok": False}
+        if candidate_app_id is not None and (type(candidate_app_id) is not int or not 0x80000000 <= candidate_app_id <= 0xffffffff):
+            return {"ok": False}
+        if observed_app_id in (None, 0) and candidate_app_id is None:
+            return {"ok": False}
+        query = {"observedAppId": observed_app_id} if candidate_app_id is None else {"uiObservedApp": "null" if observed_app_id is None else observed_app_id, "candidateAppId": candidate_app_id}
+        result = await asyncio.to_thread(self._native_session_post, "/session/steam/owned-launch", query)
+        if result.get("ok") is True and result.get("kind") == "absent":
+            if result.get("receiver") not in ("steam-ui", "ordinary-game"):
+                return {"ok": False}
+            return {"ok": True, "kind": "absent", "receiver": result["receiver"]}
+        return result if result.get("ok") is True and isinstance(result.get("route"), dict) else {"ok": False}
+
+    async def prepare_owned_mirror_presentation(self, app_id, expected_route):
+        if (type(app_id) is not int or not 0x80000000 <= app_id <= 0xffffffff or not isinstance(expected_route, dict)
+                or expected_route.get("canonicalShortcutAppId") != app_id or expected_route.get("routingOnly") is not True):
+            return {"ok": False}
+        integer_keys = ("gamePid", "wrapperPid", "steamPid")
+        text_keys = ("originalGameId", "gameBirth", "wrapperBirth", "steamBirth")
+        if any(type(expected_route.get(k)) is not int or not 0 < expected_route[k] <= 0xffffffff for k in integer_keys):
+            return {"ok": False}
+        for key in text_keys:
+            value = expected_route.get(key)
+            if (type(value) is not str or not value.isascii() or not value.isdecimal() or value.startswith("0")
+                    or len(value) > 20 or int(value) > 0xffffffffffffffff):
+                return {"ok": False}
+        if expected_route["originalGameId"] != str((app_id << 32) | 0x02000000):
+            return {"ok": False}
+        if "observedSteamGameId" not in expected_route:
+            return {"ok": False}
+        observed_game = expected_route.get("observedSteamGameId")
+        provenance = expected_route.get("launchProvenance", "steam-child")
+        if provenance not in ("steam-child", "epic-protocol"):
+            return {"ok": False}
+        if observed_game is None:
+            if provenance != "epic-protocol" or expected_route.get("observedFresh") is not False:
+                return {"ok": False}
+        elif (type(observed_game) is not str or not observed_game.isascii() or not observed_game.isdecimal()
+                or observed_game.startswith("0") or len(observed_game) > 20 or int(observed_game) > 0xffffffffffffffff):
+            return {"ok": False}
+        fields = {k: expected_route[k] for k in integer_keys + text_keys}
+        fields.update(observedSteamGameId=observed_game, launchProvenance=provenance)
+        ui_observed = expected_route.get("uiObservedApp")
+        if ui_observed is not None and (type(ui_observed) is not int or not 0 <= ui_observed <= 0xffffffff):
+            return {"ok": False}
+        fields.update({"uiObservedApp": ui_observed, "canonicalShortcutAppId": app_id, "routingOnly": True,
+                       "observedFresh": expected_route.get("observedFresh") is True})
+        result = await asyncio.to_thread(self._native_session_post, "/session/steam/owned-launch/prepare", None,
+                                        {"appId": app_id, "expectedRoute": fields})
+        return result if result.get("ok") is True and isinstance(result.get("mirror"), dict) else {"ok": False}
+
+    @staticmethod
+    def _native_game_identity(app_id, value):
+        if type(app_id) is not int or not 0x80000000 <= app_id <= 0xffffffff or type(value) is not dict:
+            return None
+        if type(value.get("protocol")) is not int or value["protocol"] != 1 or value.get("routingOnly") is not True or value.get("canonicalAppId") != app_id:
+            return None
+        integers = ("gamePid", "wrapperPid", "steamPid", "overlayPid", "companionPid")
+        text = ("fullGameId", "observedGameId", "gameBirth", "wrapperBirth", "steamBirth", "overlayBirth", "companionBirth", "gameWindow", "observedAt", "expiresAt")
+        if any(type(value.get(k)) is not int or not 0 < value[k] <= 0xffffffff for k in integers):
+            return None
+        for key in text:
+            item = value.get(key)
+            if type(item) is not str or not item.isascii() or not item.isdecimal() or not 0 < len(item) <= 20 or item.startswith("0") or int(item) > 0xffffffffffffffff:
+                return None
+        session = value.get("sessionId")
+        if type(session) is not str or len(session) != 64 or any(c not in "0123456789abcdefABCDEF" for c in session) or value["fullGameId"] != str((app_id << 32) | 0x02000000):
+            return None
+        result = {key: value[key] for key in integers + text}
+        result.update(protocol=1, canonicalAppId=app_id, sessionId=session, routingOnly=True)
+        return result
+
+    async def get_native_game_overlay(self, app_id, expected_route=None):
+        if type(app_id) is not int or not 0x80000000 <= app_id <= 0xffffffff:
+            return {"ok": False}
+        body = {"appId": app_id}
+        if expected_route is not None:
+            if type(expected_route) is not dict or expected_route.get("canonicalShortcutAppId") != app_id or expected_route.get("routingOnly") is not True:
+                return {"ok": False}
+            keys = ("canonicalShortcutAppId", "originalGameId", "observedSteamGameId", "launchProvenance", "gamePid", "gameBirth", "wrapperPid", "wrapperBirth", "steamPid", "steamBirth", "observedFresh", "routingOnly", "uiObservedApp")
+            body["expectedRoute"] = {key: expected_route[key] for key in keys if key in expected_route}
+        result = await asyncio.to_thread(self._native_session_post, "/session/steam/native-game-overlay", None, body)
+        if result.get("ok") is True and result.get("kind") in ("absent", "packaged"):
+            return {"ok": True, "kind": result["kind"]}
+        if result.get("ok") is True and result.get("kind") == "native-game" and self._native_game_identity(app_id, result.get("nativeGame")) is not None:
+            return result
+        return {"ok": False, "error": result.get("error", "native-game-unavailable")}
+
+    async def set_native_game_overlay_input(self, app_id, action, expected_native, browser=None, owner_token=None, generation=None, callback=None):
+        fields = self._native_game_identity(app_id, expected_native)
+        if fields is None or action not in ("prepare", "active", "renew", "closed", "cancel", "abort") or type(browser) is not dict:
+            return {"ok": False}
+        if any(type(browser.get(k)) is not int or not 0 < browser[k] <= 0xffffffff for k in ("overlayPid", "browserId", "appId")) or browser["overlayPid"] != fields["overlayPid"]:
+            return {"ok": False}
+        body = {"appId": app_id, "action": action, "expectedNative": fields, "browser": {k: browser[k] for k in ("overlayPid", "browserId", "appId")}}
+        if action != "prepare":
+            if type(owner_token) is not str or len(owner_token) != 32 or any(c not in "0123456789abcdef" for c in owner_token):
+                return {"ok": False}
+            if type(generation) is not str or not generation.isascii() or not generation.isdecimal() or generation.startswith("0") or len(generation) > 20 or int(generation) > 0xffffffffffffffff:
+                return {"ok": False}
+            body.update(ownerToken=owner_token, generation=generation)
+        if action in ("active", "renew", "closed"):
+            if type(callback) is not dict or any(callback.get(k) != browser[k] or type(callback.get(k)) is not int for k in ("overlayPid", "browserId", "appId")) or type(callback.get("active")) is not bool or callback["active"] != (action != "closed"):
+                return {"ok": False}
+            serial = callback.get("serial")
+            if type(serial) is not str or not serial.isascii() or not serial.isdecimal() or serial.startswith("0") or len(serial) > 20 or int(serial) > 0xffffffffffffffff:
+                return {"ok": False}
+            body["callback"] = {k: callback[k] for k in ("overlayPid", "browserId", "appId", "active", "serial")}
+        # Only this bounded stop/ACK transaction needs the longer HTTP budget.
+        result = await asyncio.to_thread(self._native_session_post, "/session/steam/native-game-overlay-input", None, body, timeout=7.0, maximum=8192)
+        # Keep issued owner receipts even on a failure: the frontend must be
+        # able to revoke/finish that exact epoch, never adopt a new one.
+        return result or {"ok": False}
+
+    async def prepare_mirror_presentation(self, app_id):
+        if not _execution_module.valid_app(app_id) or app_id < 0x80000000:
+            return {"ok": False}
+        result = await asyncio.to_thread(self._native_session_post, "/session/uwp/steam-overlay/mirror/prepare", None,
+            {"appId": app_id})
+        return result if result.get("ok") is True and isinstance(result.get("mirror"), dict) else {"ok": False}
+
+    async def get_mirror_presentation(self, app_id, overlay_pid):
+        if (not _execution_module.valid_app(app_id) or app_id < 0x80000000
+                or type(overlay_pid) is not int or not 0 <= overlay_pid <= 0xffffffff):
+            return {"ok": False}
+        result = await asyncio.to_thread(self._native_session_post, "/session/uwp/steam-overlay/mirror",
+            {"appId": app_id, "overlayPid": overlay_pid})
+        if isinstance(result.get("mirror"), dict):
+            return result
+        # A current authenticated session may not have a mirror generation yet.
+        # This proves session replacement only; it grants no presentation/input.
+        session = result.get("mirrorSessionId")
+        if (result.get("ok") is False and result.get("error") == "mirror-not-prepared"
+                and result.get("gameId") == str((app_id << 32) | 0x02000000)
+                and type(session) is str and len(session) == 64
+                and all(char in "0123456789abcdef" for char in session)
+                and type(result.get("companionPid")) is int and 0 < result["companionPid"] <= 0xffffffff
+                and type(result.get("overlayPid")) is int and 0 < result["overlayPid"] <= 0xffffffff
+                and (overlay_pid == 0 or result["overlayPid"] == overlay_pid)):
+            return {key: result[key] for key in ("ok", "error", "gameId", "companionPid", "overlayPid", "mirrorSessionId")}
+        return {"ok": False}
+
+    async def set_mirror_presentation(self, app_id, overlay_pid, action, expected_mirror):
+        if (not _execution_module.valid_app(app_id) or app_id < 0x80000000
+                or type(overlay_pid) is not int or not 0 < overlay_pid <= 0xffffffff
+                or action not in ("show", "close") or type(expected_mirror) is not dict):
+            return {"ok": False}
+        # Decimal strings preserve native uint64 identities through JavaScript.
+        # The agent reauthenticates the complete tuple before queuing a command.
+        if type(expected_mirror.get("protocol")) is not int or expected_mirror["protocol"] != 1:
+            return {"ok": False}
+        identity = ("generation", "gameId", "sourceHwnd", "sourceCookie", "destinationHwnd",
+            "destinationCookie", "ownerBirth", "gameBirth")
+        for key in identity:
+            value = expected_mirror.get(key)
+            if (type(value) is not str or not value.isascii() or not value.isdecimal()
+                    or not 0 < len(value) <= 20 or value.startswith("0") or int(value) > 0xffffffffffffffff):
+                return {"ok": False}
+        session_id = expected_mirror.get("sessionId")
+        if type(session_id) is not str or len(session_id) != 64 or any(char not in "0123456789abcdefABCDEF" for char in session_id):
+            return {"ok": False}
+        for key in ("ownerPid", "gamePid"):
+            if type(expected_mirror.get(key)) is not int or not 0 < expected_mirror[key] <= 0xffffffff:
+                return {"ok": False}
+        fields = {key: expected_mirror[key] for key in identity + ("sessionId", "ownerPid", "gamePid")}
+        fields["protocol"] = 1
+        result = await asyncio.to_thread(self._native_session_post, "/session/uwp/steam-overlay/mirror/control", None,
+            {"appId": app_id, "overlayPid": overlay_pid, "action": action, "expectedMirror": fields})
+        return result if result.get("ok") is True else {"ok": False}
+
+    def _measure_game_frames(self, app_id, gameplay=False):
         if type(app_id) is not int or not 0 < app_id <= 0xffffffff:
             return {"status": "TargetUnavailable"}
         try:
@@ -54,16 +408,80 @@ class Plugin(QuickSettingsPlugin):
             if not token or len(token) > 512:
                 return {"status": "ProviderUnavailable"}
             url = f"http://127.0.0.1:47991/session/frame-measurement?appId={app_id}"
+            if gameplay is True:
+                url += "&gameplay=1"
             request = urllib.request.Request(url, data=b"", headers={"X-Playhub-Shell-Token": token}, method="POST")
             local_client = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-            with local_client.open(request, timeout=11.0) as response:
+            with local_client.open(request, timeout=14.0 if gameplay is True else 11.0) as response:
                 measurement = json.loads(response.read(4096))
             return measurement if isinstance(measurement, dict) else {"status": "Failed"}
         except (OSError, ValueError, KeyError):
             return {"status": "ProviderUnavailable"}
 
-    async def measure_game_frames(self, app_id):
-        return await asyncio.get_running_loop().run_in_executor(None, self._measure_game_frames, app_id)
+    async def measure_game_frames(self, app_id, gameplay=False):
+        return await asyncio.to_thread(self._measure_game_frames, app_id, gameplay)
+
+    @staticmethod
+    def _live_performance_request(body=None):
+        try:
+            token_path = os.path.join(os.environ["APPDATA"], "GamingMode", "xbox-shell-token")
+            with open(token_path, "r", encoding="utf-8") as token_file:
+                token = token_file.read(513).strip()
+            if not token or len(token) > 512:
+                return {"ok": False, "error": "Unavailable"}
+            headers = {"X-Playhub-Shell-Token": token}
+            data = None
+            if body is not None:
+                data = json.dumps(body).encode("utf-8")
+                headers["Content-Type"] = "application/json"
+            request = urllib.request.Request("http://127.0.0.1:47991/session/live-performance",
+                data=data, headers=headers, method="GET" if body is None else "POST")
+            client = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            with client.open(request, timeout=2.5) as response:
+                result = json.loads(response.read(8193))
+            return result if isinstance(result, dict) else {"ok": False, "error": "Unavailable"}
+        except urllib.error.HTTPError as error:
+            # Native validation failures carry a typed result, never a shell token.
+            try:
+                result = json.loads(error.read(8193))
+                return result if isinstance(result, dict) else {"ok": False, "error": "Unavailable"}
+            except (OSError, ValueError):
+                return {"ok": False, "error": "Unavailable"}
+        except (OSError, ValueError, KeyError):
+            return {"ok": False, "error": "Unavailable"}
+
+    async def get_live_performance(self):
+        return await asyncio.to_thread(self._live_performance_request)
+
+    async def set_live_performance(self, request):
+        invalid = {"ok": False, "error": "InvalidRequest"}
+        if not isinstance(request, dict) or set(request) - {
+                "action", "appId", "lease", "enabled", "detail", "corner", "transparent", "refreshMs", "suspended", "textColor"}:
+            return invalid
+        action, lease = request.get("action"), request.get("lease")
+        if action not in ("configure", "renew", "stop"):
+            return invalid
+        if lease is not None and (type(lease) is not str or len(lease) != 32 or
+                any(char not in "0123456789abcdef" for char in lease)):
+            return invalid
+        if action != "configure":
+            allowed = {"action", "lease", "suspended"} if action == "renew" else {"action", "lease"}
+            if lease is None or set(request) - allowed:
+                return invalid
+        else:
+            if (type(request.get("appId")) is not int or not 0 <= request["appId"] <= 0xffffffff
+                    or type(request.get("enabled")) is not bool or type(request.get("transparent")) is not bool
+                    or type(request.get("detail")) is not int or not 1 <= request["detail"] <= 4
+                    or type(request.get("corner")) is not int or not 1 <= request["corner"] <= 6
+                    or ("refreshMs" in request and (type(request["refreshMs"]) is not int
+                        or request["refreshMs"] not in (20, 50, 100)))):
+                return invalid
+            request = {**request, "refreshMs": 20}
+            if "textColor" in request and (type(request["textColor"]) is not str or request["textColor"] not in ("white", "yellow", "red", "green")):
+                return invalid
+        if "suspended" in request and type(request["suspended"]) is not bool:
+            return invalid
+        return await asyncio.to_thread(self._live_performance_request, request)
 
     def _request_uwp_gamebar(self, request):
         if (not isinstance(request, dict) or type(request.get("appId")) is not int
@@ -117,6 +535,40 @@ class Plugin(QuickSettingsPlugin):
             logging.exception("Playhub Daily History unavailable; core controls remain active")
         self._panel_lock = threading.RLock()
         self._qam_preferences = _qam_module.QamPreferences(self._settings_dir)
+        self._device_profiles = _device_module.DeviceProfiles(self._settings_dir, self._read_bios_identity, self._read_cim_identity)
+        self._battery_health = _battery_module.BatteryHealth(self._get_power_status_sync, _runtime._run_cmd, _runtime._powershell_path)
+        self._processor_boost = _boost_module.ProcessorBoost(self._get_power_status_sync)
+        self._handheld_power_mode = _handheld_power_module.LenovoPowerMode(
+            self._device_profiles.identity, self._run_handheld_firmware_command, _runtime._powershell_path)
+        self._msi_claw_firmware = _msi_firmware_module.MsiClawFirmware(
+            self._device_profiles.identity, self._run_handheld_firmware_command, _runtime._powershell_path)
+        self._asus_performance_commands = _asus_commands_module.AsusPerformanceCommands(
+            self._device_profiles.identity, self._run_handheld_firmware_command, _runtime._powershell_path)
+        self._asus_device_controls = _asus_controls_module.AsusDeviceControls(
+            self._device_profiles.identity, self._run_handheld_firmware_command, _runtime._powershell_path)
+        self._handheld_tdp = _handheld_tdp_module.AsusHandheldTdp(
+            self._device_profiles.identity, self._run_handheld_firmware_command, _runtime._powershell_path)
+        self._onex_fan = _onex_fan_module.OneXTypeTwoFan(
+            lambda: _firmware_board(self._device_profiles.identity()), self._run_handheld_firmware_command, _runtime._powershell_path)
+        self._lenovo_tdp = _lenovo_tdp_module.LenovoOtherTdp(
+            self._device_profiles.identity, self._run_handheld_firmware_command, _runtime._powershell_path)
+        self._ayaneo3_controller = _ayaneo3_module.Ayaneo3Controller()
+        self._gpd_v1_controller = _gpd_v1_module.GpdV1Controller()
+        self._device_capabilities = _device_capabilities_module.DeviceCapabilities(
+            self._get_device_profile_sync, self._device_profiles.identity, {
+                "asus": (_asus_commands_module.supports_identity, self._asus_performance_commands.get),
+                "asus-fan": (_asus_controls_module.supports_identity, self._asus_device_controls.get),
+                "asus-tdp": (_handheld_tdp_module.supports_identity, self._handheld_tdp.get),
+                "onex-fan": (lambda identity: _onex_fan_module.supports_board(_firmware_board(identity)), self._onex_fan.snapshot),
+                "lenovo-other": (_lenovo_tdp_module.supports_identity, self._lenovo_tdp.read_current),
+                "ayaneo3": (_device_capabilities_module.ayaneo3_identity, self._ayaneo3_controller.get),
+                "gpd-v1": (_device_capabilities_module.gpd_v1_identity, self._gpd_v1_controller.get),
+                "lenovo": (_handheld_power_module.supports_identity, self._handheld_power_mode.get),
+                "msi": (_msi_firmware_module.supports_identity, self._msi_claw_firmware.get),
+            })
+        self._shader_preflight = _shader_module.ShaderPreflight(_runtime._run_cmd, _runtime._powershell_path, _runtime._steam_path)
+        self._shader_cache = _shader_cache_module.ShaderCacheManager(self._shader_preflight, _runtime._run_cmd, _runtime._powershell_path, _runtime._steam_path)
+        self._execution_profiles = _execution_module.GameExecutionProfiles(self._settings_dir, self._native_session_post)
         self._panel_path = os.path.join(self._settings_dir, "playhub-panel.json")
         self._display_lock = threading.RLock()
         self._display_pending = None
@@ -633,6 +1085,16 @@ class Plugin(QuickSettingsPlugin):
 
     async def _unload(self):
         logging.getLogger(__name__).info("Playhub backend unloading pid=%s", os.getpid())
+        capabilities = getattr(self, "_device_capabilities", None)
+        if capabilities is not None:
+            capabilities.close()
+        ayaneo3 = getattr(self, "_ayaneo3_controller", None)
+        if ayaneo3 is not None:
+            await asyncio.to_thread(ayaneo3.dispose)
+        gpd_v1 = getattr(self, "_gpd_v1_controller", None)
+        if gpd_v1 is not None:
+            await asyncio.to_thread(gpd_v1.dispose)
+        await asyncio.to_thread(self._execution_profiles.close)
         await asyncio.get_running_loop().run_in_executor(None, self._stop_display_sync)
         self._topbar_date_stopping = True
         if self._topbar_date_task:
@@ -642,21 +1104,219 @@ class Plugin(QuickSettingsPlugin):
         await super()._unload()
         logging.getLogger(__name__).info("Playhub backend unloaded pid=%s", os.getpid())
 
+    async def _uninstall(self):
+        await asyncio.to_thread(self._execution_profiles.close)
+        await super()._uninstall()
+
     async def set_microphone_volume(self, request):
         return await super().set_microphone_volume(request)
 
 
-    async def get_power_status(self):
+    @staticmethod
+    def _get_power_status_sync():
         class PowerStatus(ctypes.Structure):
-            _fields_ = [("ac", wintypes.BYTE), ("flags", wintypes.BYTE),
-                        ("percent", wintypes.BYTE), ("saving", wintypes.BYTE),
+            _fields_ = [("ac", ctypes.c_ubyte), ("flags", ctypes.c_ubyte),
+                        ("percent", ctypes.c_ubyte), ("saving", ctypes.c_ubyte),
                         ("remaining", wintypes.DWORD), ("full", wintypes.DWORD)]
         status = PowerStatus()
         if os.name != "nt" or not ctypes.windll.kernel32.GetSystemPowerStatus(ctypes.byref(status)):
             return {"available": False}
+        battery = status.flags != 255 and not bool(status.flags & 128)
+        # Only a known offline battery without charging/reserved flags can
+        # supply this estimate. DWORD -1 means unknown, never zero minutes.
+        discharging = battery and status.ac == 0 and not bool(status.flags & 0x78)
+        remaining = int(status.remaining) if discharging and status.remaining != 0xffffffff else None
         return {"available": True, "connected": status.ac == 1,
-                "battery": status.flags != 255 and not bool(status.flags & 128),
+                "source": {0: "battery", 1: "ac"}.get(status.ac),
+                "battery": battery, "discharging": discharging,
+                "remainingSeconds": remaining,
                 "percent": status.percent if status.percent <= 100 else None}
+
+    async def get_power_status(self):
+        return self._get_power_status_sync()
+
+    async def get_windows_power_profile(self):
+        return await asyncio.to_thread(_runtime._get_windows_power_profile_sync, self._get_power_status_sync)
+
+    async def set_windows_power_profile(self, request):
+        return await asyncio.to_thread(_runtime._set_windows_power_profile_sync, self._get_power_status_sync, request)
+
+    async def get_processor_boost(self):
+        return await asyncio.to_thread(self._processor_boost.get)
+
+    async def set_processor_boost(self, request):
+        return await asyncio.to_thread(self._processor_boost.set, request)
+
+    async def get_handheld_power_mode(self):
+        return await asyncio.to_thread(self._handheld_power_mode.get)
+
+    async def set_handheld_power_mode(self, request):
+        return await asyncio.to_thread(self._handheld_power_mode.set, request)
+
+    async def get_msi_claw_firmware(self):
+        return await asyncio.to_thread(self._msi_claw_firmware.get)
+
+    async def set_msi_claw_charge_limit(self, request):
+        return await asyncio.to_thread(self._msi_claw_firmware.set_charge_limit, request)
+
+    async def set_msi_claw_power_mode(self, request):
+        return await asyncio.to_thread(self._msi_claw_firmware.set_power_mode, request)
+
+    async def set_msi_claw_power_limits(self, request):
+        return await asyncio.to_thread(self._msi_claw_firmware.set_power_limits, request)
+
+    async def get_asus_performance_commands(self):
+        return await asyncio.to_thread(self._asus_performance_commands.get)
+
+    async def apply_asus_performance_command(self, request):
+        return await asyncio.to_thread(self._asus_performance_commands.apply, request)
+
+    async def get_asus_device_controls(self):
+        return await asyncio.to_thread(self._asus_device_controls.get)
+
+    async def get_handheld_tdp(self):
+        return await asyncio.to_thread(self._handheld_tdp.get)
+
+    async def set_handheld_tdp(self, request):
+        return await asyncio.to_thread(self._handheld_tdp.apply, request)
+
+    async def restore_handheld_tdp(self, request):
+        return await asyncio.to_thread(self._handheld_tdp.restore, request)
+
+    async def get_onex_fan_controls(self):
+        return await asyncio.to_thread(self._onex_fan.snapshot)
+
+    async def get_lenovo_power_limits(self):
+        return await asyncio.to_thread(self._lenovo_tdp.read_current)
+
+    async def get_gpd_v1_controller(self):
+        return await asyncio.to_thread(self._gpd_v1_controller.get)
+
+    async def set_gpd_v1_controller(self, request):
+        return await asyncio.to_thread(self._gpd_v1_controller.apply, request)
+
+    async def restore_gpd_v1_controller(self, request):
+        return await asyncio.to_thread(self._gpd_v1_controller.restore, request)
+
+    async def get_ayaneo3_controller(self):
+        return await asyncio.to_thread(self._ayaneo3_controller.get)
+
+    async def set_ayaneo3_controller(self, request):
+        return await asyncio.to_thread(self._ayaneo3_controller.apply, request)
+
+    async def restore_ayaneo3_controller(self, request):
+        return await asyncio.to_thread(self._ayaneo3_controller.restore, request)
+
+    async def set_lenovo_power_limits(self, request):
+        if not isinstance(request, dict) or request.get("confirmed") is not True:
+            return {"ok": False, "code": "invalid_request"}
+        return await asyncio.to_thread(self._lenovo_tdp.set_limits, request.get("limitsWatts"), request.get("token"), True)
+
+    async def set_lenovo_performance_mode(self, request):
+        if not isinstance(request, dict) or request.get("confirmed") is not True:
+            return {"ok": False, "code": "invalid_request"}
+        return await asyncio.to_thread(self._lenovo_tdp.set_mode, request.get("mode"), request.get("token"), True)
+
+    async def restore_lenovo_power_limits(self, request):
+        if not isinstance(request, dict) or request.get("confirmed") is not True:
+            return {"ok": False, "code": "invalid_request"}
+        return await asyncio.to_thread(self._lenovo_tdp.restore, request.get("token"), True)
+
+    async def set_onex_fan_controls(self, request):
+        if not isinstance(request, dict) or request.get("confirmed") is not True or type(request.get("mode")) is not int:
+            return {"ok": False, "code": "invalid_request"}
+        if request["mode"] == 0:
+            return await asyncio.to_thread(self._onex_fan.set_auto, request.get("token"), True)
+        if request["mode"] == 1:
+            return await asyncio.to_thread(self._onex_fan.set_manual, request.get("percent"), request.get("token"), True)
+        return {"ok": False, "code": "invalid_request"}
+
+    async def restore_onex_fan_controls(self, request):
+        if not isinstance(request, dict) or request.get("confirmed") is not True:
+            return {"ok": False, "code": "invalid_request"}
+        return await asyncio.to_thread(self._onex_fan.restore, request.get("token"), True)
+
+    @staticmethod
+    def _run_handheld_firmware_command(arguments, timeout):
+        # Independent Windows helpers must release Decky's extraction directory.
+        try:
+            with _runtime._independent_process_dll_directory():
+                child = _runtime.subprocess.Popen(arguments, text=True,
+                    stdout=_runtime.subprocess.PIPE, stderr=_runtime.subprocess.PIPE,
+                    env=_runtime._independent_process_environment(), creationflags=_runtime._NO_WINDOW)
+            try:
+                output, error = child.communicate(timeout=timeout)
+            except _runtime.subprocess.TimeoutExpired:
+                child.kill()
+                child.communicate()
+                return -1, "", "Firmware request timed out."
+            return child.returncode, output or "", error or ""
+        except OSError:
+            return -1, "", "Firmware helper unavailable."
+
+    @staticmethod
+    def _read_bios_identity():
+        if os.name != "nt":
+            return {}
+        import winreg
+        identity = {}
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\BIOS") as handle:
+                for key, name in (
+                    ("manufacturer", "SystemManufacturer"), ("model", "SystemProductName"), ("family", "SystemFamily"), ("version", "SystemVersion"),
+                    ("board_manufacturer", "BaseBoardManufacturer"), ("board_model", "BaseBoardProduct"),
+                ):
+                    try:
+                        identity[key] = winreg.QueryValueEx(handle, name)[0]
+                    except OSError:
+                        pass
+        except OSError:
+            pass
+        return identity
+
+    @staticmethod
+    def _read_cim_identity():
+        if os.name != "nt":
+            return {}
+        script = "Get-CimInstance Win32_ComputerSystem -Property Manufacturer,Model,SystemFamily | Select-Object @{n='manufacturer';e={$_.Manufacturer}},@{n='model';e={$_.Model}},@{n='family';e={$_.SystemFamily}} | ConvertTo-Json -Compress"
+        try:
+            code, output, _ = _runtime._run_cmd([_runtime._powershell_path(), "-NoProfile", "-NonInteractive", "-Command", script], timeout=4)
+            result = json.loads(output.lstrip("\ufeff")) if code == 0 else None
+            return result if isinstance(result, dict) else {}
+        except (OSError, ValueError):
+            return {}
+
+    def _get_device_profile_sync(self):
+        profile = self._device_profiles.get()
+        power = self._get_power_status_sync()
+        display = None
+        power_mode = False
+        if os.name == "nt":
+            try:
+                mode = _runtime._read_current_devmode()
+                if mode and mode.dmPelsWidth > 0 and mode.dmPelsHeight > 0:
+                    display = {"width": int(mode.dmPelsWidth), "height": int(mode.dmPelsHeight),
+                               "hz": int(mode.dmDisplayFrequency) if mode.dmDisplayFrequency > 1 else None}
+            except OSError:
+                pass
+            power_mode = _runtime._get_windows_power_profile_sync(lambda: power).get("available") is True
+        return {**profile, "power": power, "display": display, "powerModeAvailable": power_mode}
+
+    async def get_device_profile(self):
+        return await asyncio.to_thread(self._get_device_profile_sync)
+
+    async def get_device_capabilities(self, selection=None):
+        return await asyncio.to_thread(self._device_capabilities.get, selection)
+
+    async def get_battery_health(self):
+        return await asyncio.to_thread(self._battery_health.get)
+
+    def _set_device_profile_sync(self, profile):
+        self._device_profiles.save(profile)
+        return self._get_device_profile_sync()
+
+    async def set_device_profile(self, profile):
+        return await asyncio.to_thread(self._set_device_profile_sync, profile)
 
     async def get_device_info(self):
         return await asyncio.get_running_loop().run_in_executor(None, self._get_device_info_sync)
@@ -697,16 +1357,12 @@ $result | ConvertTo-Json -Compress
         if os.name != "nt":
             return info
         import winreg
-        for key, path, name in (
-            ("model", r"HARDWARE\DESCRIPTION\System\BIOS", "SystemProductName"),
-            ("manufacturer", r"HARDWARE\DESCRIPTION\System\BIOS", "SystemManufacturer"),
-            ("cpu", r"HARDWARE\DESCRIPTION\System\CentralProcessor\0", "ProcessorNameString"),
-        ):
-            try:
-                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path) as handle:
-                    info[key] = str(winreg.QueryValueEx(handle, name)[0]).strip()
-            except OSError:
-                pass
+        info.update(self._device_profiles.identity())
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\CentralProcessor\0") as handle:
+                info["cpu"] = str(winreg.QueryValueEx(handle, "ProcessorNameString")[0]).strip()
+        except OSError:
+            pass
         class MemoryStatus(ctypes.Structure):
             _fields_ = [("length", wintypes.DWORD), ("load", wintypes.DWORD)] + [
                 (name, ctypes.c_ulonglong) for name in ("total", "available", "page_total", "page_available", "virtual_total", "virtual_available", "extended")]
@@ -865,13 +1521,18 @@ $result | ConvertTo-Json -Compress
         if active not in eligible or active in hidden:
             active = next(x for x in order if x in eligible and x not in hidden)
         collapsed = [x for x in preferences.get("collapsed", []) if isinstance(x, str) and len(x) < 80][:64]
+        section_ids = ("topbar-date", "device", "device/details", "news", "daily-history", "measurement",
+                       "display", "mixer", "devices", "power", "game", "shaders", "radeon", "lossless", "agent")
+        requested_sections = preferences.get("expandedSections", [])
+        expanded_sections = set(x for x in requested_sections[:64] if isinstance(x, str)) if isinstance(requested_sections, list) else set()
+        expanded_sections = [x for x in section_ids if x in expanded_sections]
         date_formats = ("auto", "dd_mm_yyyy", "dd_mm_yy", "yyyy_mm_dd", "dd_month_yyyy",
                         "weekday_dd_month", "weekday_short_dd_month", "month_dd_yyyy",
                         "month_short_dd_yyyy", "iso")
         date_format = preferences.get("topbarDateFormat", "auto")
         if date_format not in date_formats:
             date_format = "auto"
-        data = dict(order=order, hidden=hidden, active=active, collapsed=collapsed,
+        data = dict(order=order, hidden=hidden, active=active, collapsed=collapsed, expandedSections=expanded_sections,
                     deckyHostEnabled=decky_host_enabled,
                     topbarDateEnabled=preferences.get("topbarDateEnabled", True) is True,
                     topbarDateFormat=date_format, topbarClockLeft=preferences.get("topbarClockLeft", False) is True)
@@ -916,7 +1577,10 @@ function ensure() {
   if (stopped) return;
   const clock = findClock();
   // Navigation can temporarily remove the header; retain our badge until the new clock mounts.
-  if (!clock) return;
+  if (!clock) {
+    if (previousClock && !previousClock.isConnected) previousClock = null;
+    return;
+  }
   if (previousClock && previousClock !== clock) previousClock.removeAttribute('data-playhub-clock-left');
   previousClock = clock;
   if (clock.hasAttribute('data-playhub-clock-left') !== config.moveLeft) clock.toggleAttribute('data-playhub-clock-left', config.moveLeft);
@@ -938,7 +1602,20 @@ function ensure() {
   if (badge.parentNode !== clock || weather && badge.nextSibling !== weather) clock.insertBefore(badge, weather || null);
 }
 function queue() { if (stopped || queued !== null) return; queued = window.setTimeout(() => { queued = null; ensure(); }, 60); }
-const observer = new MutationObserver(queue);
+// React may replace the clock's children during a render. Mutation observers
+// run before the next paint: restore the retained badge here, not in a delayed
+// timer that would leave the date visibly absent for several frames. ensure()
+// makes no DOM changes once ownership, content and ordering already match.
+const observer = new MutationObserver(records => {
+  if (stopped) return;
+  // Most Steam mutations belong to games, news or chat. Avoid clock searches
+  // and date formatting when none of our header ownership has changed.
+  if (!previousClock) { queue(); return; }
+  const wanted = config.enabled && !/^QuickAccess(?:_|$)/.test(document.title || '');
+  if (!previousClock.isConnected || wanted !== Boolean(badge?.parentNode)
+      || (wanted && badge.parentNode !== previousClock)
+      || records.some(record => record.target === previousClock || record.target === badge)) ensure();
+});
 const interval = window.setInterval(ensure, 60000);
 function cleanup() {
   stopped = true; observer.disconnect(); window.clearInterval(interval); if (queued !== null) window.clearTimeout(queued);

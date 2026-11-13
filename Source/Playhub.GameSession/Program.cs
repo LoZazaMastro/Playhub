@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace Playhub.GameSession;
 
@@ -11,6 +12,15 @@ internal static class Program
     {
         try
         {
+            if (args.Length > 0 && args[0] == "--epic")
+            {
+                if (!EpicShortcutArguments.TryRead(args, out var request) || request is null)
+                    throw new ArgumentException("Invalid installed Epic game launch identity.");
+                var launch = Playhub.Shared.EpicLaunchCatalog.ResolveInstalled(request.Namespace, request.CatalogItemId,
+                    request.AppName, request.GameExecutable) ?? throw new InvalidOperationException("Epic installed game metadata is unavailable.");
+                using var epicRuntime = new WindowsEpicProtocolRuntime(launch);
+                return EpicProtocolSession.Run(launch, epicRuntime);
+            }
             if (args.Length >= 3 && args[0] == "--gdk-game-proof")
             {
                 var plan = GdkLaunchProof.Resolve(args[1], args[2], new RegisteredPackageCatalog(physicalPaths: true));
@@ -38,7 +48,11 @@ internal static class Program
             }
             if (args.Length < 2 || args[0] != "--game")
                 throw new ArgumentException("Expected --game followed by the game executable.");
-            return GameLifetime.Run(Path.GetFullPath(args[1]), args.Skip(2));
+            string executable = Path.GetFullPath(args[1]);
+            using var display = UnrealDisplayLease.TryAcquire(executable, UwpSessionLog.Write);
+            if (Win32LaunchCommand.TryReadRawArguments(Win32LaunchCommand.ReadProcessCommandLine(), args[1], out string raw))
+                return GameLifetime.Run(executable, Array.Empty<string>(), rawArguments: raw, steamCompanion: true);
+            return GameLifetime.Run(executable, args.Skip(2), steamCompanion: true);
         }
         catch (Exception ex)
         {
@@ -60,14 +74,20 @@ internal static class Program
 
 internal static class GameLifetime
 {
+    private const int JobBasicAccounting = 1;
+    private const int JobAssociateCompletionPort = 7;
+    private const int WaitTimeout = 258;
+
     // Keep Steam's original child alive until the launched process tree exits.
     // Never attach unrelated processes or set KILL_ON_JOB_CLOSE: closing this
     // helper must not terminate the game or other applications.
-    internal static int Run(string executable, IEnumerable<string> arguments, string? directory = null, string? rawArguments = null)
+    internal static int Run(string executable, IEnumerable<string> arguments, string? directory = null,
+        string? rawArguments = null, bool steamCompanion = false)
     {
         if (!File.Exists(executable)) throw new FileNotFoundException("Game executable not found.", executable);
-        using var job = new Microsoft.Win32.SafeHandles.SafeFileHandle(CreateJobObject(IntPtr.Zero, null), true);
+        using var job = new SafeFileHandle(CreateJobObject(IntPtr.Zero, null), true);
         if (job.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+        using var completionPort = TryAttachCompletionPort(job);
         var command = new StringBuilder(string.Join(" ", new[] { executable }.Concat(arguments).Select(Quote)));
         if (!string.IsNullOrEmpty(rawArguments)) command.Append(' ').Append(rawArguments);
         var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>() };
@@ -78,26 +98,58 @@ internal static class GameLifetime
         using var thread = new Microsoft.Win32.SafeHandles.SafeFileHandle(process.Thread, true);
         // Assignment before ResumeThread prevents losing a fast bootstrapper's child.
         var assigned = AssignProcessToJobObject(job, handle);
-        if (rawArguments is not null) UwpSessionLog.Write($"gdk-proof bootstrap pid={process.ProcessId} assigned-job={assigned} package={PackageIdentity(handle)}");
+        if (rawArguments is not null && !steamCompanion) UwpSessionLog.Write($"gdk-proof bootstrap pid={process.ProcessId} assigned-job={assigned} package={PackageIdentity(handle)}");
         if (ResumeThread(thread) == uint.MaxValue)
             throw new Win32Exception(Marshal.GetLastWin32Error());
+        using var companion = steamCompanion ? Win32CompanionLease.TryStart(handle, process.ProcessId, executable) : null;
         if (!assigned)
         {
             // Some externally imposed jobs prohibit nesting. Still follow the
             // exact process handle; never guess by executable name or PID reuse.
-            WaitForSingleObject(handle, uint.MaxValue);
+            if (WaitForSingleObject(handle, uint.MaxValue) != 0)
+                throw new Win32Exception(Marshal.GetLastWin32Error());
         }
         else
         {
-            while (true)
-            {
-                if (!QueryInformationJobObject(job, 1, out var accounting, Marshal.SizeOf<JobAccounting>(), IntPtr.Zero))
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
-                if (accounting.ActiveProcesses == 0) break;
-                Thread.Sleep(250);
-            }
+            WaitForJobDrain(() => HasActiveProcesses(job),
+                completionPort is null ? null : () => WaitForCompletionHint(completionPort));
         }
         return GetExitCodeProcess(handle, out var code) ? unchecked((int)code) : 1;
+    }
+
+    private static SafeFileHandle? TryAttachCompletionPort(SafeFileHandle job)
+    {
+        var port = CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, 1);
+        if (!port.IsInvalid)
+        {
+            var association = new JobCompletionPort { Key = new IntPtr(1), Port = port.DangerousGetHandle() };
+            if (SetInformationJobObject(job, JobAssociateCompletionPort, in association, Marshal.SizeOf<JobCompletionPort>()))
+                return port;
+        }
+        port.Dispose();
+        return null;
+    }
+
+    private static bool HasActiveProcesses(SafeFileHandle job)
+    {
+        if (!QueryInformationJobObject(job, JobBasicAccounting, out var accounting, Marshal.SizeOf<JobAccounting>(), IntPtr.Zero))
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+        return accounting.ActiveProcesses != 0;
+    }
+
+    private static bool WaitForCompletionHint(SafeFileHandle port) =>
+        GetQueuedCompletionStatus(port, out _, out _, out _, 1000) || Marshal.GetLastWin32Error() == WaitTimeout;
+
+    internal static void WaitForJobDrain(Func<bool> hasActiveProcesses, Func<bool>? waitForCompletionHint)
+    {
+        // Job notifications are best-effort. A wakeup or timeout prompts a fresh
+        // accounting query. Only the query can confirm the job has drained.
+        while (hasActiveProcesses())
+        {
+            if (waitForCompletionHint?.Invoke() == true) continue;
+            waitForCompletionHint = null;
+            Thread.Sleep(250);
+        }
     }
 
     internal static string Quote(string value)
@@ -141,6 +193,8 @@ internal static class GameLifetime
         public long TotalUserTime, TotalKernelTime, PeriodUserTime, PeriodKernelTime;
         public uint PageFaults, TotalProcesses, ActiveProcesses, TerminatedProcesses;
     }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct JobCompletionPort { public IntPtr Key, Port; }
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr CreateJobObject(IntPtr attributes, string? name);
     [DllImport("kernel32.dll", EntryPoint = "CreateProcessW", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -155,7 +209,13 @@ internal static class GameLifetime
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool QueryInformationJobObject(Microsoft.Win32.SafeHandles.SafeFileHandle job, int type,
         out JobAccounting information, int size, IntPtr returnedLength);
-    [DllImport("kernel32.dll")]
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern SafeFileHandle CreateIoCompletionPort(IntPtr file, IntPtr port, UIntPtr key, uint concurrentThreads);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool SetInformationJobObject(SafeFileHandle job, int type, in JobCompletionPort information, int size);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool GetQueuedCompletionStatus(SafeFileHandle port, out uint message, out UIntPtr key, out IntPtr data, uint milliseconds);
+    [DllImport("kernel32.dll", SetLastError = true)]
     private static extern uint WaitForSingleObject(Microsoft.Win32.SafeHandles.SafeFileHandle handle, uint milliseconds);
     [DllImport("kernel32.dll")]
     private static extern bool GetExitCodeProcess(Microsoft.Win32.SafeHandles.SafeFileHandle process, out uint code);

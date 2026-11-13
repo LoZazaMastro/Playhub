@@ -25,7 +25,7 @@ namespace WSGM.PackagedLaunch;
 ///         first whose outcome is unknown compounds the damage instead of repairing it.
 ///     </para>
 /// </remarks>
-internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr, bool> targetAllowed)
+internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr, bool> targetAllowed, Action<string>? fixtureTrace = null)
 {
     /// <summary>How long a remote <c>LoadLibraryW</c> may take before its result is unknown.</summary>
     private const uint LoadBudgetMs = 15_000;
@@ -36,9 +36,12 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
     /// <summary>How long the small environment stub may take.</summary>
     private const uint EnvironmentBudgetMs = 10_000;
 
-    private readonly HashSet<string> _attempted = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, bool> _attempted = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly HashSet<int> _latched = [];
+
+    private void Info(string message) => (fixtureTrace ?? PackagedLaunchLog.Info)(message);
+    private void Error(string message) => (fixtureTrace ?? PackagedLaunchLog.Error)(message);
 
     /// <summary>Whether remote work on this process has been latched off by an uncertain result.</summary>
     /// <param name="processId">The process to ask about.</param>
@@ -76,16 +79,16 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
             return false;
         }
 
-        if (!_attempted.Add($"{processId}|{path}"))
+        string attempt = $"{processId}|{path}";
+        if (_attempted.TryGetValue(attempt, out bool previous))
         {
-            // Already done for this process. Loading the same image twice would only bump its
-            // reference count, but the attempt would also re-run the remote thread for nothing.
-            return true;
+            return previous;
         }
+        _attempted.Add(attempt, false);
 
         if (!File.Exists(path))
         {
-            PackagedLaunchLog.Error($"Cannot load {Path.GetFileName(path)}: it is not at {path}.");
+            Error($"Cannot load {Path.GetFileName(path)}: it is not at {path}.");
             return false;
         }
 
@@ -95,7 +98,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
             var error = Marshal.GetLastWin32Error();
             privileges.Record($"loading {Path.GetFileName(path)}", "PROCESS_VM_WRITE|CREATE_THREAD",
                 false, error);
-            PackagedLaunchLog.Error(
+            Error(
                 $"Cannot open process {processId} to load {Path.GetFileName(path)} (error {error}). "
                 + "The obstacle is process access, not the file.");
             return false;
@@ -103,7 +106,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
 
         try
         {
-            return LoadThrough(process, processId, path);
+            return _attempted[attempt] = LoadThrough(process, processId, path);
         }
         finally
         {
@@ -123,10 +126,10 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
             return null;
         }
 
-        var remoteBase = RemoteModuleBase(processId, Path.GetFileName(path));
+        var remoteBase = RemoteModuleBase(processId, Path.GetFileName(path), Path.GetFullPath(path));
         if (remoteBase == IntPtr.Zero)
         {
-            PackagedLaunchLog.Error(
+            Error(
                 $"{Path.GetFileName(path)} is not loaded in process {processId}, so {export} cannot be called.");
             return null;
         }
@@ -136,7 +139,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
         var local = NativeMethods.LoadLibraryW(path);
         if (local == IntPtr.Zero)
         {
-            PackagedLaunchLog.Error(
+            Error(
                 $"Could not load {Path.GetFileName(path)} here to resolve {export} "
                 + $"(error {Marshal.GetLastWin32Error()}).");
             return null;
@@ -148,7 +151,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
             var localExport = NativeMethods.GetProcAddress(local, export);
             if (localExport == IntPtr.Zero)
             {
-                PackagedLaunchLog.Error($"{Path.GetFileName(path)} has no export named {export}.");
+                Error($"{Path.GetFileName(path)} has no export named {export}.");
                 return null;
             }
 
@@ -203,7 +206,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
             : NativeMethods.GetProcAddress(kernel32, "SetEnvironmentVariableW");
         if (setter == IntPtr.Zero)
         {
-            PackagedLaunchLog.Error("Could not resolve SetEnvironmentVariableW.");
+            Error("Could not resolve SetEnvironmentVariableW.");
             return false;
         }
 
@@ -213,7 +216,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
             var error = Marshal.GetLastWin32Error();
             privileges.Record("setting the game's environment", "PROCESS_VM_WRITE|CREATE_THREAD",
                 false, error);
-            PackagedLaunchLog.Error(
+            Error(
                 $"Cannot open process {processId} to carry Steam's session across (error {error}).");
             return false;
         }
@@ -239,7 +242,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
 
             // Names and counts only. The values are the Steam session's identity and must never
             // reach the log.
-            PackagedLaunchLog.Info(
+            Info(
                 $"Carried {applied} of {variables.Count} Steam session variable(s) into process {processId}.");
             return applied == variables.Count;
         }
@@ -258,7 +261,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
             : NativeMethods.GetProcAddress(kernel32, "LoadLibraryW");
         if (loadLibrary == IntPtr.Zero)
         {
-            PackagedLaunchLog.Error("Could not resolve LoadLibraryW.");
+            Error("Could not resolve LoadLibraryW.");
             return false;
         }
 
@@ -268,7 +271,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
             NativeMethods.MemCommit | NativeMethods.MemReserve, NativeMethods.PageReadWrite);
         if (remote == IntPtr.Zero)
         {
-            PackagedLaunchLog.Error(
+            Error(
                 $"Could not allocate in process {processId} (error {Marshal.GetLastWin32Error()}).");
             return false;
         }
@@ -278,7 +281,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
         {
             if (!NativeMethods.WriteProcessMemory(process, remote, bytes, (UIntPtr)bytes.Length, out _))
             {
-                PackagedLaunchLog.Error(
+                Error(
                     $"Could not write to process {processId} (error {Marshal.GetLastWin32Error()}).");
                 return false;
             }
@@ -297,13 +300,13 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
             // not where. Zero means the loader refused the file outright.
             if (result == 0)
             {
-                PackagedLaunchLog.Error(
+                Error(
                     $"The game refused to load {Path.GetFileName(path)}: unreadable to it, the wrong "
                     + "architecture, or blocked by policy.");
                 return false;
             }
 
-            PackagedLaunchLog.Info($"Loaded {Path.GetFileName(path)} into process {processId}.");
+            Info($"Loaded {Path.GetFileName(path)} into process {processId}.");
             return true;
         }
         finally
@@ -332,7 +335,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
             NativeMethods.MemCommit | NativeMethods.MemReserve, NativeMethods.PageExecuteReadWrite);
         if (block == IntPtr.Zero)
         {
-            PackagedLaunchLog.Error(
+            Error(
                 $"Could not allocate for {name} in process {processId} (error {Marshal.GetLastWin32Error()}).");
             return false;
         }
@@ -364,7 +367,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
 
             if (!NativeMethods.WriteProcessMemory(process, block, buffer, (UIntPtr)buffer.Length, out _))
             {
-                PackagedLaunchLog.Error(
+                Error(
                     $"Could not write {name} into process {processId} (error {Marshal.GetLastWin32Error()}).");
                 return false;
             }
@@ -396,7 +399,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
         {
             var error = Marshal.GetLastWin32Error();
             privileges.Record($"running {what} in the game", "CREATE_THREAD", false, error);
-            PackagedLaunchLog.Error(
+            Error(
                 $"The game refused a foreign thread for {what} (error {error}).");
             return null;
         }
@@ -406,7 +409,7 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
             if (NativeMethods.WaitForSingleObject(thread, budgetMs) != 0)
             {
                 _latched.Add(processId);
-                PackagedLaunchLog.Error(
+                Error(
                     $"{what} did not return within {budgetMs / 1000}s in process {processId}. Its "
                     + "outcome is unknown, so no further work is done in that process this session "
                     + "and nothing is retried.");
@@ -421,7 +424,88 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
         }
     }
 
-    private static IntPtr RemoteModuleBase(int processId, string fileName)
+    // Prototype loader. Resolves the real containing system module (often
+    // KernelBase for a forwarded kernel32 export) in BOTH processes. The
+    // existing production loader remains unchanged by this experiment.
+    internal bool PrototypeLoad(int processId,string path)
+    {
+        if(Latched(processId))return false;
+        string key=$"{processId}|prototype|{path}";
+        if(_attempted.ContainsKey(key))return _attempted[key];
+        _attempted[key]=false;
+        nint process=NativeMethods.OpenProcess(NativeMethods.InjectorAccess,false,(uint)processId);
+        if(process==0)return false;
+        nint memory=0;
+        try
+        {
+            if(!targetAllowed(processId,process))return false;
+            nint loader=ResolveRemoteLoader(processId);
+            if(loader==0||!targetAllowed(processId,process))return false;
+            byte[] pathBytes=Encoding.Unicode.GetBytes(path+"\0");if(pathBytes.Length>8192)return false;
+            memory=NativeMethods.VirtualAllocEx(process,0,(nuint)pathBytes.Length,NativeMethods.MemCommit|NativeMethods.MemReserve,NativeMethods.PageReadWrite);
+            if(memory==0||!targetAllowed(processId,process))return false;
+            if(!NativeMethods.WriteProcessMemory(process,memory,pathBytes,(nuint)pathBytes.Length,out nuint written)
+                ||written!=(nuint)pathBytes.Length||!targetAllowed(processId,process))return false;
+            uint? completed=RunRemote(process,processId,loader,memory,LoadBudgetMs,"prototype LoadLibraryW");
+            if(completed is null)return false;
+            // DWORD thread exit data is not a64bit HMODULE. The full exact
+            // module enumeration is the sole module-location evidence.
+            return _attempted[key]=RemoteModuleBase(processId,Path.GetFileName(path),Path.GetFullPath(path))!=0
+                &&targetAllowed(processId,process);
+        }
+        finally
+        {
+            if(memory!=0&&!Latched(processId))NativeMethods.VirtualFreeEx(process,memory,0,NativeMethods.MemRelease);
+            NativeMethods.CloseHandle(process);
+        }
+    }
+    private static nint ResolveRemoteLoader(int processId)
+    {
+        nint kernel=NativeMethods.GetModuleHandleW("kernel32.dll");
+        nint function=kernel==0?0:NativeMethods.GetProcAddress(kernel,"LoadLibraryW");
+        if(function==0||!PrototypeGetModuleHandleEx(6,function,out nint local))return 0;
+        var path=new StringBuilder(32768);
+        if(PrototypeGetModuleFileName(local,path,(uint)path.Capacity)==0)return 0;
+        string full=Path.GetFullPath(path.ToString());
+        if(!full.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.System)+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase))return 0;
+        nint remote=RemoteModuleBase(processId,Path.GetFileName(full),full);
+        long rva=function.ToInt64()-local.ToInt64();
+        return remote!=0&&rva is >=0 and <0x1000000?checked(remote+(nint)rva):0;
+    }
+    [DllImport("kernel32.dll",EntryPoint="GetModuleHandleExW")]
+    [return:MarshalAs(UnmanagedType.Bool)] private static extern bool PrototypeGetModuleHandleEx(uint flags,nint address,out nint module);
+    [DllImport("kernel32.dll",EntryPoint="GetModuleFileNameW",CharSet=CharSet.Unicode)]
+    private static extern uint PrototypeGetModuleFileName(nint module,StringBuilder path,uint count);
+
+    // Prototype-only fixed export with a bounded data argument. Uses the full
+    // remote module base plus a verified PE RVA; a thread DWORD is NEVER an
+    // HMODULE. All remote mutations retain the existing unknown/no-retry rule.
+    internal uint? PrototypeCallWithBytes(int processId,string path,uint exportRva,byte[] argument)
+    {
+        if(Latched(processId)||argument.Length is <1 or >4096||exportRva==0)return null;
+        nint process=NativeMethods.OpenProcess(NativeMethods.InjectorAccess,false,(uint)processId);
+        if(process==0)return null;
+        nint memory=0;
+        try
+        {
+            if(!targetAllowed(processId,process))return null;
+            nint module=RemoteModuleBase(processId,Path.GetFileName(path),Path.GetFullPath(path));
+            if(module==0||!targetAllowed(processId,process))return null;
+            memory=NativeMethods.VirtualAllocEx(process,0,(nuint)argument.Length,
+                NativeMethods.MemCommit|NativeMethods.MemReserve,NativeMethods.PageReadWrite);
+            if(memory==0||!targetAllowed(processId,process))return null;
+            if(!NativeMethods.WriteProcessMemory(process,memory,argument,(nuint)argument.Length,out nuint written)
+                ||written!=(nuint)argument.Length||!targetAllowed(processId,process))return null;
+            return RunRemote(process,processId,checked(module+(nint)exportRva),memory,2000,"FenceAttach prototype");
+        }
+        finally
+        {
+            if(memory!=0&&!Latched(processId))NativeMethods.VirtualFreeEx(process,memory,0,NativeMethods.MemRelease);
+            NativeMethods.CloseHandle(process);
+        }
+    }
+
+    private static IntPtr RemoteModuleBase(int processId, string fileName, string? exactPath = null)
     {
         var process = NativeMethods.OpenProcess(
             NativeMethods.ProcessQueryInformation | NativeMethods.ProcessVmRead, false, (uint)processId);
@@ -451,7 +535,9 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
                     continue;
                 }
 
-                if (Path.GetFileName(buffer.ToString()).Equals(fileName, StringComparison.OrdinalIgnoreCase))
+                string candidate = buffer.ToString();
+                if (Path.GetFileName(candidate).Equals(fileName, StringComparison.OrdinalIgnoreCase)
+                    && (exactPath is null || Path.GetFullPath(candidate).Equals(exactPath, StringComparison.OrdinalIgnoreCase)))
                 {
                     return handles[index];
                 }
@@ -468,8 +554,8 @@ internal sealed class GameInjector(PrivilegeJournal privileges, Func<int, IntPtr
     /// <summary>Whether a module is loaded in a process, by file name.</summary>
     /// <param name="processId">The process to look in.</param>
     /// <param name="fileName">The module's file name.</param>
-    internal static bool HasModule(int processId, string fileName)
+    internal static bool HasModule(int processId, string fileName, string? exactPath = null)
     {
-        return RemoteModuleBase(processId, fileName) != IntPtr.Zero;
+        return RemoteModuleBase(processId, fileName, exactPath) != IntPtr.Zero;
     }
 }

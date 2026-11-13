@@ -27,15 +27,13 @@ public sealed class ModeManager
 
 	private readonly FileLogger _logger;
 	private readonly SemaphoreSlim _modeSwitch = new(1, 1);
-	private long _desktopSwitchRequested;
+	private readonly object _applyMode = new();
+	private readonly SteamModeCommandState _steamModeCommands = new();
 	public event Action? ModeTransitionStarted;
 	public event Action<bool>? ModeTransitionCompleted;
-	public bool ConsumeDesktopSwitchRequest()
-	{
-		long requested = Interlocked.Exchange(ref _desktopSwitchRequested, 0);
-		return requested != 0 && Environment.TickCount64 - requested <= 4000 &&
-			_store.LoadState().CurrentMode == ModeKind.Desktop;
-	}
+	public SteamModeCommand? ReadSteamModeCommand() => _steamModeCommands.Read();
+	public bool AcknowledgeSteamModeCommand(long revision, string token, bool completed) =>
+		_steamModeCommands.Acknowledge(revision, token, completed);
 
 	public ModeManager(AppPaths paths, JsonStore store, ProcessTools processTools, ShellTools shellTools, CursorAutoHideService cursorAutoHide, GamingWindowFocusService windowFocus, SystemVolumeKeyService volumeKeys, FileLogger logger)
 	{
@@ -84,13 +82,15 @@ public sealed class ModeManager
 	// borderless smetteva di funzionare e per riaverlo bisognava riapplicare la
 	// modalita' a mano.
 	//
-	// Qui si riaccendono SOLO i servizi: non si tocca Explorer, non si avvia
-	// Steam, non si sposta nulla.
+	// Si ripristinano i servizi e, se manca, la shell necessaria ai broker.
+	// Non si riavviano Steam/Explorer e non si sposta il primo piano.
 	public void ResumeGamingServices()
 	{
 		try
 		{
 			ModeConfig config = _store.LoadConfig();
+			if (!_processTools.StartExplorer(background: true))
+				throw new InvalidOperationException("The desktop shell required by Gaming Mode overlays is unavailable.");
 			_logger.Info($"Resuming Gaming Mode services after agent restart; borderless={config.Gaming.BorderlessFullscreenWindowsInGamingMode}.");
 			_volumeKeys.Start();
 			_windowFocus.Start(config.Gaming.BorderlessFullscreenWindowsInGamingMode);
@@ -107,11 +107,17 @@ public sealed class ModeManager
 
 	public Task<ApiResult> ApplyModeAsync(ModeKind mode, string action, bool interactive = true, bool restoreStartupApps = true, bool updateShell = false)
 	{
+		lock (_applyMode) return ApplyMode(mode, action, interactive, restoreStartupApps, updateShell);
+	}
+
+	private Task<ApiResult> ApplyMode(ModeKind mode, string action, bool interactive, bool restoreStartupApps, bool updateShell)
+	{
 		ModeConfig config = _store.LoadConfig();
 		ModeState modeState = _store.LoadState();
 		List<string> messages = new List<string>();
 		try
 		{
+			_windowFocus.SetPostGameReturnTransitioning(true);
 			ModeTransitionStarted?.Invoke();
 			if (updateShell)
 			{
@@ -142,7 +148,11 @@ public sealed class ModeManager
 			ModeStatus status2 = GetStatus(messages);
 			return Task.FromResult(ApiResult.Failure(ex.Message, status2));
 		}
-		finally { ModeTransitionCompleted?.Invoke(_store.LoadState().CurrentMode == ModeKind.Gaming); }
+		finally
+		{
+			_windowFocus.SetPostGameReturnTransitioning(false);
+			ModeTransitionCompleted?.Invoke(_store.LoadState().CurrentMode == ModeKind.Gaming);
+		}
 	}
 
 	public ApiResult SetDefaultMode(ModeKind mode)
@@ -198,7 +208,37 @@ public sealed class ModeManager
 		}
 	}
 
-	public async Task<ApiResult> SwitchToModeAsync(ModeKind mode)
+	internal Func<bool>? StartupForegroundGuard { get; set; }
+
+	public async Task<ApiResult> OpenSteamBigPictureAsync()
+	{
+		if (!await _modeSwitch.WaitAsync(0)) return ApiResult.Failure("A mode switch is already in progress.", GetStatus());
+		try
+		{
+			var config = _store.LoadConfig();
+			var open = _steamModeCommands.BeginOpen();
+			using SplashScreenService curtain = new(_logger);
+			using SteamThemeStartupCover theme = new(curtain, _logger, config.Gaming.SteamPath,
+				Math.Min(config.Gaming.Splash.MinVisibleMs, 7000), 8000, settlingDeliveredExit: open.Command?.Kind == "barrier");
+			curtain.ShowTransition(ModeKind.Gaming, config.Language, config.Gaming.Splash, failSafeCloseMs: 8000);
+			if (open.Command is not null)
+			{
+				var settled = await SteamModeSettlement.WaitAsync(open.Completed, () => theme.CanProceed, theme.DeadlineTick);
+				if (settled != SteamModeSettlementResult.Complete) return ApiResult.Failure(
+					settled == SteamModeSettlementResult.Cancelled ? "Steam opening was cancelled." : "Steam could not complete the previous mode switch.", GetStatus());
+			}
+			if (!theme.CanProceed) return ApiResult.Failure("Steam opening was cancelled.", GetStatus());
+			// This explicit request launches one URI. It never changes the current
+			// session mode, Explorer, startup preferences or Winlogon configuration.
+			if (!_processTools.OpenUri("steam://open/bigpicture"))
+				return ApiResult.Failure("Steam could not be opened.", GetStatus());
+			await theme.WaitAsync();
+			return ApiResult.Success("Steam Big Picture opening requested.", GetStatus());
+		}
+		finally { _modeSwitch.Release(); }
+	}
+
+	public async Task<ApiResult> SwitchToModeAsync(ModeKind mode, bool forceApply = false)
 	{
 		if (!await _modeSwitch.WaitAsync(0))
 			return ApiResult.Failure("A mode switch is already in progress.", GetStatus());
@@ -206,33 +246,57 @@ public sealed class ModeManager
 		{
 			// Una richiesta duplicata non deve riaprire l'animazione o rilanciare processi.
             var currentState = _store.LoadState();
-            if (currentState.CurrentMode == mode && currentState.LastAppliedAt.HasValue && string.IsNullOrEmpty(currentState.LastError) && (mode != ModeKind.Desktop || ProcessTools.IsExplorerShellRunning()))
+            if (!forceApply && currentState.CurrentMode == mode && currentState.LastAppliedAt.HasValue && string.IsNullOrEmpty(currentState.LastError) && ProcessTools.IsExplorerShellRunning())
                 return ApiResult.Success($"Already in {mode} Mode.", GetStatus());
             using SplashScreenService transition = new(_logger);
+            SteamThemeStartupCover? themedStartup = null;
 			try
 			{
 				// A session switch must not touch DefaultMode, NextBootMode or Winlogon.
-				Interlocked.Exchange(ref _desktopSwitchRequested, 0);
 				var transitionConfig = _store.LoadConfig();
-				transition.ShowTransition(mode, transitionConfig.Language, transitionConfig.Gaming.Splash);
-				ApiResult result = await Task.Run(() => ApplyModeAsync(mode, $"Switched to {mode} Mode", updateShell: false));
-				if (result.Ok && mode == ModeKind.Desktop)
+                SteamModeCommandWait? open = null;
+				if (mode == ModeKind.Gaming)
+                {
+                    open = _steamModeCommands.BeginOpen();
+                    themedStartup = new(transition, _logger, transitionConfig.Gaming.SteamPath,
+                        Math.Min(transitionConfig.Gaming.Splash.MinVisibleMs, 7000), 8000,
+                        settlingDeliveredExit: open.Command?.Kind == "barrier");
+                }
+                transition.ShowTransition(mode, transitionConfig.Language, transitionConfig.Gaming.Splash,
+                    failSafeCloseMs: mode == ModeKind.Gaming ? 8000 : 90000);
+				if (themedStartup is not null)
 				{
-					Interlocked.Exchange(ref _desktopSwitchRequested, Environment.TickCount64);
-					// Let the 500 ms frontend poll request Big Picture exit while the
-					// curtain is still up. Consumption is not an exit acknowledgement.
-					for (int attempt = 0; attempt < 24 && Interlocked.Read(ref _desktopSwitchRequested) != 0; attempt++)
-						await Task.Delay(50);
-					if (Interlocked.Read(ref _desktopSwitchRequested) == 0)
-						await Task.Delay(150);
-					else
-						_logger.Info("Desktop is ready; Steam has not yet consumed the Big Picture exit request.");
+					if (open!.Command is not null)
+					{
+						var settled = await SteamModeSettlement.WaitAsync(open.Completed, () => themedStartup.CanProceed, themedStartup.DeadlineTick);
+						if (settled != SteamModeSettlementResult.Complete) return ApiResult.Failure(
+							settled == SteamModeSettlementResult.Cancelled ? "Gaming Mode opening was cancelled." : "Steam could not complete the previous mode switch.", GetStatus());
+					}
+					if (!themedStartup.CanProceed) return ApiResult.Failure("Gaming Mode opening was cancelled.", GetStatus());
+					StartupForegroundGuard = () => themedStartup.MayLaunch;
 				}
+				if (mode == ModeKind.Desktop)
+				{
+					_windowFocus.SetPostGameReturnTransitioning(true);
+					var exit = _steamModeCommands.RequestDesktop();
+					// Ask the still-running frontend before changing services/shell.
+					// Explorer recovery remains bounded when Steam is unavailable;
+					// the same pending exit can still settle on a later native read.
+					for (int attempt = 0; attempt < 24 && !exit.Completed.IsCompleted; attempt++)
+						await Task.Delay(50);
+					if (!exit.Completed.IsCompletedSuccessfully || !exit.Completed.Result)
+						_logger.Info("Steam desktop exit is pending; continuing Explorer recovery with Decky running.");
+				}
+				ApiResult result = await Task.Run(() => ApplyModeAsync(mode, $"Switched to {mode} Mode", updateShell: false));
+				if (result.Ok && themedStartup is not null) await themedStartup.WaitAsync();
 				return result;
 			}
 			finally
 			{
-				await transition.HideAsync(minVisibleMs: 700, fade: true, fadeMs: 300);
+				StartupForegroundGuard = null;
+				if (mode == ModeKind.Desktop) _windowFocus.SetPostGameReturnTransitioning(false);
+				if (mode == ModeKind.Gaming) { themedStartup?.Dispose(); transition.CancelImmediately(); }
+                else await transition.HideAsync(minVisibleMs: 700, fade: true, fadeMs: 300);
 			}
 		}
 		finally { _modeSwitch.Release(); }
@@ -384,17 +448,19 @@ public sealed class ModeManager
 
 	private void ApplyGamingMode(ModeConfig config, ICollection<string> messages)
 	{
-		bool flag = config.Gaming.CloseExplorerInGamingMode && config.Gaming.AllowExplorerCloseInGamingMode;
+		// The exact Explorer shell is a runtime dependency of both Win32 and
+		// packaged-game overlay/HUD brokers. Keep it behind the fullscreen UI.
+		if (!_processTools.StartExplorer(background: true))
+			throw new InvalidOperationException("The desktop shell required by Gaming Mode overlays is unavailable.");
+		messages.Add("Desktop shell is available in the background for overlay compatibility.");
 		if (config.Gaming.EnsureSunshineCompatibilityInGamingMode)
 		{
 			_processTools.EnsureSunshineCompatibilityServices();
 		}
 		_volumeKeys.Start();
 		_windowFocus.Start(config.Gaming.BorderlessFullscreenWindowsInGamingMode);
-		if (config.Gaming.CloseExplorerInGamingMode && !config.Gaming.AllowExplorerCloseInGamingMode)
-		{
-			messages.Add("Desktop shell hiding was ignored because the advanced safety flag is disabled.");
-		}
+		if (config.Gaming.CloseExplorerInGamingMode)
+			messages.Add("The legacy shell-close request was not applied because overlays require the desktop shell.");
 		if (config.Gaming.AutoHideMouseCursorInGamingMode)
 		{
 			_cursorAutoHide.Start(config.Gaming.AutoHideMouseCursorAfterMs);
@@ -412,10 +478,9 @@ public sealed class ModeManager
 		}
 		if (config.Gaming.EnsureHandheldVendorCompatibilityInGamingMode)
 		{
-			// Handheld ASUS: senza i servizi di Armoury Crate restano fuori uso i tasti
-			// dedicati, il controller interno e le luci. Chi non li ha non vede differenza.
+			// Preserve the user's chosen OEM or alternative hardware controller.
 			int vendor = _processTools.EnsureHandheldVendorCompatibilityServices();
-			if (vendor > 0) messages.Add($"Handheld vendor compatibility checked ({vendor} service(s) ready).");
+			if (vendor > 0) messages.Add($"Observed {vendor} running handheld vendor service(s).");
 		}
 		_processTools.EnsureDeckyPluginHelperCompatibilityServices();
 		int num = _processTools.StartCustomGamingApps(config.Gaming.CustomStartupApps);
@@ -439,33 +504,22 @@ public sealed class ModeManager
 				Thread.Sleep(config.Gaming.DelaySteamAfterDeckyMs);
 			}
 		}
+		if (StartupForegroundGuard?.Invoke() == false)
+			throw new OperationCanceledException("Gaming Mode opening was cancelled after the foreground window changed.");
 		bool flag4 = _processTools.LaunchOrFocusSteamGamepad(config.Gaming.SteamPath, _processTools.GetSteamFallbackPaths(), config.Gaming.SteamArguments);
 		messages.Add(flag4 ? "Steam is running in gamepad mode." : "Steam was not found. Configure SteamPath in config.json if needed.");
 		if (!flag4)
 		{
-			if (flag) _processTools.StartExplorer();
 			throw new InvalidOperationException("Steam could not be opened; Gaming Mode was not applied.");
 		}
-		if (flag)
-		{
-			if (!_processTools.StopExplorer())
-				throw new InvalidOperationException("Explorer did not remain closed; Gaming Mode was not applied.");
-			messages.Add("Desktop shell was stopped for Gaming Mode.");
-		}
+
 	}
 
 	private void ApplyDesktopMode(ModeConfig config, ICollection<string> messages, bool interactive, bool restoreStartupApps)
 	{
-		bool restoreDecky = false;
-		// Il ritorno al desktop non dipende dalla salute di un plugin opzionale.
-		try
-		{
-			restoreDecky = _store.LoadState().CurrentMode == ModeKind.Gaming &&
-				_processTools.StopDeckyForDesktopTransition(config.Gaming.DeckyPath);
-		}
-		catch (Exception error) { _logger.Error("Decky cleanup failed; continuing Desktop recovery.", error); }
-		try
-		{
+		// A healthy loader belongs to Steam in both modes. Stopping it here
+		// invalidates the outstanding native Exit readback and reloads every
+		// plugin. The owned DeckyHost health monitor handles proven EOF/hangs.
 		_volumeKeys.Stop();
 		_windowFocus.Stop();
 		_cursorAutoHide.Stop();
@@ -480,16 +534,6 @@ public sealed class ModeManager
 		{
 			int num = _processTools.RunUserStartupApps();
 			messages.Add((num > 0) ? $"Restored {num} startup item(s)." : "No startup items needed restoring.");
-		}
-		}
-		finally
-		{
-			if (restoreDecky)
-			{
-				try { _processTools.EnsureProcessWithEnvironment(config.Gaming.DeckyPath, _processTools.GetDeckyFallbackPaths(), "",
-					_processTools.BuildDeckyPluginHelperEnvironment(), "PluginLoader", "PluginLoader_noconsole"); }
-				catch (Exception error) { _logger.Error("Desktop restored; Decky restart failed.", error); }
-			}
 		}
 	}
 }

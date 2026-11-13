@@ -1,0 +1,19 @@
+ASUS RC73XA read-only temperatures: protocol reference
+
+Hooandee/panel-de-control, commit6c08dc6bcd77c90f54d9a217294f621a7aa93db6
+Upstream license: GPL-3.0-only (full GPL-3.0 text is in GPL-3.0.txt).
+https://github.com/Hooandee/panel-de-control/tree/6c08dc6bcd77c90f54d9a217294f621a7aa93db6
+
+Endpoint and units references:
+windows/src/PanelDeControl.Service/AsusAtkSensorTransport.cs
+windows/src/PanelDeControl.Service/AsusSensorSnapshotProvider.cs
+windows/src/PanelDeControl.Core/Telemetry/SensorPlausibility.cs
+
+The Playhub addition independently implements these protocol facts through its
+existing verified WMI DSTS provider: CPU0x00120094/GPU0x00120097; upper16bits
+0x0001, low16bits integer Celsius1..125. Zero/unavailable is not a temperature.
+No Panel implementation, ATKACPI transport, upstream service, writer, driver or
+third-party binary is copied or redistributed by this addition. The existing
+Playhub/G-Helper fan reference and fan behavior remain separate and unchanged.
+Physical RC73XA/provider validation is still required; mocked tests do not prove
+real hardware or firmware support.

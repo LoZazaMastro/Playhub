@@ -10,8 +10,11 @@
     <Compile Include="../Playhub/Services/PluginCatalogService.cs" Link="PluginCatalogService.cs" />
     <Compile Include="../Playhub/Services/PluginCatalogService.Releases.cs" Link="PluginCatalogService.Releases.cs" />
     <Compile Include="../Playhub/Services/RemotePluginCatalogService.cs" Link="RemotePluginCatalogService.cs" />
+    <Compile Include="../Playhub/Services/RemotePluginCatalogService.Decky.cs" Link="RemotePluginCatalogService.Decky.cs" />
     <Compile Include="../Playhub/Models/RemotePluginCatalog.cs" Link="RemotePluginCatalog.cs" />
     <Compile Include="../Playhub/Models/DeckyPluginInfo.cs" Link="DeckyPluginInfo.cs" />
+    <Compile Include="../Playhub/Services/PluginChronology.cs" Link="PluginChronology.cs" />
+    <Compile Include="../Playhub/Services/PluginFeaturedSelection.cs" Link="PluginFeaturedSelection.cs" />
     <Content Include="../../catalog/plugins.json" Link="catalog.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

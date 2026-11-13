@@ -3,7 +3,7 @@ import { HomeHistorySettings, historyTitle } from "./DailyHistory";
 import { HomeNewsSettings } from "./HomeNews";
 import { call } from "./controlBackend";
 import { DFL, SP_REACT as React, toaster } from "./decky";
-import { TbPower, TbDeviceTv, TbVolume, TbDeviceGamepad2, TbPhoto, TbSettings, TbShoppingBag, TbRestore, TbPlug } from "react-icons/tb";
+import { TbPower, TbDeviceTv, TbVolume, TbDeviceGamepad2, TbPhoto, TbSettings, TbShoppingBag, TbRestore, TbPlug, TbGauge } from "react-icons/tb";
 import { controlLocale, controlStatus } from "./controlCenterLocale";
 import { normalizeControlPreferences, visibleControlTabs, type ControlPreferences, type ControlTab } from "./controlCenterState";
 import { createTabEditor, canToggleTab, tabEditorTransition, type TabEditorAction } from "./controlTabEditorState";
@@ -17,12 +17,15 @@ import { getOnboardingExtraCopy } from "./onboardingLocale";
 import { registerOnboardingQamDocument, replayPlayhubOnboarding } from "./onboardingIntegration";
 import { useOnboardingControlShowcase } from "./onboardingControlShowcase";
 import { reportPlayhubOnboardingAction } from "./onboardingRuntime";
-import { deviceInfoLocale } from "./deviceInfoLocale";
+import { DeviceSettings } from "./DeviceSettings";
+import { useControlSections } from "./useControlSections";
+import { quickSettingsGroups } from "./quickSettings/groups";
+import { MsiChargeLimit } from "./quickSettings/MsiChargeLimit";
 
 import { QamSettings, qamSettingsCopy } from "./QamSettings";
 
 const { Focusable, DialogButton, ToggleField, DropdownItem, ScrollPanel, GamepadButton } = DFL as any;
-const icons = { home: TbPower, audio: TbDeviceTv, performance: TbVolume, graphics: TbPhoto, controller: TbDeviceGamepad2, store: TbShoppingBag, decky: TbPlug };
+const icons = { home: TbPower, audio: TbDeviceTv, performance: TbVolume, graphics: TbGauge, controller: TbDeviceGamepad2, store: TbShoppingBag, decky: TbPlug };
 let prefs = normalizeControlPreferences({});
 let loaded = false;
 let lastSettingsPage: 'general'|'qam' = 'general';
@@ -84,13 +87,15 @@ const css = `
 .ph-controls .ph-control-icon[aria-selected=true]{border-bottom-color:#fee505!important}
 .ph-controls .ph-control-icon.gpfocus,.ph-controls .ph-control-icon:focus-visible,.ph-controls .ph-control-icon:hover{background:#dcdedf!important;color:#171a21!important;box-shadow:inset 0 0 0 2px rgba(255,255,255,.85)!important;transform:none!important}
 .ph-control-heading{font-size:18px;font-weight:700;margin:0 18px 12px;line-height:1.35}
-.ph-control-section{width:100%;min-width:0;margin:0 0 12px;border:0!important}
+.ph-control-section{width:100%;min-width:0;margin:0 0 3px;border:0!important}
 .ph-controls [class*="PanelSection"]::after,.ph-controls [class*="Field"]::after,.ph-controls [class*="Field"]::before{display:none!important}
 .ph-controls [class*="PanelSection"],.ph-controls [class*="Field"]{border-top:0!important;border-bottom:0!important}
 .ph-controls hr,.ph-controls [role="separator"],.ph-controls [class*="FieldSeparator"],.ph-controls [class*="PanelSectionSeparator"],.ph-controls [class*="Divider"]:empty,.ph-controls [class*="divider"]:empty{display:none!important}
 .ph-controls [class*="BottomSeparator"],.ph-controls [class*="WithSeparator"]{border-top:0!important;border-bottom:0!important;box-shadow:none!important}
 .ph-controls [class*="BottomSeparator"]::before,.ph-controls [class*="BottomSeparator"]::after,.ph-controls [class*="WithSeparator"]::before,.ph-controls [class*="WithSeparator"]::after{display:none!important}
-.ph-controls .ph-control-section-title{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;min-height:42px!important;padding:10px 12px!important;display:flex!important;align-items:center;justify-content:space-between;gap:8px;border-radius:5px!important;transform:none!important;font-size:14px!important}
+.ph-controls .ph-control-section-title{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;min-height:42px!important;padding:10px 4px!important;display:flex!important;align-items:center;justify-content:space-between;gap:8px;border:0!important;background:transparent!important;color:inherit!important;border-radius:5px!important;transform:none!important;font-size:14px!important;white-space:normal!important}
+.ph-controls .ph-control-section-title.gpfocus,.ph-controls .ph-control-section-title:focus-visible,.ph-controls .ph-control-section-title:hover{background:rgba(255,255,255,.12)!important}
+.ph-control-section-title strong{font-weight:600;overflow-wrap:anywhere}
 .ph-control-section-title>span{display:flex;gap:9px;align-items:center;text-align:left;min-width:0}
 .ph-control-section-title svg{width:17px;height:17px;flex:none}
 .ph-control-section-body{padding:6px 0 12px}
@@ -115,33 +120,8 @@ const css = `
 .ph-controls .qsCardBody{gap:12px;padding:8px 0!important}
 `;
 
-function DeviceInfo({ locale }: { locale: string }) {
-  const [info, setInfo] = React.useState<any>();
-  const [failed, setFailed] = React.useState(false);
-  const copy = deviceInfoLocale(locale);
-  React.useEffect(() => { let alive = true; void call("get_device_info").then(value => { if (alive) setInfo(value); }).catch(() => { if (alive) setFailed(true); }); return () => { alive = false; }; }, []);
-  if (!info) return <div role="status" style={{ padding: "8px 10px", fontSize: 12 }}>{failed ? copy.loadError : copy.loading}</div>;
-  const text = (value: unknown) => typeof value === "string" && value.trim() ? value : copy.unavailable;
-  const storage = Number.isFinite(info.storage_total_bytes) && info.storage_total_bytes > 0 ? `${(info.storage_total_bytes / (1024 ** 3)).toFixed(1)} GiB` : copy.unavailable;
-  const rows = [
-    [copy.name, text(info.device_name)],
-    [copy.model, text([info.manufacturer, info.model].filter(Boolean).join(" "))],
-    [copy.cpu, text(info.cpu)],
-    [copy.gpu, text(Array.isArray(info.gpu) ? info.gpu.filter((value: unknown) => typeof value === "string").join(", ") : info.gpu)],
-    [copy.ram, Number.isFinite(info.ram) && info.ram > 0 ? `${info.ram} GiB` : copy.unavailable],
-    [copy.storage, storage],
-    [copy.edition, text(info.windows_edition)],
-    [copy.version, text(info.windows_version)],
-  ];
-  return <div style={{ fontSize: 12, lineHeight: 1.5, overflowWrap: "anywhere", padding: "4px 10px" }}>
-    <dl style={{ margin: "0 0 18px" }}>{rows.map(([label, value]) => <div key={label} style={{ padding: "7px 0" }}>
-      <dt style={{ opacity: .65, marginBottom: 3 }}>{label}</dt><dd style={{ margin: 0, fontSize: 13 }}>{value}</dd>
-    </div>)}</dl>
-  </div>;
-}
-
-export function ControlCenter({ locale, origin, session, store, controller, settings, homeTitle }: {
-  locale: string; origin: "qam" | "decky"; session: React.ReactNode; store: React.ReactNode; controller: React.ReactNode; settings: React.ReactNode; homeTitle?: string;
+export function ControlCenter({ locale, origin, session, store, controller, settings, homeTitle, gameAppId = 0, frameTiming, gamingMode = false }: {
+  locale: string; origin: "qam" | "decky"; session: React.ReactNode; store: React.ReactNode; controller: React.ReactNode; settings: React.ReactNode; homeTitle?: string; gameAppId?: number; frameTiming?: React.ReactNode; gamingMode?: boolean;
 }) {
   const state = React.useSyncExternalStore(subscribe, () => prefs);
   const onboardingRoot = React.useRef<HTMLDivElement>(null);
@@ -182,6 +162,10 @@ export function ControlCenter({ locale, origin, session, store, controller, sett
   const visible = visibleControlTabs(state, deckyAvailable);
   const manualActive = visible.includes(state.active) ? state.active : visible[0] ?? "home";
   const { active, customizing, showcasing } = useOnboardingControlShowcase(origin === "qam", ready, visible, manualActive, manualCustomizing);
+  const updateExpanded = React.useCallback((change: (current: string[]) => string[]) => {
+    if (ready) update({ ...prefs, expandedSections: change(prefs.expandedSections) }, locale);
+  }, [ready, locale]);
+  const { expanded, toggle: toggleSection } = useControlSections(state.expandedSections, updateExpanded);
   const hostActive = !customizing && active === "decky" && deckyAvailable;
   const editing = editor.selected;
   const edit = (action: TabEditorAction) => {
@@ -212,7 +196,14 @@ export function ControlCenter({ locale, origin, session, store, controller, sett
     return !canToggleTab(state, id, deckyAvailable) ? editorCopy.lastTab : state.hidden.includes(id) ? editorCopy.show : editorCopy.hide;
   };
   const choose = (id: ControlTab) => update({ ...state, active: id }, locale);
-  const toggleSection = (id: string) => update({ ...state, collapsed: state.collapsed.includes(id) ? state.collapsed.filter(x => x !== id) : [...state.collapsed, id] }, locale);
+  const openDeviceVideo = () => {
+    choose("audio"); // Persisted tab ID for Video.
+    setCustomizing(false);
+  };
+  const openDevicePerformance = () => {
+    choose("graphics");
+    setCustomizing(false);
+  };
   const step = (direction: number) => {
     const index = visible.indexOf(active);
     choose(visible[(index + direction + visible.length) % visible.length]);
@@ -273,12 +264,17 @@ export function ControlCenter({ locale, origin, session, store, controller, sett
       <p className="ph-tab-reset-hint">{editorCopy.resetHint}</p>
       <div className="ph-editor-following">
       <div style={{ paddingTop: 16 }}>
-        <ControlSection id="topbar-date" title={topbarDateCopy(locale).title} locale={locale} icon={<TbSettings/>} collapsed={state.collapsed.includes('topbar-date')} onToggle={toggleSection}><TopbarDateSettings state={state} update={update} locale={locale} /></ControlSection>
-        <ControlSection id="device" title={copy.device} locale={locale} icon={<TbSettings/>} collapsed={state.collapsed.includes('device')} onToggle={toggleSection}><DeviceInfo locale={locale}/></ControlSection>
+        <ControlSection id="topbar-date" title={topbarDateCopy(locale).title} locale={locale} icon={<TbSettings/>} collapsed={!expanded.includes('topbar-date')} onToggle={toggleSection}><TopbarDateSettings state={state} update={update} locale={locale} /></ControlSection>
+        {!showcasing && <ControlSection id="device" title={copy.device} locale={locale} icon={<TbDeviceGamepad2/>} collapsed={!expanded.includes('device')} onToggle={toggleSection}>
+          <DeviceSettings locale={locale} openVideo={visible.includes("audio") ? openDeviceVideo : undefined}
+            openPerformance={visible.includes("graphics") ? openDevicePerformance : undefined}
+            detailsOpen={expanded.includes("device/details")} onDetailsToggle={() => toggleSection("device/details")} />
+          <MsiChargeLimit locale={locale} />
+        </ControlSection>}
       </div>
-      <ControlSection id="news" title="News" locale={locale} icon={<TbPhoto />} collapsed={state.collapsed.includes("news")} onToggle={toggleSection}><HomeNewsSettings locale={locale} /></ControlSection>
-      <ControlSection id="daily-history" title={historyTitle(locale)} locale={locale} icon={<TbPhoto />} collapsed={state.collapsed.includes("daily-history")} onToggle={toggleSection}><HomeHistorySettings locale={locale} /></ControlSection>
-      <QuickSettingsContent page="tools" locale={locale} collapsed={state.collapsed} onToggle={toggleSection} />
+      <ControlSection id="news" title="News" locale={locale} icon={<TbPhoto />} collapsed={!expanded.includes("news")} onToggle={toggleSection}><HomeNewsSettings locale={locale} /></ControlSection>
+      <ControlSection id="daily-history" title={historyTitle(locale)} locale={locale} icon={<TbPhoto />} collapsed={!expanded.includes("daily-history")} onToggle={toggleSection}><HomeHistorySettings locale={locale} /></ControlSection>
+      <QuickSettingsContent page="tools" locale={locale} expanded={expanded} onToggle={toggleSection} />
       <DialogButton className="ph-settings-action" onClick={() => { setCustomizing(false); replayPlayhubOnboarding(); }}>
         <TbRestore /> {getOnboardingExtraCopy(locale).replay}
       </DialogButton>
@@ -295,7 +291,11 @@ export function ControlCenter({ locale, origin, session, store, controller, sett
       </Focusable>
       {active !== "decky" && (active !== "home" || homeTitle) && <h2 className="ph-control-heading">{active === "home" ? homeTitle : copy[active]}</h2>}
       {!hostActive && <ScrollPanel><div data-playhub-onboarding-content={origin === "qam" ? active : undefined}>{active === "home" ? <div data-playhub-onboarding-content={origin === "qam" ? "home" : undefined}>{session}</div> : active === "store" ? <div data-playhub-onboarding-content={origin === "qam" ? "store" : undefined}>{store}</div> : active === "controller" ? <>{controller}</> :
-        <QuickSettingsContent page={active === "decky" ? "home" : active} locale={locale} collapsed={state.collapsed} onToggle={toggleSection} />}</div></ScrollPanel>}
+        <>
+          <QuickSettingsContent page={active === "decky" ? "home" : active} locale={locale} expanded={expanded} onToggle={toggleSection} gameAppId={gameAppId} gamingMode={gamingMode} />
+          {active === "graphics" && frameTiming && <ControlSection id="measurement" title={quickSettingsGroups(locale).measurement} icon={<TbGauge />} locale={locale}
+            collapsed={!expanded.includes("measurement")} onToggle={toggleSection}>{frameTiming}</ControlSection>}
+        </>}</div></ScrollPanel>}
     </>}
     </div>
     {origin === "qam" && !state.hidden.includes("decky") && <DeckyHost active={hostActive} />}

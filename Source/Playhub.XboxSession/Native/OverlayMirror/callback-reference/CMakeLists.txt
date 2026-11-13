@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.20)
+project(PlayhubShellBandCallback LANGUAGES CXX)
+add_library(ShellCallback SHARED Hook.cpp)
+target_compile_features(ShellCallback PRIVATE cxx_std_17)
+target_compile_definitions(ShellCallback PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_link_libraries(ShellCallback PRIVATE user32 advapi32 shell32 ole32 uuid)
+set_property(TARGET ShellCallback PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

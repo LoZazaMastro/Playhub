@@ -5,20 +5,8 @@ rem  di avviso arrivano a meta'.
 setlocal
 cd /d "%~dp0"
 
-rem ============================================================
-rem  BUILD DEL PLUGIN DECKY "GAMING MODE"
-rem
-rem  Compila src\*.tsx in dist\index.js e copia il risultato in
-rem  Source\Playhub\Assets\GamingModeDeckyPlugin\gaming-mode, che e' la
-rem  cartella che l'app copia dentro homebrew\plugins.
-rem
-rem  PERCHE' QUESTO FILE ESISTE.
-rem  Per mesi i sorgenti del plugin non venivano compilati da nessuno: la build
-rem  dell'app impacchettava il dist\index.js che si trovava, vecchio di
-rem  settimane. Risultato: modifiche fatte al plugin che non comparivano mai in
-rem  Steam, senza un solo errore a segnalarlo. Se npm non c'e', qui sotto la
-rem  build FALLISCE invece di spedire in silenzio un bundle vecchio.
-rem ============================================================
+rem Build the Decky frontend and copy its current payload into the app assets.
+rem Missing dependencies, type errors, or a missing bundle stop packaging.
 
 set LOG=build-plugin-log.txt
 set ASSETS=..\Playhub\Assets\GamingModeDeckyPlugin\gaming-mode

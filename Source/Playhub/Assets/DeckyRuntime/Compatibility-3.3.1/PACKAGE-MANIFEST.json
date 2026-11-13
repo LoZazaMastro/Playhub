@@ -1,0 +1,2550 @@
+{
+  "version": "3.3.1+playhub.reconnect.1",
+  "files": [
+    {
+      "path": "build-info.json",
+      "size": 945,
+      "sha256": "ded2d9034706bfd988585fdf51904baeee1cdf543efb6fec6b9091c3387742a8"
+    },
+    {
+      "path": "BUILD-WINDOWS.md",
+      "size": 2565,
+      "sha256": "64214fbe9ed9a2dd6fd5f65c8aeba3d275b9acc105ef2025d35f10766ca7e78e"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "size": 2749,
+      "sha256": "e109cc6c006e98927a41153c9337f67798e47a898234e59230abbbd0c11152f3"
+    },
+    {
+      "path": "LICENSE",
+      "size": 18431,
+      "sha256": "189b1af95d661151e054cea10c91b3d754e4de4d3fecfb074c1fb29476f7167b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@ampproject__remapping-2.3.0/LICENSE",
+      "size": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__code-frame-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__compat-data-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__core-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__generator-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__helper-compilation-targets-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__helper-environment-visitor-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__helper-function-name-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__helper-hoist-variables-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__helper-module-imports-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__helper-module-transforms-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__helper-simple-access-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__helper-split-export-declaration-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__helper-string-parser-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__helper-validator-identifier-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__helper-validator-option-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__helpers-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__highlight-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__parser-7.24.7/LICENSE",
+      "size": 1086,
+      "sha256": "2e97627cb278aa7556fb9e8817368302301a595b6c7582512b8d74c57b773652"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__runtime-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__runtime-7.28.4/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__template-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__traverse-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@babel__types-7.24.7/LICENSE",
+      "size": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@decky__api-1.1.3/LICENSE",
+      "size": 26527,
+      "sha256": "38965778962143b687faff3a5b69ef22dd228e0ca4f5a3752893e016ede87c6a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@decky__ui-4.16.4/LICENSE",
+      "size": 26527,
+      "sha256": "38965778962143b687faff3a5b69ef22dd228e0ca4f5a3752893e016ede87c6a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@gulpjs__to-absolute-glob-4.0.0/LICENSE",
+      "size": 1200,
+      "sha256": "42aa2694e783fdf56241124d3ccc33dd442cc185b06877be8d26ca54da95d7e4"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@inquirer__figures-1.0.3/LICENSE",
+      "size": 1058,
+      "sha256": "b5a8cf850a3fef0724a924001ddc313b4a1a9669111f620f155e589b94e590df"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@isaacs__cliui-8.0.2/LICENSE.txt",
+      "size": 731,
+      "sha256": "2dc0465729366c3a7890dfa9e972a1ba7048a26c02116fb8b419a6a1ac110149"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@jridgewell__gen-mapping-0.3.5/LICENSE",
+      "size": 1080,
+      "sha256": "e58e4f6d4f57ab1e4a503a523d1c4e34ed03eee292a0237a898ac158c1b7bc69"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@jridgewell__resolve-uri-3.1.2/LICENSE",
+      "size": 1079,
+      "sha256": "b8778b155bfde5a28b023a558753c0fa058a52bb9de35c343c250be1bbcdedab"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@jridgewell__set-array-1.2.1/LICENSE",
+      "size": 1080,
+      "sha256": "e58e4f6d4f57ab1e4a503a523d1c4e34ed03eee292a0237a898ac158c1b7bc69"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@jridgewell__sourcemap-codec-1.4.15/LICENSE",
+      "size": 1072,
+      "sha256": "1c632a84f7ba5a7b32d9c15e707f419b2393e7ad7de362bd9c837b5e435a197b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@jridgewell__trace-mapping-0.3.25/LICENSE",
+      "size": 1080,
+      "sha256": "0daa3c2445c4bfaaa7e8c69ec2742a8841bc920b75818ef2c7a510242de2b04a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@ljharb__through-2.3.13/LICENSE",
+      "size": 1073,
+      "sha256": "c4af2d404e917d9f6e95b8ee0c2fe4b2660f3ff109d28b17b35cc144eda8f62a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@nodelib__fs.scandir-2.1.5/LICENSE",
+      "size": 1079,
+      "sha256": "9363d160bf41d46d83901a5d24fc3fe2094c2afc17b4a2378914b273977ee2de"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@nodelib__fs.stat-2.0.5/LICENSE",
+      "size": 1079,
+      "sha256": "9363d160bf41d46d83901a5d24fc3fe2094c2afc17b4a2378914b273977ee2de"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@nodelib__fs.walk-1.2.8/LICENSE",
+      "size": 1079,
+      "sha256": "9363d160bf41d46d83901a5d24fc3fe2094c2afc17b4a2378914b273977ee2de"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@pkgjs__parseargs-0.11.0/LICENSE",
+      "size": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@rollup__plugin-commonjs-26.0.1/LICENSE",
+      "size": 1151,
+      "sha256": "7b8136f76c483d03597500bfa991aae9be68d4629e1121cbf9b93aa727efe305"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@rollup__plugin-json-6.1.0/LICENSE",
+      "size": 1151,
+      "sha256": "7b8136f76c483d03597500bfa991aae9be68d4629e1121cbf9b93aa727efe305"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@rollup__plugin-node-resolve-15.2.3/LICENSE",
+      "size": 1151,
+      "sha256": "7b8136f76c483d03597500bfa991aae9be68d4629e1121cbf9b93aa727efe305"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@rollup__plugin-replace-5.0.7/LICENSE",
+      "size": 1151,
+      "sha256": "7b8136f76c483d03597500bfa991aae9be68d4629e1121cbf9b93aa727efe305"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@rollup__plugin-typescript-11.1.6/LICENSE",
+      "size": 1151,
+      "sha256": "7b8136f76c483d03597500bfa991aae9be68d4629e1121cbf9b93aa727efe305"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@rollup__pluginutils-5.1.0/LICENSE",
+      "size": 1151,
+      "sha256": "7b8136f76c483d03597500bfa991aae9be68d4629e1121cbf9b93aa727efe305"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__debug-4.1.12/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__estree-1.0.5/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__estree-jsx-1.0.5/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__glob-7.2.0/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__hast-3.0.4/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__history-4.7.11/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__mdast-4.0.4/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__minimatch-3.0.5/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__minimatch-5.1.2/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__ms-0.7.34/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__node-20.14.2/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__react-19.1.1/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__react-dom-19.1.1/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__react-file-icon-1.0.4/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__react-router-5.1.20/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__resolve-1.20.2/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__symlink-or-copy-1.2.2/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__unist-2.0.10/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@types__unist-3.0.2/LICENSE",
+      "size": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "licenses/frontend-dependencies/@ungap__structured-clone-1.2.0/LICENSE",
+      "size": 765,
+      "sha256": "dc6d4961d8b6ee747231582ae9c53ce1d66bf76bc9f5a28f554c0e97210953bf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/aggregate-error-3.1.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/ansi-escapes-4.3.2/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/ansi-regex-5.0.1/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/ansi-regex-6.0.1/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/ansi-styles-3.2.1/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/ansi-styles-4.3.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/ansi-styles-6.2.1/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/anymatch-3.1.3/LICENSE",
+      "size": 784,
+      "sha256": "5a3b0007c4203f10fe11b3fe8747253eb994f135e10b73e1f88ada941af09c6e"
+    },
+    {
+      "path": "licenses/frontend-dependencies/argparse-1.0.10/LICENSE",
+      "size": 1079,
+      "sha256": "c8442419dc614089ea022b3da6bfc089b41a58fb7b9030d1e651f2f36189dce2"
+    },
+    {
+      "path": "licenses/frontend-dependencies/argparse-2.0.1/LICENSE",
+      "size": 12775,
+      "sha256": "de4d1f2d2ad5ad0cfd1657a106476b31cb5db5ef9d1ff842b237c0c81f0c8a23"
+    },
+    {
+      "path": "licenses/frontend-dependencies/array-union-2.1.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/b4a-1.6.6/LICENSE",
+      "size": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "licenses/frontend-dependencies/bail-2.0.2/license",
+      "size": 1099,
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/balanced-match-1.0.2/LICENSE.md",
+      "size": 1096,
+      "sha256": "a1bd5deadb6a06dd74efa852c1b8b23f63b67f2214fbe9c8bd591da51da69268"
+    },
+    {
+      "path": "licenses/frontend-dependencies/bare-events-2.4.2/LICENSE",
+      "size": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "licenses/frontend-dependencies/base64-js-1.5.1/LICENSE",
+      "size": 1081,
+      "sha256": "5b37224c080cdcc97c871ada971c224e9926370fe74f11b539aa1cf9f3b1aca1"
+    },
+    {
+      "path": "licenses/frontend-dependencies/bl-4.1.0/LICENSE.md",
+      "size": 1216,
+      "sha256": "9377db95383c8befacf05c6e465d969d756edf178487ca1344fdf3ba147c596f"
+    },
+    {
+      "path": "licenses/frontend-dependencies/bl-5.1.0/LICENSE.md",
+      "size": 1216,
+      "sha256": "9377db95383c8befacf05c6e465d969d756edf178487ca1344fdf3ba147c596f"
+    },
+    {
+      "path": "licenses/frontend-dependencies/brace-expansion-1.1.11/LICENSE",
+      "size": 1096,
+      "sha256": "68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14"
+    },
+    {
+      "path": "licenses/frontend-dependencies/brace-expansion-2.0.1/LICENSE",
+      "size": 1096,
+      "sha256": "68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14"
+    },
+    {
+      "path": "licenses/frontend-dependencies/braces-3.0.3/LICENSE",
+      "size": 1091,
+      "sha256": "35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2"
+    },
+    {
+      "path": "licenses/frontend-dependencies/broccoli-node-api-1.7.0/LICENSE",
+      "size": 1092,
+      "sha256": "ed9eac74122117d0fb6f7b8b53e296786ed47115cdd8e82af0a6c8a5e24c214c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/broccoli-node-info-2.2.0/LICENSE",
+      "size": 1074,
+      "sha256": "864b5cabda27867653749a6ce8c75a4ae08ccba05f57af82a3702ec641e9f47b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/broccoli-plugin-4.0.7/LICENSE",
+      "size": 1074,
+      "sha256": "aa897411d98e0a5c3f29fc1df2fb01109dcea6c9d545f89e7fdbd1b4f260e6fc"
+    },
+    {
+      "path": "licenses/frontend-dependencies/browserslist-4.23.1/LICENSE",
+      "size": 1118,
+      "sha256": "f25bf9bf3ae8984bcd43bf7fb8f78e7eec8d577081fb8d0989cfa7c67ecebb8e"
+    },
+    {
+      "path": "licenses/frontend-dependencies/buffer-5.7.1/LICENSE",
+      "size": 1106,
+      "sha256": "06bafa45fdad2579ba0e43b0c9b2c6290287c99c4203c300254a462b38a307f6"
+    },
+    {
+      "path": "licenses/frontend-dependencies/buffer-6.0.3/LICENSE",
+      "size": 1106,
+      "sha256": "06bafa45fdad2579ba0e43b0c9b2c6290287c99c4203c300254a462b38a307f6"
+    },
+    {
+      "path": "licenses/frontend-dependencies/builtin-modules-3.3.0/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/call-bind-1.0.7/LICENSE",
+      "size": 1071,
+      "sha256": "39c5ec504cf6bd5cd782a7c695828e09189df79f5d94840e4f08feb97b9fd416"
+    },
+    {
+      "path": "licenses/frontend-dependencies/caller-callsite-2.0.0/license",
+      "size": 1119,
+      "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/caller-path-2.0.0/license",
+      "size": 1119,
+      "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/callsites-2.0.0/license",
+      "size": 1119,
+      "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/caniuse-lite-1.0.30001633/LICENSE",
+      "size": 18651,
+      "sha256": "fd3a263fe19ed8faa9068b43abaebafc02c77897b0c6fc09abc04bb592e5f16e"
+    },
+    {
+      "path": "licenses/frontend-dependencies/ccount-2.0.1/license",
+      "size": 1099,
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/chalk-2.4.2/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/chalk-4.1.2/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/chalk-5.3.0/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/character-entities-2.0.2/license",
+      "size": 1099,
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/character-entities-html4-2.1.0/license",
+      "size": 1099,
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/character-entities-legacy-3.0.0/license",
+      "size": 1099,
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/character-reference-invalid-2.0.1/license",
+      "size": 1099,
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/chardet-0.7.0/LICENSE",
+      "size": 1059,
+      "sha256": "7df1d6cf5b4112cbe277a84269e02ae631603a9a3a21b8328a34c30b8c3dd1ab"
+    },
+    {
+      "path": "licenses/frontend-dependencies/cheerio-1.0.0-rc.12/LICENSE",
+      "size": 1081,
+      "sha256": "61c1e21d3a8ff20f9b69abe15104a75584688080febc22f60a4cbf3854becf4e"
+    },
+    {
+      "path": "licenses/frontend-dependencies/cheerio-select-2.1.0/LICENSE",
+      "size": 1260,
+      "sha256": "cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164"
+    },
+    {
+      "path": "licenses/frontend-dependencies/clean-stack-2.2.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/cli-cursor-3.1.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/cli-spinners-2.9.2/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/cli-width-4.1.0/LICENSE",
+      "size": 757,
+      "sha256": "31493c14dc0b4eb1e06fe5d4bab3ca4e3b40f8749433455c713863238600cf1a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/cliui-8.0.1/LICENSE.txt",
+      "size": 731,
+      "sha256": "2dc0465729366c3a7890dfa9e972a1ba7048a26c02116fb8b419a6a1ac110149"
+    },
+    {
+      "path": "licenses/frontend-dependencies/clone-1.0.4/LICENSE",
+      "size": 1070,
+      "sha256": "3fb0857ef0133928cf72c88dfc464e931486e88778961eedec25585e2321507f"
+    },
+    {
+      "path": "licenses/frontend-dependencies/clone-2.1.2/LICENSE",
+      "size": 1070,
+      "sha256": "3fb0857ef0133928cf72c88dfc464e931486e88778961eedec25585e2321507f"
+    },
+    {
+      "path": "licenses/frontend-dependencies/clone-stats-1.0.0/LICENSE.md",
+      "size": 1085,
+      "sha256": "74afb88a7aa7f8db6735c014cba3f9f7b1b1fde39d7b56ba9b2c1f1f2d5d10ec"
+    },
+    {
+      "path": "licenses/frontend-dependencies/color-convert-1.9.3/LICENSE",
+      "size": 1087,
+      "sha256": "693866fc419c6f61c8570438ec00659d156ec2b4d4a4d04091711f5f11a365d4"
+    },
+    {
+      "path": "licenses/frontend-dependencies/color-convert-2.0.1/LICENSE",
+      "size": 1087,
+      "sha256": "693866fc419c6f61c8570438ec00659d156ec2b4d4a4d04091711f5f11a365d4"
+    },
+    {
+      "path": "licenses/frontend-dependencies/color-name-1.1.3/LICENSE",
+      "size": 1085,
+      "sha256": "c064f7a3e353bc1bc977f3c897941c75ef763f44f41677e0a15370ca0853d6e2"
+    },
+    {
+      "path": "licenses/frontend-dependencies/color-name-1.1.4/LICENSE",
+      "size": 1085,
+      "sha256": "c064f7a3e353bc1bc977f3c897941c75ef763f44f41677e0a15370ca0853d6e2"
+    },
+    {
+      "path": "licenses/frontend-dependencies/colord-2.9.3/LICENSE.md",
+      "size": 1083,
+      "sha256": "7613d4594ee8b6163926af3435dae61c9e3d5a27cd137bd76a543ba40002d8fc"
+    },
+    {
+      "path": "licenses/frontend-dependencies/colors-1.4.0/LICENSE",
+      "size": 1187,
+      "sha256": "77ffe84006509949525fd57df06f4a6a80ad862c5314b66ab5bb6ac4cee6280b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/comma-separated-tokens-2.0.3/license",
+      "size": 1099,
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/commander-12.1.0/LICENSE",
+      "size": 1098,
+      "sha256": "04512a63dce4d2d506ad612dc0bd7681ccf6e3655f7b6eaef7dfac8323d1ec0b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/commondir-1.0.1/LICENSE",
+      "size": 1109,
+      "sha256": "8bb16db1b047019e4395965f2cf3611b06c34bf86dc2d0210b3c3f91b53c21fe"
+    },
+    {
+      "path": "licenses/frontend-dependencies/compare-versions-6.1.1/LICENSE",
+      "size": 1085,
+      "sha256": "4c247e0dce60c6a29332afa80ba7d81243e7045b0e4b6e6e59e21fb5a1a7b5ab"
+    },
+    {
+      "path": "licenses/frontend-dependencies/concat-map-0.0.1/LICENSE",
+      "size": 1073,
+      "sha256": "435a6722c786b0a56fbe7387028f1d9d3f3a2d0fb615bb8fee118727c3f59b7b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/convert-source-map-2.0.0/LICENSE",
+      "size": 1078,
+      "sha256": "1fa6ee8bb95a81ae3d73a5bd074a3ac380ffec13697051063ca1a601921b91db"
+    },
+    {
+      "path": "licenses/frontend-dependencies/core-util-is-1.0.3/LICENSE",
+      "size": 1077,
+      "sha256": "33b734d60042d0fe0c92dd1fc1e874193a1c899ec3e276a2eb935d2d0bf5b710"
+    },
+    {
+      "path": "licenses/frontend-dependencies/cosmiconfig-5.2.1/LICENSE",
+      "size": 1079,
+      "sha256": "8e714750725e75c8b31172ef84c0805f94873f86e3b5cfca8a948553f0778fa1"
+    },
+    {
+      "path": "licenses/frontend-dependencies/cross-fetch-4.0.0/LICENSE",
+      "size": 1084,
+      "sha256": "821a6be45c3fd08815688b30b6210fc97848cf88c7a6ed8afb22ae75b83571b4"
+    },
+    {
+      "path": "licenses/frontend-dependencies/cross-spawn-7.0.6/LICENSE",
+      "size": 1105,
+      "sha256": "aaa78451b6fecd1b9c4594c796c133c0e90cad100372ff8bc6de615e9ef9adf1"
+    },
+    {
+      "path": "licenses/frontend-dependencies/css-select-5.1.0/LICENSE",
+      "size": 1260,
+      "sha256": "cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164"
+    },
+    {
+      "path": "licenses/frontend-dependencies/css-what-6.1.0/LICENSE",
+      "size": 1260,
+      "sha256": "cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164"
+    },
+    {
+      "path": "licenses/frontend-dependencies/csstype-3.1.3/LICENSE",
+      "size": 1062,
+      "sha256": "11d55bd4541c75ee7879547ac49089c489163dae49551389713c3d026cab383e"
+    },
+    {
+      "path": "licenses/frontend-dependencies/debug-2.6.9/LICENSE",
+      "size": 1107,
+      "sha256": "98c970de440dcfc77471610aec2377c9d9b0db2b3be6d1add524a586e1d7f422"
+    },
+    {
+      "path": "licenses/frontend-dependencies/debug-4.3.5/LICENSE",
+      "size": 1139,
+      "sha256": "3a61c6c96caf5c1d9b623fb9b04c822b783dfcb78aa7e49c76a3f643e6ed7f95"
+    },
+    {
+      "path": "licenses/frontend-dependencies/decode-named-character-reference-1.0.2/license",
+      "size": 1099,
+      "sha256": "807a88522a850092aece49486207c17c313c4d5708ac276524840fe1caa0b0fa"
+    },
+    {
+      "path": "licenses/frontend-dependencies/deepmerge-4.3.1/license.txt",
+      "size": 1116,
+      "sha256": "6cfc4687cb2f2d86f4a77e6b526290d3878e5e512f3fec2f4cb36a9cb36f798b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/defaults-1.0.4/LICENSE",
+      "size": 1112,
+      "sha256": "fe99d9a94ec7edc64a9767701f830f66e08239b000d653a359d66e640289ed0c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/define-data-property-1.1.4/LICENSE",
+      "size": 1071,
+      "sha256": "b41d08bc3624d8c436fc80237d73ebb361985a67f4504bbcd703e5ca2b27254c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/define-lazy-prop-2.0.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/del-5.1.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/dequal-2.0.3/license",
+      "size": 1114,
+      "sha256": "306fa513e39b23a6e8747520de761809d206b99800ef41907b530226574c59ae"
+    },
+    {
+      "path": "licenses/frontend-dependencies/detect-newline-2.1.0/license",
+      "size": 1119,
+      "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/devlop-1.1.0/license",
+      "size": 1099,
+      "sha256": "6f296a5eccc1dc96714bb94ebaa9cac25b0a1467d74cc5263ac4d0646ab01f62"
+    },
+    {
+      "path": "licenses/frontend-dependencies/dir-glob-3.0.1/license",
+      "size": 1116,
+      "sha256": "69dee148a2cc470554dfa7142e830662062394d0fe67cddd379aba90dc60d6b3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/dom-serializer-2.0.0/LICENSE",
+      "size": 1098,
+      "sha256": "94cfe87de9b178e8fee313a19178e625129e2ce559db32e772e7bd95114ee6ff"
+    },
+    {
+      "path": "licenses/frontend-dependencies/domelementtype-2.3.0/LICENSE",
+      "size": 1260,
+      "sha256": "cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164"
+    },
+    {
+      "path": "licenses/frontend-dependencies/domhandler-5.0.3/LICENSE",
+      "size": 1260,
+      "sha256": "cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164"
+    },
+    {
+      "path": "licenses/frontend-dependencies/domutils-3.1.0/LICENSE",
+      "size": 1260,
+      "sha256": "cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164"
+    },
+    {
+      "path": "licenses/frontend-dependencies/electron-to-chromium-1.4.802/LICENSE",
+      "size": 728,
+      "sha256": "25ba5c59dad3e0dd8f9540beaa0f0a86a10e3aec35af5fdc8e88c5f6a5c0d8c6"
+    },
+    {
+      "path": "licenses/frontend-dependencies/emoji-regex-8.0.0/LICENSE-MIT.txt",
+      "size": 1077,
+      "sha256": "483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/emoji-regex-9.2.2/LICENSE-MIT.txt",
+      "size": 1077,
+      "sha256": "483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/entities-4.5.0/LICENSE",
+      "size": 1260,
+      "sha256": "cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164"
+    },
+    {
+      "path": "licenses/frontend-dependencies/eol-0.9.1/LICENSE",
+      "size": 1055,
+      "sha256": "9eb6f69d48a1dd764e8a33f14a584f460d3cec653477c136a95dd6df9c249211"
+    },
+    {
+      "path": "licenses/frontend-dependencies/error-ex-1.3.2/LICENSE",
+      "size": 1077,
+      "sha256": "92b07a2e5b0e051d37dde85042c736d6d551cfcbc0983f39d7ef903b3986bbc1"
+    },
+    {
+      "path": "licenses/frontend-dependencies/es-define-property-1.0.0/LICENSE",
+      "size": 1071,
+      "sha256": "5e325595b4ea8cfec3802f545b1def5d7b73e4a5b8e9ba63e32a320f67732292"
+    },
+    {
+      "path": "licenses/frontend-dependencies/es-errors-1.3.0/LICENSE",
+      "size": 1071,
+      "sha256": "5e325595b4ea8cfec3802f545b1def5d7b73e4a5b8e9ba63e32a320f67732292"
+    },
+    {
+      "path": "licenses/frontend-dependencies/esbuild-0.20.2/LICENSE.md",
+      "size": 1069,
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+    },
+    {
+      "path": "licenses/frontend-dependencies/escalade-3.1.2/license",
+      "size": 1104,
+      "sha256": "9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97"
+    },
+    {
+      "path": "licenses/frontend-dependencies/escape-string-regexp-1.0.5/license",
+      "size": 1119,
+      "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/escape-string-regexp-5.0.0/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/esprima-4.0.1/LICENSE.BSD",
+      "size": 1303,
+      "sha256": "94bcb9959136723aa4fb36e1a6c4d5c662a2369978cfae344dabfb83ae619e79"
+    },
+    {
+      "path": "licenses/frontend-dependencies/estree-util-is-identifier-name-3.0.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/estree-walker-2.0.2/LICENSE",
+      "size": 1126,
+      "sha256": "8a6dcbabe7179f9c8489c08a7d874d0f1e093ae7449e03756ccf87cb9d0e296e"
+    },
+    {
+      "path": "licenses/frontend-dependencies/estree-walker-3.0.3/LICENSE",
+      "size": 1126,
+      "sha256": "8a6dcbabe7179f9c8489c08a7d874d0f1e093ae7449e03756ccf87cb9d0e296e"
+    },
+    {
+      "path": "licenses/frontend-dependencies/extend-3.0.2/LICENSE",
+      "size": 1081,
+      "sha256": "97af7428f93afbab9bf79cd09254da1357161794f4255eb1b4599f04dd2d2e7c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/external-editor-3.1.0/LICENSE",
+      "size": 1080,
+      "sha256": "e33b7bc13a0e5ea9ed6718e12e99a5b0b60276162f0195aa7f342397f4b0155d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/fast-fifo-1.3.2/LICENSE",
+      "size": 1079,
+      "sha256": "41a2aa55a9ebad3df900cf37fded512714a127f4300ef54b978f834a11ec4d48"
+    },
+    {
+      "path": "licenses/frontend-dependencies/fast-glob-3.3.2/LICENSE",
+      "size": 1079,
+      "sha256": "9363d160bf41d46d83901a5d24fc3fe2094c2afc17b4a2378914b273977ee2de"
+    },
+    {
+      "path": "licenses/frontend-dependencies/fastq-1.17.1/LICENSE",
+      "size": 765,
+      "sha256": "c3367f6d01a79d368fc4fbb41b3615fcd92f243d6597ab96742f6f976f9325af"
+    },
+    {
+      "path": "licenses/frontend-dependencies/filesize-10.1.2/LICENSE",
+      "size": 1509,
+      "sha256": "a1ac0a1c975fdadf4a1b13fb4be3dff5083eb19ce4c396721e71676be401916f"
+    },
+    {
+      "path": "licenses/frontend-dependencies/fill-range-7.1.1/LICENSE",
+      "size": 1091,
+      "sha256": "35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2"
+    },
+    {
+      "path": "licenses/frontend-dependencies/find-root-1.1.0/LICENSE.md",
+      "size": 1056,
+      "sha256": "c3b7834a158755947fca791ea34b8a0d5ac01b203d8b43ecf3dfefa368eb8e72"
+    },
+    {
+      "path": "licenses/frontend-dependencies/foreground-child-3.2.0/LICENSE",
+      "size": 775,
+      "sha256": "93f5d82a8d59442fe3275383453a255fef761647fb28265644010ba799806148"
+    },
+    {
+      "path": "licenses/frontend-dependencies/fs-extra-11.2.0/LICENSE",
+      "size": 1084,
+      "sha256": "1e76029602ae9b21cc4e612db2496d92febed882ba13ba745f8b3309e85f9d39"
+    },
+    {
+      "path": "licenses/frontend-dependencies/fs-extra-8.1.0/LICENSE",
+      "size": 1084,
+      "sha256": "1e76029602ae9b21cc4e612db2496d92febed882ba13ba745f8b3309e85f9d39"
+    },
+    {
+      "path": "licenses/frontend-dependencies/fs-mkdirp-stream-2.0.1/LICENSE",
+      "size": 1155,
+      "sha256": "24f13547832b1c76582a71d705123385c2ef75e5fa4c03f667c1fed6a7c13ecf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/fs.realpath-1.0.0/LICENSE",
+      "size": 2125,
+      "sha256": "8465b04b67f473341171b5c9c8b2c741a4a395b3f6ed58339b3a4f4db3db7472"
+    },
+    {
+      "path": "licenses/frontend-dependencies/function-bind-1.1.2/LICENSE",
+      "size": 1052,
+      "sha256": "773e131a7684726005a7e4688a80b4620033bc08499bc1404dd1a1eb3bca725e"
+    },
+    {
+      "path": "licenses/frontend-dependencies/gensync-1.0.0-beta.2/LICENSE",
+      "size": 1075,
+      "sha256": "e3a956681ee067f971ac413994171b3d90ca801ec6324e76c9c55366cfe31cb0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/get-caller-file-2.0.5/LICENSE.md",
+      "size": 745,
+      "sha256": "902dbb4154679fb2b8d7c33878183f45b268d01eae5e5033dddaa8852d45f213"
+    },
+    {
+      "path": "licenses/frontend-dependencies/get-intrinsic-1.2.4/LICENSE",
+      "size": 1071,
+      "sha256": "39c5ec504cf6bd5cd782a7c695828e09189df79f5d94840e4f08feb97b9fd416"
+    },
+    {
+      "path": "licenses/frontend-dependencies/glob-10.4.1/LICENSE",
+      "size": 775,
+      "sha256": "cdbc258d13806538e727964c2436a8806e6e2496ccd616224aace6f7bf98dbc1"
+    },
+    {
+      "path": "licenses/frontend-dependencies/glob-7.2.3/LICENSE",
+      "size": 976,
+      "sha256": "6236fa0b88a4a0cce3dda0367979491b2052b3c8d6b1c10b3668de083e86a7f0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/glob-parent-5.1.2/LICENSE",
+      "size": 753,
+      "sha256": "2c46f1325bd3822a33c1e2c1e49c18d13127ac00f9c8b3b79196c7a126f73cd9"
+    },
+    {
+      "path": "licenses/frontend-dependencies/glob-parent-6.0.2/LICENSE",
+      "size": 857,
+      "sha256": "fc68eb8f1c8e1d6b8be50f3c177927e24791cae7dc251e6253a012f37926a30c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/glob-stream-8.0.2/LICENSE",
+      "size": 1146,
+      "sha256": "6b510df798d1ac4ce1614aeed60d220233458ff50f8eb6c2ce1218b3ef7600ac"
+    },
+    {
+      "path": "licenses/frontend-dependencies/globals-11.12.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/globby-10.0.2/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/gopd-1.0.1/LICENSE",
+      "size": 1071,
+      "sha256": "d90bf0a089da4cf43d644ed240a0b3825dcdb705e64e38371d56995a4cc9e4c5"
+    },
+    {
+      "path": "licenses/frontend-dependencies/graceful-fs-4.2.11/LICENSE",
+      "size": 791,
+      "sha256": "f65c5d9f22a317b2a10803bd1868461ce6499c2ed7217bc80c0cc772a748789c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/gulp-sort-2.0.0/LICENSE",
+      "size": 1119,
+      "sha256": "1ec982389c68401ad00b6f4908ad3b80b71215fe50282093ec1c62c17ce3088e"
+    },
+    {
+      "path": "licenses/frontend-dependencies/has-flag-3.0.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/has-flag-4.0.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/has-property-descriptors-1.0.2/LICENSE",
+      "size": 1067,
+      "sha256": "0f0ca96f50793990031ebc488a38f7292ff70bce8ab6a8e5eeda674abc32ccdf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/has-proto-1.0.3/LICENSE",
+      "size": 1067,
+      "sha256": "0f0ca96f50793990031ebc488a38f7292ff70bce8ab6a8e5eeda674abc32ccdf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/has-symbols-1.0.3/LICENSE",
+      "size": 1071,
+      "sha256": "206c1adcf206dc0031b11232f5b054ec5f1662407ab1ca415247921cab2068ab"
+    },
+    {
+      "path": "licenses/frontend-dependencies/hasown-2.0.2/LICENSE",
+      "size": 1083,
+      "sha256": "bf9b0d665be2a689851eea667ca9f42066ea1d903b38349c51e6a44b2577680a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/hast-util-to-jsx-runtime-2.3.0/license",
+      "size": 1099,
+      "sha256": "6f296a5eccc1dc96714bb94ebaa9cac25b0a1467d74cc5263ac4d0646ab01f62"
+    },
+    {
+      "path": "licenses/frontend-dependencies/hast-util-whitespace-3.0.0/license",
+      "size": 1099,
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/heimdalljs-logger-0.1.10/LICENSE",
+      "size": 1128,
+      "sha256": "69bd199227d89df9e60d6dbd045348300a2432e76994310e4ecf85bb0fa3eefa"
+    },
+    {
+      "path": "licenses/frontend-dependencies/htmlparser2-8.0.2/LICENSE",
+      "size": 1104,
+      "sha256": "204cfa747341660e4da64cd23e8c876c6b20279d247f48564993d3fc4a2eab47"
+    },
+    {
+      "path": "licenses/frontend-dependencies/husky-9.0.11/LICENSE",
+      "size": 1065,
+      "sha256": "a84ab50793627920239781ad6a48a749bc2fe37707e47fdf8e6cb1f55bc747ab"
+    },
+    {
+      "path": "licenses/frontend-dependencies/i18next-23.16.8/LICENSE",
+      "size": 1074,
+      "sha256": "c83b2035d5a4740f8739869a994acc24559e2946219b15091922b52e7b2a7287"
+    },
+    {
+      "path": "licenses/frontend-dependencies/i18next-25.6.0/LICENSE",
+      "size": 1074,
+      "sha256": "def56080ea8d5d30d11771d221d1c9e98f3942afb8c61dd6136be5e806c926d6"
+    },
+    {
+      "path": "licenses/frontend-dependencies/i18next-http-backend-2.5.2/licence",
+      "size": 1051,
+      "sha256": "4c9292737f1f40dfe854e8fc3b8ae1aa555fba597246740105b7d004cfab1713"
+    },
+    {
+      "path": "licenses/frontend-dependencies/i18next-parser-9.0.0/LICENSE.md",
+      "size": 1069,
+      "sha256": "002c2696d92b5c8cf956c11072baa58eaf9f6ade995c031ea635c6a1ee342ad1"
+    },
+    {
+      "path": "licenses/frontend-dependencies/iconv-lite-0.4.24/LICENSE",
+      "size": 1064,
+      "sha256": "ac779f7314c74f232ef847ea86e714abe25cf6eeb5cc97b69451b74e2af6492d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/iconv-lite-0.6.3/LICENSE",
+      "size": 1064,
+      "sha256": "ac779f7314c74f232ef847ea86e714abe25cf6eeb5cc97b69451b74e2af6492d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/ieee754-1.2.1/LICENSE",
+      "size": 1465,
+      "sha256": "18d45466ba3253deae04667e267a91ea8de8548f18c1125264d1c9db28194cc1"
+    },
+    {
+      "path": "licenses/frontend-dependencies/ignore-5.3.1/LICENSE-MIT",
+      "size": 1095,
+      "sha256": "9c94db23dc4b1e9aaee5d195668b916afc71efed54af226b66cf0ccc4389c1c0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/import-fresh-2.0.0/license",
+      "size": 1119,
+      "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/import-sort-6.0.0/LICENSE",
+      "size": 733,
+      "sha256": "ff424034dd7e9a1cedabf5b8ffcabdc0e243b266367bee1fa2cc88868088fefd"
+    },
+    {
+      "path": "licenses/frontend-dependencies/import-sort-config-6.0.0/LICENSE",
+      "size": 733,
+      "sha256": "ff424034dd7e9a1cedabf5b8ffcabdc0e243b266367bee1fa2cc88868088fefd"
+    },
+    {
+      "path": "licenses/frontend-dependencies/import-sort-parser-6.0.0/LICENSE",
+      "size": 733,
+      "sha256": "ff424034dd7e9a1cedabf5b8ffcabdc0e243b266367bee1fa2cc88868088fefd"
+    },
+    {
+      "path": "licenses/frontend-dependencies/import-sort-parser-babylon-6.0.0/LICENSE",
+      "size": 733,
+      "sha256": "ff424034dd7e9a1cedabf5b8ffcabdc0e243b266367bee1fa2cc88868088fefd"
+    },
+    {
+      "path": "licenses/frontend-dependencies/import-sort-parser-typescript-6.0.0/LICENSE",
+      "size": 733,
+      "sha256": "ff424034dd7e9a1cedabf5b8ffcabdc0e243b266367bee1fa2cc88868088fefd"
+    },
+    {
+      "path": "licenses/frontend-dependencies/import-sort-style-6.0.0/LICENSE",
+      "size": 733,
+      "sha256": "ff424034dd7e9a1cedabf5b8ffcabdc0e243b266367bee1fa2cc88868088fefd"
+    },
+    {
+      "path": "licenses/frontend-dependencies/import-sort-style-module-6.0.0/LICENSE",
+      "size": 733,
+      "sha256": "ff424034dd7e9a1cedabf5b8ffcabdc0e243b266367bee1fa2cc88868088fefd"
+    },
+    {
+      "path": "licenses/frontend-dependencies/indent-string-4.0.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/inflight-1.0.6/LICENSE",
+      "size": 748,
+      "sha256": "05dc4d785ac3a488676d3ed10e901b75ad89dafcc63f8e66610fd4a39cc5c7e8"
+    },
+    {
+      "path": "licenses/frontend-dependencies/inherits-2.0.4/LICENSE",
+      "size": 749,
+      "sha256": "5ffe28e7ade7d8f10d85d5337a73fd793dac5c462fb9a28fbf8c5046c7fbca3b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/inline-style-parser-0.2.3/LICENSE",
+      "size": 1098,
+      "sha256": "395c95f20598da653ff1eb1cb9d74947c7fac689697147f1d192fd0242a0e635"
+    },
+    {
+      "path": "licenses/frontend-dependencies/inquirer-9.2.23/LICENSE",
+      "size": 1058,
+      "sha256": "b5a8cf850a3fef0724a924001ddc313b4a1a9669111f620f155e589b94e590df"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-alphabetical-2.0.1/license",
+      "size": 1099,
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-alphanumerical-2.0.1/license",
+      "size": 1099,
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-arrayish-0.2.1/LICENSE",
+      "size": 1077,
+      "sha256": "92b07a2e5b0e051d37dde85042c736d6d551cfcbc0983f39d7ef903b3986bbc1"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-builtin-module-3.2.1/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-core-module-2.13.1/LICENSE",
+      "size": 1078,
+      "sha256": "5c496ce5ae47eb8e5ddcaa5e29c27c446a3855b19e3a66991b52f361bed22b28"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-decimal-2.0.1/license",
+      "size": 1099,
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-directory-0.3.1/LICENSE",
+      "size": 1088,
+      "sha256": "3672fb6ef1c214578dfee689643516c2685f61ab08d130517ca8ea24f383a840"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-docker-2.2.1/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-extglob-2.1.1/LICENSE",
+      "size": 1087,
+      "sha256": "73b5283588baa142c5baaef5f56d3e8fdea7a30b214e8c5737e87640f882453a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-fullwidth-code-point-3.0.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-glob-4.0.3/LICENSE",
+      "size": 1088,
+      "sha256": "4cd903859549d4b20b571041f96dfae1136ed079c476126268f9d7cc1b611150"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-hexadecimal-2.0.1/license",
+      "size": 1099,
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-interactive-1.0.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-negated-glob-1.0.0/LICENSE",
+      "size": 1081,
+      "sha256": "65044263853eb2cdc9a4adc749c552bc22a42b62dd94afad7038e5033400b67b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-number-7.0.0/LICENSE",
+      "size": 1091,
+      "sha256": "35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-path-cwd-2.2.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-path-inside-3.0.3/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-plain-obj-4.1.0/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-unicode-supported-0.1.0/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-valid-glob-1.0.0/LICENSE",
+      "size": 1087,
+      "sha256": "f9f40678b97b1a6aa62cb1f2166d8169bd7ee0616e48db2cdc4618feea9f97f6"
+    },
+    {
+      "path": "licenses/frontend-dependencies/is-wsl-2.2.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/isexe-2.0.0/LICENSE",
+      "size": 765,
+      "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/jackspeak-3.4.0/LICENSE.md",
+      "size": 1550,
+      "sha256": "2c7c5d22ed5a8ee968c64757710979afcd77438c48b4a265b94e615babd8a901"
+    },
+    {
+      "path": "licenses/frontend-dependencies/js-tokens-4.0.0/LICENSE",
+      "size": 1103,
+      "sha256": "2213d91c606205c71eb051a199478cdc2adde945893404d7f1421436dd6d5cc1"
+    },
+    {
+      "path": "licenses/frontend-dependencies/js-yaml-3.14.1/LICENSE",
+      "size": 1084,
+      "sha256": "a07bc24468b9654ce76a547d47a2db282d07733b715db4c73a98bd63961f9550"
+    },
+    {
+      "path": "licenses/frontend-dependencies/js-yaml-4.1.0/LICENSE",
+      "size": 1084,
+      "sha256": "a07bc24468b9654ce76a547d47a2db282d07733b715db4c73a98bd63961f9550"
+    },
+    {
+      "path": "licenses/frontend-dependencies/jsesc-2.5.2/LICENSE-MIT.txt",
+      "size": 1077,
+      "sha256": "483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/json-parse-better-errors-1.0.2/LICENSE.md",
+      "size": 1052,
+      "sha256": "6cf2891dd0e66460f7d2ed83e1e3fe4b4b4c1a8c1f1f96c222a3466ad12ff197"
+    },
+    {
+      "path": "licenses/frontend-dependencies/json5-2.2.3/LICENSE.md",
+      "size": 1145,
+      "sha256": "53e59feb13058722d977c699eb0407c7bce2f93c949b681bbd2ff31698535927"
+    },
+    {
+      "path": "licenses/frontend-dependencies/jsonfile-4.0.0/LICENSE",
+      "size": 1110,
+      "sha256": "a9801fb52ba22ef808682a094da8a7a480584b7ed0dfd0d888ab543616335031"
+    },
+    {
+      "path": "licenses/frontend-dependencies/jsonfile-6.1.0/LICENSE",
+      "size": 1110,
+      "sha256": "a9801fb52ba22ef808682a094da8a7a480584b7ed0dfd0d888ab543616335031"
+    },
+    {
+      "path": "licenses/frontend-dependencies/lead-4.0.0/LICENSE",
+      "size": 1155,
+      "sha256": "24f13547832b1c76582a71d705123385c2ef75e5fa4c03f667c1fed6a7c13ecf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/lilconfig-3.1.2/LICENSE",
+      "size": 1074,
+      "sha256": "d70f9e316930b4333b6f51af5f0d0cb7ded6a4a2641549aa088027aaff91e950"
+    },
+    {
+      "path": "licenses/frontend-dependencies/lodash-4.17.21/LICENSE",
+      "size": 1952,
+      "sha256": "f71e8ed126b46346494aad5486874cd8f0aafe95092ed67d2e3cb6110f939abc"
+    },
+    {
+      "path": "licenses/frontend-dependencies/log-symbols-4.1.0/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/longest-streak-3.1.0/license",
+      "size": 1106,
+      "sha256": "9f084fac69d8cf1e6ce983ba5a3499c7695ed74a26ec625c38f0fd19fddd5e10"
+    },
+    {
+      "path": "licenses/frontend-dependencies/loose-envify-1.4.0/LICENSE",
+      "size": 1100,
+      "sha256": "4eb7543b08d955a6d23fcc224601d43ff566e775be918805e26210d7f6eb4893"
+    },
+    {
+      "path": "licenses/frontend-dependencies/lru-cache-10.2.2/LICENSE",
+      "size": 775,
+      "sha256": "451ec07eeb9c4e1b86de9abdaa426462a8be48f887ec7421cf0bbb9c769555ab"
+    },
+    {
+      "path": "licenses/frontend-dependencies/lru-cache-5.1.1/LICENSE",
+      "size": 765,
+      "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/magic-string-0.30.10/LICENSE",
+      "size": 1051,
+      "sha256": "1cbe51b907662f6cb1492b16c359384a595180bf0e4d101603ed525e75c4e484"
+    },
+    {
+      "path": "licenses/frontend-dependencies/markdown-table-3.0.3/license",
+      "size": 1099,
+      "sha256": "9966260ba3ea9d6a5f839297dca80ddc99735a34b4ae82811cac7b956d2e3afd"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-find-and-replace-3.0.1/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-from-markdown-2.0.1/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-gfm-3.0.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-gfm-autolink-literal-2.0.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-gfm-footnote-2.0.0/license",
+      "size": 1099,
+      "sha256": "807a88522a850092aece49486207c17c313c4d5708ac276524840fe1caa0b0fa"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-gfm-strikethrough-2.0.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-gfm-table-2.0.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-gfm-task-list-item-2.0.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-mdx-expression-2.0.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-mdx-jsx-3.1.2/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-mdxjs-esm-2.0.1/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-phrasing-4.1.0/license",
+      "size": 1150,
+      "sha256": "b6d1a4e1831b177acc96f22a817d4f0f4c18419355badc3125754445fc69e3a7"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-to-hast-13.2.0/license",
+      "size": 1099,
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-to-markdown-2.1.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mdast-util-to-string-4.0.0/license",
+      "size": 1099,
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/merge2-1.4.1/LICENSE",
+      "size": 1082,
+      "sha256": "b2590e53ea6e050512c3993bfc746c394bbba9242fd6909245201bdc1dc6862a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/micromark-core-commonmark-2.0.1/license",
+      "size": 1094,
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb"
+    },
+    {
+      "path": "licenses/frontend-dependencies/micromark-extension-gfm-3.0.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/micromark-extension-gfm-autolink-literal-2.0.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/micromark-extension-gfm-footnote-2.0.0/license",
+      "size": 1099,
+      "sha256": "807a88522a850092aece49486207c17c313c4d5708ac276524840fe1caa0b0fa"
+    },
+    {
+      "path": "licenses/frontend-dependencies/micromark-extension-gfm-strikethrough-2.0.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/micromark-extension-gfm-table-2.0.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/micromark-extension-gfm-tagfilter-2.0.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/micromark-extension-gfm-task-list-item-2.0.1/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/micromark-util-subtokenize-2.0.1/license",
+      "size": 1094,
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb"
+    },
+    {
+      "path": "licenses/frontend-dependencies/micromatch-4.0.8/LICENSE",
+      "size": 1091,
+      "sha256": "35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mimic-fn-2.1.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mini-svg-data-uri-1.4.4/LICENSE",
+      "size": 1068,
+      "sha256": "927bb85bec79370fce3ebc21a32aae289110da267ca4ae249931a02d0d764c81"
+    },
+    {
+      "path": "licenses/frontend-dependencies/minimatch-3.1.2/LICENSE",
+      "size": 765,
+      "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/minimatch-9.0.4/LICENSE",
+      "size": 775,
+      "sha256": "d11323827fa4edeaafc437cc5b91b6971b335f0127efeeb42bf5122fe8657e8f"
+    },
+    {
+      "path": "licenses/frontend-dependencies/minipass-7.1.2/LICENSE",
+      "size": 787,
+      "sha256": "833faa18ac4b83a6372c05b3643d0d44ecd27d6627b8cd19b0f48fe74260cf39"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mktemp-0.4.0/LICENSE",
+      "size": 1096,
+      "sha256": "2f053bb8fd4eed5afa1f571b0883a622b9472393c62936cfbe4da8295ca4ed07"
+    },
+    {
+      "path": "licenses/frontend-dependencies/ms-2.0.0/license.md",
+      "size": 1077,
+      "sha256": "6652830c2607c722b66f1b57de15877ab8fc5dca406cc5b335afeb365d0f32c1"
+    },
+    {
+      "path": "licenses/frontend-dependencies/ms-2.1.2/license.md",
+      "size": 1077,
+      "sha256": "6652830c2607c722b66f1b57de15877ab8fc5dca406cc5b335afeb365d0f32c1"
+    },
+    {
+      "path": "licenses/frontend-dependencies/mute-stream-1.0.0/LICENSE",
+      "size": 765,
+      "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/node-fetch-2.7.0/LICENSE.md",
+      "size": 1079,
+      "sha256": "84eaa985e1ef71b8c630e8aba73404c219ff425c6fdb45c62e998b58d4fbdc8e"
+    },
+    {
+      "path": "licenses/frontend-dependencies/node-releases-2.0.14/LICENSE",
+      "size": 1107,
+      "sha256": "3706296ed611888111ceccc1dff4712844dea4bde0b185c82d718c3b69895abe"
+    },
+    {
+      "path": "licenses/frontend-dependencies/normalize-path-3.0.0/LICENSE",
+      "size": 1088,
+      "sha256": "e70ff771504ba41f2be55de812a017ff46433d7a250c862e38fc419159e44500"
+    },
+    {
+      "path": "licenses/frontend-dependencies/now-and-later-3.0.0/LICENSE",
+      "size": 1155,
+      "sha256": "36789670d7ec3afeb4d7cd7630acb0a28acbbea14bd3ec192d318914f3613bf9"
+    },
+    {
+      "path": "licenses/frontend-dependencies/nth-check-2.1.1/LICENSE",
+      "size": 1260,
+      "sha256": "cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164"
+    },
+    {
+      "path": "licenses/frontend-dependencies/object-assign-4.1.1/license",
+      "size": 1119,
+      "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/once-1.4.0/LICENSE",
+      "size": 765,
+      "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/onetime-5.1.2/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/open-8.4.2/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/ora-5.4.1/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/os-tmpdir-1.0.2/license",
+      "size": 1119,
+      "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/p-map-3.0.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/parse-entities-4.0.1/license",
+      "size": 1106,
+      "sha256": "9f084fac69d8cf1e6ce983ba5a3499c7695ed74a26ec625c38f0fd19fddd5e10"
+    },
+    {
+      "path": "licenses/frontend-dependencies/parse-json-4.0.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/parse5-7.1.2/LICENSE",
+      "size": 1109,
+      "sha256": "8c535800331e1e4439835555b3f9edc7fe9dee2fab0d8bbbd5a982e8b8343d4d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/parse5-htmlparser2-tree-adapter-7.0.0/LICENSE",
+      "size": 1109,
+      "sha256": "8c535800331e1e4439835555b3f9edc7fe9dee2fab0d8bbbd5a982e8b8343d4d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/path-is-absolute-1.0.1/license",
+      "size": 1119,
+      "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/path-key-3.1.1/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/path-parse-1.0.7/LICENSE",
+      "size": 1080,
+      "sha256": "3f4609137f65070541b9214300ea0d640af8192857de0eeb2b03403003d9228a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/path-posix-1.0.0/LICENSE.md",
+      "size": 1133,
+      "sha256": "5fb1ae9cbed7c1e67705811b1a8140185ac5eb8cef5dc8e3dbe6f3fd630493f4"
+    },
+    {
+      "path": "licenses/frontend-dependencies/path-scurry-1.11.1/LICENSE.md",
+      "size": 1552,
+      "sha256": "8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004"
+    },
+    {
+      "path": "licenses/frontend-dependencies/path-type-4.0.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/picocolors-1.0.1/LICENSE",
+      "size": 781,
+      "sha256": "800a78e2d6fa0af131b5ed2547504b4db64a10123f5df37161d15e2015023a8f"
+    },
+    {
+      "path": "licenses/frontend-dependencies/picomatch-2.3.1/LICENSE",
+      "size": 1091,
+      "sha256": "d0cd141b0c322fded5dfad1d4645bb2fedfc05b7321fe1009469638190d59ef9"
+    },
+    {
+      "path": "licenses/frontend-dependencies/prettier-3.3.2/LICENSE",
+      "size": 205508,
+      "sha256": "3e9f65ee9e8ff046f4aeac51b5abd897e61ac1ce064508c9a86443453e790053"
+    },
+    {
+      "path": "licenses/frontend-dependencies/prettier-plugin-import-sort-0.0.7/LICENSE",
+      "size": 1078,
+      "sha256": "fbbe7dcf4bd8b62fc82a5aa627eeff798658ae19520f2ac6466bf8ec25e11c8c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/process-nextick-args-2.0.1/license.md",
+      "size": 1064,
+      "sha256": "ecdccbcf39024f624ded480c01c0b25458e1eca8f26ecf040933865ce56d9a4f"
+    },
+    {
+      "path": "licenses/frontend-dependencies/promise-map-series-0.3.0/LICENSE",
+      "size": 1074,
+      "sha256": "8f4d72355fa5f562837ea95cdd49eae71d7f9ca4cd1539d005f40952fe8dae6c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/prop-types-15.8.1/LICENSE",
+      "size": 1080,
+      "sha256": "f657f99d3fb9647db92628e96007aabb46e5f04f33e49999075aab8e250ca7ce"
+    },
+    {
+      "path": "licenses/frontend-dependencies/property-information-6.5.0/license",
+      "size": 1106,
+      "sha256": "9f084fac69d8cf1e6ce983ba5a3499c7695ed74a26ec625c38f0fd19fddd5e10"
+    },
+    {
+      "path": "licenses/frontend-dependencies/queue-microtask-1.2.3/LICENSE",
+      "size": 1081,
+      "sha256": "d4c2065e2b936e62a4eb400efb4576edec9ca1388a9f78aa288e147275e7bc8b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/queue-tick-1.0.1/LICENSE",
+      "size": 1079,
+      "sha256": "df3f958807726cf08bdd2e6a1e3b566dbfbbc51415a4e05124f16b11000a3eb1"
+    },
+    {
+      "path": "licenses/frontend-dependencies/quick-temp-0.1.8/LICENSE",
+      "size": 1074,
+      "sha256": "a883e20a0f4f5d3d5fc883ac9b725b05db26c3ea527a0a494770a92201b6b6ae"
+    },
+    {
+      "path": "licenses/frontend-dependencies/react-19.1.1/LICENSE",
+      "size": 1088,
+      "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+    },
+    {
+      "path": "licenses/frontend-dependencies/react-dom-19.1.1/LICENSE",
+      "size": 1088,
+      "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+    },
+    {
+      "path": "licenses/frontend-dependencies/react-file-icon-1.6.0/LICENSE",
+      "size": 1067,
+      "sha256": "9fcf2b5b31900276c6a5b6ad5cd707b9f7cfb0b681d9ba859f75ed665a69e64f"
+    },
+    {
+      "path": "licenses/frontend-dependencies/react-i18next-16.0.1/LICENSE",
+      "size": 1075,
+      "sha256": "95bdba2cfae72e5337ecc7ccc33154492e33a533549628e385d32d98d1642859"
+    },
+    {
+      "path": "licenses/frontend-dependencies/react-icons-5.2.1/LICENSE",
+      "size": 4807,
+      "sha256": "a0c1e5484fb4c79e2a683834253864e640e1ca57cb57b807bd5bddb72bbbf74f"
+    },
+    {
+      "path": "licenses/frontend-dependencies/react-is-16.13.1/LICENSE",
+      "size": 1086,
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
+    },
+    {
+      "path": "licenses/frontend-dependencies/react-markdown-9.0.1/license",
+      "size": 1084,
+      "sha256": "b1683f31ae8586b92eb7e866ef545adc3098e697f65a4d3e2b1df2babcfa134b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/readable-stream-2.3.8/LICENSE",
+      "size": 2337,
+      "sha256": "ec62dc96da0099b87f4511736c87309335527fb7031639493e06c95728dc8c54"
+    },
+    {
+      "path": "licenses/frontend-dependencies/readable-stream-3.6.2/LICENSE",
+      "size": 2337,
+      "sha256": "ec62dc96da0099b87f4511736c87309335527fb7031639493e06c95728dc8c54"
+    },
+    {
+      "path": "licenses/frontend-dependencies/regenerator-runtime-0.14.1/LICENSE",
+      "size": 1080,
+      "sha256": "51887a3d47051ac2fce1210562e5b9fe0830a8a8fabeb272c2d586eeb18a05fd"
+    },
+    {
+      "path": "licenses/frontend-dependencies/remark-gfm-4.0.0/license",
+      "size": 1099,
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61"
+    },
+    {
+      "path": "licenses/frontend-dependencies/remark-parse-11.0.0/license",
+      "size": 1099,
+      "sha256": "413654b0a78b98661dce96d2aff2e4d075603d220b8483e28b1aa010ccc138b4"
+    },
+    {
+      "path": "licenses/frontend-dependencies/remark-rehype-11.1.0/license",
+      "size": 1099,
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/remark-stringify-11.0.0/license",
+      "size": 1099,
+      "sha256": "413654b0a78b98661dce96d2aff2e4d075603d220b8483e28b1aa010ccc138b4"
+    },
+    {
+      "path": "licenses/frontend-dependencies/remove-trailing-separator-1.1.0/license",
+      "size": 696,
+      "sha256": "aff6a0eab5763020fd4b179927f918152be1f9b6bfec360cffda972e6adf73e7"
+    },
+    {
+      "path": "licenses/frontend-dependencies/replace-ext-2.0.0/LICENSE",
+      "size": 1169,
+      "sha256": "287229fb1c78f51e413ab4c7625bf447356c7c1208417b92e03a1ad6ec9585d6"
+    },
+    {
+      "path": "licenses/frontend-dependencies/require-directory-2.1.1/LICENSE",
+      "size": 1099,
+      "sha256": "a92e52eb1fa7cd746e3827bf01d3a3589bbc8e1e51348b1da042aad165525ad1"
+    },
+    {
+      "path": "licenses/frontend-dependencies/resolve-1.22.8/LICENSE",
+      "size": 1071,
+      "sha256": "60acd7711e6c138e6041836e32d922705254cc1568a30fdf16aa8f59bb87aeaa"
+    },
+    {
+      "path": "licenses/frontend-dependencies/resolve-from-3.0.0/license",
+      "size": 1119,
+      "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/resolve-from-4.0.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/resolve-options-2.0.0/LICENSE",
+      "size": 1150,
+      "sha256": "317fca6f0c8fd601ab2b6f1e9ae9c6b1d64ef595ce2cc7cddbab8ea5df41daac"
+    },
+    {
+      "path": "licenses/frontend-dependencies/restore-cursor-3.1.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/reusify-1.0.4/LICENSE",
+      "size": 1082,
+      "sha256": "db0054e6418412e4a265236c94d1d8935057c67f367240b01bb2b0b2f9091812"
+    },
+    {
+      "path": "licenses/frontend-dependencies/rimraf-2.7.1/LICENSE",
+      "size": 765,
+      "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/rimraf-3.0.2/LICENSE",
+      "size": 765,
+      "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/rollup-4.22.4/LICENSE.md",
+      "size": 34678,
+      "sha256": "ee60e3406749aa48ba26e7c1faec3ac9b7ad454931434ebe228ddcf35a789440"
+    },
+    {
+      "path": "licenses/frontend-dependencies/rollup-plugin-external-globals-0.10.0/LICENSE",
+      "size": 1093,
+      "sha256": "18a47e6bc322efda0a1d4f0a3b3bcb968c7e7077d7107397be8ac8b5bc0dface"
+    },
+    {
+      "path": "licenses/frontend-dependencies/rollup-plugin-polyfill-node-0.13.0/LICENSE.md",
+      "size": 2322,
+      "sha256": "35ebfced43835b096ee196a5d63d1b220752e63c900d59aa79bd1dfb2564c483"
+    },
+    {
+      "path": "licenses/frontend-dependencies/rollup-plugin-visualizer-5.12.0/LICENSE",
+      "size": 1081,
+      "sha256": "975abd563775a4953726209bc094d541510e2e1614b325ff8bc32ad94c5e3ab2"
+    },
+    {
+      "path": "licenses/frontend-dependencies/rsvp-3.2.1/LICENSE",
+      "size": 1097,
+      "sha256": "da852e222c72bc04a0a9046aac35f2e5d33775a8ea9f1d8f59b1cfd195ef9bb0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/rsvp-4.8.5/LICENSE",
+      "size": 1097,
+      "sha256": "da852e222c72bc04a0a9046aac35f2e5d33775a8ea9f1d8f59b1cfd195ef9bb0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/run-async-3.0.0/LICENSE",
+      "size": 1081,
+      "sha256": "e5c1364118b39fa98b959138ce4aa4d0e68cfbee12d115e69730579fecb1dc1b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/run-parallel-1.2.0/LICENSE",
+      "size": 1081,
+      "sha256": "d4c2065e2b936e62a4eb400efb4576edec9ca1388a9f78aa288e147275e7bc8b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/rxjs-7.8.1/LICENSE.txt",
+      "size": 11064,
+      "sha256": "81c407ac717813b0e3795402960e04003c7bba8ba59b621624707028531c9ade"
+    },
+    {
+      "path": "licenses/frontend-dependencies/safe-buffer-5.1.2/LICENSE",
+      "size": 1081,
+      "sha256": "c7cc929b57080f4b9d0c6cf57669f0463fc5b39906344dfc8d3bc43426b30eac"
+    },
+    {
+      "path": "licenses/frontend-dependencies/safe-buffer-5.2.1/LICENSE",
+      "size": 1081,
+      "sha256": "c7cc929b57080f4b9d0c6cf57669f0463fc5b39906344dfc8d3bc43426b30eac"
+    },
+    {
+      "path": "licenses/frontend-dependencies/safer-buffer-2.1.2/LICENSE",
+      "size": 1094,
+      "sha256": "4bc935e71be198c67ddf3c2b5fddb195f6edc182bfc155a96a6db61b44b494b9"
+    },
+    {
+      "path": "licenses/frontend-dependencies/scheduler-0.26.0/LICENSE",
+      "size": 1088,
+      "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+    },
+    {
+      "path": "licenses/frontend-dependencies/semver-6.3.1/LICENSE",
+      "size": 765,
+      "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/set-function-length-1.2.2/LICENSE",
+      "size": 1083,
+      "sha256": "bf9b0d665be2a689851eea667ca9f42066ea1d903b38349c51e6a44b2577680a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/shebang-command-2.0.0/license",
+      "size": 1116,
+      "sha256": "69dee148a2cc470554dfa7142e830662062394d0fe67cddd379aba90dc60d6b3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/shebang-regex-3.0.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/signal-exit-3.0.7/LICENSE.txt",
+      "size": 748,
+      "sha256": "e05b1eaf5b5f99b7ad75cd1f38858ff9a311780b97715ead67936d60bf96aa7e"
+    },
+    {
+      "path": "licenses/frontend-dependencies/signal-exit-4.1.0/LICENSE.txt",
+      "size": 790,
+      "sha256": "b173e19b9a78df305577ace0e52ef45a4bcc915ea28b47b256dc3b68dcb1f7e7"
+    },
+    {
+      "path": "licenses/frontend-dependencies/slash-3.0.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/sort-keys-5.0.0/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/source-map-0.7.4/LICENSE",
+      "size": 1526,
+      "sha256": "6cb0631f71c7749763fd3dd1d5bee52dd1070ec17f2edc1710079ad070bd2fbd"
+    },
+    {
+      "path": "licenses/frontend-dependencies/space-separated-tokens-2.0.2/license",
+      "size": 1099,
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/sprintf-js-1.0.3/LICENSE",
+      "size": 1518,
+      "sha256": "a4cdda44b5adea4731d53dcae78fb5124f8fd853e994f01e25d8c33a7daf818b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/sprintf-js-1.1.3/LICENSE",
+      "size": 1513,
+      "sha256": "f8287e4dd9480be58c56aca4a55c23b782c43a86e69aabad78fff4df0d29edef"
+    },
+    {
+      "path": "licenses/frontend-dependencies/stream-composer-1.0.2/LICENSE",
+      "size": 1079,
+      "sha256": "aeefe684e0aa229c9cfcafe53d3bf5195a431a06d8cae268f4ca012da3d09914"
+    },
+    {
+      "path": "licenses/frontend-dependencies/streamx-2.18.0/LICENSE",
+      "size": 1079,
+      "sha256": "41a2aa55a9ebad3df900cf37fded512714a127f4300ef54b978f834a11ec4d48"
+    },
+    {
+      "path": "licenses/frontend-dependencies/string-width-4.2.3/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/string-width-5.1.2/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/string_decoder-1.1.1/LICENSE",
+      "size": 2338,
+      "sha256": "11f2aafb37d06b3ee5bdaf06e9811141d0da05263c316f3d627f45c20d43261b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/string_decoder-1.3.0/LICENSE",
+      "size": 2338,
+      "sha256": "11f2aafb37d06b3ee5bdaf06e9811141d0da05263c316f3d627f45c20d43261b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/stringify-entities-4.0.4/license",
+      "size": 1106,
+      "sha256": "9f084fac69d8cf1e6ce983ba5a3499c7695ed74a26ec625c38f0fd19fddd5e10"
+    },
+    {
+      "path": "licenses/frontend-dependencies/strip-ansi-6.0.1/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/strip-ansi-7.1.0/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/style-to-object-1.0.6/LICENSE",
+      "size": 1110,
+      "sha256": "896c9fd6b5fc48ac31800b9d29a6e3ffcb0c2d534ed077ebfa5c2fa388cc38b7"
+    },
+    {
+      "path": "licenses/frontend-dependencies/supports-color-5.5.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/supports-color-7.2.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/supports-preserve-symlinks-flag-1.0.0/LICENSE",
+      "size": 1067,
+      "sha256": "0f0ca96f50793990031ebc488a38f7292ff70bce8ab6a8e5eeda674abc32ccdf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/symlink-or-copy-1.3.1/LICENSE",
+      "size": 1090,
+      "sha256": "3d509e779552e9d07ca8e845ae7820263ed8758d690111a5bba915200ee449d2"
+    },
+    {
+      "path": "licenses/frontend-dependencies/teex-1.0.1/LICENSE",
+      "size": 1079,
+      "sha256": "69b1ce578ad0aa97ce5302c7cb8d507c2fbe5a670712b02f0b4a2b95cae3184a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/text-decoder-1.1.0/LICENSE",
+      "size": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "licenses/frontend-dependencies/through2-2.0.5/LICENSE.md",
+      "size": 1128,
+      "sha256": "faae57631e1c7d641c3b6f9b110c2a7a28c8b383d08d7796ac472c509f075850"
+    },
+    {
+      "path": "licenses/frontend-dependencies/tmp-0.0.33/LICENSE",
+      "size": 1082,
+      "sha256": "162413c61e0982abe89a06bf7a02ec760dc49a7364d838bd9f01daebb5b95954"
+    },
+    {
+      "path": "licenses/frontend-dependencies/to-fast-properties-2.0.0/license",
+      "size": 1103,
+      "sha256": "61b82d27e63b14eabc706960aabf6caa1b27d044eb00d7908f92e68085301c3a"
+    },
+    {
+      "path": "licenses/frontend-dependencies/to-regex-range-5.0.1/LICENSE",
+      "size": 1091,
+      "sha256": "e7d1fee7347ffddccc5fd03327ffdb50f8c112be0d5016d62388a92c4ae6e7a9"
+    },
+    {
+      "path": "licenses/frontend-dependencies/to-through-3.0.0/LICENSE",
+      "size": 1155,
+      "sha256": "24f13547832b1c76582a71d705123385c2ef75e5fa4c03f667c1fed6a7c13ecf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/trim-lines-3.0.1/license",
+      "size": 1106,
+      "sha256": "9f084fac69d8cf1e6ce983ba5a3499c7695ed74a26ec625c38f0fd19fddd5e10"
+    },
+    {
+      "path": "licenses/frontend-dependencies/trough-2.2.0/license",
+      "size": 1099,
+      "sha256": "6c03fd41cfd7c92d8aa8a2fa521b94b2683f059123281dcf921ddea9216b6254"
+    },
+    {
+      "path": "licenses/frontend-dependencies/tslib-2.6.3/CopyrightNotice.txt",
+      "size": 822,
+      "sha256": "da16ddb65f8ca390998fb99223d0112498b56b45784d00afd77ff8ce1ac4de8b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/tslib-2.6.3/LICENSE.txt",
+      "size": 655,
+      "sha256": "210b19e543130388c68654b7497e967119ce17145f66ab7d85688fbd70f08751"
+    },
+    {
+      "path": "licenses/frontend-dependencies/type-fest-0.21.3/license",
+      "size": 1116,
+      "sha256": "64a93ffc0a06a2266dbb57ed7ebe3b56ba66ab337b6347fabdbf86c76819fbae"
+    },
+    {
+      "path": "licenses/frontend-dependencies/typescript-3.9.10/CopyrightNotice.txt",
+      "size": 812,
+      "sha256": "0d9e78b962c1f6215aa974365d263c50683b6855db45c6c0ed67ee1002974dc6"
+    },
+    {
+      "path": "licenses/frontend-dependencies/typescript-3.9.10/LICENSE.txt",
+      "size": 9197,
+      "sha256": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47"
+    },
+    {
+      "path": "licenses/frontend-dependencies/typescript-5.4.5/LICENSE.txt",
+      "size": 9197,
+      "sha256": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47"
+    },
+    {
+      "path": "licenses/frontend-dependencies/unified-11.0.4/license",
+      "size": 1099,
+      "sha256": "05811400116ed61f1a7693b78fe8ca6598c155a12f3978e609db4df648a4cb3d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/unist-util-is-6.0.0/license",
+      "size": 1099,
+      "sha256": "82974dbf2639d13edab95c32ed9cb6c0867ede272cd2e07ce47ce8548fe55c05"
+    },
+    {
+      "path": "licenses/frontend-dependencies/unist-util-position-5.0.0/license",
+      "size": 1099,
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/unist-util-remove-position-5.0.0/license",
+      "size": 1099,
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/unist-util-stringify-position-4.0.0/license",
+      "size": 1099,
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/unist-util-visit-5.0.0/license",
+      "size": 1099,
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf"
+    },
+    {
+      "path": "licenses/frontend-dependencies/unist-util-visit-parents-6.0.1/license",
+      "size": 1099,
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/universalify-0.1.2/LICENSE",
+      "size": 1100,
+      "sha256": "3fda5977c0904e226190b4e21d64340c1731e2142d6fe5f3dee0090a216b8b63"
+    },
+    {
+      "path": "licenses/frontend-dependencies/universalify-2.0.1/LICENSE",
+      "size": 1100,
+      "sha256": "3fda5977c0904e226190b4e21d64340c1731e2142d6fe5f3dee0090a216b8b63"
+    },
+    {
+      "path": "licenses/frontend-dependencies/update-browserslist-db-1.0.16/LICENSE",
+      "size": 1118,
+      "sha256": "c414dde36704bd9c8a76c7aa2921b19270ff9abeb478ea0050250d16cf29b0f6"
+    },
+    {
+      "path": "licenses/frontend-dependencies/util-deprecate-1.0.2/LICENSE",
+      "size": 1102,
+      "sha256": "0154425673db15cdfa80ecba2c9b1f1a867f7197a006764712849bfc3a93cbb7"
+    },
+    {
+      "path": "licenses/frontend-dependencies/value-or-function-4.0.0/LICENSE",
+      "size": 1155,
+      "sha256": "452fb5fef139a5077afedf45c52e638c025384aed4a454e01373189e8274f0d2"
+    },
+    {
+      "path": "licenses/frontend-dependencies/vfile-6.0.1/license",
+      "size": 1099,
+      "sha256": "05811400116ed61f1a7693b78fe8ca6598c155a12f3978e609db4df648a4cb3d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/vfile-message-4.0.2/license",
+      "size": 1099,
+      "sha256": "d8fc337aaf98fc7a0f5498edc18b47a9df8cdfcc1a0f013519105905722c7a4c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/vinyl-3.0.0/LICENSE",
+      "size": 1155,
+      "sha256": "d21ca3ba63e7c2b9452d3d455fcfac84ab89e3333fa7eb600e33e5e63a439887"
+    },
+    {
+      "path": "licenses/frontend-dependencies/vinyl-contents-2.0.0/LICENSE",
+      "size": 1150,
+      "sha256": "4f9fe4a1deae042ca6284c5b34bf09127b7f63b86232df7fb02cfa68b1b61fb9"
+    },
+    {
+      "path": "licenses/frontend-dependencies/vinyl-fs-4.0.0/LICENSE",
+      "size": 1155,
+      "sha256": "3f5574b81592c6f84caf301161304efd7c1d643a71afa2ae174746c5e3baf8aa"
+    },
+    {
+      "path": "licenses/frontend-dependencies/vinyl-sourcemap-2.0.0/LICENSE",
+      "size": 1240,
+      "sha256": "cdf4168b1f0aa300a8c7788946f9c7107a3d7ed4f34b270d2b37da98c265bc86"
+    },
+    {
+      "path": "licenses/frontend-dependencies/void-elements-3.1.0/LICENSE",
+      "size": 1070,
+      "sha256": "405a272eaef556691ad7dda96db3237c9544afe18725842a1a5b3ec308960222"
+    },
+    {
+      "path": "licenses/frontend-dependencies/walk-sync-2.2.0/LICENSE",
+      "size": 1074,
+      "sha256": "8f4d72355fa5f562837ea95cdd49eae71d7f9ca4cd1539d005f40952fe8dae6c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/wcwidth-1.0.1/LICENSE",
+      "size": 1581,
+      "sha256": "6294da0e0a201bbe1de254445c9d07133a9448af05e4e44d0a2364747d114368"
+    },
+    {
+      "path": "licenses/frontend-dependencies/webidl-conversions-3.0.1/LICENSE.md",
+      "size": 1323,
+      "sha256": "a889cc4dbee2ae172c179856b25d75b0b7a5a136e1b97109b9b590b2ff1a879c"
+    },
+    {
+      "path": "licenses/frontend-dependencies/whatwg-url-5.0.0/LICENSE.txt",
+      "size": 1088,
+      "sha256": "6b7a1792144374d84dc5ed3655b8bbe2754d06f4f1f64a9fb8b9de2d6f448b85"
+    },
+    {
+      "path": "licenses/frontend-dependencies/which-2.0.2/LICENSE",
+      "size": 765,
+      "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/wrap-ansi-6.2.0/license",
+      "size": 1109,
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
+    },
+    {
+      "path": "licenses/frontend-dependencies/wrap-ansi-7.0.0/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/wrap-ansi-8.1.0/license",
+      "size": 1117,
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "path": "licenses/frontend-dependencies/wrappy-1.0.2/LICENSE",
+      "size": 765,
+      "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/xtend-4.0.2/LICENSE",
+      "size": 1078,
+      "sha256": "82e67379203d5794e7c44549847d8d64ae6904591381682360470898bd306821"
+    },
+    {
+      "path": "licenses/frontend-dependencies/y18n-5.0.8/LICENSE",
+      "size": 731,
+      "sha256": "2034cce3b6fafcddd642c4175e01d3ddfc332a53b9f20fdc46b1466dc89ac469"
+    },
+    {
+      "path": "licenses/frontend-dependencies/yallist-3.1.1/LICENSE",
+      "size": 765,
+      "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
+    },
+    {
+      "path": "licenses/frontend-dependencies/yargs-17.7.2/LICENSE",
+      "size": 1146,
+      "sha256": "2f1a503bfab84b3ba7393627308b3274501e459e3b5185bbb56bbf16cb1602d4"
+    },
+    {
+      "path": "licenses/frontend-dependencies/yargs-parser-21.1.1/LICENSE.txt",
+      "size": 731,
+      "sha256": "365496ca1f56da40b23c9815fc40fa9005847b2f8f8fd1c1a4929ef25ec8cd1d"
+    },
+    {
+      "path": "licenses/frontend-dependencies/zwitch-2.0.4/license",
+      "size": 1099,
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+    },
+    {
+      "path": "licenses/FRONTEND-PACKAGES.json",
+      "size": 32368,
+      "sha256": "e6dce45f176be0b4b687848f5eef24d6c546639990ee24224525a41c21cc24f6"
+    },
+    {
+      "path": "licenses/Python-3.14.8-LICENSE.txt",
+      "size": 35407,
+      "sha256": "935cf13e19f8c31b497d20b05d73623431a226b230c3599bc30fa3348979bc68"
+    },
+    {
+      "path": "licenses/python-dependencies/aiohappyeyeballs-2.7.1/LICENSE",
+      "size": 13936,
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+    },
+    {
+      "path": "licenses/python-dependencies/aiohttp-3.14.5/LICENSE",
+      "size": 1069,
+      "sha256": "628168d68bb5a8a17e0bbefb3bd74e326e1edc20583d76f52f457c82c921867d"
+    },
+    {
+      "path": "licenses/python-dependencies/aiohttp-3.14.5/LICENSE.txt",
+      "size": 11313,
+      "sha256": "2e4be5fc6c4c72a466fcb665d726e049a6891981fe536c4f04b6366749461d23"
+    },
+    {
+      "path": "licenses/python-dependencies/aiohttp-jinja2-1.6/LICENSE",
+      "size": 11334,
+      "sha256": "d9d867affaeac220a60381cc544681dcd37c668ed6ea5ddbf9948617f828889a"
+    },
+    {
+      "path": "licenses/python-dependencies/aiosignal-1.4.0/LICENSE",
+      "size": 11332,
+      "sha256": "6fd5243e92dd7f98ec69c7ac377728e74905709ff527a5bf98d6d0263c04f5b6"
+    },
+    {
+      "path": "licenses/python-dependencies/attrs-26.1.0/LICENSE",
+      "size": 1109,
+      "sha256": "882115c95dfc2af1eeb6714f8ec6d5cbcabf667caff8729f42420da63f714e9f"
+    },
+    {
+      "path": "licenses/python-dependencies/certifi-2026.10.19/LICENSE",
+      "size": 989,
+      "sha256": "e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7"
+    },
+    {
+      "path": "licenses/python-dependencies/frozenlist-1.8.0/LICENSE",
+      "size": 11332,
+      "sha256": "6fd5243e92dd7f98ec69c7ac377728e74905709ff527a5bf98d6d0263c04f5b6"
+    },
+    {
+      "path": "licenses/python-dependencies/idna-3.20/LICENSE.md",
+      "size": 1541,
+      "sha256": "1a9a4f0e3d479a27240ddd59a9137a66ab4a0f9dfdc8ca6188cc0bfd85187f04"
+    },
+    {
+      "path": "licenses/python-dependencies/jinja2-3.1.6/LICENSE.txt",
+      "size": 1475,
+      "sha256": "3b49dcee4105eb37bac10faf1be260408fe85d252b8e9df2e0979fc1e094437b"
+    },
+    {
+      "path": "licenses/python-dependencies/markupsafe-3.0.4/LICENSE.txt",
+      "size": 1503,
+      "sha256": "4631ec0db5fd90a547e336817264c6798214338146f8ac94b4a57f96ee8c9ec4"
+    },
+    {
+      "path": "licenses/python-dependencies/multidict-6.9.1/LICENSE",
+      "size": 11313,
+      "sha256": "2e4be5fc6c4c72a466fcb665d726e049a6891981fe536c4f04b6366749461d23"
+    },
+    {
+      "path": "licenses/python-dependencies/packaging-24.2/LICENSE",
+      "size": 197,
+      "sha256": "cad1ef5bd340d73e074ba614d26f7deaca5c7940c3d8c34852e65c4909686c48"
+    },
+    {
+      "path": "licenses/python-dependencies/packaging-24.2/LICENSE.APACHE",
+      "size": 10174,
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+    },
+    {
+      "path": "licenses/python-dependencies/packaging-24.2/LICENSE.BSD",
+      "size": 1344,
+      "sha256": "b70e7e9b742f1cc6f948b34c16aa39ffece94196364bc88ff0d2180f0028fac5"
+    },
+    {
+      "path": "licenses/python-dependencies/propcache-0.5.4/LICENSE",
+      "size": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "licenses/python-dependencies/propcache-0.5.4/NOTICE",
+      "size": 609,
+      "sha256": "56d6ac6c8105c0a51304c21db060e361af9a8ea0af9a75c239c28b5d13693838"
+    },
+    {
+      "path": "licenses/python-dependencies/pyinstaller-6.22.3/COPYING.txt",
+      "size": 32604,
+      "sha256": "0598064c7d2718e38d7914a7d08343b2fa008e3bea9ebba2aa7a6ffa5900dd64"
+    },
+    {
+      "path": "licenses/python-dependencies/pyinstaller-hooks-contrib-2026.9/LICENSE",
+      "size": 27666,
+      "sha256": "91d0baaff00773038e72c0a1fc9d5d2d38706b7a2b9c04f34296608f931b9cd0"
+    },
+    {
+      "path": "licenses/python-dependencies/setproctitle-1.3.8/LICENSE",
+      "size": 1558,
+      "sha256": "1d3f6c835788afce09a7a3e151dbff8a27ad94b412db615f3b860ea781ec50e3"
+    },
+    {
+      "path": "licenses/python-dependencies/typing-extensions-4.16.0/LICENSE",
+      "size": 13936,
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+    },
+    {
+      "path": "licenses/python-dependencies/watchdog-4.0.2/AUTHORS",
+      "size": 2880,
+      "sha256": "8038be83715f52e56258eb6667f403b2e706048494c5a0b63a9b03183f44be8d"
+    },
+    {
+      "path": "licenses/python-dependencies/watchdog-4.0.2/COPYING",
+      "size": 625,
+      "sha256": "02c8760f988a76e92a9d6cb525456a86f7b0fd1953870dd491de5955cb974d41"
+    },
+    {
+      "path": "licenses/python-dependencies/watchdog-4.0.2/LICENSE",
+      "size": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "licenses/python-dependencies/yarl-1.25.1/LICENSE",
+      "size": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "licenses/python-dependencies/yarl-1.25.1/NOTICE",
+      "size": 609,
+      "sha256": "56d6ac6c8105c0a51304c21db060e361af9a8ea0af9a75c239c28b5d13693838"
+    },
+    {
+      "path": "NOTICE.txt",
+      "size": 1512,
+      "sha256": "b425ae3855185691cb0765a8d153d65793f961f82762ac6d37ef5c25ac17975c"
+    },
+    {
+      "path": "PluginLoader.exe",
+      "size": 15681467,
+      "sha256": "afb1efafbfa1587654241acac13a3a1800a9f76f30cbb819c8bba8d6f1ca16e6"
+    },
+    {
+      "path": "PluginLoader_noconsole.exe",
+      "size": 15678881,
+      "sha256": "33dca959fe13dfe21ff4078d3ad55bab0c5a37e9b38c3c1ca321256bba8d8c50"
+    },
+    {
+      "path": "sources/Decky-3.3.1-Playhub-Reconnect-Source.zip",
+      "size": 1941693,
+      "sha256": "75195ff400aba1c1ab9813e2e879a2291e193c724ce19c31ffbd5a5f15a00e86"
+    },
+    {
+      "path": "sources/dependencies/aiohappyeyeballs-2.7.1.tar.gz",
+      "size": 24757,
+      "sha256": "065665c041c42a5938ed220bdcd7230f22527fbec085e1853d2402c8a3615d9d"
+    },
+    {
+      "path": "sources/dependencies/aiohttp-3.14.5.tar.gz",
+      "size": 8078052,
+      "sha256": "5558a7f5a05af9ecf744af91e5baefc436f93c9333e656c27ec253f9a6bbe178"
+    },
+    {
+      "path": "sources/dependencies/aiohttp-cors-0.7.0.tar.gz",
+      "size": 35966,
+      "sha256": "4d39c6d7100fd9764ed1caf8cebf0eb01bf5e3f24e2e073fda6234bc48b19f5d"
+    },
+    {
+      "path": "sources/dependencies/aiohttp-jinja2-1.6.tar.gz",
+      "size": 53057,
+      "sha256": "a3a7ff5264e5bca52e8ae547bbfd0761b72495230d438d05b6c0915be619b0e2"
+    },
+    {
+      "path": "sources/dependencies/aiosignal-1.4.0.tar.gz",
+      "size": 25007,
+      "sha256": "f47eecd9468083c2029cc99945502cb7708b082c232f9aca65da147157b251c7"
+    },
+    {
+      "path": "sources/dependencies/async_timeout-5.0.1.tar.gz",
+      "size": 9274,
+      "sha256": "d9321a7a3d5a6a5e187e824d2fa0793ce379a202935782d555d6e9d2735677d3"
+    },
+    {
+      "path": "sources/dependencies/attrs-26.1.0.tar.gz",
+      "size": 952055,
+      "sha256": "d03ceb89cb322a8fd706d4fb91940737b6642aa36998fe130a9bc96c985eff32"
+    },
+    {
+      "path": "sources/dependencies/certifi-2026.10.19.tar.gz",
+      "size": 137598,
+      "sha256": "035c1e85572b141bf1c3a3eff0e33a8eb74917522f2559075ff8d2fea780a1ae"
+    },
+    {
+      "path": "sources/dependencies/frozenlist-1.8.0.tar.gz",
+      "size": 45875,
+      "sha256": "3ede829ed8d842f6cd48fc7081d7a41001a56f1f38603f9d49bf3020d59a31ad"
+    },
+    {
+      "path": "sources/dependencies/idna-3.20.tar.gz",
+      "size": 216463,
+      "sha256": "a7db850025b95ded1eae8a46181a1a6c56c92c96f0e2b005d9ff8dc0210cab44"
+    },
+    {
+      "path": "sources/dependencies/jinja2-3.1.6.tar.gz",
+      "size": 245115,
+      "sha256": "0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d"
+    },
+    {
+      "path": "sources/dependencies/markupsafe-3.0.4.tar.gz",
+      "size": 153777,
+      "sha256": "2e9ad7dd851bf45fab9f75cbff4cb493fee9979e8d8c7c9c3ee119022518edd6"
+    },
+    {
+      "path": "sources/dependencies/multidict-6.9.1.tar.gz",
+      "size": 182404,
+      "sha256": "0f06e60fa190aa7abd0914c2a766736fdc8e9f34878c4346338534b73d1b20e2"
+    },
+    {
+      "path": "sources/dependencies/packaging-24.2.tar.gz",
+      "size": 163950,
+      "sha256": "c228a6dc5e932d346bc5739379109d49e8853dd8223571c7c5b55260edc0b97f"
+    },
+    {
+      "path": "sources/dependencies/propcache-0.5.4.tar.gz",
+      "size": 61545,
+      "sha256": "ff6b113f50bc066a698db5d944d2c6dc7507168dd3341e255a8892fd0715a558"
+    },
+    {
+      "path": "sources/dependencies/pyinstaller-6.22.3.tar.gz",
+      "size": 4437180,
+      "sha256": "05eb2f5615503e72939a7224d68b4aff572c6b0438ee4a17d0a4b481f399362d"
+    },
+    {
+      "path": "sources/dependencies/pyinstaller_hooks_contrib-2026.9.tar.gz",
+      "size": 180783,
+      "sha256": "2748767901acb5cecd1304652b6c7add5bffcff1d71d01207fe24a5d42942a56"
+    },
+    {
+      "path": "sources/dependencies/setproctitle-1.3.8.tar.gz",
+      "size": 27214,
+      "sha256": "cafe209d064a6efb88cb45a03e97981ff8832802b2b5d009dde0197a3b7b41c8"
+    },
+    {
+      "path": "sources/dependencies/typing_extensions-4.16.0.tar.gz",
+      "size": 113555,
+      "sha256": "dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5"
+    },
+    {
+      "path": "sources/dependencies/watchdog-4.0.2.tar.gz",
+      "size": 126587,
+      "sha256": "b4dfbb6c49221be4535623ea4474a4d6ee0a9cef4a80b20c28db4d858b64e270"
+    },
+    {
+      "path": "sources/dependencies/yarl-1.25.1.tar.gz",
+      "size": 246245,
+      "sha256": "03dd38de09bc213e9a8b29761eec33ee1d5318dac0e49d8af36e4d27830e23a7"
+    },
+    {
+      "path": "sources/DEPENDENCIES.json",
+      "size": 10620,
+      "sha256": "6db6525f8ab0d196957a7b9c161ec6e4dd98f543993e8b227bc00da2e3fe7c5a"
+    },
+    {
+      "path": "sources/Python-3.14.8-NuGet-catalog.json",
+      "size": 459189,
+      "sha256": "bbb29fbaa5287f17b7e44709f65352a1a904f85650440aadf5a2a6a3e5de6b3d"
+    },
+    {
+      "path": "VERIFICATION.txt",
+      "size": 2667,
+      "sha256": "666c6d264d9143c95bb82dac5437e25d325d28218178525352648b4596cdd1a3"
+    }
+  ]
+}

@@ -160,9 +160,33 @@ public static class OverlaySystemUsage
 	// interessa la somma (motori GPU, schede di rete, dischi fisici).
 	private static double SumArray(nint counter, out bool available)
 	{
-		List<(string Name, double Value)> items = ReadArray(counter);
-		available = items.Count > 0;
-		return items.Sum(item => item.Value);
+		nint buffer = ReadArrayBuffer(counter, out uint size, out uint count);
+		try
+		{
+			return SumFormattedArray(buffer, size, count, out available);
+		}
+		finally
+		{
+			if (buffer != 0) Marshal.FreeHGlobal(buffer);
+		}
+	}
+
+	// GPU e rete richiedono solo il totale: non decodificare i nomi nativi
+	// delle istanze e non creare una lista per poi scartarla a ogni campione.
+	internal static double SumFormattedArray(nint buffer, uint size, uint count, out bool available)
+	{
+		available = false;
+		int itemSize = IntPtr.Size + Marshal.SizeOf<CounterValue>();
+		if (buffer == 0 || size > int.MaxValue || count == 0 || count > size / (uint)itemSize) return 0;
+		double total = 0;
+		for (uint i = 0; i < count; i++)
+		{
+			nint value = buffer + checked((int)(i * (uint)itemSize)) + IntPtr.Size;
+			if (Marshal.ReadInt32(value) != Success) continue;
+			available = true;
+			total += BitConverter.Int64BitsToDouble(Marshal.ReadInt64(value, 8));
+		}
+		return total;
 	}
 
 	// I contatori con carattere jolly restituiscono una voce per istanza, con il
@@ -170,15 +194,10 @@ public static class OverlaySystemUsage
 	private static List<(string Name, double Value)> ReadArray(nint counter)
 	{
 		List<(string Name, double Value)> items = new();
-		if (counter == 0) return items;
-		uint size = 0;
-		uint count = 0;
-		PdhGetFormattedCounterArray(counter, FormatDouble | FormatNoCap100, ref size, ref count, IntPtr.Zero);
-		if (size == 0 || count == 0) return items;
-		nint buffer = Marshal.AllocHGlobal((int)size);
+		nint buffer = ReadArrayBuffer(counter, out _, out uint count);
+		if (buffer == 0) return items;
 		try
 		{
-			if (PdhGetFormattedCounterArray(counter, FormatDouble | FormatNoCap100, ref size, ref count, buffer) != Success) return items;
 			int itemSize = IntPtr.Size + Marshal.SizeOf<CounterValue>();
 			for (int i = 0; i < count; i++)
 			{
@@ -195,6 +214,29 @@ public static class OverlaySystemUsage
 		{
 			Marshal.FreeHGlobal(buffer);
 		}
+	}
+
+	private static nint ReadArrayBuffer(nint counter, out uint size, out uint count)
+	{
+		size = count = 0;
+		if (counter == 0) return 0;
+		PdhGetFormattedCounterArray(counter, FormatDouble | FormatNoCap100, ref size, ref count, IntPtr.Zero);
+		if (size == 0 || size > int.MaxValue || count == 0) return 0;
+		uint capacity = size;
+		nint buffer = Marshal.AllocHGlobal((int)capacity);
+		try
+		{
+			if (PdhGetFormattedCounterArray(counter, FormatDouble | FormatNoCap100, ref size, ref count, buffer) == Success
+				&& size <= capacity && count <= size / (uint)(IntPtr.Size + Marshal.SizeOf<CounterValue>()))
+				return buffer;
+		}
+		catch
+		{
+			Marshal.FreeHGlobal(buffer);
+			throw;
+		}
+		Marshal.FreeHGlobal(buffer);
+		return 0;
 	}
 
 	// "0 C:" diventa "C:"; se l'unita' non ha lettera resta il numero del disco.

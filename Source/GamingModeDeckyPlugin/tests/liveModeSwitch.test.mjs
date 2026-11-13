@@ -33,7 +33,7 @@ test("Explorer autostart and agent launches share a Decky startup lock", () => {
   const guard = read("../../Shared/DeckyStartupGuard.cs");
   const processes = read("../../GamingModeAgent/GamingMode.Services/ProcessTools.cs");
   const installer = read("../../Playhub/Services/DeckyInstallerService.cs");
-  const explorer = processes.split("public bool StartExplorer()")[1].split("public int RunUserStartupApps()")[0];
+  const explorer = processes.split("public bool StartExplorer(bool background = false)")[1].split("public int RunUserStartupApps()")[0];
   const install = installer.split("private async Task<string> InstallWindowsReleaseCoreAsync")[1].split("public Task<string> RemoveAsync")[0];
   const restart = installer.split("private bool SetupAutostartAndLaunch()")[1].split("private static")[0];
   assert.ok(explorer.indexOf("UpgradeExistingAutostart()") < explorer.indexOf("Process.Start("));
@@ -49,11 +49,10 @@ test("Explorer autostart and agent launches share a Decky startup lock", () => {
   assert.ok(guard.indexOf("Get-Process -Name") < guard.lastIndexOf("[Diagnostics.Process]::Start($start)"));
 });
 
-test("desktop transition stops Decky before Explorer and only ensures one replacement", () => {
+test("desktop transition preserves the active Decky loader while restoring Explorer", () => {
   const desktop = manager.split("private void ApplyDesktopMode(")[1];
-  assert.ok(desktop.indexOf("StopDeckyForDesktopTransition()") < desktop.indexOf("StartExplorer()"));
-  assert.match(desktop, /CurrentMode == ModeKind.Gaming/);
-  assert.match(desktop, /finally[\s\S]*if \(restoreDecky\)[\s\S]*EnsureProcessWithEnvironment/);
+  assert.match(desktop, /StartExplorer\(\)/);
+  assert.doesNotMatch(desktop, /StopDeckyForDesktopTransition\(|EnsureProcessWithEnvironment|RestartProcesses|StopProcesses/);
   const processes = read("../../GamingModeAgent/GamingMode.Services/ProcessTools.cs");
   assert.match(processes, /process.SessionId == self.SessionId/);
   assert.match(processes, /WaitForExit\(5000\)/);
@@ -73,7 +72,9 @@ test("live mode transition reuses configured mode application without changing l
   assert.doesNotMatch(method, /RestartInMode\(|BeginRestart\(|BeginLogoff\(|SetShellForMode\(|SaveConfig\(/);
   assert.match(method, /_modeSwitch.WaitAsync\(0\)/);
   assert.match(method, /finally \{ _modeSwitch.Release\(\)/);
-  assert.match(manager, /CloseExplorerInGamingMode && config.Gaming.AllowExplorerCloseInGamingMode/);
+  const gaming = manager.split("private void ApplyGamingMode")[1].split("private void ApplyDesktopMode")[0];
+  assert.match(gaming, /StartExplorer\(background: true\)/);
+  assert.doesNotMatch(gaming, /StopExplorer\(/);
   // Desktop recovery is mandatory when the shell is missing, even if the preference is off.
   assert.match(manager, /if \(config\.Gaming\.RestoreExplorerOnDesktop \|\| !ProcessTools\.IsExplorerShellRunning\(\)\)/);
   assert.match(manager, /bool flag = _processTools\.StartExplorer\(\);[\s\S]*?if \(!flag\) throw new InvalidOperationException\("Explorer could not be restored\."\)/);
@@ -85,5 +86,6 @@ test("QAM and power menu switch commands use translated live labels and never re
   assert.match(binding, /t\(\).switchDesktop/);
   assert.match(binding, /\/mode\/\$\{mode\}\/switch/);
   assert.doesNotMatch(binding, /\/restart/);
-  assert.match(entry, /signal.exitBigPicture[\s\S]*ExitBigPictureMode/);
+  assert.match(entry, /signal.steamModeCommand[\s\S]*modeCommands.process\(signal.steamModeCommand\)/);
+  assert.doesNotMatch(entry, /if \(signal.exitBigPicture\)/);
 });

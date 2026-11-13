@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Security.Cryptography;
 
 namespace Playhub.Shared;
 
@@ -12,6 +13,24 @@ public static class GamingModeInstallationPolicy
 
     public static bool ShouldMaintainInstallation(string executable, string disabledMarker) =>
         File.Exists(executable) && !File.Exists(disabledMarker);
+
+    /// <summary>Only verified identical bytes authorize skipping an agent replacement.</summary>
+    public static bool HasSameAgentPayload(string package, string installed)
+    {
+        try
+        {
+            using var source = File.Open(package, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var destination = File.Open(installed, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return source.Length == destination.Length
+                && SHA256.HashData(source).AsSpan().SequenceEqual(SHA256.HashData(destination));
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException
+            or ArgumentException or NotSupportedException or System.Security.SecurityException)
+        {
+            // Unknown content must never be reported as the current package.
+            return false;
+        }
+    }
 
     public static void Disable(string marker)
     {

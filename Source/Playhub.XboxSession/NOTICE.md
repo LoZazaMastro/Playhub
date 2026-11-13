@@ -11,7 +11,30 @@ https://github.com/KillerPixelCrew/WSGM/tree/1329813f673af665433f618db178ceeea08
 
 `NativeMethods.cs`, `SteamInstallation.cs`, and `PackagedWin32OverlayRoute.cs` retain upstream source.
 `GameInjector.cs` was modified on 2026-10-03 to require a retained process-identity guard before every remote operation.
+Later changes preserve a failed load's outcome, require the exact loaded component path for remote exports and allow
+the owned AppContainer fixture to route diagnostics to its own console.
 The complete upstream GPL text is in `LICENSE`.
+
+`Native/WsgmBridge` is the unmodified AppContainer bridge source from KillerPixelCrew/WSGM commit
+`526846032069dc991248367f95c8634bfda8f9d9`, at `src/WSGM.PackagedLaunch/Bridge`.
+https://github.com/KillerPixelCrew/WSGM/tree/526846032069dc991248367f95c8634bfda8f9d9/src/WSGM.PackagedLaunch/Bridge
+
+`Native/MinHook` contains the unmodified dependency from `external/minhook` at the same revision. Its license and
+copyright notices are in `Native/MinHook/LICENSE.txt` and must accompany the compiled DLL. The same revision's
+`Injection/OverlayObjectAllowList.cs` is retained in `Vendor`. `OverlayBrokerTransport.cs` adapts that revision's
+`Injection/OverlayObjectBroker.cs` for Playhub with reduced handle rights, bounded mapping sizes and no file requests.
+The AppContainer preflight, process query and handshake coordinator in `AppContainerProof.cs`,
+`RetainedAppContainerTarget.cs` and `AppContainerBridgeSession.cs` are Playhub additions under GPL-3.0-only.
+`AppContainerTrial.cs` follows the component initialization order from WSGM's
+`Strategies/AppContainerOverlayRoute.cs` at commit `526846032069dc991248367f95c8634bfda8f9d9`.
+The Playhub session checks and temporary bridge staging are GPL-3.0-only.
+
+The Steam companion under `Native/SteamCompanion` is an independent GPL-3.0-only implementation
+of the external overlay approach documented by shalamowww/steambro, commit
+`af09896b66d9e549773248521e78d2c6544855e9`.
+https://github.com/shalamowww/steambro/blob/af09896b66d9e549773248521e78d2c6544855e9/src/overlay.rs
+The preflight reads the bridge as a PE image without loading it. The coordinator follows the bridge setup sequence
+from the pinned `Strategies/AppContainerOverlayRoute.cs` and has been exercised with an owned AppContainer fixture.
 
 The `Runtime` directory adapts Playhub MIT code; the original copyright and license are in `Runtime/MIT-LICENSE`.
 `GdkLaunchResolver.cs` was renamed from `GdkLaunchProof.cs`. The copied runtime is included in this GPL executable as a whole.

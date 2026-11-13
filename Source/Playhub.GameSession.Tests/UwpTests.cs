@@ -16,6 +16,13 @@ internal static class UwpTests
             "Ready shell: exact activation process is awaited without periodic work");
         Check(runtime.Arguments == "--language it" && runtime.Searches == 0, "Game arguments reach activation unchanged");
 
+        var wrongPackage = new Game(32, Executable, "Unrelated.Game_123");
+        runtime = new Runtime { ReadyAt = 0, Activated = wrongPackage };
+        Expect<InvalidOperationException>(() => UwpLifetime.Run(Aumid, Executable, "", runtime),
+            "Direct Xbox activation requires the registered package as well as the executable name");
+        Check(runtime.Searches == 0 && wrongPackage.Waits == 0 && wrongPackage.Disposed,
+            "Rejected activation cannot hold the session open");
+
         runtime = new Runtime { ReadyAt = 700 };
         UwpLifetime.Run(Aumid, Executable, "", runtime);
         Check(runtime.ShellStarts == 1 && runtime.ActivationAt >= 1000 && runtime.ActivationAt < 15000,

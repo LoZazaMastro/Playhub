@@ -1,0 +1,12 @@
+PresentMon 2.6.1 console - Playhub live-output build
+Upstream: https://github.com/GameTechDev/PresentMon
+Source commit: 007f1cf009670e8b90d014324515ed41e5c54422
+License: LICENSE.txt and THIRD_PARTY.txt in this directory.
+
+Local changes are preserved in live-output.patch. The optional
+--live_output_ms 20|50|100 argument flushes this process's own realtime ETW
+session and reads new events at that interval. ETW event timestamps remain the
+source of frame timing. The default command-line behavior is unchanged.
+
+Build source and instructions:
+https://github.com/LoZazaMastro/Playhub/tree/main/Source/GamingModeAgent/Native/PresentMon

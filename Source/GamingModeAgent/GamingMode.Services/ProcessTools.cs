@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using GamingMode.Models;
 using Microsoft.Win32;
+using Playhub.Shared;
 
 namespace GamingMode.Services;
 
@@ -64,31 +65,14 @@ public sealed class ProcessTools
 		("BTAGService", "Bluetooth Audio Gateway Service")
 	};
 
-	// SERVIZI DEI PRODUTTORI DI HANDHELD.
-	//
-	// Su una handheld ASUS (ROG Ally e simili) i tasti dedicati, il controller
-	// interno, i LED e il controllo hardware passano da Armoury Crate. Se quei
-	// servizi non girano, in Gaming Mode il dispositivo perde pezzi.
-	//
-	// Qui stanno solo i servizi che servono a giocare: controllo hardware, input,
-	// tasti e luci. Aggiornatori, telemetria e servizi di collegamento al telefono
-	// restano fuori: non devono partire da soli mentre si gioca.
-	//
-	// Un servizio assente viene semplicemente saltato: la lista vale per chi ha
-	// quel software, e non cambia niente per tutti gli altri.
-	private static readonly (string Name, string Label)[] HandheldVendorCompatibilityServices = new(string, string)[11]
+	// Observe the existing Armoury Crate SE owner without changing its startup
+	// policy. Disabled or stopped services can be deliberate when another app
+	// manages the device. Service presence is not physical-device permission.
+	private static readonly (string Name, string Label)[] HandheldVendorCompatibilityServices = new(string, string)[3]
 	{
-		("ArmouryCrateControlInterface", "Armoury Crate Control Interface"),
-		("ArmouryCrateService", "Armoury Crate Service"),
+		("ArmouryCrateSEService", "Armoury Crate SE Service"),
 		("AsusAppService", "ASUS App Service"),
-		("ASUSOptimization", "ASUS Optimization"),
-		("AsHidService", "ASUS HID Service"),
-		("ASUSSwitch", "ASUS Switch"),
-		("ASUSSystemAnalysis", "ASUS System Analysis"),
-		("ASUSSystemDiagnosis", "ASUS System Diagnosis"),
-		("AsusCertService", "ASUS Certificate Service"),
-		("LightingService", "ASUS Aura Lighting Service"),
-		("ROG Live Service", "ROG Live Service")
+		("ArmouryCrateControlInterface", "Armoury Crate Control Interface")
 	};
 
 	private static readonly (string Name, string Label)[] DeckyPluginHelperCompatibilityServices = new(string, string)[10]
@@ -186,6 +170,7 @@ public sealed class ProcessTools
 		int num = 0;
 		foreach (GamingStartupApp item in apps.Where((GamingStartupApp app) => app.Enabled))
 		{
+			if (LegacyXboxGameBarWatcher.Matches(item.Name, item.ProcessName, item.Arguments)) continue;
 			if (string.IsNullOrWhiteSpace(item.Path))
 			{
 				_logger.Info("Skipped custom gaming app " + DisplayName(item) + " because no path is configured.");
@@ -285,7 +270,7 @@ public sealed class ProcessTools
 		return text;
 	}
 
-	public bool StartExplorer()
+	public bool StartExplorer(bool background = false)
 	{
 		try
 		{
@@ -302,7 +287,8 @@ public sealed class ProcessTools
 			using Process? explorer = Process.Start(new ProcessStartInfo
 			{
 				FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"),
-				UseShellExecute = true
+				UseShellExecute = true,
+				WindowStyle = background ? ProcessWindowStyle.Hidden : ProcessWindowStyle.Normal
 			});
 			for (int attempt = 0; attempt < 40; attempt++)
 			{
@@ -381,7 +367,21 @@ public sealed class ProcessTools
 
 	public int EnsureHandheldVendorCompatibilityServices()
 	{
-		return EnsureServices(HandheldVendorCompatibilityServices, "handheld vendor compatibility");
+		int running = 0;
+		foreach (var service in HandheldVendorCompatibilityServices)
+		{
+			ServiceQueryState state = QueryService(service.Name);
+			if (state.Exists && state.Running)
+			{
+				running++;
+				_logger.Info(service.Label + " (" + service.Name + ") observed running.");
+			}
+			else
+			{
+				_logger.Info(service.Label + " (" + service.Name + ") was not observed running; startup configuration was preserved.");
+			}
+		}
+		return running;
 	}
 
 	public int EnsureInputCompatibilityServices()

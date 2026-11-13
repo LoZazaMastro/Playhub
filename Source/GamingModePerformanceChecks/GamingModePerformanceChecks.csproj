@@ -7,7 +7,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../GamingModeAgent/GamingMode.Services/OverlaySteamArtwork.cs" Link="OverlaySteamArtwork.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/OverlaySystemUsage.cs" Link="OverlaySystemUsage.cs" />
     <Compile Include="../GamingModeAgent/GamingMode.Services/SteamGameIdentityPolicy.cs" Link="SteamGameIdentityPolicy.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/SteamInstallationPath.cs" Link="SteamInstallationPath.cs" />
     <Compile Include="../GamingModeAgent/GamingMode.Services/BackgroundWorkSignal.cs" Link="BackgroundWorkSignal.cs" />
     <Compile Include="../GamingModeAgent/GamingMode.Services/ControllerHapticsService.cs" Link="ControllerHapticsService.cs" />
     <Compile Include="../GamingModeAgent/GamingMode.Services/ControllerHapticPatterns.cs" Link="ControllerHapticPatterns.cs" />

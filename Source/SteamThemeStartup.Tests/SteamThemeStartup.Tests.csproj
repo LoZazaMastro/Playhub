@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../GamingModeAgent/GamingMode.Services/SteamThemeStartupPolicy.cs" Link="SteamThemeStartupPolicy.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/SteamThemeReadinessProbe.cs" Link="SteamThemeReadinessProbe.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/SteamTaskbarMainProof.cs" Link="SteamTaskbarMainProof.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/SteamTaskbarFullscreenLease.cs" Link="SteamTaskbarFullscreenLease.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/SteamThemeStartupCover.cs" Link="SteamThemeStartupCover.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/SteamThemeForegroundTransition.cs" Link="SteamThemeForegroundTransition.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/SteamInstallationPath.cs" Link="SteamInstallationPath.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/ValveImageTrust.cs" Link="ValveImageTrust.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/SplashScreenService.cs" Link="SplashScreenService.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Models/GamingSplashSettings.cs" Link="GamingSplashSettings.cs" />
+    <Compile Include="../GamingModeAgent/GamingMode.Models/ModeKind.cs" Link="ModeKind.cs" />
+    <Compile Include="../Shared/SplashLogoScale.cs" Link="SplashLogoScale.cs" />
+  </ItemGroup>
+</Project>

@@ -25,13 +25,18 @@ test("both login entry points cover Gaming startup before launching helpers", ()
   assert.doesNotMatch(boot, /bool showSplash = flag &&/);
   assert.match(boot, /bool showSplash = .*ModeKind.Gaming && !SafeModeGuard/);
   assert.ok(boot.indexOf("splashScreen.Show(") < boot.indexOf("manager.ApplyBootModeAsync("));
-  assert.match(boot, /finally[\s\S]*splashScreen.HideAsync/);
+  const finish = boot.slice(boot.indexOf("finally"));
+  assert.match(finish, /StartupForegroundGuard = null/);
+  assert.match(finish, /steamRunning && themedStartup is not null\)[\s\S]*await themedStartup.WaitAsync\(\);\s*else\s*splashScreen.CancelImmediately\(\);/);
+  assert.doesNotMatch(finish, /TryFocusSteamWindow|SetForegroundWindow/);
 });
 
 test("applying Gaming Mode does not rewrite any saved preference", () => {
   const gaming = section(manager, "private void ApplyGamingMode", "private void ApplyDesktopMode");
   assert.doesNotMatch(gaming, /SaveConfig|config\.\w+(?:\.\w+)*\s*=(?!=)/);
-  assert.match(gaming, /if \(!_processTools.StopExplorer\(\)\)[\s\S]*throw new InvalidOperationException/);
+  // The live shell is required by game overlays and stays behind Big Picture.
+  assert.match(gaming, /if \(!_processTools.StartExplorer\(background: true\)\)[\s\S]*throw new InvalidOperationException/);
+  assert.doesNotMatch(gaming, /StopExplorer\(/);
 });
 test("Explorer closure is session scoped, bounded, verified and does not alter the shell registry", () => {
   const stop = section(processes, "public bool StopExplorer()", "private static ServiceQueryState");
@@ -43,19 +48,22 @@ test("Explorer closure is session scoped, bounded, verified and does not alter t
   assert.doesNotMatch(stop, /Registry|SetShell|shutdown|BeginLogoff/);
 });
 test("Explorer startup verifies the desktop shell rather than a folder process", () => {
-  const start = section(processes, "public bool StartExplorer()", "public int RunUserStartupApps");
+  const start = section(processes, "public bool StartExplorer(bool background = false)", "public int RunUserStartupApps");
   assert.match(start, /IsExplorerShellRunning\(\)/);
   assert.doesNotMatch(start, /GetState\("explorer"\)/);
   assert.match(start, /attempt < 40/);
   assert.match(processes, /nint shell = GetShellWindow\(\)/);
 });
-test("desktop-exit signal expires and is cleared before another mode switch starts", () => {
-  const consume = section(manager, "public bool ConsumeDesktopSwitchRequest", "public ModeManager");
-  assert.match(consume, /Environment.TickCount64 - requested <= 4000/);
-  assert.match(consume, /CurrentMode == ModeKind.Desktop/);
+test("desktop exit and a later open share an acknowledged command generation", () => {
+  const commands = read("SteamModeCommandState");
+  assert.match(commands, /_exitDeadline = _clock\(\) \+ 4000/);
+  assert.match(commands, /!_deliveredExit && _clock\(\) > _exitDeadline/);
   const change = section(manager, "public async Task<ApiResult> SwitchToModeAsync", "public async Task<ApiResult> RestartSteamAsync");
-  assert.ok(change.indexOf("Interlocked.Exchange(ref _desktopSwitchRequested, 0)") < change.indexOf("ApplyModeAsync"));
-  assert.match(change, /result.Ok && mode == ModeKind.Desktop/);
+  const openAt = change.indexOf("_steamModeCommands.BeginOpen()"), desktopAt = change.indexOf("_steamModeCommands.RequestDesktop()");
+  const applyAt = change.indexOf("ApplyModeAsync");
+  assert.ok(openAt >= 0 && applyAt > openAt);
+  assert.ok(desktopAt >= 0 && applyAt > desktopAt);
+  assert.match(change, /!exit.Completed.IsCompleted/);
   assert.doesNotMatch(change, /BeginRestart|BeginLogoff|SaveConfig|SetShellForMode/);
 });
 
@@ -64,9 +72,13 @@ test("live-switch curtain covers application and always hides before gate releas
   assert.ok(change.indexOf("_modeSwitch.WaitAsync(0)") < change.indexOf("using SplashScreenService"));
   const show = change.indexOf("transition.ShowTransition(");
   assert.ok(show >= 0 && show < change.indexOf("ApplyModeAsync"));
-  assert.match(change, /finally\s*\{\s*await transition.HideAsync\(minVisibleMs: 700, fade: true, fadeMs: 300\);/);
-  assert.ok(change.indexOf("transition.HideAsync") < change.indexOf("_modeSwitch.Release()"));
+  const finish = change.slice(change.indexOf("finally"));
+  assert.match(finish, /StartupForegroundGuard = null/);
+  assert.match(finish, /if \(mode == ModeKind.Gaming\)\s*\{\s*themedStartup\?\.Dispose\(\);\s*transition.CancelImmediately\(\);\s*\}/);
+  assert.match(finish, /else await transition.HideAsync\(minVisibleMs: 700, fade: true, fadeMs: 300\);/);
+  assert.ok(finish.indexOf("transition.CancelImmediately") < finish.indexOf("_modeSwitch.Release()"));
+  assert.ok(finish.indexOf("transition.HideAsync") < finish.indexOf("_modeSwitch.Release()"));
   assert.match(change, /attempt < 24/);
-  const consume = section(manager, "public bool ConsumeDesktopSwitchRequest", "public ModeManager");
+  const consume = section(manager, "public SteamModeCommand? ReadSteamModeCommand", "public ModeManager");
   assert.doesNotMatch(consume, /_modeSwitch.CurrentCount/);
 });

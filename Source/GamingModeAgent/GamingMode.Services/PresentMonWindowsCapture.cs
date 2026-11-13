@@ -15,8 +15,8 @@ internal sealed class PresentMonWindowsCapture : IPresentMonPlatform
 {
     internal const string SessionPrefix = "PlayhubFrames-";
     internal const int CaptureSeconds = 4;
-    internal const string ExecutableSha256 = "b2a706bc6ad475749e3b7e3409263aa1e6906d45bdcf993f6dbc0f660188f1af";
-    private const long ExecutableBytes = 980320;
+    internal const string ExecutableSha256 = "93ff5a3a7adfe6bd904e6d0ead7080d2f4ca5a2e579011c915bd7a804df666f6";
+    private const long ExecutableBytes = 988672;
 
     public IDisposable? PinExecutable(string path)
     {

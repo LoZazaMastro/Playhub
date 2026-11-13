@@ -9,6 +9,8 @@
 // introduce niente di nuovo, si allarga quello che c'era.
 
 import { agentAvailability } from "./agentAvailability";
+import type { SteamReturnConfirmation } from "./steamNavigationReturn";
+import { steamModeCommand, type SteamModeCommand } from "./steamModeCommands";
 export const API_BASE = "http://127.0.0.1:47991";
 
 // L'helper che salva il primo piano quando l'overlay di Steam si apre sopra un
@@ -449,6 +451,7 @@ export function iconSource(base64: string): string {
 export interface DashboardSignal {
   open: boolean;
   exitBigPicture: boolean;
+  steamModeCommand?: SteamModeCommand;
   focusRecovery: number;
   steamForeground: boolean;
 }
@@ -458,7 +461,28 @@ export async function consumeOpenRequest(): Promise<DashboardSignal> {
   return {
     open: result?.open === true,
     exitBigPicture: result?.exitBigPicture === true,
+    steamModeCommand: steamModeCommand(result?.steamModeCommand),
     focusRecovery: Number(result?.focusRecovery) || 0,
     steamForeground: result?.steamForeground === true,
+  };
+}
+
+export async function acknowledgeSteamModeCommand(command: SteamModeCommand, completed: boolean): Promise<boolean> {
+  const result = await post<{ ok: boolean }>("/steam/mode/ack", { ...command, completed });
+  return result?.ok === true;
+}
+
+export async function confirmBigPictureForeground(version: number): Promise<SteamReturnConfirmation> {
+  if (!Number.isSafeInteger(version) || version <= 0) return { ok: false, appId: 0 };
+  const result = await request<SteamReturnConfirmation>(`/session/steam/return-focus?version=${version}`, undefined, 500);
+  const appId = result?.appId;
+  return {
+    ok: result?.ok === true,
+    appId: typeof appId === "number" && Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff ? appId : 0,
+    usedCompanion: result?.usedCompanion === true,
+    gamePid: typeof result?.gamePid === "number" && Number.isInteger(result.gamePid) && result.gamePid > 0
+      && result.gamePid <= 0xffffffff ? result.gamePid : undefined,
+    gameBirth: typeof result?.gameBirth === "string" && /^[1-9]\d{0,19}$/.test(result.gameBirth)
+      && BigInt(result.gameBirth) <= 0xffffffffffffffffn ? result.gameBirth : undefined,
   };
 }

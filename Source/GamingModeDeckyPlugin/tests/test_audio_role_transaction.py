@@ -141,10 +141,12 @@ class CpuPackagingTests(unittest.TestCase):
             payload = root / "payload"
             (payload / "dist").mkdir(parents=True)
             bundle = payload / "dist/index.js"
+            (root / "plugin.json").write_text('{"name":"fixture bundle"}', encoding="utf-8")
             bundle.write_text("fixture bundle")
             # The fallback validates all runtime helpers before the CPU package.
             for relative in (
-                "LICENSE-Shortcuts", "main.py", "THIRD-PARTY-NOTICES.md", "quick_settings/main.py",
+                "LICENSE-Shortcuts", "main.py", "decky_ipc_health.py", "THIRD-PARTY-NOTICES.md",
+                "screensaver/index.html", "screensaver/main.js", "quick_settings/main.py",
                 "quick_settings/history_editorial.json", "quick_settings/history_images.json",
                 "quick_settings/history_days.json", "quick_settings/history_imported.json",
                 "quick_settings/LICENSE", "quick_settings/NOTICE", "quick_settings/LEGAL.md",

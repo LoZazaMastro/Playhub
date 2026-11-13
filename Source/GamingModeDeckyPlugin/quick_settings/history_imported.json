@@ -793,7 +793,7 @@
               "hi": "4 जनवरी 2001 को RuneScape बीटा ब्राउजर के जरिए जनता तक पहुंची, किसी बड़े क्लाइंट को डिस्क पर बांटने की रस्म के बिना। शुरुआती तकनीक साधारण थी: 3D ग्राफिक्स और 2D sprites का मिश्रण, जिसे Gower भाइयों ने बहुत सीमित संसाधनों के साथ बनाया और चलाया। लेकिन ब्राउजर ने प्रवेश का तरीका बदल दिया। इंस्टॉलेशन, सदस्यता और विशेष समुदायों से जुड़ी MMORPG शैली को लगभग वेबसाइट की तरह आजमाया जा सकता था। यह तुरंत पहुंच दुनिया की जटिलता खत्म नहीं करती, बस उसे पहले क्लिक के बाद तक टाल देती है। RuneScape इस तरह बेहद संकरे दरवाजे से बढ़ता है: प्रवेश आसान है, फिर गेम महीनों या वर्षों का समय मांग सकता है। free-to-play के मुख्यधारा बनने से बहुत पहले यह वितरण और डिजाइन दोनों का सबक था।"
             },
             "image_brief": "Cercare una schermata orizzontale di RuneScape Classic nel browser, riferibile al 2001, con finestra web, mondo di gioco e interfaccia originale chiaramente visibili. Utile per documentare il debutto pubblico di un MMORPG accessibile dal browser. Evitare RuneScape 2, RuneScape 3, Old School RuneScape moderno, client standalone e artwork promozionali.",
-            "image_file": "workbook-step06-rscgallery-3.png",
+            "image_file": "__pending__",
             "source_url": "https://runescape.wiki/w/WWW.RUNESCAPE.COM",
             "quote": null,
             "image_subject": "RuneScape Classic"
@@ -844,7 +844,7 @@
               "hi": "RuneScape पात्र को शुरुआत में चुने गए वर्ग में बंद नहीं करता। लड़ाई, mining, fishing, cooking, crafting और कई दूसरे कौशल एक ही avatar पर बढ़ाए जा सकते हैं, इसलिए खिलाड़ी बिना फिर से शुरू किए लक्ष्य बदल सकता है। समय के साथ प्रणाली दर्जनों कौशलों तक फैलती है, लेकिन विचार की ताकत शुरुआती संरचना में ही दिखती है: प्रगति शक्ति की एक सीढ़ी नहीं, गतिविधियों का नक्शा है। इससे बहुत अलग पहचान बनती हैं। एक खिलाड़ी quests और combat चुन सकता है, दूसरा gathering को आर्थिक दिनचर्या बना सकता है और तीसरा किसी एक कौशल में अत्यधिक स्तर पाने के पीछे जा सकता है। इस तरह स्थायी दुनिया केवल लड़ाइयों की श्रृंखला नहीं रहती, बल्कि अलग-अलग अभ्यासों की जगह बन जाती है।"
             },
             "image_brief": "Cercare una schermata orizzontale di RuneScape Classic, versione 2001, con pannello delle skill aperto e personaggio nel mondo. Devono essere leggibili più abilità non legate a una classe unica. Utile per mostrare la progressione multidirezionale del primo RuneScape. Evitare interfacce di RuneScape 3 o Old School moderne, fan UI e cover.",
-            "image_file": "workbook-step06-rscgallery-2.png",
+            "image_file": "__pending__",
             "source_url": "https://www.jagex.com/news/runescape-launches-on-ios-and-android",
             "quote": null,
             "image_subject": "RuneScape Classic"
@@ -895,7 +895,7 @@
               "hi": "2001 के शुरुआती हफ्तों में ही अपडेट अभिलेख quests, combat सुधार, नए इलाके और interface बदलाव तेज गति से दिखाता है। फरवरी 2002 में membership आती है और 2004 में RuneScape 2 पुरानी तकनीक की जगह लेता है, पर लगातार देखभाल में रहने वाली दुनिया का विचार नहीं छोड़ता। यह निरंतरता अंत का अर्थ बदल देती है: ऐसा एक बिंदु नहीं जहां सब पूरा हो जाए, क्योंकि नया quest, नया skill या पूरी तरह संशोधित प्रणाली आ सकती है। इसलिए RuneScape का इतिहास स्थायी संपादकीय उत्पादन का इतिहास भी है। सामग्री एक बार बेचकर खत्म नहीं होती, बल्कि जब समुदाय पहले से दुनिया में रह रहा होता है तभी लिखी, सुधारी, बहस की और जोड़ी जाती रहती है।"
             },
             "image_brief": "Cercare un materiale storico orizzontale del sito RuneScape del 2001, preferibilmente una pagina ufficiale di aggiornamenti affiancata a una schermata di RuneScape Classic della stessa fase. Date e interfaccia web devono essere leggibili. Utile per mostrare il modello di aggiornamento continuo. Evitare pagine wiki moderne, timeline ricostruite e immagini promozionali recenti.",
-            "image_file": "workbook-step06-rscgallery-5.png",
+            "image_file": "__pending__",
             "source_url": "https://runescape.wiki/w/Major_updates",
             "quote": null,
             "image_subject": "RuneScape Classic"
@@ -922,8 +922,33 @@
         "year": 2001,
         "kind": "release"
       },
-      "media_status": "complete",
-      "missing_media": []
+      "media_status": "incomplete",
+      "missing_media": [
+        {
+          "order": 1,
+          "subject": "RuneScape",
+          "brief": "An MMO Behind a Web Page",
+          "reason": "Published image duplicates another card byte-for-byte. Awaiting a distinct verified image and immutable media publication.",
+          "rejected_file": "workbook-step06-rscgallery-3.png",
+          "rejected_sha256": "439f88e896d9125cd3743b7f3e881b6c9bbbda0016e1f030c6382e65551aefe7"
+        },
+        {
+          "order": 2,
+          "subject": "RuneScape",
+          "brief": "No Fixed Class, Many Ways to Grow",
+          "reason": "Published image duplicates another card byte-for-byte. Awaiting a distinct verified image and immutable media publication.",
+          "rejected_file": "workbook-step06-rscgallery-2.png",
+          "rejected_sha256": "439f88e896d9125cd3743b7f3e881b6c9bbbda0016e1f030c6382e65551aefe7"
+        },
+        {
+          "order": 3,
+          "subject": "RuneScape",
+          "brief": "The Game That Learned Not to End",
+          "reason": "Published image duplicates another card byte-for-byte. Awaiting a distinct verified image and immutable media publication.",
+          "rejected_file": "workbook-step06-rscgallery-5.png",
+          "rejected_sha256": "439f88e896d9125cd3743b7f3e881b6c9bbbda0016e1f030c6382e65551aefe7"
+        }
+      ]
     },
     {
       "published": true,
@@ -2408,14 +2433,14 @@
               "hi": "Resident Evil 4 साधारण तकनीकी विकास से अधिक दिशा के संकट से जन्म लेता है। पोस्टमॉर्टम में Capcom बताता है कि टीम ने श्रृंखला में जमा विशेषताओं, यहां तक कि डर की परिभाषा तक, दोबारा जांचकर पूरे कॉन्सेप्ट को बदलने का निर्णय लिया। उद्देश्य था कि परिचित हो चुका फॉर्मूला चौंकाने की क्षमता न खो दे। सीमित गोला-बारूद, तनाव और राक्षस बने रहते हैं, लेकिन उन्हें अधिक गतिशील और प्रतिक्रियाशील रिदम में रखा जाता है। Leon अब स्थिर कैमरों के लिए बनाए कमरे ही पार नहीं करता; खिलाड़ी के निशाना साधते, जगह बदलते या भीड़ संभालते समय भी खतरा आ सकता है। यह पुनर्निर्माण इसलिए सफल है क्योंकि वह अतीत को नकारता नहीं, बल्कि भावनात्मक रूप से परिचित मूल को बचाकर उस एहसास को बनाने वाले औज़ार बदलता है।"
             },
             "image_brief": "Cercare materiale di sviluppo orizzontale di Resident Evil 4 originale per Nintendo GameCube, 2004-2005, con Leon e ambienti rurali oppure strumenti interni di produzione. È adatto perché documenta la svolta progettuale del gioco prima e durante il lancio. Preferire screenshot o materiali Capcom autentici. Evitare il remake 2023, remaster HD, copertine e key art promozionali.",
-            "image_file": "workbook-step06-re4-2.jpg",
+            "image_file": "__pending__",
             "source_url": "https://www.gamedeveloper.com/design/postmortem-i-resident-evil-4-i-/",
             "quote": null,
             "image_subject": "Resident Evil 4 (2005)"
           },
           {
             "order": 2,
-            "subject": "Resident Evil 4",
+            "subject": "Resident Evil 4 (2005)",
             "kicker": {
               "it": "RESIDENT EVIL 4 · TELECAMERA · MIRA",
               "en": "RESIDENT EVIL 4 · CAMERA · AIMING",
@@ -2466,7 +2491,7 @@
           },
           {
             "order": 3,
-            "subject": "Resident Evil 4",
+            "subject": "Resident Evil 4 (2005)",
             "kicker": {
               "it": "RESIDENT EVIL 4 · GANADOS · FOLLA",
               "en": "RESIDENT EVIL 4 · GANADOS · CROWD",
@@ -2537,8 +2562,17 @@
         "year": 2005,
         "kind": "release"
       },
-      "media_status": "complete",
-      "missing_media": []
+      "media_status": "incomplete",
+      "missing_media": [
+        {
+          "order": 1,
+          "subject": "Resident Evil 4",
+          "brief": "To Continue the Series, Capcom Has to Break It",
+          "reason": "Published image duplicates another card byte-for-byte. Awaiting a distinct verified image and immutable media publication.",
+          "rejected_file": "workbook-step06-re4-2.jpg",
+          "rejected_sha256": "d8a19583c4a6810448583d568983693e75bcdeee318ad3ec4cb2c7e67097463b"
+        }
+      ]
     },
     {
       "published": true,
@@ -8226,7 +8260,7 @@
               "hi": "Paper Mario का RPG सिस्टम ऐसे आँकड़ों का ढेर लगाने से बचता है जिन्हें समझना कठिन हो। स्तर बढ़ने पर खिलाड़ी तय करता है कि निवेश कहाँ करना है, जबकि Badge Points यह निर्धारित करते हैं कि एक समय में कितनी विशेष क्षमताएँ लगाई जा सकती हैं। आधिकारिक मैनुअल बैज को ऐसे आइटम बताता है जो मैदान और युद्ध में क्रियाओं को बदल सकते हैं, लेकिन उनका असली महत्व सीमा से पैदा होता है: सब कुछ एक साथ नहीं पहना जा सकता। साथी एक और परत जोड़ते हैं, क्योंकि उनकी विशिष्ट क्षमताएँ लड़ाई में भी काम आती हैं और अन्वेषण के दौरान बाधाएँ पार करने में भी। इस तरह प्रगति बड़े अंकों की साधारण दौड़ न रहकर अलग-अलग विन्यास चुनने की प्रक्रिया बनती है। Paper Mario टर्न-आधारित संरचना रखता है, पर बार-बार किए गए निर्णयों और तुरंत दिखने वाले परिणामों से उसे स्पष्ट बनाता है।"
             },
             "image_brief": "Composizione orizzontale con menu Badge dell'originale Nintendo 64 e una battaglia con un compagno visibile; mantenere font, risoluzione e interfaccia originali del 2001.",
-            "image_file": "workbook-step08-02-05-2.jpg",
+            "image_file": "__pending__",
             "source_url": "https://www.nintendo.com/eu/media/downloads/games_8/emanuals/nintendo_8/Manual_Nintendo64_PaperMario_EN.pdf",
             "quote": null,
             "image_subject": "Paper Mario"
@@ -8304,8 +8338,17 @@
         "year": 2001,
         "kind": "release"
       },
-      "media_status": "complete",
-      "missing_media": []
+      "media_status": "incomplete",
+      "missing_media": [
+        {
+          "order": 2,
+          "subject": "Paper Mario",
+          "brief": "Small Numbers and Many Badges Turn Growth Into a Choice",
+          "reason": "Published image duplicates another card byte-for-byte. Awaiting a distinct verified image and immutable media publication.",
+          "rejected_file": "workbook-step08-02-05-2.jpg",
+          "rejected_sha256": "b458b62dd46c8ee4219ee2ace9fbc8195d041073314c24780209c71555fcda6b"
+        }
+      ]
     },
     {
       "published": true,
@@ -45335,7 +45378,7 @@
               "hi": "Yume Kōjō: Doki Doki Panic के इस अध्याय का केंद्र गेम सिस्टम और निर्णय है। 1987 से जुड़ा ठोस निर्णय कोई अलग-थलग सुविधा नहीं है, बल्कि खिलाड़ी का ध्यान, लय और प्राथमिकताएँ व्यवस्थित करता है। नियम और निर्माण की परिस्थितियाँ मिलकर विचार को इंटरैक्शन में दिखाई देने योग्य बनाती हैं। इससे समझ आता है कि परियोजना का यह हिस्सा अपने तकनीकी और सांस्कृतिक संदर्भ में क्यों काम करता था। इसका प्रभाव आगे तक जाता है, क्योंकि बाद के खेल उसी समाधान को अपनाने, बदलने या जानबूझकर अस्वीकार करने में सक्षम हुए।"
             },
             "image_brief": "Immagine pertinente al soggetto e al tema del capitolo Una differenza che si sente nel salto. Niente cover, nessuna immagine ripetuta nella storia.",
-            "image_file": "jul-dec-review-07-10-rawg-1.jpg",
+            "image_file": "__pending__",
             "source_url": "https://www.mariowiki.com/Yume_K%C5%8Dj%C5%8D:_Doki_Doki_Panic",
             "quote": null,
             "image_subject": "Yume Kōjō: Doki Doki Panic"
@@ -45413,8 +45456,17 @@
         "year": 1987,
         "kind": "release"
       },
-      "media_status": "complete",
-      "missing_media": []
+      "media_status": "incomplete",
+      "missing_media": [
+        {
+          "order": 2,
+          "subject": "Yume Kōjō: Doki Doki Panic",
+          "brief": "Pulling and throwing replace jumping as the only answer",
+          "reason": "Published image duplicates another card byte-for-byte. Awaiting a distinct verified image and immutable media publication.",
+          "rejected_file": "jul-dec-review-07-10-rawg-1.jpg",
+          "rejected_sha256": "dda142045e9616a6e7072cd4a1324813e4132e71dd65304cf5e7447add0f9844"
+        }
+      ]
     },
     {
       "published": true,
@@ -68648,7 +68700,7 @@
               "hi": ""
             },
             "image_brief": "Schermata orizzontale di Portal originale 2007 con una camera di test e uno dei dispositivi o monitor attraverso cui GLaDOS comunica, oppure vista della sua struttura finale se contestualmente adatta. Deve sostenere il rapporto tra voce e spazio. Evitare Portal 2, fan art, meme, copertine e immagini del personaggio fuori dal gioco.",
-            "image_file": "jul-dec-review-10-10-400-4.jpg",
+            "image_file": "__pending__",
             "source_url": "https://www.gamedeveloper.com/business/still-alive-kim-swift-and-erik-wolpaw-talk-portal",
             "quote": null,
             "image_subject": "Portal"
@@ -68699,7 +68751,7 @@
               "hi": ""
             },
             "image_brief": "Fotografia o screenshot orizzontale di sviluppo di Portal 2005-2007 con greybox, editor Hammer, geometrie non rifinite o sessione di playtest del team Valve. Cercare materiale produttivo autentico che mostri iterazione prima dell'art finale. Evitare screenshot retail rifiniti, Portal 2, Portal RTX, ricostruzioni e fan project.",
-            "image_file": "jul-dec-review-10-10-400-5.jpg",
+            "image_file": "__pending__",
             "source_url": "https://www.gamedeveloper.com/design/thinking-with-portals-creating-valve-s-new-ip",
             "quote": null,
             "image_subject": "Portal"
@@ -68750,7 +68802,7 @@
               "hi": ""
             },
             "image_brief": "Fotografia editoriale orizzontale o materiale promozionale ufficiale del 2007 che presenti Portal all'interno di The Orange Box insieme agli altri titoli Valve, preferibilmente confezione o display retail contestualizzato. Serve a documentare il modello di distribuzione. Evitare cover di Portal standalone successive, Portal 2, ristampe e collage non ufficiali.",
-            "image_file": "jul-dec-review-10-10-400-6.jpg",
+            "image_file": "__pending__",
             "source_url": "https://www.gamedeveloper.com/design/thinking-with-portals-creating-valve-s-new-ip",
             "quote": null,
             "image_subject": "Portal"
@@ -68777,8 +68829,33 @@
         "year": 2007,
         "kind": "release"
       },
-      "media_status": "complete",
-      "missing_media": []
+      "media_status": "incomplete",
+      "missing_media": [
+        {
+          "order": 4,
+          "subject": "Portal",
+          "brief": "GLaDOS Turns the Tutorial Into a Relationship",
+          "reason": "Published image duplicates another card byte-for-byte. Awaiting a distinct verified image and immutable media publication.",
+          "rejected_file": "jul-dec-review-10-10-400-4.jpg",
+          "rejected_sha256": "c88067d7d15d3a933d86a05b4b37d2cec5ad87f6de7e2a14f3a1bf1ed575fbef"
+        },
+        {
+          "order": 5,
+          "subject": "Portal",
+          "brief": "Playtesting Begins Before Beauty",
+          "reason": "Published image duplicates another card byte-for-byte. Awaiting a distinct verified image and immutable media publication.",
+          "rejected_file": "jul-dec-review-10-10-400-5.jpg",
+          "rejected_sha256": "73ae3cfe1bfeb25b43ed3215f9f9ec5c8b373e525581923fd608b7d9aaf8dee0"
+        },
+        {
+          "order": 6,
+          "subject": "Portal",
+          "brief": "The Orange Box Protects an Experiment",
+          "reason": "Published image duplicates another card byte-for-byte. Awaiting a distinct verified image and immutable media publication.",
+          "rejected_file": "jul-dec-review-10-10-400-6.jpg",
+          "rejected_sha256": "bbec51ca212b85ccc48766f6213770043f21603c6b5819170c0aae561803c3d3"
+        }
+      ]
     },
     {
       "published": true,
@@ -74891,7 +74968,7 @@
               "hi": ""
             },
             "image_brief": "Schermata orizzontale originale di Castlevania: Rondo of Blood, 1993, con Maria Renard in gameplay oppure confronto visivo fra una sezione affrontata da Richter e Maria. Preferire pixel art PC Engine autentica. Evitare Maria delle versioni successive, Symphony of the Night, PSP, PS4 e fan art.",
-            "image_file": "jul-dec-review-10-29-rawg2-9.jpg",
+            "image_file": "__pending__",
             "source_url": "https://shmuplations.com/chinorondo2/",
             "quote": null,
             "image_subject": "Castlevania: Rondo of Blood"
@@ -74969,8 +75046,17 @@
         "year": 1993,
         "kind": "release"
       },
-      "media_status": "complete",
-      "missing_media": []
+      "media_status": "incomplete",
+      "missing_media": [
+        {
+          "order": 3,
+          "subject": "Castlevania: Rondo of Blood",
+          "brief": "Two Characters Rewrite the Difficulty",
+          "reason": "Published image duplicates another card byte-for-byte. Awaiting a distinct verified image and immutable media publication.",
+          "rejected_file": "jul-dec-review-10-29-rawg2-9.jpg",
+          "rejected_sha256": "be0a961e406a2a3fecfd77843e8036f0ab5ab3d8cc7c9b90aad507cc7180481d"
+        }
+      ]
     },
     {
       "published": true,
@@ -91319,7 +91405,7 @@
               "hi": ""
             },
             "image_brief": "Schermata orizzontale di Mega Man 2 originale 1988 con menu armi e uno o più E-Tank visibili, oppure raccolta dell'oggetto durante un livello. Evitare versioni mobile, Legacy Collection con overlay e Mega Man 3.",
-            "image_file": "jul-dec-review-12-24-rawg-2.jpg",
+            "image_file": "__pending__",
             "source_url": "https://captown.capcom.com/en/classic_games/6",
             "quote": null,
             "image_subject": "Mega Man 2"
@@ -91550,8 +91636,17 @@
         "year": 1988,
         "kind": "release"
       },
-      "media_status": "complete",
-      "missing_media": []
+      "media_status": "incomplete",
+      "missing_media": [
+        {
+          "order": 2,
+          "subject": "Mega Man 2",
+          "brief": "The Energy Tank separates recovery from the moment it is found",
+          "reason": "Published image duplicates another card byte-for-byte. Awaiting a distinct verified image and immutable media publication.",
+          "rejected_file": "jul-dec-review-12-24-rawg-2.jpg",
+          "rejected_sha256": "8b686568e15f2163f43f5585b7d4cb2ebbe7466fcc96f09e981a38c16bef3d38"
+        }
+      ]
     },
     {
       "published": true,

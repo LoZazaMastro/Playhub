@@ -25,6 +25,8 @@ public static class Shortcuts
             sc.Description = "Playhub";
             sc.Save();
             Marshal.FinalReleaseComObject(sc);
+            if (!string.IsNullOrEmpty(iconPath))
+                Playhub.Shared.ShellIdentity.UpdateOwnedShortcut(shortcutPath, targetPath, iconPath);
         }
         finally
         {

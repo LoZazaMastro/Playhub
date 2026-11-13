@@ -15,8 +15,9 @@ using System.Threading.Tasks;
 
 namespace Playhub.Services;
 
-internal sealed partial class DeckyWindowsReleaseClient(HttpClient http, Architecture architecture)
+internal sealed partial class DeckyWindowsReleaseClient(HttpClient http, Architecture architecture, string? bundledRoot = null)
 {
+    private readonly BundledDeckyWindowsRelease _bundled = new(bundledRoot);
     private const string ApiRoot = "https://api.github.com/repos/SteamDeckHomebrew/decky-loader/releases";
     private const string AssetRoot = "https://github.com/SteamDeckHomebrew/decky-loader/releases/download/";
     private const int MaxAssetSize = 64 * 1024 * 1024;
@@ -24,7 +25,7 @@ internal sealed partial class DeckyWindowsReleaseClient(HttpClient http, Archite
     private const int MaxMetadataSize = 4 * 1024 * 1024;
 
     internal sealed record Asset(string InstallName, Uri Url, int Size, string Digest);
-    internal sealed record Release(DeckyWindowsRelease Summary, Asset Console, Asset Background)
+    internal sealed record Release(DeckyWindowsRelease Summary, Asset Console, Asset Background, bool OfflineFallback = false)
     {
         internal IReadOnlyList<Asset> Assets => [Console, Background];
     }
@@ -33,8 +34,18 @@ internal sealed partial class DeckyWindowsReleaseClient(HttpClient http, Archite
     {
         if (tag is not null && !IsStableTag(tag))
             throw new ArgumentException("La versione di Decky selezionata non è valida.", nameof(tag));
-        try { return await GetApiReleaseAsync(tag).ConfigureAwait(false); }
-        catch (ReleaseApiThrottledException) { return await GetWebReleaseAsync(tag).ConfigureAwait(false); }
+        try
+        {
+            Release release;
+            try { release = await GetApiReleaseAsync(tag).ConfigureAwait(false); }
+            catch (ReleaseApiThrottledException) { release = await GetWebReleaseAsync(tag).ConfigureAwait(false); }
+            return release;
+        }
+        catch (Exception error) when ((tag is null || tag == BundledDeckyWindowsRelease.UpstreamTag) && error is HttpRequestException or TaskCanceledException)
+        {
+            if (_bundled.Get(architecture, offline: true) is { } local) return local;
+            throw;
+        }
     }
 
     private async Task<Release> GetApiReleaseAsync(string? tag)
@@ -57,8 +68,16 @@ internal sealed partial class DeckyWindowsReleaseClient(HttpClient http, Archite
     internal async Task<IReadOnlyList<DeckyWindowsRelease>> ListAsync()
     {
         Release[] compatible;
-        try { compatible = await ListCompatibleAsync().ConfigureAwait(false); }
-        catch (ReleaseApiThrottledException) { compatible = await ListWebCompatibleAsync().ConfigureAwait(false); }
+        try
+        {
+            try { compatible = await ListCompatibleAsync().ConfigureAwait(false); }
+            catch (ReleaseApiThrottledException) { compatible = await ListWebCompatibleAsync().ConfigureAwait(false); }
+        }
+        catch (Exception error) when (error is HttpRequestException or TaskCanceledException)
+        {
+            if (_bundled.Get(architecture, offline: true) is { } local) return [local.Summary];
+            throw;
+        }
         return compatible.Select(release => release.Summary).ToArray();
     }
 
@@ -76,6 +95,7 @@ internal sealed partial class DeckyWindowsReleaseClient(HttpClient http, Archite
 
     internal async Task<byte[]> DownloadAsync(Asset asset)
     {
+        if (asset.Url.IsFile) return await _bundled.ReadAsync(asset, architecture).ConfigureAwait(false);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
         Uri uri = asset.Url;
         for (int attempt = 0; attempt <= 3; attempt++)

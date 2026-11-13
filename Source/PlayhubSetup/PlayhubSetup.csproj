@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -24,8 +24,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Using Include="System.Net.Http" />
+    <Using Include="System.IO" />
+    <AssemblyMetadata Include="PlayhubControllerDriverRequired" Value="true" Condition="'$(PlayhubControllerDriverRequired)' == 'true'" />
     <Compile Include="../Shared/EditorialPhotoMigration.cs" Link="EditorialPhotoMigration.cs" />
     <Compile Include="../Shared/GamingModeInstallationPolicy.cs" Link="GamingModeInstallationPolicy.cs" />
+    <Compile Include="../Shared/ShellIdentity.cs" Link="ShellIdentity.cs" />
+    <Compile Include="../Playhub/Services/DeckyPluginService.cs" Link="BundledPlugins/DeckyPluginService.cs" />
+    <Compile Include="../Playhub/Services/BundledExecutableCopy.cs" Link="BundledPlugins/BundledExecutableCopy.cs" />
+    <Compile Include="../Playhub/Services/AppPaths.cs" Link="BundledPlugins/AppPaths.cs" />
+    <Compile Include="../Playhub/Models/DeckyPluginInfo.cs" Link="BundledPlugins/DeckyPluginInfo.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/SteamPluginBridge.cs" Link="BundledPlugins/SteamPluginBridge.cs" />
     <Resource Include="Assets\cube.png" />
     <Resource Include="Assets\wordmark.png" />
   </ItemGroup>

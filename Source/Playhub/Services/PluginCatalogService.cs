@@ -68,7 +68,7 @@ public sealed partial class PluginCatalogService
             ["Shortcuts"] = "1.2.0",
             ["Playhub-Notifications"] = "1.3.1",
             ["News"] = "1.0.0",
-            ["Weather"] = "2.1.0",
+            ["Weather"] = "2.1.1",
             ["Proton-VPN"] = "1.0.0"
         };
     private static readonly JsonSerializerOptions ExternalCatalogJsonOptions = new()
@@ -457,11 +457,14 @@ public sealed partial class PluginCatalogService
             });
         }
 
+        AppendLocalDiscordBundle(plugins, pluginRoot, deckyPluginsPath, claimedInstalledFolders);
         // One installed-folder pass hydrates both bundled and newly published definitions.
         AppendUncataloguedInstalledPlugins(plugins, deckyPluginsPath, claimedInstalledFolders);
 #if !PLAYHUB_UI_REVIEW
         foreach (var plugin in plugins)
         {
+            // Local candidates have no published repository or remote release history.
+            if (plugin.CatalogSource == "bundled-local") continue;
             var cacheKey = ReleaseCacheKey(plugin.RepositorySlug, plugin.CatalogSource);
             var latest = releases.GetValueOrDefault(plugin.RepositorySlug) ?? LoadReleaseCache(cacheKey);
             ApplyLatestRelease(plugin, latest);
@@ -488,6 +491,7 @@ public sealed partial class PluginCatalogService
             "Playhub-Notifications",
             "News",
             "Weather",
+            "Discord",
             "Proton-VPN"
         };
 
@@ -505,6 +509,89 @@ public sealed partial class PluginCatalogService
             .ThenBy(p => p.IsPlayhubPlugin ? "" : p.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
         return result;
+    }
+
+    private static void AppendLocalDiscordBundle(List<DeckyPluginInfo> plugins, string pluginRoot,
+        string deckyPluginsPath, HashSet<string> claimedInstalledFolders)
+    {
+        // This Windows fork is a separate Decky plugin. A local candidate must not
+        // invent a public GitHub repository or inherit Steamcord's release channel.
+        if (plugins.Any(IsPublishedDiscordPlugin)) return;
+        var folder = FindLocalFolder(pluginRoot, "Discord");
+        var archive = folder is null ? null : FindInstallerZip(folder);
+        if (archive is null) return;
+        try
+        {
+            using var zip = System.IO.Compression.ZipFile.OpenRead(archive);
+            var manifests = zip.Entries.Where(entry => entry.FullName.Replace('\\', '/')
+                .EndsWith("/plugin.json", StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (manifests.Length != 1 || manifests[0].Length > 65536) return;
+            var prefix = manifests[0].FullName.Replace('\\', '/')[..^"plugin.json".Length];
+            var package = zip.Entries.SingleOrDefault(entry => entry.FullName.Replace('\\', '/') == prefix + "package.json");
+            if (package is null || package.Length > 65536 || !zip.Entries.Any(entry =>
+                    entry.FullName.Replace('\\', '/') == prefix + "dist/index.js" && entry.Length > 0)) return;
+            using var pluginStream = manifests[0].Open();
+            using var pluginJson = JsonDocument.Parse(pluginStream);
+            using var packageStream = package.Open();
+            using var packageJson = JsonDocument.Parse(packageStream);
+            var manifest = pluginJson.RootElement;
+            var metadata = packageJson.RootElement;
+            if (manifest.GetProperty("name").GetString() != "Discord" ||
+                metadata.GetProperty("name").GetString() != "playhub-discord") return;
+            var version = metadata.GetProperty("version").GetString() ?? "";
+            if (!Version.TryParse(version, out _)) return;
+
+            if (!TryResolveDiscordDestination(deckyPluginsPath, out var destination, out var installed)) return;
+            var installedFolderName = Path.GetFileName(destination);
+            var description = manifest.GetProperty("publish").GetProperty("description").GetString() ?? "";
+            var image = Path.Combine(folder!, "discord.png");
+            var readmePath = Path.Combine(folder!, "README.md");
+            var notesPath = Path.Combine(folder!, "CHANGELOG.md");
+            var installedVersion = installed ? ReadInstalledVersion(destination, "Discord") : "";
+            plugins.Add(new DeckyPluginInfo
+            {
+                Name = "Discord", FolderName = installedFolderName,
+                Author = manifest.GetProperty("author").GetString() ?? Owner,
+                Version = version, InstalledVersion = installedVersion,
+                IsInstalled = installed, InstalledFolder = destination,
+                HasUpdate = installed && HasVersionUpdate(installedVersion, version),
+                ShortDescription = description, LongDescription = description,
+                Readme = File.Exists(readmePath) ? File.ReadAllText(readmePath) : description,
+                IconGlyph = ((char)0xE8F2).ToString(),
+                SourceFolder = folder!, InstallerZip = archive,
+                CoverImage = File.Exists(image) ? image : null, Image = File.Exists(image) ? image : null,
+                RepositoryName = "Discord", RepositorySlug = "", RepositoryUrl = "",
+                Category = "Playhub", CatalogStatus = "playhub", CatalogSource = "bundled-local",
+                IsPlayhubPlugin = true, Keywords = "discord voice chat channels conversations windows",
+                InstallAliases = new[] { "playhub-discord", installedFolderName }.Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
+                ReleaseNotes = File.Exists(notesPath) ? File.ReadAllText(notesPath) : "",
+                ReleaseNotesVersion = version
+            });
+            if (installed) ClaimInstalledFolder(claimedInstalledFolders, destination);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or
+            InvalidDataException or JsonException or InvalidOperationException or KeyNotFoundException)
+        {
+            // A damaged local candidate never becomes an installable catalog item.
+        }
+    }
+
+    private static bool IsPublishedDiscordPlugin(DeckyPluginInfo plugin) =>
+        plugin.IsPlayhubPlugin && plugin.CatalogSource == "playhub" &&
+        string.Equals(plugin.RepositorySlug, Owner + "/Playhub-Discord", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsInstalledDiscordFork(string folder)
+    {
+        try
+        {
+            if (!IsPlainDiscordPath(folder)) return false;
+            using var plugin = ReadDiscordIdentityManifest(Path.Combine(folder, "plugin.json"));
+            using var package = ReadDiscordIdentityManifest(Path.Combine(folder, "package.json"));
+            return plugin.RootElement.GetProperty("name").GetString() == "Discord" &&
+                package.RootElement.GetProperty("name").GetString() == "playhub-discord";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or
+            InvalidOperationException or KeyNotFoundException) { return false; }
     }
 
     public async Task EnsurePluginDetailsAsync(DeckyPluginInfo plugin)
@@ -531,6 +618,66 @@ public sealed partial class PluginCatalogService
         {
             plugin.Media = new List<PluginMediaInfo>();
         }
+    }
+
+    private static bool TryResolveDiscordDestination(string pluginsPath, out string destination, out bool installed)
+    {
+        destination = ""; installed = false;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(pluginsPath) || !Path.IsPathFullyQualified(pluginsPath)) return false;
+            var root = Path.GetFullPath(pluginsPath);
+            if (!IsPlainDiscordPath(root)) return false;
+            var canonical = Path.Combine(root, "playhub-discord");
+            string? match = null;
+            if (Directory.Exists(root))
+            {
+                int count = 0;
+                foreach (var folder in Directory.EnumerateDirectories(root))
+                {
+                    // A bounded, direct-child scan cannot guess among duplicate
+                    // identities or silently install another copy of the fork.
+                    if (++count > 4096) return false;
+                    if (!IsInstalledDiscordFork(folder)) continue;
+                    if (match is not null) return false;
+                    match = folder;
+                }
+            }
+            if (match is not null)
+            {
+                destination = match; installed = true;
+                return true;
+            }
+            // A same-name directory, file or junction is not ownership evidence.
+            if (Directory.Exists(canonical) || File.Exists(canonical) || !IsPlainDiscordPath(canonical)) return false;
+            destination = canonical;
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or
+            System.Security.SecurityException) { return false; }
+    }
+
+    private static JsonDocument ReadDiscordIdentityManifest(string path)
+    {
+        if (!IsPlainDiscordPath(path)) throw new IOException("Linked Discord metadata is not an installed identity.");
+        using var stream = File.OpenRead(path);
+        if (stream.Length is <= 0 or > 65536) throw new InvalidDataException("Discord metadata is outside the supported size.");
+        var bytes = new byte[(int)stream.Length];
+        stream.ReadExactly(bytes);
+        return JsonDocument.Parse(bytes);
+    }
+
+    private static bool IsPlainDiscordPath(string path)
+    {
+        var full = Path.GetFullPath(path);
+        if (!Path.IsPathFullyQualified(full) || full.StartsWith(@"\\")) return false;
+        for (var current = full; !string.IsNullOrEmpty(current); current = Path.GetDirectoryName(current))
+        {
+            try { if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0) return false; }
+            catch (FileNotFoundException) { }
+            catch (DirectoryNotFoundException) { }
+        }
+        return true;
     }
 
     internal async Task<string?> FindPluginPreviewAsync(DeckyPluginInfo plugin, ISet<string> rejected)
@@ -1791,7 +1938,11 @@ public sealed partial class PluginCatalogService
             return;
         }
 
-        var catalogPlugins = plugins.ToArray();
+        // Local forks are matched explicitly against their package identity above.
+        // A shared display name cannot claim another installed Discord client.
+        var catalogPlugins = plugins.Where(plugin => plugin.CatalogSource != "bundled-local").ToArray();
+        var verifiedDiscordFolders = Directory.GetDirectories(deckyPluginsPath)
+            .Where(IsInstalledDiscordFork).Take(2).ToArray();
         foreach (var folder in Directory.GetDirectories(deckyPluginsPath)
                      .OrderBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase))
         {
@@ -1802,6 +1953,19 @@ public sealed partial class PluginCatalogService
             }
 
             var metadata = ReadInstalledPluginMetadata(folder);
+            var isDiscordFork = IsInstalledDiscordFork(folder);
+            if (isDiscordFork)
+            {
+                // Early development ZIPs retained the upstream repository in package.json.
+                // The installed package identity still belongs to the Windows fork, even
+                // when its optional bundled installer is missing or cannot be read.
+                metadata = metadata with
+                {
+                    Name = "Discord", RepositoryUrl = "", RepositoryName = "Discord",
+                    RepositorySlug = "", ReleaseAssetName = "", ReleaseZipUrl = null,
+                    Aliases = new List<string> { "Discord", "playhub-discord", Path.GetFileName(folder) }
+                };
+            }
             if (IsBlockedPluginIdentity(
                     Path.GetFileName(folder),
                     metadata.Name,
@@ -1829,7 +1993,13 @@ public sealed partial class PluginCatalogService
             DeckyPluginInfo[] candidates;
             // Repository metadata (with the installed marker taking precedence) is
             // authoritative. Never fall back to shared names after a repository miss.
-            if (!string.IsNullOrWhiteSpace(metadata.RepositorySlug))
+            if (isDiscordFork)
+            {
+                candidates = verifiedDiscordFolders.Length == 1
+                    ? catalogPlugins.Where(IsPublishedDiscordPlugin).Take(2).ToArray()
+                    : Array.Empty<DeckyPluginInfo>();
+            }
+            else if (!string.IsNullOrWhiteSpace(metadata.RepositorySlug))
             {
                 candidates = catalogPlugins.Where(plugin => string.Equals(
                     plugin.RepositorySlug, metadata.RepositorySlug, StringComparison.OrdinalIgnoreCase)).Take(2).ToArray();
@@ -1892,10 +2062,10 @@ public sealed partial class PluginCatalogService
                 ReleaseAssetName = metadata.ReleaseAssetName,
                 CatalogReleaseZipUrl = metadata.ReleaseZipUrl,
                 InstallAliases = identities,
-                Category = InferInstalledCategory(metadata.Name, metadata.Description, metadata.Tags),
+                Category = isDiscordFork ? "Playhub" : InferInstalledCategory(metadata.Name, metadata.Description, metadata.Tags),
                 Keywords = string.Join(' ', metadata.Tags),
-                IsPlayhubPlugin = false,
-                CatalogStatus = "github",
+                IsPlayhubPlugin = isDiscordFork,
+                CatalogStatus = isDiscordFork ? "playhub" : "github",
                 CatalogSource = "installed",
                 Compatibility = "Plugin installato localmente e non ancora identificato dal catalogo Playhub.",
                 ReleasePageUrl = canResolveRelease

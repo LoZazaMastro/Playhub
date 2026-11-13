@@ -7,7 +7,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using Microsoft.Win32;
 
 namespace GamingMode.Services;
 
@@ -46,6 +45,7 @@ public static class OverlaySteamArtworkResolver
 	private static Dictionary<string, string>? _installIndex;
 	private static Dictionary<string, string>? _shortcutIndex;
 	private static Dictionary<string, string>? _titleIndex;
+	private static string? _indexSteamRoot;
 	private static long _indexBuiltAt;
 	private const long IndexLifetimeMs = 120_000;
 
@@ -56,7 +56,7 @@ public static class OverlaySteamArtworkResolver
 			|| SteamGameIdentityPolicy.IsSteamClient(window.Path)) return null;
 		try
 		{
-			string steamPath = FindSteamPath();
+			if (SteamInstallationPath.FindRoot() is not { } steamPath) return null;
 			EnsureIndex(steamPath);
 			ActiveSteamGame? activeGame = FindActiveGame(steamPath, window.ProcessId);
 			if (activeGame is not null)
@@ -87,8 +87,7 @@ public static class OverlaySteamArtworkResolver
 	{
 		try
 		{
-			string steamPath = FindSteamPath();
-			return FindActiveGame(steamPath, processId) is not null;
+			return SteamInstallationPath.FindRoot() is { } steamPath && FindActiveGame(steamPath, processId) is not null;
 		}
 		catch
 		{
@@ -101,7 +100,8 @@ public static class OverlaySteamArtworkResolver
 		if (appId == 0) return false;
 		try
 		{
-			ActiveSteamGame? game = FindActiveGame(FindSteamPath(), processId);
+			if (SteamInstallationPath.FindRoot() is not { } steamPath) return false;
+			ActiveSteamGame? game = FindActiveGame(steamPath, processId);
 			return game is not null && (game.GameId <= uint.MaxValue ? (uint)game.GameId : (uint)(game.GameId >> 32)) == appId;
 		}
 		catch (Exception error) when (error is IOException or UnauthorizedAccessException)
@@ -118,6 +118,7 @@ public static class OverlaySteamArtworkResolver
 			_installIndex = null;
 			_shortcutIndex = null;
 			_titleIndex = null;
+			_indexSteamRoot = null;
 			_indexBuiltAt = 0;
 		}
 	}
@@ -127,11 +128,13 @@ public static class OverlaySteamArtworkResolver
 		lock (IndexSync)
 		{
 			long now = Environment.TickCount64;
-			if (_installIndex is not null && _shortcutIndex is not null && now - _indexBuiltAt < IndexLifetimeMs) return;
+			if (_installIndex is not null && _shortcutIndex is not null && now - _indexBuiltAt < IndexLifetimeMs
+				&& string.Equals(steamPath, _indexSteamRoot, StringComparison.OrdinalIgnoreCase)) return;
 			Dictionary<string, string> titles = new(StringComparer.OrdinalIgnoreCase);
 			_installIndex = BuildInstallIndex(steamPath, titles);
 			_shortcutIndex = BuildShortcutIndex(steamPath, titles);
 			_titleIndex = titles;
+			_indexSteamRoot = steamPath;
 			_indexBuiltAt = now;
 		}
 	}
@@ -621,20 +624,6 @@ public static class OverlaySteamArtworkResolver
 	{
 		try { return File.Exists(path) && new FileInfo(path).Length > 0 ? path : null; }
 		catch { return null; }
-	}
-
-	private static string FindSteamPath()
-	{
-		try
-		{
-			using RegistryKey? key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
-			string? path = key?.GetValue("SteamPath") as string;
-			if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path)) return path.Replace('/', Path.DirectorySeparatorChar);
-		}
-		catch
-		{
-		}
-		return @"C:\Program Files (x86)\Steam";
 	}
 
 	private static string ReadTail(string path, int maximumBytes)

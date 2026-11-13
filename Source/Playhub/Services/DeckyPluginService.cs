@@ -36,7 +36,9 @@ public sealed class DeckyPluginService
     public async Task InstallOrUpdateAsync(
         DeckyPluginInfo plugin,
         string deckyPluginsPath,
-        IProgress<PluginInstallProgress>? progress = null)
+        IProgress<PluginInstallProgress>? progress = null,
+        bool bundledOnly = false,
+        Func<bool>? canInstall = null)
     {
         progress?.Report(new PluginInstallProgress(PluginInstallPhase.Resolving));
         var destination = await Task.Run(() =>
@@ -49,11 +51,12 @@ public sealed class DeckyPluginService
         var source = plugin.SourceFolder;
         var bundled = FindBundledPayload(plugin);
 
-        var release = await Task.Run(() =>
+        if (bundledOnly && bundled is null) throw new InvalidDataException("Bundled plugin payload is unavailable.");
+        var release = bundledOnly ? null : await Task.Run(() =>
             string.Equals(plugin.CatalogSource, "decky-store", StringComparison.OrdinalIgnoreCase)
                 ? ResolveLatestDeckyStoreReleaseAsync(plugin)
                 : ResolveLatestReleaseAsync(plugin.RepositorySlug, plugin.ReleaseAssetName));
-        var releaseZipUrl = release?.ZipUrl ?? plugin.CatalogReleaseZipUrl ?? plugin.ReleaseZipUrl;
+        var releaseZipUrl = bundledOnly ? null : release?.ZipUrl ?? plugin.CatalogReleaseZipUrl ?? plugin.ReleaseZipUrl;
         var preferBundled = bundled is not null && (release is null ||
             ShouldUseBundledVersion(bundled.Version, release.Version));
         if (preferBundled) releaseZipUrl = null;
@@ -115,6 +118,8 @@ public sealed class DeckyPluginService
             source = pluginRoot;
 
             progress?.Report(new PluginInstallProgress(PluginInstallPhase.Installing));
+            if (canInstall?.Invoke() == false)
+                throw new OperationCanceledException("Bundled plugin maintenance deferred by the process guard.");
             if (Directory.Exists(destination))
             {
                 StopPluginProcesses(destination);

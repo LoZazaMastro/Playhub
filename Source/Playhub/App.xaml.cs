@@ -95,6 +95,7 @@ public partial class App : Application
         try
         {
             Diag.Step("Main-window startup begin");
+            Playhub.Shared.ShellIdentity.SetMainProcess(Diag.Step);
             _window = new MainWindow();
             _window.Closed += (_, _) =>
             {

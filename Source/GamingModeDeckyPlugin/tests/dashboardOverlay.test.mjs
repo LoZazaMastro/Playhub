@@ -4,11 +4,19 @@ import vm from "node:vm";
 import test from "node:test";
 import ts from "typescript";
 
-const source = readFileSync(new URL("../src/dashboardOverlay.ts", import.meta.url), "utf8");
-const exports = {};
-vm.runInNewContext(ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-}).outputText, { exports });
+function load(name, require) {
+  const source = readFileSync(new URL(`../src/${name}.ts`, import.meta.url), "utf8");
+  const exports = {};
+  vm.runInNewContext(ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText, { exports, require });
+  return exports;
+}
+const appIdHelpers = load("controlledQamFocus");
+const exports = load("dashboardOverlay", name => {
+  assert.equal(name, "./controlledQamFocus");
+  return appIdHelpers;
+});
 const info = { gameID: "18446744071562067968", appID: 2147483648, unPID: 10, nBrowserID: 3 };
 const candidate = (overrides = {}) => ({
   IsGamepadUIOverlayWindow: () => true,
@@ -18,6 +26,21 @@ const candidate = (overrides = {}) => ({
 
 test("Steam shortcut/emulator game IDs retain 64-bit precision", () => {
   assert.equal(exports.selectOverlay([info]).gameID, info.gameID);
+});
+test("a signed shortcut app ID resolves to the same native overlay and remains unsigned", () => {
+  const appID = 0xb1966ee1;
+  const signed = { ...info, appID: appID | 0, gameID: "12796537303900094464" };
+  assert.equal(exports.selectOverlay([signed], appID).appID, appID);
+  assert.equal(exports.selectOverlay([signed], 0xc1966ee1), null);
+});
+test("Windows overlay accepts a truncated shortcut appID only with exact full game identity", () => {
+  const appId = 0xb1966ee1;
+  const alias = { ...info, appID: 0x966ee1, gameID: String(appId) };
+  assert.equal(exports.selectOverlay([alias], appId).unPID, 10);
+  assert.equal(exports.selectOverlay([{ ...alias, gameID: "12796537303900094464" }], appId).unPID, 10);
+  assert.equal(exports.selectOverlay([{ ...alias, gameID: "2950000000" }], appId), null);
+  assert.equal(exports.selectOverlay([alias], 0xc1966ee1), null);
+  assert.equal(exports.selectOverlay([alias, { ...alias, unPID: 11 }], appId), null);
 });
 test("ambiguous games fail closed, selected running app resolves identity", () => {
   const other = { ...info, appID: 620, unPID: 11 };

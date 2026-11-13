@@ -22,7 +22,11 @@ Risultato: **`Output\Playhub-Setup.exe`**.
 
 ## Cosa fa l'installer
 
-- Installazione **per-utente** in `%LOCALAPPDATA%\Programs\Playhub` → **niente UAC**.
+- Installazione dell'app **per-utente** in `%LOCALAPPDATA%\Programs\Playhub`.
+- Le build con il relay controller includono il setup ViGEmBus ufficiale firmato.
+  Il driver viene riutilizzato quando compatibile; solo un PC privo del driver
+  riceve la richiesta di autorizzazione Windows per installare la dipendenza.
+  Il risultato del supporto controller viene indicato separatamente a fine setup.
 - Opzioni: collegamento **desktop**, **menu Start**, **avvio con Windows**.
 - **Avvio automatico** di Playhub a fine installazione (casella spuntabile).
 - Registra la voce di disinstallazione (DisplayName, icona, versione, editore).

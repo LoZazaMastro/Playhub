@@ -34,6 +34,10 @@ const settledWriter = {};
 vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL('../src/panelIntegration/settledWriter.ts', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText, { exports: settledWriter });
+const groupLabels = {};
+vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL('../src/quickSettings/groups.ts', import.meta.url), 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: groupLabels });
 
 function backend() {
   const state = { pending: null, beginCalls: 0, finishCalls: 0, reads: 0,
@@ -114,6 +118,7 @@ function renderer(api, realRpc) {
         modals.push(modal); return modal;
       } };
       if (name === './translations') return { t: () => ({}) };
+      if (name === './groups') return groupLabels;
       return {};
     },
   });

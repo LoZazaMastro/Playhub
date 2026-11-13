@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO.Pipes;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using Playhub.Shared;
@@ -12,11 +13,18 @@ internal sealed class UwpIdentityPublication : IDisposable
 {
     private readonly CancellationTokenSource _stop = new();
     private readonly Task _worker;
+    private readonly Task _returnArm;
     private readonly object _sync = new();
     private NamedPipeServerStream? _listening;
-    internal UwpIdentityPublication(UwpSessionIdentity identity)
+    internal UwpIdentityPublication(UwpSessionIdentity identity, uint appId = 0)
     {
         _worker = Serve(identity);
+        _returnArm = appId == 0 ? Task.CompletedTask : Task.Run(async () =>
+        {
+            var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GamingMode");
+            using var client = new HttpClient(new HttpClientHandler { UseProxy = false }) { Timeout = TimeSpan.FromMilliseconds(800) };
+            await XboxShellBrokerClient.ArmGameReturnAsync(directory, client, appId, identity.GamePid, _stop.Token);
+        });
     }
     private async Task Serve(UwpSessionIdentity identity)
     {
@@ -46,6 +54,7 @@ internal sealed class UwpIdentityPublication : IDisposable
         _stop.Cancel();
         lock (_sync) _listening?.Dispose();
         try { _worker.GetAwaiter().GetResult(); } catch (OperationCanceledException) { }
+        _returnArm.GetAwaiter().GetResult();
         _stop.Dispose();
     }
     internal static IDisposable? Publish(string aumid, IUwpProcess game)
@@ -54,6 +63,7 @@ internal sealed class UwpIdentityPublication : IDisposable
             || !string.Equals(actual.PackageFamily, aumid.Split('!')[0], StringComparison.OrdinalIgnoreCase)) return null;
         using var wrapper = Process.GetCurrentProcess();
         return new UwpIdentityPublication(new((uint)wrapper.Id, wrapper.StartTime.ToUniversalTime().ToFileTimeUtc(),
-            actual.Id, actual.Birth, aumid, actual.PackageFamily, actual.Executable));
+            actual.Id, actual.Birth, aumid, actual.PackageFamily, actual.Executable),
+            XboxShellBrokerClient.ShortcutAppId(Environment.GetEnvironmentVariable("SteamGameId")));
     }
 }

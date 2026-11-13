@@ -22,8 +22,9 @@ namespace Playhub.Services;
 ///
 /// This is an original, clean-room implementation: it performs the documented
 /// DeckyLoader-on-Windows install steps directly in Playhub and does NOT bundle
-/// or execute any third-party installer binary. The PluginLoader build is the
-/// official Windows pair from SteamDeckHomebrew/decky-loader releases.
+/// or execute any third-party installer binary. The PluginLoader pair comes
+/// from verified upstream Windows releases, with an unmodified official pair
+/// included for offline installation.
 /// Verify and stage both binaries before touching the running installation;
 /// roll back the pair if the new loader fails to start.
 /// </summary>
@@ -82,6 +83,12 @@ public sealed class DeckyInstallerService
 
         return await Task.Run(() => DeckyStartupGuard.RunExclusive(() =>
         {
+            if (tag is null && release.Summary.Tag == BundledDeckyWindowsRelease.UpstreamTag)
+            {
+                if (BundledDeckyWindowsRelease.HasNewerInstalledVersion(services))
+                    return "La versione installata di Decky è già la più recente.";
+                if (release.OfflineFallback) BundledDeckyWindowsRelease.RequireSafeOfflineReplacement(services);
+            }
             // Validate the listener before touching binaries. Never reuse or stop a
             // same-named process owned by another installation, session or user.
             var previous = CurrentListener();

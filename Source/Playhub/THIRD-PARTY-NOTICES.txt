@@ -196,9 +196,12 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -------------------------------------------------------------------------------
-PresentMon 2.6.0 - https://github.com/GameTechDev/PresentMon/releases/tag/v2.6.0
-Gaming Mode includes Intel's unmodified x64 command-line release to measure
-frame timing on demand. The MIT license and upstream third-party notices are
+PresentMon 2.6.1 - https://github.com/GameTechDev/PresentMon
+Gaming Mode includes an x64 console build from source commit
+007f1cf009670e8b90d014324515ed41e5c54422 with an optional live-output interval
+for the owned realtime trace session. Local changes and source provenance are
+shipped as PresentMon/live-output.patch and PresentMon/SOURCE.txt.
+The MIT license and upstream third-party notices are
 shipped beside the executable as PresentMon/LICENSE.txt and
 PresentMon/THIRD_PARTY.txt.
 
@@ -207,6 +210,33 @@ Html Agility Pack 1.13.0 - https://github.com/zzzprojects/html-agility-pack
 Used to interpret supported project HTML in memory without a browser.
 
 The MIT License (MIT)
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+PlayniteExtensions GOG installed-record discovery
+----------------------------------------------
+GOG installer key and manifest conventions informed this adapter.
+https://github.com/JosefNemec/PlayniteExtensions/tree/886468f65724e6fd104f3a09847a17ba57cfb430/source/Libraries/GogLibrary
+MIT License
+
+Copyright (c) 2020 Josef Nemec
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights

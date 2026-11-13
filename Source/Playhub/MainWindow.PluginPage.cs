@@ -129,7 +129,10 @@ public sealed partial class MainWindow
             try
             {
                 if (previous.FocusTarget is not null && previous.FocusTarget.TryGetTarget(out var target) && target.IsLoaded)
-                    target.Focus(FocusState.Programmatic);
+                {
+                    if (!RestorePluginFocus(target))
+                        (previous.Mode == "manage" ? _pluginManageButton : _pluginDiscoverButton).Focus(FocusState.Programmatic);
+                }
                 else (previous.Mode == "manage" ? _pluginManageButton : _pluginDiscoverButton)
                     .Focus(FocusState.Programmatic);
             }

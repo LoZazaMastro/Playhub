@@ -189,6 +189,7 @@ public partial class MainWindow : Window
 
         try
         {
+            ControllerDriverInstallResult? controller = null;
             if (_mode == SetupMode.Install)
             {
                 var options = new InstallOptions(
@@ -197,7 +198,7 @@ public partial class MainWindow : Window
                     ChkStartMenu.IsChecked == true,
                     Loc.Lang,
                     PreserveExistingShortcuts: _automaticUpdate);
-                await Installer.InstallAsync(options, progress);
+                controller = await Installer.InstallAsync(options, progress);
             }
             else
             {
@@ -208,7 +209,7 @@ public partial class MainWindow : Window
             }
 
             _session.Complete(succeeded: true);
-            ShowDone();
+            ShowDone(controller);
         }
         catch (Exception ex)
         {
@@ -246,7 +247,7 @@ public partial class MainWindow : Window
         BtnClose.IsEnabled = false;
     }
 
-    private void ShowDone()
+    private void ShowDone(ControllerDriverInstallResult? controller = null)
     {
         PanelReady.Visibility = Visibility.Collapsed;
         PanelProgress.Visibility = Visibility.Collapsed;
@@ -258,6 +259,8 @@ public partial class MainWindow : Window
         {
             DoneTitle.Text = Loc.T("DoneTitle");
             DoneSub.Text = Loc.T("DoneSub");
+            if (controller?.MessageKey is { } messageKey)
+                DoneSub.Text += "\n\n" + Loc.T(messageKey);
             BtnDone.Content = Loc.T("Finish");
             ChkLaunchEnd.Visibility = Visibility.Visible;
         }

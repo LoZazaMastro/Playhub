@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Playhub.Shared;
 
 namespace GamingMode.Services;
 
@@ -133,17 +134,19 @@ public static class AgentHost
 			int minSplashVisibleMs = Math.Clamp(modeConfig.Gaming.Splash.MinVisibleMs, 0, 120000);
 			int maxSplashVisibleMs = Math.Clamp(modeConfig.Gaming.Splash.MaxVisibleMs, 5000, 120000);
 			using SplashScreenService splashScreen = new SplashScreenService(logger);
+			using SteamThemeStartupCover? themedStartup = showSplash
+				? new(splashScreen, logger, modeConfig.Gaming.SteamPath, minSplashVisibleMs, maxSplashVisibleMs) : null;
 			// Paint the login curtain before constructing any input, audio or dashboard service.
 			if (showSplash)
 			{
-				splashScreen.Show(modeConfig.Gaming.Splash, maxSplashVisibleMs + 15000);
+				splashScreen.Show(modeConfig.Gaming.Splash, maxSplashVisibleMs);
 			}
 			ProcessTools processTools = new ProcessTools(logger);
 			ShellTools shellTools = new ShellTools(logger);
 			CursorAutoHideService cursorAutoHide = new CursorAutoHideService(logger);
 			try
 			{
-				using GamingWindowFocusService windowFocus = new GamingWindowFocusService(logger);
+				using GamingWindowFocusService windowFocus = new GamingWindowFocusService(logger, modeConfig.Gaming.SteamPath);
 				// Schermo nero con l'audio dopo aver acceso la TV: vedi SteamDisplayRecoveryService.
 				// Parte prima della modalita' di avvio, cosi' la fotografia iniziale dei monitor
 				// e' quella dell'accensione, TV spenta compresa.
@@ -157,6 +160,9 @@ public static class AgentHost
 				using SystemVolumeKeyService volumeKeys = new SystemVolumeKeyService(logger);
 				using OverlayQuickSettingsClient quickSettings = new OverlayQuickSettingsClient();
 				ModeManager manager = new ModeManager(paths, store, processTools, shellTools, cursorAutoHide, windowFocus, volumeKeys, logger);
+				using SteamTaskbarFullscreenService steamTaskbar = new(logger, modeConfig.Gaming.SteamPath);
+				manager.ModeTransitionStarted += steamTaskbar.ModeChanging;
+				manager.ModeTransitionCompleted += steamTaskbar.ModeCompleted;
 				using WindowsQamFocusAdapter qamWindows = new(windowFocus, modeConfig.Gaming.SteamPath);
 				using ControlledQamFocusService qamFocus = new(qamWindows, store.LoadState().CurrentMode == ModeKind.Gaming);
 				qamWindows.Changed += qamFocus.WindowChanged;
@@ -178,6 +184,8 @@ public static class AgentHost
 					try
 					{
 						processTools.CleanupDeckyOrphanedForks();
+						manager.StartupForegroundGuard = showSplash && modeConfig.Gaming.Splash.Enabled && themedStartup is not null
+							? () => themedStartup.MayLaunch : null;
 						await manager.ApplyBootModeAsync(flag);
 						waitForSteamFullscreen = true;
 					}
@@ -187,28 +195,14 @@ public static class AgentHost
 					}
 					finally
 					{
+						manager.StartupForegroundGuard = null;
 						if (showSplash)
 						{
 							bool steamRunning = waitForSteamFullscreen && manager.GetStatus().Steam.Running;
-							if (steamRunning)
-							{
-								int firstWaitMs = Math.Min(15000, maxSplashVisibleMs);
-								bool detected = await SteamFullscreenDetector.WaitForFullscreenAsync(TimeSpan.FromMilliseconds(firstWaitMs), logger, suppressDesktopWindows: true);
-								if (!detected)
-								{
-									processTools.OpenUri("steam://open/bigpicture");
-									int remainingMs = maxSplashVisibleMs - firstWaitMs;
-									if (remainingMs > 0)
-									{
-										await SteamFullscreenDetector.WaitForFullscreenAsync(TimeSpan.FromMilliseconds(remainingMs), logger, suppressDesktopWindows: true);
-									}
-								}
-							}
-							await splashScreen.HideAsync(minSplashVisibleMs, fade: true);
-							if (steamRunning)
-							{
-								SteamFullscreenDetector.TryFocusSteamWindow(logger);
-							}
+							if (steamRunning && themedStartup is not null)
+								await themedStartup.WaitAsync();
+							else
+								splashScreen.CancelImmediately();
 						}
 					}
 				}
@@ -274,27 +268,278 @@ public static class AgentHost
 				}));
 				var gameBarGuide = new GameBarGuideService(WindowsXboxGameBar.ToggleVerified, () => Environment.TickCount64);
 				var frameCollector = new PresentMonFrameCollector(Path.Combine(AppContext.BaseDirectory, "PresentMon", "PresentMon.exe"));
-				app.MapPost("/session/frame-measurement", (Func<HttpContext, Task<IResult>>)(async context =>
+				await using var livePerformance = new LivePerformanceController(new LivePerformanceSettingsStore(),
+					new LivePerformanceRuntime(windowFocus, Path.Combine(AppContext.BaseDirectory, "PresentMon", "PresentMon.exe")));
+				using var livePerformanceLifetime = new LivePerformanceLifetime(livePerformance, app.Lifetime.ApplicationStopping);
+				manager.ModeTransitionStarted += livePerformance.Invalidate;
+				LivePerformanceEndpoints.Map(app, xboxShell, livePerformance);
+				await using var launchCurtainCover = new LaunchCurtainCoverController(windowFocus, app.Lifetime.ApplicationStopping);
+				manager.ModeTransitionStarted += launchCurtainCover.Invalidate;
+				using var launchCurtainShutdown = app.Lifetime.ApplicationStopping.Register(launchCurtainCover.Invalidate);
+				LaunchCurtainCoverEndpoints.Map(app, xboxShell, launchCurtainCover,
+					context => LaunchCurtainPublisherChannel.Read(context, modeConfig.Gaming.DeckyPath, processTools.GetDeckyFallbackPaths()));
+				using var ownedLaunchShutdown = app.Lifetime.ApplicationStopping.Register(Win32SteamSessionAssociation.DisposeOwned);
+				OwnedWin32RouteEndpoints.Map(app, xboxShell, logger.Info);
+				NativeGameOverlayEndpoints.Map(app, xboxShell, logger.Info);
+				int gamingSessionEnabled = store.LoadState().CurrentMode == ModeKind.Gaming ? 1 : 0;
+				bool GamingSessionEnabled() => Volatile.Read(ref gamingSessionEnabled) != 0 && !app.Lifetime.ApplicationStopping.IsCancellationRequested;
+				using var gameQos = new GameExecutionQosController(GamingSessionEnabled);
+				using var downloadPower = new SteamDownloadPowerLease(() => GamingSessionEnabled() &&
+					SteamInstallationPath.FindRoot(modeConfig.Gaming.SteamPath) is { } steamRoot &&
+					SteamInstallationPath.ReadVerifiedClientBirth(steamRoot) is { } clientBirth &&
+					OverlaySteamArtworkResolver.HasActiveGameForRecovery(steamRoot, clientBirth) == false);
+				void StopSessionOptions()
+				{
+					Volatile.Write(ref gamingSessionEnabled, 0);
+					downloadPower.Revoke();
+					gameQos.StopAsync().GetAwaiter().GetResult();
+				}
+				manager.ModeTransitionStarted += StopSessionOptions;
+				manager.ModeTransitionCompleted += gaming =>
+				{
+					if (gaming && !app.Lifetime.ApplicationStopping.IsCancellationRequested) Volatile.Write(ref gamingSessionEnabled, 1);
+					else StopSessionOptions();
+				};
+				using var shutdownSessionOptions = app.Lifetime.ApplicationStopping.Register(StopSessionOptions);
+
+				object gameAudioGate = new();
+				app.MapPost("/session/steam/game-audio", (Func<HttpContext, IResult>)(context =>
+				{
+					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString()))
+						return Results.StatusCode(401);
+					var query = context.Request.Query;
+					if (!uint.TryParse(query["appId"], out uint appId) || appId == 0) return Results.StatusCode(400);
+					bool write = query.ContainsKey("level");
+					string token = query["token"].ToString();
+					int level = 0;
+					if (write && (!int.TryParse(query["level"], out level) || level is < 0 or > 100 ||
+						token.Length != 64 || !token.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f'))) return Results.StatusCode(400);
+					if (!write && query.ContainsKey("token")) return Results.StatusCode(400);
+
+					lock (gameAudioGate)
+					{
+						if (app.Lifetime.ApplicationStopping.IsCancellationRequested || !windowFocus.TryGetQamSource(out nint window, out uint gamePid))
+							return Results.Json(new { status = "Unavailable" });
+
+						try
+						{
+							using var process = System.Diagnostics.Process.GetProcessById((int)gamePid);
+							long birth = process.StartTime.ToFileTimeUtc();
+							bool StillCurrent() => !context.RequestAborted.IsCancellationRequested && !app.Lifetime.ApplicationStopping.IsCancellationRequested &&
+								!process.HasExited &&
+								windowFocus.TryGetQamSource(out nint current, out uint currentPid) && current == window && currentPid == gamePid &&
+								(OverlaySteamArtworkResolver.IsTrackedAppProcess(process.Id, appId) || UwpSteamSessionAssociation.Find(gamePid, appId) is not null);
+
+							if (!StillCurrent()) return Results.Json(new { status = "Unavailable" });
+							var target = new GameAudioTarget(process.Id, birth);
+							return Results.Json(write ? GameAudioVolumeService.Set(target, level, token, StillCurrent)
+								: GameAudioVolumeService.Read(target, StillCurrent));
+						}
+						catch (Exception error) when (error is InvalidOperationException or ArgumentException or System.ComponentModel.Win32Exception)
+						{ return Results.Json(new { status = "Unavailable" }); }
+					}
+				}));
+
+				app.MapPost("/session/steam/game-qos", (Func<HttpContext, Task<IResult>>)(async context =>
 				{
 					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString())) return Results.StatusCode(401);
 					if (!uint.TryParse(context.Request.Query["appId"], out uint appId) || appId == 0) return Results.StatusCode(400);
-					if (store.LoadState().CurrentMode != ModeKind.Gaming || !windowFocus.TryGetQamSource(out _, out uint gamePid))
-						return Results.Json(new FrameMeasurement(FrameMeasurementStatus.TargetUnavailable));
-					PresentMonTarget measurementTarget;
+					if (!GamingSessionEnabled() || !windowFocus.TryGetQamSource(out _, out uint gamePid))
+						return Results.Json(new { status = "TargetUnavailable" });
+					GameExecutionQosTarget target;
 					try
 					{
 						using var process = System.Diagnostics.Process.GetProcessById((int)gamePid);
 						long birth = process.StartTime.ToFileTimeUtc();
-						if (!OverlaySteamArtworkResolver.IsTrackedAppProcess(process.Id, appId) && UwpSteamSessionAssociation.Find(gamePid, appId) is null)
-							return Results.Json(new FrameMeasurement(FrameMeasurementStatus.TargetUnavailable));
-						measurementTarget = new PresentMonTarget(process.Id, birth);
+						if (process.HasExited || (!OverlaySteamArtworkResolver.IsTrackedAppProcess(process.Id, appId) &&
+							UwpSteamSessionAssociation.Find(gamePid, appId) is null)) return Results.Json(new { status = "TargetUnavailable" });
+						target = new GameExecutionQosTarget(process.Id, birth);
 					}
 					catch (Exception error) when (error is InvalidOperationException or ArgumentException or System.ComponentModel.Win32Exception)
+					{ return Results.Json(new { status = "TargetUnavailable" }); }
+					if (!GamingSessionEnabled()) return Results.Json(new { status = "TargetUnavailable" });
+					string status = await gameQos.RenewAsync(target, context.Request.Query["ac"].ToString(), context.Request.Query["battery"].ToString());
+					if (!GamingSessionEnabled())
+					{
+						await gameQos.StopAsync();
+						return Results.Json(new { status = "TargetUnavailable" });
+					}
+					return Results.Json(new { status });
+				}));
+				app.MapPost("/session/steam/game-qos/stop", (Func<HttpContext, Task<IResult>>)(async context =>
+				{
+					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString())) return Results.StatusCode(401);
+					string status = await gameQos.StopAsync();
+					return Results.Json(new { ok = status == "Default", status });
+				}));
+				app.MapPost("/session/steam/download-power", (Func<HttpContext, IResult>)(context =>
+				{
+					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString())) return Results.StatusCode(401);
+					string action = context.Request.Query["action"].ToString();
+					string lease = context.Request.Query["lease"].ToString();
+					if (action == "stop" && Guid.TryParseExact(lease, "N", out _)) return Results.Json(new { ok = downloadPower.Stop(lease) });
+					if (!uint.TryParse(context.Request.Query["appId"], out uint appId) || appId == 0) return Results.StatusCode(400);
+					return action switch
+					{
+						"start" => Results.Json(downloadPower.Start(appId)),
+						"renew" when Guid.TryParseExact(lease, "N", out _) => Results.Json(downloadPower.Renew(lease, appId)),
+						_ => Results.StatusCode(400)
+					};
+				}));
+				app.MapPost("/session/frame-measurement", (Func<HttpContext, Task<IResult>>)(async context =>
+				{
+					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString())) return Results.StatusCode(401);
+					if (!uint.TryParse(context.Request.Query["appId"], out uint appId) || appId == 0) return Results.StatusCode(400);
+					if (!GamingSessionEnabled())
+						return Results.Json(new FrameMeasurement(FrameMeasurementStatus.TargetUnavailable));
+					using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted, app.Lifetime.ApplicationStopping);
+					bool gameplay = context.Request.Query["gameplay"] == "1";
+					var preparation = gameplay ? TimeSpan.FromSeconds(3) : TimeSpan.Zero;
+					Task<FrameMeasurement> CapturePackaged(UwpSessionIdentity game)
+					{
+						bool IsGameForeground()
+						{
+							if (!GamingSessionEnabled()) return false;
+							nint window = OverlayWindowTools.GetForegroundWindowHandle();
+							if (!OverlayWindowTools.IsVisibleGameSurface(window)) return false;
+							string? frame = UwpFrameWindow.ReadAppId(window);
+							return FrameMeasurementTargetPolicy.MatchesPackagedForeground(game.GamePid, game.Aumid,
+								OverlayWindowTools.WindowOwnerProcessId(window), frame,
+								frame is not null && UwpSteamSessionAssociation.IsOnlyRunningInstance(game))
+								&& UwpSteamSessionAssociation.Find(game.GamePid, appId) == game
+								&& OverlayWindowTools.GetForegroundWindowHandle() == window;
+						}
+						return frameCollector.CaptureAsync(new PresentMonTarget((int)game.GamePid, game.GameBirth),
+							cancellation.Token, preparation, IsGameForeground);
+					}
+					try
+					{
+						if (appId >= 0x80000000)
+						{
+							var packaged = UwpSteamSessionAssociation.FindForApp(appId);
+							if (packaged.Count > 1) return Results.Json(new FrameMeasurement(FrameMeasurementStatus.TargetUnavailable));
+							if (packaged is [var game]) return Results.Json(await CapturePackaged(game));
+						}
+						if (!windowFocus.TryGetQamSource(out _, out uint gamePid))
+							return Results.Json(new FrameMeasurement(FrameMeasurementStatus.TargetUnavailable));
+						using var process = System.Diagnostics.Process.GetProcessById((int)gamePid);
+						if (!FrameMeasurementTargetPolicy.CanMeasureWindowOwner(process.ProcessName))
+							return Results.Json(new FrameMeasurement(FrameMeasurementStatus.TargetUnavailable));
+						if (UwpSteamSessionAssociation.Find(gamePid, appId) is { } packagedGame)
+							return Results.Json(await CapturePackaged(packagedGame));
+						if (!OverlaySteamArtworkResolver.IsTrackedAppProcess(process.Id, appId))
+							return Results.Json(new FrameMeasurement(FrameMeasurementStatus.TargetUnavailable));
+						var target = new PresentMonTarget(process.Id, process.StartTime.ToFileTimeUtc());
+						if (!gameplay) return Results.Json(await frameCollector.CaptureAsync(target, cancellation.Token));
+						return Results.Json(await frameCollector.CaptureAsync(target, cancellation.Token, preparation,
+							() => GamingSessionEnabled() &&
+								windowFocus.TryGetQamGameProcess(OverlayWindowTools.GetForegroundWindowHandle(), out uint currentPid) && currentPid == gamePid));
+					}
+					catch (Exception error) when (error is InvalidOperationException or ArgumentException or
+						System.ComponentModel.Win32Exception or UnauthorizedAccessException or IOException)
 					{
 						return Results.Json(new FrameMeasurement(FrameMeasurementStatus.TargetUnavailable));
 					}
+				}));
+				app.MapPost("/session/steam/arm-return", (Func<HttpContext, Task<IResult>>)(async context =>
+				{
+					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString())) return Results.StatusCode(401);
+					if (!uint.TryParse(context.Request.Query["appId"], out uint appId) || appId == 0) return Results.StatusCode(400);
+					uint gamePid = 0;
+					if (context.Request.Query.TryGetValue("gamePid", out var requestedPid)
+						&& (!uint.TryParse(requestedPid, out gamePid) || gamePid == 0)) return Results.StatusCode(400);
+					return Results.Json(new { ok = await windowFocus.ArmBigPictureReturnAsync(appId, gamePid, context.RequestAborted) });
+				}));
+				app.MapPost("/session/uwp/steam-overlay", (Func<HttpContext, Task<IResult>>)(async context =>
+				{
+					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString()))
+						return Results.StatusCode(401);
+					var query = context.Request.Query;
+					if (!uint.TryParse(query["appId"], out uint appId) || appId < 0x80000000
+						|| !uint.TryParse(query["overlayPid"], out uint overlayPid)
+						|| !bool.TryParse(query["keyboard"], out bool keyboard)) return Results.StatusCode(400);
+					bool menu = false;
+					if (query.TryGetValue("menu", out var menuValue) && !bool.TryParse(menuValue, out menu)) return Results.StatusCode(400);
+					if (overlayPid == 0 && (keyboard || menu)) return Results.StatusCode(400);
+					return Results.Json(await XboxCompanionOverlaySession.CheckAsync(appId, overlayPid, keyboard, menu, context.RequestAborted, logger.Info));
+				}));
+                app.MapPost("/session/uwp/steam-overlay/snapshot", (Func<HttpContext, Task<IResult>>)(async context =>
+                {
+                    if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString()))
+                        return Results.StatusCode(401);
+                    var query = context.Request.Query;
+                    if (!uint.TryParse(query["appId"], out uint appId) || appId < 0x80000000
+                        || !uint.TryParse(query["overlayPid"], out uint overlayPid) || overlayPid == 0)
+                        return Results.StatusCode(400);
+                    return Results.Json(await XboxCompanionOverlaySession.ReadSnapshotAsync(appId, overlayPid, context.RequestAborted, logger.Info));
+                }));
+				app.MapPost("/session/uwp/steam-overlay/open", (Func<HttpContext, Task<IResult>>)(async context =>
+				{
+					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString()))
+						return Results.StatusCode(401);
+					var fields = await ReadFieldsAsync(context.Request);
+					if (!uint.TryParse(Field(fields, "appId"), out uint appId) || appId < 0x80000000)
+						return Results.StatusCode(400);
+					var decision = await XboxCompanionOverlaySession.RequestOpenAsync(appId, context.RequestAborted, logger.Info);
+					return Results.Json(decision);
+				}));
+                app.MapPost("/session/uwp/steam-overlay/mirror/prepare", (Func<HttpContext, Task<IResult>>)(async context =>
+                {
+                    if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString()))
+                        return Results.StatusCode(401);
+                    var fields = await ReadFieldsAsync(context.Request);
+                    if (!uint.TryParse(Field(fields, "appId"), out uint appId) || appId < 0x80000000)
+                        return Results.StatusCode(400);
+                    return Results.Json(await XboxCompanionOverlaySession.RequestMirrorPreparationAsync(appId,
+                        context.RequestAborted, logger.Info));
+                }));
+                app.MapPost("/session/uwp/steam-overlay/mirror", (Func<HttpContext, Task<IResult>>)(async context =>
+                {
+                    if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString()))
+                        return Results.StatusCode(401);
+                    if (!uint.TryParse(context.Request.Query["appId"], out uint appId) || appId < 0x80000000
+                        || !uint.TryParse(context.Request.Query["overlayPid"], out uint overlayPid)) return Results.StatusCode(400);
+                    return Results.Json(await XboxCompanionOverlaySession.ReadMirrorPresentationAsync(appId, overlayPid,
+                        context.RequestAborted, logger.Info));
+                }));
+                app.MapPost("/session/uwp/steam-overlay/mirror/control", (Func<HttpContext, Task<IResult>>)(async context =>
+                {
+                    if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString()))
+                        return Results.StatusCode(401);
+                    if (context.Request.ContentLength is > 4096) return Results.StatusCode(413);
+                    try
+                    {
+                        using var document = await JsonDocument.ParseAsync(context.Request.Body,
+                            new JsonDocumentOptions { MaxDepth = 8 }, context.RequestAborted);
+                        var body = document.RootElement;
+                        if (body.ValueKind != JsonValueKind.Object
+                            || !body.TryGetProperty("appId", out var appValue) || !appValue.TryGetUInt32(out uint appId) || appId < 0x80000000
+                            || !body.TryGetProperty("overlayPid", out var pid) || !pid.TryGetUInt32(out uint overlayPid) || overlayPid == 0
+                            || !body.TryGetProperty("action", out var action) || action.ValueKind != JsonValueKind.String
+                            || action.GetString() is not ("show" or "close")
+                            || !body.TryGetProperty("expectedMirror", out var expected) || expected.ValueKind != JsonValueKind.Object)
+                            return Results.StatusCode(400);
+                        return Results.Json(await XboxCompanionOverlaySession.SetMirrorPresentationAsync(appId, overlayPid,
+                            action.GetString()!, expected, context.RequestAborted, logger.Info));
+                    }
+                    catch (JsonException) { return Results.StatusCode(400); }
+                    catch (InvalidOperationException) { return Results.StatusCode(400); }
+                }));
+				app.MapPost("/session/uwp/resume", (Func<HttpContext, Task<IResult>>)(async context =>
+				{
+					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString()))
+						return Results.StatusCode(401);
+					if (!uint.TryParse(context.Request.Query["appId"], out uint appId) || appId < 0x80000000)
+						return Results.StatusCode(400);
 					using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted, app.Lifetime.ApplicationStopping);
-					return Results.Json(await frameCollector.CaptureAsync(measurementTarget, cancellation.Token));
+					return Results.Json(new { ok = await ResumeXboxGameAsync(appId, modeConfig.Gaming.SteamPath, cancellation.Token) });
+				}));
+				app.MapGet("/session/steam/return-focus", (Func<HttpContext, IResult>)(context =>
+				{
+					var proof = int.TryParse(context.Request.Query["version"], out int version)
+						? windowFocus.ConfirmedBigPictureReturn(version) : null;
+					return Results.Json(new { ok = proof.HasValue, appId = proof?.AppId ?? 0, usedCompanion = proof?.UsedCompanion ?? false,
+                        gamePid = proof?.GamePid ?? 0, gameBirth = (proof?.GameBirth ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture) });
 				}));
 				app.MapPost("/session/uwp/gamebar", (Func<HttpContext, Task<IResult>>)(async context =>
 				{
@@ -313,7 +558,7 @@ public static class AgentHost
 					return Results.Json(new { appId, sessions = identities.Select(identity => new {
 						identity.GamePid, identity.GameBirth, identity.WrapperPid, identity.WrapperBirth,
 						identity.PackageFamily, identity.Aumid, identity.Executable,
-						windows = handles.Where(h => OverlayWindowTools.IsVisibleGameSurface(h) && OverlayWindowTools.WindowProcessId(h) == identity.GamePid)
+						windows = handles.Where(h => OverlayWindowTools.IsVisibleGameSurface(h) && MatchesXboxGameWindow(h, identity))
 							.Select(h => new { hwnd = h.ToString(), pid = identity.GamePid, process = Path.GetFileName(identity.Executable), title = Path.GetFileNameWithoutExtension(identity.Executable) })
 					}) });
 				}));
@@ -329,7 +574,8 @@ public static class AgentHost
 				app.MapPost("/qam/focus/release", (Func<HttpRequest, Task<IResult>>)(async request =>
 					Results.Json(qamFocus.Release(Field(await ReadFieldsAsync(request), "requestId")))));
 				MapCurrentModeEndpoint(app, store);
-				app.MapPost("/mode/gaming", (Func<Task<IResult>>)(async () => Results.Json(await manager.ApplyModeAsync(ModeKind.Gaming, "Applied Gaming Mode"))));
+				app.MapPost("/steam/bigpicture/open", (Func<Task<IResult>>)(async () => Results.Json(await manager.OpenSteamBigPictureAsync())));
+				app.MapPost("/mode/gaming", (Func<Task<IResult>>)(async () => Results.Json(await manager.SwitchToModeAsync(ModeKind.Gaming, forceApply: true))));
 				app.MapPost("/mode/desktop", (Func<Task<IResult>>)(async () => Results.Json(await manager.ApplyModeAsync(ModeKind.Desktop, "Applied Desktop Mode"))));
 				app.MapPost("/mode/gaming/switch", (Func<Task<IResult>>)(async () => Results.Json(await manager.SwitchToModeAsync(ModeKind.Gaming))));
 				app.MapPost("/mode/desktop/switch", (Func<Task<IResult>>)(async () => Results.Json(await manager.SwitchToModeAsync(ModeKind.Desktop))));
@@ -451,10 +697,20 @@ public static class AgentHost
 					return Results.Json(new
 					{
 						open,
-						exitBigPicture = manager.ConsumeDesktopSwitchRequest(),
+						exitBigPicture = false,
+						steamModeCommand = manager.ReadSteamModeCommand(),
 						focusRecovery = windowFocus.SteamFocusRecoveryVersion,
 						steamForeground = OverlayWindowTools.IsSteamForeground()
 					});
+				}));
+				app.MapPost("/steam/mode/ack", (Func<HttpRequest, Task<IResult>>)(async request =>
+				{
+					var fields = await ReadFieldsAsync(request);
+					bool valid = long.TryParse(Field(fields, "revision"), out long revision) && revision > 0
+						&& Guid.TryParseExact(Field(fields, "token"), "N", out _)
+						&& bool.TryParse(Field(fields, "completed"), out bool completed);
+					return Results.Json(new { ok = valid && manager.AcknowledgeSteamModeCommand(
+						revision, Field(fields, "token"), Field(fields, "completed").Equals("true", StringComparison.OrdinalIgnoreCase)) });
 				}));
 				app.MapPost("/dash/open", (Func<IResult>)delegate
 				{
@@ -724,4 +980,35 @@ public static class AgentHost
 			}
 		}
 	}
+
+	internal static async Task<bool> ResumeXboxGameAsync(uint appId, string? steamPath, CancellationToken stop)
+	{
+		if (WindowsQamFocusAdapter.CaptureSteam(steamPath) is not { } steam ||
+			OverlayWindowTools.GetForegroundWindowHandle() != steam.Handle) return false;
+
+		// Steam raises its own target first. The fallback only runs while the same
+		// Big Picture window still owns the foreground.
+		try { await Task.Delay(200, stop); }
+		catch (OperationCanceledException) when (stop.IsCancellationRequested) { return false; }
+		bool StillInSteam() => !stop.IsCancellationRequested &&
+			OverlayWindowTools.GetForegroundWindowHandle() == steam.Handle && WindowsQamFocusAdapter.IsWindowOwnerCurrent(steam);
+		if (!StillInSteam() || UwpSteamSessionAssociation.FindForApp(appId) is not [var game]) return false;
+
+		using var process = OverlayWindowTools.ProcessLease.TryOpen((int)game.GamePid);
+		if (process is null || !process.Alive || process.CreatedAt != game.GameBirth) return false;
+		var windows = OverlayWindowTools.EnumerateTopLevelHandles()
+			.Where(window => OverlayWindowTools.HasVisibleWindow(window) && OverlayWindowTools.IsUsableWindow(window)
+				&& MatchesXboxGameWindow(window, game))
+			.Take(2).ToArray();
+		if (windows is not [var window] || WindowsQamFocusAdapter.Capture(window, game.GamePid) is not { } target ||
+			target.GameBirth != game.GameBirth) return false;
+		if (UwpSteamSessionAssociation.Find(game.GamePid, appId) != game ||
+			(OverlayWindowTools.WindowOwnerProcessId(window) != game.GamePid && !UwpSteamSessionAssociation.IsOnlyRunningInstance(game))) return false;
+
+		return WindowsQamFocusAdapter.ActivateWindow(window, () => StillInSteam() && process.Alive &&
+			WindowsQamFocusAdapter.IsWindowOwnerCurrent(target) && MatchesXboxGameWindow(window, game));
+	}
+
+	private static bool MatchesXboxGameWindow(nint window, UwpSessionIdentity game) =>
+		OverlayWindowTools.WindowOwnerProcessId(window) == game.GamePid || UwpFrameWindow.Matches(window, game.Aumid);
 }

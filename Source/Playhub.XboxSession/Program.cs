@@ -14,11 +14,43 @@ internal static class XboxSession
         try
         {
             HideOwnConsole();
+            if (args.Length == 1 && args[0] == "--appcontainer-sidecar")
+                return AppContainerTrial.Run();
+            if (args.Length == 1 && args[0] == "--steam-companion-sidecar")
+                return SteamCompanionTrial.Run();
+            if (args.Length == 1 && args[0] == "--win32-companion-sidecar")
+                return Win32SteamCompanion.Run();
+            if (args.Length == 1 && args[0] == "--uwp-steam-companion-sidecar")
+                return UwpSteamCompanion.Run();
             if (args.Length == 1 && args[0] == "--check-steam")
             {
                 using var files = TrustedSteamFiles.Open();
                 Console.WriteLine("PASS installed Steam client path and four signed Valve x64 components; no activation or remote write.");
                 return 0;
+            }
+            if (args.Length == 3 && args[0] is "--check-appcontainer" or "--check-running-appcontainer")
+            {
+                var check = XboxCommand.Parse(["--uwp", args[1], args[2]]);
+                var package = AppContainerProof.Resolve(check, new RegisteredPackageCatalog(physicalPaths: true),
+                    verifyImage: args[0] == "--check-appcontainer");
+                using var bridge = File.OpenRead(Path.Combine(AppContext.BaseDirectory, AppContainerProof.BridgeFileName));
+                AppContainerProof.VerifyBridge(bridge);
+                using var files = TrustedSteamFiles.Open();
+                Console.WriteLine($"PASS x64 AppContainer manifest for {package.PackageFullName}; native bridge exports; signed Steam components.");
+                if (args[0] == "--check-running-appcontainer")
+                {
+                    using var target = RetainedAppContainerTarget.Find(check, package);
+                    if (!target.IsCurrent()) throw new InvalidOperationException("The verified application exited during the check.");
+                    Console.WriteLine($"PASS exact running AppContainer PID {target.Pid}; native x64, package, AUMID, session and creation verified. Query-only handle.");
+                    return 0;
+                }
+                if (package.ExecutableVerified)
+                {
+                    Console.WriteLine("PASS game image is native x64. No game activation.");
+                    return 0;
+                }
+                Console.WriteLine("PARTIAL Windows denied read access to the game image. Verify a manually started game with --check-running-appcontainer. No game activation.");
+                return 2;
             }
             if (args.Length >= 3 && args[0] == "--check-uwp")
             {
@@ -33,6 +65,11 @@ internal static class XboxSession
         }
         catch (Exception error)
         {
+            if (args.Length > 0 && args[0] is "--check-appcontainer" or "--check-running-appcontainer")
+            {
+                Console.Error.WriteLine(error.Message);
+                return 1;
+            }
             PackagedLaunchLog.Error(error.ToString());
             MessageBox(0, error.Message, "Playhub", 0x10);
             return 1;

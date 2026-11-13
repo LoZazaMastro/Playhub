@@ -4,6 +4,31 @@ using GamingMode.Services;
 
 var failures = new List<string>();
 int passed = 0;
+await Check("PDH totals preserve values without dereferencing instance names", () =>
+{
+    OverlayUsageChecks.ValidValues();
+    return Task.CompletedTask;
+});
+await Check("PDH availability distinguishes a valid zero from unavailable data", () =>
+{
+    OverlayUsageChecks.Availability();
+    return Task.CompletedTask;
+});
+await Check("PDH totals reject incomplete or oversized native arrays", () =>
+{
+    OverlayUsageChecks.InvalidBuffers();
+    return Task.CompletedTask;
+});
+await Check("PDH totals preserve floating-point ordering and missing values", () =>
+{
+    OverlayUsageChecks.FloatingPointValues();
+    return Task.CompletedTask;
+});
+await Check("PDH total allocations do not scale with GPU engine count", () =>
+{
+    OverlayUsageChecks.BoundedAllocations();
+    return Task.CompletedTask;
+});
 await Check("OS event bursts coalesce into one wake-up", async () =>
 {
     var signal = new BackgroundWorkSignal();

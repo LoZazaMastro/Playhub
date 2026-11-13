@@ -77,7 +77,10 @@ public sealed class GamingWindowFocusService : IDisposable
 
 	private volatile bool _launchCurtainPriorityActive;
 
-	private int _steamFocusRecoveryGeneration;
+	private readonly BigPictureGameReturn _postGameReturn;
+	private readonly string? _configuredSteamPath;
+	private volatile bool _modeTransitioning;
+	private int _returnArmEpoch;
 
 	private nint _lastForegroundSteamGameWindow;
 
@@ -91,7 +94,8 @@ public sealed class GamingWindowFocusService : IDisposable
 	/// </summary>
 	public bool IsLaunchCurtainOnScreen => _launchCurtainPriorityActive;
 
-	public int SteamFocusRecoveryVersion => Volatile.Read(ref _steamFocusRecoveryGeneration);
+	public int SteamFocusRecoveryVersion => _postGameReturn.Version;
+	internal BigPictureGameReturn.ForegroundProof? ConfirmedBigPictureReturn(int version) => _postGameReturn.ConfirmedForeground(version);
 
 	private const int GwlStyle = -16;
 
@@ -151,13 +155,17 @@ public sealed class GamingWindowFocusService : IDisposable
 		}
 	}
 
-	public GamingWindowFocusService(FileLogger logger) : this(logger, pid => OverlaySteamArtworkResolver.IsSteamGameProcess(pid)
-		|| UwpSteamSessionAssociation.IsTrackedGame(pid)) { }
+	public GamingWindowFocusService(FileLogger logger, string? configuredSteamPath = null) : this(logger,
+		pid => OverlaySteamArtworkResolver.IsSteamGameProcess(pid) || UwpSteamSessionAssociation.IsTrackedGame(pid))
+	{
+		_configuredSteamPath = configuredSteamPath;
+	}
 
 	internal GamingWindowFocusService(FileLogger logger, Func<int, bool> isSteamGame)
 	{
 		_logger = logger;
 		_isSteamGame = isSteamGame;
+		_postGameReturn = new(logger);
 	}
 
 	public void Start(bool applyBorderlessFullscreen = true)
@@ -183,6 +191,8 @@ public sealed class GamingWindowFocusService : IDisposable
 		Task worker;
 		lock (_sync)
 		{
+			Interlocked.Increment(ref _returnArmEpoch);
+			_postGameReturn.Cancel();
 			cancellation = _cancellation;
 			worker = _worker;
 			_cancellation = null;
@@ -215,6 +225,7 @@ public sealed class GamingWindowFocusService : IDisposable
 	public void Dispose()
 	{
 		Stop();
+		_postGameReturn.Dispose();
 	}
 
 	private async Task RunAsync(CancellationToken cancellationToken)
@@ -305,7 +316,17 @@ public sealed class GamingWindowFocusService : IDisposable
 			_pendingLaunchFocus.Clear();
 		}
 		nint foregroundWindow = GetForegroundWindow();
-		if (_gameWindows.ContainsKey(foregroundWindow)) _lastForegroundSteamGameWindow = foregroundWindow;
+		if (_gameWindows.TryGetValue(foregroundWindow, out uint foregroundPid)
+			&& processIdentity.GetValueOrDefault(foregroundPid))
+		{
+			_lastForegroundSteamGameWindow = foregroundWindow;
+			if (!flag)
+			{
+				lock (_sync)
+					if (!_modeTransitioning && _cancellation is { IsCancellationRequested: false })
+						_postGameReturn.Arm(foregroundWindow, foregroundPid, 0, () => true, _configuredSteamPath);
+			}
+		}
 		// Hidden UWP frames can survive process exit; an iconic window, however,
 		// is only minimized and must not be treated as a finished game.
 		nint[] removed = _gameWindows.Keys.Where(window => !seen.Contains(window)
@@ -318,7 +339,6 @@ public sealed class GamingWindowFocusService : IDisposable
 			_pendingLaunchFocus.Remove(window);
 		}
 		if (removedForegroundSteamGame) _lastForegroundSteamGameWindow = 0;
-		if (!flag && removedForegroundSteamGame && _gameWindows.IsEmpty) QueueSteamFocusRecovery();
 
 		return flag;
 	}
@@ -339,44 +359,86 @@ public sealed class GamingWindowFocusService : IDisposable
 		return TryGetQamGameProcess(window, out processId);
 	}
 
-	private void QueueSteamFocusRecovery()
+	public async Task<bool> ArmBigPictureReturnAsync(uint appId, uint expectedGamePid = 0, CancellationToken cancellation = default)
 	{
-		int generation = Interlocked.Increment(ref _steamFocusRecoveryGeneration);
-		CancellationToken token = _cancellation?.Token ?? CancellationToken.None;
-		_ = Task.Run(async delegate
+		int epoch = Volatile.Read(ref _returnArmEpoch);
+		bool ServiceCurrent() => !cancellation.IsCancellationRequested && !_launchCurtainPriorityActive && !_modeTransitioning
+			&& Volatile.Read(ref _returnArmEpoch) == epoch;
+		if (appId == 0 || !ServiceCurrent()) return false;
+		// Preserve the existing Steam/packaged fast path. Only its refusal may
+		// borrow an authenticated canonical Win32 launch outside this service lock.
+		if (ArmBigPictureReturn(appId, expectedGamePid)) return true;
+		if (appId < 0x80000000 || !ServiceCurrent()) return false;
+		nint window = GetForegroundWindow();
+		if (!OverlayWindowTools.IsPresentGameSurface(window)) return false;
+		uint thread = GetWindowThreadProcessId(window, out uint pid);
+		if (thread == 0 || pid == 0 || pid > int.MaxValue || expectedGamePid != 0 && pid != expectedGamePid) return false;
+		using var game = OverlayWindowTools.ProcessLease.TryOpen(checked((int)pid));
+		if (game is null || !game.Alive) return false;
+		try
 		{
-			try
+			using var lease = await Win32SteamSessionAssociation.FindLeaseAsync(appId, cancellation).ConfigureAwait(false);
+			if (lease is null || !ServiceCurrent()) return false;
+			var identity = lease.Identity;
+			if (identity.GameId != ((ulong)appId << 32 | 0x02000000UL) || identity.GamePid != pid
+				|| identity.GameBirth != game.CreatedAt || identity.GameBirth <= 0) return false;
+			bool Current()
 			{
-				// Steam aggiorna lo stato della sessione qualche istante dopo che la
-				// finestra del gioco scompare. Aspettare qui evita di contendere il
-				// foreground durante la chiusura e non blocca il watcher principale.
-				await Task.Delay(260, token);
-				for (int attempt = 1; attempt <= 3; attempt++)
-				{
-					if (generation != Volatile.Read(ref _steamFocusRecoveryGeneration)
-						|| token.IsCancellationRequested || _launchCurtainPriorityActive || !_gameWindows.IsEmpty
-						|| !CanRecoverSteamFocus())
-					{
-						return;
-					}
+				if (!ServiceCurrent() || !lease.Current) return false;
+				// The retained publication may perform IO. Recheck only the exact
+				// foreground window and retained game after that final slow read.
+				return ServiceCurrent() && game.Alive && game.CreatedAt == identity.GameBirth
+					&& OverlayWindowTools.IsPresentGameSurface(window) && GetForegroundWindow() == window
+					&& GetWindowThreadProcessId(window, out uint currentPid) == thread && currentPid == pid
+					&& game.Alive && ServiceCurrent() && GetForegroundWindow() == window;
+			}
+			if (!Current()) return false;
+			return _postGameReturn.Arm(window, pid, appId, Current, _configuredSteamPath);
+		}
+		catch (Exception error) when (error is OperationCanceledException or System.IO.IOException or UnauthorizedAccessException
+			or InvalidOperationException or ArgumentException or System.ComponentModel.Win32Exception or OverflowException)
+		{ return false; }
+	}
 
-					bool activated = OverlayWindowTools.ActivateSteam(out string report);
-					_logger.Info($"Post-game Steam focus recovery {attempt}/3: {report}");
-					if (activated && OverlayWindowTools.IsSteamForeground())
-					{
-						return;
-					}
-					await Task.Delay(220, token);
-				}
-			}
-			catch (OperationCanceledException) when (token.IsCancellationRequested)
+	public bool ArmBigPictureReturn(uint appId, uint expectedUwpPid = 0)
+	{
+		if (appId == 0 || _launchCurtainPriorityActive) return false;
+		nint window = GetForegroundWindow();
+		if (!OverlayWindowTools.IsPresentGameSurface(window)) return false;
+		lock (_sync)
+		{
+			if (_modeTransitioning) return false;
+			if (UwpFrameWindow.ReadAppId(window) is { } aumid)
 			{
+				return UwpSteamSessionAssociation.FindForApp(appId) is [var game]
+					&& (expectedUwpPid == 0 || expectedUwpPid == game.GamePid)
+					&& string.Equals(aumid, game.Aumid, StringComparison.OrdinalIgnoreCase)
+					&& _postGameReturn.Arm(window, game.GamePid, appId,
+						() => UwpSteamSessionAssociation.Find(game.GamePid, appId) == game
+							&& UwpSteamSessionAssociation.IsOnlyRunningInstance(game),
+						_configuredSteamPath, game.Aumid, game);
 			}
-			catch (Exception exception)
-			{
-				_logger.Error("Post-game Steam focus recovery failed.", exception);
-			}
-		}, token);
+			if (!TryGetWindowProcess(window, out uint pid, out string name) || SteamGameIdentityPolicy.IsSteamClient(name)
+				|| SteamGameIdentityPolicy.IsXboxLaunchHelper(name)) return false;
+			if (expectedUwpPid != 0 && pid != expectedUwpPid) return false;
+			if (UwpSteamSessionAssociation.Find(pid, appId) is { } directGame)
+				return _postGameReturn.Arm(window, pid, appId,
+						() => UwpSteamSessionAssociation.Find(pid, appId) == directGame
+							&& UwpSteamSessionAssociation.IsOnlyRunningInstance(directGame),
+						_configuredSteamPath, uwp: directGame);
+			return _postGameReturn.Arm(window, pid, appId,
+				() => OverlaySteamArtworkResolver.IsTrackedAppProcess((int)pid, appId),
+				_configuredSteamPath);
+		}
+	}
+
+	internal void SetPostGameReturnTransitioning(bool transitioning)
+	{
+		lock (_sync)
+		{
+			_modeTransitioning = transitioning;
+			if (transitioning) { Interlocked.Increment(ref _returnArmEpoch); _postGameReturn.Cancel(); }
+		}
 	}
 
 	private void PrioritizeLaunchCurtainWindow(nint window)
@@ -553,16 +615,6 @@ public sealed class GamingWindowFocusService : IDisposable
 
 	private static bool IsCloaked(nint window)
 		=> DwmGetWindowAttribute(window, 14, out int cloaked, sizeof(int)) == 0 && cloaked != 0;
-
-	private static bool CanRecoverSteamFocus()
-	{
-		nint foreground = GetForegroundWindow();
-		if (foreground == 0 || !IsWindowVisible(foreground) || IsCloaked(foreground)) return true;
-		if (OverlayWindowTools.IsSteamForeground()) return true;
-		StringBuilder className = new(128);
-		GetClassName(foreground, className, className.Capacity);
-		return className.ToString() is "Progman" or "WorkerW" or "Shell_TrayWnd";
-	}
 
 	[DllImport("dwmapi.dll")]
 	private static extern int DwmGetWindowAttribute(nint window, int attribute, out int value, int size);

@@ -36,6 +36,19 @@ internal static class XboxShellTests
         try { XboxShellBrokerClient.Ensure(directory, client); }
         catch (InvalidOperationException ex) { denied = ex.InnerException is HttpRequestException; }
         Check(denied, "Rejected broker request fails launch before activation");
+        Check(XboxShellBrokerClient.ShortcutAppId("10674787038353424384") == 2485417537
+            && XboxShellBrokerClient.ShortcutAppId("620") == 0
+            && XboxShellBrokerClient.ShortcutAppId("bad") == 0, "Only canonical Steam shortcut identities arm Xbox game return");
+        handler.Code = HttpStatusCode.OK;
+        handler.WaitOnce = true;
+        int sentBefore = handler.Sent;
+        XboxShellBrokerClient.ArmGameReturnAsync(directory, client, 2485417537, 12345, CancellationToken.None).GetAwaiter().GetResult();
+        Check(handler.Sent == sentBefore + 2 && handler.Url == "http://127.0.0.1:49234/session/steam/arm-return?appId=2485417537&gamePid=12345"
+            && handler.Token == token, "Game return waits for an exact active Xbox game without requiring Decky");
+        handler.Code = HttpStatusCode.Unauthorized;
+        sentBefore = handler.Sent;
+        XboxShellBrokerClient.ArmGameReturnAsync(directory, client, 2485417537, 12345, CancellationToken.None).GetAwaiter().GetResult();
+        Check(handler.Sent == sentBefore + 1, "Rejected return arm does not keep retrying");
     }
 
     private static void Check(bool condition, string name)
@@ -49,12 +62,17 @@ internal static class XboxShellTests
         public HttpStatusCode Code = HttpStatusCode.OK;
         public string Url = "", Token = "";
         public HttpMethod? Method;
+        public bool WaitOnce;
+        public int Sent;
         protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Url = request.RequestUri!.AbsoluteUri;
             Method = request.Method;
             Token = request.Headers.GetValues("X-Playhub-Shell-Token").Single();
-            return new HttpResponseMessage(Code) { Content = new StringContent("{\"ok\":true}") };
+            Sent++;
+            var armed = WaitOnce ? "{\"ok\":false}" : "{\"ok\":true}";
+            WaitOnce = false;
+            return new HttpResponseMessage(Code) { Content = new StringContent(armed) };
         }
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(Send(request, cancellationToken));

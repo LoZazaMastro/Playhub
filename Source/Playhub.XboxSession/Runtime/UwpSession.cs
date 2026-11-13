@@ -218,11 +218,19 @@ internal sealed class WindowsUwpProcess : IUwpProcess
 
 internal static class UwpSessionLog
 {
+#if PLAYHUB_TEST_FIXTURE
+    internal static string? FixtureDirectory;
+#endif
     internal static void Write(string message)
     {
         try
         {
+#if PLAYHUB_TEST_FIXTURE
+            string? directory = FixtureDirectory;
+            if (directory is null) return;
+#else
             var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Playhub", "logs");
+#endif
             Directory.CreateDirectory(directory);
             File.AppendAllText(Path.Combine(directory, "game-session.log"), $"{DateTimeOffset.Now:O} {message}\n");
         }

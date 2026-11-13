@@ -34,6 +34,7 @@
   <ItemGroup>
     <Compile Include="../PerfectArtwork/*.cs" Link="Integrations/%(Filename)%(Extension)" />
     <Compile Include="../Shared/DeckyStartupGuard.cs" Link="DeckyStartupGuard.cs" />
+    <Compile Include="../Shared/LegacyXboxGameBarWatcher.cs" Link="LegacyXboxGameBarWatcher.cs" />
     <Compile Include="../Shared/GamingModeInstallationPolicy.cs" Link="GamingModeInstallationPolicy.cs" />
     <Compile Include="../Shared/EditorialPhotoMigration.cs" Link="EditorialPhotoMigration.cs" />
     <Compile Include="../Shared/SplashLogoScale.cs" Link="SplashLogoScale.cs" />
@@ -47,12 +48,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\ShellIdentity.cs" Link="Services\ShellIdentity.cs" />
 <Compile Remove="MainWindow.PawnIo.cs;Services/PawnIoService.cs;Services/PawnIoInstallService.cs" />
     <Compile Remove="Assets\GamingModeDeckyPlugin\**\*.cs" />
     <Content Include="Assets\**\*.*" Exclude="Assets\GamingModeDeckyPlugin\**\cpu_power\**;Assets\**\__pycache__\**;Assets\**\*.pyc">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Remove="Assets\GamingModeDeckyPlugin\**\history_imported.json.before-*" />
+    <Content Remove="Assets\DeckyRuntime\Compatibility-3.3.1\**\*" />
+    <Content Remove="Assets\DeckyRuntime\Official-3.3.1\**\*" />
+    <Content Include="Assets\DeckyRuntime\Official-3.3.1\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
     <Content Include="..\..\catalog\plugins.json" Link="Assets\PluginCatalog\store-catalog.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
@@ -64,8 +72,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <!-- Keep unpublished fixes until their matching release archives are public. -->
-    <Content Include="Plugins\Metadata\*Installer*.zip;Plugins\Launch Curtain\*Installer*.zip">
+    <Content Include="Plugins\Metadata\*Installer*.zip;Plugins\Launch Curtain\*Installer*.zip;Plugins\Weather\*Installer*.zip;Plugins\Discord\*Installer*.zip;Plugins\CSS Loader\*.zip">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="Plugins\Weather\**\*;Plugins\Discord\**\*;Plugins\CSS Loader\**\*">
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
     <Content Include="THIRD-PARTY-NOTICES.txt">
@@ -74,12 +85,28 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Playhub.GameSession\UwpShortcutArguments.cs" Link="Services\UwpShortcutArguments.cs" />
-    <Content Include="..\Playhub.XboxSession\**\*.cs;..\Playhub.XboxSession\**\*.csproj;..\Playhub.XboxSession\**\LICENSE;..\Playhub.XboxSession\**\NOTICE.md;..\Playhub.XboxSession\**\BUILD.md;..\Playhub.XboxSession\**\MIT-LICENSE"
-             Exclude="..\Playhub.XboxSession\bin\**;..\Playhub.XboxSession\obj\**">
+    <Compile Include="..\Playhub.GameSession\EpicShortcutArguments.cs" Link="Services\EpicShortcutArguments.cs" />
+    <Content Include="..\Shared\EpicLaunchWindows.cs;..\Shared\EpicLaunchCatalog.cs;..\Shared\EpicLaunchPayload.cs"
+             Link="XboxSession\Shared\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\Playhub.XboxSession\**\PublicSteamContext.md"
+             Link="XboxSession\source\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\Playhub.XboxSession\**\*.cs;..\Playhub.XboxSession\**\*.csproj;..\Playhub.XboxSession\**\LICENSE;..\Playhub.XboxSession\**\NOTICE.md;..\Playhub.XboxSession\**\BUILD.md;..\Playhub.XboxSession\**\MIT-LICENSE;..\Playhub.XboxSession\**\*.cmake;..\Playhub.XboxSession\**\*.cpp;..\Playhub.XboxSession\**\*.c;..\Playhub.XboxSession\**\*.h;..\Playhub.XboxSession\**\CMakeLists.txt;..\Playhub.XboxSession\**\AUTHORS.txt;..\Playhub.XboxSession\**\LICENSE.txt;..\Playhub.XboxSession\**\README.md;..\Playhub.XboxSession\**\INTEGRATION.md"
+             Exclude="..\Playhub.XboxSession\**\bin\**;..\Playhub.XboxSession\**\obj\**;..\Playhub.XboxSession\**\CMakeFiles\**">
       <Link>XboxSession\source\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
+    <Content Include="..\Playhub.XboxSession\Native\HudDisplay\WindowContent\Build.cmd;..\Playhub.XboxSession\Native\HudDisplay\WindowContent\PerMonitor.manifest;..\Playhub.XboxSession\Native\HudDisplay\WindowContent\provenance.json"
+             Link="XboxSession\source\Native\HudDisplay\WindowContent\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\Playhub.XboxSession\Native\HudDisplay\tests\callback-source.sha256"
+             Link="XboxSession\source\Native\HudDisplay\tests\callback-source.sha256"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\Playhub.XboxSession\Native\HudDisplay\tests\*.py"
+             Link="XboxSession\source\Native\HudDisplay\tests\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <Target Name="BuildGameSession" BeforeTargets="PrepareForBuild">
     <MSBuild Projects="..\Playhub.GameSession\Playhub.GameSession.csproj" Targets="Restore;Publish"
@@ -106,6 +133,8 @@
              Properties="Configuration=$(Configuration);Platform=AnyCPU;RuntimeIdentifier=win-x64;SelfContained=true" />
     <ItemGroup>
       <Content Include="..\Playhub.XboxSession\bin\$(Configuration)\net8.0-windows\win-x64\publish\Playhub.XboxSession.exe" Link="Playhub.XboxSession.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+      <Content Include="..\Playhub.XboxSession\bin\$(Configuration)\net8.0-windows\win-x64\publish\PlayhubInputFence.dll" Link="PlayhubInputFence.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+      <Content Include="..\Playhub.XboxSession\bin\$(Configuration)\net8.0-windows\win-x64\publish\XboxSession\licenses\InputFence-MinHook.txt" Link="XboxSession\licenses\InputFence-MinHook.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
   </Target>
 </Project>

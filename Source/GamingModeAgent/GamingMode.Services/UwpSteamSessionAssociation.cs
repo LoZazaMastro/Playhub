@@ -5,12 +5,13 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
-using Playhub.Shared;
 using Microsoft.Win32;
+using Playhub.Shared;
 
 namespace GamingMode.Services;
 
@@ -18,6 +19,9 @@ namespace GamingMode.Services;
 // published by the exact live installed wrapper Steam currently tracks.
 internal static class UwpSteamSessionAssociation
 {
+    private const string InstallerKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Playhub";
+    private const string InstallLocation = "InstallLocation";
+    internal sealed record InstalledImages(string Wrapper, string Companion);
     internal sealed record Tracked(uint Pid, ulong GameId, DateTime Started, string Image, string Aumid, string Executable);
     private sealed record Verified(UwpSessionIdentity Identity, Tracked Session);
     private static readonly object Sync = new();
@@ -29,7 +33,36 @@ internal static class UwpSteamSessionAssociation
     private static readonly Regex Added = new(@"AppID (?<id>\d+) adding PID (?<pid>\d+) as a tracked process (?<args>.*)$", RegexOptions.CultureInvariant);
     private static readonly Regex Removed = new(@"no longer tracking PID (?<pid>\d+)", RegexOptions.CultureInvariant);
     private static readonly Regex Command = new("^\\\"?\\\"(?<image>[^\\\"]+)\\\" --uwp \\\"(?<aumid>[^\\\"]+)\\\" \\\"(?<exe>[^\\\"]+)\\\"", RegexOptions.CultureInvariant);
-    private static readonly string TrustedHelper = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "Playhub", "Playhub.GameSession.exe");
+    internal static InstalledImages? ReadInstalledImages()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(InstallerKey);
+            bool registered = key is not null && key.GetValueNames().Contains(InstallLocation, StringComparer.OrdinalIgnoreCase);
+            string? location = registered && key!.GetValueKind(InstallLocation) == RegistryValueKind.String
+                ? key.GetValue(InstallLocation, null, RegistryValueOptions.DoNotExpandEnvironmentNames) as string : null;
+            string defaultLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "Playhub");
+            return ResolveInstalledImages(registered, location, defaultLocation);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or SecurityException)
+        {
+            return null;
+        }
+    }
+
+    internal static InstalledImages? ResolveInstalledImages(bool registered, string? location, string defaultLocation)
+    {
+        string? root = (registered ? location : defaultLocation)?.TrimEnd('\\');
+        if (root is null || root.Length < 4 || !char.IsAsciiLetter(root[0]) || root[1] != ':' || root[2] != '\\')
+            return null;
+        var invalid = Path.GetInvalidFileNameChars();
+        foreach (string part in root[3..].Split('\\'))
+        {
+            if (part.Length == 0 || part[^1] is '.' or ' ' || part.IndexOfAny(invalid) >= 0)
+                return null;
+        }
+        return new(Path.Combine(root, "Playhub.GameSession.exe"), Path.Combine(root, "Playhub.XboxSession.exe"));
+    }
 
     internal static uint AppId(ulong gameId) => gameId > uint.MaxValue ? (uint)(gameId >> 32) : (uint)gameId;
     internal static IReadOnlyList<Tracked> Parse(string text)
@@ -53,23 +86,26 @@ internal static class UwpSteamSessionAssociation
     }
 
     internal static bool Matches(Tracked session, UwpSessionIdentity identity, uint serverPid, uint gamePid, uint appId,
-        long wrapperBirth, long gameBirth, string wrapperImage, string package, string image)
+        long wrapperBirth, long gameBirth, string wrapperImage, string package, string image, InstalledImages images)
     {
         return identity.WrapperPid == session.Pid && serverPid == session.Pid && identity.WrapperBirth == wrapperBirth
             && wrapperBirth != 0 && identity.GamePid == gamePid && identity.GameBirth == gameBirth && gameBirth != 0
             && (appId == 0 || AppId(session.GameId) == appId)
-            && string.Equals(Path.GetFullPath(session.Image), Path.GetFullPath(TrustedHelper), StringComparison.OrdinalIgnoreCase)
-            && string.Equals(Path.GetFullPath(wrapperImage), Path.GetFullPath(TrustedHelper), StringComparison.OrdinalIgnoreCase)
+            && string.Equals(session.Image, images.Wrapper, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(wrapperImage, images.Wrapper, StringComparison.OrdinalIgnoreCase)
             && string.Equals(identity.Aumid, session.Aumid, StringComparison.OrdinalIgnoreCase)
             && string.Equals(identity.PackageFamily, package, StringComparison.OrdinalIgnoreCase)
             && string.Equals(package, session.Aumid.Split('!')[0], StringComparison.OrdinalIgnoreCase)
-            && string.Equals(Path.GetFileName(image), session.Executable, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(Path.GetFileName(image), Path.GetFileName(session.Executable), StringComparison.OrdinalIgnoreCase)
             && string.Equals(identity.Executable, image, StringComparison.OrdinalIgnoreCase)
             && SteamGameIdentityPolicy.IsCurrentProcess(DateTime.FromFileTimeUtc(wrapperBirth).ToLocalTime(), session.Started);
     }
 
     internal static bool IsTrackedGame(int pid) => pid > 0 && Find((uint)pid, 0) is not null;
-    internal static UwpSessionIdentity? Find(uint pid, uint appId)
+    internal static UwpSessionIdentity? Find(uint pid, uint appId) =>
+        ReadInstalledImages() is { } images ? Find(pid, appId, images) : null;
+
+    private static UwpSessionIdentity? Find(uint pid, uint appId, InstalledImages images)
     {
         lock (Sync)
         {
@@ -78,17 +114,17 @@ internal static class UwpSteamSessionAssociation
             if (Cache.TryGetValue(pid, out var cached))
             {
                 if (tracked.Contains(cached.Session) && ReadProcess(cached.Session.Pid, out long wrapperBirth, out string wrapperImage, out _)
-                    && Matches(cached.Session, cached.Identity, cached.Session.Pid, pid, appId, wrapperBirth, gameBirth, wrapperImage, package, gameImage))
+                    && Matches(cached.Session, cached.Identity, cached.Session.Pid, pid, appId, wrapperBirth, gameBirth, wrapperImage, package, gameImage, images))
                     return cached.Identity;
                 Cache.Remove(pid);
             }
             foreach (var session in tracked)
             {
-                if ((appId != 0 && AppId(session.GameId) != appId) || !session.Image.Equals(TrustedHelper, StringComparison.OrdinalIgnoreCase)
+                if ((appId != 0 && AppId(session.GameId) != appId) || !session.Image.Equals(images.Wrapper, StringComparison.OrdinalIgnoreCase)
                     || !session.Aumid.StartsWith(package + "!", StringComparison.OrdinalIgnoreCase)
-                    || !Path.GetFileName(gameImage).Equals(session.Executable, StringComparison.OrdinalIgnoreCase)
+                    || !Path.GetFileName(gameImage).Equals(Path.GetFileName(session.Executable), StringComparison.OrdinalIgnoreCase)
                     || !ReadProcess(session.Pid, out long wrapperBirth, out string wrapperImage, out _)
-                    || !wrapperImage.Equals(TrustedHelper, StringComparison.OrdinalIgnoreCase)) continue;
+                    || !wrapperImage.Equals(images.Wrapper, StringComparison.OrdinalIgnoreCase)) continue;
                 try
                 {
                     using var stop = new CancellationTokenSource(200);
@@ -106,7 +142,7 @@ internal static class UwpSteamSessionAssociation
                     }
                     if (length == bytes.Length) continue;
                     var identity = JsonSerializer.Deserialize<UwpSessionIdentity>(Encoding.UTF8.GetString(bytes, 0, length));
-                    if (identity is null || !Matches(session, identity, serverPid, pid, appId, wrapperBirth, gameBirth, wrapperImage, package, gameImage)) continue;
+                    if (identity is null || !Matches(session, identity, serverPid, pid, appId, wrapperBirth, gameBirth, wrapperImage, package, gameImage, images)) continue;
                     if (Cache.Count > 64) Cache.Clear();
                     Cache[pid] = new(identity, session);
                     return identity;
@@ -116,12 +152,15 @@ internal static class UwpSteamSessionAssociation
             return null;
         }
     }
-    internal static IReadOnlyList<UwpSessionIdentity> FindForApp(uint appId)
+    internal static IReadOnlyList<UwpSessionIdentity> FindForApp(uint appId) =>
+        appId != 0 && ReadInstalledImages() is { } images ? FindForApp(appId, images) : Array.Empty<UwpSessionIdentity>();
+
+    internal static IReadOnlyList<UwpSessionIdentity> FindForApp(uint appId, InstalledImages images)
     {
         if (appId == 0) return Array.Empty<UwpSessionIdentity>();
         Tracked[] sessions;
         lock (Sync) sessions = ReadTracked().Where(s => AppId(s.GameId) == appId
-            && s.Image.Equals(TrustedHelper, StringComparison.OrdinalIgnoreCase)).Take(4).ToArray();
+            && s.Image.Equals(images.Wrapper, StringComparison.OrdinalIgnoreCase)).Take(4).ToArray();
         var found = new List<UwpSessionIdentity>();
         var deadline = Stopwatch.StartNew();
         foreach (var session in sessions)
@@ -134,18 +173,33 @@ internal static class UwpSteamSessionAssociation
                 foreach (var process in candidates.Take(8))
                 {
                     if (deadline.ElapsedMilliseconds >= 250) break;
-                    if (Find((uint)process.Id, appId) is { } identity && !found.Contains(identity)) found.Add(identity);
+                    if (Find((uint)process.Id, appId, images) is { } identity && !found.Contains(identity)) found.Add(identity);
                 }
             }
             finally { foreach (var process in candidates) process.Dispose(); }
         }
         return found;
     }
+
+    // A Windows frame identifies the app, so the frame alone cannot distinguish two live copies.
+    internal static bool IsOnlyRunningInstance(UwpSessionIdentity identity)
+    {
+        var candidates = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(identity.Executable));
+        try
+        {
+            return candidates.All(process => process.Id == identity.GamePid
+                || !ReadProcess((uint)process.Id, out _, out string image, out string family)
+                || !string.Equals(image, identity.Executable, StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(family, identity.PackageFamily, StringComparison.OrdinalIgnoreCase));
+        }
+        finally { foreach (var process in candidates) process.Dispose(); }
+    }
+
     private static IReadOnlyList<Tracked> ReadTracked()
     {
         try
         {
-            string root = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Valve\Steam", "SteamPath", null) as string ?? @"C:\Program Files (x86)\Steam";
+            if (SteamInstallationPath.FindRoot() is not { } root) return Array.Empty<Tracked>();
             string path = Path.Combine(root, "logs", "gameprocess_log.txt");
             var info = new FileInfo(path);
             if (path == _logPath && info.Exists && info.Length == _logLength && info.LastWriteTimeUtc == _logModified) return _tracked;

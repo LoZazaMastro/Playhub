@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -11,4 +11,42 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
   </PropertyGroup>
+  <ItemGroup Condition="'$(PlayhubAppContainerBridgeSha256)' != ''">
+    <AssemblyMetadata Include="PlayhubAppContainerBridgeSha256" Value="$(PlayhubAppContainerBridgeSha256)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlayhubSteamCompanionSha256)' != ''">
+    <AssemblyMetadata Include="PlayhubSteamCompanionSha256" Value="$(PlayhubSteamCompanionSha256)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlayhubSteamBandCallbackSha256)' != ''">
+    <AssemblyMetadata Include="PlayhubSteamBandCallbackSha256" Value="$(PlayhubSteamBandCallbackSha256)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlayhubUwpSteamCompanion)' == 'true' and '$(PlayhubSteamCompanionSha256)' != ''">
+    <AssemblyMetadata Include="PlayhubUwpSteamCompanion" Value="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlayhubCupheadWindowedPreference)' == 'true' and '$(PlayhubSteamCompanionSha256)' != ''">
+    <AssemblyMetadata Include="PlayhubCupheadWindowedPreference" Value="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlayhubSteamControllerProbe)' == 'true'">
+    <AssemblyMetadata Include="PlayhubSteamControllerProbe" Value="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlayhubSteamControllerLayoutTrial)' == 'true'">
+    <AssemblyMetadata Include="PlayhubSteamControllerLayoutTrial" Value="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlayhubSteamInputReaderSha256)' != ''">
+    <AssemblyMetadata Include="PlayhubSteamInputReaderSha256" Value="$(PlayhubSteamInputReaderSha256)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlayhubSteamInputRelayDriverSha256)' != ''">
+    <AssemblyMetadata Include="PlayhubSteamInputRelayDriverSha256" Value="$(PlayhubSteamInputRelayDriverSha256)" />
+  </ItemGroup>
+  <ItemGroup><Compile Include="../Shared/EpicLaunchWindows.cs" Link="EpicLaunchWindows.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/EpicLaunchCatalog.cs" Link="EpicLaunchCatalog.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/EpicLaunchPayload.cs" Link="EpicLaunchPayload.cs" /></ItemGroup>
+  <ItemGroup>
+    <Content Include="Native\InputFencePrototype\PlayhubInputFence.dll" Link="PlayhubInputFence.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <Content Include="Native\InputFencePrototype\MinHook\LICENSE.txt" Link="XboxSession\licenses\InputFence-MinHook.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+  <Target Name="VerifyInputFencePrototype" BeforeTargets="PrepareForBuild">
+    <GetFileHash Files="$(MSBuildProjectDirectory)\Native\InputFencePrototype\PlayhubInputFence.dll" Algorithm="SHA256"><Output TaskParameter="Items" ItemName="_InputFenceHash" /></GetFileHash>
+    <Error Condition="'%(_InputFenceHash.FileHash)' != 'C2EDEFEC2BAE213A1C9CAEC6837E6E9FEF66ECC9248AC8680A6A3882B312DBF4'" Text="The input fence prototype DLL is not the reviewed pinned build." />
+  </Target>
 </Project>

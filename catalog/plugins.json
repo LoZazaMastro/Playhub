@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "verifiedAt": "2026-11-10",
+  "verifiedAt": "2026-11-13",
   "officialDeckyCatalogUrl": "https://plugins.deckbrew.xyz/plugins",
   "plugins": [
     {
@@ -513,6 +513,46 @@
       ],
       "firstPublishedAt": "2026-08-22T10:52:12Z",
       "updatedAt": "2026-08-22T10:52:12Z"
+    },
+    {
+      "active": true,
+      "name": "Discord",
+      "installFolder": "Discord",
+      "author": "LoZazaMastro, based on Steamcord by Necrosiak",
+      "repository": "LoZazaMastro/Playhub-Discord",
+      "repositoryUrl": "https://github.com/LoZazaMastro/Playhub-Discord",
+      "version": "1.0.1",
+      "releaseAssetName": "Discord_Installer-1.0.1.zip",
+      "catalogReleaseUrl": "https://github.com/LoZazaMastro/Playhub-Discord/releases/download/v1.0.1/Discord_Installer-1.0.1.zip",
+      "releasePublishedAt": "2026-11-13T13:44:30Z",
+      "firstPublishedAt": "2026-11-13T13:44:30Z",
+      "updatedAt": "2026-11-13T13:44:30Z",
+      "category": "Playhub",
+      "shortDescription": "Discord voice, channels and conversations, built into Playhub for Windows.",
+      "longDescription": "Discord voice, channels and conversations, built into Playhub for Windows.",
+      "coverUrl": "https://raw.githubusercontent.com/LoZazaMastro/Playhub/main/assets/plugin-store/discord.png",
+      "iconGlyph": "",
+      "catalogStatus": "playhub",
+      "catalogSource": "playhub",
+      "catalogPluginId": 0,
+      "compatibility": "Windows",
+      "keywords": [
+        "discord",
+        "chat",
+        "voice",
+        "channels",
+        "conversations",
+        "Windows",
+        "noloc",
+        "catalog-added:2026-11-13",
+        "first-release:2026-11-13",
+        "featured"
+      ],
+      "aliases": [
+        "Discord",
+        "Playhub-Discord",
+        "playhub-discord"
+      ]
     },
     {
       "active": true,
@@ -12756,5 +12796,5 @@
       "longDescription": "WiFi optimizations for game streaming and online play. Survives sleep and updates."
     }
   ],
-  "catalogRevision": 12
+  "catalogRevision": 13
 }

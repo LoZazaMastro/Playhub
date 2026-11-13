@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <StartupObject>DeckyGenerationChecks.Checks</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Playhub.DeckyHost/Program.cs;../Playhub.DeckyHost/DeckyProcessTree.cs;../Playhub.DeckyHost/DeckyRuntimeDirectory.cs;../Playhub.DeckyHost/SteamGenerationPolicy.cs;../Playhub.DeckyHost/SteamGenerationLease.cs;../Playhub.DeckyHost/DeckyHealthPolicy.cs;../Playhub.DeckyHost/DeckyHealthMonitor.cs" />
+  </ItemGroup>
+</Project>

@@ -11,4 +11,21 @@
     <ImplicitUsings>enable</ImplicitUsings>
 </PropertyGroup>
   <ItemGroup><Compile Include="../Shared/UwpSessionIdentity.cs" Link="UwpSessionIdentity.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/EpicLaunchCatalog.cs" Link="EpicLaunchCatalog.cs" /></ItemGroup>
+  <ItemGroup Condition="'$(PlayhubAppContainerBridgeSha256)' != ''">
+    <AssemblyMetadata Include="PlayhubCupheadOverlayPilot" Value="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlayhubSteamCompanionSha256)' != ''">
+    <AssemblyMetadata Include="PlayhubSteamCompanionSha256" Value="$(PlayhubSteamCompanionSha256)" />
+    <AssemblyMetadata Include="PlayhubCupheadSteamCompanion" Value="true" />
+    <AssemblyMetadata Include="PlayhubWin32SteamCompanion" Value="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlayhubUwpSteamCompanion)' == 'true' and '$(PlayhubSteamCompanionSha256)' != ''">
+    <AssemblyMetadata Include="PlayhubUwpSteamCompanion" Value="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlayhubCupheadWindowedPreference)' == 'true' and '$(PlayhubSteamCompanionSha256)' != ''">
+    <AssemblyMetadata Include="PlayhubCupheadWindowedPreference" Value="true" />
+  </ItemGroup>
+  <ItemGroup><Compile Include="../Shared/EpicLaunchWindows.cs" Link="EpicLaunchWindows.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/EpicLaunchPayload.cs" Link="EpicLaunchPayload.cs" /></ItemGroup>
 </Project>

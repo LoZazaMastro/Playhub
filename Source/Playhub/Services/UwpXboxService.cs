@@ -952,7 +952,7 @@ public sealed partial class UwpXboxService
             {
                 var targetExe = GetTargetExecutable(game, uwpHookExe ?? sessionExe);
                 var targetDirectory = game.IsLocalExecutable
-                    ? QuotePath(Path.GetDirectoryName(game.LocalExecutablePath) ?? "")
+                    ? LocalStartDirectory(game)
                     : uwpHookDir;
                 var appId = XboxSteamShortcut.ResolveAppId(profiles.Values, entry => MatchesGame(entry, game),
                     unchecked((int)Crc32.SteamGridAppId(game.Name, targetExe)));
@@ -965,12 +965,7 @@ public sealed partial class UwpXboxService
                 // Keep the shortcut identity (and its artwork/collections) when
                 // changing the launcher. Steam must keep tracking our session
                 // even if a game's bootstrapper exits or registers another AppID.
-                var oldArguments = string.IsNullOrEmpty(game.SteamIdentity)
-                    ? existing?.LaunchOptions ?? game.SourceLaunchArguments : game.SourceLaunchArguments;
-                var alreadyTracked = existing is not null && IsSessionShortcut(existing);
-                var launchOptions = game.IsLocalExecutable
-                        ? alreadyTracked && string.IsNullOrEmpty(game.SteamIdentity) ? oldArguments : "--game " + targetExe + (oldArguments.Length > 0 ? " " + oldArguments : "")
-                        : global::Playhub.GameSession.UwpShortcutArguments.Build(game.Aumid, game.Executable, existing?.LaunchOptions ?? game.SourceLaunchArguments);
+                var launchOptions = BuildLaunchOptions(game, existing, targetExe);
                 var entry = XboxSteamShortcut.Create(existing, appId, game.Name, sessionExe,
                     game.IsLocalExecutable ? targetDirectory : QuotePath(AppContext.BaseDirectory),
                     icon, launchOptions, game.IsLocalExecutable, (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
@@ -1052,6 +1047,8 @@ public sealed partial class UwpXboxService
             if (PathsEqual(entry.Exe, game.LocalExecutablePath)) return true;
             if (!IsSessionShortcut(entry)) return false;
             var arguments = CommandLine.Parse(entry.LaunchOptions ?? "");
+            if (global::Playhub.GameSession.EpicShortcutArguments.HasCatalog(game.EpicNamespace, game.EpicCatalogItemId, game.EpicAppName)
+                && global::Playhub.GameSession.EpicShortcutArguments.Matches(arguments, game.EpicNamespace, game.EpicCatalogItemId, game.EpicAppName)) return true;
             return arguments.Count >= 2 && arguments[0] == "--game" &&
                    PathsEqual(arguments[1], game.LocalExecutablePath);
         }
@@ -1071,6 +1068,23 @@ public sealed partial class UwpXboxService
         }
 
         return uwpHookExe ?? "";
+    }
+
+    internal static string LocalStartDirectory(UwpGameEntry game) =>
+        QuotePath(game.SourceWorkingDirectory ?? Path.GetDirectoryName(game.LocalExecutablePath) ?? "");
+
+    internal static string BuildLaunchOptions(UwpGameEntry game, VDFEntry? existing, string targetExe)
+    {
+        if (!game.IsLocalExecutable)
+            return global::Playhub.GameSession.UwpShortcutArguments.Build(game.Aumid, game.Executable, existing?.LaunchOptions ?? game.SourceLaunchArguments);
+
+        if (global::Playhub.GameSession.EpicShortcutArguments.HasCatalog(game.EpicNamespace, game.EpicCatalogItemId, game.EpicAppName))
+            return global::Playhub.GameSession.EpicShortcutArguments.Build(game.EpicNamespace, game.EpicCatalogItemId, game.EpicAppName, game.LocalExecutablePath);
+
+        bool preserveExisting = string.IsNullOrEmpty(game.SteamIdentity);
+        string arguments = preserveExisting ? existing?.LaunchOptions ?? game.SourceLaunchArguments : game.SourceLaunchArguments;
+        if (preserveExisting && existing is not null && IsSessionShortcut(existing)) return arguments;
+        return "--game " + targetExe + (arguments.Length > 0 ? " " + arguments : "");
     }
 
     private static string QuotePath(string path) =>

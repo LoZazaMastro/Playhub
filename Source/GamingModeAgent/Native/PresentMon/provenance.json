@@ -1,0 +1,15 @@
+{
+  "component": "PresentMon console with Playhub live-output support",
+  "upstream": "https://github.com/GameTechDev/PresentMon",
+  "commit": "007f1cf009670e8b90d014324515ed41e5c54422",
+  "version": "2.6.1",
+  "architecture": "x64",
+  "license": "MIT and upstream third-party notices",
+  "compiler": "MSVC19.44.35229 v143 Windows SDK10.0.26100",
+  "cmake": "4.2.2",
+  "bytes": 988672,
+  "sha256": "93ff5a3a7adfe6bd904e6d0ead7080d2f4ca5a2e579011c915bd7a804df666f6",
+  "patchSha256": "b735dcb60618d330afcec7bc0e82e32df0217795408dabd5395b28b94a90ca3c",
+  "liveArgument": "--live_output_ms 20",
+  "defaultBehavior": "Upstream output and flush behavior is retained without the live argument"
+}

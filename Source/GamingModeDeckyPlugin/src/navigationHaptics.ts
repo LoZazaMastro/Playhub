@@ -36,6 +36,8 @@ interface HapticStep {
 }
 
 const MODERN_HAPTIC_CONTROLLERS = new Set([10, 48]);
+const CONTROLLER_FOCUS_WINDOW_MS = 260;
+const KEYBOARD_COLLISION_WINDOW_MS = 80;
 const pending = new Set<number>();
 
 let config: NavigationHapticsConfig = { enabled: false, intensity: 55 };
@@ -47,7 +49,6 @@ export function subscribeNavigationHaptics(listener: () => void) {
   configListeners.add(listener);
   return () => { configListeners.delete(listener); };
 }
-let lastControllerIndex = 0;
 let nextSoundRequestId = 1;
 let nextSoundSerial = 1;
 let lastConsumedSoundSerial = 0;
@@ -68,7 +69,6 @@ let playbackAlreadyMatched = new WeakSet<object>();
 const waveformTimers = new Set<number>();
 let waveformGeneration = 0;
 let lastNativeRequestId = Math.floor(Date.now() * 1000);
-const gamepadTimestamps = new Map<number, number>();
 
 function clampIntensity(value: number): number {
   return Math.max(5, Math.min(100, Math.round(value)));
@@ -162,12 +162,11 @@ function sliderValue(element: HTMLElement | null): number | null {
 }
 
 function controllerFor(index: number): any {
+  if (!Number.isInteger(index) || index < 0 || index >= 0xffffffff) return undefined;
   const store = (window as any).ControllerStore;
-  const controllers = Array.from(store?.GetControllers?.() ?? []) as any[];
-  return store?.GetController?.(index)
-    ?? controllers.find((controller: any) => Number(controller?.nControllerIndex) === index)
-    ?? controllers.find((controller: any) => Number(controller?.nXInputIndex) === index && index !== 0xffffffff)
-    ?? (controllers.length === 1 ? controllers[0] : undefined);
+  const exact = store?.GetController?.(index);
+  if (exact?.nControllerIndex === index) return exact;
+  return (Array.from(store?.GetControllers?.() ?? []) as any[]).find(controller => controller?.nControllerIndex === index);
 }
 
 function usesModernHaptics(controller: any): boolean {
@@ -184,56 +183,10 @@ function activeController(preferredIndex: number): any {
   return Number.isFinite(index) ? controller : undefined;
 }
 
-function controllerFromActiveSlot(value: unknown): any {
-  const slot = Number((value as any)?.nActiveController ?? value);
-  if (!Number.isInteger(slot) || slot < 0) return undefined;
-  const store = (window as any).ControllerStore;
-  const controllers = Array.from(store?.GetControllers?.() ?? []) as any[];
-  const controller = controllers[slot] ?? store?.GetController?.(slot);
-  return Number.isFinite(Number(controller?.nControllerIndex)) ? controller : undefined;
-}
-
 function gamepadHardwareId(id: string): { vendor: number; product: number } | null {
   const match = id.match(/Vendor:\s*([0-9a-f]{4})\s+Product:\s*([0-9a-f]{4})/i);
   if (!match) return null;
   return { vendor: Number.parseInt(match[1], 16), product: Number.parseInt(match[2], 16) };
-}
-
-function controllerForGamepad(gamepad: Gamepad): any {
-  const hardware = gamepadHardwareId(gamepad.id);
-  const controllers = Array.from((window as any).ControllerStore?.GetControllers?.() ?? []) as any[];
-  if (hardware) {
-    const exact = controllers.find((controller) =>
-      Number(controller?.unVendorID) === hardware.vendor
-      && Number(controller?.unProductID) === hardware.product
-    );
-    if (exact) return exact;
-  }
-  const name = gamepad.id.toLocaleLowerCase();
-  return controllers.find((controller) => {
-    const controllerName = String(controller?.strName ?? "").toLocaleLowerCase();
-    return controllerName.length >= 5 && (name.includes(controllerName) || controllerName.includes(name));
-  });
-}
-
-function controllerFromRecentGamepad(): any {
-  let latest: { controller: any; timestamp: number } | null = null;
-  for (const gamepad of Array.from(navigator.getGamepads?.() ?? []).filter(Boolean) as Gamepad[]) {
-    const timestamp = Number(gamepad.timestamp) || 0;
-    const previous = gamepadTimestamps.get(gamepad.index);
-    gamepadTimestamps.set(gamepad.index, timestamp);
-    if (previous === undefined || timestamp <= previous) continue;
-    const controller = controllerForGamepad(gamepad);
-    if (controller && (!latest || timestamp >= latest.timestamp)) latest = { controller, timestamp };
-  }
-  return latest?.controller;
-}
-
-function primeGamepadTimestamps() {
-  gamepadTimestamps.clear();
-  for (const gamepad of Array.from(navigator.getGamepads?.() ?? []).filter(Boolean) as Gamepad[]) {
-    gamepadTimestamps.set(gamepad.index, Number(gamepad.timestamp) || 0);
-  }
 }
 
 function later(callback: () => void, delay: number): number {
@@ -795,13 +748,9 @@ function stopActiveHaptics() {
   stopNativeHaptics();
 }
 
-export function playNavigationHaptic(action: HapticAction, controllerIndex?: number) {
+function playNavigationHaptic(action: HapticAction, controllerIndex: number) {
   if (!config.enabled || !steamIsForeground()) return;
-  const controller = activeController(controllerIndex ?? lastControllerIndex);
-  if (!controller) return;
-  const index = Number(controller.nControllerIndex);
-  lastControllerIndex = index;
-  playActionPattern(index, action);
+  playActionPattern(controllerIndex, action);
 }
 
 export function configureNavigationHaptics(next: Partial<NavigationHapticsConfig>) {
@@ -837,14 +786,14 @@ function actionForButton(button: number): HapticAction | null {
 
 export function installNavigationHaptics(): () => void {
   let registration: any;
-  let activeControllerRegistration: any;
   let lastElement: HTMLElement | null = null;
   let lastIdentity = "";
   let lastBox: DOMRect | null = null;
   let lastSliderValue: number | null = null;
   let lastToggleState: string | null = null;
-  let lastButtonAction: HapticAction | null = null;
-  let lastButtonAt = 0;
+  let lastButtonAt = -Infinity;
+  let lastKeyboardAt = -Infinity;
+  let controllerInput: { index: number; at: number } | undefined;
   let lastFocusAction: HapticAction | null = null;
   let lastFocusActionAt = 0;
   const identities = new WeakMap<HTMLElement, number>();
@@ -852,26 +801,60 @@ export function installNavigationHaptics(): () => void {
   let lastLetter = "";
   let lastLetterAt = 0;
   const letterObservers = new Map<Document, MutationObserver>();
-  const focusDocuments = new Map<Document, { observer: MutationObserver; onValue: EventListener }>();
+  const focusDocuments = new Map<Document, { observer?: MutationObserver; onValue: EventListener; keyTarget: Window | Document }>();
+  const heldKeys = new Set<string>();
   let focusFrame: number | undefined;
   let focusContext: any;
   let focusRegistration: any;
 
+  const interruptControllerFeedback = () => {
+    lastKeyboardAt = performance.now();
+    // A delayed native reply or waveform can outlive the focus attribution
+    // window. A new input device must cancel it regardless of that age.
+    if (controllerInput) {
+      soundRequests.forEach(discardSoundRequest);
+      stopActiveHaptics();
+    }
+    controllerInput = undefined;
+  };
+  const onKeyboard = (event: Event) => {
+    if (!event.isTrusted) return;
+    const key = (event as KeyboardEvent).code || (event as KeyboardEvent).key || "keyboard";
+    if (event.type === "keyup") heldKeys.delete(key);
+    else heldKeys.add(key);
+    interruptControllerFeedback();
+  };
+  const onPointer = (event: Event) => {
+    if (event.isTrusted) interruptControllerFeedback();
+  };
+  const onBlur = (event: Event) => {
+    // Capturing blur also sees ordinary focus changes between controls.
+    // Only leaving the window loses the corresponding keyboard key-up events.
+    if (event.target === event.currentTarget) heldKeys.clear();
+  };
+
+  const controllerForFocus = (now: number) => controllerInput && now - controllerInput.at <= CONTROLLER_FOCUS_WINDOW_MS
+    && controllerFor(controllerInput.index) ? controllerInput.index : undefined;
+
   const playFocusAction = (action: HapticAction) => {
     const now = performance.now();
+    const index = controllerForFocus(now);
+    if (index === undefined) return;
     if (now - lastButtonAt < 180) return;
     if (lastFocusAction === action && now - lastFocusActionAt < 140) return;
     lastFocusAction = action;
     lastFocusActionAt = now;
-    playNavigationHaptic(action);
+    playNavigationHaptic(action, index);
   };
 
   const playLetter = (value: string) => {
     const now = performance.now();
+    const index = controllerForFocus(now);
+    if (index === undefined) return;
     if (value === lastLetter && now - lastLetterAt < 80) return;
     lastLetter = value;
     lastLetterAt = now;
-    playNavigationHaptic("letter");
+    playNavigationHaptic("letter", index);
   };
 
   const inspectLetter = (node: Node) => {
@@ -898,7 +881,7 @@ export function installNavigationHaptics(): () => void {
       const Observer = root.MutationObserver as typeof MutationObserver | undefined;
       if (!Observer) continue;
       const observer = new Observer((mutations) => {
-        if (!config.enabled || !steamIsForeground()) return;
+        if (!config.enabled || controllerForFocus(performance.now()) === undefined || !steamIsForeground()) return;
         for (const mutation of mutations) {
           inspectLetter(mutation.target);
           mutation.addedNodes.forEach(inspectLetter);
@@ -908,7 +891,6 @@ export function installNavigationHaptics(): () => void {
       letterObservers.set(doc, observer);
     }
   };
-  primeGamepadTimestamps();
   bindLetterObservers();
   const inspectFocus = () => {
     if (!config.enabled || !steamIsForeground()) return;
@@ -986,18 +968,23 @@ export function installNavigationHaptics(): () => void {
     for (const root of steamRoots()) {
       const doc = root?.document as Document | undefined;
       const Observer = root?.MutationObserver as typeof MutationObserver | undefined;
-      if (!doc?.documentElement || !Observer || focusDocuments.has(doc)) continue;
+      if (!doc?.documentElement || focusDocuments.has(doc)) continue;
       const onValue = scheduleFocusInspection as EventListener;
+      const keyTarget = doc.defaultView ?? doc;
+      keyTarget.addEventListener("keydown", onKeyboard, true);
+      keyTarget.addEventListener("keyup", onKeyboard, true);
+      keyTarget.addEventListener("pointerdown", onPointer, true);
+      keyTarget.addEventListener("blur", onBlur, true);
       doc.addEventListener("focusin", onValue, true);
       doc.addEventListener("input", onValue, true);
       doc.addEventListener("change", onValue, true);
-      const observer = new Observer(scheduleFocusInspection);
-      observer.observe(doc.documentElement, {
+      const observer = Observer ? new Observer(scheduleFocusInspection) : undefined;
+      observer?.observe(doc.documentElement, {
         attributes: true,
         subtree: true,
         attributeFilter: ["aria-valuenow", "aria-checked", "aria-selected", "aria-activedescendant"],
       });
-      focusDocuments.set(doc, { observer, onValue });
+      focusDocuments.set(doc, { observer, onValue, keyTarget });
     }
   };
 
@@ -1010,31 +997,20 @@ export function installNavigationHaptics(): () => void {
   }, 500);
 
   try {
-    activeControllerRegistration = (window as any).SteamClient?.Input?.RegisterForActiveControllerChanges?.(
-      (message: any) => {
-        const controller = controllerFromActiveSlot(message);
-        if (controller) lastControllerIndex = Number(controller.nControllerIndex);
-      }
-    );
     registration = (window as any).SteamClient?.Input?.RegisterForControllerInputMessages?.(
       (...args: any[]) => {
         const message = args[0] && typeof args[0] === "object" ? args[0] : undefined;
-        const slotController = controllerFromActiveSlot(message);
-        const controllerIndex = Number(
-          slotController?.nControllerIndex
-          ?? message?.nControllerIndex
-          ?? message?.unControllerIndex
-          ?? args[0]
-        );
-        const button = Number(message?.eButton ?? message?.nButton ?? message?.button ?? args[1]);
-        const pressed = Boolean(message?.bPressed ?? message?.bDown ?? message?.pressed ?? args[2]);
-        if (!pressed) return;
-        if (Number.isInteger(controllerIndex) && activeController(controllerIndex)) lastControllerIndex = controllerIndex;
+        const index = message?.nControllerIndex ?? message?.unControllerIndex ?? args[0];
+        const button = message?.eButton ?? message?.nButton ?? message?.button ?? args[1];
+        const pressed = message?.bPressed ?? message?.bDown ?? message?.pressed ?? args[2];
+        const now = performance.now();
+        if (!config.enabled || pressed !== true || !Number.isInteger(button) || !controllerFor(index)
+          || heldKeys.size > 0 || now - lastKeyboardAt <= KEYBOARD_COLLISION_WINDOW_MS || !steamIsForeground()) return;
+        controllerInput = { index, at: now };
         const action = actionForButton(button);
         if (action) {
-          lastButtonAction = action;
-          lastButtonAt = performance.now();
-          playNavigationHaptic(action, controllerIndex);
+          lastButtonAt = now;
+          playNavigationHaptic(action, index);
         }
       }
     );
@@ -1048,8 +1024,12 @@ export function installNavigationHaptics(): () => void {
     try { focusRegistration?.Unregister?.(); } catch {}
     focusRegistration = undefined;
     focusContext = undefined;
-    focusDocuments.forEach(({ observer, onValue }, doc) => {
-      observer.disconnect();
+    focusDocuments.forEach(({ observer, onValue, keyTarget }, doc) => {
+      observer?.disconnect();
+      keyTarget.removeEventListener("keydown", onKeyboard, true);
+      keyTarget.removeEventListener("keyup", onKeyboard, true);
+      keyTarget.removeEventListener("pointerdown", onPointer, true);
+      keyTarget.removeEventListener("blur", onBlur, true);
       doc.removeEventListener("focusin", onValue, true);
       doc.removeEventListener("input", onValue, true);
       doc.removeEventListener("change", onValue, true);
@@ -1058,7 +1038,6 @@ export function installNavigationHaptics(): () => void {
     letterObservers.forEach((observer) => observer.disconnect());
     letterObservers.clear();
     try { (registration?.Unregister ?? registration?.unregister)?.call(registration); } catch {}
-    try { (activeControllerRegistration?.Unregister ?? activeControllerRegistration?.unregister)?.call(activeControllerRegistration); } catch {}
     pending.forEach((timer) => window.clearTimeout(timer));
     pending.clear();
     waveformTimers.clear();
@@ -1074,7 +1053,6 @@ export function installNavigationHaptics(): () => void {
     soundBuffersByAction.clear();
     playbackUrls = new WeakMap<object, string>();
     playbackAlreadyMatched = new WeakSet<object>();
-    gamepadTimestamps.clear();
     recentUiSound = null;
     recentUiTrigger = null;
     lastActionForCapture = null;

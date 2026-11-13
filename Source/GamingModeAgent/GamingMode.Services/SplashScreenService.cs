@@ -19,198 +19,158 @@ public sealed class SplashScreenService : IDisposable
 
 	private readonly object _sync = new object();
 
-	private DateTimeOffset? _shownAt;
-
-	private Dispatcher? _dispatcher;
-
-	private Thread? _thread;
-
-	private Window? _window;
-
-	public bool Running
+	private sealed class Surface
 	{
-		get
-		{
-			lock (_sync)
-			{
-				return _thread?.IsAlive ?? false;
-			}
-		}
+		internal readonly CancellationTokenSource Cancellation = new();
+		internal readonly long Started = Environment.TickCount64;
+		internal Dispatcher? Dispatcher;
+		internal Thread? Thread;
+		internal Window? Window;
+		internal nint Handle, EventHook;
+		internal uint NativeThread;
+		internal WinEventCallback? Callback;
 	}
-
-	public SplashScreenService(FileLogger logger)
-	{
-		_logger = logger;
-	}
-
+	private Surface? _surface;
+	private Func<bool>? _foregroundGuard;
+	private (int Left, int Top, int Width, int Height)? _physicalBounds;
+	public bool Running { get { lock (_sync) return _surface is { } surface && !surface.Cancellation.IsCancellationRequested && surface.Thread?.IsAlive == true; } }
+	public SplashScreenService(FileLogger logger) => _logger = logger;
+	internal void SetForegroundGuard(Func<bool> allowed) { lock (_sync) _foregroundGuard = allowed; }
+	internal void SetTargetPhysicalBounds(int left, int top, int width, int height)
+	{ if (width > 0 && height > 0) lock (_sync) _physicalBounds = (left, top, width, height); }
 	public void Show(GamingSplashSettings settings, int failSafeCloseMs = 150000)
 	{
-		if (!settings.Enabled)
-		{
-			return;
-		}
+		if (!settings.Enabled) return;
 		string? logoPath = ResolveLogoPath(settings.LogoPath);
 		ShowCore(() => CreateSplashWindow(logoPath, settings), failSafeCloseMs);
 	}
-
-	public void ShowTransition(ModeKind mode, string? language, GamingSplashSettings? settings = null)
+	public void ShowTransition(ModeKind mode, string? language, GamingSplashSettings? settings = null, int failSafeCloseMs = 90000)
 	{
 		ShowCore(() =>
 		{
 			Window window = CreateSplashWindow(null);
-			window.Left = 0;
-			window.Top = 0;
-			window.Width = SystemParameters.PrimaryScreenWidth;
-			window.Height = SystemParameters.PrimaryScreenHeight;
+			window.Left = 0; window.Top = 0;
+			window.Width = SystemParameters.PrimaryScreenWidth; window.Height = SystemParameters.PrimaryScreenHeight;
 			window.Content = ModeTransitionVisual.Create(mode, language, settings);
 			return window;
-		}, 90000);
+		}, failSafeCloseMs);
 	}
-
 	private void ShowCore(Func<Window> createWindow, int failSafeCloseMs)
 	{
+		Surface surface = new(); Func<bool>? allowed; (int Left,int Top,int Width,int Height)? bounds;
 		lock (_sync)
 		{
-			Thread thread = _thread;
-			if (thread != null && thread.IsAlive)
-			{
-				return;
-			}
-			_shownAt = DateTimeOffset.Now;
+			if (_surface?.Thread?.IsAlive == true) return;
+			_surface = surface; allowed = _foregroundGuard; bounds = _physicalBounds;
 		}
-		ManualResetEventSlim ready = new ManualResetEventSlim(initialState: false);
-		var firstFrameTimer = System.Diagnostics.Stopwatch.StartNew();
-		int failSafeMs = Math.Clamp(failSafeCloseMs, 5000, 300000);
-		Thread thread2 = new Thread((ThreadStart)delegate
+		ManualResetEventSlim ready = new(false);
+		bool Allowed() { try { return !surface.Cancellation.IsCancellationRequested && (allowed?.Invoke() ?? true); } catch { return false; } }
+		surface.Thread = new Thread(() =>
 		{
+			DispatcherTimer? failSafe = null;
+			nint previousDpi = SetThreadDpiAwarenessContext(new nint(-4));
 			try
 			{
-				Dispatcher currentDispatcher = Dispatcher.CurrentDispatcher;
-				Window window = createWindow();
+				var dispatcher = Dispatcher.CurrentDispatcher; surface.Dispatcher = dispatcher; surface.NativeThread = GetCurrentThreadId();
+				if (!Allowed()) { surface.Cancellation.Cancel(); ready.Set(); return; }
+				var window = createWindow(); surface.Window = window;
+				window.SourceInitialized += (_, _) =>
+				{
+					surface.Handle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+					if (bounds is { } target) SetWindowPos(surface.Handle, new nint(-1), target.Left, target.Top, target.Width, target.Height, 0x0010);
+					if (allowed is not null)
+					{
+						surface.Callback = (_, _, _, _, _, _, _) => { if (!Allowed()) CancelSurface(surface); };
+						surface.EventHook = SetWinEventHook(3, 3, 0, surface.Callback, 0, 0, 0);
+						if (surface.EventHook == 0) CancelSurface(surface);
+					}
+				};
 				window.ContentRendered += (_, _) =>
-					_logger.Info($"Gaming splash first frame rendered after {firstFrameTimer.ElapsedMilliseconds} ms.");
-				lock (_sync)
 				{
-					_dispatcher = currentDispatcher;
-					_window = window;
-				}
+					_logger.Info($"Gaming splash first frame rendered after {Environment.TickCount64 - surface.Started} ms.");
+					ready.Set();
+					if (!Allowed()) CancelSurface(surface);
+				};
+				window.Closed += (_, _) =>
+				{
+					failSafe?.Stop(); surface.Cancellation.Cancel();
+					if (surface.EventHook != 0) { UnhookWinEvent(surface.EventHook); surface.EventHook = 0; }
+					surface.Handle = 0; ready.Set(); dispatcher.BeginInvokeShutdown(DispatcherPriority.Send);
+				};
+				if (!Allowed()) { surface.Cancellation.Cancel(); ready.Set(); return; }
 				window.Show();
-				DispatcherTimer failSafeTimer = new DispatcherTimer
-				{
-					Interval = TimeSpan.FromMilliseconds(failSafeMs)
-				};
-				failSafeTimer.Tick += delegate
-				{
-					failSafeTimer.Stop();
-					try
-					{
-						_logger.Info("Gaming splash screen fail-safe closed the window.");
-						window.Close();
-					}
-					catch
-					{
-					}
-					currentDispatcher.InvokeShutdown();
-				};
-				failSafeTimer.Start();
-				ready.Set();
-				Dispatcher.Run();
+				if (bounds is { } shownBounds && surface.Handle != 0)
+					SetWindowPos(surface.Handle, new nint(-1), shownBounds.Left, shownBounds.Top, shownBounds.Width, shownBounds.Height, 0x0010);
+				if (!Allowed()) CancelSurface(surface);
+				failSafe = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Math.Clamp(failSafeCloseMs, 1000, 300000)) };
+				failSafe.Tick += (_, _) => { _logger.Info("Gaming splash deadline reached."); CancelSurface(surface); };
+				failSafe.Start(); Dispatcher.Run();
 			}
-			catch (Exception exception)
+			catch (Exception error) { surface.Cancellation.Cancel(); _logger.Error("Gaming splash could not be shown.", error); ready.Set(); }
+			finally
 			{
-				_logger.Error("Gaming splash screen could not be shown.", exception);
-				ready.Set();
+				failSafe?.Stop();
+				if (surface.EventHook != 0) { UnhookWinEvent(surface.EventHook); surface.EventHook = 0; }
+				if (previousDpi != 0) SetThreadDpiAwarenessContext(previousDpi);
+				lock (_sync) if (ReferenceEquals(_surface, surface)) _surface = null;
 			}
-		})
-		{
-			IsBackground = true,
-			Name = "Gaming Mode Splash"
-		};
-		thread2.SetApartmentState(ApartmentState.STA);
-		lock (_sync)
-		{
-			_thread = thread2;
-		}
-		thread2.Start();
-		if (!ready.Wait(TimeSpan.FromSeconds(3.0)))
-			_logger.Info("Gaming splash creation is still pending after 3000 ms.");
+		}) { IsBackground = true, Name = "Gaming Mode Splash" };
+		surface.Thread.SetApartmentState(ApartmentState.STA); surface.Thread.Start();
+		if (!ready.Wait(TimeSpan.FromSeconds(3))) _logger.Info("Gaming splash first frame is still pending after 3000 ms.");
 	}
-
+	private static void CancelSurface(Surface surface)
+	{
+		surface.Cancellation.Cancel();
+		// Lower only our own no-activate surface immediately, before its Dispatcher
+		// can process a close. A foreign foreground window must stay accessible.
+		if (surface.Handle != 0 && GetWindowThreadProcessId(surface.Handle, out uint owner) == surface.NativeThread
+			&& owner == Environment.ProcessId) SetWindowPos(surface.Handle, new nint(-2), 0, 0, 0, 0, 0x0013);
+		var dispatcher = surface.Dispatcher;
+		if (dispatcher is null || dispatcher.HasShutdownStarted) return;
+		dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() =>
+		{
+			try { surface.Window?.Close(); } catch (InvalidOperationException) { }
+			dispatcher.BeginInvokeShutdown(DispatcherPriority.Send);
+		}));
+	}
+	internal void CancelImmediately() { Surface? surface; lock (_sync) surface = _surface; if (surface is not null) CancelSurface(surface); }
 	public async Task HideAsync(int minVisibleMs = 0, bool fade = false, int fadeMs = 450)
 	{
-		Dispatcher dispatcher;
-		Thread thread;
-		Window window;
-		DateTimeOffset? shownAt;
-		lock (_sync)
-		{
-			dispatcher = _dispatcher;
-			thread = _thread;
-			window = _window;
-			shownAt = _shownAt;
-			_dispatcher = null;
-			_thread = null;
-			_window = null;
-			_shownAt = null;
-		}
-		if (dispatcher == null)
-		{
-			return;
-		}
-		if (shownAt.HasValue && minVisibleMs > 0)
-		{
-			int num = minVisibleMs - (int)(DateTimeOffset.Now - shownAt.Value).TotalMilliseconds;
-			if (num > 0)
-			{
-				await Task.Delay(num);
-			}
-		}
+		Surface? surface; lock (_sync) surface = _surface;
+		if (surface?.Dispatcher is not { } dispatcher || surface.Cancellation.IsCancellationRequested) return;
 		try
 		{
-			Task hideTask = (await dispatcher.InvokeAsync(delegate
+			long remaining = minVisibleMs - (Environment.TickCount64 - surface.Started);
+			if (remaining > 0) await Task.Delay((int)Math.Min(remaining,120000), surface.Cancellation.Token).ConfigureAwait(false);
+			if (surface.Cancellation.IsCancellationRequested || dispatcher.HasShutdownStarted) return;
+			var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+			using var registration = surface.Cancellation.Token.Register(() => completion.TrySetResult());
+			await dispatcher.InvokeAsync(() =>
 			{
-				TaskCompletionSource completion = new TaskCompletionSource();
-				if (!fade || window == null)
-				{
-					window?.Close();
-					dispatcher.InvokeShutdown();
-					completion.SetResult();
-					return completion.Task;
-				}
-				DoubleAnimation doubleAnimation = new DoubleAnimation
-				{
-					From = window.Opacity,
-					To = 0.0,
-					Duration = TimeSpan.FromMilliseconds(Math.Clamp(fadeMs, 100, 3000)),
-					FillBehavior = FillBehavior.Stop
-				};
-				doubleAnimation.Completed += delegate
-				{
-					window.Opacity = 0.0;
-					window.Close();
-					dispatcher.InvokeShutdown();
-					completion.SetResult();
-				};
-				window.BeginAnimation(UIElement.OpacityProperty, doubleAnimation);
-				return completion.Task;
-			}).Task);
-			await Task.WhenAny(hideTask, Task.Delay(Math.Clamp(fadeMs, 100, 3000) + 5000));
-			if (thread != null && thread.IsAlive)
-			{
-				thread.Join(TimeSpan.FromSeconds(1.0));
-			}
-			_logger.Info("Gaming splash screen hidden.");
+				if (surface.Cancellation.IsCancellationRequested) { completion.TrySetResult(); return; }
+				if (!fade || surface.Window is not { } window) { CancelSurface(surface); completion.TrySetResult(); return; }
+				var animation = new DoubleAnimation { From = window.Opacity, To = 0, Duration = TimeSpan.FromMilliseconds(Math.Clamp(fadeMs,100,3000)), FillBehavior = FillBehavior.HoldEnd };
+				animation.Completed += (_, _) => { CancelSurface(surface); completion.TrySetResult(); };
+				window.BeginAnimation(UIElement.OpacityProperty, animation);
+			}, DispatcherPriority.Send);
+			await completion.Task.WaitAsync(TimeSpan.FromMilliseconds(Math.Clamp(fadeMs,100,3000)+1000)).ConfigureAwait(false);
 		}
-		catch (Exception exception)
-		{
-			_logger.Error("Gaming splash screen could not be hidden.", exception);
-		}
+		catch (OperationCanceledException) { }
+		catch (Exception error) { _logger.Error("Gaming splash close failed.", error); CancelSurface(surface); }
 	}
-
 	public void Dispose()
 	{
-		HideAsync().GetAwaiter().GetResult();
+		Surface? surface; lock (_sync) surface = _surface;
+		if (surface is null) return;
+		CancelSurface(surface);
+		if (surface.Thread is { IsAlive:true } thread && thread != Thread.CurrentThread) thread.Join(1000);
 	}
+	private delegate void WinEventCallback(nint hook,uint kind,nint hwnd,int objectId,int childId,uint thread,uint tick);
+	[DllImport("user32.dll")] private static extern nint SetWinEventHook(uint minimum,uint maximum,nint module,WinEventCallback callback,uint process,uint thread,uint flags);
+	[DllImport("user32.dll")] private static extern bool UnhookWinEvent(nint hook);
+	[DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
+	[DllImport("user32.dll")] private static extern nint SetThreadDpiAwarenessContext(nint context);
+	[DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(nint hwnd,out uint pid);
 
 	internal static void ShowPreview(string variant, GamingSplashSettings settings, string? language)
 	{
@@ -280,16 +240,6 @@ public sealed class SplashScreenService : IDisposable
 			Height = SystemParameters.VirtualScreenHeight,
 			WindowStartupLocation = WindowStartupLocation.Manual
 		};
-		// Steam may create its fullscreen window after us. Keep the curtain above it
-		// without taking keyboard/controller focus from the destination session.
-		var foregroundTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
-		foregroundTimer.Tick += (_, _) =>
-		{
-			nint handle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
-			if (handle != 0) SetWindowPos(handle, new IntPtr(-1), 0, 0, 0, 0, 0x13);
-		};
-		window.ContentRendered += (_, _) => foregroundTimer.Start();
-		window.Closed += (_, _) => foregroundTimer.Stop();
 		window.SourceInitialized += delegate
 		{
 			if (interactive) return;

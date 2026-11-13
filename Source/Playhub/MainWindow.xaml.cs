@@ -76,6 +76,7 @@ public sealed partial class MainWindow : Window
     private bool _windowSizeSavePending;
     private PointerRoutedEventArgs? _lastWheelArgs;
     private AppWindow? _appWindow;
+    private IDisposable? _shellIdentity;
 
     private Grid _titleBar = new();
     private Border _titleBarAccent = new();
@@ -152,6 +153,8 @@ public sealed partial class MainWindow : Window
     private List<PluginMediaInfo> _lightboxMedia = new();
     private int _lightboxIndex;
     private Action? _collapseOpenPluginCard; // accordion: collapses the currently open store card
+    private string? _openPluginCardKey;
+    private bool _featuredRefreshDeferred;
     private Action? _cancelPluginMorphVisual;
     private int _pluginCardMorphVersion;
     private Grid _welcomeRoot = new();
@@ -323,9 +326,13 @@ public sealed partial class MainWindow : Window
         Title = "Playhub";
         ExtendsContentIntoTitleBar = true;
         SystemBackdrop = new MicaBackdrop();
-        Closed += (_, _) => { _playhubUpdateCheckTimer?.Stop(); CancelNavigationRestore(); CancelPluginCardMorph(); ReleaseMediaForShutdown(); CloseLibraryDensity(); ClosePcCardViewports(); };
+        Closed += (_, _) => { _shellIdentity?.Dispose(); _playhubUpdateCheckTimer?.Stop(); CancelNavigationRestore(); CancelPluginCardMorph(); ReleaseMediaForShutdown(); CloseLibraryDensity(); ClosePcCardViewports(); };
         SetWindowShape();
-        if (_appWindow is not null) _appWindow.Changed += OnAppWindowChanged;
+        if (_appWindow is not null)
+        {
+            _appWindow.Changed += OnAppWindowChanged;
+            _appWindow.Closing += (_, _) => _shellIdentity?.Dispose();
+        }
         // Seed accent brushes BEFORE the navigation is built so its selection
         // indicator and item brushes resolve our instances (and update live).
         ApplyAccentResources(ParseColor(_settings.AccentColor));
@@ -421,6 +428,22 @@ public sealed partial class MainWindow : Window
                 Diag.Step("LoadAsync: sync plugin Decky non riuscita: " + ex.Message);
             }
 
+            // Bring an existing CSS Loader forward with the Windows fix shipped
+            // in this setup. Its themes and settings live outside the plugin.
+            // Its running worker picks up the files on its next normal reload.
+            try
+            {
+                if (_cssLoaderInstaller.HasBundledUpdate(_settings.DeckyPluginsPath))
+                {
+                    var cssUpdate = await _cssLoaderInstaller.InstallLatestAsync(_settings.DeckyPluginsPath);
+                    Diag.Step(cssUpdate.Success ? "LoadAsync: CSS Loader aggiornato" : "LoadAsync: aggiornamento CSS Loader rinviato");
+                }
+            }
+            catch (Exception ex)
+            {
+                Diag.Step("LoadAsync: aggiornamento CSS Loader rinviato: " + ex.Message);
+            }
+
             ApplyTheme();
             ApplyBackdrop();
             PopulateSettingsControls();
@@ -432,8 +455,6 @@ public sealed partial class MainWindow : Window
             _ = RefreshPluginsAsync();
             Diag.Step("LoadAsync: RefreshGamingMode");
             await RefreshGamingModeAsync();
-            Diag.Step("LoadAsync: ResetXboxGameBarIfStuck");
-            ResetXboxGameBarIfStuck();
             Diag.Step("LoadAsync: RefreshDeckyState");
             await RefreshDeckyStateAsync();
             Diag.Step("LoadAsync: steps done");
@@ -514,15 +535,41 @@ public sealed partial class MainWindow : Window
                 workArea.X + Math.Max(0, (workArea.Width - width) / 2),
                 workArea.Y + Math.Max(0, (workArea.Height - height) / 2)));
 
-            var icon = Path.Combine(AppContext.BaseDirectory, "Assets", "Brand", "Playhub.ico");
-            if (File.Exists(icon))
-            {
-                _appWindow.SetIcon(icon);
-            }
         }
-        catch
+        catch (Exception error)
         {
+            Diag.Step("Window geometry: " + error.Message);
         }
+        finally
+        {
+            SetWindowIcon();
+        }
+    }
+
+    private void SetWindowIcon()
+    {
+        var icon = Path.Combine(AppContext.BaseDirectory, "Assets", "Brand", "Playhub.ico");
+        try
+        {
+            // The icon must also be assigned when a monitor or sizing call fails.
+            var appWindow = _appWindow ?? AppWindow.GetFromWindowId(
+                Win32Interop.GetWindowIdFromWindow(WindowNative.GetWindowHandle(this)));
+            if (File.Exists(icon))
+                appWindow.SetIcon(icon);
+            else
+                Diag.Step("Window icon asset missing");
+        }
+        catch (Exception error)
+        {
+            Diag.Step("Window icon: " + error.Message);
+        }
+        try
+        {
+            _shellIdentity?.Dispose();
+            _shellIdentity = Playhub.Shared.ShellIdentity.SetMainWindow(WindowNative.GetWindowHandle(this),
+                Path.Combine(AppContext.BaseDirectory, "Playhub.exe"), icon, Diag.Step);
+        }
+        catch (Exception error) { Diag.Step("Shell window identity: " + error.Message); }
     }
 
     private void ApplySavedWindowSize()
@@ -1662,6 +1709,15 @@ public sealed partial class MainWindow : Window
             Height = 380,
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
+        _pluginFeaturedHost.LostFocus += (_, _) => DispatcherQueue.TryEnqueue(
+            Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (!_featuredRefreshDeferred || PluginOwnsFocus(_pluginFeaturedHost) ||
+                _currentPageTag != "plugins" || _pluginStoreMode == "manage" ||
+                _pluginFeaturedHost.Visibility != Visibility.Visible) return;
+            _featuredRefreshDeferred = false;
+            RenderFeaturedPlugin();
+        });
         _pluginFeaturedHost.SizeChanged += (_, args) =>
         {
             if (_featuredPluginExpanded || args.NewSize.Width <= 0)
@@ -1834,6 +1890,7 @@ public sealed partial class MainWindow : Window
                 DispatcherQueue.TryEnqueue(RenderPluginManagementIfNeeded);
             }
         };
+        _pluginManageContent.LostFocus += (_, _) => DispatcherQueue.TryEnqueue(RenderPluginManagementIfNeeded);
         _pluginManageView.Children.Add(_pluginManageContent);
         _pluginManageView.Children.Add(BuildPluginRestartCard());
         panel.Children.Add(_pluginManageView);
@@ -2200,14 +2257,11 @@ public sealed partial class MainWindow : Window
 
         // ---------- 5. Controller, streaming e audio ----------
         var inputCard = Card();
-        inputCard.Children.Add(IconHeader(((char)0xE7FC).ToString(), "Controller e streaming",
-            "Controller, Game Bar e streaming sulla rete di casa."));
+        inputCard.Children.Add(IconHeader(((char)0xE7FC).ToString(), "Controller e streaming", ""));
         AddExplainedToggle(inputCard, "Prepara i controller",
             "Applica le impostazioni dei controller quando entri in Gaming Mode.", "inputCompatibility");
         AddExplainedToggle(inputCard, "Prepara lo streaming locale",
             "Configura il sistema per lo streaming dei giochi sulla rete di casa.", "sunshineCompatibility");
-        AddExplainedToggle(inputCard, "Xbox Game Bar automatica",
-            "Attiva la Xbox Game Bar dal controller nei giochi Xbox e Microsoft Store, poi la rispegne quando esci.", "xboxGameBar");
         inputCard.Children.Add(Labeled(
             "Host per il gioco in remoto",
             BrowseRow(_sunshinePathBox, folder: false, exts: new[] { ".exe" })));
@@ -2634,7 +2688,7 @@ public sealed partial class MainWindow : Window
         var card = BuildDeckyStep(
             ((char)0xE7FC).ToString(),
             "Apertura della Game Bar dal controller disattivata",
-            "Il tasto del controller non deve aprire la Game Bar: in Big Picture crea problemi di navigazione. Ci pensa Playhub ad attivarla solo per i giochi Xbox.",
+            "Puoi scegliere nelle impostazioni di Windows se il pulsante del controller apre la Game Bar.",
             ActionRow(_gameBarButton),
             out _gameBarTile, out _gameBarGlyph, out _gameBarStatus);
 
@@ -2685,9 +2739,12 @@ public sealed partial class MainWindow : Window
         text.Children.Add(IconHeader(
             ((char)0xE7F4).ToString(),
             "Iniziamo!",
-            "Apri Steam e clicca su Modalità Big Picture."));
-        text.Children.Add(ActionRow(Button("Apri Steam", async () =>
-            await Windows.System.Launcher.LaunchUriAsync(new Uri("steam://open/main")), primary: true)));
+            "Apri Steam Big Picture e continua con il controller."));
+        text.Children.Add(ActionRow(Button("Apri Big Picture", async () =>
+        {
+            if (!await _gamingMode.OpenSteamBigPictureAsync(_gamingConfig.Safety.ApiPort))
+                SetStatus("Gaming Mode non risponde. Avvialo e riprova.", InfoBarSeverity.Warning);
+        }, primary: true)));
 
         var imagePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Tutorials", "Big Picture Mode tutorial.png");
         var imageStage = new Border
@@ -3437,12 +3494,14 @@ public sealed partial class MainWindow : Window
     {
         if (_cssLoaderStatusText is null || _cssLoaderInstallButton is null || _cssLoaderRemoveButton is null) return;
         var status = _cssLoaderInstaller.GetStatus(_settings.DeckyPluginsPath);
+        var update = _cssLoaderInstaller.HasBundledUpdate(_settings.DeckyPluginsPath);
         _cssLoaderStatusText.Text = status.Installed
             ? string.Format(T("CSS Loader {0} è pronto. Ora puoi applicare il profilo Playhub."), status.Version)
             : T("Installa CSS Loader per usare il profilo Playhub.");
-        _cssLoaderInstallButton.Visibility = status.Installed ? Visibility.Collapsed : Visibility.Visible;
+        _cssLoaderInstallButton.Content = T(update ? "Aggiorna" : "Installa");
+        _cssLoaderInstallButton.Visibility = !status.Installed || update ? Visibility.Visible : Visibility.Collapsed;
         _cssLoaderRemoveButton.Visibility = status.Installed ? Visibility.Visible : Visibility.Collapsed;
-        _cssLoaderInstallButton.IsEnabled = !_cssLoaderInstallBusy && !status.Installed;
+        _cssLoaderInstallButton.IsEnabled = !_cssLoaderInstallBusy && (!status.Installed || update);
         _cssLoaderRemoveButton.IsEnabled = !_cssLoaderInstallBusy && status.Installed;
         _cssProfileInstallButton.IsEnabled = !_cssLoaderInstallBusy && status.Installed;
     }
@@ -4004,9 +4063,10 @@ by Valve.";
 
     private void RenderPluginManagement()
     {
+        if (PluginOwnsFocus(_pluginManageContent)) return;
         CancelPluginCardMorph();
         _pluginManagementDirty = false;
-        _pluginManageContent.Children.Clear();
+        var sections = new List<UIElement>();
 
         var installed = _plugins
             .Where(plugin => plugin.IsInstalled && !IsIntegratedGamingModePlugin(plugin))
@@ -4023,8 +4083,6 @@ by Valve.";
         // Bulk updates bypass commit invalidation; unchanged renders keep both cached layouts.
         if (_pluginManageVisibleSnapshot is null || !_pluginManageVisibleSnapshot.SequenceEqual(snapshot))
         {
-            _pluginManageListCache = null;
-            _pluginManageCardsCache = null;
             _pluginManageVisibleSnapshot = snapshot;
         }
 
@@ -4071,7 +4129,7 @@ by Valve.";
             headingCopy.Margin = new Thickness(0, compact ? 12 : 0, 0, 0);
             foreach (var button in heading.Children.OfType<Button>()) Grid.SetRow(button, compact ? 1 : 0);
         };
-        _pluginManageContent.Children.Add(heading);
+        sections.Add(heading);
 
         _pluginManageProgress = new ProgressBar
         {
@@ -4091,7 +4149,7 @@ by Valve.";
         var progress = new StackPanel { Spacing = 6 };
         progress.Children.Add(_pluginManageProgressText);
         progress.Children.Add(_pluginManageProgress);
-        _pluginManageContent.Children.Add(progress);
+        sections.Add(progress);
 
         if (installed.Count == 0)
         {
@@ -4115,21 +4173,24 @@ by Valve.";
                 Opacity = 0.74,
                 HorizontalAlignment = HorizontalAlignment.Center
             });
-            _pluginManageContent.Children.Add(empty);
+            sections.Add(empty);
         }
         else if (visible.Count == 0)
-            _pluginManageContent.Children.Add(Body(T("Nessun plugin trovato.")));
+            sections.Add(Body(T("Nessun plugin trovato.")));
         else if (_pluginAllLayout == "list")
         {
             _pluginManageListCache ??= BuildPluginStoreListRepeater(visible, managed: true);
-            AttachPluginView(_pluginManageContent, _pluginManageListCache);
+            if (_pluginManageListCache is ItemsRepeater list) RefreshPluginResults(list, visible);
+            sections.Add(_pluginManageListCache);
         }
         else
         {
             _pluginManageCardsCache ??= BuildPluginStoreGrid(visible, managed: true);
-            AttachPluginView(_pluginManageContent, _pluginManageCardsCache);
+            if (_pluginManageCardsCache is ItemsRepeater cards) RefreshPluginResults(cards, visible);
+            sections.Add(_pluginManageCardsCache);
         }
 
+        SynchronizePluginSections(_pluginManageContent, sections);
         LocalizeElement(_pluginManageContent);
     }
 
@@ -4470,17 +4531,27 @@ by Valve.";
 
     private void RenderPluginCards()
     {
+        var featured = GetFeaturedPlugins();
         var refreshFeatured = _pluginFeaturedHost.Visibility == Visibility.Visible &&
-            (_pluginCardsDirty || _pluginFeaturedHost.Children.Count == 0);
+            (_featuredRenderedCacheVersion != _featuredFrameCacheVersion || _pluginFeaturedHost.Children.Count == 0);
         _pluginCardsDirty = false;
-        _collapseOpenPluginCard?.Invoke();
-        _collapseOpenPluginCard = null;
-        CancelPluginCardMorph();
         if (refreshFeatured)
         {
-            RenderFeaturedPlugin();
+            // A membership change can invalidate the featured cache while an
+            // install/repository action still owns keyboard or controller focus.
+            // Defer this one region until focus leaves; keep the other results live.
+            if (PluginOwnsFocus(_pluginFeaturedHost))
+            {
+                _featuredRefreshDeferred = true;
+                StopFeaturedAutoAdvance();
+            }
+            else
+            {
+                _featuredRefreshDeferred = false;
+                RenderFeaturedPlugin();
+            }
         }
-        _pluginCards.Children.Clear();
+        var sections = new List<UIElement>();
 
         var query = _pluginSearchBox.Text?.Trim() ?? string.Empty;
         IEnumerable<DeckyPluginInfo> discoveryPool = string.Equals(_pluginCategoryFilter, "Novità", StringComparison.OrdinalIgnoreCase)
@@ -4493,25 +4564,37 @@ by Valve.";
             ? SortPluginAll(FilterPluginAllBySource(visibleQuery)).ToList()
             : visibleQuery.OrderBy(plugin => plugin.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
 
+        // A release update elsewhere must not close an expanded card. Collapse
+        // only when its own identity has left the current result/filter.
+        if (_openPluginCardKey is { } openKey &&
+            !visible.Any(plugin => string.Equals(PluginStoreKey(plugin), openKey, StringComparison.OrdinalIgnoreCase)))
+        {
+            _collapseOpenPluginCard?.Invoke();
+            _collapseOpenPluginCard = null;
+            _openPluginCardKey = null;
+            CancelPluginCardMorph();
+        }
+
         if (visible.Count == 0 && !_pluginShowAll && string.IsNullOrWhiteSpace(query) && _pluginCategoryFilter is null)
         {
-            _pluginCards.Children.Add(new TextBlock
+            sections.Add(new TextBlock
             {
                 Text = T("Nessun plugin trovato."),
                 Style = StyleResource("PlayhubBodyTextStyle"),
                 Margin = new Thickness(0, 28, 0, 28),
                 HorizontalAlignment = HorizontalAlignment.Center
             });
+            SynchronizePluginSections(_pluginCards, sections);
             return;
         }
 
         if (!string.IsNullOrWhiteSpace(query))
         {
-            _pluginCards.Children.Add(BuildPluginStoreCategory("Risultati", visible, showLayoutToggle: true));
+            sections.Add(BuildPluginStoreCategory("Risultati", visible, showLayoutToggle: true));
         }
         else if (_pluginShowAll)
         {
-            _pluginCards.Children.Add(BuildPluginStoreCategory(_pluginCategoryFilter ?? "Tutti i plugin", visible, showLayoutToggle: true));
+            sections.Add(BuildPluginStoreCategory(_pluginCategoryFilter ?? "Tutti i plugin", visible, showLayoutToggle: true));
         }
         else
         {
@@ -4520,12 +4603,13 @@ by Valve.";
             {
                 var group = visible.Where(plugin => PluginBelongsToCategory(plugin, category)).ToList();
                 if (group.Count == 0) continue;
-                _pluginCards.Children.Add(BuildPluginDiscoveryCategory(
+                sections.Add(BuildPluginDiscoveryCategory(
                     category,
                     group));
             }
         }
 
+        SynchronizePluginSections(_pluginCards, sections);
         LocalizeElement(_pluginCards);
     }
 
@@ -4575,6 +4659,7 @@ by Valve.";
         _featuredPluginExpanded = false;
         SetFeaturedPluginCollapsedSize(_pluginFeaturedHost.ActualWidth);
         var featured = GetFeaturedPlugins();
+        _featuredRenderedCacheVersion = _featuredFrameCacheVersion;
         if (featured.Count == 0)
         {
             _pluginFeaturedHost.Children.Add(new ProgressRing
@@ -4688,6 +4773,20 @@ by Valve.";
         => PluginChronology.Identity(plugin);
 
     private FrameworkElement BuildFeaturedPluginFrame(DeckyPluginInfo plugin)
+        => LivePluginView(plugin, () => BuildFeaturedPluginFrameCore(plugin), (slot, content) =>
+        {
+            _featuredAutoAdvanceControls.Remove(slot);
+            if (content is FrameworkElement card && _featuredAutoAdvanceControls.TryGetValue(card, out var countdown))
+                _featuredAutoAdvanceControls.Add(slot, countdown);
+            if (_pluginFeaturedCarouselHost.Children.LastOrDefault() == slot)
+            {
+                StopFeaturedAutoAdvance();
+                _featuredAutoAdvanceCard = null;
+                ResetFeaturedAutoAdvance();
+            }
+        });
+
+    private FrameworkElement BuildFeaturedPluginFrameCore(DeckyPluginInfo plugin)
     {
         var imagePath = PluginImagePath(plugin);
         var actions = (FrameworkElement)BuildPluginStoreActions(plugin, compact: true, includeUninstall: false);
@@ -4786,6 +4885,13 @@ by Valve.";
         bool showLayoutToggle = false,
         bool clickableHeading = false)
     {
+        var sectionKey = string.Join("|", title, showLayoutToggle, clickableHeading,
+            _pluginStoreMode, _pluginAllLayout, _pluginAllSort, _pluginAllSource, _pluginStoreColumnCount);
+        if (plugins.Count > 0 && _pluginSectionViews.TryGetValue(sectionKey, out var retainedSection))
+        {
+            RefreshPluginResults(retainedSection.Results, plugins);
+            return retainedSection.Section;
+        }
         var section = new StackPanel
         {
             Spacing = 14,
@@ -4842,21 +4948,22 @@ by Valve.";
                 _pluginAllCardsCache ??= BuildPluginStoreGrid(plugins);
                 AttachPluginView(section, _pluginAllCardsCache);
             }
+            if (section.Children.OfType<ItemsRepeater>().LastOrDefault() is { } results)
+                _pluginSectionViews[sectionKey] = (section, results);
             return section;
         }
 
-        section.Children.Add(BuildPluginStoreGrid(plugins));
+        var preview = (ItemsRepeater)BuildPluginStoreGrid(plugins);
+        section.Children.Add(preview);
+        _pluginSectionViews[sectionKey] = (section, preview);
         return section;
     }
 
     private UIElement BuildPluginStoreGrid(IReadOnlyList<DeckyPluginInfo> plugins, bool managed = false)
     {
         var columns = Math.Max(1, managed ? _pluginManageColumnCount : _pluginStoreColumnCount);
-        var rowGroups = new List<IReadOnlyList<DeckyPluginInfo>>();
-        for (var rowStart = 0; rowStart < plugins.Count; rowStart += columns)
-        {
-            rowGroups.Add(plugins.Skip(rowStart).Take(columns).ToList());
-        }
+        var rowGroups = new System.Collections.ObjectModel.ObservableCollection<IReadOnlyList<DeckyPluginInfo>>(
+            PluginCatalogReconciliation.Rows(Array.Empty<IReadOnlyList<DeckyPluginInfo>>(), plugins, columns));
 
         var repeater = new ItemsRepeater
         {
@@ -4871,13 +4978,16 @@ by Valve.";
                 args.Index >= 0 && args.Index < rowGroups.Count)
             {
                 var index = args.Index;
+                var row = rowGroups[index];
                 var width = managed ? _pluginManageContent.ActualWidth : _pluginCards.ActualWidth;
                 var tileWidth = Math.Max(260, (width - 14 * (columns - 1)) / columns);
                 QueuePluginRow(repeater, presenter, index, Math.Max(160, tileWidth * 0.5) + 150,
-                    () => BuildPluginStoreGridRow(rowGroups[index], columns, managed));
+                    () => BuildPluginStoreGridRow(row, columns, managed));
             }
         };
         repeater.ElementClearing += ClearPluginRow;
+        RegisterPluginResults(repeater, desired => PluginCatalogReconciliation.Synchronize(rowGroups,
+            PluginCatalogReconciliation.Rows(rowGroups, desired, columns)));
         return repeater;
     }
 
@@ -4912,9 +5022,12 @@ by Valve.";
 
         for (var column = 0; column < plugins.Count; column++)
         {
-            var tile = BuildPluginStoreTile(plugins[column], OpenInRow);
-            tiles[PluginStoreKey(plugins[column])] = tile;
-            var item = managed ? WithManagedUpdateNotes(tile, plugins[column]) : tile;
+            var plugin = plugins[column];
+            var tile = managed
+                ? LivePluginView(plugin, () => WithManagedUpdateNotes(BuildPluginStoreTileCore(plugin, OpenInRow), plugin))
+                : BuildPluginStoreTile(plugin, OpenInRow);
+            tiles[PluginStoreKey(plugin)] = tile;
+            var item = tile;
             Grid.SetColumn(item, column);
             compactRow.Children.Add(item);
         }
@@ -5232,6 +5345,7 @@ by Valve.";
 
     private void InvalidatePluginAllViews()
     {
+        _pluginSectionViews.Clear();
         _pluginAllCardsCache = null;
         _pluginAllListCache = null;
         _pluginManageCardsCache = null;
@@ -5258,7 +5372,7 @@ by Valve.";
 
     private UIElement BuildPluginStoreListRepeater(IReadOnlyList<DeckyPluginInfo> plugins, bool managed = false)
     {
-        var items = plugins.ToList();
+        var items = new System.Collections.ObjectModel.ObservableCollection<DeckyPluginInfo>(plugins);
         var repeater = new ItemsRepeater
         {
             ItemsSource = items,
@@ -5272,18 +5386,21 @@ by Valve.";
                 args.Index >= 0 && args.Index < items.Count)
             {
                 var index = args.Index;
-                QueuePluginRow(repeater, presenter, index, 121, () =>
-                {
-                    var row = (FrameworkElement)BuildPluginStoreListRow(items[index]);
-                    return managed ? WithManagedUpdateNotes(row, items[index]) : row;
-                });
+                var plugin = items[index];
+                QueuePluginRow(repeater, presenter, index, 121, () => managed
+                    ? LivePluginView(plugin, () => WithManagedUpdateNotes((FrameworkElement)BuildPluginStoreListRowCore(plugin), plugin))
+                    : BuildPluginStoreListRow(plugin));
             }
         };
         repeater.ElementClearing += ClearPluginRow;
+        RegisterPluginResults(repeater, desired => PluginCatalogReconciliation.Synchronize(items, desired));
         return repeater;
     }
 
     private UIElement BuildPluginStoreListRow(DeckyPluginInfo plugin)
+        => LivePluginView(plugin, () => BuildPluginStoreListRowCore(plugin));
+
+    private UIElement BuildPluginStoreListRowCore(DeckyPluginInfo plugin)
     {
         var compactHost = new Grid { HorizontalAlignment = HorizontalAlignment.Stretch };
         var expandedHost = new StackPanel
@@ -5396,7 +5513,10 @@ by Valve.";
         return shell;
     }
 
-    private Border BuildPluginStoreTile(
+    private Border BuildPluginStoreTile(DeckyPluginInfo plugin, Func<DeckyPluginInfo, Task> openDetails)
+        => LivePluginView(plugin, () => BuildPluginStoreTileCore(plugin, openDetails));
+
+    private Border BuildPluginStoreTileCore(
         DeckyPluginInfo plugin,
         Func<DeckyPluginInfo, Task> openDetails)
     {
@@ -6042,6 +6162,7 @@ by Valve.";
                 Collapse();
                 chevron.Glyph = ((char)0xE70D).ToString();
                 _collapseOpenPluginCard = null;
+                _openPluginCardKey = null;
             }
             else
             {
@@ -6051,6 +6172,7 @@ by Valve.";
                 Expand();
                 chevron.Glyph = ((char)0xE70E).ToString();
                 _collapseOpenPluginCard = CollapseInstant;
+                _openPluginCardKey = PluginStoreKey(plugin);
                 DispatcherQueue.TryEnqueue(() => ScrollCardIntoView(card));
             }
         }
@@ -6980,51 +7102,8 @@ by Valve.";
     private async Task RefreshGamingModeAsync()
     {
         _gamingConfig = await _gamingMode.LoadConfigAsync();
-        var changed = false;
-        // Xbox Game Bar: verità durevole nelle impostazioni di Playhub (l'agente
-        // scarta EnableXboxGameBar dal config.json e lo riporta al default true).
-        if (_gamingConfig.Gaming.EnableXboxGameBar != _settings.XboxGameBarEnabled)
-        {
-            _gamingConfig.Gaming.EnableXboxGameBar = _settings.XboxGameBarEnabled;
-            changed = true;
-        }
-        if (changed)
-        {
-            await _gamingMode.SaveConfigAsync(_gamingConfig);
-        }
         PopulateGamingConfigControls();
         RenderStartupApps();
-    }
-
-    // Sicurezza: se un gioco Xbox aveva acceso "apri Game Bar dal controller" e
-    // qualcosa è andato storto lasciandola accesa, la rispegniamo all'avvio di
-    // Playhub quando nessun helper UWPHook/GameSession/XboxSession è attivo.
-    // Durante una sessione il watcher gestisce il ritorno allo stato normale. Solo se la
-    // feature è attiva: se l'utente l'ha disattivata NON tocchiamo la sua scelta.
-    private void ResetXboxGameBarIfStuck()
-    {
-        try
-        {
-            if (_gamingConfig?.Gaming is null || !_gamingConfig.Gaming.EnableXboxGameBar)
-            {
-                return;
-            }
-
-            if (XboxGameBarStartupPolicy.HasActiveLaunchHelper())
-            {
-                return; // Un helper di avvio è attivo: non cambiare l'impostazione.
-            }
-
-            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
-                @"Software\Microsoft\GameBar", writable: true);
-            if (key?.GetValue("UseNexusForGameBarEnabled") is int value && value != 0)
-            {
-                key.SetValue("UseNexusForGameBarEnabled", 0, Microsoft.Win32.RegistryValueKind.DWord);
-            }
-        }
-        catch
-        {
-        }
     }
 
     private async Task SaveGamingConfigAsync()
@@ -7046,7 +7125,7 @@ by Valve.";
         try
         {
             await _gamingMode.SaveConfigAsync(_gamingConfig);
-            // Salva anche le impostazioni proprie di Playhub (Xbox Game Bar ecc.).
+            // Salva anche le impostazioni proprie di Playhub.
             await _settingsService.SaveAsync();
         }
         catch (Exception ex)
@@ -8299,8 +8378,6 @@ by Valve.";
         SetToggle("sunshineCompatibility", _gamingConfig.Gaming.EnsureSunshineCompatibilityInGamingMode);
         SetToggle("hideMouse", _gamingConfig.Gaming.AutoHideMouseCursorInGamingMode);
         SetToggle("borderless", _gamingConfig.Gaming.BorderlessFullscreenWindowsInGamingMode);
-        _gamingConfig.Gaming.EnableXboxGameBar = _settings.XboxGameBarEnabled;
-        SetToggle("xboxGameBar", _settings.XboxGameBarEnabled);
         SetToggle("remoteApi", _gamingConfig.Safety.AllowRemoteApi);
         SetToggle("restartWithoutPrompt", _gamingConfig.Safety.RestartWithoutPrompt);
     }
@@ -8324,8 +8401,6 @@ by Valve.";
         _gamingConfig.Gaming.EnsureSunshineCompatibilityInGamingMode = GetToggle("sunshineCompatibility");
         _gamingConfig.Gaming.AutoHideMouseCursorInGamingMode = GetToggle("hideMouse");
         _gamingConfig.Gaming.BorderlessFullscreenWindowsInGamingMode = GetToggle("borderless");
-        _gamingConfig.Gaming.EnableXboxGameBar = GetToggle("xboxGameBar");
-        _settings.XboxGameBarEnabled = GetToggle("xboxGameBar");
         _gamingConfig.Gaming.DashboardEnabled = true;
         _gamingConfig.Safety.AllowRemoteApi = GetToggle("remoteApi");
         _gamingConfig.Safety.RestartWithoutPrompt = true;

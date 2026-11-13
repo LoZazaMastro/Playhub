@@ -11,7 +11,9 @@ public sealed class ControllerHapticsService : IDisposable
 	private readonly ConcurrentDictionary<string, Gamepad> _gamepads = new(StringComparer.Ordinal);
 	private readonly ConcurrentDictionary<string, RawGameController> _rawControllers = new(StringComparer.Ordinal);
 	private readonly FileLogger _logger;
+	private readonly object _outputSync = new();
 	private long _latestRequestId;
+	private long _outputGeneration;
 
 	public ControllerHapticsService(FileLogger logger)
 	{
@@ -29,8 +31,8 @@ public sealed class ControllerHapticsService : IDisposable
 		string? action,
 		long requestId = 0)
 	{
-		if (!TryAcceptRequest(requestId)) return new(true, "stale-request");
-		if (!TryEnterSteamUi(out ControllerHapticResult? blocked)) return blocked!;
+		if (!TryAcceptRequest(requestId, out long generation)) return new(true, "stale-request");
+		if (!TryEnterSteamUi(generation, out ControllerHapticResult? blocked)) return blocked!;
 		if (!TryHardwareIds(vendorId, productId, out ushort vendor, out ushort product))
 		{
 			return new(false, "missing-hardware-id");
@@ -47,7 +49,7 @@ public sealed class ControllerHapticsService : IDisposable
 				product,
 				first.Side,
 				Math.Clamp(strength * first.Scale, 0, 1),
-				first.DurationMs);
+				first.DurationMs, generation);
 		}
 		catch (Exception exception)
 		{
@@ -65,8 +67,8 @@ public sealed class ControllerHapticsService : IDisposable
 		int durationMs,
 		long requestId = 0)
 	{
-		if (!TryAcceptRequest(requestId)) return new(true, "stale-request");
-		if (!TryEnterSteamUi(out ControllerHapticResult? blocked)) return blocked!;
+		if (!TryAcceptRequest(requestId, out long generation)) return new(true, "stale-request");
+		if (!TryEnterSteamUi(generation, out ControllerHapticResult? blocked)) return blocked!;
 		if (!TryHardwareIds(vendorId, productId, out ushort vendor, out ushort product))
 		{
 			return new(false, "missing-hardware-id");
@@ -76,7 +78,7 @@ public sealed class ControllerHapticsService : IDisposable
 		int duration = Math.Clamp(durationMs, 8, 250);
 		try
 		{
-			return PulseWindows(vendor, product, side, strength, duration);
+			return PulseWindows(vendor, product, side, strength, duration, generation);
 		}
 		catch (Exception exception)
 		{
@@ -87,48 +89,52 @@ public sealed class ControllerHapticsService : IDisposable
 
 	public ControllerHapticResult Stop(int vendorId = 0, int productId = 0, long requestId = 0)
 	{
-		if (!TryAcceptRequest(requestId)) return new(true, "stale-request");
+		if (!TryAcceptRequest(requestId, out long generation)) return new(true, "stale-request");
 		if ((vendorId != 0 || productId != 0) &&
 			!TryHardwareIds(vendorId, productId, out _, out _))
 		{
 			return new(false, "missing-hardware-id");
 		}
 
-		ushort vendor = (ushort)vendorId;
-		ushort product = (ushort)productId;
-		bool stopped = false;
-		foreach ((string identity, Gamepad gamepad) in _gamepads)
+		lock (_outputSync)
 		{
-			try
+		if (generation != _outputGeneration) return new(true, "stale-request");
+			ushort vendor = (ushort)vendorId;
+			ushort product = (ushort)productId;
+			bool stopped = false;
+			foreach ((string identity, Gamepad gamepad) in _gamepads)
 			{
-				RawGameController? raw = RawGameController.FromGameController(gamepad);
-				if (raw is null || !Matches(raw, vendor, product)) continue;
-				_pulseGenerations.AddOrUpdate(identity, 1, (_, current) => unchecked(current + 1));
-				gamepad.Vibration = new GamepadVibration(0, 0, 0, 0);
-				stopped = true;
-			}
-			catch { }
-		}
-		foreach (RawGameController raw in _rawControllers.Values)
-		{
-			if (!Matches(raw, vendor, product)) continue;
-			foreach (SimpleHapticsController haptics in raw.SimpleHapticsControllers)
-			{
-				string key = raw.NonRoamableId + ":" + haptics.Id;
-				_pulseGenerations.AddOrUpdate(key, 1, (_, current) => unchecked(current + 1));
 				try
 				{
-					haptics.StopFeedback();
+					RawGameController? raw = RawGameController.FromGameController(gamepad);
+					if (raw is null || !Matches(raw, vendor, product)) continue;
+					_pulseGenerations.AddOrUpdate(identity, 1, (_, current) => unchecked(current + 1));
+					gamepad.Vibration = new GamepadVibration(0, 0, 0, 0);
 					stopped = true;
 				}
 				catch { }
 			}
-		}
+			foreach (RawGameController raw in _rawControllers.Values)
+			{
+				if (!Matches(raw, vendor, product)) continue;
+				foreach (SimpleHapticsController haptics in raw.SimpleHapticsControllers)
+				{
+					string key = raw.NonRoamableId + ":" + haptics.Id;
+					_pulseGenerations.AddOrUpdate(key, 1, (_, current) => unchecked(current + 1));
+					try
+					{
+						haptics.StopFeedback();
+						stopped = true;
+					}
+					catch { }
+				}
+			}
 
-		return new(true, stopped ? "stopped" : "already-stopped");
+			return new(true, stopped ? "stopped" : "already-stopped");
+		}
 	}
 
-	private bool TryEnterSteamUi(out ControllerHapticResult? blocked)
+	private bool TryEnterSteamUi(long generation, out ControllerHapticResult? blocked)
 	{
 		SteamUiHapticsState state = _uiGate.ReadState();
 		if (state == SteamUiHapticsState.Allowed)
@@ -136,19 +142,20 @@ public sealed class ControllerHapticsService : IDisposable
 			blocked = null;
 			return true;
 		}
-		StopWindows();
+		StopWindows(generation);
 		blocked = new(true, "steam-ui-only", state.ToString());
 		return false;
 	}
 
-	private bool TryAcceptRequest(long requestId)
+	private bool TryAcceptRequest(long requestId, out long generation)
 	{
-		if (requestId <= 0) return true;
-		while (true)
+		lock (_outputSync)
 		{
-			long current = Interlocked.Read(ref _latestRequestId);
-			if (requestId <= current) return false;
-			if (Interlocked.CompareExchange(ref _latestRequestId, requestId, current) == current) return true;
+			generation = _outputGeneration;
+			if (requestId > 0 && requestId <= _latestRequestId) return false;
+			if (requestId > 0) _latestRequestId = requestId;
+			generation = ++_outputGeneration;
+			return true;
 		}
 	}
 
@@ -157,55 +164,62 @@ public sealed class ControllerHapticsService : IDisposable
 		ushort product,
 		int side,
 		double strength,
-		int duration)
+		int duration, long generation)
 	{
-		_gamepads.Clear();
-		_rawControllers.Clear();
+		// Windows may take time to enumerate a device. Keep this read outside
+		// the output lock so a keyboard stop can revoke it immediately.
 		var gamepads = Gamepad.Gamepads
 			.Select(gamepad => new { Gamepad = gamepad, Raw = RawGameController.FromGameController(gamepad) })
 			.Where(item => item.Raw is not null && Matches(item.Raw, vendor, product))
 			.ToArray();
 
 		if (gamepads.Length > 1) return new(false, "ambiguous-gamepad");
-		if (gamepads.Length == 1)
-		{
-			var selected = gamepads[0];
-			string identity = selected.Raw!.NonRoamableId;
-			_gamepads[identity] = selected.Gamepad;
-			(double left, double right) = Motors(side, strength);
-			selected.Gamepad.Vibration = new GamepadVibration(left, right, 0, 0);
-			ScheduleGamepadStop(selected.Gamepad, identity, duration);
-			return new(true, "windows-gamepad", selected.Raw.DisplayName);
-		}
-		var rawControllers = RawGameController.RawGameControllers
+		var rawControllers = gamepads.Length == 0 ? RawGameController.RawGameControllers
 			.Where(raw => Matches(raw, vendor, product) && raw.SimpleHapticsControllers.Count > 0)
-			.ToArray();
-
+			.ToArray() : [];
 		if (rawControllers.Length > 1) return new(false, "ambiguous-raw-controller");
-		if (rawControllers.Length == 0) return new(false, "unsupported-by-windows");
-
-		RawGameController rawController = rawControllers[0];
-		_rawControllers[rawController.NonRoamableId] = rawController;
-		bool sent = false;
-		foreach (SimpleHapticsController haptics in rawController.SimpleHapticsControllers)
+		// Inventory enumeration may outlive the initial Steam UI eligibility.
+		if (!TryEnterSteamUi(generation, out ControllerHapticResult? blocked)) return blocked!;
+		lock (_outputSync)
 		{
-			SimpleHapticsControllerFeedback? feedback = PreferredFeedback(haptics);
-			if (feedback is null) continue;
-			if (haptics.IsPlayDurationSupported)
+			if (generation != _outputGeneration) return new(true, "stale-request");
+			_gamepads.Clear();
+			_rawControllers.Clear();
+			if (gamepads.Length == 1)
 			{
-				haptics.SendHapticFeedbackForDuration(feedback, strength, TimeSpan.FromMilliseconds(duration));
+				var selected = gamepads[0];
+				string identity = selected.Raw!.NonRoamableId;
+				_gamepads[identity] = selected.Gamepad;
+				(double left, double right) = Motors(side, strength);
+				selected.Gamepad.Vibration = new GamepadVibration(left, right, 0, 0);
+				ScheduleGamepadStop(selected.Gamepad, identity, duration);
+				return new(true, "windows-gamepad", selected.Raw.DisplayName);
 			}
-			else
-			{
-				haptics.SendHapticFeedback(feedback, strength);
-			}
-			ScheduleSimpleHapticsStop(haptics, rawController.NonRoamableId, duration);
-			sent = true;
-		}
+			if (rawControllers.Length == 0) return new(false, "unsupported-by-windows");
 
-		return sent
-			? new(true, "windows-simple-haptics", rawController.DisplayName)
-			: new(false, "no-supported-waveform", rawController.DisplayName);
+			RawGameController rawController = rawControllers[0];
+			_rawControllers[rawController.NonRoamableId] = rawController;
+			bool sent = false;
+			foreach (SimpleHapticsController haptics in rawController.SimpleHapticsControllers)
+			{
+				SimpleHapticsControllerFeedback? feedback = PreferredFeedback(haptics);
+				if (feedback is null) continue;
+				if (haptics.IsPlayDurationSupported)
+				{
+					haptics.SendHapticFeedbackForDuration(feedback, strength, TimeSpan.FromMilliseconds(duration));
+				}
+				else
+				{
+					haptics.SendHapticFeedback(feedback, strength);
+				}
+				ScheduleSimpleHapticsStop(haptics, rawController.NonRoamableId, duration);
+				sent = true;
+			}
+
+			return sent
+				? new(true, "windows-simple-haptics", rawController.DisplayName)
+				: new(false, "no-supported-waveform", rawController.DisplayName);
+		}
 	}
 
 	private static bool TryHardwareIds(int vendorId, int productId, out ushort vendor, out ushort product)
@@ -252,6 +266,7 @@ public sealed class ControllerHapticsService : IDisposable
 		_ = Task.Run(async () =>
 		{
 			await WaitUntilStoppedOrUnsafe(durationMs).ConfigureAwait(false);
+			lock (_outputSync)
 			if (_pulseGenerations.TryGetValue(identity, out int current) && current == generation)
 			{
 				try { gamepad.Vibration = new GamepadVibration(0, 0, 0, 0); }
@@ -268,6 +283,7 @@ public sealed class ControllerHapticsService : IDisposable
 		_ = Task.Run(async () =>
 		{
 			await WaitUntilStoppedOrUnsafe(durationMs).ConfigureAwait(false);
+			lock (_outputSync)
 			if (_pulseGenerations.TryGetValue(key, out int current) && current == generation)
 			{
 				try { controller.StopFeedback(); }
@@ -288,19 +304,24 @@ public sealed class ControllerHapticsService : IDisposable
 		}
 	}
 
-	private void StopWindows()
+	private void StopWindows(long? expectedGeneration = null)
 	{
-		foreach (Gamepad gamepad in _gamepads.Values)
+		lock (_outputSync)
 		{
-			try { gamepad.Vibration = new GamepadVibration(0, 0, 0, 0); }
-			catch { }
-		}
-		foreach (RawGameController raw in _rawControllers.Values)
-		{
-			foreach (SimpleHapticsController haptics in raw.SimpleHapticsControllers)
+			if (expectedGeneration.HasValue && expectedGeneration != _outputGeneration) return;
+			_outputGeneration++;
+			foreach (Gamepad gamepad in _gamepads.Values)
 			{
-				try { haptics.StopFeedback(); }
+				try { gamepad.Vibration = new GamepadVibration(0, 0, 0, 0); }
 				catch { }
+			}
+			foreach (RawGameController raw in _rawControllers.Values)
+			{
+				foreach (SimpleHapticsController haptics in raw.SimpleHapticsControllers)
+				{
+					try { haptics.StopFeedback(); }
+					catch { }
+				}
 			}
 		}
 	}

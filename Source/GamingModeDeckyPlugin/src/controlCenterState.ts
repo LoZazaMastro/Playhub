@@ -1,10 +1,22 @@
 // Stable persisted IDs: audio is Video (third); performance is Audio (fourth).
 export const CONTROL_TABS = ["home", "store", "audio", "performance", "graphics", "controller", "decky"] as const;
 export type ControlTab = typeof CONTROL_TABS[number];
+export const CONTROL_SECTION_IDS = ["topbar-date", "device", "device/details", "news", "daily-history", "measurement", "display", "mixer", "devices", "power", "game", "shaders", "radeon", "lossless", "agent"] as const;
+export function normalizeExpandedSections(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const expanded = new Set(value.slice(0, 64).filter(id => typeof id === "string"));
+  return CONTROL_SECTION_IDS.filter(id => expanded.has(id));
+}
+export function toggleControlSection(current: string[], id: string): string[] {
+  const expanded = normalizeExpandedSections(current);
+  if (!(CONTROL_SECTION_IDS as readonly string[]).includes(id)) return expanded;
+  return normalizeExpandedSections(expanded.includes(id) ? expanded.filter(value => value !== id) : [...expanded, id]);
+}
 export interface ControlPreferences {
   order: ControlTab[];
   hidden: ControlTab[];
   collapsed: string[];
+  expandedSections: string[];
   active: ControlTab;
   deckyHostEnabled: boolean;
   topbarDateEnabled: boolean;
@@ -26,7 +38,7 @@ export function normalizeControlPreferences(value: any): ControlPreferences {
   const active = valid(value?.active) && eligible(value.active) && !hidden.includes(value.active) ? value.active : order.find(id => eligible(id) && !hidden.includes(id))!;
   const dateFormats = ["auto", "dd_mm_yyyy", "dd_mm_yy", "yyyy_mm_dd", "dd_month_yyyy", "weekday_dd_month", "weekday_short_dd_month", "month_dd_yyyy", "month_short_dd_yyyy", "iso"];
   const topbarDateFormat = dateFormats.includes(value?.topbarDateFormat) ? value.topbarDateFormat : "auto";
-  return { order, hidden, active, deckyHostEnabled, topbarDateEnabled: value?.topbarDateEnabled !== false, topbarDateFormat, topbarClockLeft: value?.topbarClockLeft === true, collapsed: [...new Set<string>((Array.isArray(value?.collapsed) ? value.collapsed : []).filter((id: unknown) => typeof id === "string" && id.length < 80))] };
+  return { order, hidden, active, deckyHostEnabled, topbarDateEnabled: value?.topbarDateEnabled !== false, topbarDateFormat, topbarClockLeft: value?.topbarClockLeft === true, expandedSections: normalizeExpandedSections(value?.expandedSections), collapsed: [...new Set<string>((Array.isArray(value?.collapsed) ? value.collapsed : []).filter((id: unknown) => typeof id === "string" && id.length < 80))] };
 }
 export function moveControlTab(prefs: ControlPreferences, id: ControlTab, direction: -1 | 1): ControlPreferences {
   const order = [...prefs.order];

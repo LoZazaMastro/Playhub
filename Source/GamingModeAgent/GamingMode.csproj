@@ -22,10 +22,44 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../Playhub.XboxSession/SteamMirrorWireProtocol.cs" Link="SteamMirrorWireProtocol.cs" />
+    <Compile Include="../Playhub.XboxSession/SteamNativeOverlayInputWire.cs" Link="SteamNativeOverlayInputWire.cs" />
+    <Compile Include="../Playhub.XboxSession/SteamNativeOverlayInputPresentationBridge.cs" Link="SteamNativeOverlayInputPresentationBridge.cs" />
     <Compile Include="../Shared/DeckyStartupGuard.cs" Link="DeckyStartupGuard.cs" />
+    <Compile Include="../Shared/LegacyXboxGameBarWatcher.cs" Link="LegacyXboxGameBarWatcher.cs" />
     <Compile Include="../Playhub.DeckyHost/DeckyProcessTree.cs" Link="DeckyProcessTree.cs" />
     <Compile Include="../Shared/UwpSessionIdentity.cs" Link="UwpSessionIdentity.cs" />
     <Compile Include="../Shared/SplashLogoScale.cs" Link="SplashLogoScale.cs" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
+  <!-- Private, default-OFF HUD trial. Does not enable the mirror or input. -->
+  <ItemGroup Condition="'$(PlayhubHudDisplaySha256)' != '' and '$(PlayhubHudDisplayCallbackSha256)' != ''">
+    <HudDisplayAssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>PlayhubHudDisplaySha256</_Parameter1><_Parameter2>$(PlayhubHudDisplaySha256)</_Parameter2>
+    </HudDisplayAssemblyAttribute>
+    <HudDisplayAssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>PlayhubHudDisplayCallbackSha256</_Parameter1><_Parameter2>$(PlayhubHudDisplayCallbackSha256)</_Parameter2>
+    </HudDisplayAssemblyAttribute>
+  </ItemGroup>
+  <Target Name="GeneratePrivateHudDisplayPins" BeforeTargets="CoreCompile" Condition="'@(HudDisplayAssemblyAttribute)' != ''">
+    <WriteCodeFragment Language="C#" AssemblyAttributes="@(HudDisplayAssemblyAttribute)" OutputFile="$(IntermediateOutputPath)HudDisplayPins.g.cs" />
+    <ItemGroup><Compile Include="$(IntermediateOutputPath)HudDisplayPins.g.cs" /></ItemGroup>
+  </Target>
+  <ItemGroup><Compile Include="../Shared/EpicLaunchWindows.cs" Link="EpicLaunchWindows.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/EpicLaunchCatalog.cs" Link="EpicLaunchCatalog.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/EpicLaunchPayload.cs" Link="EpicLaunchPayload.cs" /></ItemGroup>
+  <!-- Private first-content cover is independent of HUD/menu/input and OFF without exact pins. -->
+  <ItemGroup Condition="'$(PlayhubCurtainDisplaySha256)' != '' and '$(PlayhubCurtainCallbackSha256)' != ''">
+    <CurtainDisplayAssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>PlayhubCurtainDisplaySha256</_Parameter1><_Parameter2>$(PlayhubCurtainDisplaySha256)</_Parameter2>
+    </CurtainDisplayAssemblyAttribute>
+    <CurtainDisplayAssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>PlayhubCurtainCallbackSha256</_Parameter1><_Parameter2>$(PlayhubCurtainCallbackSha256)</_Parameter2>
+    </CurtainDisplayAssemblyAttribute>
+  </ItemGroup>
+  <Target Name="GeneratePrivateCurtainDisplayPins" BeforeTargets="CoreCompile" Condition="'@(CurtainDisplayAssemblyAttribute)' != ''">
+    <WriteCodeFragment Language="C#" AssemblyAttributes="@(CurtainDisplayAssemblyAttribute)" OutputFile="$(IntermediateOutputPath)CurtainDisplayPins.g.cs" />
+    <ItemGroup><Compile Include="$(IntermediateOutputPath)CurtainDisplayPins.g.cs" /></ItemGroup>
+  </Target>
+  <ItemGroup><Compile Remove="GamingMode.Services/OwnedWin32GameFocus.cs" /></ItemGroup>
 </Project>

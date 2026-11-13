@@ -1,0 +1,19 @@
+{
+  "version": "3.3.1+playhub.reconnect.1",
+  "upstream_version": "v3.3.1",
+  "upstream_commit": "ffd103b9c1a4ce5bf305e7c0998eda6e05457dad",
+  "python": "3.14.8",
+  "python_nuget_sha512": "b9oz/C2qiLlE7FKAogz3dyiT38vFX3d9K2IqhooLZmcL3E9REJsgrg3eUXeTHLXRy50jgfHEoX1bx3u91Vjeaw==",
+  "python_signature": "Valid: Python Software Foundation",
+  "node": "26.13.0",
+  "node_signature": "Valid: OpenJS Foundation",
+  "poetry": "2.3.1",
+  "poetry_dynamic_versioning": "1.10.1",
+  "pyinstaller": "6.22.3",
+  "pnpm": "11.25.0",
+  "binaries_signed": false,
+  "console_sha256": "afb1efafbfa1587654241acac13a3a1800a9f76f30cbb819c8bba8d6f1ca16e6",
+  "noconsole_sha256": "33dca959fe13dfe21ff4078d3ad55bab0c5a37e9b38c3c1ca321256bba8d8c50",
+  "source_sha256": "75195ff400aba1c1ab9813e2e879a2291e193c724ce19c31ffbd5a5f15a00e86",
+  "verification": "30 frozen-bytecode fault and real loopback checks; no loader process or live Steam execution"
+}

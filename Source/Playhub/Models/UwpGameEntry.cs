@@ -11,6 +11,10 @@ public sealed class UwpGameEntry
     public bool IsLocalExecutable { get; set; }
     public string LocalExecutablePath { get; set; } = "";
     public string SourceLaunchArguments { get; set; } = "";
+    public string EpicNamespace { get; set; } = "";
+    public string EpicCatalogItemId { get; set; } = "";
+    public string EpicAppName { get; set; } = "";
+    public string? SourceWorkingDirectory { get; set; }
     // Stable application identity survives versioned executable paths and renamed games.
     public string SteamIdentity { get; set; } = "";
     public string Publisher { get; set; } = "";

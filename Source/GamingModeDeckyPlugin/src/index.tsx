@@ -1,4 +1,5 @@
-﻿import { installCirclesScreensaver } from "./circlesScreensaver";
+﻿import { readOwnedGameApp, resolveOwnedGameApp } from "./steamOwnedLaunchDispatcher";
+import { installCirclesScreensaver } from "./circlesScreensaver";
 import { pollStatus } from "./statusPoll";
 import { agentAvailability } from "./agentAvailability";
 import { optionalAgentCopy } from "./optionalAgentLocale";
@@ -6,7 +7,12 @@ import { disposeDisplayConfirmation } from "./quickSettings";
 import { initializeQamPreferences } from "./QamSettings";
 import { installHomeNews, notifyHomeNewsLanguageChanged } from "./HomeNews";
 import { definePlugin, routerHook, toaster, DFL, SP_REACT as React } from "./decky";
-import { captureDashboardSourceFocus, consumeOpenRequest, logToAgent, readEnvironment, readSettings, writeSettings, API_BASE, requestDashboardSteamFocus, restoreDashboardSourceFocus } from "./api";
+import { acknowledgeSteamModeCommand, captureDashboardSourceFocus, confirmBigPictureForeground, consumeOpenRequest, logToAgent, readEnvironment, readSettings, writeSettings, API_BASE, requestDashboardSteamFocus, restoreDashboardSourceFocus } from "./api";
+import { createSteamKeyFocusReset, createSteamNavigationRecovery, createSteamNavigationWakeup, createSteamOverlayReturnScope, focusReturnedSteamGameAction, hasVisibleSteamNavigationFocus, isConfirmedSteamIdle, isSteamNavigationReturnApp, navigateReturnedSteamGame, recoverSteamNavigation, releaseExitedSteamOverlay, type SteamOverlayScope, type SteamReturnOverlayWindow } from "./steamNavigationReturn";
+import { activeSteamController, createSteamReturnControllerLayout } from "./steamReturnControllerLayout";
+import { observeSteamOverlayFocus } from "./steamFocusEvents";
+import { installSteamModeCommands } from "./steamModeCommands";
+import { matchesOverlayApp } from "./dashboardOverlay";
 import { DashboardPage, DASHBOARD_ROUTE, clearDashboardChrome, focusDashboardSurface, markDashboardChrome, preloadDashboardWindows, prepareDashboardOverlay, resetDashboardExit } from "./DashboardPage";
 import { configureNavigationHaptics, installNavigationHaptics, getNavigationHapticsConfig, getNavigationHapticsRevision, subscribeNavigationHaptics } from "./navigationHaptics";
 import { installPowerMenuPatch } from "./powerMenuPatch";
@@ -28,6 +34,8 @@ import { installPlayhubOnboarding, refreshOnboardingLocale } from "./onboardingI
 import { installQuickSettings } from "./quickSettings";
 import { installDeckyIpcRecovery, type IpcFailure } from "./deckyIpcRecovery";
 import { installControlledQamFocus } from "./controlledQamIntegration";
+import { createSteamConfiguratorReturn, type SteamConfiguratorReturn } from "./steamConfiguratorReturn";
+import { installLivePerformance } from "./quickSettings/livePerformanceRuntime";
 
 const { useState, useEffect, useMemo } = React;
 let hapticSettingsWrite = Promise.resolve();
@@ -453,109 +461,372 @@ function openPluginStore() {
   }
 }
 
-function restoreSteamNavigationFocus(reason: string): boolean {
-  const store = (DFL as any)?.Router?.WindowStore;
-  const main = store?.GamepadUIMainWindowInstance;
+function currentSteamGame(): number {
+  return steamAppId((window as any).SteamUIStore?.MainRunningAppID ?? (DFL as any).Router?.MainRunningAppID);
+}
+
+function steamWindowStore() {
+  return (window as any).SteamUIStore?.WindowStore ?? (DFL as any)?.Router?.WindowStore;
+}
+
+function bigPictureMainWindow() {
+  const main = steamWindowStore()?.GamepadUIMainWindowInstance;
+  return main?.IsGamepadUIOverlayWindow?.() === false ? main : undefined;
+}
+
+function steamNavigationController() {
+  return (DFL as any)?.getFocusNavController?.() ?? (window as any).FocusNavController;
+}
+
+function returnOverlayWindows(appId: number): SteamReturnOverlayWindow[] | undefined {
+  const store = steamWindowStore();
+  const windows = store?.OverlayWindows;
+  return Array.isArray(windows) ? windows : store?.GetOverlayInstances?.(appId);
+}
+
+function matchesReturnOverlay(overlay: SteamReturnOverlayWindow, appId: number): boolean {
+  const info = overlay.params?.browserInfo;
+  return matchesOverlayApp({ appID: info?.m_unAppID, gameID: info?.m_gameID }, appId);
+}
+
+function restoreSteamNavigationFocus(reason: string, exitedApp: number, retainedOverlay?: SteamOverlayScope,
+  nativeForegroundConfirmed = false): boolean {
+  const main = bigPictureMainWindow();
   const browserWindow = main?.m_BrowserWindow ?? main?.BrowserWindow;
-  const context = main?.m_FocusNavContext;
-  if (!main || !browserWindow || !context) return false;
+  const context = main?.GetFocusNavContext?.() ?? main?.m_FocusNavContext;
+  const canRestore = () => bigPictureMainWindow() === main && isSteamNavigationReturnApp(currentSteamGame(), exitedApp);
+  if (!main || !browserWindow || !context || !canRestore() || context.BIsGamepadInputSuppressed?.() === true) return false;
 
-  if (browserWindow.document?.querySelector?.(".ph-dashboard")) {
-    return focusDashboardSurface();
-  }
-
-  const controller = (DFL as any)?.getFocusNavController?.() ?? (window as any).FocusNavController;
-  const hasRealFocus = () => {
-    const activeContext = controller?.GetActiveContext?.() ?? controller?.m_ActiveContext;
-    const active = activeContext === context || context.BIsActive?.() === true;
-    const documentFocused = browserWindow.document?.hasFocus?.() === true;
-    const navigationFocused = !!browserWindow.document?.querySelector?.(".gpfocus");
-    return active && documentFocused && navigationFocused;
-  };
-
-  try { browserWindow.SteamClient?.Window?.BringToFront?.(1); } catch {}
-  try { browserWindow.SteamClient?.Window?.MarkLastFocused?.(); } catch {}
-  if (hasRealFocus()) return true;
-
-  try { browserWindow.focus?.(); } catch {}
-  try {
-    if (!context.BIsActive?.()) context.OnActivate?.(browserWindow);
-    main.FocusApplicationRoot?.();
-    browserWindow.SteamClient?.Window?.SetKeyFocus?.(true);
-  } catch {
-    return false;
-  }
-
-  const focused = hasRealFocus();
-  if (focused) logToAgent(`focus Steam ripristinato (${reason})`);
+  const controller = steamNavigationController();
+  const activeContext = () => typeof controller?.GetActiveContext === "function"
+    ? controller.GetActiveContext() : controller?.m_ActiveContext;
+  const pointsToMain = () => controller ? activeContext() === context : context.BIsActive?.() === true;
+  const ownsContext = () => pointsToMain() && context.BIsActive?.() !== false
+    && (context.ActiveWindow == null || context.ActiveWindow === browserWindow);
+  const nativeForeground = () => nativeForegroundConfirmed && canRestore();
+  const mayFocusMain = () => canRestore() && (browserWindow.document?.hasFocus?.() === true || nativeForeground());
+  const focused = recoverSteamNavigation({
+    hasDocumentFocus: () => canRestore() && browserWindow.document?.hasFocus?.() === true,
+    hasNativeForeground: nativeForeground,
+    hasNavigationFocus: () => {
+      if (!canRestore() || !ownsContext()) return false;
+      if (typeof controller?.GetActiveNavTree === "function") {
+        const tree = controller.GetActiveNavTree();
+        return Boolean(tree && hasVisibleSteamNavigationFocus(browserWindow.document, tree));
+      }
+      return hasVisibleSteamNavigationFocus(browserWindow.document, context.m_LastActiveFocusNavTree ?? context.m_LastActiveNavTree);
+    },
+    requestKeyFocus: () => {
+      if (!canRestore() || bigPictureMainWindow() !== main) return;
+      // Foregrounding SDL alone can leave Win32 focus on the container. Steam's
+      // own activation targets its CEF child as well, under the fresh exit proof.
+      if (nativeForegroundConfirmed) browserWindow.SteamClient?.Window?.BringToFront?.(1);
+      if (canRestore()) browserWindow.SteamClient?.Window?.SetKeyFocus?.(true);
+    },
+    focusApplication: () => {
+      if (!canRestore()) return;
+      if (!ownsContext()) {
+        const previous = activeContext();
+        const released = previous != null && previous !== context && releaseExitedSteamOverlay(exitedApp, browserWindow,
+          canRestore, activeContext, () => controller?.GetActiveNavTree?.(), returnOverlayWindows, retainedOverlay,
+          matchesReturnOverlay, nativeForeground);
+        if (previous != null && previous !== context && !released) return;
+        const mayActivateMain = () => mayFocusMain() && (activeContext() == null || activeContext() === context);
+        if (!mayActivateMain()) return;
+        if (!ownsContext()) context.OnActivate?.(browserWindow);
+        // An overlay can leave the main context internally active even though
+        // Steam's navigation controller no longer points to it.
+        if (!ownsContext() && mayActivateMain()
+            && context.BIsActive?.() === true && context.ActiveWindow === browserWindow) {
+          context.OnDeactivate?.(browserWindow);
+          if (mayActivateMain()) context.OnActivate?.(browserWindow);
+        }
+      }
+      if (!canRestore() || !ownsContext()) return;
+      if (browserWindow.document?.querySelector?.(".ph-dashboard")) focusDashboardSurface();
+      else {
+        main.FocusApplicationRoot?.();
+        const tree = controller?.GetActiveNavTree?.();
+        if (canRestore() && ownsContext() && exitedApp > 0
+            && main.MenuStore?.GetOpenSideMenu?.() === 0 && !main.m_ModalManager?.modals?.length
+            && !hasVisibleSteamNavigationFocus(browserWindow.document, tree)) {
+          // Steam's root activation preserves an existing node, even when that
+          // node belongs to a hidden running-game panel. Focus the actual game
+          // action on this exact route before declaring navigation restored.
+          const classes = (DFL as any).findModule?.((value: any) =>
+            value?.AppActionButton && value?.ActionButtonAndStatusPanel && value?.AppDetailSectionList);
+          focusReturnedSteamGameAction(browserWindow.document, main.m_locationPathname, exitedApp, undefined, classes);
+        }
+      }
+    },
+  });
   return focused;
 }
 
-function installSteamNavigationFocusRecovery(): { schedule: (reason: string) => void; uninstall: () => void } {
-  const timers = new Set<number>();
-  const clearTimers = () => {
-    timers.forEach((timer) => window.clearTimeout(timer));
-    timers.clear();
-  };
-  const schedule = (reason: string) => {
-    clearTimers();
-    [0, 100, 280, 650].forEach((delay) => {
-      const timer = window.setTimeout(() => {
-        timers.delete(timer);
-        if (restoreSteamNavigationFocus(reason)) clearTimers();
-      }, delay);
-      timers.add(timer);
-    });
-  };
-
-  return {
-    schedule,
-    uninstall: clearTimers,
-  };
-}
-
-function startOpenRequestWatcher(onFocusRecovery: () => void): () => void {
+function startOpenRequestWatcher(configuratorReturn: SteamConfiguratorReturn): () => void {
   let alive = true;
   let inFlight = false;
-  let focusRecoveryVersion: number | undefined;
-  let focusRecoveryPending = false;
+  let runAgain = false;
+  let launchRevision = 0;
+  let armGame = 0, fastArmUntil = 0, nextArm = 0, armed = false, arming = false;
+  let launchPatch: { unpatch(): void } | undefined;
+  const steam = (window as any).SteamClient;
+  const overlayScope = createSteamOverlayReturnScope(matchesReturnOverlay);
+  const rememberOverlay = (appId: number) => {
+    if (appId <= 0) { overlayScope.observe(appId, undefined); return; }
+    // A new RunGame can precede Steam clearing the old app's overlay list.
+    if (launchRevision > 0 && (!armed || armGame !== appId)) {
+      overlayScope.observe(appId, undefined);
+      return;
+    }
+    try {
+      const controller = steamNavigationController();
+      overlayScope.observe(appId, returnOverlayWindows(appId), controller?.GetActiveContext?.() ?? controller?.m_ActiveContext);
+    } catch { /* Steam can remove the browser while the event is delivered. */ }
+  };
+  const layout = typeof steam?.URL?.ExecuteSteamURL === "function"
+    ? createSteamReturnControllerLayout(url => {
+      try {
+        steam.URL.ExecuteSteamURL(url);
+        logToAgent(url.endsWith("/769") ? "Steam Input menu layout restored after game exit" : "Steam Input automatic layout restored");
+      }
+      catch (error) { console.warn("Playhub Dashboard: Steam Input layout unavailable", error); }
+    }, (callback, delay) => window.setTimeout(callback, delay), timer => window.clearTimeout(timer),
+      () => activeSteamController((window as any).ControllerStore))
+    : undefined;
+  const keyFocusReset = createSteamKeyFocusReset((callback, delay) => window.setTimeout(callback, delay),
+    timer => window.clearTimeout(timer));
+  const focusRecovery = createSteamNavigationRecovery(
+    confirmBigPictureForeground,
+    async (appId, usedCompanion, recovery) => {
+      const target = bigPictureMainWindow();
+      const targetWindow = target?.m_BrowserWindow ?? target?.BrowserWindow;
+      const targetDocument = targetWindow?.document;
+      const mayResetKeys = () => {
+        const runningStore = (window as any).SteamUIStore ?? (DFL as any).Router;
+        const currentWindow = target?.m_BrowserWindow ?? target?.BrowserWindow;
+        const context = target?.GetFocusNavContext?.() ?? target?.m_FocusNavContext;
+        return alive && recovery.isCurrent() && appId > 0 && target && bigPictureMainWindow() === target
+          && targetWindow && targetWindow.closed !== true && currentWindow === targetWindow
+          && targetWindow.document === targetDocument && targetDocument
+          && isConfirmedSteamIdle(runningStore?.MainRunningAppID, runningStore?.IsAnyAppRunning?.())
+          && context && context.RootWindow === targetWindow && context.BIsGamepadInputSuppressed?.() !== true
+          && target.MenuStore?.GetOpenSideMenu?.() === 0 && !target.m_ModalManager?.modals?.length
+          && typeof targetWindow.SteamClient?.Window?.SetKeyFocus === "function";
+      };
+      if (mayResetKeys()) {
+        await keyFocusReset.reset({
+          context: recovery,
+          canRestore: mayResetKeys,
+          hasRealFocus: () => targetDocument?.hasFocus?.() === true
+            && targetDocument.body?.classList?.contains("WindowFocus") === true,
+          setKeyFocus: value => targetWindow.SteamClient.Window.SetKeyFocus(value),
+        });
+      }
+      if (!alive || !recovery.isCurrent() || !await recovery.confirmForeground()) return false;
+      const focused = restoreSteamNavigationFocus("chiusura gioco", launchPatch ? appId : 0, overlayScope.get(appId), true);
+      if (focused) overlayScope.clear();
+      if (launchPatch && appId > 0) {
+        const main = bigPictureMainWindow();
+        const returnedWindow = main?.m_BrowserWindow ?? main?.BrowserWindow;
+        const document = returnedWindow?.document;
+        // A verified exit may leave Steam routing input to the running-game
+        // view while the launcher helper retires.
+        if (currentSteamGame() === appId && (usedCompanion || main?.m_locationPathname === "/apprunning"))
+          layout?.begin(appId, currentSteamGame());
+        if (document?.hasFocus?.() === true && main?.MenuStore?.GetOpenSideMenu?.() === 0 && !main?.m_ModalManager?.modals?.length) {
+          // The running-game page is a placeholder. Windows has confirmed
+          // exit, so replace it with the game page while Steam retires the shortcut.
+          if (main.m_locationPathname === "/apprunning") navigateReturnedSteamGame(main, appId);
+          // A still-retiring shortcut renders Resume/Stop and can replace the
+          // focused button later. Wait for Steam to retire it before selecting
+          // the actual Play action and completing this recovery.
+          const runningStore = (window as any).SteamUIStore ?? (DFL as any).Router;
+          if (!isConfirmedSteamIdle(runningStore?.MainRunningAppID, runningStore?.IsAnyAppRunning?.())) return false;
+          if (main.m_locationPathname !== `/library/app/${appId}`) {
+            navigateReturnedSteamGame(main, appId);
+            return false;
+          }
+          const classes = (DFL as any).findModule?.((value: any) =>
+            value?.AppActionButton && value?.ActionButtonAndStatusPanel && value?.AppDetailSectionList);
+          const playFocused = focusReturnedSteamGameAction(document, main.m_locationPathname, appId, undefined, classes);
+          const tree = steamNavigationController()?.GetActiveNavTree?.();
+          const button = document.activeElement;
+          const highlighted = button?.matches?.(".gpfocus") === true || Boolean(button?.querySelector?.(".gpfocus"));
+          if (!focused || !playFocused || !document.hasFocus() || !document.body?.classList?.contains("WindowFocus")
+              || !highlighted || !hasVisibleSteamNavigationFocus(document, tree)) return false;
+          const input = () => (window as any).SteamClient?.Input;
+          const canReleaseConfigurator = () => {
+            const store = (window as any).SteamUIStore;
+            const currentMain = bigPictureMainWindow();
+            const currentWindow = currentMain?.m_BrowserWindow ?? currentMain?.BrowserWindow;
+            const context = currentMain?.GetFocusNavContext?.() ?? currentMain?.m_FocusNavContext;
+            const controller = steamNavigationController();
+            const active = controller?.GetActiveContext?.();
+            const modals = currentMain?.m_ModalManager?.modals;
+            const activeTree = controller?.GetActiveNavTree?.();
+            return alive && recovery.isCurrent() && currentMain === main && currentWindow === returnedWindow && currentWindow?.document === document
+              && currentWindow?.closed !== true && store?.IsAnyAppRunning?.() === false
+              && isConfirmedSteamIdle(store?.MainRunningAppID, false)
+              && currentMain?.m_locationPathname === `/library/app/${appId}`
+              && context != null && active === context && context.RootWindow === currentWindow
+              && context.ActiveWindow === currentWindow && context.BIsActive?.() === true
+              && context.BIsGamepadInputSuppressed?.() === false
+              && currentMain?.MenuStore?.GetOpenSideMenu?.() === 0 && Array.isArray(modals) && modals.length === 0
+              && document.hasFocus() === true && document.body?.classList?.contains("WindowFocus") === true
+              && document.activeElement === button && (button?.matches?.(".gpfocus") === true || Boolean(button?.querySelector?.(".gpfocus")))
+              && hasVisibleSteamNavigationFocus(document, activeTree);
+          };
+          if (await configuratorReturn.release(appId, recovery, canReleaseConfigurator, input))
+            logToAgent("Steam native configurator focus released after owned mirror game exit");
+          if (!alive || !recovery.isCurrent() || configuratorReturn.pending(appId)) return false;
+          logToAgent("Steam Play action focused after game exit");
+          return true;
+        }
+        return false;
+      }
+      return focused;
+    },
+    currentSteamGame,
+  );
+  const apps = steam?.Apps;
+  try {
+    if (typeof apps?.RunGame === "function" && typeof (DFL as any).beforePatch === "function") {
+      launchPatch = (DFL as any).beforePatch(apps, "RunGame", () => {
+        configuratorReturn.forget();
+        layout?.release();
+        overlayScope.clear();
+        launchRevision++;
+        armGame = 0;
+        armed = false;
+        focusRecovery.launchStarted();
+      });
+    }
+  } catch (error) {
+    console.warn("Playhub Dashboard: could not observe Steam game launches", error);
+  }
 
-  const timer = window.setInterval(async () => {
-    if (!alive || inFlight) return;
+  const modeCommands = installSteamModeCommands(window, {
+    alive: () => alive,
+    exit: () => {
+      layout?.release();
+      overlayScope.clear();
+      focusRecovery.cancel(0);
+      clearDashboardChrome();
+      Navigation?.CloseSideMenus?.();
+      if (typeof steam?.UI?.ExitBigPictureMode !== "function") throw new Error("Steam desktop transition unavailable");
+      return steam.UI.ExitBigPictureMode();
+    },
+    readDesktop: async () => {
+      if (typeof steam?.UI?.GetUIMode !== "function" || typeof steam?.UI?.GetDesiredSteamUIWindows !== "function") return false;
+      let timer = 0;
+      try {
+        const observation = Promise.all([steam.UI.GetUIMode(), steam.UI.GetDesiredSteamUIWindows()]).then(([mode, desired]) =>
+          mode === 7 && Array.isArray(desired) && desired.some(value => value?.windowType === 5)
+          && !desired.some(value => value?.windowType === 0));
+        return await Promise.race([observation, new Promise<boolean>(resolve => { timer = window.setTimeout(() => resolve(false), 200); })]);
+      } finally { window.clearTimeout(timer); }
+    },
+    ack: acknowledgeSteamModeCommand,
+    now: () => performance.now(),
+    delay: ms => new Promise(resolve => window.setTimeout(resolve, ms)),
+  });
+
+  async function poll(urgent = false) {
+    if (!alive) return;
+    overlayFocusObserver.refresh();
+    if (inFlight) {
+      runAgain ||= urgent;
+      return;
+    }
     inFlight = true;
     try {
+      const activeApp = currentSteamGame();
+      rememberOverlay(activeApp);
+      const main = bigPictureMainWindow();
+      layout?.observe(activeApp, (main?.m_BrowserWindow ?? main?.BrowserWindow)?.document?.hasFocus?.() === true);
+      const knownArmApp=readOwnedGameApp(activeApp);
+      const selectedArmApp=armed&&armGame===knownArmApp?knownArmApp:resolveOwnedGameApp(activeApp);
+      const armApp=typeof selectedArmApp==="number"?selectedArmApp:await selectedArmApp;
+      if(!alive)return;
+      const now = Date.now();
+      if (armGame !== armApp) {
+        armGame = armApp;
+        fastArmUntil = now + 20000;
+        nextArm = 0;
+        armed = false;
+      }
+      if (armApp && !armed && !arming && now >= nextArm && bigPictureMainWindow()) {
+        const revision = launchRevision;
+        arming = true;
+        // Steam reports the shortcut before some launchers create a game window.
+        nextArm = now + (now < fastArmUntil ? 1000 : 5000);
+        void controlCall<[number], { ok: boolean }>("arm_big_picture_return", armApp).then(result => {
+          if (!alive || revision !== launchRevision || armGame !== armApp || readOwnedGameApp(currentSteamGame()) !== armApp) return;
+          armed = result?.ok === true;
+          if (armed) {
+            rememberOverlay(armApp);
+            focusRecovery.gameArmed();
+          }
+        }).catch(() => {}).finally(() => { arming = false; });
+      }
       const signal = await consumeOpenRequest();
-      if (signal.exitBigPicture) {
-        focusRecoveryPending = false;
-        focusRecoveryVersion = signal.focusRecovery;
-        clearDashboardChrome();
-        Navigation?.CloseSideMenus?.();
-        (window as any).SteamClient?.UI?.ExitBigPictureMode?.();
+      if (!alive) return;
+      if (signal.steamModeCommand) {
+        await modeCommands.process(signal.steamModeCommand);
         return;
       }
       if (signal.open) {
+        focusRecovery.cancel(signal.focusRecovery);
         openDashboard();
+        return;
       }
-      if (focusRecoveryVersion === undefined) {
-        focusRecoveryVersion = signal.focusRecovery;
-      } else if (signal.focusRecovery !== focusRecoveryVersion) {
-        focusRecoveryVersion = signal.focusRecovery;
-        focusRecoveryPending = true;
-      }
-      if (focusRecoveryPending && signal.steamForeground) {
-        focusRecoveryPending = false;
-        onFocusRecovery();
-      }
+      await focusRecovery.observe(signal.focusRecovery, signal.steamForeground);
     } catch (error) {
       console.warn("Playhub Dashboard: attesa dell'apertura non riuscita", error);
     } finally {
       inFlight = false;
+      if (runAgain) {
+        runAgain = false;
+        void poll();
+      }
     }
-  }, 500);
+  }
+
+  const wakeup = createSteamNavigationWakeup(() => { void poll(true); },
+    (callback, delay) => window.setTimeout(callback, delay), id => window.clearTimeout(id));
+  const onFocus = () => { overlayFocusObserver.refresh(); if (bigPictureMainWindow()) wakeup.wake(); };
+  const overlayFocusObserver = observeSteamOverlayFocus(
+    () => (window as any).FocusedAppWindowStore,
+    (appId, pid) => {
+      if (appId === 0 || pid === 0) onFocus();
+      else rememberOverlay(currentSteamGame());
+    },
+  );
+  overlayFocusObserver.refresh();
+  const timer = window.setInterval(() => poll(), 500);
+  const steamUi = (window as any).SteamClient?.System?.UI;
+  const subscriptions: Array<{ unregister?: () => void }> = [];
+  try {
+    const focus = steamUi?.RegisterForFocusChangeEvents?.(onFocus);
+    if (focus) subscriptions.push(focus);
+  } catch (error) {
+    console.warn("Playhub Dashboard: could not observe Steam focus changes", error);
+  }
 
   return () => {
     alive = false;
+    focusRecovery.cancel();
+    configuratorReturn.forget();
+    layout?.release();
+    overlayScope.clear();
+    overlayFocusObserver.dispose();
+    wakeup.stop();
     window.clearInterval(timer);
+    for (const subscription of subscriptions) {
+      try { subscription.unregister?.(); } catch { /* Steam may have already disposed the browser view. */ }
+    }
+    launchPatch?.unpatch();
   };
 }
 
@@ -636,7 +907,8 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
 
   const gameAppId = steamAppId((window as any).SteamUIStore?.MainRunningAppID ?? (DFL as any).Router?.MainRunningAppID);
   return (
-    <ControlCenter locale={locale} origin={origin} homeTitle={local.controlCentre} session={<>
+    <ControlCenter locale={locale} origin={origin} homeTitle={local.controlCentre} gameAppId={gameAppId} gamingMode={status?.currentMode === "Gaming"}
+      frameTiming={origin === "qam" && status && gameAppId !== 0 ? <GameFrameTiming key={gameAppId} appId={gameAppId} locale={locale} /> : null} session={<>
       {!status && <PanelSection><PanelSectionRow>
         <div role="status" style={{ margin: "8px 0 16px", padding: "16px", borderRadius: 10,
           background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.12)" }}>
@@ -644,7 +916,6 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
           <div style={{ fontSize: 13, lineHeight: 1.5, opacity: .8 }}>{optional.AgentRequired}</div>
         </div>
       </PanelSectionRow></PanelSection>}
-      {origin === "qam" && status && gameAppId !== 0 && <GameFrameTiming key={gameAppId} appId={gameAppId} locale={locale} />}
       <PanelSection>
         <PanelSectionRow>
           <ButtonItem
@@ -806,7 +1077,11 @@ export default definePlugin(() => {
   const uninstallOnboarding = installOptionalHook("Onboarding", () => installPlayhubOnboarding(() => currentLocale));
   const uninstallDeckyHost = installOptionalHook("Decky host", () => initDeckyHost(() => controlCall<[], { deckyHostEnabled?: boolean }>("get_panel_preferences")));
   const uninstallQuickSettings = installOptionalHook("Quick settings", installQuickSettings);
-  const uninstallControlledQamFocus = installOptionalHook("QAM focus", installControlledQamFocus);
+  const configuratorReturn = createSteamConfiguratorReturn();
+  const uninstallControlledQamFocus = installOptionalHook("QAM focus", () => installControlledQamFocus(
+    (app, presentation) => configuratorReturn.admitted(app, presentation, (window as any).SteamClient?.Input),
+    (app, proof, browser) => configuratorReturn.nativeAdmitted(app, proof, browser, (window as any).SteamClient?.Input)));
+  const uninstallLivePerformance = installOptionalHook("Performance monitor", installLivePerformance);
   void initializeQamPreferences().catch(error=>console.warn('[Playhub QAM] Preferences unavailable',error));
   let uninstallHomeNews = () => {};
   try { uninstallHomeNews = installHomeNews(() => currentLocale); }
@@ -815,8 +1090,7 @@ export default definePlugin(() => {
   // finestra primaria invece di mostrarla soltanto dopo il primo effect React.
   void preloadDashboardWindows();
   void preloadPluginStoreCatalog().catch(() => {});
-  const steamFocusRecovery = installSteamNavigationFocusRecovery();
-  const stopOpenRequestWatcher = startOpenRequestWatcher(() => steamFocusRecovery.schedule("chiusura gioco"));
+  const stopOpenRequestWatcher = startOpenRequestWatcher(configuratorReturn);
   const uninstallNavigationHaptics = installOptionalHook("Navigation haptics", installNavigationHaptics);
   const uninstallPlayhubQam = initPlayhubQam({ content: <Content origin="qam" />, icon: <PlayhubIcon />, title: <div style={{ paddingInline: 16, boxSizing: "border-box" }}>{playhubTitle}</div> });
   const uninstallPowerMenuPatch = installOptionalHook("Power menu", () => installPowerMenuPatch(
@@ -852,8 +1126,8 @@ export default definePlugin(() => {
       const cleanups = [
         stopDeckyIpcRecovery,
         uninstallCircles, disposeDisplayConfirmation, uninstallOnboarding,
-        uninstallDeckyHost, uninstallQuickSettings, uninstallControlledQamFocus, uninstallHomeNews,
-        clearDashboardChrome, () => steamFocusRecovery.uninstall(),
+        uninstallDeckyHost, uninstallQuickSettings, uninstallControlledQamFocus, uninstallLivePerformance, uninstallHomeNews,
+        clearDashboardChrome,
         stopOpenRequestWatcher, uninstallNavigationHaptics,
         uninstallPowerMenuPatch, uninstallPlayhubQam,
       ];

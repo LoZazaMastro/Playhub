@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><TreatWarningsAsErrors>true</TreatWarningsAsErrors><Version>3.4.0</Version></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Playhub/Services/BundledDeckyWindowsRelease.cs;../Playhub/Services/DeckyWindowsReleaseClient.cs;../Playhub/Services/DeckyWindowsReleaseClient.Web.cs;../Playhub/Services/DeckyFileUpgrade.cs;../Playhub/Models/DeckyWindowsRelease.cs" />
+  </ItemGroup>
+</Project>

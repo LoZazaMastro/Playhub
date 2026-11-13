@@ -51,3 +51,8 @@ Source/GamingModeAgent/publish_verified_*/
 **/__pycache__/
 *.pyc
 *.pyo
+
+# Self-contained Discord package is published as a release asset (over GitHub's file limit).
+/Source/Playhub/Plugins/Discord/Discord_Installer-1.0.1.zip
+# TrailerHero updates are retrieved from the published plugin release.
+/Source/Playhub/Plugins/TrailerHero/*_Installer.zip

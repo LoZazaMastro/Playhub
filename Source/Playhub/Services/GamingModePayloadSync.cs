@@ -18,17 +18,25 @@ internal static class GamingModePayloadSync
         if (sourceVersion is not null && installedVersion is not null)
         {
             int comparison = installedVersion.CompareTo(sourceVersion);
-            if (comparison > 0 || (comparison == 0 && File.GetLastWriteTimeUtc(installed) > File.GetLastWriteTimeUtc(source))) return false;
+            if (comparison > 0) return false;
             if (comparison < 0) return true;
         }
-        return !BundledExecutableCopy.IsCurrent(source, installed);
+        return !GamingModeInstallationPolicy.HasSameAgentPayload(source, installed);
     }
 
     private static Version? ReadVersion(string path)
     {
-        var info = FileVersionInfo.GetVersionInfo(path);
-        return string.IsNullOrWhiteSpace(info.FileVersion) ? null :
-            new Version(info.FileMajorPart, info.FileMinorPart, info.FileBuildPart, info.FilePrivatePart);
+        try
+        {
+            var info = FileVersionInfo.GetVersionInfo(path);
+            return string.IsNullOrWhiteSpace(info.FileVersion) ? null :
+                new Version(info.FileMajorPart, info.FileMinorPart, info.FileBuildPart, info.FilePrivatePart);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException
+            or System.ComponentModel.Win32Exception or System.Security.SecurityException)
+        {
+            return null;
+        }
     }
 
     internal static IEnumerable<string> RequiredPluginFiles(string installRoot, string source)

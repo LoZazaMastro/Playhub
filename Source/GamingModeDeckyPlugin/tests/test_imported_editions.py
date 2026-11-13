@@ -7,7 +7,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from quick_settings.daily_history import DailyHistory
+from quick_settings.daily_history import DailyHistory, ENGLISH_EDITORIAL_FALLBACK
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -68,6 +68,12 @@ class ImportedEditionTests(unittest.TestCase):
                         self.assertEqual(image['subject'], chapter['subject'])
                         self.assertNotEqual(image['kind'], 'cover')
                         self.assertTrue((ROOT / 'src/assets/history' / image['file']).is_file())
+                # Declaring an edition incomplete must not hide duplicates among
+                # the images that remain assigned to its visible cards.
+                bound = [theme['intro_image_file'], *[c['image_file'] for c in theme['chapters']]]
+                hashes = [hashlib.sha256((ROOT / 'src/assets/history' / name).read_bytes()).hexdigest()
+                          for name in bound if name != '__pending__']
+                self.assertEqual(len(hashes), len(set(hashes)), theme['id'])
                 date = datetime.date.fromisoformat('2026-' + edition['anniversary']['date'])
                 reader = DailyHistory(directory, today=lambda: date)
                 for locale in edition['locales']:
@@ -75,7 +81,10 @@ class ImportedEditionTests(unittest.TestCase):
                     self.assertEqual(payload['editorial']['id'], theme['id'])
                     self.assertEqual(len(payload['editorial']['chapters']), len(theme['chapters']))
                     self.assertEqual(payload['article']['title'], theme['subject'])
-                    self.assertEqual(payload['editorial']['intro'], theme['intro'][locale])
+                    # Unapproved editorial locales deliberately use the English
+                    # source, independently of whether this edition lacks media.
+                    content_locale = 'en' if locale in ENGLISH_EDITORIAL_FALLBACK else locale
+                    self.assertEqual(payload['editorial']['intro'], theme['intro'][content_locale])
                     self.assertEqual(payload['year'], edition['anniversary'].get('year'))
                     for chapter in payload['editorial']['chapters']:
                         self.assertTrue(chapter['kicker'])

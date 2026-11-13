@@ -3,11 +3,36 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using Playhub.DeckyHost;
+using Playhub.Shared;
+
+if (args is [GameExecutionQosOwner.Command])
+	return GameExecutionQosOwner.RunAsync().GetAwaiter().GetResult();
+if (args is ["--live-frame-proof", string fixture, string provider, string refresh] && int.TryParse(refresh, out int refreshMs))
+	return PresentMonLiveProof.Run(fixture, provider, refreshMs);
+if (args is ["--live-frame-proof-offscreen", string offscreenFixture, string offscreenProvider, string offscreenRefresh]
+    && int.TryParse(offscreenRefresh, out int offscreenRefreshMs))
+	return PresentMonLiveProof.Run(offscreenFixture, offscreenProvider, offscreenRefreshMs, hardwareOffscreen: true);
+if (args is ["--live-performance-tests"]) { LivePerformanceControllerTests.Verify(); return 0; }
+if (args is ["--hud-stacking-tests"]) { LivePerformanceHudStackingTests.Verify(); return 0; }
+if (args is ["--steam-mode-settlement-tests"]) { SteamModeCommandTests.Run(); SteamModeSettlementTests.Run(); return 0; }
+if (args is ["--live-usage-proof", string period] && int.TryParse(period, out int usagePeriod)) return LivePerformanceSystemUsageTests.Proof(usagePeriod);
+if (args is [GameExecutionQosTests.ParentFixtureCommand, string pid, string birth]
+	&& int.TryParse(pid, out int processId) && long.TryParse(birth, out long fileTime))
+	return GameExecutionQosTests.RunParentFixtureAsync(new GameExecutionQosTarget(processId, fileTime)).GetAwaiter().GetResult();
 
 var tests = new (string Name, Action Run)[]
 {
+	("Desktop exit acknowledgements serialize a later explicit Big Picture open", SteamModeCommandTests.Run),
+    ("A pending desktop exit preserves quiet native handover and real user cancellation", SteamThemeForegroundTransitionTests.Run),
 	("Hidden helper policy preserves interactive applications", TestHiddenHelpers),
+	("Retired Playhub Game Bar watcher is blocked without filtering unrelated startup apps", TestLegacyGameBarWatcher),
 	("Steam UI never inherits game identity", TestSteamClientIdentity),
+	("Steam installation rejects stale directories and validates steam.exe", TestSteamInstallationPath),
+	("Big Picture returns only after exact exit and never takes a foreign foreground", TestBigPictureReturn),
+	("Xbox companion allows a stale scope sample for ownership proof only", TestXboxCompanionScope),
+	("Win32 companion identity and Valve host headers reject stale, foreign and ambiguous evidence", Win32SteamSessionTests.Run),
+	("Registered UWP companion status binds the exact shortcut and retained process", UwpCompanionPolicyTests.Run),
+	("Valve host command binds unique exact companion, Steam owner and full GameID", NativeSteamOverlayHostTests.Run),
 	("Tracked game identity only flows to child processes", TestTrackedGameAncestry),
 	("Historical tracking cannot match a recycled PID", TestRecycledGamePid),
 	("Steam UI gate allows navigation", TestGateAllowsSteamUi),
@@ -27,12 +52,27 @@ var tests = new (string Name, Action Run)[]
 	("Display: a context change aborts recovery before another process is restarted", TestDisplayRecoveryContextChange),
 	("Display: browser fallback requires a confirmed black screen", TestDisplayRecoveryFallback),
 	("Frame measurement: verifies Windows process creation identity", PresentMonFrameCollectorTests.VerifyNativeIdentity),
+	("Live frames: exact source, rolling window, timestamps and stale data", PresentMonLiveTests.VerifyMetrics),
+	("Live frames: one continuous provider, automatic 20ms fresh-only publication and owned cleanup", PresentMonLiveTests.VerifyStreaming),
+	("Live HUD: exact owned leases, atomic settings, suspend, expiry and cleanup", LivePerformanceControllerTests.Verify),
+    ("Live HUD: bounded exact-game stacking preserves popup order and foreground", LivePerformanceHudStackingTests.Verify),
+    ("Steam mode queue: native settlement shares the themed-cover deadline and respects cancellation", SteamModeSettlementTests.Run),
+	("Live HUD: lightweight hardware counters preserve missing values and validate native bounds", LivePerformanceSystemUsageTests.Verify),
+	("Frame measurement: uses the exact packaged game and rejects its overlay or launcher", TestPackagedFrameMeasurementTarget),
 	("Frame measurement: reports separate presentation and display cadence", PresentMonFrameCollectorTests.VerifyMetrics),
 	("Frame measurement: rejects sparse and ambiguous swapchains", PresentMonFrameCollectorTests.VerifyUnreliableMetrics),
 	("Frame measurement: single active request and exact graceful cancellation", PresentMonFrameCollectorTests.VerifyCancellation),
 	("Frame measurement: observes target exit and bounds stuck capture", PresentMonFrameCollectorTests.VerifyTargetExitAndWatchdog),
 	("Frame measurement: cleanup blocks new sessions until exact previous stop", PresentMonFrameCollectorTests.VerifyCleanup),
 	("Frame measurement: refuses unavailable providers and foreign sessions", PresentMonFrameCollectorTests.VerifyFailures),
+	("Game QoS: default and verified AC/DC execution profiles", GameExecutionQosTests.VerifyOwnership),
+	("Game QoS: refuses and relinquishes external control", GameExecutionQosTests.VerifyForeignAndFailedControl),
+	("Game QoS: owner expires, restores and closes the same process", GameExecutionQosTests.VerifyOwnerLifecycle),
+	("Game QoS: independent Windows owner confirms masks and creation identity", GameExecutionQosTests.VerifyWindowsOwnerAndProcessIdentity),
+	("Steam downloads: same app and lease required; expires without heartbeat", SteamDownloadPowerLeaseTests.VerifyIdentityAndExpiry),
+	("Steam downloads: revokes on AC loss, game or mode change, and suspend", SteamDownloadPowerLeaseTests.VerifyRevocation),
+	("Steam downloads: Windows accepts the system-only request context", SteamDownloadPowerLeaseTests.VerifyNativeContext),
+	("Game audio: only the exact session may change and readback must agree", GameAudioVolumeTests.Verify),
 	("Foreground cache bounds identity reads and disposes expired handles", TestForegroundCacheExpiry),
 	("Foreground cache invalidates on PID changes and no foreground", TestForegroundCacheChanges),
 	("Foreground cache rejects a dead handle even when PID is reused", TestForegroundCacheReuse),
@@ -62,7 +102,41 @@ foreach ((string name, Action run) in tests)
 }
 
 foreach (string failure in failures) Console.Error.WriteLine(failure);
-if (failures.Count > 0) Environment.ExitCode = 1;
+return failures.Count > 0 ? 1 : 0;
+
+static void TestXboxCompanionScope()
+{
+	Equal(true, XboxCompanionOverlaySession.AllowsRequest(2, false, 1000, 2501, true, true));
+	Equal(true, XboxCompanionOverlaySession.AllowsRequest(2, false, 1000, 4000, true, true));
+	Equal(false, XboxCompanionOverlaySession.AllowsRequest(2, false, 1000, 4001, true, true));
+	Equal(false, XboxCompanionOverlaySession.AllowsRequest(0, false, 1000, 1500, true, true));
+	Equal(false, XboxCompanionOverlaySession.AllowsRequest(1, false, 1000, 1500, true, true));
+	Equal(false, XboxCompanionOverlaySession.AllowsRequest(2, false, 1501, 1500, true, true));
+	Equal(false, XboxCompanionOverlaySession.AllowsRequest(2, false, 0, 1500, true, true));
+	Equal(true, XboxCompanionOverlaySession.MatchesForegroundScope(1, 2, true));
+	Equal(true, XboxCompanionOverlaySession.MatchesForegroundScope(2, 1, true));
+	Equal(false, XboxCompanionOverlaySession.MatchesForegroundScope(1, 2, false));
+	Equal(false, XboxCompanionOverlaySession.MatchesForegroundScope(2, 1, false));
+	Equal(true, XboxCompanionOverlaySession.MatchesForegroundScope(1, 1, false));
+	Equal(true, XboxCompanionOverlaySession.MatchesForegroundScope(2, 2, false));
+	Equal(false, XboxCompanionOverlaySession.MatchesForegroundScope(1, 0, true));
+	Equal(false, XboxCompanionOverlaySession.MatchesForegroundScope(0, 2, true));
+}
+
+static void TestPackagedFrameMeasurementTarget()
+{
+	const uint game = 100;
+	const int frame = 200;
+	const string aumid = "Fixture.Game_abcd!App";
+	Equal(true, FrameMeasurementTargetPolicy.MatchesPackagedForeground(game, aumid, (int)game, null, false));
+	Equal(false, FrameMeasurementTargetPolicy.MatchesPackagedForeground(game, aumid, frame, null, true));
+	Equal(true, FrameMeasurementTargetPolicy.MatchesPackagedForeground(game, aumid, frame, aumid.ToUpperInvariant(), true));
+	Equal(false, FrameMeasurementTargetPolicy.MatchesPackagedForeground(game, aumid, frame, aumid, false));
+	Equal(false, FrameMeasurementTargetPolicy.MatchesPackagedForeground(game, aumid, frame, aumid + "2", true));
+	foreach (string helper in new[] { "ApplicationFrameHost", "Playhub.GameSession", "Playhub.XboxSession.exe", "steamwebhelper", "GameLaunchHelper" })
+		Equal(false, FrameMeasurementTargetPolicy.CanMeasureWindowOwner(helper));
+	Equal(true, FrameMeasurementTargetPolicy.CanMeasureWindowOwner("Cuphead"));
+}
 
 static void TestHiddenHelpers()
 {
@@ -74,12 +148,82 @@ static void TestHiddenHelpers()
 	Equal(false, BackgroundProcessPolicy.IsHiddenPowerShell("powershell.exe", "-WindowStyle HiddenOther"));
 }
 
+static void TestLegacyGameBarWatcher()
+{
+	const string name = "Playhub Xbox Game Bar";
+	const string args = "-NoProfile -File \"C:\\Playhub\\Assets\\GamingMode\\xbox-gamebar.ps1\"";
+	Equal(true, LegacyXboxGameBarWatcher.Matches(name, "playhub-gm-gamebar", args));
+	Equal(true, LegacyXboxGameBarWatcher.Matches(name, null, args));
+	Equal(false, LegacyXboxGameBarWatcher.Matches(name, "PersonalApp", "--launch"));
+	Equal(false, LegacyXboxGameBarWatcher.Matches("My startup script", "powershell", args));
+}
+
 static void TestSteamClientIdentity()
 {
 	foreach (string name in new[] { "steam", "STEAM.EXE", "steamwebhelper", "steamservice", @"C:\Steam\GameOverlayUI.exe" })
 		Equal(true, SteamGameIdentityPolicy.IsSteamClient(name));
 	Equal(false, SteamGameIdentityPolicy.IsSteamClient("NFS14.exe"));
 	Equal(false, SteamGameIdentityPolicy.IsSteamClient("steamworlddig.exe"));
+}
+
+static void TestBigPictureReturn()
+{
+    Equal(true, BigPictureReturnPolicy.IsShellTransition("ApplicationManager_ImmersiveShellWindow", 123, 123));
+    Equal(false, BigPictureReturnPolicy.IsShellTransition("ApplicationManager_ImmersiveShellWindow", 456, 123));
+    Equal(false, BigPictureReturnPolicy.IsShellTransition("ApplicationManager_ImmersiveShellWindow", 0, 0));
+    Equal(false, BigPictureReturnPolicy.IsShellTransition("CabinetWClass", 123, 123));
+    Equal(false, BigPictureReturnPolicy.IsShellTransition("Windows.UI.Core.CoreWindow", 123, 123));
+    var shellReturn = new BigPictureReturnPolicy();
+    var shellClass = BigPictureReturnPolicy.IsShellTransition("ApplicationManager_ImmersiveShellWindow", 123, 123)
+        ? ReturnForeground.Transition : ReturnForeground.Foreign;
+    shellReturn.Observe(shellClass, gameAlive: true); // Window can change before the process exit signals.
+    Equal(false, shellReturn.AllowsReturn(shellClass, gameExited: false));
+    Equal(true, shellReturn.AllowsReturn(shellClass, gameExited: true));
+    shellReturn.Observe(ReturnForeground.Foreign, gameAlive: true);
+    shellReturn.Observe(shellClass, gameAlive: false);
+    Equal(false, shellReturn.AllowsReturn(shellClass, gameExited: true));
+	var policy = new BigPictureReturnPolicy();
+	Equal(false, policy.AllowsReturn(ReturnForeground.Transition, gameExited: false));
+	Equal(true, policy.AllowsReturn(ReturnForeground.Transition, gameExited: true));
+	Equal(true, policy.AllowsReturn(ReturnForeground.Steam, gameExited: true));
+	Equal(false, policy.AllowsReturn(ReturnForeground.Foreign, gameExited: true));
+	policy.Observe(ReturnForeground.Foreign, gameAlive: true);
+	Equal(false, policy.AllowsReturn(ReturnForeground.Transition, gameExited: true));
+	policy.Observe(ReturnForeground.Steam, gameAlive: true);
+	Equal(false, policy.AllowsReturn(ReturnForeground.Steam, gameExited: true));
+	policy.Observe(ReturnForeground.Game, gameAlive: true);
+	Equal(true, policy.AllowsReturn(ReturnForeground.Steam, gameExited: true));
+	policy.Observe(ReturnForeground.Foreign, gameAlive: false);
+	policy.Observe(ReturnForeground.Game, gameAlive: false);
+	Equal(false, policy.AllowsReturn(ReturnForeground.Transition, gameExited: true));
+	policy.Observe(ReturnForeground.Companion, gameAlive: true);
+	Equal(false, policy.AllowsReturn(ReturnForeground.Companion, gameExited: false));
+	Equal(true, policy.AllowsReturn(ReturnForeground.Companion, gameExited: true));
+}
+
+static void TestSteamInstallationPath()
+{
+	string fixture = Path.Combine(Path.GetTempPath(), $"Playhub-SteamRoot-{Guid.NewGuid():N}");
+	string stale = Path.Combine(fixture, "Stale registry directory");
+	string actual = Path.Combine(fixture, "Installed Steam");
+	try
+	{
+		Directory.CreateDirectory(Path.Combine(stale, "logs"));
+		File.WriteAllText(Path.Combine(stale, "logs", "gameprocess_log.txt"), "Stale tracking data");
+		string wrongExe = Path.Combine(stale, "Game.exe");
+		File.WriteAllText(wrongExe, "");
+		Directory.CreateDirectory(actual);
+		string actualExe = Path.Combine(actual, "steam.exe");
+		File.WriteAllText(actualExe, "");
+
+		Equal<string?>(null, SteamInstallationPath.ResolveRoot(stale, wrongExe, "steam.exe"));
+		Equal(actual, SteamInstallationPath.ResolveRoot(stale, $"  \"{actualExe.Replace('\\', '/')}\"  "));
+		Equal(actual, SteamInstallationPath.ResolveRoot(actual + Path.DirectorySeparatorChar));
+	}
+	finally
+	{
+		Directory.Delete(fixture, recursive: true);
+	}
 }
 
 static void TestTrackedGameAncestry()

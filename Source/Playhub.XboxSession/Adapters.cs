@@ -5,11 +5,19 @@ internal sealed record ProcessFacts(int Id);
 
 internal static class PackagedLaunchLog
 {
+#if PLAYHUB_TEST_FIXTURE
+    internal static string? FixtureDirectory;
+#endif
     internal static void Info(string message) => Write("info", message);
     internal static void Error(string message) => Write("error", message);
     private static void Write(string level, string message)
     {
+#if PLAYHUB_TEST_FIXTURE
+        string? folder = FixtureDirectory;
+        if (folder is null) return;
+#else
         string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Playhub", "logs");
+#endif
         try
         {
             Directory.CreateDirectory(folder);
@@ -21,10 +29,10 @@ internal static class PackagedLaunchLog
     }
 }
 
-internal sealed class PrivilegeJournal
+internal sealed class PrivilegeJournal(Action<string>? trace = null)
 {
     internal void Record(string action, string access, bool granted, int error)
-        => PackagedLaunchLog.Info($"action={action}; access={access}; granted={granted}; error={error}");
+        => (trace ?? PackagedLaunchLog.Info)($"action={action}; access={access}; granted={granted}; error={error}");
 }
 
 internal static class ProcessInspector

@@ -1,0 +1,26 @@
+Decky Loader 3.3.1 - Playhub reconnect compatibility build
+
+Based on Decky Loader by Steam Deck Homebrew and its contributors, licensed
+under GNU GPL version 2. Compatibility changes by LoZazaMastro preserve the
+original copyright and license notices. Preferred source is included in
+sources/Decky-3.3.1-Playhub-Reconnect-Source.zip, with build instructions.
+
+The private build uses Python 3.14.8 under the Python Software Foundation
+license. Its license text is included under licenses. Python source:
+https://github.com/python/cpython/tree/v3.14.8
+NuGet package: https://api.nuget.org/v3-flatcontainer/python/3.14.8/python.3.14.8.nupkg
+The exact official NuGet SHA512 is recorded in build-info.json.
+
+PyInstaller's bootloader is distributed under GPLv2 with its bootloader
+exception. The full license text and exact preferred source archive are
+included. Other backend dependency source archives are verified against
+poetry.lock. DEPENDENCIES.json records their versions, source URLs and hashes.
+
+The frontend is built from the supplied source with its frozen pnpm lock.
+Original dependency license and notice files are preserved in licenses/
+frontend-dependencies. FRONTEND-PACKAGES.json records the exact package set.
+Build dependencies are included in that notice inventory as well.
+
+These binaries have private-build provenance and are unsigned. They are not
+an official new Decky release. Runtime compatibility with the user's live
+Steam session is a separate installation test.

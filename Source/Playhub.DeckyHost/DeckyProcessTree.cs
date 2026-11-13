@@ -58,17 +58,23 @@ internal static class DeckyProcessTree
         int stopped = 0;
         foreach (var root in identities.Values.Where(identity => !identities.TryGetValue(identity.ParentPid, out var parent)
             || !SameOwner(identity, parent) || parent.Birth > identity.Birth))
+            stopped += StopRoot(root);
+        return stopped;
+    }
+
+    // A lifecycle reset owns one exact root, never every loader installation.
+    internal static int StopRoot(Identity root)
+    {
+        using var handle = OpenProcess(0x101001, false, root.Pid);
+        if (Read(handle, root.Pid) != root) return 0;
+        int stopped = StopDescendants(root);
+        // Leave the onefile parent time to remove its own extraction directory.
+        if (WaitForSingleObject(handle, 1500) != 0)
         {
-            using var handle = OpenProcess(0x101001, false, root.Pid);
-            if (Read(handle, root.Pid) != root) continue;
-            stopped += StopDescendants(root);
-            // Give a onefile parent its own cleanup opportunity before bounded
-            // fallback termination of this exact retained handle.
-            if (WaitForSingleObject(handle, 1500) == 0) continue;
             if (Read(handle, root.Pid) == root && TerminateProcess(handle, 0)) stopped++;
             if (WaitForSingleObject(handle, 10000) != 0) throw new IOException("Decky is still closing. Try again after it has stopped.");
         }
-        return stopped;
+        return Math.Max(1, stopped);
     }
 
     // Verify the whole lineage using birth times, image paths, owner SID and

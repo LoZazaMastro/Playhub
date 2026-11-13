@@ -1,3 +1,337 @@
+// Read-only veto facts. They do not prove native foreground or grant authority.
+function readSteamGuideReceiver(main, active, focusStore) {
+    try {
+        const browser = main?.BrowserWindow ?? main?.m_BrowserWindow, doc = browser?.document;
+        if (!main || !browser || browser.closed === true || !doc || typeof doc.hasFocus !== "function"
+            || typeof doc.body?.classList?.contains !== "function")
+            return;
+        const focused = doc.hasFocus(), windowFocus = doc.body.classList.contains("WindowFocus");
+        if (!focusStore)
+            return;
+        const focusedApp = focusStore.GetFocusedAppID?.() ?? focusStore.m_unFocusedAppID;
+        const focusedWindow = focusStore.GetFocusedWindowID?.() ?? focusStore.m_nFocusedWindowID;
+        const app = focusStore ? focusStore.GetFocusedOverlayAppID?.() ?? focusStore.m_unFocusedOverlayAppID : null;
+        const pid = focusStore ? focusStore.GetFocusedOverlayPID?.() ?? focusStore.m_unFocusedOverlayPID : null;
+        const known = (v) => typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 0xffffffff;
+        if (typeof focused !== "boolean" || typeof windowFocus !== "boolean" || !known(focusedApp) || !known(focusedWindow) || !known(app) || !known(pid)
+            || (main.BrowserWindow ?? main.m_BrowserWindow) !== browser || browser.document !== doc)
+            return;
+        return { main, browser, document: doc, focused, windowFocus, activeMain: active === main,
+            focusStore, focusApp: app, focusPid: pid, focusedApp, focusedWindow };
+    }
+    catch {
+        return;
+    }
+}
+const app = (v) => typeof v === "number" && Number.isInteger(v) && v > 0 && v <= 0xffffffff;
+const canonical = (v) => app(v) && v >= 0x80000000;
+const uint64$1 = (v) => typeof v === "string" && /^[1-9]\d{0,19}$/.test(v) && BigInt(v) <= 0xffffffffffffffffn;
+const observed = (v) => BigInt(v) <= 0xffffffffn ? Number(v) : Number(BigInt(v) >> 32n);
+function parseOwnedLaunchRoute(value, observedApp) {
+    if (!value || typeof value !== "object")
+        return;
+    const r = value;
+    if (!canonical(r.canonicalShortcutAppId) || r.routingOnly !== true || typeof r.observedFresh !== "boolean"
+        || ![r.gamePid, r.wrapperPid, r.steamPid].every(app) || new Set([r.gamePid, r.wrapperPid, r.steamPid]).size !== 3
+        || ![r.originalGameId, r.gameBirth, r.wrapperBirth, r.steamBirth].every(uint64$1)
+        || BigInt(r.originalGameId) !== (BigInt(r.canonicalShortcutAppId) << 32n | 0x02000000n)
+        || r.uiObservedApp !== observedApp
+        || (r.observedSteamGameId === null
+            ? r.launchProvenance !== "epic-protocol" || r.observedFresh !== false || (observedApp !== null && observedApp !== 0 && observedApp !== r.canonicalShortcutAppId)
+            : !uint64$1(r.observedSteamGameId) || (observedApp !== null && observedApp !== 0 && observed(r.observedSteamGameId) !== observedApp))
+        || (r.launchProvenance !== undefined && r.launchProvenance !== "steam-child" && r.launchProvenance !== "epic-protocol")
+        || BigInt(r.steamBirth) > BigInt(r.wrapperBirth) || BigInt(r.wrapperBirth) > BigInt(r.gameBirth))
+        return;
+    return Object.freeze({ ...r });
+}
+// One lookup can serve delayed Home/System/Quick observers, but each edge still
+// enters the existing common Guide admission and its unchanged coalescing rules.
+function createOwnedLaunchDispatcher(deps) {
+    let disposed = false, version = 0;
+    let launch;
+    let nativeLaunch;
+    let cache;
+    let pending;
+    const trace = (s) => { try {
+        deps.trace?.(s);
+    }
+    catch { } };
+    const scope = () => { try {
+        const s = deps.scope();
+        return { ...s, runningShortcuts: [...s.runningShortcuts], receiver: s.receiver ? { ...s.receiver } : undefined };
+    }
+    catch {
+        return;
+    } };
+    const same = (a, b) => a.context === b.context && a.revision === b.revision && a.observedApp === b.observedApp
+        && !b.disposed && b.enabled && Boolean(b.context);
+    const sameReceiver = (a, b, kind) => {
+        const first = a.receiver, last = b.receiver;
+        return Boolean(first && last && first.main === last.main && first.browser === last.browser && first.document === last.document
+            && first.focused === last.focused && first.windowFocus === last.windowFocus && first.activeMain === last.activeMain
+            && first.focusStore === last.focusStore && first.focusApp === last.focusApp && first.focusPid === last.focusPid
+            && first.focusedApp === last.focusedApp && first.focusedWindow === last.focusedWindow
+            && (kind !== "steam-ui" || (last.focused && last.windowFocus && last.activeMain)));
+    };
+    const activeCandidate = (s) => {
+        if (nativeLaunch === s.observedApp)
+            return false;
+        const running = s.runningShortcuts.filter(canonical);
+        if (running.length > 8)
+            return undefined; // Candidate overflow is unknown, never ordinary-game proof.
+        let now;
+        try {
+            now = deps.now();
+        }
+        catch {
+            return undefined;
+        }
+        if (!Number.isFinite(now) || now < 0)
+            return undefined;
+        if (launch && now < launch.at)
+            return undefined;
+        return running.length > 0 || Boolean(launch && Number.isFinite(launch.at));
+    };
+    const cached = (s) => cache?.version === version && same(cache.scope, s) && activeCandidate(s) ? cache.route : undefined;
+    const current = (s, v) => { const n = scope(); return !disposed && v === version && n && same(s, n) && activeCandidate(n); };
+    const lookup = (s) => {
+        const existing = cached(s);
+        if (existing && s.observedApp !== null && s.observedApp !== 0)
+            return Promise.resolve({ route: existing });
+        if (pending && pending.version === version && same(pending.scope, s))
+            return pending.lookup;
+        const v = version;
+        const request = {
+            scope: s, version: v, lookup: Promise.resolve(undefined),
+        };
+        request.lookup = (async () => {
+            try {
+                if (!current(s, v))
+                    return;
+                const reply = await new Promise((resolve) => {
+                    let finished = false;
+                    let timer;
+                    const finish = (reply) => {
+                        if (finished)
+                            return;
+                        finished = true;
+                        if (timer !== undefined)
+                            deps.cancel(timer);
+                        resolve(reply);
+                    };
+                    request.stop = () => finish({ ok: false });
+                    timer = deps.schedule(() => finish({ ok: false }), 1800);
+                    if (finished && timer !== undefined)
+                        deps.cancel(timer);
+                    if (finished || !current(s, v)) {
+                        finish({ ok: false });
+                        return;
+                    }
+                    try {
+                        Promise.resolve(deps.discover(s.observedApp, launch?.canonical ?? (s.runningShortcuts.length === 1 ? s.runningShortcuts[0] : undefined))).then(finish, () => finish({ ok: false }));
+                    }
+                    catch {
+                        finish({ ok: false });
+                    }
+                });
+                if (!current(s, v))
+                    return;
+                if (reply?.ok !== true) {
+                    cache = undefined;
+                    return;
+                }
+                if (reply.kind === "absent") {
+                    cache = undefined;
+                    if (reply.receiver !== "steam-ui" && reply.receiver !== "ordinary-game")
+                        return;
+                    return { receiver: reply.receiver };
+                }
+                const route = parseOwnedLaunchRoute(reply.route, s.observedApp);
+                if (!route || !current(s, v))
+                    return;
+                // A client launch hint is not proof; a conflicting receipt cannot
+                // silently select another candidate. Reload may use running shortcuts.
+                if (launch && route.canonicalShortcutAppId !== launch.canonical
+                    && !s.runningShortcuts.includes(route.canonicalShortcutAppId))
+                    return;
+                cache = { scope: s, route, version: v };
+                trace("owned-route-cached");
+                return { route };
+            }
+            catch {
+                trace("owned-route-unknown");
+            }
+            finally {
+                if (pending === request)
+                    pending = undefined;
+            }
+        })();
+        pending = request;
+        return request.lookup;
+    };
+    return {
+        app() {
+            const s = scope();
+            if (!s || disposed || s.disposed)
+                return 0;
+            return canonical(s.observedApp) ? s.observedApp : cached(s)?.canonicalShortcutAppId ?? s.observedApp ?? 0;
+        },
+        async resolveApp() {
+            const s = scope();
+            if (!s || disposed || s.disposed || !s.enabled)
+                return 0;
+            if (canonical(s.observedApp))
+                return s.observedApp;
+            const candidate = activeCandidate(s);
+            if (candidate === undefined)
+                return 0;
+            if (!candidate)
+                return s.observedApp ?? 0;
+            if (!s.context || ((s.observedApp === null || s.observedApp === 0) && !launch && s.runningShortcuts.length !== 1))
+                return 0;
+            const v = version, result = await lookup(s);
+            if (!current(s, v) || !result)
+                return 0;
+            if ("route" in result)
+                return cached(s) === result.route ? result.route.canonicalShortcutAppId : 0;
+            return result.receiver === "ordinary-game" ? s.observedApp ?? 0 : 0;
+        },
+        expected(canonicalApp) {
+            const s = scope();
+            if (!s || canonical(s.observedApp))
+                return;
+            const r = cached(s);
+            return r?.canonicalShortcutAppId === canonicalApp ? r : undefined;
+        },
+        noteLaunch(gameId) {
+            ++version;
+            cache = undefined;
+            pending?.stop?.();
+            pending = undefined;
+            launch = undefined;
+            nativeLaunch = undefined;
+            try {
+                if (typeof gameId !== "string" || !uint64$1(gameId))
+                    return;
+                const id = BigInt(gameId), candidate = Number(id >> 32n);
+                if ((id & 0xffffffffn) === 0x02000000n && canonical(candidate))
+                    launch = { canonical: candidate, at: deps.now() };
+                else if (id <= 0xffffffffn)
+                    nativeLaunch = Number(id);
+            }
+            catch { /* A malformed hint grants no discovery eligibility. */ }
+        },
+        signal(origin, menu, fallback) {
+            const s = scope();
+            if (!s)
+                return true; // Unknown is never permission to call native Home.
+            if (disposed || s.disposed || !s.enabled)
+                return false;
+            if (s.observedApp !== null && s.observedApp !== 0 && !app(s.observedApp))
+                return true;
+            if (canonical(s.observedApp))
+                return deps.signal(origin, menu, fallback); // no discovery/RPC
+            const candidate = activeCandidate(s);
+            if (candidate === undefined)
+                return true;
+            if (!candidate || !s.context)
+                return false;
+            if ((s.observedApp === null || s.observedApp === 0) && !launch && s.runningShortcuts.length !== 1)
+                return true;
+            if (cached(s) && s.observedApp !== null && s.observedApp !== 0)
+                return deps.signal(origin, menu, fallback);
+            const v = version;
+            void lookup(s).then(result => {
+                if (!result || !current(s, v))
+                    return;
+                if ("receiver" in result) {
+                    const latest = scope();
+                    if (!latest || !current(s, v) || !sameReceiver(s, latest, result.receiver))
+                        return;
+                    try {
+                        fallback?.();
+                    }
+                    catch { }
+                    return;
+                }
+                if (cached(s) === result.route)
+                    deps.signal(origin, menu, fallback);
+            });
+            return true;
+        },
+        invalidate() { ++version; cache = undefined; pending?.stop?.(); pending = undefined; },
+        dispose() { disposed = true; ++version; cache = undefined; pending?.stop?.(); pending = undefined; launch = undefined; },
+    };
+}
+let gameConsumer;
+function registerOwnedGameConsumer(value) {
+    gameConsumer = value;
+    return () => { if (gameConsumer === value)
+        gameConsumer = undefined; };
+}
+function readOwnedNativeOverlay(selected) {
+    const owner = gameConsumer;
+    if (!owner || !canonical(selected))
+        return;
+    try {
+        if (owner.app() !== selected)
+            return;
+        const value = owner.nativeOverlay?.(selected);
+        if (!value || value.app !== selected || !value.entry || ![value.pid, value.browserId, value.nativeApp].every(app)
+            || !uint64$1(value.rendererToken) || typeof value.active !== "boolean" || !/^\d{1,20}$/.test(value.serial))
+            return;
+        const copy = Object.freeze({ ...value });
+        return gameConsumer === owner && owner.app() === selected && gameConsumer === owner ? copy : undefined;
+    }
+    catch {
+        return;
+    }
+}
+function readOwnedGameRoute(selected) {
+    const owner = gameConsumer;
+    if (!owner)
+        return;
+    try {
+        if (owner.app() !== selected)
+            return;
+        const route = owner.expected(selected);
+        if (!route || !parseOwnedLaunchRoute(route, route.uiObservedApp) || route.canonicalShortcutAppId !== selected)
+            return;
+        return gameConsumer === owner && owner.app() === selected && owner.expected(selected) === route ? route : undefined;
+    }
+    catch {
+        return;
+    }
+}
+function readOwnedGameApp(raw) {
+    const owner = gameConsumer;
+    if (!owner)
+        return raw;
+    try {
+        const selected = owner.app();
+        if (selected === raw)
+            return selected;
+        const route = readOwnedGameRoute(selected);
+        if (!route || gameConsumer !== owner)
+            return raw;
+        return raw === 0 || raw === route.canonicalShortcutAppId || route.observedSteamGameId !== null && observed(route.observedSteamGameId) === raw ? selected : raw;
+    }
+    catch {
+        return raw;
+    }
+}
+function resolveOwnedGameApp(raw) {
+    const owner = gameConsumer;
+    if (!owner)
+        return raw;
+    try {
+        return owner.resolveApp().then(selected => gameConsumer === owner && selected > 0 && readOwnedGameApp(raw) === selected ? selected : 0, () => 0);
+    }
+    catch {
+        return 0;
+    }
+}
+
 const manifest = {"name":"Playhub"};
 const API_VERSION = 2;
 const internalAPIConnection = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
@@ -216,7 +550,7 @@ function createAgentAvailability(now = Date.now) {
 }
 const agentAvailability = createAgentAvailability();
 
-const copy$5 = {
+const copy$7 = {
     "en": {
         "Title": "Gaming Mode optional",
         "Description": "Start in Big Picture, switch to the desktop and open the Playhub Dashboard with a controller.",
@@ -386,7 +720,7 @@ const copy$5 = {
         "Ready": "Gaming Mode तैयार है।"
     }
 };
-function optionalAgentCopy(locale) { return copy$5[locale] ?? copy$5.en; }
+function optionalAgentCopy(locale) { return copy$7[locale] ?? copy$7.en; }
 
 var DefaultContext = {
   color: undefined,
@@ -631,7 +965,7 @@ function gameSettingsLabel(_language) {
     return "Playhub Game Settings";
 }
 
-const copy$4 = {
+const copy$6 = {
     en: ["Session", "Audio", "Display", "Performance", "Graphics", "Controller", "System", "Settings", "Customize your panel", "Show tabs", "Move up", "Move down", "Restore defaults", "Back", "Hide a tab without changing its settings or disabling its features.", "Expand", "Collapse", "Switch tab", "Settings could not be saved. Try again."],
     it: ["Sessione", "Audio", "Schermo", "Prestazioni", "Grafica", "Controller", "Sistema", "Impostazioni", "Personalizza il pannello", "Mostra le schede", "Sposta su", "Sposta giù", "Ripristina predefiniti", "Indietro", "Nascondere una scheda non modifica le impostazioni e non disattiva le sue funzioni.", "Espandi", "Comprimi", "Cambia scheda", "Impossibile salvare le impostazioni. Riprova."],
     de: ["Sitzung", "Audio", "Bildschirm", "Leistung", "Grafik", "Controller", "System", "Einstellungen", "Panel anpassen", "Tabs anzeigen", "Nach oben", "Nach unten", "Standard wiederherstellen", "Zurück", "Das Ausblenden eines Tabs ändert keine Einstellungen und deaktiviert keine Funktionen.", "Ausklappen", "Einklappen", "Tab wechseln", "Einstellungen konnten nicht gespeichert werden. Erneut versuchen."],
@@ -648,10 +982,10 @@ const copy$4 = {
 function controlLocale(locale) {
     const aliases = { english: "en", italian: "it", german: "de", spanish: "es", latam: "es", french: "fr", brazilian: "pt", portuguese: "pt", russian: "ru", ukrainian: "uk", japanese: "ja", koreana: "ko", schinese: "zh", tchinese: "zh", hindi: "hi" };
     const key = aliases[locale] ?? locale.split(/[-_]/)[0];
-    const row = copy$4[key] ?? copy$4.en;
+    const row = copy$6[key] ?? copy$6.en;
     const tabs = tabCopy[key] ?? tabCopy.en;
     const video = { en: "Video", it: "Video", de: "Video", es: "Vídeo", fr: "Vidéo", pt: "Vídeo", ru: "Видео", uk: "Відео", ja: "映像", ko: "비디오", zh: "视频", hi: "वीडियो" };
-    return { home: row[0], audio: video[key] ?? video.en, display: row[2], performance: row[1], graphics: row[4], controller: row[5], tools: row[6], store: 'Plugin Store', decky: 'Decky', settings: row[7], customize: tabs[1], show: tabs[4], up: tabs[2], down: tabs[3], reset: row[12], back: row[13], hint: row[14], expand: row[15], collapse: row[16], switchTab: row[17], saveError: row[18], device: tabs[5], unavailable: tabs[6], loading: tabs[7], retry: tabs[8] };
+    return { home: row[0], audio: video[key] ?? video.en, display: row[2], performance: row[1], graphics: row[3], controller: row[5], tools: row[6], store: 'Plugin Store', decky: 'Decky', settings: row[7], customize: tabs[1], show: tabs[4], up: tabs[2], down: tabs[3], reset: row[12], back: row[13], hint: row[14], expand: row[15], collapse: row[16], switchTab: row[17], saveError: row[18], device: tabs[5], unavailable: tabs[6], loading: tabs[7], retry: tabs[8] };
 }
 const tabCopy = {
     en: ['Audio & Video', 'Customize horizontal tabs', 'Move left', 'Move right', 'Show this tab', 'Device information', 'Unavailable on this device', 'Loading controls...', 'Retry'],
@@ -667,24 +1001,9 @@ const tabCopy = {
     zh: ['音频和视频', '自定义横向选项卡', '向左移动', '向右移动', '显示此选项卡', '设备信息', '此设备不支持', '正在加载控件...', '重试'],
     hi: ['ऑडियो और वीडियो', 'क्षैतिज टैब अपने हिसाब से बदलें', 'बाएँ ले जाएँ', 'दाएँ ले जाएँ', 'यह टैब दिखाएँ', 'डिवाइस की जानकारी', 'इस डिवाइस पर उपलब्ध नहीं', 'नियंत्रण लोड हो रहे हैं...', 'फिर कोशिश करें'],
 };
-const statusCopy = {
-    en: ["Connected to power", "On battery", "No supported controls were detected on this device."],
-    it: ["Alimentazione collegata", "A batteria", "Non sono stati rilevati controlli supportati su questo dispositivo."],
-    de: ["Netzbetrieb", "Akkubetrieb", "Für dieses Gerät wurden keine unterstützten Steuerelemente erkannt."],
-    es: ["Conectado a la corriente", "Con batería", "No se han detectado controles compatibles con este dispositivo."],
-    fr: ["Branché sur secteur", "Sur batterie", "Aucun réglage compatible n’a été détecté sur cet appareil."],
-    pt: ["Conectado à energia", "Na bateria", "Nenhum controle compatível foi detectado neste dispositivo."],
-    ru: ["Питание от сети", "Питание от батареи", "На этом устройстве не обнаружены поддерживаемые настройки."],
-    uk: ["Живлення від мережі", "Живлення від батареї", "На цьому пристрої не виявлено підтримуваних налаштувань."],
-    ja: ["電源に接続中", "バッテリー使用中", "このデバイスで対応している設定は見つかりませんでした。"],
-    ko: ["전원 연결됨", "배터리 사용 중", "이 기기에서 지원되는 설정을 찾지 못했습니다."],
-    zh: ["已连接电源", "使用电池", "未检测到此设备支持的控件。"],
-    hi: ["बिजली से जुड़ा है", "बैटरी पर चल रहा है", "इस डिवाइस पर कोई समर्थित नियंत्रण नहीं मिला।"],
-};
-const controlStatus = (locale) => statusCopy[locale.split(/[-_]/)[0]] ?? statusCopy.en;
 
-const keys = ["volume", "microphoneVolume", "audioOutput", "microphoneInput", "brightness", "resolution", "refreshRate", "powerMode", "powerEfficiency", "powerBalanced", "powerBetter", "powerBest", "tdpLimit", "off", "advanced", "diagnostics", "generateDiagnostics", "ok", "cancel", "back"];
-const rows$4 = {
+const keys$1 = ["volume", "microphoneVolume", "audioOutput", "microphoneInput", "brightness", "resolution", "refreshRate", "powerMode", "powerEfficiency", "powerBalanced", "powerBetter", "powerBest", "tdpLimit", "off", "advanced", "diagnostics", "generateDiagnostics", "ok", "cancel", "back"];
+const rows$7 = {
     de: ["Lautstärke", "Mikrofonlautstärke", "Audioausgabe", "Audioeingang", "Helligkeit", "Auflösung", "Bildwiederholrate", "Energiemodus", "Beste Energieeffizienz", "Ausbalanciert", "Bessere Leistung", "Beste Leistung", "Leistungsgrenze", "Aus", "Erweitert", "Diagnose", "Diagnosebericht erstellen", "OK", "Abbrechen", "Zurück"],
     es: ["Volumen", "Volumen del micrófono", "Salida de audio", "Entrada de audio", "Brillo", "Resolución", "Frecuencia de actualización", "Modo de energía", "Máxima eficiencia", "Equilibrado", "Mejor rendimiento", "Máximo rendimiento", "Límite de potencia", "Desactivado", "Avanzado", "Diagnóstico", "Generar informe de diagnóstico", "Aceptar", "Cancelar", "Volver"],
     fr: ["Volume", "Volume du microphone", "Sortie audio", "Entrée audio", "Luminosité", "Résolution", "Fréquence de rafraîchissement", "Mode d’alimentation", "Efficacité énergétique maximale", "Équilibré", "Performances améliorées", "Performances maximales", "Limite de puissance", "Désactivé", "Avancé", "Diagnostic", "Créer un rapport de diagnostic", "OK", "Annuler", "Retour"],
@@ -721,10 +1040,10 @@ function quickCoreLocale(locale) {
     const key = locale.toLowerCase().split(/[-_]/)[0];
     const language = aliases[key] ?? key;
     const labels = controlLocale(language);
-    const row = rows$4[language];
+    const row = rows$7[language];
     const confirmation = displayConfirmation[language] ?? displayConfirmation.en;
     const media = mediaSections[language] ?? mediaSections.en;
-    return { ...(row ? Object.fromEntries(keys.map((key, index) => [key, row[index]])) : {}),
+    return { ...(row ? Object.fromEntries(keys$1.map((key, index) => [key, row[index]])) : {}),
         hdrConfirmTitle: confirmation[0], hdrConfirmBody: confirmation[1], hdrUnavailable: confirmation[2],
         audio: media[0], display: media[1], performance: labels.performance };
 }
@@ -1745,10 +2064,16 @@ function TbWindow (props) {
   return GenIcon({"attr":{"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":"2","strokeLinecap":"round","strokeLinejoin":"round"},"child":[{"tag":"path","attr":{"d":"M15 8h.01"},"child":[]},{"tag":"path","attr":{"d":"M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12"},"child":[]},{"tag":"path","attr":{"d":"M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"},"child":[]},{"tag":"path","attr":{"d":"M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"},"child":[]}]})(props);
 }function TbMusic (props) {
   return GenIcon({"attr":{"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":"2","strokeLinecap":"round","strokeLinejoin":"round"},"child":[{"tag":"path","attr":{"d":"M3 17a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"},"child":[]},{"tag":"path","attr":{"d":"M13 17a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"},"child":[]},{"tag":"path","attr":{"d":"M9 17v-13h10v13"},"child":[]},{"tag":"path","attr":{"d":"M9 8h10"},"child":[]}]})(props);
+}function TbMinus (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":"2","strokeLinecap":"round","strokeLinejoin":"round"},"child":[{"tag":"path","attr":{"d":"M5 12l14 0"},"child":[]}]})(props);
 }function TbLayoutDashboard (props) {
   return GenIcon({"attr":{"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":"2","strokeLinecap":"round","strokeLinejoin":"round"},"child":[{"tag":"path","attr":{"d":"M5 4h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1"},"child":[]},{"tag":"path","attr":{"d":"M5 16h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"},"child":[]},{"tag":"path","attr":{"d":"M15 12h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1"},"child":[]},{"tag":"path","attr":{"d":"M15 4h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"},"child":[]}]})(props);
+}function TbInfoCircle (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":"2","strokeLinecap":"round","strokeLinejoin":"round"},"child":[{"tag":"path","attr":{"d":"M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"},"child":[]},{"tag":"path","attr":{"d":"M12 9h.01"},"child":[]},{"tag":"path","attr":{"d":"M11 12h1v4h1"},"child":[]}]})(props);
 }function TbHistory (props) {
   return GenIcon({"attr":{"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":"2","strokeLinecap":"round","strokeLinejoin":"round"},"child":[{"tag":"path","attr":{"d":"M12 8l0 4l2 2"},"child":[]},{"tag":"path","attr":{"d":"M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"},"child":[]}]})(props);
+}function TbGauge (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":"2","strokeLinecap":"round","strokeLinejoin":"round"},"child":[{"tag":"path","attr":{"d":"M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"},"child":[]},{"tag":"path","attr":{"d":"M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"},"child":[]},{"tag":"path","attr":{"d":"M13.41 10.59l2.59 -2.59"},"child":[]},{"tag":"path","attr":{"d":"M7 12a5 5 0 0 1 5 -5"},"child":[]}]})(props);
 }function TbDownload (props) {
   return GenIcon({"attr":{"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":"2","strokeLinecap":"round","strokeLinejoin":"round"},"child":[{"tag":"path","attr":{"d":"M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"},"child":[]},{"tag":"path","attr":{"d":"M7 11l5 5l5 -5"},"child":[]},{"tag":"path","attr":{"d":"M12 4l0 12"},"child":[]}]})(props);
 }function TbDeviceTv (props) {
@@ -1767,16 +2092,18 @@ function TbWindow (props) {
   return GenIcon({"attr":{"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":"2","strokeLinecap":"round","strokeLinejoin":"round"},"child":[{"tag":"path","attr":{"d":"M3 21l18 0"},"child":[]},{"tag":"path","attr":{"d":"M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1h-18l2 -4h14l2 4"},"child":[]},{"tag":"path","attr":{"d":"M5 21l0 -10.15"},"child":[]},{"tag":"path","attr":{"d":"M19 21l0 -10.15"},"child":[]},{"tag":"path","attr":{"d":"M9 21v-4a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v4"},"child":[]}]})(props);
 }function TbBrandGithub (props) {
   return GenIcon({"attr":{"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":"2","strokeLinecap":"round","strokeLinejoin":"round"},"child":[{"tag":"path","attr":{"d":"M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5"},"child":[]}]})(props);
+}function TbBattery (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":"2","strokeLinecap":"round","strokeLinejoin":"round"},"child":[{"tag":"path","attr":{"d":"M6 7h11a2 2 0 0 1 2 2v.5a.5 .5 0 0 0 .5 .5a.5 .5 0 0 1 .5 .5v3a.5 .5 0 0 1 -.5 .5a.5 .5 0 0 0 -.5 .5v.5a2 2 0 0 1 -2 2h-11a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2"},"child":[]}]})(props);
 }function TbArrowsSort (props) {
   return GenIcon({"attr":{"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":"2","strokeLinecap":"round","strokeLinejoin":"round"},"child":[{"tag":"path","attr":{"d":"M3 9l4 -4l4 4m-4 -4v14"},"child":[]},{"tag":"path","attr":{"d":"M21 15l-4 4l-4 -4m4 4v-14"},"child":[]}]})(props);
 }function TbAdjustmentsHorizontal (props) {
   return GenIcon({"attr":{"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":"2","strokeLinecap":"round","strokeLinejoin":"round"},"child":[{"tag":"path","attr":{"d":"M12 6a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"},"child":[]},{"tag":"path","attr":{"d":"M4 6l8 0"},"child":[]},{"tag":"path","attr":{"d":"M16 6l4 0"},"child":[]},{"tag":"path","attr":{"d":"M6 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"},"child":[]},{"tag":"path","attr":{"d":"M4 12l2 0"},"child":[]},{"tag":"path","attr":{"d":"M10 12l10 0"},"child":[]},{"tag":"path","attr":{"d":"M15 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"},"child":[]},{"tag":"path","attr":{"d":"M4 18l11 0"},"child":[]},{"tag":"path","attr":{"d":"M19 18l1 0"},"child":[]}]})(props);
 }
 
-const { DialogButton: DialogButton$5, Focusable: Focusable$6 } = _global_DFL;
+const { DialogButton: DialogButton$7, Focusable: Focusable$8 } = _global_DFL;
 function ControlSection({ id, title, icon, children, collapsed, onToggle, locale }) {
     const copy = controlLocale(locale);
-    return SP_JSX.jsxs(Focusable$6, { className: "ph-control-section", "flow-children": "column", children: [SP_JSX.jsxs(DialogButton$5, { className: "ph-control-section-title", "aria-expanded": !collapsed, onClick: () => onToggle(id), onOKActionDescription: collapsed ? copy.expand : copy.collapse, children: [SP_JSX.jsxs("span", { children: [icon, SP_JSX.jsx("strong", { children: title })] }), collapsed ? SP_JSX.jsx(TbChevronRight, {}) : SP_JSX.jsx(TbChevronDown, {})] }), !collapsed && SP_JSX.jsx(Focusable$6, { className: "ph-control-section-body", "flow-children": "column", children: children })] });
+    return SP_JSX.jsxs(Focusable$8, { className: "ph-control-section", "flow-children": "column", children: [SP_JSX.jsxs(DialogButton$7, { className: "ph-control-section-title", "aria-expanded": !collapsed, onClick: () => onToggle(id), onOKActionDescription: collapsed ? copy.expand : copy.collapse, children: [SP_JSX.jsxs("span", { children: [icon, SP_JSX.jsx("strong", { children: title })] }), collapsed ? SP_JSX.jsx(TbChevronRight, {}) : SP_JSX.jsx(TbChevronDown, {})] }), !collapsed && SP_JSX.jsx(Focusable$8, { className: "ph-control-section-body", "flow-children": "column", children: children })] });
 }
 
 /** One writer per independent setting/resource; callbacks receive only current results. */
@@ -1852,6 +2179,2878 @@ function createSettledWriter(options) {
             pending = undefined;
         },
     };
+}
+
+function steamAppId(value) {
+    const id = Number(value);
+    return Number.isInteger(id) && id >= -2147483648 && id <= 4294967295 ? id >>> 0 : 0;
+}
+// Explicit main-window QAM handoff. The game's native overlay stays owned by Steam.
+function createControlledQamFocus(deps) {
+    let pending;
+    let disposed = false;
+    let openingMain = false;
+    let closedAt = -Infinity, closedApp = 0;
+    const systemKeys = new Map();
+    const now = deps.now ?? (() => Date.now());
+    const report = (promise) => { void promise.catch(deps.warn); };
+    const invalidate = (restore) => {
+        const request = pending;
+        pending = undefined;
+        if (request)
+            report(restore ? deps.close(request.id) : deps.release(request.id));
+    };
+    return {
+        opened(tab, side = 2) {
+            if (disposed || openingMain)
+                return;
+            if (pending) {
+                pending.side = side;
+                return;
+            }
+            const app = deps.runningApp();
+            if (!(app > 0) || !deps.mainMenu())
+                return;
+            const request = { id: deps.requestId(), app, side, acquired: false };
+            pending = request;
+            void (async () => {
+                try {
+                    // Unknown/failed native-overlay enumeration fails closed: it cannot
+                    // justify moving the user's foreground away from a working overlay.
+                    if (await deps.nativeOverlayAvailable(app)) {
+                        if (pending === request)
+                            pending = undefined;
+                        return;
+                    }
+                    if (disposed || pending !== request)
+                        return;
+                    if (deps.runningApp() !== app) {
+                        invalidate(false);
+                        return;
+                    }
+                    const main = deps.mainMenu();
+                    if (!main) {
+                        invalidate(false);
+                        return;
+                    }
+                    // Ask native policy before opening anything in Steam. COM-activated
+                    // UWP sessions outside the Steam process tree are not eligible.
+                    const acquired = await deps.acquire(request.id, app);
+                    if (disposed || pending !== request || deps.runningApp() !== app) {
+                        if (pending === request)
+                            pending = undefined;
+                        report(deps.release(request.id));
+                        return;
+                    }
+                    if (!acquired.ok) {
+                        pending = undefined;
+                        return;
+                    }
+                    request.acquired = true;
+                    if (deps.mainMenu() !== main) {
+                        invalidate(true);
+                        return;
+                    }
+                    if (main.GetOpenSideMenu() !== request.side) {
+                        openingMain = true;
+                        try {
+                            if (request.side === 2)
+                                main.OpenQuickAccessMenu(tab);
+                            else if (typeof main.OpenSideMenu === "function")
+                                main.OpenSideMenu(1);
+                            else {
+                                invalidate(true);
+                                return;
+                            }
+                        }
+                        finally {
+                            openingMain = false;
+                        }
+                    }
+                    if (disposed || pending !== request || deps.runningApp() !== app || main.GetOpenSideMenu() !== request.side) {
+                        if (pending === request)
+                            invalidate(deps.runningApp() === app);
+                        else
+                            report(deps.release(request.id));
+                        return;
+                    }
+                }
+                catch (error) {
+                    if (pending === request)
+                        invalidate(request.acquired);
+                    deps.warn(error);
+                }
+            })();
+        },
+        systemKey(event) {
+            if (disposed || event?.ePressed === false || event?.bPressed === false || (event?.eKey !== 0 && event?.eKey !== 1))
+                return;
+            const time = now(), key = `${event.nControllerIndex ?? -1}:${event.eKey}`;
+            if (time - (systemKeys.get(key) ?? -Infinity) < 220)
+                return;
+            systemKeys.set(key, time);
+            if (systemKeys.size > 64) {
+                systemKeys.clear();
+                systemKeys.set(key, time);
+            }
+            // Steam may already have closed the menu for this same key event.
+            if (deps.runningApp() === closedApp && time - closedAt < 220)
+                return;
+            this.opened(undefined, event.eKey === 1 ? 2 : 1);
+        },
+        closed() {
+            if (!openingMain) {
+                closedAt = now();
+                closedApp = deps.runningApp();
+                invalidate(true);
+            }
+        },
+        applicationSelected() { invalidate(false); },
+        dispose() { disposed = true; invalidate(false); },
+    };
+}
+
+function performanceNativeVisibilityMatches(entry, value, app) {
+    const info = entry?.params?.browserInfo;
+    return !!value && value.app === app && value.entry === entry && value.pid === info?.m_unPID && value.browserId === info?.m_nBrowserID
+        && value.nativeApp === info?.m_unAppID && value.rendererToken === String(info?.m_gameID ?? "");
+}
+function performanceOverlayMatches(entry, store, app, observedGameId, native) {
+    if (!Number.isInteger(app) || app <= 0 || app > 0xffffffff)
+        return false;
+    const info = entry?.params?.browserInfo;
+    const full = app >= 0x80000000 ? ((BigInt(app) << 32n) | 0x02000000n).toString() : String(app);
+    if (String(info?.m_gameID ?? "") === full)
+        return true;
+    // Steam's injected game host can expose the shortcut's compact ID, while
+    // its activation callback carries a separate native AppID. Bind both to
+    // the actual mapped browser; low AppID bits alone are never a match.
+    return app >= 0x80000000 && (performanceNativeVisibilityMatches(entry, native, app) || String(info?.m_gameID ?? "") === String(app)
+        || typeof observedGameId === "string" && /^[1-9]\d{0,19}$/.test(observedGameId) && String(info?.m_gameID ?? "") === observedGameId)
+        && Number.isInteger(info?.m_unPID) && info.m_unPID > 0
+        && Number.isInteger(info?.m_nBrowserID) && info.m_nBrowserID > 0
+        && Number.isInteger(info?.m_unAppID) && info.m_unAppID > 0 && info.m_unAppID <= 0xffffffff
+        && store?.m_mapOverlayPopupByPID?.get(info.m_unPID) === entry
+        && store?.OverlayWindows?.includes(entry) === true
+        && entry.IsGamepadUIOverlayWindow?.() === true;
+}
+function performanceActivationMatches(entry, activation, app) {
+    const info = entry?.params?.browserInfo;
+    return activation?.app === app && activation.active === true
+        && activation.entry === entry && activation.browserId === info?.m_nBrowserID
+        && info?.m_unPID === activation.pid && info?.m_unAppID === activation.nativeApp;
+}
+
+const isApp = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 0xffffffff;
+const isLease = (value) => typeof value === "string" && /^[a-f0-9]{32}$/.test(value);
+function livePerformanceState(raw) {
+    if (!raw || typeof raw !== "object")
+        return null;
+    const value = raw;
+    if (typeof value.enabled !== "boolean" || typeof value.transparent !== "boolean"
+        || ![1, 2, 3, 4].includes(value.detail) || ![1, 2, 3, 4, 5, 6].includes(value.corner)
+        || ![20, 50, 100].includes(value.refreshMs) || !isApp(value.appId)
+        || typeof value.status !== "string" || value.status.length > 80
+        || (value.textColor !== undefined && !["white", "yellow", "red", "green"].includes(value.textColor))
+        || (value.lease != null && !isLease(value.lease)))
+        return null;
+    return { ...value, textColor: value.textColor ?? "white" };
+}
+function createLivePerformanceController(deps) {
+    let state = null;
+    let loading = false, busy = false, failed = false, disposed = false;
+    let started = false, lease, timer;
+    let restoreSteam;
+    let menuRevision = 0, menuFlight;
+    let queue = Promise.resolve();
+    const listeners = new Set();
+    const notify = () => { if (!disposed)
+        listeners.forEach(listener => listener()); };
+    const app = () => { try {
+        const value = deps.app();
+        return isApp(value) ? value : 0;
+    }
+    catch {
+        return 0;
+    } };
+    const resolvedApp = async () => { try {
+        const value = deps.resolveApp ? await deps.resolveApp() : app();
+        return isApp(value) ? value : 0;
+    }
+    catch {
+        return 0;
+    } };
+    const options = (value) => ({ enabled: value.enabled,
+        detail: value.detail, corner: value.corner, transparent: value.transparent, refreshMs: 20, textColor: value.textColor ?? "white" });
+    const matches = (a, b) => Object.keys(options(a)).every(key => a[key] === b[key]);
+    function serial(work) {
+        const result = queue.catch(() => { }).then(work);
+        queue = result.catch(() => { });
+        return result;
+    }
+    function cancelTimer() { if (timer !== undefined)
+        deps.cancel(timer); timer = undefined; }
+    function next() {
+        cancelTimer();
+        if (!disposed && state?.enabled)
+            timer = deps.schedule(() => { timer = undefined; void refresh(); }, 2000);
+    }
+    async function release(includeSteam = true) {
+        const old = lease;
+        lease = undefined;
+        if (old) {
+            try {
+                await deps.send({ action: "stop", lease: old });
+            }
+            catch { /* The native watchdog expires an unrenewed lease. */ }
+        }
+        if (includeSteam) {
+            const restore = restoreSteam;
+            restoreSteam = undefined;
+            if (restore)
+                await restore();
+        }
+    }
+    async function accept(reply, expected) {
+        const actual = livePerformanceState(reply?.state);
+        if (reply?.ok !== true || !actual || (expected && !matches(actual, expected))) {
+            if (reply?.ok === true && actual && isLease(actual.lease) && (!lease || actual.lease === lease)) {
+                lease = actual.lease;
+                await release();
+            }
+            if (reply?.error === "ExpiredLease" || reply?.error === "InvalidLease")
+                await release();
+            throw new Error("Performance overlay state not confirmed");
+        }
+        if (actual.enabled && !isLease(actual.lease))
+            throw new Error("Performance overlay lease not confirmed");
+        if (actual.enabled)
+            lease = actual.lease;
+        state = actual;
+        failed = false;
+    }
+    async function configure(value, selected) {
+        const appId = selected ?? await resolvedApp();
+        const reply = await deps.send({ action: "configure", appId, ...options(value),
+            suspended: deps.suspended?.() ?? false, ...(lease ? { lease } : {}) });
+        await accept(reply, options(value));
+        if (disposed || !value.enabled)
+            await release(disposed);
+        else if (!restoreSteam && deps.suspendSteam) {
+            try {
+                restoreSteam = await deps.suspendSteam();
+            }
+            catch {
+                await release();
+                throw new Error("Steam monitor setting not confirmed");
+            }
+        }
+    }
+    async function reconcile() {
+        if (disposed)
+            return;
+        const selected = await resolvedApp();
+        if (disposed)
+            return;
+        const actual = livePerformanceState(await deps.get());
+        if (!actual)
+            throw new Error("Performance overlay unavailable");
+        state = actual;
+        if (!state.enabled) {
+            await release(false);
+            return;
+        }
+        if (lease && state.lease === lease && state.appId === selected) {
+            await accept(await deps.send({ action: "renew", lease, suspended: deps.suspended?.() ?? false }));
+        }
+        else if (lease && state.lease === lease)
+            await configure(state, selected);
+        else {
+            // A replaced Steam context lets its old six-second lease expire. It never
+            // adopts another context's lease and cannot renew a stale game session.
+            if (lease)
+                await release();
+            if (!state.lease)
+                await configure(state, selected);
+        }
+    }
+    async function refresh() {
+        return serial(async () => {
+            if (disposed)
+                return;
+            loading = !state;
+            notify();
+            try {
+                await reconcile();
+                failed = false;
+            }
+            catch {
+                failed = true;
+            }
+            finally {
+                loading = false;
+                next();
+                notify();
+            }
+        });
+    }
+    function menuChanged() {
+        // Opening Steam's normal overlay does not necessarily change the game's
+        // foreground HWND. Send the current lease's visibility immediately, ahead
+        // of slow status reads; native code remains the authority for this lease.
+        ++menuRevision;
+        if (menuFlight)
+            return menuFlight;
+        menuFlight = (async () => {
+            while (!disposed && lease && state?.enabled) {
+                const revision = menuRevision, owned = lease;
+                const suspended = deps.suspended?.() ?? true;
+                try {
+                    const reply = await deps.send({ action: "renew", lease: owned, suspended });
+                    if (disposed || lease !== owned)
+                        return;
+                    const actual = livePerformanceState(reply?.state);
+                    if (revision === menuRevision && reply?.ok === true && actual?.lease === owned
+                        && state?.appId === actual.appId && typeof actual.suspended === "boolean"
+                        && actual.suspended === (deps.suspended?.() ?? true)) {
+                        // This lightweight reply can arrive after a configure under the
+                        // same lease. It owns visibility only, never newer saved options.
+                        state = { ...state, suspended: actual.suspended,
+                            status: actual.suspended ? "Suspended" : state.suspended ? "NoData" : state.status };
+                        notify();
+                    }
+                }
+                catch { /* The regular bounded heartbeat reports transport failures. */ }
+                if (revision === menuRevision)
+                    return;
+            }
+        })().finally(() => { menuFlight = undefined; });
+        return menuFlight;
+    }
+    return {
+        read() { return { state, loading, busy, failed }; },
+        subscribe(listener) { listeners.add(listener); return () => { listeners.delete(listener); }; },
+        start() { if (disposed || started)
+            return; started = true; void refresh(); },
+        refresh,
+        menuChanged,
+        holdSteamMonitor() {
+            return serial(async () => {
+                if (!disposed && !restoreSteam && deps.suspendSteam)
+                    restoreSteam = await deps.suspendSteam();
+            });
+        },
+        restoreSteamMonitor() { return serial(() => release()); },
+        change(changes) {
+            return serial(async () => {
+                if (disposed || !state)
+                    return false;
+                busy = true;
+                failed = false;
+                cancelTimer();
+                notify();
+                try {
+                    const desired = { ...options(state), ...changes };
+                    if (!livePerformanceState({ ...desired, status: "Pending", appId: app() }))
+                        throw new Error("Invalid overlay options");
+                    await configure(desired);
+                    return !disposed;
+                }
+                catch {
+                    failed = true;
+                    return false;
+                }
+                finally {
+                    busy = false;
+                    next();
+                    notify();
+                }
+            });
+        },
+        dispose() {
+            if (disposed)
+                return;
+            disposed = true;
+            cancelTimer();
+            listeners.clear();
+            void serial(release).catch(() => { });
+        },
+    };
+}
+
+const CORNER = "overlay_fps_counter_corner";
+const DETAIL = "overlay_fps_counter_detail_level";
+const OVERLAY = "enable_overlay";
+const OPACITY = "overlay_fps_counter_bgopacity";
+const LAST_CORNER = "playhub.steam-performance-monitor.last-corner";
+const LAST_OPACITY = "playhub.steam-performance-monitor.background-opacity";
+const monitorCorners = [1, 5, 2, 4, 6, 3];
+const monitorDetails = [1, 2, 3, 4];
+const lastCorners = new WeakMap();
+const lastOpacities = new WeakMap();
+const shortcutWrites = new WeakMap();
+const unconfirmedShortcuts = new WeakMap();
+function rememberCorner(host, corner) {
+    if (lastCorners.get(host)?.corner === corner)
+        return;
+    let saved = false;
+    try {
+        const storage = host.localStorage;
+        if (storage) {
+            storage.setItem(LAST_CORNER, String(corner));
+            saved = true;
+        }
+    }
+    catch { /* Some Steam windows block access to browser storage. */ }
+    lastCorners.set(host, { corner, saved });
+}
+function preferredCorner(host) {
+    const fallback = lastCorners.get(host);
+    if (fallback?.saved === false)
+        return fallback.corner;
+    try {
+        const stored = host.localStorage?.getItem(LAST_CORNER);
+        const corner = monitorCorners.find(value => String(value) === stored);
+        if (corner !== undefined)
+            return corner;
+    }
+    catch { /* The confirmed value in this window remains available. */ }
+    return fallback?.corner ?? 1;
+}
+function steamPerformanceMonitor(host) {
+    const settings = host.settingsStore;
+    if (typeof settings?.GetClientSetting !== "function")
+        return null;
+    function read() {
+        try {
+            const [corner, setCorner] = settings.GetClientSetting(CORNER);
+            const [detail, setDetail] = settings.GetClientSetting(DETAIL);
+            const [overlay, setOverlay] = settings.GetClientSetting(OVERLAY);
+            if (typeof setCorner !== "function" || typeof setDetail !== "function" || typeof setOverlay !== "function" ||
+                typeof overlay !== "boolean" || (corner !== 0 && !monitorCorners.some(value => value === corner)) ||
+                !monitorDetails.some(value => value === detail))
+                return null;
+            if (corner !== 0)
+                rememberCorner(host, corner);
+            const state = { corner: corner, detail: detail, overlay };
+            try {
+                const [opacity, setOpacity] = settings.GetClientSetting(OPACITY);
+                if (typeof setOpacity === "function" && typeof opacity === "number" && Number.isFinite(opacity) && opacity >= 0 && opacity <= 1) {
+                    state.backgroundOpacity = opacity;
+                    if (opacity > 0 && lastOpacities.get(host) !== opacity) {
+                        lastOpacities.set(host, opacity);
+                        try {
+                            host.localStorage?.setItem(LAST_OPACITY, String(opacity));
+                        }
+                        catch { /* Retain the value in this window. */ }
+                    }
+                }
+            }
+            catch { /* Older clients retain the basic monitor controls. */ }
+            return state;
+        }
+        catch {
+            return null;
+        }
+    }
+    async function write(key, value) {
+        const state = read();
+        if (!state)
+            throw new Error("Steam performance monitor unavailable");
+        const desired = typeof value === "function" ? value(state) : value;
+        const [current, set] = settings.GetClientSetting(key);
+        if (current !== desired)
+            await set(desired);
+    }
+    return {
+        read,
+        setEnabled: (enabled) => write(CORNER, state => enabled ? state.corner || preferredCorner(host) : 0),
+        setCorner: (corner) => write(CORNER, corner),
+        setDetail: (detail) => write(DETAIL, detail),
+        enableOverlay: () => write(OVERLAY, true),
+        setTransparent: (transparent) => {
+            const state = read();
+            if (state?.backgroundOpacity === undefined)
+                return Promise.reject(new Error("Steam monitor appearance unavailable"));
+            let opacity = lastOpacities.get(host) ?? .8;
+            if (!lastOpacities.has(host)) {
+                try {
+                    const stored = host.localStorage?.getItem(LAST_OPACITY);
+                    const value = stored ? Number(stored) : NaN;
+                    if (Number.isFinite(value) && value > 0 && value <= 1)
+                        opacity = value;
+                }
+                catch { /* Use Steam's usual opacity when storage is unavailable. */ }
+            }
+            return write(OPACITY, transparent ? 0 : opacity);
+        },
+        subscribe(listener) {
+            try {
+                let subscribed = true;
+                const connection = host.SteamClient?.Settings?.RegisterForSettingsArrayChanges?.(() => {
+                    queueMicrotask(() => { if (subscribed)
+                        listener(); });
+                });
+                return () => { subscribed = false; connection?.unregister(); };
+            }
+            catch {
+                return () => { };
+            }
+        },
+    };
+}
+function steamShortcutOverlay(host, appId) {
+    const details = host.appDetailsStore;
+    const apps = host.SteamClient?.Apps;
+    try {
+        if (appId < 0x80000000 || appId > 0xffffffff || !Number.isInteger(appId) ||
+            host.appStore?.GetAppOverviewByAppID?.(appId)?.BIsShortcut?.() !== true ||
+            typeof details?.GetAppDetails !== "function" || typeof details.RegisterForAppData !== "function" ||
+            typeof apps?.ToggleEnableSteamOverlayForApp !== "function")
+            return null;
+    }
+    catch {
+        return null;
+    }
+    const value = (current) => current?.unAppID === appId && typeof current.bOverlayEnabled === "boolean"
+        ? current.bOverlayEnabled : null;
+    return {
+        read: () => value(details.GetAppDetails(appId)),
+        subscribe(listener) {
+            const connection = details.RegisterForAppData(appId, current => listener(value(current)));
+            return () => connection.unregister();
+        },
+        async enable(isCurrentGame) {
+            const writes = shortcutWrites.get(details) ?? new Map();
+            shortcutWrites.set(details, writes);
+            if (writes.has(appId))
+                return writes.get(appId);
+            const pending = Promise.resolve().then(async () => {
+                // Steam exposes a toggle, so use fresh details and running-game identity.
+                const current = value(details.GetAppDetails(appId));
+                if (current === null || !isCurrentGame())
+                    throw new Error("Steam shortcut no longer active");
+                const unconfirmed = unconfirmedShortcuts.get(details) ?? new Set();
+                unconfirmedShortcuts.set(details, unconfirmed);
+                if (current) {
+                    unconfirmed.delete(appId);
+                    return;
+                }
+                if (unconfirmed.has(appId))
+                    throw new Error("Check this shortcut's overlay setting in Steam");
+                // A second native toggle can undo a successful first one if the store
+                // hasn't caught up. Require positive confirmation before issuing another.
+                unconfirmed.add(appId);
+                const request = Promise.resolve(apps.ToggleEnableSteamOverlayForApp(appId));
+                let timeout;
+                try {
+                    await Promise.race([request, new Promise(resolve => { timeout = setTimeout(resolve, 800); })]);
+                }
+                finally {
+                    clearTimeout(timeout);
+                }
+                for (let retry = 0; retry < 8; retry++) {
+                    if (value(details.GetAppDetails(appId)) === true) {
+                        unconfirmed.delete(appId);
+                        return;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                throw new Error("Steam shortcut setting not confirmed");
+            });
+            writes.set(appId, pending);
+            try {
+                await pending;
+            }
+            finally {
+                writes.delete(appId);
+            }
+        },
+    };
+}
+
+const PERFORMANCE_SOURCE = "playhub.performance-monitor.source";
+function performanceMonitorHost() {
+    const current = window;
+    if (current.settingsStore)
+        return current;
+    try {
+        const main = (_global_DFL.Router?.WindowStore)?.GamepadUIMainWindowInstance;
+        return [main?.BrowserWindow, main?.m_BrowserWindow, main?.window, main?.m_Window, main]
+            .find(value => value?.settingsStore) ?? current;
+    }
+    catch {
+        return current;
+    }
+}
+const activatedOverlays = new Map();
+let observedRunningApp = 0;
+function runningApp() {
+    const app = readOwnedGameApp(steamAppId(performanceMonitorHost().SteamUIStore?.MainRunningAppID ?? _global_DFL.Router?.MainRunningAppID));
+    if (app !== observedRunningApp) {
+        activatedOverlays.clear();
+        observedRunningApp = app;
+    }
+    return app;
+}
+function menuOpen() {
+    try {
+        const app = runningApp();
+        if (!app)
+            return true;
+        const store = performanceMonitorHost().SteamUIStore?.WindowStore ?? _global_DFL.Router?.WindowStore;
+        const native = readOwnedNativeOverlay(app);
+        return (store?.OverlayWindows ?? []).some((entry) => {
+            if (!performanceOverlayMatches(entry, store, app, readOwnedGameRoute(app)?.observedSteamGameId, native))
+                return false;
+            return performanceNativeVisibilityMatches(entry, native, app) && native?.active === true
+                || performanceActivationMatches(entry, activatedOverlays.get(entry?.params?.browserInfo?.m_unPID), app)
+                || entry?.DesktopOverlay?.overlay_active === true
+                || entry?.IsGamepadUIOverlayWindow?.() === true && (entry.MenuStore?.GetOpenSideMenu?.() ?? 0) > 0;
+        }) || (store?.GamepadUIMainWindowInstance?.MenuStore?.GetOpenSideMenu?.() ?? 0) > 0;
+    }
+    catch {
+        return true;
+    }
+}
+const STEAM_HOLD = "__playhubPerformanceSteamHoldV1";
+async function suspendSteamMonitor(host = performanceMonitorHost()) {
+    // Store ownership on the Steam host, not this module. The preceding root may
+    // still be disposing while a newly loaded bundle takes over the same counter.
+    let shared = host[STEAM_HOLD];
+    if (!shared)
+        host[STEAM_HOLD] = shared = { version: 1, owners: new Set(), queue: Promise.resolve(), corner: null };
+    if (shared.version !== 1 || typeof shared.owners?.add !== "function" || typeof shared.queue?.then !== "function")
+        throw new Error("Steam monitor ownership unavailable");
+    const hold = shared, owner = Symbol("Playhub performance monitor");
+    const serial = (work) => {
+        const result = hold.queue.catch(() => { }).then(work);
+        hold.queue = result.catch(() => { });
+        return result;
+    };
+    await serial(async () => {
+        const monitor = steamPerformanceMonitor(host), original = monitor?.read();
+        if (!monitor || !original)
+            throw new Error("Steam monitor unavailable");
+        if (hold.owners.size === 0) {
+            // Retain a previous pending restore if Steam rejected its setting write.
+            if (hold.corner === null)
+                hold.corner = original.corner;
+            if (original.corner !== 0) {
+                hold.corner = original.corner;
+                await monitor.setEnabled(false);
+                if (monitor.read()?.corner !== 0)
+                    throw new Error("Steam monitor change not confirmed");
+            }
+        }
+        hold.owners.add(owner);
+    });
+    let released = false;
+    return async () => {
+        if (released)
+            return;
+        released = true;
+        await serial(async () => {
+            if (!hold.owners.delete(owner) || hold.owners.size !== 0)
+                return;
+            const monitor = steamPerformanceMonitor(host), current = monitor?.read();
+            if (!monitor || !current)
+                throw new Error("Steam monitor unavailable");
+            // A different nonzero corner is an explicit Steam/user change.
+            if (hold.corner && current.corner === 0) {
+                await monitor.setCorner(hold.corner);
+                if (monitor.read()?.corner !== hold.corner)
+                    throw new Error("Steam monitor restore not confirmed");
+            }
+            hold.corner = null;
+        });
+    };
+}
+let controller;
+function livePerformanceRuntime() {
+    if (!controller)
+        controller = createLivePerformanceController({
+            get: () => call("get_live_performance"),
+            send: request => call("set_live_performance", request),
+            app: runningApp, resolveApp: async () => resolveOwnedGameApp(steamAppId(performanceMonitorHost().SteamUIStore?.MainRunningAppID ?? _global_DFL.Router?.MainRunningAppID)), suspended: menuOpen,
+            schedule: (callback, delay) => window.setTimeout(callback, delay), cancel: timer => window.clearTimeout(timer),
+            suspendSteam: () => suspendSteamMonitor(),
+        });
+    return controller;
+}
+function watchSteamMenus(refresh) {
+    const ui = _global_DFL;
+    const patches = new Map();
+    const registrations = [];
+    let timer, disposed = false;
+    let observedStore;
+    let storePatch;
+    const request = () => {
+        if (disposed || !controller?.read().state?.enabled)
+            return;
+        void controller.menuChanged();
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => { timer = undefined; if (!disposed)
+            refresh(); }, 0);
+    };
+    const attach = () => {
+        if (disposed)
+            return;
+        const store = performanceMonitorHost().SteamUIStore?.WindowStore ?? ui.Router?.WindowStore;
+        if (store !== observedStore) {
+            try {
+                storePatch?.unpatch();
+            }
+            catch { /* Steam replaced the previous store. */ }
+            storePatch = undefined;
+            observedStore = store;
+            if (typeof ui.afterPatch === "function" && typeof store?.UpdateDesiredWindows === "function") {
+                try {
+                    // The native callback belongs to Steam. Observe its completed update
+                    // without replacing the callback that creates Desktop/Big Picture.
+                    storePatch = ui.afterPatch(store, "UpdateDesiredWindows", (_args, result) => {
+                        try {
+                            attach();
+                            request();
+                        }
+                        catch { /* An observer cannot interrupt Steam's window update. */ }
+                        return result;
+                    });
+                }
+                catch { /* Overlay activation still refreshes the available menus. */ }
+            }
+        }
+        const menus = new Set([store?.GamepadUIMainWindowInstance, ...(store?.OverlayWindows ?? [])]
+            .map((entry) => entry?.MenuStore).filter(Boolean));
+        for (const [menu, owned] of patches)
+            if (!menus.has(menu)) {
+                for (const patch of owned)
+                    try {
+                        patch.unpatch();
+                    }
+                    catch { /* Steam disposed the old menu. */ }
+                patches.delete(menu);
+            }
+        if (typeof ui.afterPatch !== "function")
+            return;
+        for (const menu of menus)
+            if (!patches.has(menu)) {
+                const owned = [];
+                for (const name of ["OpenSideMenu", "CloseSideMenus"])
+                    if (typeof menu[name] === "function") {
+                        try {
+                            owned.push(ui.afterPatch(menu, name, (_args, result) => { request(); return result; }));
+                        }
+                        catch { /* A replaced Steam menu is handled by the next window event. */ }
+                    }
+                patches.set(menu, owned);
+            }
+    };
+    try {
+        const steam = performanceMonitorHost().SteamClient;
+        const overlay = steam?.Overlay?.RegisterForOverlayActivated?.((pid, appId, active) => {
+            const nativeApp = steamAppId(appId);
+            // Track the exact current overlay host. A dead host's last active=true
+            // must not suspend a later launch of the same game indefinitely.
+            const app = runningApp();
+            if (app > 0 && nativeApp > 0 && Number.isInteger(pid) && pid > 0 && typeof active === "boolean") {
+                const store = performanceMonitorHost().SteamUIStore?.WindowStore ?? ui.Router?.WindowStore;
+                const matches = (store?.OverlayWindows ?? []).filter((entry) => performanceOverlayMatches(entry, store, app, readOwnedGameRoute(app)?.observedSteamGameId, readOwnedNativeOverlay(app))
+                    && entry.params?.browserInfo?.m_unPID === pid && entry.params.browserInfo.m_unAppID === nativeApp
+                    && Number.isInteger(entry.params.browserInfo.m_nBrowserID) && entry.params.browserInfo.m_nBrowserID > 0);
+                if (matches.length === 1) {
+                    const entry = matches[0];
+                    activatedOverlays.set(pid, { app, pid, nativeApp, active, entry, browserId: entry.params.browserInfo.m_nBrowserID });
+                }
+            }
+            // Preserve the actual activation signal: a normal overlay can be open
+            // with GetOpenSideMenu() === 0 and the game still in the foreground.
+            attach();
+            request();
+        });
+        if (overlay)
+            registrations.push(overlay);
+        attach();
+    }
+    catch { /* Foreground checks and the bounded subscription heartbeat remain active. */ }
+    return () => {
+        disposed = true;
+        window.clearTimeout(timer);
+        activatedOverlays.clear();
+        try {
+            storePatch?.unpatch();
+        }
+        catch { /* Steam may have replaced its store. */ }
+        storePatch = undefined;
+        for (const registration of registrations)
+            try {
+                registration.unregister?.();
+            }
+            catch { /* Steam may have closed. */ }
+        for (const owned of patches.values())
+            for (const patch of owned)
+                try {
+                    patch.unpatch();
+                }
+                catch { /* Stale Steam menu. */ }
+        patches.clear();
+    };
+}
+function installLivePerformance() {
+    const instance = livePerformanceRuntime();
+    instance.start();
+    try {
+        if (performanceMonitorHost().localStorage?.getItem(PERFORMANCE_SOURCE) !== "steam")
+            void instance.holdSteamMonitor().catch(() => { });
+    }
+    catch { /* A blocked browser store does not change the user's Steam counter. */ }
+    const stopMenus = watchSteamMenus(() => { void instance.refresh(); });
+    return () => { stopMenus(); instance.dispose(); if (controller === instance)
+        controller = undefined; };
+}
+
+const cornerTokens$1 = ["TopLeft", "TopCenter", "TopRight", "BottomLeft", "BottomCenter", "BottomRight"];
+const cornerLabels = ["Top left", "Top center", "Top right", "Bottom left", "Bottom center", "Bottom right"];
+const detailTokens = ["ClassicFPSOnly", "FPSDetailsAndGraph", "FPSCPUGPUSummary", "FPSCPUGPURAMDetails"];
+const detailLabels = ["FPS only", "FPS and graph", "FPS, CPU and GPU", "Full details"];
+const transparentLabels = {
+    en: "Transparent background", it: "Sfondo trasparente", de: "Transparenter Hintergrund", es: "Fondo transparente",
+    fr: "Arrière-plan transparent", pt: "Fundo transparente", ru: "Прозрачный фон", uk: "Прозоре тло",
+    ja: "背景を透明にする", ko: "투명 배경", zh: "透明背景", hi: "पारदर्शी पृष्ठभूमि",
+};
+function getHost() {
+    const current = window;
+    if (current.settingsStore)
+        return current;
+    try {
+        const store = _global_DFL.Router?.WindowStore;
+        const item = store?.GamepadUIMainWindowInstance;
+        return [item, item?.window, item?.m_Window].find(value => value?.settingsStore) ?? current;
+    }
+    catch {
+        return current;
+    }
+}
+function label(host, token, fallback) {
+    try {
+        const value = host.LocalizationManager?.LocalizeString(token);
+        if (typeof value === "string" && value.trim() && value !== token)
+            return value;
+    }
+    catch { /* The Steam UI may still be loading its language. */ }
+    return fallback;
+}
+function SteamPerformanceSettings({ locale, appId }) {
+    const [state, setState] = SP_REACT.useState(null);
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [failed, setFailed] = SP_REACT.useState(false);
+    const [loading, setLoading] = SP_REACT.useState(true);
+    const [attempt, setAttempt] = SP_REACT.useState(0);
+    const running = SP_REACT.useRef(false);
+    const mounted = SP_REACT.useRef(false);
+    const monitorControl = SP_REACT.useRef(null);
+    const copy = controlLocale(locale);
+    const host = getHost();
+    SP_REACT.useEffect(() => {
+        mounted.current = true;
+        let timer;
+        let unsubscribe;
+        const connect = (remaining) => {
+            const monitor = steamPerformanceMonitor(getHost());
+            const initial = monitor?.read();
+            if (monitor && initial) {
+                setState(initial);
+                setLoading(false);
+                unsubscribe = monitor.subscribe(() => setState(monitor.read()));
+            }
+            else if (remaining > 0) {
+                timer = window.setTimeout(() => connect(remaining - 1), 250);
+            }
+            else
+                setLoading(false);
+        };
+        connect(8);
+        return () => {
+            mounted.current = false;
+            window.clearTimeout(timer);
+            unsubscribe?.();
+        };
+    }, [attempt]);
+    function returnFocus() {
+        const owner = monitorControl.current?.ownerDocument;
+        if (!owner?.activeElement?.closest("[data-overlay-repair]"))
+            return;
+        owner.defaultView?.requestAnimationFrame(() => {
+            if (owner.activeElement !== owner.body && !owner.activeElement?.closest("[data-overlay-repair]"))
+                return;
+            monitorControl.current?.querySelector("[role=switch], button, [tabindex='0']")?.focus({ preventScroll: true });
+        });
+    }
+    async function change(write, matches, repaired = false) {
+        if (running.current)
+            return;
+        running.current = true;
+        setBusy(true);
+        setFailed(false);
+        const monitor = steamPerformanceMonitor(getHost());
+        try {
+            if (!monitor)
+                throw new Error("Steam settings unavailable");
+            await write(monitor);
+            for (let retry = 0; retry < 8 && mounted.current; retry++) {
+                const actual = monitor.read();
+                if (actual && matches(actual)) {
+                    if (repaired)
+                        returnFocus();
+                    setState(actual);
+                    return;
+                }
+                await new Promise(resolve => window.setTimeout(resolve, 100));
+            }
+            if (mounted.current)
+                setFailed(true);
+        }
+        catch {
+            if (mounted.current)
+                setFailed(true);
+        }
+        finally {
+            running.current = false;
+            if (mounted.current)
+                setBusy(false);
+        }
+    }
+    const title = label(host, "#Settings_InGame_Overlay_PerformanceMonitor", "Steam performance monitor");
+    const overlayLabel = label(host, "#Settings_InGame_EnableOverlay", "Enable the Steam Overlay");
+    const enabled = state?.corner !== 0 && state?.overlay === true;
+    return SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { ref: monitorControl, children: SP_JSX.jsx(_global_DFL.ToggleField, { bottomSeparator: "none", label: title, checked: enabled, disabled: busy || !state?.overlay, onChange: value => void change(monitor => monitor.setEnabled(value), result => (result.corner !== 0) === value) }) }), state?.overlay === false && SP_JSX.jsx("div", { "data-overlay-repair": true, children: SP_JSX.jsx(_global_DFL.DialogButton, { disabled: busy, onClick: () => void change(monitor => monitor.enableOverlay(), result => result.overlay, true), children: overlayLabel }) }), state?.overlay === true && appId !== 0 && SP_JSX.jsx(ShortcutOverlayAction, { appId: appId, error: copy.saveError, onRepaired: returnFocus }, appId), !state && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: loading ? copy.loading : SP_JSX.jsxs(SP_JSX.Fragment, { children: [copy.unavailable, " ", SP_JSX.jsx(_global_DFL.DialogButton, { onClick: () => {
+                                setLoading(true);
+                                setAttempt(value => value + 1);
+                            }, children: copy.retry })] }) }), enabled && SP_JSX.jsxs(SP_JSX.Fragment, { children: [state.backgroundOpacity !== undefined && SP_JSX.jsx(_global_DFL.ToggleField, { bottomSeparator: "none", label: transparentLabels[locale.split(/[-_]/)[0]] ?? transparentLabels.en, disabled: busy, checked: state.backgroundOpacity === 0, onChange: value => void change(monitor => monitor.setTransparent(value), result => result.backgroundOpacity !== undefined && (result.backgroundOpacity === 0) === value) }), SP_JSX.jsx("div", { className: "qsDropdownFullWidth", children: SP_JSX.jsx(_global_DFL.DropdownItem, { bottomSeparator: "none", layout: "below", label: label(host, "#Settings_InGame_PerfOverlayDetailLevel", "Detail level"), disabled: busy, rgOptions: monitorDetails.map((data, index) => ({ data, label: label(host, `#Settings_InGame_PerfOverlay_${detailTokens[index]}`, detailLabels[index]) })), selectedOption: state.detail, onChange: option => { const data = option.data; void change(monitor => monitor.setDetail(data), result => result.detail === data); } }) }), SP_JSX.jsx("div", { className: "qsDropdownFullWidth", children: SP_JSX.jsx(_global_DFL.DropdownItem, { bottomSeparator: "none", layout: "below", label: label(host, "#Settings_InGame_PerformanceMonitor", "Position"), disabled: busy, rgOptions: monitorCorners.map((data, index) => ({ data, label: label(host, `#Corner_${cornerTokens$1[index]}`, cornerLabels[index]) })), selectedOption: state.corner, onChange: option => { const data = option.data; void change(monitor => monitor.setCorner(data), result => result.corner === data); } }) })] }), failed && SP_JSX.jsx("div", { role: "status", className: "qsMeta", children: copy.saveError })] });
+}
+function ShortcutOverlayAction({ appId, error, onRepaired }) {
+    const [disabled, setDisabled] = SP_REACT.useState(false);
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [failed, setFailed] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(false);
+    SP_REACT.useEffect(() => {
+        mounted.current = true;
+        let unsubscribe;
+        try {
+            const shortcut = steamShortcutOverlay(getHost(), appId);
+            if (shortcut) {
+                setDisabled(shortcut.read() === false);
+                unsubscribe = shortcut.subscribe(enabled => setDisabled(enabled === false));
+            }
+        }
+        catch { /* Steam can dispose its game details on mode changes. */ }
+        return () => { mounted.current = false; unsubscribe?.(); };
+    }, [appId]);
+    if (!disabled)
+        return null;
+    async function enable() {
+        setBusy(true);
+        setFailed(false);
+        try {
+            const shortcut = steamShortcutOverlay(getHost(), appId);
+            if (!shortcut)
+                throw new Error("Steam shortcut unavailable");
+            await shortcut.enable(() => steamAppId(getHost().SteamUIStore?.MainRunningAppID ?? _global_DFL.Router?.MainRunningAppID) === appId);
+            if (mounted.current) {
+                onRepaired();
+                setDisabled(false);
+            }
+        }
+        catch {
+            if (mounted.current)
+                setFailed(true);
+        }
+        finally {
+            if (mounted.current)
+                setBusy(false);
+        }
+    }
+    return SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { "data-overlay-repair": true, children: SP_JSX.jsx(_global_DFL.DialogButton, { disabled: busy, onClick: () => void enable(), children: label(getHost(), "#AppProperties_EnableOverlay", "Enable Steam Overlay for this game") }) }), failed && SP_JSX.jsx("div", { role: "status", className: "qsMeta", children: error })] });
+}
+
+const labels$5 = {
+    en: ["Performance monitor", "Show performance", "Transparent background", "Start a game to see its performance.", "Waiting for game frames.", "Visible while playing."],
+    it: ["Monitor prestazioni", "Mostra prestazioni", "Sfondo trasparente", "Avvia un gioco per vedere le prestazioni.", "In attesa dei fotogrammi del gioco.", "Visibile durante il gioco."],
+    de: ["Leistungsanzeige", "Leistung anzeigen", "Transparenter Hintergrund", "Starte ein Spiel, um die Leistung zu sehen.", "Warte auf Spielbilder.", "Während des Spielens sichtbar."],
+    es: ["Monitor de rendimiento", "Mostrar rendimiento", "Fondo transparente", "Inicia un juego para ver su rendimiento.", "Esperando fotogramas del juego.", "Visible durante el juego."],
+    fr: ["Suivi des performances", "Afficher les performances", "Arrière-plan transparent", "Lancez un jeu pour voir ses performances.", "En attente d’images du jeu.", "Visible pendant le jeu."],
+    pt: ["Monitor de desempenho", "Mostrar desempenho", "Fundo transparente", "Inicia um jogo para ver o desempenho.", "A aguardar fotogramas do jogo.", "Visível durante o jogo."],
+    ru: ["Монитор производительности", "Показывать производительность", "Прозрачный фон", "Запустите игру, чтобы увидеть производительность.", "Ожидание кадров игры.", "Отображается во время игры."],
+    uk: ["Монітор продуктивності", "Показувати продуктивність", "Прозоре тло", "Запустіть гру, щоб побачити продуктивність.", "Очікування кадрів гри.", "Видно під час гри."],
+    ja: ["パフォーマンスモニター", "パフォーマンスを表示", "背景を透明にする", "ゲームを起動するとパフォーマンスが表示されます。", "ゲームのフレームを待っています。", "プレイ中に表示されます。"],
+    ko: ["성능 모니터", "성능 표시", "투명 배경", "게임을 시작하면 성능이 표시됩니다.", "게임 프레임을 기다리는 중입니다.", "플레이 중에 표시됩니다."],
+    zh: ["效能監視器", "顯示效能", "透明背景", "啟動遊戲以查看效能。", "正在等候遊戲畫面。", "遊玩時顯示。"],
+    hi: ["परफ़ॉर्मेंस मॉनिटर", "परफ़ॉर्मेंस दिखाएँ", "पारदर्शी पृष्ठभूमि", "परफ़ॉर्मेंस देखने के लिए गेम शुरू करें।", "गेम के फ़्रेम की प्रतीक्षा है।", "खेलते समय दिखाई देता है।"],
+};
+const colorLabels = {
+    en: ["Text color", "White", "Yellow", "Red", "Green"], it: ["Colore del testo", "Bianco", "Giallo", "Rosso", "Verde"],
+    de: ["Textfarbe", "Weiß", "Gelb", "Rot", "Grün"], es: ["Color del texto", "Blanco", "Amarillo", "Rojo", "Verde"],
+    fr: ["Couleur du texte", "Blanc", "Jaune", "Rouge", "Vert"], pt: ["Cor do texto", "Branco", "Amarelo", "Vermelho", "Verde"],
+    ru: ["Цвет текста", "Белый", "Жёлтый", "Красный", "Зелёный"], uk: ["Колір тексту", "Білий", "Жовтий", "Червоний", "Зелений"],
+    ja: ["文字色", "白", "黄", "赤", "緑"], ko: ["글자 색상", "흰색", "노란색", "빨간색", "초록색"],
+    zh: ["文字颜色", "白色", "黄色", "红色", "绿色"], hi: ["टेक्स्ट का रंग", "सफ़ेद", "पीला", "लाल", "हरा"],
+};
+const colorValues = ["white", "yellow", "red", "green"];
+const localeAliases = { english: "en", italian: "it", german: "de", spanish: "es", latam: "es",
+    french: "fr", portuguese: "pt", brazilian: "pt", russian: "ru", ukrainian: "uk", japanese: "ja", koreana: "ko",
+    schinese: "zh", tchinese: "zh", hindi: "hi" };
+const cornerTokens = ["TopLeft", "TopCenter", "TopRight", "BottomLeft", "BottomCenter", "BottomRight"];
+const cornerFallback = ["Top left", "Top center", "Top right", "Bottom left", "Bottom center", "Bottom right"];
+const details = ["ClassicFPSOnly", "FPSDetailsAndGraph", "FPSCPUGPUSummary", "FPSCPUGPURAMDetails"];
+const detailFallback = ["FPS only", "FPS and graph", "FPS, CPU and GPU", "Full details"];
+function steamLabel(token, fallback) {
+    try {
+        const value = performanceMonitorHost().LocalizationManager?.LocalizeString(token);
+        return typeof value === "string" && value.trim() && value !== token ? value : fallback;
+    }
+    catch {
+        return fallback;
+    }
+}
+function selectedSource() {
+    try {
+        const saved = performanceMonitorHost().localStorage?.getItem(PERFORMANCE_SOURCE);
+        if (saved === "live" || saved === "steam")
+            return saved;
+    }
+    catch { /* The default remains Playhub for this session. */ }
+    return "live";
+}
+function PerformanceSettings({ locale, appId }) {
+    const runtime = livePerformanceRuntime();
+    const [view, setView] = SP_REACT.useState(runtime.read);
+    const [source, setSource] = SP_REACT.useState(selectedSource);
+    const [changing, setChanging] = SP_REACT.useState(false);
+    const [sourceFailed, setSourceFailed] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(false);
+    SP_REACT.useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+    const key = localeAliases[locale.toLowerCase()] ?? locale.toLowerCase().split(/[-_]/)[0];
+    const copy = labels$5[key] ?? labels$5.en, colors = colorLabels[key] ?? colorLabels.en;
+    const common = controlLocale(locale);
+    SP_REACT.useEffect(() => {
+        const update = () => setView(runtime.read());
+        const unsubscribe = runtime.subscribe(update);
+        update();
+        runtime.start();
+        return unsubscribe;
+    }, [runtime]);
+    SP_REACT.useEffect(() => {
+        if (!view.state?.enabled)
+            return;
+        try {
+            if (performanceMonitorHost().localStorage?.getItem(PERFORMANCE_SOURCE) !== "steam")
+                setSource("live");
+        }
+        catch {
+            setSource("live");
+        }
+    }, [view.state?.enabled]);
+    async function choose(next) {
+        if (changing || next === source)
+            return;
+        setChanging(true);
+        setSourceFailed(false);
+        try {
+            if (!runtime.read().state) {
+                await runtime.refresh();
+                if (!runtime.read().state)
+                    throw new Error("Unavailable");
+            }
+            if (next === "live") {
+                const steam = steamPerformanceMonitor(performanceMonitorHost())?.read();
+                const mapped = steam ? ([1, 3, 6, 4, 2, 5][steam.corner - 1] ?? 1) : 1;
+                const accepted = await runtime.change({ enabled: steam ? steam.corner !== 0 : false,
+                    detail: steam?.detail ?? 1, corner: mapped, transparent: steam?.backgroundOpacity === 0 });
+                if (!accepted)
+                    throw new Error("Unconfirmed");
+                await runtime.holdSteamMonitor();
+            }
+            else {
+                if (!await runtime.change({ enabled: false }))
+                    throw new Error("Unconfirmed");
+                await runtime.restoreSteamMonitor();
+            }
+            try {
+                performanceMonitorHost().localStorage?.setItem(PERFORMANCE_SOURCE, next);
+            }
+            catch { /* Selection remains valid for this session. */ }
+            if (mounted.current)
+                setSource(next);
+        }
+        catch {
+            if (mounted.current)
+                setSourceFailed(true);
+        }
+        finally {
+            if (mounted.current)
+                setChanging(false);
+        }
+    }
+    const state = view.state;
+    const disabled = view.busy || changing || !state;
+    const change = (values) => { void runtime.change(values); };
+    const description = !state?.appId || state.status === "TargetUnavailable" ? copy[3]
+        : state.status === "NoData" ? copy[4]
+            : state.suspended || state.status === "GameNotForeground" || state.status === "Suspended" ? copy[5]
+                : state.status === "Ready" || state.status === "Disabled" ? "" : common.unavailable;
+    return SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "qsDropdownFullWidth", children: SP_JSX.jsx(DFL.DropdownItem, { bottomSeparator: "none", layout: "below", label: copy[0], rgOptions: [{ data: "live", label: "Playhub" }, { data: "steam", label: "Steam" }], selectedOption: source, disabled: view.busy || changing, onChange: option => { if (option.data === "live" || option.data === "steam")
+                        void choose(option.data); } }) }), source === "steam" ? SP_JSX.jsx(SteamPerformanceSettings, { locale: locale, appId: appId }) : SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: copy[1], checked: state?.enabled === true, disabled: disabled, onChange: value => change({ enabled: value }) }), state?.enabled && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: copy[2], checked: state.transparent, disabled: disabled, onChange: value => change({ transparent: value }) }), SP_JSX.jsx("div", { className: "qsDropdownFullWidth", children: SP_JSX.jsx(DFL.DropdownItem, { bottomSeparator: "none", layout: "below", label: colors[0], selectedOption: state.textColor ?? "white", disabled: disabled, rgOptions: colorValues.map((value, index) => ({ data: value, label: colors[index + 1] })), onChange: option => change({ textColor: option.data }) }) }), SP_JSX.jsx("div", { className: "qsDropdownFullWidth", children: SP_JSX.jsx(DFL.DropdownItem, { bottomSeparator: "none", layout: "below", label: steamLabel("#Settings_InGame_PerfOverlayDetailLevel", "Detail level"), disabled: disabled, selectedOption: state.detail, rgOptions: details.map((value, index) => ({ data: index + 1,
+                                        label: steamLabel(`#Settings_InGame_PerfOverlay_${value}`, detailFallback[index]) })), onChange: option => change({ detail: option.data }) }) }), SP_JSX.jsx("div", { className: "qsDropdownFullWidth", children: SP_JSX.jsx(DFL.DropdownItem, { bottomSeparator: "none", layout: "below", label: steamLabel("#Settings_InGame_PerformanceMonitor", "Position"), disabled: disabled, selectedOption: state.corner, rgOptions: cornerTokens.map((value, index) => ({ data: index + 1,
+                                        label: steamLabel(`#Corner_${value}`, cornerFallback[index]) })), onChange: option => change({ corner: option.data }) }) }), description && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: description })] }), !state && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: view.loading ? common.loading : common.unavailable })] }), ((source === "live" && view.failed) || sourceFailed) && SP_JSX.jsxs("div", { className: "qsMeta", role: "status", children: [common.saveError, " ", SP_JSX.jsx(DFL.DialogButton, { disabled: changing || view.busy, onClick: () => { setSourceFailed(false); void runtime.refresh(); }, children: common.retry })] })] });
+}
+
+const rows$6 = {
+    en: ["Refresh", "Saved shaders", "NVIDIA shader cache", "Keep compiled shaders", "Storage limit", "Driver default", "Apply", "No cache files found yet", "Partial inventory", "Files", "Settings changed. Review the current values.", "The previous settings were restored.", "Couldn’t update the cache settings. Try again.", "Current"],
+    it: ["Aggiorna", "Shader salvati", "Cache shader NVIDIA", "Conserva gli shader compilati", "Limite di spazio", "Predefinito del driver", "Applica", "Nessun file di cache presente", "Inventario parziale", "File", "Le impostazioni sono cambiate. Controlla i valori attuali.", "Le impostazioni precedenti sono state ripristinate.", "Impossibile aggiornare la cache. Riprova.", "Attuale"],
+    de: ["Aktualisieren", "Gespeicherte Shader", "NVIDIA-Shader-Cache", "Kompilierte Shader behalten", "Speicherlimit", "Treibervorgabe", "Anwenden", "Noch keine Cache-Dateien vorhanden", "Unvollständige Übersicht", "Dateien", "Die Einstellungen wurden geändert. Prüfe die aktuellen Werte.", "Die vorherigen Einstellungen wurden wiederhergestellt.", "Die Cache-Einstellungen konnten nicht geändert werden. Versuche es erneut.", "Aktuell"],
+    es: ["Actualizar", "Shaders guardados", "Caché de shaders NVIDIA", "Conservar shaders compilados", "Límite de espacio", "Predeterminado del controlador", "Aplicar", "Aún no hay archivos de caché", "Inventario parcial", "Archivos", "La configuración ha cambiado. Revisa los valores actuales.", "Se ha restaurado la configuración anterior.", "No se pudo actualizar la caché. Inténtalo de nuevo.", "Actual"],
+    fr: ["Actualiser", "Shaders enregistrés", "Cache de shaders NVIDIA", "Conserver les shaders compilés", "Limite de stockage", "Valeur du pilote", "Appliquer", "Aucun fichier de cache pour le moment", "Inventaire partiel", "Fichiers", "Les paramètres ont changé. Vérifiez les valeurs actuelles.", "Les paramètres précédents ont été rétablis.", "Impossible de modifier les paramètres du cache. Réessayez.", "Actuel"],
+    pt: ["Atualizar", "Shaders guardados", "Cache de shaders NVIDIA", "Manter shaders compilados", "Limite de espaço", "Padrão do driver", "Aplicar", "Ainda não há arquivos de cache", "Inventário parcial", "Arquivos", "As definições mudaram. Confira os valores atuais.", "As definições anteriores foram restauradas.", "Não foi possível atualizar o cache. Tente novamente.", "Atual"],
+    ru: ["Обновить", "Сохранённые шейдеры", "Кэш шейдеров NVIDIA", "Сохранять скомпилированные шейдеры", "Лимит хранилища", "По умолчанию драйвера", "Применить", "Файлов кэша пока нет", "Неполный список", "Файлы", "Настройки изменились. Проверьте текущие значения.", "Предыдущие настройки восстановлены.", "Не удалось изменить настройки кэша. Повторите попытку.", "Текущее"],
+    uk: ["Оновити", "Збережені шейдери", "Кеш шейдерів NVIDIA", "Зберігати скомпільовані шейдери", "Обмеження сховища", "Типове для драйвера", "Застосувати", "Файлів кешу поки немає", "Неповний перелік", "Файли", "Налаштування змінилися. Перевірте поточні значення.", "Попередні налаштування відновлено.", "Не вдалося змінити налаштування кешу. Спробуйте ще раз.", "Поточне"],
+    ja: ["更新", "保存済みシェーダー", "NVIDIA シェーダーキャッシュ", "コンパイル済みシェーダーを保存", "ストレージ上限", "ドライバーの既定値", "適用", "キャッシュファイルはまだありません", "一部のみ集計", "ファイル", "設定が変更されました。現在の値を確認してください。", "以前の設定を復元しました。", "キャッシュ設定を変更できませんでした。もう一度お試しください。", "現在"],
+    ko: ["새로 고침", "저장된 셰이더", "NVIDIA 셰이더 캐시", "컴파일된 셰이더 유지", "저장 공간 한도", "드라이버 기본값", "적용", "아직 캐시 파일이 없습니다", "일부만 집계됨", "파일", "설정이 변경되었습니다. 현재 값을 확인하세요.", "이전 설정이 복원되었습니다.", "캐시 설정을 변경할 수 없습니다. 다시 시도하세요.", "현재"],
+    zh: ["刷新", "已保存的着色器", "NVIDIA 着色器缓存", "保留已编译的着色器", "存储空间上限", "驱动默认值", "应用", "尚无缓存文件", "仅统计部分内容", "文件", "设置已更改，请检查当前值。", "已恢复之前的设置。", "无法更改缓存设置，请重试。", "当前"],
+    hi: ["रीफ़्रेश", "सहेजे गए शेडर", "NVIDIA शेडर कैश", "कंपाइल किए गए शेडर रखें", "स्टोरेज सीमा", "ड्राइवर का डिफ़ॉल्ट", "लागू करें", "अभी कोई कैश फ़ाइल नहीं है", "आंशिक सूची", "फ़ाइलें", "सेटिंग बदल गई हैं। मौजूदा मान जाँचें।", "पिछली सेटिंग बहाल कर दी गई हैं।", "कैश सेटिंग नहीं बदल सकीं। फिर कोशिश करें।", "मौजूदा"],
+};
+function shaderCacheCopy(locale) {
+    const aliases = { english: "en", italian: "it", german: "de", spanish: "es", latam: "es", french: "fr", brazilian: "pt", portuguese: "pt", russian: "ru", ukrainian: "uk", japanese: "ja", koreana: "ko", schinese: "zh", tchinese: "zh", hindi: "hi" };
+    const key = aliases[locale.toLowerCase()] ?? locale.toLowerCase().split(/[-_]/)[0];
+    const r = rows$6[key] ?? rows$6.en;
+    return { refresh: r[0], saved: r[1], nvidia: r[2], enabled: r[3], limit: r[4], driverDefault: r[5], apply: r[6], empty: r[7], partial: r[8], files: r[9], changed: r[10], restored: r[11], failed: r[12], current: r[13] };
+}
+
+const DriverDropdown = DFL.DropdownItem;
+const cacheNames = { directx: "DirectX", "nvidia-dx": "NVIDIA · DirectX", "nvidia-gl": "NVIDIA · OpenGL", "nvidia-low-dx": "NVIDIA · DirectX", "amd-dx": "AMD · DirectX", "amd-dxc": "AMD · DXC", "amd-gl": "AMD · OpenGL", "amd-vulkan": "AMD · Vulkan", intel: "Intel" };
+function shaderBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes < 0)
+        return "—";
+    if (bytes < 1048576)
+        return `${(bytes / 1024).toFixed(bytes < 10240 ? 1 : 0)} KiB`;
+    if (bytes < 1073741824)
+        return `${(bytes / 1048576).toFixed(1)} MiB`;
+    return `${(bytes / 1073741824).toFixed(1)} GiB`;
+}
+function shaderLimit(value) { return value === 0xffffffff ? "∞" : shaderBytes(value * 1048576); }
+function bounded(operation) {
+    return new Promise((resolve, reject) => {
+        const timer = window.setTimeout(() => reject(new Error("Shader request timed out")), 20000);
+        operation.then(value => { window.clearTimeout(timer); resolve(value); }, error => { window.clearTimeout(timer); reject(error); });
+    });
+}
+const copy$5 = {
+    en: ["Check shader support", "Graphics requirements met", "Requirements unmet", "Needs verification", "Listed by Intel · cache unverified", "Graphics adapter unavailable"],
+    it: ["Verifica supporto shader", "Requisiti grafici soddisfatti", "Fuori requisiti", "Da verificare", "Nel catalogo Intel · cache da verificare", "Scheda grafica da rilevare"],
+    de: ["Shader-Unterstützung prüfen", "Grafikanforderungen erfüllt", "Nicht unterstützt", "Nicht geprüft", "Bei Intel gelistet · Cache nicht geprüft", "Keine Grafikkarte erkannt"],
+    es: ["Comprobar shaders", "Requisitos gráficos cumplidos", "No compatible", "Sin verificar", "En el catálogo de Intel · caché sin verificar", "No se detectó ninguna tarjeta gráfica"],
+    fr: ["Vérifier la compatibilité des shaders", "Configuration graphique compatible", "Non pris en charge", "Non vérifié", "Répertorié par Intel · cache non vérifié", "Aucune carte graphique détectée"],
+    pt: ["Verificar suporte a shaders", "Requisitos gráficos atendidos", "Sem suporte", "Não verificado", "No catálogo da Intel · cache não verificado", "Nenhuma placa de vídeo detectada"],
+    ru: ["Проверить поддержку шейдеров", "Требования к графике выполнены", "Не поддерживается", "Не проверено", "В каталоге Intel · кэш не проверен", "Видеокарта не обнаружена"],
+    uk: ["Перевірити підтримку шейдерів", "Графічні вимоги виконано", "Не підтримується", "Не перевірено", "У каталозі Intel · кеш не перевірено", "Відеокарту не виявлено"],
+    ja: ["シェーダーの対応を確認", "グラフィック要件を満たしています", "非対応", "未確認", "Intel の一覧に掲載 · キャッシュ未確認", "グラフィックアダプターが見つかりません"],
+    ko: ["셰이더 지원 확인", "그래픽 요구 사항 충족", "지원 안 함", "확인되지 않음", "Intel 목록에 있음 · 캐시 미확인", "그래픽 어댑터를 찾을 수 없음"],
+    zh: ["检查着色器支持", "满足图形要求", "不支持", "未验证", "已列入 Intel 目录 · 缓存未验证", "未检测到显卡"],
+    hi: ["शेडर सपोर्ट जाँचें", "ग्राफ़िक्स की ज़रूरतें पूरी हैं", "सपोर्ट नहीं है", "पुष्टि नहीं हुई", "Intel की सूची में है · कैश की पुष्टि नहीं हुई", "कोई ग्राफ़िक्स अडैप्टर नहीं मिला"],
+};
+const aliases$2 = { italian: "it", german: "de", spanish: "es", latam: "es", french: "fr", brazilian: "pt", portuguese: "pt", russian: "ru", ukrainian: "uk", japanese: "ja", koreana: "ko", schinese: "zh", tchinese: "zh", hindi: "hi" };
+function ShaderCompatibility({ appId, locale }) {
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [failed, setFailed] = SP_REACT.useState(false);
+    const [report, setReport] = SP_REACT.useState();
+    const [inventory, setInventory] = SP_REACT.useState();
+    const [enabled, setEnabled] = SP_REACT.useState(true);
+    const [limit, setLimit] = SP_REACT.useState("default");
+    const [notice, setNotice] = SP_REACT.useState("");
+    const mounted = SP_REACT.useRef(false);
+    const running = SP_REACT.useRef(false);
+    const epoch = SP_REACT.useRef(0);
+    SP_REACT.useEffect(() => {
+        mounted.current = true;
+        running.current = false;
+        const generation = ++epoch.current;
+        setInventory(undefined);
+        setReport(undefined);
+        void inspect(generation);
+        return () => { mounted.current = false; ++epoch.current; };
+    }, [appId]);
+    const text = shaderCacheCopy(locale);
+    const [check, eligible, unsupported, unknown, listed, noAdapter] = copy$5[aliases$2[locale] ?? locale.split(/[-_]/)[0]] ?? copy$5.en;
+    const labels = { eligible, unsupported, unverified: unknown };
+    const current = (generation) => mounted.current && epoch.current === generation;
+    function accept(next, generation) {
+        if (!current(generation))
+            return;
+        setInventory(next);
+        setReport(next.preflight);
+        if (next.nvidia.available) {
+            setEnabled(next.nvidia.enabled === true);
+            setLimit(next.nvidia.defaultLimit ? "default" : next.nvidia.limit);
+        }
+    }
+    async function inspect(generation = epoch.current) {
+        if (running.current)
+            return;
+        running.current = true;
+        setBusy(true);
+        setFailed(false);
+        setNotice("");
+        try {
+            const next = await bounded(call("get_shader_cache", appId));
+            if (next?.status !== "ready" || !Array.isArray(next.caches))
+                throw new Error("Shader inventory unavailable");
+            accept(next, generation);
+        }
+        catch {
+            if (current(generation))
+                setFailed(true);
+        }
+        finally {
+            if (current(generation)) {
+                running.current = false;
+                setBusy(false);
+            }
+        }
+    }
+    async function apply() {
+        if (running.current || !inventory?.nvidia.available || !inventory.nvidia.token)
+            return;
+        const generation = epoch.current;
+        running.current = true;
+        setBusy(true);
+        setNotice("");
+        try {
+            const next = await bounded(call("set_nvidia_shader_cache", { token: inventory.nvidia.token, enabled, limit }));
+            if (current(generation)) {
+                setInventory(current => current ? { ...current, nvidia: next } : current);
+                if (next.available) {
+                    setEnabled(next.enabled === true);
+                    setLimit(next.defaultLimit ? "default" : next.limit);
+                }
+                if (next.status !== "applied")
+                    setNotice(next.status === "changed" ? text.changed : next.status === "restored" ? text.restored : text.failed);
+            }
+        }
+        catch {
+            if (current(generation))
+                setNotice(text.failed);
+        }
+        finally {
+            if (current(generation)) {
+                running.current = false;
+                setBusy(false);
+            }
+        }
+    }
+    const driver = inventory?.nvidia;
+    const dirty = driver?.available && (enabled !== driver.enabled || limit !== (driver.defaultLimit ? "default" : driver.limit));
+    const options = [{ data: "default", label: `${text.driverDefault}${driver?.driverDefault !== undefined ? ` · ${shaderLimit(driver.driverDefault)}` : ""}` },
+        ...[1024, 4096, 10240, 16384, 102400].map(value => ({ data: value, label: shaderLimit(value) }))];
+    // Preserve custom/unknown limits without silently selecting another preset.
+    if (typeof limit === "number" && !options.some(value => value.data === limit))
+        options.push({ data: limit, label: `${text.current} · ${shaderLimit(limit)}` });
+    return SP_JSX.jsxs("div", { className: "qsCardBody", children: [SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => void inspect(), children: busy ? controlLocale(locale).loading : text.refresh }), failed && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: controlLocale(locale).unavailable }), inventory && SP_JSX.jsxs("div", { "aria-live": "polite", style: { display: "grid", gap: 10 }, children: [SP_JSX.jsx("strong", { children: text.saved }), inventory.caches.filter(cache => cache.state === "ready" || cache.state === "partial").map(cache => SP_JSX.jsxs("div", { className: "qsMeta", children: [SP_JSX.jsxs("div", { style: { display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }, children: [SP_JSX.jsx("span", { children: cacheNames[cache.id] ?? (cache.id.startsWith("steam") ? "Steam" : cache.id) }), SP_JSX.jsx("strong", { children: shaderBytes(cache.bytes) })] }), SP_JSX.jsxs("span", { children: [cache.files.toLocaleString(), " ", text.files, cache.modified ? ` · ${new Date(cache.modified * 1000).toLocaleDateString()}` : "", cache.state === "partial" ? ` · ${text.partial}` : ""] })] }, cache.id)), !inventory.caches.some(cache => cache.files > 0) && SP_JSX.jsx("div", { className: "qsMeta", children: inventory.caches.some(cache => cache.state === "unavailable" || cache.state === "partial") ? controlLocale(locale).unavailable : text.empty })] }), driver?.available && SP_JSX.jsxs("div", { style: { display: "grid", gap: 10 }, children: [SP_JSX.jsx("strong", { children: text.nvidia }), SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: text.enabled, checked: enabled, disabled: busy, onChange: setEnabled }), SP_JSX.jsx(DriverDropdown, { label: text.limit, layout: "below", bottomSeparator: "none", selectedOption: limit, rgOptions: options, disabled: busy || !enabled, onChange: (option) => setLimit(option.data) }), SP_JSX.jsx(DFL.DialogButton, { disabled: busy || !dirty, onClick: () => void apply(), children: text.apply })] }), notice && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: notice }), report && SP_JSX.jsxs("div", { className: "qsMeta", "aria-live": "polite", style: { display: "grid", gap: 8 }, children: [report.adapters.length === 0 ? noAdapter : report.adapters.map((adapter, i) => SP_JSX.jsxs("div", { children: [SP_JSX.jsx("strong", { children: adapter.name }), SP_JSX.jsx("br", {}), "Advanced Shader Delivery \u00B7 ", labels[adapter.microsoft_asd], adapter.intel_precompiled !== "unverified" && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("br", {}), "Intel Precompiled Shaders \u00B7 ", labels[adapter.intel_precompiled]] })] }, `${adapter.name}-${i}`)), appId !== 0 && SP_JSX.jsx("div", { children: report.game.state === "provider_listed" ? `${report.game.title} — ${listed}` : unknown })] })] });
+}
+
+const rows$5 = {
+    en: ["Device name", "Model", "Processor", "Graphics", "Memory", "Total local storage", "Windows edition", "Windows version", "Windows Update", "Loading device information...", "Unavailable", "Could not open Windows Update.", "Could not load device information."],
+    it: ["Nome dispositivo", "Modello", "Processore", "GPU", "Memoria", "Archiviazione locale totale", "Edizione Windows", "Versione Windows", "Windows Update", "Caricamento informazioni dispositivo...", "Non disponibile", "Impossibile aprire Windows Update.", "Impossibile caricare le informazioni del dispositivo."],
+    de: ["Gerätename", "Modell", "Prozessor", "Grafik", "Arbeitsspeicher", "Lokaler Gesamtspeicher", "Windows-Edition", "Windows-Version", "Windows Update", "Geräteinformationen werden geladen...", "Nicht verfügbar", "Windows Update konnte nicht geöffnet werden.", "Geräteinformationen konnten nicht geladen werden."],
+    es: ["Nombre del dispositivo", "Modelo", "Procesador", "GPU", "Memoria", "Almacenamiento local total", "Edición de Windows", "Versión de Windows", "Windows Update", "Cargando información del dispositivo...", "No disponible", "No se pudo abrir Windows Update.", "No se pudo cargar la información del dispositivo."],
+    fr: ["Nom de l'appareil", "Modèle", "Processeur", "GPU", "Mémoire", "Stockage local total", "Édition de Windows", "Version de Windows", "Windows Update", "Chargement des informations de l'appareil...", "Indisponible", "Impossible d'ouvrir Windows Update.", "Impossible de charger les informations de l'appareil."],
+    pt: ["Nome do dispositivo", "Modelo", "Processador", "GPU", "Memória", "Armazenamento local total", "Edição do Windows", "Versão do Windows", "Windows Update", "Carregando informações do dispositivo...", "Indisponível", "Não foi possível abrir o Windows Update.", "Não foi possível carregar as informações do dispositivo."],
+    ru: ["Имя устройства", "Модель", "Процессор", "Видеокарта", "Память", "Общий локальный объём", "Выпуск Windows", "Версия Windows", "Windows Update", "Загрузка сведений об устройстве...", "Недоступно", "Не удалось открыть Windows Update.", "Не удалось загрузить сведения об устройстве."],
+    uk: ["Ім'я пристрою", "Модель", "Процесор", "Відеокарта", "Пам'ять", "Загальний локальний обсяг", "Випуск Windows", "Версія Windows", "Windows Update", "Завантаження відомостей про пристрій...", "Недоступно", "Не вдалося відкрити Windows Update.", "Не вдалося завантажити відомості про пристрій."],
+    ja: ["デバイス名", "モデル", "プロセッサー", "GPU", "メモリ", "ローカルストレージ合計", "Windows エディション", "Windows バージョン", "Windows Update", "デバイス情報を読み込み中...", "利用不可", "Windows Update を開けませんでした。", "デバイス情報を読み込めませんでした。"],
+    ko: ["장치 이름", "모델", "프로세서", "GPU", "메모리", "전체 로컬 저장 공간", "Windows 에디션", "Windows 버전", "Windows Update", "장치 정보 불러오는 중...", "사용 불가", "Windows Update를 열 수 없습니다.", "장치 정보를 불러올 수 없습니다."],
+    zh: ["设备名称", "型号", "处理器", "GPU", "内存", "本地存储总容量", "Windows 版本类别", "Windows 版本号", "Windows Update", "正在加载设备信息...", "不可用", "无法打开 Windows Update。", "无法加载设备信息。"],
+    hi: ["डिवाइस का नाम", "मॉडल", "प्रोसेसर", "GPU", "मेमोरी", "कुल स्थानीय स्टोरेज", "Windows संस्करण", "Windows संस्करण संख्या", "Windows Update", "डिवाइस की जानकारी लोड हो रही है...", "उपलब्ध नहीं", "Windows Update नहीं खुल सका।", "डिवाइस की जानकारी लोड नहीं हो सकी।"],
+};
+const profiles = {
+    en: ["Device profile", "Automatic", "Windows PC", "Other handheld", "Experimental", "The profile changes how Playhub presents your device. Windows supplies the available controls.", "On battery", "Plugged in", "Primary display", "Video controls", "Power controls", "Hardware details", "Could not save the device profile.", "Try again"],
+    it: ["Profilo dispositivo", "Automatico", "PC Windows", "Altro portatile da gioco", "Sperimentale", "Il profilo adatta Playhub al dispositivo. I controlli disponibili dipendono da Windows.", "A batteria", "Alimentatore collegato", "Schermo principale", "Controlli video", "Controlli di alimentazione", "Dettagli hardware", "Impossibile salvare il profilo dispositivo.", "Riprova"],
+    de: ["Geräteprofil", "Automatisch", "Windows-PC", "Anderes Handheld", "Experimentell", "Das Profil passt Playhub an dein Gerät an. Windows bestimmt die verfügbaren Einstellungen.", "Akkubetrieb", "Netzbetrieb", "Hauptbildschirm", "Videoeinstellungen", "Energieeinstellungen", "Hardwaredetails", "Das Geräteprofil konnte nicht gespeichert werden.", "Erneut versuchen"],
+    es: ["Perfil del dispositivo", "Automático", "PC con Windows", "Otra consola portátil", "Experimental", "El perfil adapta Playhub a tu dispositivo. Windows determina los controles disponibles.", "Con batería", "Conectado a la corriente", "Pantalla principal", "Controles de vídeo", "Controles de energía", "Detalles del hardware", "No se pudo guardar el perfil del dispositivo.", "Reintentar"],
+    fr: ["Profil de l’appareil", "Automatique", "PC Windows", "Autre console portable", "Expérimental", "Le profil adapte Playhub à votre appareil. Windows détermine les commandes disponibles.", "Sur batterie", "Branché au secteur", "Écran principal", "Réglages vidéo", "Réglages d’alimentation", "Détails du matériel", "Impossible d’enregistrer le profil de l’appareil.", "Réessayer"],
+    pt: ["Perfil do dispositivo", "Automático", "PC com Windows", "Outro portátil para jogos", "Experimental", "O perfil adapta o Playhub ao seu dispositivo. O Windows define os controles disponíveis.", "Na bateria", "Ligado à tomada", "Tela principal", "Controles de vídeo", "Controles de energia", "Detalhes do hardware", "Não foi possível salvar o perfil do dispositivo.", "Tentar novamente"],
+    ru: ["Профиль устройства", "Автоматически", "ПК с Windows", "Другая портативная консоль", "Экспериментально", "Профиль адаптирует Playhub к вашему устройству. Доступные настройки определяет Windows.", "От батареи", "От сети", "Основной экран", "Настройки видео", "Настройки питания", "Сведения об оборудовании", "Не удалось сохранить профиль устройства.", "Повторить"],
+    uk: ["Профіль пристрою", "Автоматично", "ПК з Windows", "Інша портативна консоль", "Експериментально", "Профіль адаптує Playhub до вашого пристрою. Доступні налаштування визначає Windows.", "Від батареї", "Від мережі", "Основний екран", "Налаштування відео", "Налаштування живлення", "Відомості про обладнання", "Не вдалося зберегти профіль пристрою.", "Повторити"],
+    ja: ["デバイスプロファイル", "自動", "Windows PC", "その他の携帯ゲーム機", "実験的", "プロファイルに応じて Playhub の表示が変わります。利用できる操作は Windows が判定します。", "バッテリー駆動", "電源に接続中", "メインディスプレイ", "映像設定", "電源設定", "ハードウェアの詳細", "デバイスプロファイルを保存できませんでした。", "再試行"],
+    ko: ["장치 프로필", "자동", "Windows PC", "기타 휴대용 게임기", "실험적", "프로필에 따라 Playhub의 표시가 달라집니다. 사용할 수 있는 제어 기능은 Windows가 결정합니다.", "배터리 사용 중", "전원 연결됨", "기본 디스플레이", "화면 설정", "전원 설정", "하드웨어 정보", "장치 프로필을 저장할 수 없습니다.", "다시 시도"],
+    zh: ["设备配置", "自动", "Windows PC", "其他游戏掌机", "实验性", "Playhub 会根据配置调整界面。可用的控制选项由 Windows 决定。", "使用电池", "已接通电源", "主显示器", "显示设置", "电源设置", "硬件详情", "无法保存设备配置。", "重试"],
+    hi: ["डिवाइस प्रोफ़ाइल", "स्वचालित", "Windows PC", "अन्य हैंडहेल्ड", "प्रयोगात्मक", "प्रोफ़ाइल के अनुसार Playhub का इंटरफ़ेस बदलता है। उपलब्ध नियंत्रण Windows तय करता है।", "बैटरी पर", "बिजली से कनेक्ट है", "मुख्य डिस्प्ले", "वीडियो नियंत्रण", "पावर नियंत्रण", "हार्डवेयर की जानकारी", "डिवाइस प्रोफ़ाइल सेव नहीं हो सकी।", "फिर कोशिश करें"],
+};
+const batteryHealth = {
+    en: "Battery health", it: "Salute batteria", de: "Akkuzustand", es: "Salud de la batería",
+    fr: "État de santé de la batterie", pt: "Saúde da bateria", ru: "Состояние аккумулятора",
+    uk: "Стан акумулятора", ja: "バッテリーの状態", ko: "배터리 상태", zh: "电池健康度", hi: "बैटरी की सेहत",
+};
+const batteryRemaining = {
+    en: "Estimated time remaining", it: "Autonomia stimata", de: "Geschätzte Restlaufzeit", es: "Autonomía estimada",
+    fr: "Autonomie estimée", pt: "Autonomia estimada", ru: "Примерное оставшееся время", uk: "Приблизний час роботи",
+    ja: "推定残り時間", ko: "예상 남은 시간", zh: "预计剩余时间", hi: "अनुमानित शेष समय",
+};
+function deviceLanguage(locale) {
+    const aliases = { english: "en", italian: "it", german: "de", spanish: "es", latam: "es", french: "fr", brazilian: "pt", portuguese: "pt", russian: "ru", ukrainian: "uk", japanese: "ja", koreana: "ko", schinese: "zh", tchinese: "zh", hindi: "hi" };
+    const key = locale.toLowerCase();
+    const candidate = aliases[key] ?? key.split(/[-_]/)[0];
+    return Object.prototype.hasOwnProperty.call(rows$5, candidate) ? candidate : "en";
+}
+function deviceInfoLocale(locale) {
+    const language = deviceLanguage(locale);
+    const row = rows$5[language] ?? rows$5.en;
+    const profile = profiles[language] ?? profiles.en;
+    return { language, batteryRemaining: batteryRemaining[language] ?? batteryRemaining.en, name: row[0], model: row[1], cpu: row[2], gpu: row[3], ram: row[4], storage: row[5], edition: row[6], version: row[7], update: row[8], loading: row[9], unavailable: row[10], openError: row[11], loadError: row[12],
+        profile: profile[0], auto: profile[1], pc: profile[2], handheld: profile[3], experimental: profile[4], profileHint: profile[5], battery: profile[6], ac: profile[7], primaryDisplay: profile[8], video: profile[9], power: profile[10], details: profile[11], saveError: profile[12], retry: profile[13], batteryHealth: batteryHealth[language] ?? batteryHealth.en };
+}
+
+const modes$1 = ["efficiency", "balanced", "performance"];
+function PowerProfile({ locale }) {
+    const [state, setState] = SP_REACT.useState();
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [failed, setFailed] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(false);
+    const writing = SP_REACT.useRef(false);
+    const revision = SP_REACT.useRef(0);
+    SP_REACT.useEffect(() => {
+        mounted.current = true;
+        let stopped = false;
+        let reading = false;
+        let available = false;
+        const refresh = async () => {
+            if (stopped || reading || writing.current)
+                return;
+            const observedRevision = revision.current;
+            reading = true;
+            try {
+                const response = await call("get_windows_power_profile");
+                if (!stopped && revision.current === observedRevision) {
+                    available = response.available === true;
+                    setState(response.available ? response : undefined);
+                }
+            }
+            catch { /* Startup and transient refresh failures retain the last confirmed value. */ }
+            finally {
+                reading = false;
+            }
+        };
+        void refresh();
+        const interval = window.setInterval(() => { if (available)
+            void refresh(); }, 15000);
+        const onFocus = () => void refresh();
+        window.addEventListener("focus", onFocus);
+        return () => {
+            stopped = true;
+            mounted.current = false;
+            window.clearInterval(interval);
+            window.removeEventListener("focus", onFocus);
+        };
+    }, []);
+    if (!state)
+        return null;
+    const local = t$1(locale);
+    const device = deviceInfoLocale(locale);
+    const labels = { efficiency: local.powerEfficiency, balanced: local.powerBalanced, performance: local.powerBest };
+    const supply = state.source === "ac" ? device.ac : device.battery;
+    async function choose(mode, current) {
+        if (writing.current || !modes$1.includes(mode) || mode === current.mode)
+            return;
+        revision.current++;
+        writing.current = true;
+        setBusy(true);
+        setFailed(false);
+        try {
+            const result = await call("set_windows_power_profile", { source: current.source, mode });
+            if (!mounted.current)
+                return;
+            if (result.available)
+                setState(result);
+            if (result.ok !== true)
+                setFailed(true);
+        }
+        catch {
+            if (mounted.current)
+                setFailed(true);
+        }
+        finally {
+            writing.current = false;
+            if (mounted.current)
+                setBusy(false);
+        }
+    }
+    return SP_JSX.jsxs("div", { className: "qsCardBody qsDropdownFullWidth", "aria-busy": busy, children: [SP_JSX.jsx(DFL.DropdownItem, { bottomSeparator: "none", layout: "below", label: local.powerMode, description: supply, rgOptions: modes$1.map(data => ({ data, label: labels[data] })), selectedOption: state.mode, disabled: busy, onChange: option => void choose(option.data, state) }), failed && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: controlLocale(locale).saveError })] });
+}
+
+const translations$4 = {
+    en: ["CPU boost", "Extra CPU speed and power use.", "Off", "On", "Maximum", "Efficient", "Efficient maximum", "Windows preset"],
+    it: ["Boost CPU", "Velocità aggiuntiva della CPU e consumi.", "Disattivato", "Attivato", "Massimo", "Efficiente", "Massimo efficiente", "Profilo Windows"],
+    de: ["CPU-Boost", "Zusätzliche CPU-Leistung und Energieverbrauch.", "Aus", "Ein", "Maximum", "Effizient", "Effizientes Maximum", "Windows-Vorgabe"],
+    es: ["Turbo de CPU", "Velocidad adicional de CPU y consumo.", "Desactivado", "Activado", "Máximo", "Eficiente", "Máximo eficiente", "Perfil de Windows"],
+    fr: ["Boost du processeur", "Vitesse supplémentaire du processeur et consommation.", "Désactivé", "Activé", "Maximum", "Efficace", "Maximum efficace", "Profil Windows"],
+    pt: ["Boost da CPU", "Velocidade adicional da CPU e consumo.", "Desativado", "Ativado", "Máximo", "Eficiente", "Máximo eficiente", "Perfil do Windows"],
+    ru: ["Ускорение процессора", "Дополнительная скорость процессора и энергопотребление.", "Выкл.", "Вкл.", "Максимум", "Эффективный", "Эффективный максимум", "Профиль Windows"],
+    uk: ["Прискорення процесора", "Додаткова швидкість процесора та енергоспоживання.", "Вимкнено", "Увімкнено", "Максимум", "Ефективний", "Ефективний максимум", "Профіль Windows"],
+    ja: ["CPU ブースト", "CPU の追加性能と消費電力。", "オフ", "オン", "最大", "効率優先", "効率を考慮した最大", "Windows の設定"],
+    ko: ["CPU 부스트", "CPU의 추가 성능과 전력 사용량.", "꺼짐", "켜짐", "최대", "효율 우선", "효율적인 최대 성능", "Windows 설정"],
+    zh: ["CPU 睿频", "CPU 额外性能和功耗。", "关闭", "开启", "最高性能", "节能", "节能最高性能", "Windows 预设"],
+    hi: ["CPU बूस्ट", "CPU की अतिरिक्त गति और बिजली का उपयोग।", "बंद", "चालू", "अधिकतम", "कुशल", "कुशल अधिकतम", "Windows प्रीसेट"],
+};
+function ProcessorBoost({ locale }) {
+    const key = locale.toLowerCase().split(/[-_]/)[0];
+    const copy = translations$4[key] ?? translations$4.en;
+    const [state, setState] = SP_REACT.useState();
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [failed, setFailed] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(false);
+    const writing = SP_REACT.useRef(false);
+    const revision = SP_REACT.useRef(0);
+    SP_REACT.useEffect(() => {
+        mounted.current = true;
+        let stopped = false, reading = false;
+        const refresh = async () => {
+            if (stopped || reading || writing.current || document.visibilityState === "hidden")
+                return;
+            reading = true;
+            const observedRevision = revision.current;
+            try {
+                const result = await call("get_processor_boost");
+                if (!stopped && revision.current === observedRevision)
+                    setState(result.available ? result : undefined);
+            }
+            catch { /* Preserve the last confirmed policy through a transient RPC failure. */ }
+            finally {
+                reading = false;
+            }
+        };
+        void refresh();
+        const timer = window.setInterval(() => void refresh(), 15000);
+        const onVisible = () => void refresh();
+        window.addEventListener("focus", onVisible);
+        document.addEventListener("visibilitychange", onVisible);
+        return () => {
+            stopped = true;
+            mounted.current = false;
+            window.clearInterval(timer);
+            window.removeEventListener("focus", onVisible);
+            document.removeEventListener("visibilitychange", onVisible);
+        };
+    }, []);
+    if (!state)
+        return null;
+    const device = deviceInfoLocale(locale);
+    const supply = state.source === "ac" ? device.ac : device.battery;
+    const modes = state.modes.filter(mode => Number.isInteger(mode) && mode >= 0 && mode <= 6 && (mode <= 4 || mode === state.mode));
+    const choose = async (mode) => {
+        if (writing.current || !modes.includes(mode) || mode === state.mode)
+            return;
+        revision.current++;
+        writing.current = true;
+        setBusy(true);
+        setFailed(false);
+        try {
+            const result = await call("set_processor_boost", {
+                plan: state.plan, source: state.source, mode,
+            });
+            if (!mounted.current)
+                return;
+            if (result.available)
+                setState(result);
+            else if (result.code === "unavailable")
+                setState(undefined);
+            setFailed(result.ok !== true);
+        }
+        catch {
+            if (mounted.current)
+                setFailed(true);
+        }
+        finally {
+            writing.current = false;
+            if (mounted.current)
+                setBusy(false);
+        }
+    };
+    return SP_JSX.jsxs("div", { className: "qsCardBody qsDropdownFullWidth", "aria-busy": busy, children: [SP_JSX.jsx(DFL.DropdownItem, { label: copy[0], description: `${supply} · ${copy[1]}`, bottomSeparator: "none", layout: "below", rgOptions: modes.map(mode => ({ data: mode, label: mode <= 4 ? copy[mode + 2] : copy[7] })), selectedOption: state.mode, disabled: busy, onChange: ({ data }) => void choose(data) }), failed && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: controlLocale(locale).saveError })] });
+}
+
+const translations$3 = {
+    en: ["Device performance", "Lenovo firmware", "Quiet", "Balanced", "Performance", "Custom", "Custom profile managed by Lenovo firmware."],
+    it: ["Prestazioni dispositivo", "Firmware Lenovo", "Silenzioso", "Bilanciato", "Prestazioni", "Personalizzato", "Profilo personalizzato gestito dal firmware Lenovo."],
+    de: ["Geräteleistung", "Lenovo-Firmware", "Leise", "Ausgewogen", "Leistung", "Benutzerdefiniert", "Benutzerdefiniertes Profil der Lenovo-Firmware."],
+    es: ["Rendimiento del dispositivo", "Firmware de Lenovo", "Silencioso", "Equilibrado", "Rendimiento", "Personalizado", "Perfil personalizado gestionado por el firmware de Lenovo."],
+    fr: ["Performances de l’appareil", "Firmware Lenovo", "Silencieux", "Équilibré", "Performances", "Personnalisé", "Profil personnalisé géré par le firmware Lenovo."],
+    pt: ["Desempenho do dispositivo", "Firmware Lenovo", "Silencioso", "Equilibrado", "Desempenho", "Personalizado", "Perfil personalizado gerenciado pelo firmware Lenovo."],
+    ru: ["Производительность устройства", "Прошивка Lenovo", "Тихий", "Сбалансированный", "Производительность", "Свой профиль", "Своим профилем управляет прошивка Lenovo."],
+    uk: ["Продуктивність пристрою", "Прошивка Lenovo", "Тихий", "Збалансований", "Продуктивність", "Власний профіль", "Власним профілем керує прошивка Lenovo."],
+    ja: ["デバイスのパフォーマンス", "Lenovo ファームウェア", "静音", "バランス", "パフォーマンス", "カスタム", "カスタムプロファイルは Lenovo ファームウェアで管理します。"],
+    ko: ["장치 성능", "Lenovo 펌웨어", "조용하게", "균형", "성능", "사용자 지정", "사용자 지정 프로필은 Lenovo 펌웨어에서 관리합니다."],
+    zh: ["设备性能", "Lenovo 固件", "安静", "均衡", "性能", "自定义", "自定义配置由 Lenovo 固件管理。"],
+    hi: ["डिवाइस का प्रदर्शन", "Lenovo फ़र्मवेयर", "शांत", "संतुलित", "प्रदर्शन", "कस्टम", "कस्टम प्रोफ़ाइल Lenovo फ़र्मवेयर संभालता है।"],
+};
+function handheldPerformanceModeName(locale, mode) {
+    const copy = translations$3[deviceLanguage(locale)];
+    return mode >= 1 && mode <= 3 ? copy[mode + 1] : mode === 224 ? "Extreme" : copy[5];
+}
+function HandheldPowerMode({ locale }) {
+    const key = deviceLanguage(locale);
+    const copy = translations$3[key] ?? translations$3.en;
+    const [state, setState] = SP_REACT.useState();
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [failed, setFailed] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(false);
+    const writing = SP_REACT.useRef(false);
+    const revision = SP_REACT.useRef(0);
+    SP_REACT.useEffect(() => {
+        mounted.current = true;
+        let stopped = false, reading = false;
+        const refresh = async () => {
+            if (stopped || reading || writing.current || document.visibilityState === "hidden")
+                return;
+            reading = true;
+            const observedRevision = revision.current;
+            try {
+                const result = await call("get_handheld_power_mode");
+                if (!stopped && revision.current === observedRevision)
+                    setState(result.available ? result : undefined);
+            }
+            catch { /* Keep the last verified firmware state through transient RPC errors. */ }
+            finally {
+                reading = false;
+            }
+        };
+        void refresh();
+        const onVisible = () => void refresh();
+        window.addEventListener("focus", onVisible);
+        document.addEventListener("visibilitychange", onVisible);
+        return () => {
+            stopped = true;
+            mounted.current = false;
+            window.removeEventListener("focus", onVisible);
+            document.removeEventListener("visibilitychange", onVisible);
+        };
+    }, []);
+    if (!state)
+        return null;
+    const modes = [...state.modes];
+    if (!modes.includes(state.mode))
+        modes.push(state.mode);
+    const choose = async (mode) => {
+        if (writing.current || !state.editable || !state.modes.includes(mode) || mode === state.mode)
+            return;
+        revision.current++;
+        writing.current = true;
+        setBusy(true);
+        setFailed(false);
+        try {
+            const result = await call("set_handheld_power_mode", {
+                token: state.token, expected: state.mode, mode,
+            });
+            if (!mounted.current)
+                return;
+            if (result.available)
+                setState(result);
+            else if (result.code === "unavailable")
+                setState(undefined);
+            setFailed(result.ok !== true);
+        }
+        catch {
+            if (mounted.current)
+                setFailed(true);
+        }
+        finally {
+            writing.current = false;
+            if (mounted.current)
+                setBusy(false);
+        }
+    };
+    return SP_JSX.jsxs("div", { className: "qsCardBody qsDropdownFullWidth", "aria-busy": busy, children: [SP_JSX.jsx(DFL.DropdownItem, { label: copy[0], description: `${copy[1]} · ${deviceInfoLocale(locale).experimental}`, bottomSeparator: "none", layout: "below", selectedOption: state.mode, disabled: busy || !state.editable, rgOptions: modes.map(mode => ({ data: mode, label: mode >= 1 && mode <= 3 ? copy[mode + 1] : copy[5] })), onChange: ({ data }) => void choose(data) }), !state.editable && SP_JSX.jsx("div", { className: "qsMeta", children: copy[6] }), failed && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: controlLocale(locale).saveError })] });
+}
+
+const words$6 = {
+    en: ["Power limit", "Current", "Apply", "Restore previous settings"],
+    it: ["Limite di potenza", "Attuale", "Applica", "Ripristina le impostazioni precedenti"],
+    de: ["Leistungsgrenze", "Aktuell", "Anwenden", "Vorherige Einstellungen wiederherstellen"],
+    es: ["Límite de potencia", "Actual", "Aplicar", "Restaurar los ajustes anteriores"],
+    fr: ["Limite de puissance", "Actuelle", "Appliquer", "Rétablir les réglages précédents"],
+    pt: ["Limite de potência", "Atual", "Aplicar", "Restaurar as definições anteriores"],
+    ru: ["Лимит мощности", "Сейчас", "Применить", "Восстановить предыдущие настройки"],
+    uk: ["Ліміт потужності", "Поточний", "Застосувати", "Відновити попередні налаштування"],
+    ja: ["電力上限", "現在", "適用", "以前の設定に戻す"],
+    ko: ["전력 제한", "현재", "적용", "이전 설정 복원"],
+    zh: ["功率上限", "当前", "应用", "恢复之前的设置"],
+    hi: ["पावर सीमा", "वर्तमान", "लागू करें", "पिछली सेटिंग बहाल करें"],
+};
+const managedBy = {
+    en: "Managed by another performance app", it: "Gestito da un’altra app per le prestazioni", de: "Von einer anderen Leistungs-App verwaltet",
+    es: "Gestionado por otra aplicación de rendimiento", fr: "Géré par une autre application de performances", pt: "Gerenciado por outro aplicativo de desempenho",
+    ru: "Управляется другим приложением производительности", uk: "Керується іншим застосунком продуктивності", ja: "別のパフォーマンスアプリで管理中",
+    ko: "다른 성능 앱에서 관리 중", zh: "由其他性能应用管理", hi: "अन्य प्रदर्शन ऐप द्वारा नियंत्रित",
+};
+function validHandheldPowerState(value) {
+    const limits = value?.limitsWatts;
+    return value?.ok === true && value.available === true && value.provider === "asus-rc73xa-tdp"
+        && typeof value.token === "string" && /^[a-f0-9]{64}$/.test(value.token)
+        && value.readbackKind === "firmware-register" && typeof value.externalPower === "boolean"
+        && typeof value.restoreAvailable === "boolean" && typeof value.manualRecoveryRequired === "boolean"
+        && typeof value.writeAvailable === "boolean" && typeof value.oemControllerActive === "boolean"
+        && (!value.writeAvailable || !value.oemControllerActive && !value.manualRecoveryRequired)
+        && value.minimumWatts === 7 && value.maximumWatts === (value.externalPower ? 35 : 25)
+        && !!limits && [limits.spl, limits.sppt, limits.fppt].every(v => Number.isInteger(v) && v >= 1 && v <= 255)
+        && limits.spl <= limits.sppt && limits.sppt <= limits.fppt;
+}
+function HandheldPowerLimits({ locale }) {
+    const copy = words$6[deviceLanguage(locale)];
+    const device = deviceInfoLocale(locale), common = controlLocale(locale);
+    const [state, setState] = SP_REACT.useState();
+    const [draft, setDraft] = SP_REACT.useState();
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [failed, setFailed] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(false), writing = SP_REACT.useRef(false), editing = SP_REACT.useRef(false);
+    const revision = SP_REACT.useRef(0);
+    const accept = (value) => {
+        const current = validHandheldPowerState(value) ? value : undefined;
+        setState(current);
+        setDraft(current ? Math.max(current.minimumWatts, Math.min(current.maximumWatts, current.limitsWatts.spl)) : undefined);
+        editing.current = false;
+    };
+    SP_REACT.useEffect(() => {
+        mounted.current = true;
+        let stopped = false, reading = false;
+        const refresh = async () => {
+            if (stopped || reading || writing.current || editing.current || document.visibilityState === "hidden")
+                return;
+            reading = true;
+            const expected = revision.current;
+            try {
+                const result = await call("get_handheld_tdp");
+                if (!stopped && expected === revision.current && !editing.current) {
+                    accept(result);
+                    setFailed(result.manualRecoveryRequired === true);
+                }
+            }
+            catch {
+                if (!stopped && expected === revision.current)
+                    setFailed(true);
+            }
+            finally {
+                reading = false;
+            }
+        };
+        void refresh();
+        const visible = () => void refresh();
+        window.addEventListener("focus", visible);
+        document.addEventListener("visibilitychange", visible);
+        return () => {
+            stopped = true;
+            mounted.current = false;
+            revision.current++;
+            window.removeEventListener("focus", visible);
+            document.removeEventListener("visibilitychange", visible);
+        };
+    }, []);
+    const write = async (restore) => {
+        if (!mounted.current || !state || writing.current || !state.writeAvailable || state.manualRecoveryRequired || (!restore && !Number.isInteger(draft)))
+            return;
+        const targetWatts = draft;
+        writing.current = true;
+        revision.current++;
+        setBusy(true);
+        setFailed(false);
+        try {
+            const result = await call(restore ? "restore_handheld_tdp" : "set_handheld_tdp", restore ? { token: state.token, confirmed: true } : { token: state.token, watts: targetWatts, confirmed: true });
+            if (!mounted.current)
+                return;
+            const current = await call("get_handheld_tdp");
+            if (!mounted.current)
+                return;
+            accept(current);
+            const confirmedLimits = result.limitsWatts;
+            const matches = validHandheldPowerState(current) && current.token === state.token
+                && !!confirmedLimits && ["spl", "sppt", "fppt"].every(key => {
+                const part = key;
+                return current.limitsWatts[part] === confirmedLimits[part]
+                    && (restore || current.limitsWatts[part] === targetWatts);
+            });
+            setFailed(result.ok !== true || !matches || current.manualRecoveryRequired === true);
+        }
+        catch {
+            if (mounted.current) {
+                setState(undefined);
+                setDraft(undefined);
+                setFailed(true);
+            }
+        }
+        finally {
+            writing.current = false;
+            if (mounted.current)
+                setBusy(false);
+        }
+    };
+    const retry = async () => {
+        if (!mounted.current || writing.current)
+            return;
+        writing.current = true;
+        revision.current++;
+        setBusy(true);
+        try {
+            const current = await call("get_handheld_tdp");
+            if (!mounted.current)
+                return;
+            accept(current);
+            setFailed(!validHandheldPowerState(current) || current.manualRecoveryRequired);
+        }
+        catch {
+            if (mounted.current)
+                setFailed(true);
+        }
+        finally {
+            writing.current = false;
+            if (mounted.current)
+                setBusy(false);
+        }
+    };
+    if (!state)
+        return failed ? SP_JSX.jsxs("div", { className: "qsCardBody", "aria-busy": busy, children: [SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: common.saveError }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: busy, onClick: () => void retry(), children: common.retry })] }) : null;
+    const changed = editing.current && [state.limitsWatts.spl, state.limitsWatts.sppt, state.limitsWatts.fppt].some(value => value !== draft);
+    return SP_JSX.jsxs("div", { className: "qsCardBody qsDropdownFullWidth", "aria-busy": busy, children: [SP_JSX.jsx(DFL.SliderField, { bottomSeparator: "none", label: copy[0], description: `${copy[1]}: ${state.limitsWatts.spl} W · ${state.externalPower ? device.ac : device.battery} · ${device.experimental}`, min: state.minimumWatts, max: state.maximumWatts, step: 1, value: draft ?? state.limitsWatts.spl, valueSuffix: " W", showValue: true, editableValue: true, disabled: busy || !state.writeAvailable || state.manualRecoveryRequired, onChange: value => {
+                    if (writing.current || !Number.isInteger(value) || value < state.minimumWatts || value > state.maximumWatts)
+                        return;
+                    editing.current = true;
+                    setDraft(value);
+                } }), state.oemControllerActive && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: managedBy[deviceLanguage(locale)] }), changed && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: busy || !state.writeAvailable || state.manualRecoveryRequired, onClick: () => void write(false), children: copy[2] }), state.restoreAvailable && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: busy || !state.writeAvailable || state.manualRecoveryRequired, onClick: () => void write(true), children: copy[3] }), (failed || state.manualRecoveryRequired) && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: common.saveError }), (failed || state.manualRecoveryRequired) && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: busy, onClick: () => void retry(), children: common.retry })] });
+}
+
+const translations$2 = {
+    en: ["Device performance", "MSI firmware", "AI Engine", "Endurance", "Manual", "Sustained power", "Boost power", "Apply", "Manual gives you control over sustained and boost power."],
+    it: ["Prestazioni dispositivo", "Firmware MSI", "AI Engine", "Autonomia", "Manuale", "Potenza continua", "Potenza boost", "Applica", "La modalità manuale permette di regolare la potenza continua e il boost."],
+    de: ["Geräteleistung", "MSI-Firmware", "AI Engine", "Ausdauer", "Manuell", "Dauerleistung", "Boost-Leistung", "Anwenden", "Im manuellen Modus regelst du Dauer- und Boost-Leistung."],
+    es: ["Rendimiento del dispositivo", "Firmware de MSI", "AI Engine", "Autonomía", "Manual", "Potencia sostenida", "Potencia boost", "Aplicar", "El modo manual permite ajustar la potencia sostenida y el boost."],
+    fr: ["Performances de l’appareil", "Firmware MSI", "AI Engine", "Autonomie", "Manuel", "Puissance soutenue", "Puissance boost", "Appliquer", "Le mode manuel permet de régler la puissance soutenue et le boost."],
+    pt: ["Desempenho do dispositivo", "Firmware MSI", "AI Engine", "Autonomia", "Manual", "Potência contínua", "Potência boost", "Aplicar", "O modo manual permite ajustar a potência contínua e o boost."],
+    ru: ["Производительность устройства", "Прошивка MSI", "AI Engine", "Автономность", "Вручную", "Постоянная мощность", "Мощность boost", "Применить", "Ручной режим позволяет настроить постоянную мощность и boost."],
+    uk: ["Продуктивність пристрою", "Прошивка MSI", "AI Engine", "Автономність", "Вручну", "Постійна потужність", "Потужність boost", "Застосувати", "Ручний режим дає змогу налаштувати постійну потужність і boost."],
+    ja: ["デバイスのパフォーマンス", "MSI ファームウェア", "AI Engine", "長時間駆動", "手動", "持続電力", "ブースト電力", "適用", "手動モードで持続電力とブースト電力を調整できます。"],
+    ko: ["장치 성능", "MSI 펌웨어", "AI Engine", "배터리 절약", "수동", "지속 전력", "부스트 전력", "적용", "수동 모드에서 지속 전력과 부스트 전력을 조절할 수 있습니다."],
+    zh: ["设备性能", "MSI 固件", "AI Engine", "续航", "手动", "持续功率", "睿频功率", "应用", "手动模式可调节持续功率和睿频功率。"],
+    hi: ["डिवाइस का प्रदर्शन", "MSI फ़र्मवेयर", "AI Engine", "बैटरी बचत", "मैनुअल", "निरंतर पावर", "बूस्ट पावर", "लागू करें", "मैनुअल मोड में निरंतर और बूस्ट पावर चुन सकते हैं।"],
+};
+function MsiPowerControls({ locale }) {
+    const key = deviceLanguage(locale);
+    const copy = translations$2[key] ?? translations$2.en;
+    const [state, setState] = SP_REACT.useState();
+    const [draft, setDraft] = SP_REACT.useState({ pl1: 17, pl2: 19 });
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [failed, setFailed] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(false);
+    const writing = SP_REACT.useRef(false);
+    const editing = SP_REACT.useRef(false);
+    const revision = SP_REACT.useRef(0);
+    const accept = (result) => {
+        setState(result.available ? result : undefined);
+        if (result.available && result.tdpAvailable && result.pl1 !== undefined && result.pl2 !== undefined)
+            setDraft({ pl1: result.pl1, pl2: result.pl2 });
+        editing.current = false;
+    };
+    SP_REACT.useEffect(() => {
+        mounted.current = true;
+        let stopped = false, reading = false;
+        const refresh = async () => {
+            if (stopped || reading || writing.current || editing.current || document.visibilityState === "hidden")
+                return;
+            reading = true;
+            const observedRevision = revision.current;
+            try {
+                const result = await call("get_msi_claw_firmware");
+                if (!stopped && revision.current === observedRevision && !editing.current)
+                    accept(result);
+            }
+            catch { /* Preserve the last verified device state through a transient RPC error. */ }
+            finally {
+                reading = false;
+            }
+        };
+        void refresh();
+        const onVisible = () => void refresh();
+        window.addEventListener("focus", onVisible);
+        document.addEventListener("visibilitychange", onVisible);
+        return () => {
+            stopped = true;
+            mounted.current = false;
+            window.removeEventListener("focus", onVisible);
+            document.removeEventListener("visibilitychange", onVisible);
+        };
+    }, []);
+    if (!state)
+        return null;
+    const write = async (method, request) => {
+        if (writing.current)
+            return;
+        revision.current++;
+        writing.current = true;
+        setBusy(true);
+        setFailed(false);
+        try {
+            const result = await call(method, request);
+            if (!mounted.current)
+                return;
+            if (result.available || result.code === "unavailable")
+                accept(result);
+            setFailed(result.ok !== true);
+        }
+        catch {
+            if (mounted.current)
+                setFailed(true);
+        }
+        finally {
+            writing.current = false;
+            if (mounted.current)
+                setBusy(false);
+        }
+    };
+    const chooseMode = (mode) => {
+        if (![1, 2, 6].includes(mode) || mode === state.mode)
+            return;
+        void write("set_msi_claw_power_mode", { token: state.token, expectedMode: state.mode, mode });
+    };
+    const changeLimit = (which, value) => {
+        if (writing.current || state.mode !== 6 || !state.tdpAvailable || !Number.isInteger(value))
+            return;
+        editing.current = true;
+        if (which === "pl1") {
+            const pl1 = Math.max(8, Math.min(35, value));
+            setDraft(current => ({ pl1, pl2: Math.max(current.pl2, pl1 + 2) }));
+        }
+        else {
+            const pl2 = Math.max(10, Math.min(45, value));
+            setDraft(current => ({ pl1: Math.min(current.pl1, pl2 - 2), pl2 }));
+        }
+    };
+    const apply = () => {
+        if (!state.tdpAvailable || state.mode !== 6 || state.pl1 === undefined || state.pl2 === undefined)
+            return;
+        void write("set_msi_claw_power_limits", { token: state.token, expectedMode: state.mode,
+            expectedPl1: state.pl1, expectedPl2: state.pl2, ...draft });
+    };
+    const manual = state.mode === 6 && state.tdpAvailable;
+    const changed = draft.pl1 !== state.pl1 || draft.pl2 !== state.pl2;
+    return SP_JSX.jsxs("div", { className: "qsCardBody qsDropdownFullWidth", "aria-busy": busy, children: [SP_JSX.jsx(DFL.DropdownItem, { label: copy[0], description: `${copy[1]} · ${deviceInfoLocale(locale).experimental}`, bottomSeparator: "none", layout: "below", selectedOption: state.mode, disabled: busy, rgOptions: [1, 2, 6].map((mode, index) => ({ data: mode, label: copy[index + 2] })), onChange: ({ data }) => chooseMode(data) }), manual ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.SliderField, { bottomSeparator: "none", label: copy[5], min: 8, max: 35, step: 1, value: draft.pl1, valueSuffix: " W", showValue: true, editableValue: true, disabled: busy, onChange: value => changeLimit("pl1", value) }), SP_JSX.jsx(DFL.SliderField, { bottomSeparator: "none", label: copy[6], min: 10, max: 45, step: 1, value: draft.pl2, valueSuffix: " W", showValue: true, editableValue: true, disabled: busy, onChange: value => changeLimit("pl2", value) }), changed && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: busy, onClick: apply, children: copy[7] })] }) : state.tdpAvailable && SP_JSX.jsx("div", { className: "qsMeta", children: copy[8] }), failed && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: controlLocale(locale).saveError })] });
+}
+
+const translations$1 = {
+    en: ["Device performance", "ASUS firmware", "Silent", "Balanced", "Turbo"],
+    it: ["Prestazioni dispositivo", "Firmware ASUS", "Silenzioso", "Bilanciato", "Turbo"],
+    de: ["Geräteleistung", "ASUS-Firmware", "Leise", "Ausgewogen", "Turbo"],
+    es: ["Rendimiento del dispositivo", "Firmware de ASUS", "Silencioso", "Equilibrado", "Turbo"],
+    fr: ["Performances de l’appareil", "Firmware ASUS", "Silencieux", "Équilibré", "Turbo"],
+    pt: ["Desempenho do dispositivo", "Firmware ASUS", "Silencioso", "Equilibrado", "Turbo"],
+    ru: ["Производительность устройства", "Прошивка ASUS", "Тихий", "Сбалансированный", "Турбо"],
+    uk: ["Продуктивність пристрою", "Прошивка ASUS", "Тихий", "Збалансований", "Турбо"],
+    ja: ["デバイスのパフォーマンス", "ASUS ファームウェア", "静音", "バランス", "ターボ"],
+    ko: ["장치 성능", "ASUS 펌웨어", "조용하게", "균형", "터보"],
+    zh: ["设备性能", "ASUS 固件", "安静", "均衡", "增强"],
+    hi: ["डिवाइस का प्रदर्शन", "ASUS फ़र्मवेयर", "शांत", "संतुलित", "टर्बो"],
+};
+function AsusPerformanceActions({ locale }) {
+    const key = locale.toLowerCase().split(/[-_]/)[0];
+    const copy = translations$1[key] ?? translations$1.en;
+    const [state, setState] = SP_REACT.useState();
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [failed, setFailed] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(false);
+    const writing = SP_REACT.useRef(false);
+    const revision = SP_REACT.useRef(0);
+    SP_REACT.useEffect(() => {
+        mounted.current = true;
+        let stopped = false, reading = false;
+        const refresh = async () => {
+            if (stopped || reading || writing.current || document.visibilityState === "hidden")
+                return;
+            reading = true;
+            const observedRevision = revision.current;
+            try {
+                const result = await call("get_asus_performance_commands");
+                if (!stopped && revision.current === observedRevision)
+                    setState(result.available ? result : undefined);
+            }
+            catch { /* Keep verified command capability through a transient RPC failure. */ }
+            finally {
+                reading = false;
+            }
+        };
+        void refresh();
+        const onVisible = () => void refresh();
+        window.addEventListener("focus", onVisible);
+        document.addEventListener("visibilitychange", onVisible);
+        return () => {
+            stopped = true;
+            mounted.current = false;
+            window.removeEventListener("focus", onVisible);
+            document.removeEventListener("visibilitychange", onVisible);
+        };
+    }, []);
+    if (!state)
+        return null;
+    const apply = async (mode) => {
+        if (writing.current || ![2, 0, 1].includes(mode) || !state.commands.includes(mode))
+            return;
+        revision.current++;
+        writing.current = true;
+        setBusy(true);
+        setFailed(false);
+        try {
+            const result = await call("apply_asus_performance_command", { token: state.token, mode });
+            if (!mounted.current)
+                return;
+            if (result.available)
+                setState(result);
+            else if (result.code === "unavailable")
+                setState(undefined);
+            setFailed(result.ok !== true || result.acknowledged !== true);
+        }
+        catch {
+            if (mounted.current)
+                setFailed(true);
+        }
+        finally {
+            writing.current = false;
+            if (mounted.current)
+                setBusy(false);
+        }
+    };
+    return SP_JSX.jsxs("div", { className: "qsCardBody", "aria-busy": busy, children: [SP_JSX.jsx("div", { children: copy[0] }), SP_JSX.jsxs("div", { className: "qsMeta", children: [copy[1], " \u00B7 ", deviceInfoLocale(locale).experimental] }), [2, 0, 1].filter(mode => state.commands.includes(mode)).map(mode => SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => void apply(mode), style: { whiteSpace: "normal", height: "auto", minHeight: 40 }, children: copy[[2, 0, 1].indexOf(mode) + 2] }, mode)), failed && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: controlLocale(locale).saveError })] });
+}
+
+const validRpm = (value) => value === null || (typeof value === "number" && Number.isInteger(value)
+    && value >= 0 && value <= 12000 && value % 100 === 0);
+const validTemperature = (value) => value === null || (typeof value === "number" && Number.isInteger(value)
+    && value >= 1 && value <= 125);
+function asusFanTelemetry(raw, now) {
+    if (!raw || typeof raw !== "object")
+        return null;
+    const value = raw;
+    if (value.available === false)
+        return false;
+    if (value.available !== true || value.ok !== true || value.provider !== "asus-ally"
+        || typeof value.token !== "string" || !/^[a-f0-9]{64}$/.test(value.token) || typeof value.capabilities?.fan_rpm !== "boolean"
+        || !value.fans || !validRpm(value.fans.cpu_rpm) || !validRpm(value.fans.gpu_rpm)
+        || !Number.isSafeInteger(value.sampled_at_ms) || value.sampled_at_ms <= 0
+        || now - value.sampled_at_ms < -1e3 || now - value.sampled_at_ms >= 6000)
+        return null;
+    const hasFans = value.fans.cpu_rpm !== null || value.fans.gpu_rpm !== null;
+    if (value.capabilities.fan_rpm !== hasFans)
+        return null;
+    let temperatures = null;
+    if (value.temperatures !== undefined || value.capabilities.temperature_c !== undefined) {
+        const t = value.temperatures;
+        if (!t || Object.keys(t).length !== 2 || !validTemperature(t.cpu_c) || !validTemperature(t.gpu_c))
+            return null;
+        const hasTemperatures = t.cpu_c !== null || t.gpu_c !== null;
+        if (value.capabilities.temperature_c !== hasTemperatures)
+            return null;
+        if (hasTemperatures)
+            temperatures = { cpu_c: t.cpu_c, gpu_c: t.gpu_c };
+    }
+    if (!hasFans && !temperatures)
+        return null;
+    return { token: value.token, fans: hasFans ? { cpu_rpm: value.fans.cpu_rpm, gpu_rpm: value.fans.gpu_rpm } : null,
+        temperatures, sampled_at_ms: value.sampled_at_ms };
+}
+function createAsusFanMonitor(deps) {
+    let disposed = false, running = false, revision = 0, timer, expiry;
+    let view = { available: false, failed: false, fans: null, temperatures: null };
+    const update = (value) => { view = value; if (!disposed)
+        deps.changed(value); };
+    const clear = () => { if (timer !== undefined)
+        deps.cancel(timer); if (expiry !== undefined)
+        deps.cancel(expiry); timer = expiry = undefined; };
+    async function refresh() {
+        if (disposed || running || !deps.visible())
+            return;
+        const observed = revision;
+        running = true;
+        try {
+            const reply = await deps.get();
+            if (disposed || observed !== revision || !deps.visible())
+                return;
+            const value = asusFanTelemetry(reply, deps.now());
+            if (expiry !== undefined)
+                deps.cancel(expiry);
+            expiry = undefined;
+            if (value === false)
+                update({ available: false, failed: false, fans: null, temperatures: null });
+            else if (!value)
+                update({ available: view.available, failed: true, fans: null, temperatures: null });
+            else {
+                update({ available: true, failed: false, fans: value.fans, temperatures: value.temperatures });
+                expiry = deps.schedule(() => { expiry = undefined; update({ available: true, failed: true, fans: null, temperatures: null }); }, Math.max(1, 6000 - Math.max(0, deps.now() - value.sampled_at_ms)));
+            }
+        }
+        catch {
+            if (!disposed && observed === revision && deps.visible())
+                update({ available: view.available, failed: true, fans: null, temperatures: null });
+        }
+        finally {
+            running = false;
+            if (!disposed && deps.visible())
+                timer = deps.schedule(() => { timer = undefined; void refresh(); }, observed === revision ? 3000 : 0);
+        }
+    }
+    return {
+        visibilityChanged() {
+            revision++;
+            if (timer !== undefined)
+                deps.cancel(timer);
+            timer = undefined;
+            if (!deps.visible()) {
+                clear();
+                update({ ...view, fans: null, temperatures: null });
+            }
+            else
+                void refresh();
+        },
+        dispose() { disposed = true; revision++; clear(); },
+    };
+}
+
+const labels$4 = {
+    en: ["Fans", "Fan 1", "Fan 2", "Temperatures"], it: ["Ventole", "Ventola 1", "Ventola 2", "Temperature"],
+    de: ["Lüfter", "Lüfter 1", "Lüfter 2", "Temperaturen"], es: ["Ventiladores", "Ventilador 1", "Ventilador 2", "Temperaturas"],
+    fr: ["Ventilateurs", "Ventilateur 1", "Ventilateur 2", "Températures"], pt: ["Ventoinhas", "Ventoinha 1", "Ventoinha 2", "Temperaturas"],
+    ru: ["Вентиляторы", "Вентилятор 1", "Вентилятор 2", "Температуры"], uk: ["Вентилятори", "Вентилятор 1", "Вентилятор 2", "Температури"],
+    ja: ["ファン", "ファン 1", "ファン 2", "温度"], ko: ["팬", "팬 1", "팬 2", "온도"],
+    zh: ["风扇", "风扇 1", "风扇 2", "温度"], hi: ["पंखे", "पंखा 1", "पंखा 2", "तापमान"],
+};
+const aliases$1 = { english: "en", italian: "it", german: "de", spanish: "es", latam: "es",
+    french: "fr", brazilian: "pt", portuguese: "pt", russian: "ru", ukrainian: "uk", japanese: "ja",
+    koreana: "ko", schinese: "zh", tchinese: "zh", hindi: "hi" };
+function AsusFanStatus({ locale }) {
+    const [view, setView] = SP_REACT.useState({ available: false, failed: false, fans: null });
+    SP_REACT.useEffect(() => {
+        const monitor = createAsusFanMonitor({ get: () => call("get_asus_device_controls"),
+            visible: () => document.visibilityState !== "hidden", now: Date.now,
+            schedule: (callback, delay) => window.setTimeout(callback, delay), cancel: timer => window.clearTimeout(timer),
+            changed: setView });
+        const visible = () => monitor.visibilityChanged();
+        document.addEventListener("visibilitychange", visible);
+        window.addEventListener("focus", visible);
+        visible();
+        return () => { monitor.dispose(); document.removeEventListener("visibilitychange", visible); window.removeEventListener("focus", visible); };
+    }, []);
+    if (!view.available)
+        return null;
+    const key = locale.trim().toLowerCase();
+    const canonical = aliases$1[key] ?? key.replace(/_/g, "-");
+    const copy = labels$4[canonical.split("-")[0]] ?? labels$4.en;
+    let number = (rpm) => String(rpm);
+    try {
+        const formatter = new Intl.NumberFormat(canonical);
+        number = rpm => formatter.format(rpm);
+    }
+    catch { /* Unknown interface locales retain a readable integer. */ }
+    return SP_JSX.jsxs("div", { className: "qsCardBody", children: [SP_JSX.jsx("div", { children: view.fans || !view.temperatures ? copy[0] : copy[3] }), SP_JSX.jsxs("div", { className: "qsMeta", children: ["ASUS \u00B7 ", deviceInfoLocale(locale).experimental] }), view.fans ? SP_JSX.jsx("div", { style: { display: "flex", gap: 16, flexWrap: "wrap" }, children: [view.fans.cpu_rpm, view.fans.gpu_rpm].map((rpm, index) => rpm === null ? null : SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { className: "qsMeta", children: copy[index + 1] }), SP_JSX.jsxs("div", { children: [number(rpm), " RPM"] })] }, index)) }) : !view.temperatures && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: controlLocale(locale).unavailable }), view.temperatures && SP_JSX.jsxs(SP_JSX.Fragment, { children: [view.fans && SP_JSX.jsx("div", { className: "qsMeta", children: copy[3] }), SP_JSX.jsx("div", { style: { display: "flex", gap: 16, flexWrap: "wrap" }, children: [view.temperatures.cpu_c, view.temperatures.gpu_c].map((celsius, index) => celsius === null ? null : SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { className: "qsMeta", children: index === 0 ? "CPU" : "GPU" }), SP_JSX.jsxs("div", { children: [number(celsius), " \u00B0C"] })] }, index)) })] })] });
+}
+
+const words$5 = {
+    en: ["Fan control", "Automatic", "Manual", "Fan speed", "Apply", "Restore previous settings", "Current"],
+    it: ["Controllo ventola", "Automatico", "Manuale", "Velocità ventola", "Applica", "Ripristina le impostazioni precedenti", "Attuale"],
+    de: ["Lüftersteuerung", "Automatisch", "Manuell", "Lüftergeschwindigkeit", "Anwenden", "Vorherige Einstellungen wiederherstellen", "Aktuell"],
+    es: ["Control del ventilador", "Automático", "Manual", "Velocidad del ventilador", "Aplicar", "Restaurar los ajustes anteriores", "Actual"],
+    fr: ["Commande du ventilateur", "Automatique", "Manuel", "Vitesse du ventilateur", "Appliquer", "Rétablir les réglages précédents", "Actuelle"],
+    pt: ["Controle da ventoinha", "Automático", "Manual", "Velocidade da ventoinha", "Aplicar", "Restaurar as definições anteriores", "Atual"],
+    ru: ["Управление вентилятором", "Автоматически", "Вручную", "Скорость вентилятора", "Применить", "Восстановить предыдущие настройки", "Сейчас"],
+    uk: ["Керування вентилятором", "Автоматично", "Вручну", "Швидкість вентилятора", "Застосувати", "Відновити попередні налаштування", "Поточна"],
+    ja: ["ファン制御", "自動", "手動", "ファン速度", "適用", "以前の設定に戻す", "現在"],
+    ko: ["팬 제어", "자동", "수동", "팬 속도", "적용", "이전 설정 복원", "현재"],
+    zh: ["风扇控制", "自动", "手动", "风扇速度", "应用", "恢复之前的设置", "当前"],
+    hi: ["पंखा नियंत्रण", "स्वचालित", "मैनुअल", "पंखे की रफ़्तार", "लागू करें", "पिछली सेटिंग बहाल करें", "वर्तमान"],
+};
+function validOneXFanSnapshot(value) {
+    return value?.ok === true && value.available === true && value.provider === "onex-type2-fan"
+        && typeof value.token === "string" && /^[a-f0-9]{64}$/.test(value.token)
+        && value.readbackKind === "firmware-register" && typeof value.restoreAvailable === "boolean"
+        && typeof value.manualRecoveryRequired === "boolean" && !!value.state && [0, 1].includes(value.state.mode)
+        && Number.isInteger(value.state.pwm) && value.state.pwm >= 0 && value.state.pwm <= 184
+        && !!value.telemetry && Number.isInteger(value.telemetry.fanRpm) && value.telemetry.fanRpm >= 0 && value.telemetry.fanRpm <= 65535
+        && Number.isInteger(value.telemetry.cpuTemperatureC) && value.telemetry.cpuTemperatureC >= 0 && value.telemetry.cpuTemperatureC <= 255;
+}
+const sameControl = (left, right) => !!right && left.mode === right.mode && (left.mode === 0 || left.pwm === right.pwm);
+function OneXFanControls({ locale }) {
+    const copy = words$5[deviceLanguage(locale)], common = controlLocale(locale), device = deviceInfoLocale(locale);
+    const [state, setState] = SP_REACT.useState();
+    const [mode, setMode] = SP_REACT.useState(0), [percent, setPercent] = SP_REACT.useState(50);
+    const [busy, setBusy] = SP_REACT.useState(false), [failed, setFailed] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(false), writing = SP_REACT.useRef(false), editing = SP_REACT.useRef(false), revision = SP_REACT.useRef(0);
+    const polling = SP_REACT.useRef(() => { });
+    const accept = (reply) => {
+        const current = validOneXFanSnapshot(reply) ? reply : undefined;
+        setState(current);
+        if (current) {
+            setMode(current.state.mode);
+            setPercent(Math.max(30, Math.min(100, Math.round(current.state.pwm * 100 / 184))));
+        }
+        editing.current = false;
+    };
+    SP_REACT.useEffect(() => {
+        mounted.current = true;
+        let stopped = false, reading = false, supported = false, timer;
+        const schedule = () => {
+            window.clearTimeout(timer);
+            if (!stopped && supported) {
+                timer = window.setTimeout(() => void refresh(), 3000);
+            }
+        };
+        polling.current = available => { supported = available; schedule(); };
+        const refresh = async () => {
+            if (stopped || reading)
+                return;
+            window.clearTimeout(timer);
+            if (writing.current || editing.current || document.visibilityState === "hidden") {
+                schedule();
+                return;
+            }
+            reading = true;
+            const generation = revision.current;
+            try {
+                const result = await call("get_onex_fan_controls");
+                if (!stopped && generation === revision.current && !editing.current) {
+                    supported = validOneXFanSnapshot(result);
+                    accept(result);
+                    setFailed(result.manualRecoveryRequired === true);
+                }
+            }
+            catch {
+                if (!stopped && generation === revision.current)
+                    setFailed(true);
+            }
+            finally {
+                reading = false;
+                schedule();
+            }
+        };
+        const visible = () => void refresh();
+        void refresh();
+        window.addEventListener("focus", visible);
+        document.addEventListener("visibilitychange", visible);
+        return () => {
+            stopped = true;
+            mounted.current = false;
+            revision.current++;
+            polling.current = () => { };
+            window.clearTimeout(timer);
+            window.removeEventListener("focus", visible);
+            document.removeEventListener("visibilitychange", visible);
+        };
+    }, []);
+    const run = async (action) => {
+        if (!mounted.current || writing.current || (action !== "refresh" && (!state || state.manualRecoveryRequired)))
+            return;
+        const target = { mode, pwm: Math.floor((percent * 184 + 50) / 100) };
+        writing.current = true;
+        revision.current++;
+        setBusy(true);
+        setFailed(false);
+        try {
+            let result;
+            if (action !== "refresh") {
+                result = await call(action === "restore" ? "restore_onex_fan_controls" : "set_onex_fan_controls", action === "restore" ? { token: state.token, confirmed: true } : { token: state.token, mode, percent, confirmed: true });
+                if (!mounted.current)
+                    return;
+            }
+            const current = await call("get_onex_fan_controls");
+            if (!mounted.current)
+                return;
+            accept(current);
+            const valid = validOneXFanSnapshot(current);
+            polling.current(valid);
+            const confirmed = action === "refresh" || (result?.ok === true && valid && current.token === state.token
+                && sameControl(current.state, result.state) && (action === "restore" || sameControl(current.state, target)));
+            setFailed(!valid || !confirmed || current.manualRecoveryRequired === true);
+        }
+        catch {
+            if (mounted.current) {
+                setState(undefined);
+                setFailed(true);
+                polling.current(false);
+            }
+        }
+        finally {
+            writing.current = false;
+            if (mounted.current)
+                setBusy(false);
+        }
+    };
+    if (!state)
+        return failed ? SP_JSX.jsxs("div", { className: "qsCardBody", "aria-busy": busy, children: [SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: common.saveError }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: busy, onClick: () => void run("refresh"), children: common.retry })] }) : null;
+    const changed = editing.current && (mode !== state.state.mode || mode === 1 && Math.floor((percent * 184 + 50) / 100) !== state.state.pwm);
+    const rpm = state.telemetry.fanRpm <= 20000 ? `${state.telemetry.fanRpm} RPM` : "";
+    const temperature = state.telemetry.cpuTemperatureC >= 1 && state.telemetry.cpuTemperatureC <= 125 ? `CPU ${state.telemetry.cpuTemperatureC} °C` : "";
+    return SP_JSX.jsxs("div", { className: "qsCardBody qsDropdownFullWidth", "aria-busy": busy, children: [SP_JSX.jsx(DFL.DropdownItem, { label: copy[0], description: `ONEXPLAYER · ${device.experimental}`, layout: "below", bottomSeparator: "none", selectedOption: mode, disabled: busy || state.manualRecoveryRequired, rgOptions: [0, 1].map(value => ({ data: value, label: copy[value + 1] })), onChange: ({ data }) => {
+                    if (!writing.current && (data === 0 || data === 1)) {
+                        editing.current = true;
+                        setMode(data);
+                    }
+                } }), SP_JSX.jsxs("div", { className: "qsMeta", children: [copy[6], ": ", state.state.mode === 0 ? copy[1] : `${Math.round(state.state.pwm * 100 / 184)}%`, [rpm, temperature].filter(Boolean).map(value => SP_JSX.jsxs("span", { children: [" \u00B7 ", value] }, value))] }), mode === 1 && SP_JSX.jsx(DFL.SliderField, { label: copy[3], bottomSeparator: "none", min: 30, max: 100, step: 1, value: percent, valueSuffix: "%", showValue: true, editableValue: true, disabled: busy || state.manualRecoveryRequired, onChange: value => {
+                    if (!writing.current && Number.isInteger(value) && value >= 30 && value <= 100) {
+                        editing.current = true;
+                        setPercent(value);
+                    }
+                } }), changed && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: busy || state.manualRecoveryRequired, onClick: () => void run("apply"), children: copy[4] }), state.restoreAvailable && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: busy || state.manualRecoveryRequired, onClick: () => void run("restore"), children: copy[5] }), (failed || state.manualRecoveryRequired) && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: common.saveError }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: busy, onClick: () => void run("refresh"), children: common.retry })] })] });
+}
+
+const words$4 = {
+    en: ["Sustained power", "Short boost", "Peak boost", "Apply", "Restore previous limits"],
+    it: ["Potenza continua", "Boost breve", "Boost di picco", "Applica", "Ripristina i limiti precedenti"],
+    de: ["Dauerleistung", "Kurzer Boost", "Spitzenleistung", "Anwenden", "Vorherige Grenzwerte wiederherstellen"],
+    es: ["Potencia sostenida", "Boost breve", "Potencia máxima", "Aplicar", "Restaurar los límites anteriores"],
+    fr: ["Puissance soutenue", "Boost court", "Puissance de pointe", "Appliquer", "Rétablir les limites précédentes"],
+    pt: ["Potência contínua", "Boost breve", "Potência de pico", "Aplicar", "Restaurar os limites anteriores"],
+    ru: ["Постоянная мощность", "Короткий boost", "Пиковая мощность", "Применить", "Восстановить предыдущие лимиты"],
+    uk: ["Постійна потужність", "Короткий boost", "Пікова потужність", "Застосувати", "Відновити попередні ліміти"],
+    ja: ["持続電力", "短時間ブースト", "ピーク電力", "適用", "以前の制限に戻す"],
+    ko: ["지속 전력", "단기 부스트", "최대 부스트", "적용", "이전 제한 복원"],
+    zh: ["持续功率", "短时睿频", "峰值睿频", "应用", "恢复之前的功率限制"],
+    hi: ["निरंतर पावर", "छोटा बूस्ट", "पीक बूस्ट", "लागू करें", "पिछली सीमाएँ बहाल करें"],
+};
+const rails = ["spl", "sppt", "fppt"];
+const integer = (value, minimum, maximum) => typeof value === "number" && Number.isInteger(value) && value >= minimum && value <= maximum;
+const ordered = (limits) => limits.spl <= limits.sppt && limits.sppt <= limits.fppt;
+const aligned = (value, bound) => integer(value, bound.minimum, bound.maximum) && (value - bound.minimum) % bound.step === 0;
+const sameBounds = (first, last) => first.tdpAvailable === last.tdpAvailable && (!first.tdpAvailable
+    || last.tdpAvailable && rails.every(rail => ["minimum", "maximum", "step", "default"].every(key => first.boundsWatts[rail][key] === last.boundsWatts[rail][key])));
+function validLenovoPowerState(value) {
+    if (value?.ok !== true || value.available !== true || value.provider !== "lenovo-other-tdp"
+        || value.nativeUnit !== "W"
+        || ![value.token, value.deviceToken].every(token => typeof token === "string" && /^[a-f0-9]{64}$/.test(token))
+        || !integer(value.mode, 1, 255) || !integer(value.realMode, 1, 255)
+        || ![1, 2, 3, 224, 255].includes(value.mode) || ![1, 2, 3, 224, 255].includes(value.realMode)
+        || ![value.writable, value.customModeAvailable, value.modeControlAvailable, value.restoreAvailable, value.manualRecoveryRequired].every(flag => typeof flag === "boolean")
+        || (typeof value.externalPower !== "boolean" && value.externalPower !== null))
+        return false;
+    if (value.modeControlAvailable && (value.mode !== value.realMode || ![1, 2, 3, 255].includes(value.mode) || typeof value.externalPower !== "boolean"))
+        return false;
+    if (value.customModeAvailable && (!value.modeControlAvailable || value.mode !== value.realMode || ![1, 2, 3].includes(value.mode) || typeof value.externalPower !== "boolean" || value.writable))
+        return false;
+    if (value.tdpAvailable === false)
+        return value.boundsWatts === null && value.limitsWatts === null && value.writable === false && !value.restoreAvailable;
+    if (value.tdpAvailable !== true || !value.boundsWatts || !value.limitsWatts)
+        return false;
+    for (const rail of rails) {
+        const bound = value.boundsWatts[rail];
+        if (!bound || !integer(bound.minimum, 1, 255) || !integer(bound.maximum, bound.minimum, 255)
+            || !integer(bound.step, 1, 255) || !aligned(bound.default, bound) || !integer(value.limitsWatts[rail], 1, 255))
+            return false;
+    }
+    return ordered(value.limitsWatts)
+        && (!value.modeControlAvailable || value.mode === value.realMode && [1, 2, 3, 255].includes(value.mode) && typeof value.externalPower === "boolean")
+        && (!value.customModeAvailable || value.modeControlAvailable === true && value.mode === value.realMode && [1, 2, 3].includes(value.mode)
+            && typeof value.externalPower === "boolean" && !value.writable)
+        && (!value.writable || value.mode === 255 && value.realMode === 255
+            && typeof value.externalPower === "boolean" && !value.manualRecoveryRequired
+            && rails.every(rail => aligned(value.limitsWatts[rail], value.boundsWatts[rail])));
+}
+function LenovoPowerLimits({ locale }) {
+    const copy = words$4[deviceLanguage(locale)], common = controlLocale(locale), device = deviceInfoLocale(locale);
+    const [state, setState] = SP_REACT.useState(), [draft, setDraft] = SP_REACT.useState();
+    const [busy, setBusy] = SP_REACT.useState(false), [failed, setFailed] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(false), writing = SP_REACT.useRef(false), editing = SP_REACT.useRef(false), revision = SP_REACT.useRef(0);
+    const accept = (value) => {
+        const current = validLenovoPowerState(value) ? value : undefined;
+        setState(current);
+        setDraft(current?.tdpAvailable ? { ...current.limitsWatts } : undefined);
+        editing.current = false;
+    };
+    SP_REACT.useEffect(() => {
+        mounted.current = true;
+        let stopped = false, reading = false;
+        const refresh = async () => {
+            if (stopped || reading || writing.current || editing.current || document.visibilityState === "hidden")
+                return;
+            reading = true;
+            const generation = revision.current;
+            try {
+                const result = await call("get_lenovo_power_limits");
+                if (!stopped && generation === revision.current && !editing.current) {
+                    accept(result);
+                    setFailed(result.manualRecoveryRequired === true);
+                }
+            }
+            catch {
+                if (!stopped && generation === revision.current)
+                    setFailed(true);
+            }
+            finally {
+                reading = false;
+            }
+        };
+        const visible = () => void refresh();
+        void refresh();
+        window.addEventListener("focus", visible);
+        document.addEventListener("visibilitychange", visible);
+        return () => {
+            stopped = true;
+            mounted.current = false;
+            revision.current++;
+            window.removeEventListener("focus", visible);
+            document.removeEventListener("visibilitychange", visible);
+        };
+    }, []);
+    const run = async (action, selectedMode) => {
+        if (!mounted.current || writing.current || action !== "refresh" && (!state || state.manualRecoveryRequired)
+            || action === "mode" && (!state || ![1, 2, 3, 255].includes(selectedMode) || selectedMode === state.mode || !state.modeControlAvailable)
+            || action === "restore" && (!state?.writable || !state.restoreAvailable)
+            || action === "apply" && (!state?.tdpAvailable || !state.writable || !draft || !ordered(draft)
+                || !rails.every(rail => aligned(draft[rail], state.boundsWatts[rail]))))
+            return;
+        const target = draft ? { ...draft } : undefined;
+        writing.current = true;
+        revision.current++;
+        setBusy(true);
+        setFailed(false);
+        try {
+            let result;
+            if (action !== "refresh") {
+                const method = action === "apply" ? "set_lenovo_power_limits" : action === "mode" ? "set_lenovo_performance_mode" : "restore_lenovo_power_limits";
+                result = await call(method, { token: state.token, confirmed: true, ...(action === "apply" ? { limitsWatts: target } : action === "mode" ? { mode: selectedMode } : {}) });
+                if (!mounted.current)
+                    return;
+            }
+            const current = await call("get_lenovo_power_limits");
+            if (!mounted.current)
+                return;
+            accept(current);
+            const valid = validLenovoPowerState(current);
+            const confirmed = action === "refresh" || !!result && validLenovoPowerState(result) && valid && current.deviceToken === state.deviceToken
+                && current.token === result.token && current.deviceToken === result.deviceToken
+                && current.mode === result.mode && current.realMode === result.realMode && current.externalPower === result.externalPower
+                && sameBounds(current, result)
+                && (action === "mode" || current.mode === state.mode && current.realMode === state.realMode
+                    && current.externalPower === state.externalPower && sameBounds(current, state))
+                && (action === "mode" ? current.mode === selectedMode && current.realMode === selectedMode
+                    : current.tdpAvailable && result.tdpAvailable && rails.every(rail => current.limitsWatts[rail] === result.limitsWatts[rail]
+                        && (action !== "apply" || current.limitsWatts[rail] === target?.[rail])));
+            setFailed(!valid || !confirmed || current.manualRecoveryRequired === true);
+        }
+        catch {
+            if (mounted.current) {
+                setState(undefined);
+                setDraft(undefined);
+                setFailed(true);
+            }
+        }
+        finally {
+            writing.current = false;
+            if (mounted.current)
+                setBusy(false);
+        }
+    };
+    if (!state)
+        return failed ? SP_JSX.jsxs("div", { className: "qsCardBody", "aria-busy": busy, children: [SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: common.saveError }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: busy, onClick: () => void run("refresh"), children: common.retry })] }) : null;
+    const changed = state.tdpAvailable && !!draft && editing.current && rails.some(rail => draft[rail] !== state.limitsWatts[rail]);
+    return SP_JSX.jsxs("div", { className: "qsCardBody qsDropdownFullWidth", "aria-busy": busy, children: [SP_JSX.jsxs("div", { className: "qsMeta", children: ["Lenovo \u00B7 ", device.experimental, " \u00B7 ", state.externalPower === null ? common.unavailable : state.externalPower ? device.ac : device.battery] }), SP_JSX.jsx(DFL.DropdownItem, { label: device.power, layout: "below", bottomSeparator: "none", selectedOption: state.mode, disabled: busy || state.manualRecoveryRequired || !state.modeControlAvailable, rgOptions: [1, 2, 3, 255, ...(state.mode === 224 ? [224] : [])].map(mode => ({ data: mode, label: handheldPerformanceModeName(locale, mode) })), onChange: ({ data }) => void run("mode", data) }), state.tdpAvailable && draft && (state.writable ? rails.map((rail, index) => {
+                const bound = state.boundsWatts[rail];
+                const lower = Math.max(bound.minimum, index > 0 ? draft[rails[index - 1]] : bound.minimum);
+                const upper = Math.min(bound.maximum, index < 2 ? draft[rails[index + 1]] : bound.maximum);
+                const minimum = bound.minimum + Math.ceil((lower - bound.minimum) / bound.step) * bound.step;
+                const maximum = bound.minimum + Math.floor((upper - bound.minimum) / bound.step) * bound.step;
+                if (minimum === maximum)
+                    return SP_JSX.jsxs("div", { className: "qsMeta", children: [copy[index], ": ", draft[rail], " W"] }, rail);
+                return SP_JSX.jsx(DFL.SliderField, { label: copy[index], bottomSeparator: "none", min: minimum, max: maximum, step: bound.step, value: draft[rail], valueSuffix: " W", showValue: true, editableValue: true, disabled: busy || state.manualRecoveryRequired, onChange: value => {
+                        if (!writing.current && aligned(value, bound) && value >= minimum && value <= maximum) {
+                            editing.current = true;
+                            setDraft(current => current ? { ...current, [rail]: value } : current);
+                        }
+                    } }, rail);
+            }) : SP_JSX.jsx(SP_JSX.Fragment, { children: rails.map((rail, index) => SP_JSX.jsxs("div", { className: "qsMeta", children: [copy[index], ": ", state.limitsWatts[rail], " W"] }, rail)) })), changed && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: busy || !state.writable || state.manualRecoveryRequired, onClick: () => void run("apply"), children: copy[3] }), state.restoreAvailable && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: busy || !state.writable || state.manualRecoveryRequired, onClick: () => void run("restore"), children: copy[4] }), (failed || state.manualRecoveryRequired) && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: common.saveError }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: busy, onClick: () => void run("refresh"), children: common.retry })] })] });
+}
+
+const options = ["default", "efficiency", "performance"];
+const copyByLanguage = {
+    en: ["Game CPU profile", "Windows default", "Profile applied", "Managed by another app"],
+    it: ["Profilo CPU del gioco", "Predefinito di Windows", "Profilo applicato", "Gestito da un’altra app"],
+    de: ["CPU-Profil des Spiels", "Windows-Standard", "Profil angewendet", "Von einer anderen App verwaltet"],
+    es: ["Perfil de CPU del juego", "Predeterminado de Windows", "Perfil aplicado", "Gestionado por otra aplicación"],
+    fr: ["Profil processeur du jeu", "Par défaut sous Windows", "Profil appliqué", "Géré par une autre application"],
+    pt: ["Perfil de CPU do jogo", "Padrão do Windows", "Perfil aplicado", "Gerenciado por outro aplicativo"],
+    ru: ["Профиль ЦП игры", "По умолчанию в Windows", "Профиль применён", "Управляется другим приложением"],
+    uk: ["Профіль ЦП гри", "Типовий у Windows", "Профіль застосовано", "Керується іншою програмою"],
+    ja: ["ゲームの CPU プロファイル", "Windows の既定値", "プロファイルを適用済み", "別のアプリで管理中"],
+    ko: ["게임 CPU 프로필", "Windows 기본값", "프로필 적용됨", "다른 앱에서 관리 중"],
+    zh: ["游戏 CPU 配置", "Windows 默认", "配置已应用", "由其他应用管理"],
+    hi: ["गेम की CPU प्रोफ़ाइल", "Windows का डिफ़ॉल्ट", "प्रोफ़ाइल लागू की गई", "दूसरा ऐप प्रबंधित कर रहा है"],
+};
+function GameExecutionProfile({ appId, locale }) {
+    const [profile, setProfile] = SP_REACT.useState();
+    const [saving, setSaving] = SP_REACT.useState(false);
+    const [failed, setFailed] = SP_REACT.useState(false);
+    const active = SP_REACT.useRef(false);
+    const writing = SP_REACT.useRef(false);
+    const revision = SP_REACT.useRef(0);
+    const polling = SP_REACT.useRef(false);
+    const [title, defaultLabel, appliedLabel, externalLabel] = copyByLanguage[locale.toLowerCase().split(/[-_]/)[0]] ?? copyByLanguage.en;
+    const device = deviceInfoLocale(locale);
+    const control = controlLocale(locale);
+    const local = t$1(locale);
+    const labels = { default: defaultLabel, efficiency: local.powerEfficiency, performance: local.powerBest };
+    SP_REACT.useEffect(() => {
+        active.current = true;
+        let disposed = false;
+        const refresh = async () => {
+            if (disposed || writing.current || polling.current || document.visibilityState === "hidden")
+                return;
+            const requested = revision.current;
+            polling.current = true;
+            try {
+                const result = await call("get_game_execution_profile", appId);
+                if (!disposed && requested === revision.current && result.ok)
+                    setProfile(result);
+            }
+            catch { /* Keep the last saved profile during a transient backend outage. */ }
+            finally {
+                polling.current = false;
+            }
+        };
+        void refresh();
+        const timer = window.setInterval(() => void refresh(), 7000);
+        const onVisible = () => void refresh();
+        document.addEventListener("visibilitychange", onVisible);
+        return () => { disposed = true; active.current = false; clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
+    }, [appId]);
+    async function choose(slot, value, current) {
+        if (!options.includes(value) || current[slot] === value || writing.current)
+            return;
+        writing.current = true;
+        revision.current++;
+        setSaving(true);
+        setFailed(false);
+        try {
+            const updated = { ...current, [slot]: value };
+            const response = await call("set_game_execution_profile", appId, updated.ac, updated.battery);
+            if (!active.current)
+                return;
+            if (response.ok)
+                setProfile(response);
+            else
+                setFailed(true);
+        }
+        catch {
+            if (active.current)
+                setFailed(true);
+        }
+        finally {
+            writing.current = false;
+            if (active.current)
+                setSaving(false);
+        }
+    }
+    if (!profile?.available)
+        return null;
+    const modes = options.map(data => ({ data, label: labels[data] }));
+    const feedback = failed ? control.saveError : profile.status === "Applied" ? appliedLabel
+        : profile.status === "ExternalControl" ? externalLabel
+            : ["Unavailable", "RestoreUnavailable"].includes(profile.status) ? control.unavailable : undefined;
+    return SP_JSX.jsxs("div", { className: "qsCardBody qsDropdownFullWidth", "aria-busy": saving, children: [SP_JSX.jsx(DFL.DropdownItem, { bottomSeparator: "none", label: title, description: profile.batteryAvailable ? device.ac : undefined, layout: "below", rgOptions: modes, selectedOption: profile.ac, disabled: saving, onChange: item => void choose("ac", item.data, profile) }), profile.batteryAvailable && SP_JSX.jsx(DFL.DropdownItem, { bottomSeparator: "none", label: device.battery, layout: "below", rgOptions: modes, selectedOption: profile.battery, disabled: saving, onChange: item => void choose("battery", item.data, profile) }), feedback && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: feedback })] });
+}
+
+const activeStages = new Set([
+    "Downloading", "Updating", "Preloading", "Preallocating", "Patching", "Unpacking", "Installing", "Verifying", "Validating", "Transferring",
+]);
+function nonnegative(value) {
+    return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+function activeLocalDownload(raw) {
+    if (raw === null || typeof raw !== "object")
+        return 0;
+    const entry = raw;
+    const appId = entry.update_appid;
+    if (typeof appId !== "number" || !Number.isInteger(appId) || appId <= 0 || appId > 0xffffffff ||
+        entry.remote_client_id !== "0" || entry.paused !== false || typeof entry.update_state !== "string" || !activeStages.has(entry.update_state) ||
+        entry.update_is_shader !== false || entry.update_is_workshop !== false || entry.update_is_upload !== false || entry.update_is_prefetch_estimate !== false)
+        return 0;
+    const network = entry.update_network_bytes_per_second;
+    const disk = entry.update_disc_bytes_per_second;
+    if (!nonnegative(network) || !nonnegative(disk) || (network === 0 && disk === 0))
+        return 0;
+    if (!Array.isArray(entry.progress) || !entry.progress.some(part => nonnegative(part?.bytes_in_progress) &&
+        nonnegative(part?.bytes_total) && part.bytes_total > part.bytes_in_progress))
+        return 0;
+    return appId;
+}
+function createSteamDownloadPower(read, send) {
+    let session;
+    let busy = false;
+    let renewing = false;
+    let failed = false;
+    let timer;
+    let generation = 0;
+    const listeners = new Set();
+    const notify = () => listeners.forEach(listener => listener());
+    async function stop() {
+        generation++;
+        const old = session;
+        session = undefined;
+        clearInterval(timer);
+        timer = undefined;
+        notify();
+        if (old) {
+            try {
+                await send({ action: "stop", ...old });
+            }
+            catch { /* Without renewal, the native lease expires. */ }
+        }
+    }
+    async function tick() {
+        const current = session;
+        if (!current)
+            return;
+        if (read() !== current.appId) {
+            await stop();
+            return;
+        }
+        if (renewing)
+            return;
+        renewing = true;
+        try {
+            const result = await send({ action: "renew", ...current });
+            if (session === current && result?.ok !== true)
+                await stop();
+        }
+        catch {
+            if (session === current)
+                await stop();
+        }
+        finally {
+            renewing = false;
+        }
+    }
+    return {
+        read() { return { available: read() > 0, active: !!session, busy, failed }; },
+        subscribe(listener) { listeners.add(listener); return () => { listeners.delete(listener); }; },
+        refresh() { notify(); if (session && read() !== session.appId)
+            void stop(); },
+        async start() {
+            const appId = read();
+            if (!appId || busy || session)
+                return;
+            const current = ++generation;
+            busy = true;
+            failed = false;
+            notify();
+            try {
+                const reply = await send({ action: "start", appId });
+                if (reply?.ok !== true || typeof reply.lease !== "string" || !/^[a-f0-9]{32}$/.test(reply.lease)) {
+                    failed = generation === current;
+                    return;
+                }
+                if (generation !== current || read() !== appId) {
+                    await send({ action: "stop", appId, lease: reply.lease });
+                    return;
+                }
+                session = { appId, lease: reply.lease };
+                timer = setInterval(() => void tick(), 2000);
+            }
+            catch {
+                failed = generation === current;
+            }
+            finally {
+                busy = false;
+                notify();
+            }
+        },
+        stop,
+        tick,
+    };
+}
+
+const copy$4 = {
+    en: ["Finish Steam download", "Stop keeping awake", "On AC power, Windows can turn off the display while Steam finishes the current download.", "PC stays awake for this download.", "Could not start download power mode."],
+    it: ["Completa il download Steam", "Termina modalità download", "Con l’alimentazione collegata, Windows può spegnere lo schermo mentre Steam completa il download.", "Il PC resta sveglio per questo download.", "Impossibile avviare la modalità download."],
+    de: ["Steam-Download abschließen", "Wachhalten beenden", "Am Netz kann Windows den Bildschirm ausschalten, während Steam den Download beendet.", "Der PC bleibt für diesen Download wach.", "Downloadmodus konnte nicht gestartet werden."],
+    es: ["Completar descarga de Steam", "Dejar de mantener activo", "Con el cargador conectado, Windows puede apagar la pantalla mientras Steam completa la descarga.", "El PC se mantiene activo durante la descarga.", "No se pudo iniciar el modo de descarga."],
+    fr: ["Terminer le téléchargement Steam", "Autoriser la veille", "Sur secteur, Windows peut éteindre l’écran pendant que Steam termine le téléchargement.", "Le PC reste éveillé pendant ce téléchargement.", "Impossible de démarrer le mode téléchargement."],
+    pt: ["Concluir transferência do Steam", "Permitir suspensão", "Ligado à corrente, o Windows pode desligar o ecrã enquanto o Steam termina a transferência.", "O PC fica ativo durante esta transferência.", "Não foi possível iniciar o modo de transferência."],
+    uk: ["Завершити завантаження Steam", "Дозволити перехід у сон", "Під час живлення від мережі Windows може вимкнути екран, поки Steam завершує завантаження.", "ПК не засинатиме під час цього завантаження.", "Не вдалося запустити режим завантаження."],
+    ru: ["Завершить загрузку Steam", "Разрешить переход в сон", "При питании от сети Windows может отключить экран, пока Steam завершает загрузку.", "ПК не будет переходить в сон во время загрузки.", "Не удалось запустить режим загрузки."],
+    ja: ["Steam のダウンロードを完了", "スリープを許可", "電源接続中は、Steam のダウンロード中に Windows が画面を消灯できます。", "このダウンロード中はスリープしません。", "ダウンロードモードを開始できませんでした。"],
+    ko: ["Steam 다운로드 완료하기", "절전 모드 허용", "전원에 연결되어 있으면 Steam 다운로드 중에 Windows가 화면을 끌 수 있습니다.", "이 다운로드가 끝날 때까지 PC가 깨어 있습니다.", "다운로드 모드를 시작할 수 없습니다."],
+    zh: ["完成 Steam 下載", "允許睡眠", "接上電源時，Steam 下載期間 Windows 可以關閉顯示器。", "這次下載完成前，電腦會保持喚醒。", "無法啟動下載模式。"],
+    hi: ["Steam डाउनलोड पूरा करें", "स्लीप की अनुमति दें", "बिजली से जुड़े होने पर Steam डाउनलोड के दौरान Windows स्क्रीन बंद कर सकता है।", "इस डाउनलोड के लिए पीसी चालू रहेगा।", "डाउनलोड मोड शुरू नहीं हो सका।"],
+};
+let unsubscribe;
+let latestApp = 0;
+let latestAt = -Infinity;
+const host$1 = () => window;
+function activeDownload() {
+    try {
+        const steam = host$1();
+        const router = _global_DFL.Router;
+        const main = (steam.SteamUIStore?.WindowStore ?? router?.WindowStore)?.GamepadUIMainWindowInstance;
+        const running = steamAppId(steam.SteamUIStore?.MainRunningAppID ?? router?.MainRunningAppID);
+        return !running && main?.IsGamepadUIOverlayWindow?.() === false && performance.now() - latestAt < 7000 ? latestApp : 0;
+    }
+    catch {
+        return 0;
+    }
+}
+const downloadPower = createSteamDownloadPower(activeDownload, request => call("set_steam_download_power", request));
+function observeSteamDownloads() {
+    if (unsubscribe)
+        return;
+    const downloads = host$1().SteamClient?.Downloads;
+    if (typeof downloads?.RegisterForDownloadOverview !== "function")
+        return;
+    try {
+        const connection = downloads.RegisterForDownloadOverview((entry) => {
+            if (entry?.remote_client_id !== "0")
+                return;
+            latestAt = performance.now();
+            latestApp = activeLocalDownload(entry);
+            downloadPower.refresh();
+        });
+        unsubscribe = () => connection?.unregister?.();
+    }
+    catch { /* Unsupported Steam client or browser. */ }
+}
+function stopSteamDownloadPower() {
+    unsubscribe?.();
+    unsubscribe = undefined;
+    latestAt = -Infinity;
+    latestApp = 0;
+    void downloadPower.stop();
+}
+function SteamDownloadPower({ locale }) {
+    const [state, setState] = SP_REACT.useState(downloadPower.read);
+    SP_REACT.useEffect(() => {
+        const update = () => setState(downloadPower.read());
+        const remove = downloadPower.subscribe(update);
+        observeSteamDownloads();
+        update();
+        const timer = window.setInterval(update, 2000);
+        return () => { remove(); window.clearInterval(timer); };
+    }, []);
+    if (!state.available && !state.active)
+        return null;
+    const [start, stop, detail, active, failed] = copy$4[locale.split(/[-_]/)[0]] ?? copy$4.en;
+    return SP_JSX.jsxs("div", { className: "qsCardBody", "aria-busy": state.busy, children: [SP_JSX.jsx(_global_DFL.DialogButton, { disabled: state.busy, onClick: () => void (state.active ? downloadPower.stop() : downloadPower.start()), children: SP_JSX.jsx("span", { style: { whiteSpace: "normal", overflowWrap: "anywhere" }, children: state.active ? stop : start }) }), SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: state.failed ? failed : state.active ? active : detail })] });
+}
+
+const labels$3 = {
+    en: "Game volume", it: "Volume del gioco", de: "Spiellautstärke", es: "Volumen del juego",
+    fr: "Volume du jeu", pt: "Volume do jogo", ru: "Громкость игры", uk: "Гучність гри",
+    ja: "ゲーム音量", ko: "게임 볼륨", zh: "遊戲音量", hi: "गेम की आवाज़",
+};
+function confirmedVolume(result) {
+    if (result?.status !== "Ready" || typeof result.level !== "number" || !Number.isInteger(result.level) ||
+        result.level < 0 || result.level > 100 || typeof result.token !== "string" || !/^[0-9a-f]{64}$/.test(result.token))
+        return;
+    return { level: result.level, token: result.token };
+}
+function GameAudioVolume({ appId, locale }) {
+    const [volume, setVolume] = SP_REACT.useState();
+    const [available, setAvailable] = SP_REACT.useState(false);
+    const [failed, setFailed] = SP_REACT.useState(false);
+    const confirmed = SP_REACT.useRef(undefined);
+    const writer = SP_REACT.useRef(undefined);
+    const revision = SP_REACT.useRef(0);
+    const pending = SP_REACT.useRef(false);
+    SP_REACT.useEffect(() => {
+        if (!appId)
+            return;
+        let alive = true;
+        let reading = false;
+        confirmed.current = undefined;
+        pending.current = false;
+        setVolume(undefined);
+        setAvailable(false);
+        setFailed(false);
+        const settled = (reply) => {
+            pending.current = false;
+            const saved = confirmedVolume(reply);
+            if (saved)
+                confirmed.current = saved;
+            setVolume(confirmed.current);
+            setAvailable(!!saved);
+            setFailed(!saved);
+        };
+        const currentWriter = createSettledWriter({
+            delayMs: 350,
+            write: ({ level, token }) => call("game_audio_volume", appId, level, token),
+            onSettled: settled,
+            onError: () => settled(),
+        });
+        writer.current = currentWriter;
+        const refresh = async () => {
+            if (!alive || reading || pending.current || document.visibilityState === "hidden")
+                return;
+            reading = true;
+            const startedAt = revision.current;
+            try {
+                const reply = await call("game_audio_volume", appId);
+                if (!alive || pending.current || revision.current !== startedAt)
+                    return;
+                const current = confirmedVolume(reply);
+                if (current) {
+                    confirmed.current = current;
+                    setVolume(current);
+                    setFailed(false);
+                }
+                setAvailable(!!current);
+            }
+            catch {
+                if (alive && revision.current === startedAt && !pending.current)
+                    setAvailable(false);
+            }
+            finally {
+                reading = false;
+            }
+        };
+        void refresh();
+        const timer = window.setInterval(refresh, 3000);
+        return () => {
+            alive = false;
+            currentWriter.dispose();
+            if (writer.current === currentWriter)
+                writer.current = undefined;
+            window.clearInterval(timer);
+        };
+    }, [appId]);
+    if (!volume)
+        return null;
+    const lang = locale.toLowerCase().split(/[-_]/)[0];
+    return SP_JSX.jsxs("div", { children: [SP_JSX.jsx(DFL.SliderField, { bottomSeparator: "none", label: labels$3[lang] ?? labels$3.en, description: new Intl.NumberFormat(labels$3[lang] ? lang : "en", { style: "percent" }).format(volume.level / 100), disabled: !available, min: 0, max: 100, step: 1, minimumDpadGranularity: 2, value: volume.level, onChange: value => {
+                    const level = Math.round(value);
+                    if (!available || !writer.current || !Number.isFinite(level) || level < 0 || level > 100 || level === volume.level)
+                        return;
+                    const next = { token: volume.token, level };
+                    revision.current++;
+                    pending.current = true;
+                    setFailed(false);
+                    setVolume(next);
+                    writer.current.enqueue(next);
+                } }), failed && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: controlLocale(locale).saveError })] });
+}
+
+const brightnessLabels = {
+    en: ["Built-in display brightness", "Software brightness"],
+    it: ["Luminosità dello schermo integrato", "Luminosità software"],
+    de: ["Helligkeit des integrierten Displays", "Software-Helligkeit"],
+    es: ["Brillo de la pantalla integrada", "Brillo por software"],
+    fr: ["Luminosité de l’écran intégré", "Luminosité logicielle"],
+    pt: ["Brilho da tela integrada", "Brilho por software"],
+    ru: ["Яркость встроенного экрана", "Программная яркость"],
+    uk: ["Яскравість вбудованого екрана", "Програмна яскравість"],
+    ja: ["内蔵ディスプレイの明るさ", "ソフトウェアでの明るさ"],
+    ko: ["내장 디스플레이 밝기", "소프트웨어 밝기"],
+    zh: ["内置屏幕亮度", "软件亮度"],
+    hi: ["अंतर्निहित स्क्रीन की चमक", "सॉफ़्टवेयर की चमक"],
+};
+const language$1 = (locale) => locale.toLowerCase().split(/[-_]/)[0];
+const labels$2 = (locale) => brightnessLabels[language$1(locale)] ?? brightnessLabels.en;
+const softwareBrightnessLabel = (locale) => labels$2(locale)[1];
+function PanelBrightness({ locale }) {
+    const [state, setState] = SP_REACT.useState();
+    const [failed, setFailed] = SP_REACT.useState(false);
+    const confirmed = SP_REACT.useRef(undefined);
+    const draft = SP_REACT.useRef(undefined);
+    const pending = SP_REACT.useRef(false);
+    const revision = SP_REACT.useRef(0);
+    const writer = SP_REACT.useRef(undefined);
+    SP_REACT.useEffect(() => {
+        let mounted = true;
+        let reading = false;
+        const restore = () => {
+            pending.current = false;
+            draft.current = confirmed.current?.level;
+            setState(confirmed.current);
+            setFailed(true);
+        };
+        const currentWriter = createSettledWriter({
+            delayMs: 400,
+            write: request => call("set_panel_brightness", request),
+            onSettled: result => {
+                pending.current = false;
+                if (result.available)
+                    confirmed.current = result;
+                else if (result.code === "panel_changed" || result.code === "unavailable")
+                    confirmed.current = undefined;
+                draft.current = confirmed.current?.level;
+                setState(confirmed.current);
+                setFailed(result.ok !== true);
+            },
+            onError: restore,
+        });
+        writer.current = currentWriter;
+        const refresh = async () => {
+            if (!mounted || reading || pending.current || document.visibilityState === "hidden")
+                return;
+            reading = true;
+            const readingRevision = revision.current;
+            try {
+                const result = await call("get_panel_brightness");
+                if (!mounted || pending.current || revision.current !== readingRevision)
+                    return;
+                confirmed.current = result.available ? result : undefined;
+                draft.current = confirmed.current?.level;
+                setState(confirmed.current);
+            }
+            catch { /* Keep the last confirmed hardware value on a transient RPC failure. */ }
+            finally {
+                reading = false;
+            }
+        };
+        void refresh();
+        const onVisible = () => void refresh();
+        window.addEventListener("focus", onVisible);
+        document.addEventListener("visibilitychange", onVisible);
+        return () => {
+            mounted = false;
+            pending.current = false;
+            currentWriter.dispose();
+            if (writer.current === currentWriter)
+                writer.current = undefined;
+            window.removeEventListener("focus", onVisible);
+            document.removeEventListener("visibilitychange", onVisible);
+        };
+    }, []);
+    if (!state)
+        return null;
+    const key = language$1(locale);
+    const formatted = new Intl.NumberFormat(brightnessLabels[key] ? key : "en", { style: "percent" }).format(state.level / 100);
+    return SP_JSX.jsxs("div", { children: [SP_JSX.jsx(DFL.SliderField, { bottomSeparator: "none", label: labels$2(locale)[0], description: formatted, min: 0, max: state.levels.length - 1, step: 1, value: state.levels.indexOf(state.level), minimumDpadGranularity: 1, onChange: index => {
+                    const level = state.levels[Math.round(index)];
+                    if (level === undefined || level === draft.current || !writer.current)
+                        return;
+                    draft.current = level;
+                    revision.current++;
+                    pending.current = true;
+                    setFailed(false);
+                    setState({ ...state, level });
+                    writer.current.enqueue({ token: state.token, level });
+                } }), failed && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: controlLocale(locale).saveError })] });
+}
+
+const rows$4 = {
+    en: ["Power", "Game", "Shaders", "Mixer", "Devices", "Measurement"],
+    it: ["Alimentazione", "Gioco", "Shader", "Mixer", "Dispositivi", "Misurazione"],
+    de: ["Energie", "Spiel", "Shader", "Mixer", "Geräte", "Messung"],
+    es: ["Energía", "Juego", "Shaders", "Mezclador", "Dispositivos", "Medición"],
+    fr: ["Alimentation", "Jeu", "Shaders", "Mixeur", "Périphériques", "Mesure"],
+    pt: ["Energia", "Jogo", "Shaders", "Mixer", "Dispositivos", "Medição"],
+    ru: ["Питание", "Игра", "Шейдеры", "Микшер", "Устройства", "Измерение"],
+    uk: ["Живлення", "Гра", "Шейдери", "Мікшер", "Пристрої", "Вимірювання"],
+    ja: ["電源", "ゲーム", "シェーダー", "ミキサー", "デバイス", "計測"],
+    ko: ["전원", "게임", "셰이더", "믹서", "장치", "측정"],
+    zh: ["电源", "游戏", "着色器", "混音器", "设备", "测量"],
+    hi: ["पावर", "गेम", "शेडर", "मिक्सर", "डिवाइस", "मापन"],
+};
+function quickSettingsGroups(locale) {
+    const aliases = { english: "en", italian: "it", german: "de", spanish: "es", latam: "es",
+        french: "fr", portuguese: "pt", brazilian: "pt", russian: "ru", ukrainian: "uk", japanese: "ja", koreana: "ko", schinese: "zh", tchinese: "zh", hindi: "hi" };
+    const key = aliases[locale] ?? locale.toLowerCase().split(/[-_]/)[0];
+    const row = rows$4[key] ?? rows$4.en;
+    return { power: row[0], game: row[1], shaders: row[2], mixer: row[3], devices: row[4], measurement: row[5] };
 }
 
 const REFRESH_INTERVAL = 15000;
@@ -2071,8 +5270,9 @@ function disposeDisplayConfirmation() {
     sharedDisplayModal.current = undefined;
     current?.modal?.Close?.();
 }
-function QuickSettingsContent({ page, collapsed, onToggle, locale }) {
+function QuickSettingsContent({ page, expanded = [], onToggle, locale, gameAppId = 0, gamingMode = false }) {
     const local = t$1(locale);
+    const groups = quickSettingsGroups(locale);
     const [loadFailed, setLoadFailed] = SP_REACT.useState(false);
     const [loadAttempt, setLoadAttempt] = SP_REACT.useState(0);
     const [volume, setVolume] = SP_REACT.useState(audioStartupSnapshot.quick?.volume
@@ -2608,28 +5808,6 @@ function QuickSettingsContent({ page, collapsed, onToggle, locale }) {
         setLossless((c) => (c ? { ...c, multiplier: n } : c));
         commitMultiplier(n);
     };
-    const onDrawFps = (enabled) => {
-        setLossless((current) => current ? {
-            ...current,
-            settings: current.settings
-                ? { ...current.settings, draw_fps: enabled }
-                : current.settings,
-        } : current);
-        void setLosslessSetting("draw_fps", enabled)
-            .then((result) => {
-            if (result?.settings) {
-                setLossless((current) => current ? {
-                    ...current,
-                    settings: result.settings,
-                    runtime: result.runtime ?? current.runtime,
-                } : current);
-            }
-            if (result?.ok === false && result?.message)
-                notify(result.message);
-        })
-            .catch(() => notify(local.notConnected))
-            .finally(() => window.setTimeout(() => void loadLossless(), 250));
-    };
     // ADLX writes are comparatively expensive. Keep the control fully optimistic,
     // coalesce repeated notches and allow at most one write plus the final value.
     const onAmdToggle = (feature, enabled) => {
@@ -2672,18 +5850,16 @@ function QuickSettingsContent({ page, collapsed, onToggle, locale }) {
         { data: "LSFG2", label: "LSFG 2.3" },
         { data: "LSFG1", label: "LSFG 1.1" },
     ];
-    const section = (icon, title, children) => {
+    const section = (icon, title, children, location) => {
         const sections = {
             [local.audio]: ["performance", "audio"], [local.display]: ["audio", "display"],
             [local.lossless]: ["graphics", "lossless"], [local.amd]: ["graphics", "radeon"],
             [local.advanced]: ["tools", "agent"],
         };
-        const [tab, id] = sections[title];
+        const [tab, id] = location ?? sections[title];
         if (tab !== page)
             return null;
-        if (tab === "audio" || tab === "performance")
-            return SP_JSX.jsx("div", { className: "qsCardBody", children: children }, id);
-        return SP_JSX.jsx(ControlSection, { id: id, title: title, icon: icon, locale: locale, collapsed: collapsed.includes(id), onToggle: onToggle, children: SP_JSX.jsx("div", { className: "qsCardBody", children: children }) }, id);
+        return SP_JSX.jsx(ControlSection, { id: id, title: title, icon: icon, locale: locale, collapsed: !expanded.includes(id), onToggle: onToggle, children: SP_JSX.jsx("div", { className: "qsCardBody", children: children }) }, id);
     };
     return (SP_JSX.jsx("div", { children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "column", className: "qsRedesign", children: [SP_JSX.jsx("style", { children: `
           .qsRedesign,.qsRedesign *{box-sizing:border-box;min-width:0;letter-spacing:0}
@@ -2700,8 +5876,7 @@ function QuickSettingsContent({ page, collapsed, onToggle, locale }) {
           .qsButtonInner svg{width:17px;height:17px;flex:none}
           .qsMeta{font-size:12px;line-height:1.45;opacity:.7;overflow-wrap:anywhere}
           .qsStatus{font-size:13px;line-height:1.4;padding:4px 0}
-        ` }), !caps && SP_JSX.jsxs("div", { className: "qsMeta", children: [loadFailed ? local.notConnected : controlLocale(locale).loading, loadFailed && SP_JSX.jsx(DFL.DialogButton, { onClick: () => { setLoadFailed(false); setLoadAttempt(value => value + 1); }, children: controlLocale(locale).retry })] }), caps && (page === "graphics" && !caps.lossless && !caps.amd_radeon) &&
-                    SP_JSX.jsx("div", { className: "qsMeta", children: controlStatus(locale)[2] }), section(SP_JSX.jsx(FaVolumeUp, {}), local.audio, SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(QuickSlider, { label: local.volume, value: volume.level, min: 0, max: 100, suffix: "%", disabled: !volume.available, onChange: onVolume }), SP_JSX.jsx(QuickSlider, { label: local.microphoneVolume, value: clampPercent(audio.input_volume), min: 0, max: 100, suffix: "%", disabled: !audio.ok, onChange: onMicVolume }), SP_JSX.jsx(QuickDropdown, { fullWidth: true, label: local.audioOutput, options: outputOptions, value: audio.default_output_id || "", disabled: !audio.ok || audio.outputs.length === 0, onChange: onOutput }), SP_JSX.jsx(QuickDropdown, { fullWidth: true, label: local.microphoneInput, options: inputOptions, value: audio.default_input_id || "", disabled: !audio.ok || audio.inputs.length === 0, onChange: onInput })] })), section(SP_JSX.jsx(FaDesktop, {}), local.display, SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(QuickSlider, { label: local.brightness, value: dimmerToBrightness(dimmer.level), min: 0, max: 100, suffix: "%", onChange: onBrightness }), caps?.display && resolutionOptions.length > 0 && SP_JSX.jsx(QuickDropdown, { fullWidth: true, label: local.resolution, options: resolutionOptions, value: currentResolution, onChange: onResolution }, `res-${currentResolution}`), caps?.display && refreshOptions.length > 0 && SP_JSX.jsx(QuickDropdown, { fullWidth: true, label: local.refreshRate, options: refreshOptions, value: currentRefresh, onChange: onRefresh }, `hz-${currentRefresh}`), SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.hdr, checked: Boolean(hdr.enabled), onChange: onHdr })] })), caps?.lossless && section(SP_JSX.jsx(FaPlay, {}), local.lossless, SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.losslessScaling, disabled: !lossless?.installed || !lossless?.can_scale, checked: Boolean(lossless?.scaling_active), onChange: onScalingToggle }), SP_JSX.jsx(QuickDropdown, { label: local.losslessFrameGen, options: frameGenOptions, value: lossless?.frame_gen ?? "Off", onChange: onFrameGen }, `fg-${lossless?.frame_gen ?? "Off"}`), SP_JSX.jsx(QuickSlider, { label: local.losslessMultiplier, value: Math.max(2, Math.min(4, lossless?.multiplier ?? 2)), min: 2, max: 4, suffix: "x", onChange: onMultiplier }), SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.drawFps, description: local.drawFpsDesc, checked: Boolean(lossless?.settings?.draw_fps), onChange: onDrawFps }), SP_JSX.jsx("div", { className: "qsMeta", children: lossless?.can_scale ? local.losslessManagedHint : local.losslessGameOnlyHint })] })), caps?.amd_radeon && amd?.available && section(SP_JSX.jsx(FaMicrochip, {}), local.amd, SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "qsMeta", children: local.amdGlobalHint }), amd.rsr?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdRsr, description: local.amdRsrHint, checked: Boolean(amd.rsr.enabled), onChange: (v) => onAmdToggle("rsr", v) }), amd.rsr?.supported && amd.rsr.enabled && SP_JSX.jsx(QuickSlider, { label: local.amdRsrSharpness, value: amd.rsr.sharpness ?? 0, min: amd.rsr.smin ?? 0, max: amd.rsr.smax ?? 100, onChange: (v) => queueAmdWrite("rsr_sharpness", v, AMD_SLIDER_SETTLE) }), amd.afmf?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdAfmf, description: local.amdAfmfHint, checked: Boolean(amd.afmf.enabled), onChange: (v) => onAmdToggle("afmf", v) }), amd.antilag?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdAntilag, description: local.amdAntilagHint, checked: Boolean(amd.antilag.enabled), onChange: (v) => onAmdToggle("antilag", v) }), amd.boost?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdBoost, description: local.amdBoostHint, checked: Boolean(amd.boost.enabled), onChange: (v) => onAmdToggle("boost", v) }), amd.boost?.supported && amd.boost.enabled && SP_JSX.jsx(QuickSlider, { label: local.amdBoostResolution, value: amd.boost.resolution ?? 50, min: amd.boost.rmin ?? 50, max: amd.boost.rmax ?? 100, suffix: "%", onChange: (v) => queueAmdWrite("boost_resolution", v, AMD_SLIDER_SETTLE) }), amd.enhanced_sync?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdEnhancedSync, description: local.amdEnhancedSyncHint, checked: Boolean(amd.enhanced_sync.enabled), onChange: (v) => onAmdToggle("enhanced_sync", v) }), amd.chill?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdChill, description: local.amdChillHint, checked: Boolean(amd.chill.enabled), onChange: (v) => onAmdToggle("chill", v) }), amd.chill?.supported && amd.chill.enabled && SP_JSX.jsx(QuickSlider, { label: local.amdChillMin, value: amd.chill.min ?? 0, min: amd.chill.fmin ?? 0, max: amd.chill.fmax ?? 240, onChange: (v) => queueAmdWrite("chill_min", v, AMD_SLIDER_SETTLE) }), amd.chill?.supported && amd.chill.enabled && SP_JSX.jsx(QuickSlider, { label: local.amdChillMax, value: amd.chill.max ?? 0, min: amd.chill.fmin ?? 0, max: amd.chill.fmax ?? 240, onChange: (v) => queueAmdWrite("chill_max", v, AMD_SLIDER_SETTLE) }), amd.sharpening?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdSharpening, description: local.amdSharpeningHint, checked: Boolean(amd.sharpening.enabled), onChange: (v) => onAmdToggle("sharpening", v) }), amd.sharpening?.supported && amd.sharpening.enabled && SP_JSX.jsx(QuickSlider, { label: local.amdSharpeningValue, value: amd.sharpening.value ?? 0, min: amd.sharpening.smin ?? 0, max: amd.sharpening.smax ?? 100, step: amd.sharpening.step ?? 10, onChange: (v) => queueAmdWrite("sharpening_value", v, AMD_SLIDER_SETTLE) }), amd.display_color?.available && SP_JSX.jsx("div", { className: "qsMeta", children: local.amdDisplayColor }), amd.display_color?.brightness?.supported && SP_JSX.jsx(QuickSlider, { label: local.amdDisplayBrightness, value: amd.display_color.brightness.value ?? 0, min: amd.display_color.brightness.min ?? -100, max: amd.display_color.brightness.max ?? 100, onChange: (v) => queueAmdWrite("display_brightness", v, AMD_SLIDER_SETTLE) }), amd.display_color?.contrast?.supported && SP_JSX.jsx(QuickSlider, { label: local.amdDisplayContrast, value: amd.display_color.contrast.value ?? 100, min: amd.display_color.contrast.min ?? 0, max: amd.display_color.contrast.max ?? 200, onChange: (v) => queueAmdWrite("display_contrast", v, AMD_SLIDER_SETTLE) }), amd.display_color?.saturation?.supported && SP_JSX.jsx(QuickSlider, { label: local.amdDisplaySaturation, value: amd.display_color.saturation.value ?? 100, min: amd.display_color.saturation.min ?? 0, max: amd.display_color.saturation.max ?? 200, onChange: (v) => queueAmdWrite("display_saturation", v, AMD_SLIDER_SETTLE) }), amd.display_color?.temperature?.supported && SP_JSX.jsx(QuickSlider, { label: local.amdDisplayTemperature, value: amd.display_color.temperature.value ?? 6500, min: amd.display_color.temperature.min ?? 4000, max: amd.display_color.temperature.max ?? 10000, step: 100, suffix: " K", onChange: (v) => queueAmdWrite("display_temperature", v, AMD_SLIDER_SETTLE) })] })), section(SP_JSX.jsx(FaTools, {}), local.advanced, SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "qsStatus", children: `${local.agentLabel}: ${agentRunning ? local.agentRunning : local.agentStopped}` }), SP_JSX.jsx(DFL.DialogButton, { disabled: agentRunning, onClick: onStartAgent, children: SP_JSX.jsxs("span", { className: "qsButtonInner", children: [SP_JSX.jsx(FaPlay, {}), SP_JSX.jsx("span", { children: local.startAgent })] }) }), SP_JSX.jsx(DFL.DialogButton, { disabled: !agentRunning, onClick: onStopAgent, children: SP_JSX.jsxs("span", { className: "qsButtonInner", children: [SP_JSX.jsx(FaTools, {}), SP_JSX.jsx("span", { children: local.stopAgent })] }) }), SP_JSX.jsx("div", { className: "qsMeta", children: local.agentHint }), SP_JSX.jsx(DFL.DialogButton, { disabled: diagnosticsBusy, onClick: onDiagnostics, children: SP_JSX.jsxs("span", { className: "qsButtonInner", children: [SP_JSX.jsx(FaFileAlt, {}), SP_JSX.jsx("span", { children: local.generateDiagnostics })] }) })] }))] }) }));
+        ` }), !caps && SP_JSX.jsxs("div", { className: "qsMeta", children: [loadFailed ? local.notConnected : controlLocale(locale).loading, loadFailed && SP_JSX.jsx(DFL.DialogButton, { onClick: () => { setLoadFailed(false); setLoadAttempt(value => value + 1); }, children: controlLocale(locale).retry })] }), section(SP_JSX.jsx(FaBolt, {}), groups.power, SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(HandheldPowerLimits, { locale: locale }), SP_JSX.jsx(LenovoPowerLimits, { locale: locale }), SP_JSX.jsx(PowerProfile, { locale: locale }), SP_JSX.jsx(HandheldPowerMode, { locale: locale }), SP_JSX.jsx(MsiPowerControls, { locale: locale }), SP_JSX.jsx(AsusFanStatus, { locale: locale }), SP_JSX.jsx(OneXFanControls, { locale: locale }), SP_JSX.jsx(AsusPerformanceActions, { locale: locale }), SP_JSX.jsx(ProcessorBoost, { locale: locale })] }), ["graphics", "power"]), gamingMode && gameAppId !== 0 && section(SP_JSX.jsx(FaPlay, {}), groups.game, SP_JSX.jsx(SP_JSX.Fragment, { children: SP_JSX.jsx(GameExecutionProfile, { appId: gameAppId, locale: locale }, gameAppId) }), ["graphics", "game"]), section(SP_JSX.jsx(FaMicrochip, {}), groups.shaders, SP_JSX.jsx(SP_JSX.Fragment, { children: SP_JSX.jsx(ShaderCompatibility, { appId: gameAppId, locale: locale }, gameAppId) }), ["graphics", "shaders"]), section(SP_JSX.jsx(FaVolumeUp, {}), groups.mixer, SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(QuickSlider, { label: local.volume, value: volume.level, min: 0, max: 100, suffix: "%", disabled: !volume.available, onChange: onVolume }), gameAppId !== 0 && SP_JSX.jsx(GameAudioVolume, { appId: gameAppId, locale: locale }, gameAppId), SP_JSX.jsx(QuickSlider, { label: local.microphoneVolume, value: clampPercent(audio.input_volume), min: 0, max: 100, suffix: "%", disabled: !audio.ok, onChange: onMicVolume })] }), ["performance", "mixer"]), section(SP_JSX.jsx(FaVolumeUp, {}), groups.devices, SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(QuickDropdown, { fullWidth: true, label: local.audioOutput, options: outputOptions, value: audio.default_output_id || "", disabled: !audio.ok || audio.outputs.length === 0, onChange: onOutput }), SP_JSX.jsx(QuickDropdown, { fullWidth: true, label: local.microphoneInput, options: inputOptions, value: audio.default_input_id || "", disabled: !audio.ok || audio.inputs.length === 0, onChange: onInput })] }), ["performance", "devices"]), section(SP_JSX.jsx(FaDesktop, {}), local.display, SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(PanelBrightness, { locale: locale }), SP_JSX.jsx(QuickSlider, { label: softwareBrightnessLabel(locale), value: dimmerToBrightness(dimmer.level), min: 0, max: 100, suffix: "%", onChange: onBrightness }), caps?.display && resolutionOptions.length > 0 && SP_JSX.jsx(QuickDropdown, { fullWidth: true, label: local.resolution, options: resolutionOptions, value: currentResolution, onChange: onResolution }, `res-${currentResolution}`), caps?.display && refreshOptions.length > 0 && SP_JSX.jsx(QuickDropdown, { fullWidth: true, label: local.refreshRate, options: refreshOptions, value: currentRefresh, onChange: onRefresh }, `hz-${currentRefresh}`), SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.hdr, checked: Boolean(hdr.enabled), onChange: onHdr }), SP_JSX.jsx(PerformanceSettings, { locale: locale, appId: gameAppId }), gamingMode && gameAppId === 0 && SP_JSX.jsx(SteamDownloadPower, { locale: locale })] })), caps?.amd_radeon && amd?.available && section(SP_JSX.jsx(FaMicrochip, {}), local.amd, SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "qsMeta", children: local.amdGlobalHint }), amd.rsr?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdRsr, description: local.amdRsrHint, checked: Boolean(amd.rsr.enabled), onChange: (v) => onAmdToggle("rsr", v) }), amd.rsr?.supported && amd.rsr.enabled && SP_JSX.jsx(QuickSlider, { label: local.amdRsrSharpness, value: amd.rsr.sharpness ?? 0, min: amd.rsr.smin ?? 0, max: amd.rsr.smax ?? 100, onChange: (v) => queueAmdWrite("rsr_sharpness", v, AMD_SLIDER_SETTLE) }), amd.afmf?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdAfmf, description: local.amdAfmfHint, checked: Boolean(amd.afmf.enabled), onChange: (v) => onAmdToggle("afmf", v) }), amd.antilag?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdAntilag, description: local.amdAntilagHint, checked: Boolean(amd.antilag.enabled), onChange: (v) => onAmdToggle("antilag", v) }), amd.boost?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdBoost, description: local.amdBoostHint, checked: Boolean(amd.boost.enabled), onChange: (v) => onAmdToggle("boost", v) }), amd.boost?.supported && amd.boost.enabled && SP_JSX.jsx(QuickSlider, { label: local.amdBoostResolution, value: amd.boost.resolution ?? 50, min: amd.boost.rmin ?? 50, max: amd.boost.rmax ?? 100, suffix: "%", onChange: (v) => queueAmdWrite("boost_resolution", v, AMD_SLIDER_SETTLE) }), amd.enhanced_sync?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdEnhancedSync, description: local.amdEnhancedSyncHint, checked: Boolean(amd.enhanced_sync.enabled), onChange: (v) => onAmdToggle("enhanced_sync", v) }), amd.chill?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdChill, description: local.amdChillHint, checked: Boolean(amd.chill.enabled), onChange: (v) => onAmdToggle("chill", v) }), amd.chill?.supported && amd.chill.enabled && SP_JSX.jsx(QuickSlider, { label: local.amdChillMin, value: amd.chill.min ?? 0, min: amd.chill.fmin ?? 0, max: amd.chill.fmax ?? 240, onChange: (v) => queueAmdWrite("chill_min", v, AMD_SLIDER_SETTLE) }), amd.chill?.supported && amd.chill.enabled && SP_JSX.jsx(QuickSlider, { label: local.amdChillMax, value: amd.chill.max ?? 0, min: amd.chill.fmin ?? 0, max: amd.chill.fmax ?? 240, onChange: (v) => queueAmdWrite("chill_max", v, AMD_SLIDER_SETTLE) }), amd.sharpening?.supported && SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.amdSharpening, description: local.amdSharpeningHint, checked: Boolean(amd.sharpening.enabled), onChange: (v) => onAmdToggle("sharpening", v) }), amd.sharpening?.supported && amd.sharpening.enabled && SP_JSX.jsx(QuickSlider, { label: local.amdSharpeningValue, value: amd.sharpening.value ?? 0, min: amd.sharpening.smin ?? 0, max: amd.sharpening.smax ?? 100, step: amd.sharpening.step ?? 10, onChange: (v) => queueAmdWrite("sharpening_value", v, AMD_SLIDER_SETTLE) }), amd.display_color?.available && SP_JSX.jsx("div", { className: "qsMeta", children: local.amdDisplayColor }), amd.display_color?.brightness?.supported && SP_JSX.jsx(QuickSlider, { label: local.amdDisplayBrightness, value: amd.display_color.brightness.value ?? 0, min: amd.display_color.brightness.min ?? -100, max: amd.display_color.brightness.max ?? 100, onChange: (v) => queueAmdWrite("display_brightness", v, AMD_SLIDER_SETTLE) }), amd.display_color?.contrast?.supported && SP_JSX.jsx(QuickSlider, { label: local.amdDisplayContrast, value: amd.display_color.contrast.value ?? 100, min: amd.display_color.contrast.min ?? 0, max: amd.display_color.contrast.max ?? 200, onChange: (v) => queueAmdWrite("display_contrast", v, AMD_SLIDER_SETTLE) }), amd.display_color?.saturation?.supported && SP_JSX.jsx(QuickSlider, { label: local.amdDisplaySaturation, value: amd.display_color.saturation.value ?? 100, min: amd.display_color.saturation.min ?? 0, max: amd.display_color.saturation.max ?? 200, onChange: (v) => queueAmdWrite("display_saturation", v, AMD_SLIDER_SETTLE) }), amd.display_color?.temperature?.supported && SP_JSX.jsx(QuickSlider, { label: local.amdDisplayTemperature, value: amd.display_color.temperature.value ?? 6500, min: amd.display_color.temperature.min ?? 4000, max: amd.display_color.temperature.max ?? 10000, step: 100, suffix: " K", onChange: (v) => queueAmdWrite("display_temperature", v, AMD_SLIDER_SETTLE) })] })), caps?.lossless && section(SP_JSX.jsx(FaPlay, {}), local.lossless, SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "none", label: local.losslessScaling, disabled: !lossless?.installed || !lossless?.can_scale, checked: Boolean(lossless?.scaling_active), onChange: onScalingToggle }), SP_JSX.jsx(QuickDropdown, { label: local.losslessFrameGen, options: frameGenOptions, value: lossless?.frame_gen ?? "Off", onChange: onFrameGen }, `fg-${lossless?.frame_gen ?? "Off"}`), SP_JSX.jsx(QuickSlider, { label: local.losslessMultiplier, value: Math.max(2, Math.min(4, lossless?.multiplier ?? 2)), min: 2, max: 4, suffix: "x", onChange: onMultiplier }), SP_JSX.jsx("div", { className: "qsMeta", children: lossless?.can_scale ? local.losslessManagedHint : local.losslessGameOnlyHint })] })), section(SP_JSX.jsx(FaTools, {}), local.advanced, SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "qsStatus", children: `${local.agentLabel}: ${agentRunning ? local.agentRunning : local.agentStopped}` }), SP_JSX.jsx(DFL.DialogButton, { disabled: agentRunning, onClick: onStartAgent, children: SP_JSX.jsxs("span", { className: "qsButtonInner", children: [SP_JSX.jsx(FaPlay, {}), SP_JSX.jsx("span", { children: local.startAgent })] }) }), SP_JSX.jsx(DFL.DialogButton, { disabled: !agentRunning, onClick: onStopAgent, children: SP_JSX.jsxs("span", { className: "qsButtonInner", children: [SP_JSX.jsx(FaTools, {}), SP_JSX.jsx("span", { children: local.stopAgent })] }) }), SP_JSX.jsx("div", { className: "qsMeta", children: local.agentHint }), SP_JSX.jsx(DFL.DialogButton, { disabled: diagnosticsBusy, onClick: onDiagnostics, children: SP_JSX.jsxs("span", { className: "qsButtonInner", children: [SP_JSX.jsx(FaFileAlt, {}), SP_JSX.jsx("span", { children: local.generateDiagnostics })] }) })] }))] }) }));
 }
 function installQuickSettings() {
     void (async () => {
@@ -2732,6 +5907,7 @@ function installQuickSettings() {
         /* ignore */
     }
     return () => {
+        stopSteamDownloadPower();
         cleanupGameIntegration?.();
         try {
             registration?.unregister?.();
@@ -13765,32 +16941,33 @@ function openHistoryImage(url, subject, locale, ownerWindow = window) {
 }
 
 /** Explicit editorial assignments take precedence over positional fallbacks. */
-function orderHistoryImages(all, chapter, index, chapters, intro) {
+function orderHistoryImages(all, chapter, index, chapters, intro, digest) {
     if (chapters) {
+        const key = (image) => digest?.(image) || image.file;
         const used = new Set();
         const bindings = [intro, ...chapters];
+        const candidates = (at, assigned) => {
+            const binding = bindings[at];
+            const reserved = new Set(bindings.slice(at + 1).map(value => value?.image_file).filter(Boolean));
+            const reservedContent = binding?.image_file ? undefined : new Set(all.filter(image => reserved.has(image.file)).map(key));
+            return orderHistoryImages(all.filter(image => !assigned.has(key(image)) && !reserved.has(image.file) && !reservedContent?.has(key(image))), binding, 0);
+        };
         for (let current = 0; current < bindings.length; current++) {
-            const binding = bindings[current];
-            // Reserve explicit later bindings so the opening card cannot steal them.
-            const reserved = new Set(bindings.slice(current + 1).map(value => value?.image_file).filter(Boolean));
-            const available = all.filter(image => !used.has(image.file) && !reserved.has(image.file));
-            const ordered = orderHistoryImages(available, binding, 0);
+            const ordered = candidates(current, used);
             const selected = ordered[0];
             if (current === index) {
-                // Fallbacks may use spare images only, never another card's selected image.
                 const laterUsed = new Set(used);
                 if (selected)
-                    laterUsed.add(selected.file);
+                    laterUsed.add(key(selected));
                 for (let later = current + 1; later < bindings.length; later++) {
-                    const laterReserved = new Set(bindings.slice(later + 1).map(value => value?.image_file).filter(Boolean));
-                    const next = orderHistoryImages(all.filter(image => !laterUsed.has(image.file) && !laterReserved.has(image.file)), bindings[later], 0)[0];
+                    const next = candidates(later, laterUsed)[0];
                     if (next)
-                        laterUsed.add(next.file);
+                        laterUsed.add(key(next));
                 }
-                return ordered.filter(image => image === selected || !laterUsed.has(image.file));
+                return ordered.filter(image => image === selected || !laterUsed.has(key(image)));
             }
             if (selected)
-                used.add(selected.file);
+                used.add(key(selected));
         }
         return [];
     }
@@ -13816,7 +16993,8 @@ function historyHeadingCover(all, kind, coverFile) {
     return coverFile ? all.find(image => image.file === coverFile) : all.find(image => image.kind === 'cover');
 }
 
-const { Focusable: Focusable$5, DialogButton: DialogButton$4, Navigation: Navigation$4 } = _global_DFL;
+const historyDigest = (image) => historyPhotoIntegrity[image.url]?.sha256;
+const { Focusable: Focusable$7, DialogButton: DialogButton$6, Navigation: Navigation$4 } = _global_DFL;
 const labels$1 = {
     it: ['Accade oggi', 'La storia dei videogiochi, un giorno alla volta', 'In questo giorno', '', 'Dietro la storia', 'Continua su Wikipedia', 'Immagine: crediti e licenza', 'Prepariamo la storia di oggi…', 'Storia non disponibile. Riprova', 'Ultima storia disponibile', 'Fonte: Wikipedia · testo CC BY-SA 4.0'],
     en: ['On this day', 'Video game history, one day at a time', 'On this day', 'Today’s discovery', 'Behind the story', 'Read on Wikipedia', 'Image: credits and license', 'Finding today’s story…', 'Story unavailable. Retry', 'Last available story', 'Source: Wikipedia · text CC BY-SA 4.0'],
@@ -13831,8 +17009,8 @@ const labels$1 = {
     zh: ['歷史上的今天', '每天探索一段電子遊戲歷史', '歷史上的今天', '今日發現', '故事背後', '在維基百科閱讀', '圖片來源與授權', '正在尋找今天的故事…', '重試', '最近的故事', '來源：維基百科 · CC BY-SA 4.0'],
     hi: ['आज के दिन', 'वीडियो गेम का इतिहास, हर दिन एक कहानी', 'आज के दिन', 'आज की खोज', 'कहानी के पीछे', 'विकिपीडिया पर पढ़ें', 'चित्र: श्रेय और लाइसेंस', 'आज की कहानी खोज रहे हैं…', 'फिर कोशिश करें', 'पिछली उपलब्ध कहानी', 'स्रोत: विकिपीडिया · CC BY-SA 4.0'],
 };
-const words$1 = (locale) => labels$1[locale.split(/[-_]/)[0]] ?? labels$1.en;
-const historyTitle = (locale) => words$1(locale)[0];
+const words$3 = (locale) => labels$1[locale.split(/[-_]/)[0]] ?? labels$1.en;
+const historyTitle = (locale) => words$3(locale)[0];
 const birth = { it: 'In questo giorno nasce', en: 'Born on this day', de: 'An diesem Tag geboren', es: 'Tal día como hoy nace', fr: 'Naissance ce jour-là', pt: 'Neste dia nasce', ru: 'В этот день родились', uk: 'Цього дня народилися', ja: 'この日に誕生', ko: '이날 태어난 인물', zh: '在這一天誕生', hi: 'इस दिन जन्म हुआ' };
 const foundation = { it: 'In questo giorno viene fondata', en: 'Founded on this day', de: 'An diesem Tag gegründet', es: 'Tal día como hoy se funda', fr: 'Fondation ce jour-là', pt: 'Neste dia é fundada', ru: 'В этот день основана', uk: 'Цього дня заснована', ja: 'この日に設立', ko: '이날 설립', zh: '在這一天成立', hi: 'इस दिन स्थापना हुई' };
 const release$1 = { it: 'In questo giorno esce', en: 'Released on this day', de: 'An diesem Tag erschienen', es: 'Tal día como hoy se publica', fr: 'Sortie ce jour-là', pt: 'Neste dia é lançado', ru: 'В этот день вышла', uk: 'Цього дня вийшла', ja: 'この日に発売', ko: '이날 출시', zh: '在這一天推出', hi: 'इस दिन जारी हुआ' };
@@ -13842,7 +17020,7 @@ const release$1 = { it: 'In questo giorno esce', en: 'Released on this day', de:
 const feature = { it: '', en: '', de: '', es: '', fr: '', pt: '', ru: '', uk: '', ja: '', ko: '', zh: '', hi: '' };
 const commemoration = { it: 'In occasione di', en: 'On the occasion of', de: 'Anlässlich', es: 'Con motivo de', fr: "À l’occasion de", pt: 'Por ocasião de', ru: 'По случаю', uk: 'З нагоди', ja: 'この日に寄せて', ko: '이 날을 기념하며', zh: '值此之际', hi: 'इस अवसर पर' };
 const previewWords = { it: ['Giorno precedente', 'Giorno successivo'], en: ['Previous day', 'Next day'], de: ['Vorheriger Tag', 'Nächster Tag'], es: ['Día anterior', 'Día siguiente'], fr: ['Jour précédent', 'Jour suivant'], pt: ['Dia anterior', 'Dia seguinte'], ru: ['Предыдущий день', 'Следующий день'], uk: ['Попередній день', 'Наступний день'], ja: ['前の日', '次の日'], ko: ['이전 날', '다음 날'], zh: ['前一天', '後一天'], hi: ['पिछला दिन', 'अगला दिन'] };
-const css$3 = `
+const css$4 = `
 .ph-history{color:#f0edd8;padding:0 0 26px;max-width:1480px;margin:auto;font-family:inherit}
  .ph-history-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;padding:20px 28px;min-height:84px;margin:16px 5px 24px;background:rgba(12,15,19,.76);border:1px solid rgba(240,237,216,.12);border-radius:5px;box-sizing:border-box}
  .ph-history-day-card{cursor:pointer;outline:2px solid transparent;outline-offset:3px;transition:background .2s,outline-color .2s}.ph-history-day-card:hover,.ph-history-day-card.gpfocus,.ph-history-day-card:focus{background:rgba(28,31,37,.86);outline-color:#f0c75a}
@@ -13912,7 +17090,7 @@ function Block({ story, chapter, index, locale }) {
     const mediaThemeId = story.editorial.media_id ?? story.editorial.id;
     const all = historyImages[mediaThemeId] ?? [];
     const [failed, setFailed] = _global_SP_REACT.useState([]);
-    const ordered = orderHistoryImages(all, chapter, index, story.editorial.chapters, { image_file: story.editorial.intro_image_file, image_role: story.editorial.intro_image_role });
+    const ordered = orderHistoryImages(all, chapter, index, story.editorial.chapters, { image_file: story.editorial.intro_image_file, image_role: story.editorial.intro_image_role }, historyDigest);
     const media = ordered.find(image => !failed.includes(image.url));
     const photo = useHistoryPhoto(media?.url);
     const lang = locale.split(/[-_]/)[0];
@@ -13925,7 +17103,7 @@ function Block({ story, chapter, index, locale }) {
     const open = () => { const now = Date.now(); if (now - lastActivation.current < 350)
         return; lastActivation.current = now; if (!media)
         return; openHistoryImage(media.url, media.subject, locale, cardRef.current?.ownerDocument.defaultView ?? window); };
-    return SP_JSX.jsxs(Focusable$5, { ref: cardRef, className: `ph-history-card ${index % 2 ? 'reverse' : ''} ${photo ? '' : 'no-image'}`, role: photo ? 'button' : 'article', "aria-label": title, focusable: true, onOKActionDescription: photo ? historyActionCopy(locale)[3] : undefined, onActivate: photo ? open : undefined, onClick: photo ? open : undefined, children: [SP_JSX.jsxs("div", { className: "ph-history-copy", children: [SP_JSX.jsx("div", { className: "ph-history-eyebrow", children: chapter ? SP_JSX.jsx("span", { className: "ph-history-subject", children: chapter.subject || story.article.title }) : story.relationship ?? (occasion ? `${occasion} · ${story.article.title}` : story.article.title) }), renderTitle(), SP_JSX.jsx("p", { children: chapter?.body ?? story.editorial.intro }), !chapter && story.year && SP_JSX.jsx("div", { className: "ph-history-year", children: story.year })] }), media && photo && SP_JSX.jsxs("div", { className: "ph-history-image", children: [SP_JSX.jsx("img", { className: "ph-history-image-bg", src: photo, alt: "", "aria-hidden": true, role: "presentation" }), SP_JSX.jsx("img", { className: "ph-history-image-fg", src: photo, alt: media.subject, onError: () => setFailed(previous => [...previous, media.url]) })] })] });
+    return SP_JSX.jsxs(Focusable$7, { ref: cardRef, className: `ph-history-card ${index % 2 ? 'reverse' : ''} ${photo ? '' : 'no-image'}`, role: photo ? 'button' : 'article', "aria-label": title, focusable: true, onOKActionDescription: photo ? historyActionCopy(locale)[3] : undefined, onActivate: photo ? open : undefined, onClick: photo ? open : undefined, children: [SP_JSX.jsxs("div", { className: "ph-history-copy", children: [SP_JSX.jsx("div", { className: "ph-history-eyebrow", children: chapter ? SP_JSX.jsx("span", { className: "ph-history-subject", children: chapter.subject || story.article.title }) : story.relationship ?? (occasion ? `${occasion} · ${story.article.title}` : story.article.title) }), renderTitle(), SP_JSX.jsx("p", { children: chapter?.body ?? story.editorial.intro }), !chapter && story.year && SP_JSX.jsx("div", { className: "ph-history-year", children: story.year })] }), media && photo && SP_JSX.jsxs("div", { className: "ph-history-image", children: [SP_JSX.jsx("img", { className: "ph-history-image-bg", src: photo, alt: "", "aria-hidden": true, role: "presentation" }), SP_JSX.jsx("img", { className: "ph-history-image-fg", src: photo, alt: media.subject, onError: () => setFailed(previous => [...previous, media.url]) })] })] });
 }
 const expandedRelatedStories = new Set();
 function RelatedStory({ story, locale }) {
@@ -13933,18 +17111,18 @@ function RelatedStory({ story, locale }) {
     const [expanded, setExpanded] = _global_SP_REACT.useState(() => expandedRelatedStories.has(storyKey));
     const lastActivation = _global_SP_REACT.useRef(0);
     const all = historyImages[story.editorial.media_id ?? story.editorial.id] ?? [];
-    const media = orderHistoryImages(all, undefined, 0, story.editorial.chapters, { image_file: story.editorial.intro_image_file, image_role: story.editorial.intro_image_role })[0];
+    const media = orderHistoryImages(all, undefined, 0, story.editorial.chapters, { image_file: story.editorial.intro_image_file, image_role: story.editorial.intro_image_role }, historyDigest)[0];
     const photo = useHistoryPhoto(media?.url);
     const toggle = () => { const now = Date.now(); if (now - lastActivation.current < 350)
         return; lastActivation.current = now; setExpanded(value => { if (value)
         expandedRelatedStories.delete(storyKey);
     else
         expandedRelatedStories.add(storyKey); return !value; }); };
-    return SP_JSX.jsxs("div", { className: "ph-history-related", children: [SP_JSX.jsxs(Focusable$5, { className: "ph-history-card ph-history-related-summary", role: "button", "aria-expanded": expanded, focusable: true, onActivate: toggle, onClick: toggle, onOKActionDescription: historyActionCopy(locale)[expanded ? 2 : 1], children: [SP_JSX.jsxs("div", { className: "ph-history-copy", children: [SP_JSX.jsx("div", { className: "ph-history-eyebrow", children: story.relationship ?? words$1(locale)[4] }), SP_JSX.jsx("h3", { children: story.article.title }), SP_JSX.jsx(HistoryConfirmHint, { locale: locale, expanded: expanded })] }), media && photo && SP_JSX.jsx("div", { className: "ph-history-image", children: SP_JSX.jsx("img", { className: "ph-history-image-fg", src: photo, alt: media.subject }) })] }), expanded && SP_JSX.jsxs("div", { className: "ph-history-related-content", children: [SP_JSX.jsx(Block, { story: story, index: 0, locale: locale }), story.editorial.chapters?.map((chapter, index) => SP_JSX.jsxs(_global_SP_REACT.Fragment, { children: [SP_JSX.jsx(Block, { story: story, chapter: chapter, index: index + 1, locale: locale }), story.quote && (story.quote.after ?? 1) === index + 1 && SP_JSX.jsxs(Focusable$5, { className: "ph-history-quote", role: "note", focusable: true, children: [SP_JSX.jsx("p", { children: story.quote.quoted ? `«${story.quote.text}»` : story.quote.text }), story.quote.attribution && SP_JSX.jsx("span", { children: story.quote.attribution })] })] }, index))] })] });
+    return SP_JSX.jsxs("div", { className: "ph-history-related", children: [SP_JSX.jsxs(Focusable$7, { className: "ph-history-card ph-history-related-summary", role: "button", "aria-expanded": expanded, focusable: true, onActivate: toggle, onClick: toggle, onOKActionDescription: historyActionCopy(locale)[expanded ? 2 : 1], children: [SP_JSX.jsxs("div", { className: "ph-history-copy", children: [SP_JSX.jsx("div", { className: "ph-history-eyebrow", children: story.relationship ?? words$3(locale)[4] }), SP_JSX.jsx("h3", { children: story.article.title }), SP_JSX.jsx(HistoryConfirmHint, { locale: locale, expanded: expanded })] }), media && photo && SP_JSX.jsx("div", { className: "ph-history-image", children: SP_JSX.jsx("img", { className: "ph-history-image-fg", src: photo, alt: media.subject }) })] }), expanded && SP_JSX.jsxs("div", { className: "ph-history-related-content", children: [SP_JSX.jsx(Block, { story: story, index: 0, locale: locale }), story.editorial.chapters?.map((chapter, index) => SP_JSX.jsxs(_global_SP_REACT.Fragment, { children: [SP_JSX.jsx(Block, { story: story, chapter: chapter, index: index + 1, locale: locale }), story.quote && (story.quote.after ?? 1) === index + 1 && SP_JSX.jsxs(Focusable$7, { className: "ph-history-quote", role: "note", focusable: true, children: [SP_JSX.jsx("p", { children: story.quote.quoted ? `«${story.quote.text}»` : story.quote.text }), story.quote.attribution && SP_JSX.jsx("span", { children: story.quote.attribution })] })] }, index))] })] });
 }
 let historyPreviewOffset = 0;
 function DailyHistory({ getLocale }) {
-    const locale = getLocale(), copy = words$1(locale), lang = locale.split(/[-_]/)[0];
+    const locale = getLocale(), copy = words$3(locale), lang = locale.split(/[-_]/)[0];
     const [offset, setOffsetState] = _global_SP_REACT.useState(historyPreviewOffset), [story, setStory] = _global_SP_REACT.useState(), [failed, setFailed] = _global_SP_REACT.useState(false), [retry, setRetry] = _global_SP_REACT.useState(0);
     const setOffset = (update) => setOffsetState(value => { historyPreviewOffset = update(value); return historyPreviewOffset; });
     const busy = _global_SP_REACT.useRef(false), root = _global_SP_REACT.useRef(null);
@@ -14008,7 +17186,7 @@ function DailyHistory({ getLocale }) {
     }
     catch { } };
     const headingContent = SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "ph-history-date", children: new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' }).format(date) }), story ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { className: "ph-history-sub", children: [heading && SP_JSX.jsx("span", { children: heading }), SP_JSX.jsx("strong", { children: story.article.title }), story.year && story.occasion?.kind !== 'feature' && SP_JSX.jsx("span", { className: "ph-history-year", children: story.year })] }), headingMedia(story)] }) : SP_JSX.jsx("div", { className: "ph-history-sub", children: copy[1] })] });
-    return SP_JSX.jsxs(Focusable$5, { className: "ph-history", ref: root, "flow-children": "column", onButtonDown: navigate, actionDescriptionMap: story?.preview ? { [buttons.SECONDARY]: hints[0], [buttons.OPTIONS]: hints[1] } : {}, children: [SP_JSX.jsx("style", { children: css$3 }), SP_JSX.jsx(Focusable$5, { className: "ph-history-head ph-history-day-card", role: "button", "aria-label": story?.article.title ?? copy[0], focusable: true, onActivate: dayAppId ? openDayGame : undefined, onClick: dayAppId ? openDayGame : undefined, children: headingContent }), !story ? SP_JSX.jsx("div", { className: "ph-history-empty", children: failed ? SP_JSX.jsx(DialogButton$4, { onClick: () => setRetry(v => v + 1), children: copy[8] }) : SP_JSX.jsx("span", { role: "status", children: copy[7] }) }) : [story, ...(story.also ?? [])].map(item => SP_JSX.jsxs("div", { className: "ph-history-story", children: [SP_JSX.jsx(Block, { story: item, index: 0, locale: locale }), item.editorial.chapters?.map((chapter, index) => SP_JSX.jsxs(_global_SP_REACT.Fragment, { children: [SP_JSX.jsx(Block, { story: item, chapter: chapter, index: index + 1, locale: locale }), item.quote && (item.quote.after ?? 1) === index + 1 && SP_JSX.jsxs(Focusable$5, { className: "ph-history-quote", role: "note", focusable: true, children: [SP_JSX.jsx("p", { children: item.quote.quoted ? `«${item.quote.text}»` : item.quote.text }), item.quote.attribution && SP_JSX.jsx("span", { children: item.quote.attribution })] })] }, index)), item.quote && !item.editorial.chapters?.length && SP_JSX.jsxs(Focusable$5, { className: "ph-history-quote", role: "note", focusable: true, children: [SP_JSX.jsx("p", { children: item.quote.quoted ? `«${item.quote.text}»` : item.quote.text }), item.quote.attribution && SP_JSX.jsx("span", { children: item.quote.attribution })] }), item.connections?.length ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "ph-history-connections-title", children: copy[4] }), item.connections.map(related => SP_JSX.jsx(RelatedStory, { story: related, locale: locale }, `${related.date}-${related.editorial.id}`))] }) : null] }, `${item.date}-${item.editorial.id}`))] });
+    return SP_JSX.jsxs(Focusable$7, { className: "ph-history", ref: root, "flow-children": "column", onButtonDown: navigate, actionDescriptionMap: story?.preview ? { [buttons.SECONDARY]: hints[0], [buttons.OPTIONS]: hints[1] } : {}, children: [SP_JSX.jsx("style", { children: css$4 }), SP_JSX.jsx(Focusable$7, { className: "ph-history-head ph-history-day-card", role: "button", "aria-label": story?.article.title ?? copy[0], focusable: true, onActivate: dayAppId ? openDayGame : undefined, onClick: dayAppId ? openDayGame : undefined, children: headingContent }), !story ? SP_JSX.jsx("div", { className: "ph-history-empty", children: failed ? SP_JSX.jsx(DialogButton$6, { onClick: () => setRetry(v => v + 1), children: copy[8] }) : SP_JSX.jsx("span", { role: "status", children: copy[7] }) }) : [story, ...(story.also ?? [])].map(item => SP_JSX.jsxs("div", { className: "ph-history-story", children: [SP_JSX.jsx(Block, { story: item, index: 0, locale: locale }), item.editorial.chapters?.map((chapter, index) => SP_JSX.jsxs(_global_SP_REACT.Fragment, { children: [SP_JSX.jsx(Block, { story: item, chapter: chapter, index: index + 1, locale: locale }), item.quote && (item.quote.after ?? 1) === index + 1 && SP_JSX.jsxs(Focusable$7, { className: "ph-history-quote", role: "note", focusable: true, children: [SP_JSX.jsx("p", { children: item.quote.quoted ? `«${item.quote.text}»` : item.quote.text }), item.quote.attribution && SP_JSX.jsx("span", { children: item.quote.attribution })] })] }, index)), item.quote && !item.editorial.chapters?.length && SP_JSX.jsxs(Focusable$7, { className: "ph-history-quote", role: "note", focusable: true, children: [SP_JSX.jsx("p", { children: item.quote.quoted ? `«${item.quote.text}»` : item.quote.text }), item.quote.attribution && SP_JSX.jsx("span", { children: item.quote.attribution })] }), item.connections?.length ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "ph-history-connections-title", children: copy[4] }), item.connections.map(related => SP_JSX.jsx(RelatedStory, { story: related, locale: locale }, `${related.date}-${related.editorial.id}`))] }) : null] }, `${item.date}-${item.editorial.id}`))] });
 }
 let historyConfig = { enabled: true, revision: 0 };
 let historyReady = false;
@@ -14045,10 +17223,10 @@ function HomeHistorySettings({ locale }) {
         setBusy(false);
     } };
     const Toggle = _global_DFL.ToggleField;
-    return SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(Toggle, { label: historyTitle(locale), description: words$1(locale)[1], checked: config.enabled, disabled: !historyReady || busy, onChange: (enabled) => void save(enabled), bottomSeparator: "none" }), failed && SP_JSX.jsx(DialogButton$4, { onClick: () => void loadHistorySettings().then(() => setFailed(false)).catch(() => { }), children: words$1(locale)[8] })] });
+    return SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(Toggle, { label: historyTitle(locale), description: words$3(locale)[1], checked: config.enabled, disabled: !historyReady || busy, onChange: (enabled) => void save(enabled), bottomSeparator: "none" }), failed && SP_JSX.jsx(DialogButton$6, { onClick: () => void loadHistorySettings().then(() => setFailed(false)).catch(() => { }), children: words$3(locale)[8] })] });
 }
 
-const words = {
+const words$2 = {
     en: ["Gaming news", "Show gaming news in Home", "Country", "Follow Playhub language", "News unavailable. Try again later.", "Could not save news settings.", "Last available news"],
     it: ["Notizie dal mondo dei videogiochi", "Mostra le news nella Home", "Paese delle notizie", "Segui la lingua di Playhub", "Notizie non disponibili. Riprova più tardi.", "Impossibile salvare le impostazioni News.", "Ultime notizie disponibili"],
     de: ["Gaming-Nachrichten", "Gaming-Nachrichten auf der Startseite", "Land", "Playhub-Sprache verwenden", "Nachrichten derzeit nicht verfügbar.", "Nachrichteneinstellungen konnten nicht gespeichert werden.", "Zuletzt verfügbare Nachrichten"],
@@ -14063,9 +17241,9 @@ const words = {
     hi: ["वीडियो गेम समाचार", "होम में गेम समाचार दिखाएँ", "देश", "Playhub की भाषा का उपयोग करें", "समाचार उपलब्ध नहीं हैं। बाद में फिर कोशिश करें।", "सेटिंग सहेजी नहीं जा सकी।", "पिछले उपलब्ध समाचार"],
 };
 const NEWS_COUNTRIES = ["US", "IT", "DE", "ES", "FR", "BR", "RU", "UA", "JP", "KR", "TW", "IN"];
-function newsCopy(locale) { return words[locale] ?? words.en; }
+function newsCopy(locale) { return words$2[locale] ?? words$2.en; }
 
-const { Focusable: Focusable$4, DialogButton: DialogButton$3, DropdownItem: DropdownItem$2, ToggleField: ToggleField$3, Navigation: Navigation$3 } = _global_DFL;
+const { Focusable: Focusable$6, DialogButton: DialogButton$5, DropdownItem: DropdownItem$3, ToggleField: ToggleField$3, Navigation: Navigation$3 } = _global_DFL;
 let config$1 = { enabled: true, country: "auto" };
 let ready = false;
 const listeners$6 = new Set();
@@ -14099,7 +17277,7 @@ function HomeNewsSettings({ locale }) {
         }
     };
     const names = new Intl.DisplayNames([locale], { type: "region" });
-    return SP_JSX.jsxs(Focusable$4, { "flow-children": "column", style: { padding: "8px 0", display: "flex", flexDirection: "column", gap: 12 }, children: [loadFailed && SP_JSX.jsx(DialogButton$3, { onClick: () => void readConfig().then(() => setLoadFailed(false)).catch(() => { }), children: copy[4] }), SP_JSX.jsx(ToggleField$3, { label: copy[1], bottomSeparator: "none", checked: value.enabled, disabled: busy || !ready, onChange: (enabled) => void save({ ...value, enabled }) }), SP_JSX.jsx(DropdownItem$2, { label: copy[2], layout: "below", bottomSeparator: "none", selectedOption: value.country, disabled: busy || !ready, rgOptions: [{ data: "auto", label: copy[3] }, ...NEWS_COUNTRIES.map(data => ({ data, label: names.of(data) ?? data }))], onChange: (option) => void save({ ...value, country: option.data }) })] });
+    return SP_JSX.jsxs(Focusable$6, { "flow-children": "column", style: { padding: "8px 0", display: "flex", flexDirection: "column", gap: 12 }, children: [loadFailed && SP_JSX.jsx(DialogButton$5, { onClick: () => void readConfig().then(() => setLoadFailed(false)).catch(() => { }), children: copy[4] }), SP_JSX.jsx(ToggleField$3, { label: copy[1], bottomSeparator: "none", checked: value.enabled, disabled: busy || !ready, onChange: (enabled) => void save({ ...value, enabled }) }), SP_JSX.jsx(DropdownItem$3, { label: copy[2], layout: "below", bottomSeparator: "none", selectedOption: value.country, disabled: busy || !ready, rgOptions: [{ data: "auto", label: copy[3] }, ...NEWS_COUNTRIES.map(data => ({ data, label: names.of(data) ?? data }))], onChange: (option) => void save({ ...value, country: option.data }) })] });
 }
 function nativeNewsRows(tree) {
     const children = tree?.props?.children;
@@ -14123,7 +17301,7 @@ function shelfSkin() {
     }
     return nativeSkin;
 }
-const css$2 = `
+const css$3 = `
 .ph-home-news{padding:10px 0 22px;min-width:0;color:inherit}
 .ph-home-news h2{font-size:20px;line-height:1.3;font-weight:600;margin:0 0 14px}
 .ph-news-card{box-sizing:border-box;flex-shrink:0;overflow:hidden}
@@ -14146,7 +17324,7 @@ function NewsCard({ item, width, height, locale, skin }) {
     const [missing, setMissing] = _global_SP_REACT.useState(false);
     const c = skin.classes;
     const date = item.published > 0 ? new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "long" }).format(new Date(item.published * 1000)) : "";
-    return SP_JSX.jsxs("div", { className: `${c.OuterWrapper} ph-news-card`, style: { width, height }, "data-news-url": item.url, children: [SP_JSX.jsx("div", { className: c.EventType, children: item.source }), SP_JSX.jsxs(Focusable$4, { className: `${c.EventPreviewContainer} ph-news-content`, focusable: true, "aria-label": `${item.title} Â· ${item.source}`, onActivate: () => {
+    return SP_JSX.jsxs("div", { className: `${c.OuterWrapper} ph-news-card`, style: { width, height }, "data-news-url": item.url, children: [SP_JSX.jsx("div", { className: c.EventType, children: item.source }), SP_JSX.jsxs(Focusable$6, { className: `${c.EventPreviewContainer} ph-news-content`, focusable: true, "aria-label": `${item.title} Â· ${item.source}`, onActivate: () => {
                     if (/^https?:\/\//i.test(item.url))
                         Navigation$3.NavigateToExternalWeb(item.url);
                 }, children: [SP_JSX.jsx("div", { className: `${c.EventImageWrapper} ph-news-cover`, style: { height: Math.round(width * 9 / 16), minHeight: Math.round(width * 9 / 16), flexShrink: 0 }, "data-logo": fallback, children: !missing ? SP_JSX.jsx("img", { className: `${c.EventImage} ph-news-image`, loading: "lazy", alt: "", src: fallback ? item.logo : item.image, onError: () => fallback ? setMissing(true) : setFallback(true) }) : SP_JSX.jsx("span", { children: item.source }) }), SP_JSX.jsxs("div", { className: `${c.EventInfo} ph-news-info`, children: [SP_JSX.jsx("div", { className: "ph-news-date", children: date }), SP_JSX.jsx("div", { className: `${c.Title} ph-news-title`, children: item.title })] })] })] });
@@ -14187,7 +17365,7 @@ function NewsRow({ locale, country }) {
     const height = (Number.parseInt(c.ItemPreviewHeight) || 335) + 24;
     const margin = Number.parseInt(c.ItemMarginRight) || 12;
     const columnWidth = _global_SP_REACT.useCallback(() => width, [width]);
-    return SP_JSX.jsxs("section", { className: "ph-home-news", "aria-label": copy[0], children: [SP_JSX.jsx("style", { children: css$2 }), SP_JSX.jsx("h2", { children: copy[0] }), feed?.stale && SP_JSX.jsx("div", { className: "ph-news-status", children: copy[6] }), SP_JSX.jsx(Bleed, { children: SP_JSX.jsx(Carousel, { name: "PlayhubEditorialNews", className: `${c.EventCarousel} ph-news-row`, nNumItems: feed ? items.length : 4, nHeight: height, nItemHeight: height, nItemMarginX: margin, fnGetColumnWidth: columnWidth, fnGetId: (index) => items[index]?.url ?? `loading-${index}`, fnItemRenderer: (index, itemWidth, itemHeight) => items[index]
+    return SP_JSX.jsxs("section", { className: "ph-home-news", "aria-label": copy[0], children: [SP_JSX.jsx("style", { children: css$3 }), SP_JSX.jsx("h2", { children: copy[0] }), feed?.stale && SP_JSX.jsx("div", { className: "ph-news-status", children: copy[6] }), SP_JSX.jsx(Bleed, { children: SP_JSX.jsx(Carousel, { name: "PlayhubEditorialNews", className: `${c.EventCarousel} ph-news-row`, nNumItems: feed ? items.length : 4, nHeight: height, nItemHeight: height, nItemMarginX: margin, fnGetColumnWidth: columnWidth, fnGetId: (index) => items[index]?.url ?? `loading-${index}`, fnItemRenderer: (index, itemWidth, itemHeight) => items[index]
                         ? SP_JSX.jsx(NewsCard, { item: items[index], width: itemWidth, height: itemHeight, locale: locale, skin: skin }, items[index].url)
                         : SP_JSX.jsx("div", { "aria-hidden": "true", style: { width: itemWidth, height: itemHeight, background: "#202a37" } }), scrollToAlignment: "center", "aria-label": copy[0], "aria-busy": !feed }, `${locale}:${country}`) }), feed && !items.length && SP_JSX.jsx("div", { className: "ph-news-status", role: "status", children: copy[4] })] });
 }
@@ -14239,6 +17417,86 @@ function installHomeNews(getLocale) {
         news.stop();
         routerHook.removePatch("/library/home", patch);
         notifyHomeNewsLanguageChanged();
+    };
+}
+
+function steamModeCommand(value) {
+    return value && Number.isSafeInteger(value.revision) && value.revision > 0
+        && typeof value.token === "string" && /^[a-f0-9]{32}$/.test(value.token)
+        && (value.kind === "exit" || value.kind === "barrier")
+        ? { revision: value.revision, token: value.token, kind: value.kind } : undefined;
+}
+/** Shared by old and new plugin roots until every already-submitted native exit settles. */
+function installSteamModeCommands(host, deps) {
+    const key = "__playhubSteamModeCommandsV1";
+    const state = host[key] ?? (host[key] = {
+        tail: Promise.resolve(), highest: 0, unsettledExit: false, completed: new Map(),
+    });
+    const confirmDesktop = async () => {
+        const deadline = deps.now() + 1000;
+        for (let attempt = 0; attempt < 20 && deps.now() <= deadline; attempt++) {
+            if (!deps.alive())
+                return false;
+            try {
+                if (await deps.readDesktop())
+                    return true;
+            }
+            catch { /* Retain the unsettled exit. */ }
+            await deps.delay(75);
+        }
+        return false;
+    };
+    return {
+        async process(value) {
+            const command = steamModeCommand(value);
+            if (!command || !deps.alive() || command.revision < state.highest)
+                return false;
+            if (command.revision === state.highest && state.identity
+                && (command.token !== state.identity.token || command.kind !== state.identity.kind))
+                return false;
+            state.highest = Math.max(state.highest, command.revision);
+            state.identity = command;
+            const task = state.tail.then(async () => {
+                if (!deps.alive() || command.revision < state.highest)
+                    return false;
+                const identity = `${command.revision}:${command.token}:${command.kind}`;
+                let complete = state.completed.get(identity);
+                if (complete !== true) {
+                    if (command.kind === "exit") {
+                        // From this point an explicit open must wait for native desktop
+                        // readback, even when this plugin root unloads during that read.
+                        if (complete === undefined) {
+                            state.unsettledExit = true;
+                            // Remember dispatch BEFORE invoking the native action. A later
+                            // poll retries only readback, even after an initial false ACK.
+                            state.completed.set(identity, false);
+                            try {
+                                void Promise.resolve(deps.exit()).catch(() => { });
+                            }
+                            catch { /* Readback still decides whether Steam settled. */ }
+                        }
+                        complete = await confirmDesktop();
+                        if (complete)
+                            state.unsettledExit = false;
+                    }
+                    else {
+                        complete = !state.unsettledExit || await confirmDesktop();
+                        if (complete)
+                            state.unsettledExit = false;
+                    }
+                    state.completed.set(identity, complete);
+                    while (state.completed.size > 16)
+                        state.completed.delete(state.completed.keys().next().value);
+                }
+                // The previous native action is now complete. Acknowledgement itself
+                // performs no UI action and cannot hold the shared queue on a lost HTTP reply.
+                if (deps.alive())
+                    void deps.ack(command, complete).catch(() => { });
+                return complete;
+            });
+            state.tail = task.catch(() => false);
+            return task;
+        },
     };
 }
 
@@ -14438,9 +17696,497 @@ async function consumeOpenRequest() {
     return {
         open: result?.open === true,
         exitBigPicture: result?.exitBigPicture === true,
+        steamModeCommand: steamModeCommand(result?.steamModeCommand),
         focusRecovery: Number(result?.focusRecovery) || 0,
         steamForeground: result?.steamForeground === true,
     };
+}
+async function acknowledgeSteamModeCommand(command, completed) {
+    const result = await post$1("/steam/mode/ack", { ...command, completed });
+    return result?.ok === true;
+}
+async function confirmBigPictureForeground(version) {
+    if (!Number.isSafeInteger(version) || version <= 0)
+        return { ok: false, appId: 0 };
+    const result = await request(`/session/steam/return-focus?version=${version}`, undefined, 500);
+    const appId = result?.appId;
+    return {
+        ok: result?.ok === true,
+        appId: typeof appId === "number" && Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff ? appId : 0,
+        usedCompanion: result?.usedCompanion === true,
+        gamePid: typeof result?.gamePid === "number" && Number.isInteger(result.gamePid) && result.gamePid > 0
+            && result.gamePid <= 0xffffffff ? result.gamePid : undefined,
+        gameBirth: typeof result?.gameBirth === "string" && /^[1-9]\d{0,19}$/.test(result.gameBirth)
+            && BigInt(result.gameBirth) <= 0xffffffffffffffffn ? result.gameBirth : undefined,
+    };
+}
+
+const exactOverlayApp = (overlay, appId) => overlay.params?.browserInfo?.m_unAppID === appId;
+function readOverlayScope(overlay, appId, matchesApp) {
+    try {
+        if (overlay.IsGamepadUIOverlayWindow?.() !== true || !matchesApp(overlay, appId))
+            return;
+        const root = overlay.BrowserWindow ?? overlay.m_BrowserWindow;
+        const context = overlay.GetFocusNavContext?.();
+        if (root && context?.RootWindow === root)
+            return { appId, root, context };
+    }
+    catch { /* The Steam browser may be closing. */ }
+}
+function createSteamOverlayReturnScope(matchesApp = exactOverlayApp, now = () => performance.now()) {
+    let watchedApp = 0;
+    let retained;
+    let stoppedAt;
+    function clear() { watchedApp = 0; retained = undefined; stoppedAt = undefined; }
+    return {
+        observe(appId, windows, active) {
+            if (appId <= 0) {
+                // Steam can clear the game before native exit proof arrives.
+                stoppedAt ?? (stoppedAt = now());
+                if (now() - stoppedAt >= 15000)
+                    clear();
+                return;
+            }
+            stoppedAt = undefined;
+            if (appId !== watchedApp) {
+                watchedApp = appId;
+                retained = undefined;
+            }
+            const candidates = windows?.flatMap(window => {
+                const scope = readOverlayScope(window, appId, matchesApp);
+                return scope && scope.root.closed !== true ? [scope] : [];
+            }) ?? [];
+            const activeCandidates = candidates.filter(scope => scope.context === active);
+            if (activeCandidates.length === 1)
+                retained = activeCandidates[0];
+            else if (!retained && candidates.length === 1)
+                retained = candidates[0];
+        },
+        get(appId) {
+            if (stoppedAt !== undefined && now() - stoppedAt >= 15000)
+                clear();
+            return retained?.appId === appId ? retained : undefined;
+        },
+        clear,
+    };
+}
+function releaseExitedSteamOverlay(exitedApp, mainWindow, canRestore, getActiveContext, getActiveTree, getOverlays, retained, matchesApp = exactOverlayApp, hasNativeForeground) {
+    const mainIsFocused = () => canRestore() &&
+        (mainWindow.document?.hasFocus() === true || hasNativeForeground?.() === true);
+    if (!Number.isInteger(exitedApp) || exitedApp <= 0 || !mainIsFocused())
+        return false;
+    const active = getActiveContext();
+    const overlayWindow = active?.RootWindow;
+    const activeWindow = active?.ActiveWindow;
+    if (!active || !overlayWindow || !activeWindow || overlayWindow === mainWindow || activeWindow === mainWindow
+        || typeof active.OnDeactivate !== "function")
+        return false;
+    const retainedMatch = retained?.appId === exitedApp && retained.root === overlayWindow && retained.context === active;
+    if (!retainedMatch) {
+        const matching = getOverlays(exitedApp)?.filter(overlay => {
+            const scope = readOverlayScope(overlay, exitedApp, matchesApp);
+            return scope?.root === overlayWindow && scope.context === active;
+        });
+        if (matching?.length !== 1)
+            return false;
+    }
+    const tree = getActiveTree();
+    // Steam can leave hasFocus() true in the dead game's overlay. The caller's
+    // exact native exit/foreground proof or focused main browser is authoritative.
+    if (tree?.WindowContext !== active || tree.Window !== activeWindow
+        || !mainIsFocused() || getActiveContext() !== active || getActiveTree() !== tree || active.ActiveWindow !== activeWindow)
+        return false;
+    try {
+        active.OnDeactivate(activeWindow);
+    }
+    catch { /* Steam can detach the context before a closing browser throws. */ }
+    return getActiveContext() !== active;
+}
+function hasVisibleSteamNavigationFocus(document, tree) {
+    const visible = (element) => element?.ownerDocument === document && element.isConnected &&
+        element.getClientRects().length > 0 && !element.closest('[hidden],[inert],[aria-hidden="true"]') &&
+        element.checkVisibility?.({ opacityProperty: true, visibilityProperty: true }) !== false;
+    if (tree?.GetLastFocusedNode) {
+        const node = tree.GetLastFocusedNode();
+        return visible(node?.Element) && (node?.BHasFocus?.() ?? node?.Element?.matches(".gpfocus")) === true;
+    }
+    return Array.from(document.querySelectorAll(".gpfocus")).some(visible);
+}
+function focusReturnedSteamGameAction(document, route, appId, current, classes) {
+    if (route !== `/library/app/${appId}` || current?.closest('a,button,[role="button"],[role="tab"],[role="menuitem"]'))
+        return false;
+    const button = classes?.AppActionButton;
+    const panel = classes?.ActionButtonAndStatusPanel;
+    if (typeof button !== "string" || typeof panel !== "string" ||
+        !/^[\w-]+$/.test(button) || !/^[\w-]+$/.test(panel))
+        return false;
+    const actions = document.querySelectorAll(`.${panel} .${button} [role="button"][tabindex]`);
+    const target = Array.from(actions).find(action => action.tabIndex >= 0 && action.isConnected &&
+        action.getClientRects().length > 0 && !action.closest('[hidden],[inert],[aria-hidden="true"],[aria-disabled="true"]') &&
+        action.checkVisibility?.({ opacityProperty: true, visibilityProperty: true }) !== false);
+    if (!target)
+        return false;
+    target.focus({ preventScroll: true });
+    return document.activeElement === target;
+}
+function navigateReturnedSteamGame(main, appId) {
+    if (!Number.isInteger(appId) || appId <= 0 || appId > 0xffffffff)
+        return false;
+    const route = `/library/app/${appId}`;
+    if (main.m_locationPathname === route || main.BCanNavigate?.() !== true || typeof main.Navigate !== "function")
+        return false;
+    // Retire only Steam's transient running-game placeholder. Other pages are
+    // real history entries: preserve them so Back returns to the user's library.
+    main.Navigate(route, main.m_locationPathname === "/apprunning", true);
+    return true;
+}
+// The caller has just verified the exact Win32 foreground. Steam's child
+// browser can remain blurred after an overlay closes; repair its navigation
+// while CEF catches up, but confirm success only after its real input focus.
+function recoverSteamNavigation(steam) {
+    try {
+        const mayRestore = () => steam.hasDocumentFocus() || steam.hasNativeForeground?.() === true;
+        if (!steam.hasDocumentFocus())
+            steam.requestKeyFocus();
+        if (!mayRestore())
+            return false;
+        if (!steam.hasNavigationFocus()) {
+            steam.focusApplication();
+            // Changing the active tree can blur the old browser after the first
+            // SetKeyFocus call. Request keys again for the now-current main tree.
+            if (mayRestore() && !steam.hasDocumentFocus())
+                steam.requestKeyFocus();
+        }
+        return mayRestore() && steam.hasDocumentFocus() && steam.hasNavigationFocus();
+    }
+    catch {
+        return false;
+    }
+}
+// Steam can retain a stale native "keys focused" bit while its CEF child is
+// blurred. A single real false/true edge repairs that state; never manufacture
+// document focus or repeat the edge on every 500 ms recovery poll.
+function createSteamKeyFocusReset(schedule, cancelTimer) {
+    let spentGeneration;
+    let pending;
+    function wait(context) {
+        return new Promise(resolve => {
+            if (context.signal.aborted) {
+                resolve(false);
+                return;
+            }
+            let timer;
+            const finish = (elapsed) => {
+                if (timer !== undefined) {
+                    cancelTimer(timer);
+                    timer = undefined;
+                }
+                context.signal.removeEventListener("abort", abort);
+                resolve(elapsed);
+            };
+            const abort = () => finish(false);
+            context.signal.addEventListener("abort", abort, { once: true });
+            timer = schedule(() => finish(true), 50);
+        });
+    }
+    return {
+        reset(request) {
+            const { context } = request;
+            if (pending?.generation === context.generation)
+                return pending.promise;
+            const valid = () => !context.signal.aborted && context.isCurrent() && request.canRestore();
+            if (!valid() || request.hasRealFocus() || spentGeneration === context.generation)
+                return Promise.resolve(false);
+            const operation = (async () => {
+                try {
+                    if (!await context.confirmForeground() || !valid() || request.hasRealFocus())
+                        return false;
+                    spentGeneration = context.generation;
+                    await request.setKeyFocus(false);
+                    if (!valid() || !await wait(context) || !valid())
+                        return false;
+                    // The user can Alt-Tab during the edge. Recheck the actual native
+                    // foreground after the delay and immediately before returning keys.
+                    if (!await context.confirmForeground() || !valid())
+                        return false;
+                    await request.setKeyFocus(true);
+                    return valid(); // Dispatch proof only; callers still verify CEF + Play.
+                }
+                catch {
+                    return false;
+                }
+            })();
+            pending = { generation: context.generation, promise: operation };
+            void operation.finally(() => { if (pending?.promise === operation)
+                pending = undefined; });
+            return operation;
+        },
+    };
+}
+function isSteamNavigationReturnApp(runningApp, exitedApp) {
+    return runningApp === 0 || (exitedApp > 0 && runningApp === exitedApp);
+}
+function isConfirmedSteamIdle(value, anyAppRunning) {
+    // Current Steam returns undefined for an empty running-app list. Its own
+    // IsAnyAppRunning() must confirm that state; a missing store is not proof.
+    return (value === 0 || value === "0") && anyAppRunning !== true ||
+        value === undefined && anyAppRunning === false;
+}
+// Steam's focus event can precede the native process-exit confirmation.
+// Coalesce duplicate focus events and briefly check again for that proof.
+function createSteamNavigationWakeup(poll, schedule, cancel) {
+    const delays = [65, 95, 145, 235, 400];
+    let timer;
+    let stopped = false;
+    function next(index) {
+        timer = index < delays.length ? schedule(() => {
+            if (stopped)
+                return;
+            next(index + 1);
+            poll();
+        }, delays[index]) : undefined;
+    }
+    return {
+        wake() {
+            if (stopped || timer !== undefined)
+                return;
+            next(0);
+            poll();
+        },
+        stop() {
+            stopped = true;
+            if (timer !== undefined)
+                cancel(timer);
+            timer = undefined;
+        },
+    };
+}
+function createSteamNavigationRecovery(confirmForeground, recoverNavigation, runningApp, now = () => performance.now()) {
+    let version = 0;
+    let deadline = 0;
+    let generation = 0;
+    let launchBlockedUntil = 0;
+    let abort = new AbortController();
+    function cancel(nextVersion = version) {
+        abort.abort();
+        abort = new AbortController();
+        version = nextVersion;
+        deadline = 0;
+        generation++;
+    }
+    async function observe(nextVersion, steamForeground) {
+        if (nextVersion !== version) {
+            cancel(nextVersion);
+            if (now() >= launchBlockedUntil && Number.isSafeInteger(nextVersion) && nextVersion > 0)
+                deadline = now() + 12000;
+        }
+        if (!deadline || now() >= deadline || !steamForeground)
+            return;
+        const expected = generation;
+        const before = runningApp();
+        const confirmed = await confirmForeground(nextVersion);
+        if (!confirmed.ok || expected !== generation || now() >= deadline
+            || !isSteamNavigationReturnApp(before, confirmed.appId)
+            || !isSteamNavigationReturnApp(runningApp(), confirmed.appId))
+            return;
+        const current = () => expected === generation && deadline > 0 && now() < deadline
+            && isSteamNavigationReturnApp(runningApp(), confirmed.appId);
+        const context = {
+            generation: expected,
+            exitedGame: confirmed.gamePid != null && confirmed.gameBirth != null
+                ? Object.freeze({ pid: confirmed.gamePid, birth: confirmed.gameBirth }) : undefined,
+            signal: abort.signal,
+            isCurrent: current,
+            async confirmForeground() {
+                if (!current())
+                    return false;
+                const before = runningApp();
+                const proof = await confirmForeground(nextVersion);
+                return current() && proof.ok && proof.appId === confirmed.appId
+                    && proof.gamePid === confirmed.gamePid && proof.gameBirth === confirmed.gameBirth
+                    && isSteamNavigationReturnApp(before, confirmed.appId);
+            },
+        };
+        if (await recoverNavigation(confirmed.appId, confirmed.usedCompanion, context) && current())
+            cancel();
+    }
+    return {
+        observe, cancel,
+        launchStarted() {
+            // Ignore any late proof from the previous game until it has expired or
+            // the native watcher confirms it is supervising a fresh game process.
+            launchBlockedUntil = now() + 20000;
+            cancel();
+        },
+        gameArmed() { launchBlockedUntil = 0; },
+    };
+}
+
+const menuLayout = "steam://forceinputappid/769";
+const automaticLayout = "steam://forceinputappid/0";
+const layoutTimeoutMs = 4000;
+/** Resolve a connected physical Steam Controller using Steam's own type map. */
+function activeSteamController(store) {
+    try {
+        if (typeof store?.GetControllers !== "function" || typeof store.GetController !== "function"
+            || typeof store.GetControllerTypeString !== "function")
+            return undefined;
+        const controllers = store.GetControllers();
+        if (!Array.isArray(controllers) || controllers.length > 16)
+            return undefined;
+        const indices = new Set();
+        for (const controller of controllers) {
+            const index = controller?.nControllerIndex;
+            if (!Number.isSafeInteger(index) || index < 0 || index >= 16 || indices.has(index))
+                return undefined;
+            indices.add(index);
+        }
+        for (const controller of controllers) {
+            if (controller.bRemoteDevice !== false || controller.unVendorID !== 0x28de
+                || !Number.isSafeInteger(controller.eControllerType)
+                || store.GetController(controller.nControllerIndex) !== controller)
+                continue;
+            const type = store.GetControllerTypeString(controller.eControllerType);
+            // These are native enum keys, not translated names or user-editable labels.
+            const original = type === "controller_steamcontroller_gordon"
+                && [0x1101, 0x1102, 0x1105, 0x1106, 0x1142].includes(controller.unProductID);
+            const triton = type === "controller_steamcontroller_triton"
+                && [0x1302, 0x1304].includes(controller.unProductID);
+            if (original || triton)
+                return controller;
+        }
+    }
+    catch { /* An unknown/reloading native inventory must not force a layout. */ }
+    return undefined;
+}
+function createSteamReturnControllerLayout(execute, schedule, cancelTimer, connectedController = () => undefined) {
+    let app = 0;
+    let attemptedApp = 0;
+    let timer;
+    let controller;
+    function release() {
+        if (!app)
+            return;
+        app = 0;
+        controller = undefined;
+        if (timer !== undefined)
+            cancelTimer(timer);
+        timer = undefined;
+        execute(automaticLayout);
+    }
+    return {
+        begin(exitedApp, runningApp) {
+            if (app || attemptedApp === exitedApp || exitedApp < 0x80000000 || runningApp !== exitedApp)
+                return;
+            const current = connectedController();
+            if (!current || typeof current !== "object")
+                return;
+            execute(menuLayout);
+            controller = current;
+            attemptedApp = exitedApp;
+            app = exitedApp;
+            timer = schedule(release, layoutTimeoutMs);
+        },
+        observe(runningApp, mainFocused) {
+            if (app && (app !== runningApp || !mainFocused || connectedController() !== controller))
+                release();
+        },
+        release() { release(); attemptedApp = 0; },
+    };
+}
+
+/** Sample Valve's committed state from the existing return watcher, never its native callback. */
+function observeSteamOverlayFocus(readStore, changed) {
+    let disposed = false;
+    let observedStore;
+    let previous;
+    const refresh = () => {
+        if (disposed)
+            return;
+        try {
+            const store = readStore();
+            if (store !== observedStore) {
+                observedStore = store;
+                previous = undefined;
+            }
+            if (!store)
+                return;
+            const appId = store.GetFocusedOverlayAppID?.() ?? store.m_unFocusedOverlayAppID;
+            const pid = store.GetFocusedOverlayPID?.() ?? store.m_unFocusedOverlayPID;
+            if (!Number.isInteger(appId) || appId < 0 || appId > 0xffffffff
+                || !Number.isInteger(pid) || pid < 0 || pid > 0xffffffff
+                || readStore() !== store)
+                return;
+            const prior = previous;
+            previous = { appId, pid };
+            if (prior && (prior.appId !== appId || prior.pid !== pid))
+                changed(appId, pid);
+        }
+        catch { /* An observer cannot interrupt Steam's window or the return watcher. */ }
+    };
+    return { refresh, dispose() { disposed = true; observedStore = undefined; previous = undefined; } };
+}
+
+function matchesOverlayApp(info, runningAppId) {
+    if (!info || !Number.isInteger(runningAppId) || runningAppId <= 0 || runningAppId > 0xffffffff)
+        return false;
+    const reported = steamAppId(info.appID);
+    if (reported === runningAppId)
+        return true;
+    if (runningAppId < 0x80000000 || reported !== (runningAppId & 0xffffff))
+        return false;
+    // On Windows Steam can expose a shortcut's low 24 bits as appID, with
+    // the full shortcut identity in gameID. The truncated value alone collides.
+    const raw = String(info.gameID ?? "");
+    if (!/^\d{1,20}$/.test(raw))
+        return false;
+    const id = BigInt(raw);
+    return id === BigInt(runningAppId) || id === (BigInt(runningAppId) << 32n | 0x02000000n);
+}
+function selectOverlay(infos, runningAppId) {
+    if (!Array.isArray(infos))
+        return null;
+    const candidates = infos.filter((info) => info && Number(info.unPID) > 0 &&
+        steamAppId(info.appID) > 0 && Number.isInteger(Number(info.nBrowserID)) &&
+        Number(info.nBrowserID) >= 0 && /^\d+$/.test(String(info.gameID ?? "")) &&
+        String(info.gameID) !== "0" && steamAppId(info.appID) !== 993090);
+    const matching = runningAppId ? candidates.filter((info) => matchesOverlayApp(info, runningAppId)) : candidates;
+    if (matching.length !== 1)
+        return null;
+    const info = matching[0];
+    return { gameID: String(info.gameID), unPID: Number(info.unPID),
+        nBrowserID: Number(info.nBrowserID), appID: steamAppId(info.appID) };
+}
+function findOverlayWindow(windows, identity) {
+    if (!identity || !Array.isArray(windows))
+        return null;
+    for (const candidate of windows) {
+        try {
+            const info = candidate?.params?.browserInfo;
+            if (candidate?.IsGamepadUIOverlayWindow?.() !== true ||
+                String(info?.m_gameID) !== identity.gameID ||
+                Number(info?.m_unPID) !== identity.unPID ||
+                Number(info?.m_nBrowserID) !== identity.nBrowserID)
+                continue;
+            const browser = candidate.BrowserWindow ?? candidate.m_BrowserWindow;
+            if (browser?.document?.body && !browser.closed)
+                return candidate;
+        }
+        catch { /* A closing browser can reject property access. */ }
+    }
+    return null;
+}
+// Polling is finite and never reopens an overlay after the user closes it.
+async function waitForOverlay(find, cancelled, delay) {
+    for (let attempt = 0; attempt < 40; attempt++) {
+        if (cancelled())
+            return null;
+        const target = find();
+        if (target)
+            return target;
+        await delay();
+    }
+    return null;
 }
 
 // Steam may expose a route with no previous entry, or with the same route as
@@ -14593,52 +18339,6 @@ const messages = {
 };
 function windowCloseCopy(locale) { return messages[locale] ?? messages.en; }
 
-function selectOverlay(infos, runningAppId) {
-    if (!Array.isArray(infos))
-        return null;
-    const candidates = infos.filter((info) => info && Number(info.unPID) > 0 &&
-        Number(info.appID) > 0 && Number.isInteger(Number(info.nBrowserID)) &&
-        Number(info.nBrowserID) >= 0 && /^\d+$/.test(String(info.gameID ?? "")) &&
-        String(info.gameID) !== "0" && Number(info.appID) !== 993090);
-    const matching = runningAppId ? candidates.filter((info) => Number(info.appID) === runningAppId) : candidates;
-    if (matching.length !== 1)
-        return null;
-    const info = matching[0];
-    return { gameID: String(info.gameID), unPID: Number(info.unPID),
-        nBrowserID: Number(info.nBrowserID), appID: Number(info.appID) };
-}
-function findOverlayWindow(windows, identity) {
-    if (!identity || !Array.isArray(windows))
-        return null;
-    for (const candidate of windows) {
-        try {
-            const info = candidate?.params?.browserInfo;
-            if (candidate?.IsGamepadUIOverlayWindow?.() !== true ||
-                String(info?.m_gameID) !== identity.gameID ||
-                Number(info?.m_unPID) !== identity.unPID ||
-                Number(info?.m_nBrowserID) !== identity.nBrowserID)
-                continue;
-            const browser = candidate.BrowserWindow ?? candidate.m_BrowserWindow;
-            if (browser?.document?.body && !browser.closed)
-                return candidate;
-        }
-        catch { /* A closing browser can reject property access. */ }
-    }
-    return null;
-}
-// Polling is finite and never reopens an overlay after the user closes it.
-async function waitForOverlay(find, cancelled, delay) {
-    for (let attempt = 0; attempt < 40; attempt++) {
-        if (cancelled())
-            return null;
-        const target = find();
-        if (target)
-            return target;
-        await delay();
-    }
-    return null;
-}
-
 const SHORTCUT_ORDER_STORAGE_KEY = "playhub.dashboard.shortcut-order.v1";
 function uniqueIds(values) {
     const seen = new Set();
@@ -14723,7 +18423,7 @@ function SiSteam (props) {
 }
 
 const { useCallback: useCallback$1, useEffect: useEffect$2, useLayoutEffect, useMemo: useMemo$2, useRef: useRef$1, useState: useState$2 } = _global_SP_REACT;
-const { Focusable: Focusable$3, GamepadButton: GamepadButton$2, Navigation: Navigation$2, TextField: TextField$1, ToggleField: ToggleField$2 } = _global_DFL;
+const { Focusable: Focusable$5, GamepadButton: GamepadButton$2, Navigation: Navigation$2, TextField: TextField$1, ToggleField: ToggleField$2 } = _global_DFL;
 const DASHBOARD_ROUTE = "/playhub-dashboard";
 const dashboardExit = createDashboardExit({
     hideOverlay: () => { closeDashboardOverlay(); clearDashboardChrome(); },
@@ -14901,7 +18601,10 @@ async function prepareDashboardOverlay() {
         const infos = await overlay.GetOverlayBrowserInfo?.();
         if (generation !== dashboardOverlayGeneration)
             return false;
-        const current = selectOverlay(infos, Number(_global_DFL?.Router?.MainRunningAppID) || undefined);
+        const running = steamAppId(window.SteamUIStore?.MainRunningAppID ?? _global_DFL?.Router?.MainRunningAppID);
+        if (!running)
+            return false;
+        const current = selectOverlay(infos, running);
         if (!current)
             return false;
         dashboardOverlayIdentity = current;
@@ -14909,8 +18612,10 @@ async function prepareDashboardOverlay() {
         // This is the same native activation signal Quick Settings observes to
         // suspend its own Lossless Scaling capture. Do not duplicate its ownership.
         dashboardOverlayRegistration = overlay.RegisterForOverlayActivated?.((pid, appId, active) => {
-            if (generation !== dashboardOverlayGeneration || Number(pid) !== current.unPID ||
-                Number(appId) !== current.appID || active)
+            if (generation !== dashboardOverlayGeneration || Number(pid) !== current.unPID || active)
+                return;
+            const reportedAppId = steamAppId(appId);
+            if (reportedAppId !== current.appID && reportedAppId !== running)
                 return;
             closeDashboardOverlay(false);
         });
@@ -15432,7 +19137,7 @@ function FocusItem({ className = "", children, onPress, onFocus, ...props }) {
         sound("open");
         onPress?.();
     };
-    return (SP_JSX.jsx(Focusable$3, { ...props, tabIndex: 0, "data-ph-focusable": "true", noFocusRing: true, focusClassName: "ph-focus", className: className, onActivate: activate, onClick: (event) => { if (event?.detail > 0)
+    return (SP_JSX.jsx(Focusable$5, { ...props, tabIndex: 0, "data-ph-focusable": "true", noFocusRing: true, focusClassName: "ph-focus", className: className, onActivate: activate, onClick: (event) => { if (event?.detail > 0)
             activate(event); }, onFocus: (event) => { sound("move"); onFocus?.(event); }, children: children }));
 }
 function gridDirectionFromKey(key) {
@@ -15577,7 +19282,7 @@ function focusSystemMetric(position = 0) {
     return true;
 }
 function FocusGrid({ className = "", children, ...props }) {
-    return (SP_JSX.jsx(Focusable$3, { ...props, className: className, "flow-children": "grid", "data-ph-focus-grid": "true", children: children }));
+    return (SP_JSX.jsx(Focusable$5, { ...props, className: className, "flow-children": "grid", "data-ph-focus-grid": "true", children: children }));
 }
 function useClock() {
     const [now, setNow] = useState$2(() => new Date());
@@ -15598,7 +19303,7 @@ function Header({ tab, setTab, copy, locale, logo }) {
             { id: "system", label: copy.system, icon: FiCpu },
         ];
     }, [copy]);
-    return (SP_JSX.jsxs("header", { className: "ph-header", children: [SP_JSX.jsx("div", { className: "ph-brand", children: logo ? SP_JSX.jsx("img", { src: logo, alt: "Playhub" }) : SP_JSX.jsx("div", { className: "ph-brand-fallback", children: "playhub" }) }), SP_JSX.jsx(Focusable$3, { className: "ph-tabs", "flow-children": "horizontal", children: tabs.map((item) => {
+    return (SP_JSX.jsxs("header", { className: "ph-header", children: [SP_JSX.jsx("div", { className: "ph-brand", children: logo ? SP_JSX.jsx("img", { src: logo, alt: "Playhub" }) : SP_JSX.jsx("div", { className: "ph-brand-fallback", children: "playhub" }) }), SP_JSX.jsx(Focusable$5, { className: "ph-tabs", "flow-children": "horizontal", children: tabs.map((item) => {
                     const Icon = item.icon;
                     return (SP_JSX.jsxs(FocusItem, { className: `ph-tab ${tab === item.id ? "ph-active" : ""}`, onPress: () => setTab(item.id), onButtonDown: (event) => {
                             if (item.id !== "system" || tab !== "system" || Number(event?.detail?.button) !== GamepadButton$2?.DIR_DOWN)
@@ -15775,7 +19480,7 @@ function TaskSwitcher({ copy, onReady, onSelectWindow }) {
             closingHandles.current.delete(entry.handle);
         }
     }, [windows, refresh, onReady]);
-    return (SP_JSX.jsxs("div", { className: "ph-page ph-switcher-page", children: [closeNotice ? SP_JSX.jsx("div", { className: "ph-window-notice", role: "status", "aria-live": "polite", children: closeNotice.text }) : null, windows.length === 0 ? (SP_JSX.jsx("div", { className: "ph-empty", children: SP_JSX.jsxs("div", { className: "ph-empty-inner", children: [SP_JSX.jsx(FiMonitor, {}), SP_JSX.jsx("div", { className: "ph-empty-title", children: copy.noWindows }), SP_JSX.jsx("div", { className: "ph-muted", children: copy.noWindowsBody })] }) })) : (SP_JSX.jsx(Focusable$3, { ref: rail, className: `ph-window-rail ${orderedWindows.length === 1 ? "ph-single" : ""}`, "flow-children": "horizontal", "data-ph-focus-grid": "true", children: orderedWindows.map((entry, index) => (SP_JSX.jsx(WindowCard, { entry: entry, artwork: artwork[entry.handle] ?? "", index: index, copy: copy, onSelect: () => onSelectWindow(entry), onAskClose: () => void closeEntry(entry, index) }, entry.handle))) }))] }));
+    return (SP_JSX.jsxs("div", { className: "ph-page ph-switcher-page", children: [closeNotice ? SP_JSX.jsx("div", { className: "ph-window-notice", role: "status", "aria-live": "polite", children: closeNotice.text }) : null, windows.length === 0 ? (SP_JSX.jsx("div", { className: "ph-empty", children: SP_JSX.jsxs("div", { className: "ph-empty-inner", children: [SP_JSX.jsx(FiMonitor, {}), SP_JSX.jsx("div", { className: "ph-empty-title", children: copy.noWindows }), SP_JSX.jsx("div", { className: "ph-muted", children: copy.noWindowsBody })] }) })) : (SP_JSX.jsx(Focusable$5, { ref: rail, className: `ph-window-rail ${orderedWindows.length === 1 ? "ph-single" : ""}`, "flow-children": "horizontal", "data-ph-focus-grid": "true", children: orderedWindows.map((entry, index) => (SP_JSX.jsx(WindowCard, { entry: entry, artwork: artwork[entry.handle] ?? "", index: index, copy: copy, onSelect: () => onSelectWindow(entry), onAskClose: () => void closeEntry(entry, index) }, entry.handle))) }))] }));
 }
 function focusShortcutTile(id) {
     const tile = Array.from(dashboardRoot()?.querySelectorAll("[data-shortcut-id]") ?? [])
@@ -16200,7 +19905,7 @@ function SystemTab({ copy, extra, onConfirm }) {
                                                     stopDirectionalEvent(event);
                                                     focusDashboard(".ph-process-row");
                                                 }
-                                            }, children: [SP_JSX.jsx(FiRefreshCw, {}), SP_JSX.jsx("span", { children: copy.restartDecky })] })] }), SP_JSX.jsx(Focusable$3, { className: "ph-process-list", "flow-children": "vertical", children: processes.slice(0, 18).map((process) => (SP_JSX.jsxs(FocusItem, { className: "ph-process-row", onPress: () => setSelectedProcess(process), onOKActionDescription: copy.open, onButtonDown: (event) => {
+                                            }, children: [SP_JSX.jsx(FiRefreshCw, {}), SP_JSX.jsx("span", { children: copy.restartDecky })] })] }), SP_JSX.jsx(Focusable$5, { className: "ph-process-list", "flow-children": "vertical", children: processes.slice(0, 18).map((process) => (SP_JSX.jsxs(FocusItem, { className: "ph-process-row", onPress: () => setSelectedProcess(process), onOKActionDescription: copy.open, onButtonDown: (event) => {
                                             const direction = gridDirectionFromGamepad(event?.detail?.button);
                                             if (direction === "up" && process === processes[0]) {
                                                 stopDirectionalEvent(event);
@@ -16243,14 +19948,14 @@ function ProcessOptionsSheet({ process, copy, onCancel, onClose, onKill }) {
         const timer = window.setTimeout(() => focusDashboard(".ph-process-options .ph-confirm-button"), 40);
         return () => window.clearTimeout(timer);
     }, []);
-    return (SP_JSX.jsx(Focusable$3, { className: "ph-confirm-backdrop ph-process-options", onCancel: (event) => { stopEvent$1(event, true); onCancel(); }, onCancelButton: (event) => { stopEvent$1(event, true); onCancel(); }, children: SP_JSX.jsxs("div", { className: "ph-confirm", children: [SP_JSX.jsx("div", { className: "ph-confirm-title", children: process.name }), SP_JSX.jsxs("div", { className: "ph-confirm-name", children: ["PID ", process.id] }), SP_JSX.jsxs(Focusable$3, { className: "ph-confirm-actions ph-three", "flow-children": "horizontal", children: [SP_JSX.jsx(FocusItem, { preferredFocus: true, className: "ph-confirm-button", onPress: onCancel, children: copy.cancel }), SP_JSX.jsx(FocusItem, { className: "ph-confirm-button", onPress: onClose, children: copy.close }), SP_JSX.jsx(FocusItem, { className: "ph-confirm-button ph-danger", onPress: onKill, children: copy.forceClose })] })] }) }));
+    return (SP_JSX.jsx(Focusable$5, { className: "ph-confirm-backdrop ph-process-options", onCancel: (event) => { stopEvent$1(event, true); onCancel(); }, onCancelButton: (event) => { stopEvent$1(event, true); onCancel(); }, children: SP_JSX.jsxs("div", { className: "ph-confirm", children: [SP_JSX.jsx("div", { className: "ph-confirm-title", children: process.name }), SP_JSX.jsxs("div", { className: "ph-confirm-name", children: ["PID ", process.id] }), SP_JSX.jsxs(Focusable$5, { className: "ph-confirm-actions ph-three", "flow-children": "horizontal", children: [SP_JSX.jsx(FocusItem, { preferredFocus: true, className: "ph-confirm-button", onPress: onCancel, children: copy.cancel }), SP_JSX.jsx(FocusItem, { className: "ph-confirm-button", onPress: onClose, children: copy.close }), SP_JSX.jsx(FocusItem, { className: "ph-confirm-button ph-danger", onPress: onKill, children: copy.forceClose })] })] }) }));
 }
 function ConfirmSheet({ title, name, copy, onCancel, onConfirm }) {
     useEffect$2(() => {
         const timer = window.setTimeout(() => focusDashboard(".ph-confirm-button"), 40);
         return () => window.clearTimeout(timer);
     }, []);
-    return (SP_JSX.jsx(Focusable$3, { className: "ph-confirm-backdrop", onCancel: (event) => { stopEvent$1(event, true); onCancel(); }, onCancelButton: (event) => { stopEvent$1(event, true); onCancel(); }, children: SP_JSX.jsxs("div", { className: "ph-confirm", children: [SP_JSX.jsx("div", { className: "ph-confirm-title", children: title }), SP_JSX.jsx("div", { className: "ph-confirm-name", children: name }), SP_JSX.jsxs(Focusable$3, { className: "ph-confirm-actions", "flow-children": "horizontal", children: [SP_JSX.jsx(FocusItem, { preferredFocus: true, className: "ph-confirm-button", onPress: onCancel, children: copy.cancel }), SP_JSX.jsx(FocusItem, { className: "ph-confirm-button ph-danger", onPress: onConfirm, children: copy.continue })] })] }) }));
+    return (SP_JSX.jsx(Focusable$5, { className: "ph-confirm-backdrop", onCancel: (event) => { stopEvent$1(event, true); onCancel(); }, onCancelButton: (event) => { stopEvent$1(event, true); onCancel(); }, children: SP_JSX.jsxs("div", { className: "ph-confirm", children: [SP_JSX.jsx("div", { className: "ph-confirm-title", children: title }), SP_JSX.jsx("div", { className: "ph-confirm-name", children: name }), SP_JSX.jsxs(Focusable$5, { className: "ph-confirm-actions", "flow-children": "horizontal", children: [SP_JSX.jsx(FocusItem, { preferredFocus: true, className: "ph-confirm-button", onPress: onCancel, children: copy.cancel }), SP_JSX.jsx(FocusItem, { className: "ph-confirm-button ph-danger", onPress: onConfirm, children: copy.continue })] })] }) }));
 }
 function AppOptionsSheet({ shortcut, copy, extra, onCancel, onRemove, onSave }) {
     const [name, setName] = useState$2(shortcut.name);
@@ -16259,7 +19964,7 @@ function AppOptionsSheet({ shortcut, copy, extra, onCancel, onRemove, onSave }) 
         const timer = window.setTimeout(() => focusDashboard(".ph-options-field input"), 50);
         return () => window.clearTimeout(timer);
     }, []);
-    return (SP_JSX.jsx(Focusable$3, { className: "ph-confirm-backdrop", onCancel: (event) => { stopEvent$1(event, true); onCancel(); }, onCancelButton: (event) => { stopEvent$1(event, true); onCancel(); }, children: SP_JSX.jsxs("div", { className: "ph-confirm", children: [SP_JSX.jsx("div", { className: "ph-confirm-title", children: extra.options }), SP_JSX.jsx("div", { className: "ph-confirm-name", children: shortcut.name }), SP_JSX.jsx("div", { className: "ph-options-field", children: SP_JSX.jsx(TextField$1, { value: name, onChange: (event) => setName(event.target.value), style: { width: "100%", minWidth: 0 } }) }), SP_JSX.jsx(ToggleField$2, { label: extra.sdl3, description: extra.sdl3Description, checked: sdl3, onChange: setSdl3 }), SP_JSX.jsxs(Focusable$3, { className: "ph-confirm-actions ph-three", "flow-children": "horizontal", children: [SP_JSX.jsx(FocusItem, { className: "ph-confirm-button", onPress: onCancel, children: copy.cancel }), SP_JSX.jsx(FocusItem, { className: "ph-confirm-button ph-danger", onPress: onRemove, children: copy.remove }), SP_JSX.jsx(FocusItem, { className: "ph-confirm-button", onPress: () => { if (name.trim())
+    return (SP_JSX.jsx(Focusable$5, { className: "ph-confirm-backdrop", onCancel: (event) => { stopEvent$1(event, true); onCancel(); }, onCancelButton: (event) => { stopEvent$1(event, true); onCancel(); }, children: SP_JSX.jsxs("div", { className: "ph-confirm", children: [SP_JSX.jsx("div", { className: "ph-confirm-title", children: extra.options }), SP_JSX.jsx("div", { className: "ph-confirm-name", children: shortcut.name }), SP_JSX.jsx("div", { className: "ph-options-field", children: SP_JSX.jsx(TextField$1, { value: name, onChange: (event) => setName(event.target.value), style: { width: "100%", minWidth: 0 } }) }), SP_JSX.jsx(ToggleField$2, { label: extra.sdl3, description: extra.sdl3Description, checked: sdl3, onChange: setSdl3 }), SP_JSX.jsxs(Focusable$5, { className: "ph-confirm-actions ph-three", "flow-children": "horizontal", children: [SP_JSX.jsx(FocusItem, { className: "ph-confirm-button", onPress: onCancel, children: copy.cancel }), SP_JSX.jsx(FocusItem, { className: "ph-confirm-button ph-danger", onPress: onRemove, children: copy.remove }), SP_JSX.jsx(FocusItem, { className: "ph-confirm-button", onPress: () => { if (name.trim())
                                 onSave(name.trim(), sdl3); }, children: extra.save })] })] }) }));
 }
 function DashboardSurface() {
@@ -16505,7 +20210,7 @@ function DashboardSurface() {
         targets.forEach((targetWindow) => targetWindow.addEventListener("keydown", onKeyDown, true));
         return () => targets.forEach((targetWindow) => targetWindow.removeEventListener("keydown", onKeyDown, true));
     }, [cancelDashboard, tab]);
-    return (SP_JSX.jsxs(Focusable$3, { ref: root, className: "ph-dashboard", noFocusRing: true, onButtonDown: (event) => {
+    return (SP_JSX.jsxs(Focusable$5, { ref: root, className: "ph-dashboard", noFocusRing: true, onButtonDown: (event) => {
             const button = Number(event?.detail?.button);
             if (button === (GamepadButton$2?.CANCEL ?? 2)) {
                 cancelDashboard(event);
@@ -16681,6 +20386,8 @@ function modernHapticIntensity(value, scale = 1) {
 }
 
 const MODERN_HAPTIC_CONTROLLERS = new Set([10, 48]);
+const CONTROLLER_FOCUS_WINDOW_MS = 260;
+const KEYBOARD_COLLISION_WINDOW_MS = 80;
 const pending = new Set();
 let config = { enabled: false, intensity: 55 };
 let configRevision = 0;
@@ -16691,7 +20398,6 @@ function subscribeNavigationHaptics(listener) {
     configListeners.add(listener);
     return () => { configListeners.delete(listener); };
 }
-let lastControllerIndex = 0;
 const soundRequests = new Map();
 const soundPlayerPatches = [];
 const uiAudioManagers = new Set();
@@ -16703,7 +20409,6 @@ const soundBuffersByAction = new Map();
 const waveformTimers = new Set();
 let waveformGeneration = 0;
 let lastNativeRequestId = Math.floor(Date.now() * 1000);
-const gamepadTimestamps = new Map();
 function clampIntensity(value) {
     return Math.max(5, Math.min(100, Math.round(value)));
 }
@@ -16804,12 +20509,13 @@ function sliderValue(element) {
     return Number.isFinite(value) ? value : null;
 }
 function controllerFor(index) {
+    if (!Number.isInteger(index) || index < 0 || index >= 0xffffffff)
+        return undefined;
     const store = window.ControllerStore;
-    const controllers = Array.from(store?.GetControllers?.() ?? []);
-    return store?.GetController?.(index)
-        ?? controllers.find((controller) => Number(controller?.nControllerIndex) === index)
-        ?? controllers.find((controller) => Number(controller?.nXInputIndex) === index && index !== 0xffffffff)
-        ?? (controllers.length === 1 ? controllers[0] : undefined);
+    const exact = store?.GetController?.(index);
+    if (exact?.nControllerIndex === index)
+        return exact;
+    return Array.from(store?.GetControllers?.() ?? []).find(controller => controller?.nControllerIndex === index);
 }
 function usesModernHaptics(controller) {
     const vendor = Number(controller?.unVendorID);
@@ -16824,26 +20530,11 @@ function activeController(preferredIndex) {
     const index = Number(controller?.nControllerIndex);
     return Number.isFinite(index) ? controller : undefined;
 }
-function controllerFromActiveSlot(value) {
-    const slot = Number(value?.nActiveController ?? value);
-    if (!Number.isInteger(slot) || slot < 0)
-        return undefined;
-    const store = window.ControllerStore;
-    const controllers = Array.from(store?.GetControllers?.() ?? []);
-    const controller = controllers[slot] ?? store?.GetController?.(slot);
-    return Number.isFinite(Number(controller?.nControllerIndex)) ? controller : undefined;
-}
 function gamepadHardwareId(id) {
     const match = id.match(/Vendor:\s*([0-9a-f]{4})\s+Product:\s*([0-9a-f]{4})/i);
     if (!match)
         return null;
     return { vendor: Number.parseInt(match[1], 16), product: Number.parseInt(match[2], 16) };
-}
-function primeGamepadTimestamps() {
-    gamepadTimestamps.clear();
-    for (const gamepad of Array.from(navigator.getGamepads?.() ?? []).filter(Boolean)) {
-        gamepadTimestamps.set(gamepad.index, Number(gamepad.timestamp) || 0);
-    }
 }
 function later(callback, delay) {
     const timer = window.setTimeout(() => {
@@ -17122,12 +20813,7 @@ function stopActiveHaptics() {
 function playNavigationHaptic(action, controllerIndex) {
     if (!config.enabled || !steamIsForeground())
         return;
-    const controller = activeController(controllerIndex ?? lastControllerIndex);
-    if (!controller)
-        return;
-    const index = Number(controller.nControllerIndex);
-    lastControllerIndex = index;
-    playActionPattern(index, action);
+    playActionPattern(controllerIndex, action);
 }
 function configureNavigationHaptics(next) {
     configRevision += 1;
@@ -17167,13 +20853,14 @@ function actionForButton(button) {
 }
 function installNavigationHaptics() {
     let registration;
-    let activeControllerRegistration;
     let lastElement = null;
     let lastIdentity = "";
     let lastBox = null;
     let lastSliderValue = null;
     let lastToggleState = null;
-    let lastButtonAt = 0;
+    let lastButtonAt = -Infinity;
+    let lastKeyboardAt = -Infinity;
+    let controllerInput;
     let lastFocusAction = null;
     let lastFocusActionAt = 0;
     const identities = new WeakMap();
@@ -17182,26 +20869,65 @@ function installNavigationHaptics() {
     let lastLetterAt = 0;
     const letterObservers = new Map();
     const focusDocuments = new Map();
+    const heldKeys = new Set();
     let focusFrame;
     let focusContext;
     let focusRegistration;
+    const interruptControllerFeedback = () => {
+        lastKeyboardAt = performance.now();
+        // A delayed native reply or waveform can outlive the focus attribution
+        // window. A new input device must cancel it regardless of that age.
+        if (controllerInput) {
+            soundRequests.forEach(discardSoundRequest);
+            stopActiveHaptics();
+        }
+        controllerInput = undefined;
+    };
+    const onKeyboard = (event) => {
+        if (!event.isTrusted)
+            return;
+        const key = event.code || event.key || "keyboard";
+        if (event.type === "keyup")
+            heldKeys.delete(key);
+        else
+            heldKeys.add(key);
+        interruptControllerFeedback();
+    };
+    const onPointer = (event) => {
+        if (event.isTrusted)
+            interruptControllerFeedback();
+    };
+    const onBlur = (event) => {
+        // Capturing blur also sees ordinary focus changes between controls.
+        // Only leaving the window loses the corresponding keyboard key-up events.
+        if (event.target === event.currentTarget)
+            heldKeys.clear();
+    };
+    const controllerForFocus = (now) => controllerInput && now - controllerInput.at <= CONTROLLER_FOCUS_WINDOW_MS
+        && controllerFor(controllerInput.index) ? controllerInput.index : undefined;
     const playFocusAction = (action) => {
         const now = performance.now();
+        const index = controllerForFocus(now);
+        if (index === undefined)
+            return;
         if (now - lastButtonAt < 180)
             return;
         if (lastFocusAction === action && now - lastFocusActionAt < 140)
             return;
         lastFocusAction = action;
         lastFocusActionAt = now;
-        playNavigationHaptic(action);
+        playNavigationHaptic(action, index);
     };
     const playLetter = (value) => {
         const now = performance.now();
+        const index = controllerForFocus(now);
+        if (index === undefined)
+            return;
         if (value === lastLetter && now - lastLetterAt < 80)
             return;
         lastLetter = value;
         lastLetterAt = now;
-        playNavigationHaptic("letter");
+        playNavigationHaptic("letter", index);
     };
     const inspectLetter = (node) => {
         let candidate = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node);
@@ -17231,7 +20957,7 @@ function installNavigationHaptics() {
             if (!Observer)
                 continue;
             const observer = new Observer((mutations) => {
-                if (!config.enabled || !steamIsForeground())
+                if (!config.enabled || controllerForFocus(performance.now()) === undefined || !steamIsForeground())
                     return;
                 for (const mutation of mutations) {
                     inspectLetter(mutation.target);
@@ -17242,7 +20968,6 @@ function installNavigationHaptics() {
             letterObservers.set(doc, observer);
         }
     };
-    primeGamepadTimestamps();
     bindLetterObservers();
     const inspectFocus = () => {
         if (!config.enabled || !steamIsForeground())
@@ -17326,19 +21051,24 @@ function installNavigationHaptics() {
         for (const root of steamRoots()) {
             const doc = root?.document;
             const Observer = root?.MutationObserver;
-            if (!doc?.documentElement || !Observer || focusDocuments.has(doc))
+            if (!doc?.documentElement || focusDocuments.has(doc))
                 continue;
             const onValue = scheduleFocusInspection;
+            const keyTarget = doc.defaultView ?? doc;
+            keyTarget.addEventListener("keydown", onKeyboard, true);
+            keyTarget.addEventListener("keyup", onKeyboard, true);
+            keyTarget.addEventListener("pointerdown", onPointer, true);
+            keyTarget.addEventListener("blur", onBlur, true);
             doc.addEventListener("focusin", onValue, true);
             doc.addEventListener("input", onValue, true);
             doc.addEventListener("change", onValue, true);
-            const observer = new Observer(scheduleFocusInspection);
-            observer.observe(doc.documentElement, {
+            const observer = Observer ? new Observer(scheduleFocusInspection) : undefined;
+            observer?.observe(doc.documentElement, {
                 attributes: true,
                 subtree: true,
                 attributeFilter: ["aria-valuenow", "aria-checked", "aria-selected", "aria-activedescendant"],
             });
-            focusDocuments.set(doc, { observer, onValue });
+            focusDocuments.set(doc, { observer, onValue, keyTarget });
         }
     };
     bindFocusContext();
@@ -17349,28 +21079,20 @@ function installNavigationHaptics() {
         bindFocusDocuments();
     }, 500);
     try {
-        activeControllerRegistration = window.SteamClient?.Input?.RegisterForActiveControllerChanges?.((message) => {
-            const controller = controllerFromActiveSlot(message);
-            if (controller)
-                lastControllerIndex = Number(controller.nControllerIndex);
-        });
         registration = window.SteamClient?.Input?.RegisterForControllerInputMessages?.((...args) => {
             const message = args[0] && typeof args[0] === "object" ? args[0] : undefined;
-            const slotController = controllerFromActiveSlot(message);
-            const controllerIndex = Number(slotController?.nControllerIndex
-                ?? message?.nControllerIndex
-                ?? message?.unControllerIndex
-                ?? args[0]);
-            const button = Number(message?.eButton ?? message?.nButton ?? message?.button ?? args[1]);
-            const pressed = Boolean(message?.bPressed ?? message?.bDown ?? message?.pressed ?? args[2]);
-            if (!pressed)
+            const index = message?.nControllerIndex ?? message?.unControllerIndex ?? args[0];
+            const button = message?.eButton ?? message?.nButton ?? message?.button ?? args[1];
+            const pressed = message?.bPressed ?? message?.bDown ?? message?.pressed ?? args[2];
+            const now = performance.now();
+            if (!config.enabled || pressed !== true || !Number.isInteger(button) || !controllerFor(index)
+                || heldKeys.size > 0 || now - lastKeyboardAt <= KEYBOARD_COLLISION_WINDOW_MS || !steamIsForeground())
                 return;
-            if (Number.isInteger(controllerIndex) && activeController(controllerIndex))
-                lastControllerIndex = controllerIndex;
+            controllerInput = { index, at: now };
             const action = actionForButton(button);
             if (action) {
-                lastButtonAt = performance.now();
-                playNavigationHaptic(action, controllerIndex);
+                lastButtonAt = now;
+                playNavigationHaptic(action, index);
             }
         });
     }
@@ -17387,8 +21109,12 @@ function installNavigationHaptics() {
         catch { }
         focusRegistration = undefined;
         focusContext = undefined;
-        focusDocuments.forEach(({ observer, onValue }, doc) => {
-            observer.disconnect();
+        focusDocuments.forEach(({ observer, onValue, keyTarget }, doc) => {
+            observer?.disconnect();
+            keyTarget.removeEventListener("keydown", onKeyboard, true);
+            keyTarget.removeEventListener("keyup", onKeyboard, true);
+            keyTarget.removeEventListener("pointerdown", onPointer, true);
+            keyTarget.removeEventListener("blur", onBlur, true);
             doc.removeEventListener("focusin", onValue, true);
             doc.removeEventListener("input", onValue, true);
             doc.removeEventListener("change", onValue, true);
@@ -17398,10 +21124,6 @@ function installNavigationHaptics() {
         letterObservers.clear();
         try {
             (registration?.Unregister ?? registration?.unregister)?.call(registration);
-        }
-        catch { }
-        try {
-            (activeControllerRegistration?.Unregister ?? activeControllerRegistration?.unregister)?.call(activeControllerRegistration);
         }
         catch { }
         pending.forEach((timer) => window.clearTimeout(timer));
@@ -17420,7 +21142,6 @@ function installNavigationHaptics() {
         patchedAudioSourcePrototypes.clear();
         soundBuffersByUrl.clear();
         soundBuffersByAction.clear();
-        gamepadTimestamps.clear();
     };
 }
 
@@ -19513,7 +23234,8 @@ function featuredPlugins(plugins, limit = 6) {
     const requestedLimit = Math.max(0, Math.floor(limit));
     if (!requestedLimit)
         return [];
-    const playhub = plugins.filter((plugin) => plugin.catalogSource === "playhub").sort(compareCatalogAdded);
+    const playhub = plugins.filter((plugin) => plugin.catalogSource === "playhub").sort((a, b) => Number(b.keywords.some((keyword) => keyword.toLowerCase() === "featured")) -
+        Number(a.keywords.some((keyword) => keyword.toLowerCase() === "featured")) || compareCatalogAdded(a, b));
     const required = FEATURED_DECKY_REPOSITORIES.map((repository) => plugins.find((plugin) => plugin.catalogSource === "decky-store" &&
         plugin.repository.toLocaleLowerCase("en-US") === repository.toLocaleLowerCase("en-US"))).filter((plugin) => Boolean(plugin));
     const selected = [];
@@ -19701,7 +23423,7 @@ function resolveInstallArtifact(plugin, release) {
 }
 
 var schemaVersion = 3;
-var verifiedAt = "2026-11-10";
+var verifiedAt = "2026-11-13";
 var officialDeckyCatalogUrl = "https://plugins.deckbrew.xyz/plugins";
 var plugins = [
 	{
@@ -20214,6 +23936,46 @@ var plugins = [
 		],
 		firstPublishedAt: "2026-08-22T10:52:12Z",
 		updatedAt: "2026-08-22T10:52:12Z"
+	},
+	{
+		active: true,
+		name: "Discord",
+		installFolder: "Discord",
+		author: "LoZazaMastro, based on Steamcord by Necrosiak",
+		repository: "LoZazaMastro/Playhub-Discord",
+		repositoryUrl: "https://github.com/LoZazaMastro/Playhub-Discord",
+		version: "1.0.1",
+		releaseAssetName: "Discord_Installer-1.0.1.zip",
+		catalogReleaseUrl: "https://github.com/LoZazaMastro/Playhub-Discord/releases/download/v1.0.1/Discord_Installer-1.0.1.zip",
+		releasePublishedAt: "2026-11-13T13:44:30Z",
+		firstPublishedAt: "2026-11-13T13:44:30Z",
+		updatedAt: "2026-11-13T13:44:30Z",
+		category: "Playhub",
+		shortDescription: "Discord voice, channels and conversations, built into Playhub for Windows.",
+		longDescription: "Discord voice, channels and conversations, built into Playhub for Windows.",
+		coverUrl: "https://raw.githubusercontent.com/LoZazaMastro/Playhub/main/assets/plugin-store/discord.png",
+		iconGlyph: "",
+		catalogStatus: "playhub",
+		catalogSource: "playhub",
+		catalogPluginId: 0,
+		compatibility: "Windows",
+		keywords: [
+			"discord",
+			"chat",
+			"voice",
+			"channels",
+			"conversations",
+			"Windows",
+			"noloc",
+			"catalog-added:2026-11-13",
+			"first-release:2026-11-13",
+			"featured"
+		],
+		aliases: [
+			"Discord",
+			"Playhub-Discord",
+			"playhub-discord"
+		]
 	},
 	{
 		active: true,
@@ -32457,7 +36219,7 @@ var plugins = [
 		longDescription: "WiFi optimizations for game streaming and online play. Survives sleep and updates."
 	}
 ];
-var catalogRevision = 12;
+var catalogRevision = 13;
 var bundledCatalogData = {
 	schemaVersion: schemaVersion,
 	verifiedAt: verifiedAt,
@@ -33061,7 +36823,7 @@ function subscribePluginProgress(listener) {
 }
 
 const { useCallback, useEffect: useEffect$1, useMemo: useMemo$1, useRef, useState: useState$1 } = _global_SP_REACT;
-const { DialogButton: DialogButton$2, ConfirmModal: ConfirmModal$1, Focusable: Focusable$2, GamepadButton: GamepadButton$1, ModalRoot, Navigation: Navigation$1, SteamSpinner, Tabs, TextField, showModal: showModal$1, } = _global_DFL;
+const { DialogButton: DialogButton$4, ConfirmModal: ConfirmModal$1, Focusable: Focusable$4, GamepadButton: GamepadButton$1, ModalRoot, Navigation: Navigation$1, SteamSpinner, Tabs, TextField, showModal: showModal$1, } = _global_DFL;
 const PLUGIN_STORE_ROUTE = "/playhub/plugin-store";
 const STORE_STYLE = `
   .ph-store-page { box-sizing:border-box; width:100%; height:100%; min-width:0; color:#f5f5f5; background:rgba(8,8,10,.76); }
@@ -33343,7 +37105,7 @@ function ScrollReader({ children, copy, onBack }) {
         onBack();
     }, [reading, onBack]);
     const cancel = useGuardedCancel(cancelAction);
-    return (SP_JSX.jsx(Focusable$2, { ref: ref, className: `ph-store-reader${reading ? " ph-reading" : ""}`, noFocusRing: true, "flow-children": "none", onActivate: (event) => { stopEvent(event); setReading(true); }, onOKButton: (event) => { stopEvent(event); setReading(true); }, onCancel: cancel, onCancelButton: cancel, onOKActionDescription: reading ? undefined : copy.scroll, onCancelActionDescription: reading ? copy.stopReading : copy.back, actionDescriptionMap: reading ? {
+    return (SP_JSX.jsx(Focusable$4, { ref: ref, className: `ph-store-reader${reading ? " ph-reading" : ""}`, noFocusRing: true, "flow-children": "none", onActivate: (event) => { stopEvent(event); setReading(true); }, onOKButton: (event) => { stopEvent(event); setReading(true); }, onCancel: cancel, onCancelButton: cancel, onOKActionDescription: reading ? undefined : copy.scroll, onCancelActionDescription: reading ? copy.stopReading : copy.back, actionDescriptionMap: reading ? {
             [GamepadButton$1.DIR_UP]: copy.scroll,
             [GamepadButton$1.DIR_DOWN]: copy.scroll,
         } : undefined, onButtonDown: (event) => {
@@ -33359,7 +37121,7 @@ function ScrollReader({ children, copy, onBack }) {
 function MediaViewer({ item, copy, closeModal }) {
     const video = useRef(null);
     const close = useGuardedCancel(() => closeModal?.());
-    return (SP_JSX.jsx(ModalRoot, { closeModal: closeModal, onCancel: () => closeModal?.(), style: { width: "90vw", maxWidth: "1200px", boxSizing: "border-box" }, children: SP_JSX.jsx(Focusable$2, { className: "ph-store-media-modal", style: { width: "100%", maxWidth: "100%", height: "78vh", minWidth: 0, overflow: "hidden", display: "grid", gridTemplateRows: "minmax(0,1fr)" }, "flow-children": "column", onCancel: close, onCancelButton: close, onMenuButton: stopEvent, onMenuActionDescription: "", children: SP_JSX.jsx(Focusable$2, { style: { width: "100%", height: "100%", minWidth: 0, minHeight: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }, "flow-children": "none", onOKActionDescription: copy.select, onOKButton: (event) => {
+    return (SP_JSX.jsx(ModalRoot, { closeModal: closeModal, onCancel: () => closeModal?.(), style: { width: "90vw", maxWidth: "1200px", boxSizing: "border-box" }, children: SP_JSX.jsx(Focusable$4, { className: "ph-store-media-modal", style: { width: "100%", maxWidth: "100%", height: "78vh", minWidth: 0, overflow: "hidden", display: "grid", gridTemplateRows: "minmax(0,1fr)" }, "flow-children": "column", onCancel: close, onCancelButton: close, onMenuButton: stopEvent, onMenuActionDescription: "", children: SP_JSX.jsx(Focusable$4, { style: { width: "100%", height: "100%", minWidth: 0, minHeight: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }, "flow-children": "none", onOKActionDescription: copy.select, onOKButton: (event) => {
                     stopEvent(event);
                     if (video.current?.paused)
                         void video.current.play().catch(() => { });
@@ -33380,7 +37142,7 @@ function SafeMedia({ item, copy }) {
     const [visible, setVisible] = useState$1(true);
     if (!visible)
         return null;
-    return (SP_JSX.jsx(Focusable$2, { className: "ph-store-media-item", "flow-children": "none", onOKActionDescription: copy.select, onActivate: (event) => {
+    return (SP_JSX.jsx(Focusable$4, { className: "ph-store-media-item", "flow-children": "none", onOKActionDescription: copy.select, onActivate: (event) => {
             stopEvent(event);
             openStoreMedia(item, copy);
         }, children: item.kind === "video"
@@ -33424,7 +37186,7 @@ function PluginActionButton({ plugin, shared }) {
         return null;
     const running = pluginOperationActive(plugin, current, shared.progress);
     const label = preparing || running ? shared.copy.preparing : update ? shared.copy.update : shared.copy.install;
-    return (SP_JSX.jsxs(DialogButton$2, { className: "ph-store-action", "aria-label": label, title: label, onOKActionDescription: label, disabled: preparing || running, onClick: async (event) => {
+    return (SP_JSX.jsxs(DialogButton$4, { className: "ph-store-action", "aria-label": label, title: label, onOKActionDescription: label, disabled: preparing || running, onClick: async (event) => {
             stopEvent(event);
             setPreparing(true);
             try {
@@ -33448,8 +37210,8 @@ function PluginActionButton({ plugin, shared }) {
 }
 function VersionPicker({ plugin, shared, versions, closeModal }) {
     const [busy, setBusy] = useState$1(false);
-    return SP_JSX.jsxs(ModalRoot, { closeModal: closeModal, onCancel: closeModal, children: [SP_JSX.jsx("h2", { children: shared.copy.chooseVersion }), SP_JSX.jsx(Focusable$2, { "flow-children": "column", style: { maxHeight: "60vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, padding: "8px 4px" }, children: !versions.length ? SP_JSX.jsx("p", { children: shared.copy.releaseUnavailable }) :
-                    versions.map((artifact) => SP_JSX.jsx(DialogButton$2, { disabled: busy, onClick: async () => {
+    return SP_JSX.jsxs(ModalRoot, { closeModal: closeModal, onCancel: closeModal, children: [SP_JSX.jsx("h2", { children: shared.copy.chooseVersion }), SP_JSX.jsx(Focusable$4, { "flow-children": "column", style: { maxHeight: "60vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, padding: "8px 4px" }, children: !versions.length ? SP_JSX.jsx("p", { children: shared.copy.releaseUnavailable }) :
+                    versions.map((artifact) => SP_JSX.jsx(DialogButton$4, { disabled: busy, onClick: async () => {
                             if (!await confirmStoreOperation(shared.copy.installQuestion, "", shared.copy.install, shared.copy))
                                 return;
                             setBusy(true);
@@ -33469,7 +37231,7 @@ function UninstallButton({ plugin, shared }) {
     const installed = findInstalledPlugin(plugin, shared.installed);
     if (!installed)
         return null;
-    return (SP_JSX.jsx(DialogButton$2, { className: "ph-store-action", "aria-label": shared.copy.uninstall, title: shared.copy.uninstall, onOKActionDescription: shared.copy.uninstall, onClick: (event) => {
+    return (SP_JSX.jsx(DialogButton$4, { className: "ph-store-action", "aria-label": shared.copy.uninstall, title: shared.copy.uninstall, onOKActionDescription: shared.copy.uninstall, onClick: (event) => {
             stopEvent(event);
             try {
                 requestDeckyUninstall(installed.name, shared.copy.uninstallTitle, shared.copy.uninstall, shared.copy.uninstallDescription);
@@ -33484,10 +37246,10 @@ function UninstallButton({ plugin, shared }) {
 }
 function PluginRow({ plugin, shared, onOpen, manage = false }) {
     const update = pluginHasUpdate(plugin, shared.installed);
-    const body = (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "ph-store-row-media", children: SP_JSX.jsx(PluginImage, { plugin: plugin }) }), SP_JSX.jsxs("div", { className: "ph-store-row-copy", children: [SP_JSX.jsx("h3", { className: "ph-store-row-title", children: plugin.name }), SP_JSX.jsx("p", { className: "ph-store-row-description", children: plugin.shortDescription })] }), SP_JSX.jsxs("div", { className: "ph-store-row-trailing", children: [update ? SP_JSX.jsx("span", { className: "ph-store-update-marker", "aria-label": shared.copy.update, children: SP_JSX.jsx(TbRefresh, {}) }) : null, plugin.catalogStatus === "installed-only" ? null : SP_JSX.jsx(SourceBadge, { source: plugin.catalogSource }), manage ? (SP_JSX.jsxs(Focusable$2, { className: "ph-store-actions", "flow-children": "row", noFocusRing: true, children: [SP_JSX.jsx(PluginActionButton, { plugin: plugin, shared: shared }), SP_JSX.jsx(UninstallButton, { plugin: plugin, shared: shared })] })) : null] })] }));
+    const body = (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "ph-store-row-media", children: SP_JSX.jsx(PluginImage, { plugin: plugin }) }), SP_JSX.jsxs("div", { className: "ph-store-row-copy", children: [SP_JSX.jsx("h3", { className: "ph-store-row-title", children: plugin.name }), SP_JSX.jsx("p", { className: "ph-store-row-description", children: plugin.shortDescription })] }), SP_JSX.jsxs("div", { className: "ph-store-row-trailing", children: [update ? SP_JSX.jsx("span", { className: "ph-store-update-marker", "aria-label": shared.copy.update, children: SP_JSX.jsx(TbRefresh, {}) }) : null, plugin.catalogStatus === "installed-only" ? null : SP_JSX.jsx(SourceBadge, { source: plugin.catalogSource }), manage ? (SP_JSX.jsxs(Focusable$4, { className: "ph-store-actions", "flow-children": "row", noFocusRing: true, children: [SP_JSX.jsx(PluginActionButton, { plugin: plugin, shared: shared }), SP_JSX.jsx(UninstallButton, { plugin: plugin, shared: shared })] })) : null] })] }));
     if (manage || !onOpen)
         return SP_JSX.jsx("div", { className: "ph-store-row ph-store-row-manage", children: body });
-    return (SP_JSX.jsx(Focusable$2, { className: "ph-store-row ph-store-row-openable", onActivate: (event) => { stopEvent(event); onOpen(plugin); }, onOKButton: (event) => { stopEvent(event); onOpen(plugin); }, onOKActionDescription: shared.copy.select, children: body }));
+    return (SP_JSX.jsx(Focusable$4, { className: "ph-store-row ph-store-row-openable", onActivate: (event) => { stopEvent(event); onOpen(plugin); }, onOKButton: (event) => { stopEvent(event); onOpen(plugin); }, onOKActionDescription: shared.copy.select, children: body }));
 }
 function PluginRows({ plugins, shared, onOpen, manage = false }) {
     if (!plugins.length)
@@ -33501,7 +37263,7 @@ function SourceFilters({ value, onChange, copy }) {
         { id: "decky-store", label: "Decky Store" },
         { id: "outside-store", label: "GitHub" },
     ];
-    return (SP_JSX.jsx(Focusable$2, { className: "ph-store-filter", "flow-children": "row", noFocusRing: true, children: options.map((option) => (SP_JSX.jsx(DialogButton$2, { className: value === option.id ? "ph-selected" : "", onClick: () => onChange(option.id), children: option.id === "all" ? option.label : SP_JSX.jsx(SourceBadge, { source: option.id }) }, option.id))) }));
+    return (SP_JSX.jsx(Focusable$4, { className: "ph-store-filter", "flow-children": "row", noFocusRing: true, children: options.map((option) => (SP_JSX.jsx(DialogButton$4, { className: value === option.id ? "ph-selected" : "", onClick: () => onChange(option.id), children: option.id === "all" ? option.label : SP_JSX.jsx(SourceBadge, { source: option.id }) }, option.id))) }));
 }
 function sortLabel(sort, copy) {
     if (sort === "newest")
@@ -33515,7 +37277,7 @@ function SortPickerModal({ value, copy, onChange, closeModal }) {
         onChange(next);
         closeModal();
     };
-    return (SP_JSX.jsxs(ModalRoot, { className: "ph-store-sort-modal", closeModal: closeModal, onCancel: closeModal, children: [SP_JSX.jsx("h2", { children: copy.sortBy }), SP_JSX.jsx(Focusable$2, { className: "ph-store-sort-options", "flow-children": "column", noFocusRing: true, children: ["name", "newest", "updated"].map((option) => (SP_JSX.jsx(DialogButton$2, { className: value === option ? "ph-selected" : "", onClick: () => choose(option), children: sortLabel(option, copy) }, option))) })] }));
+    return (SP_JSX.jsxs(ModalRoot, { className: "ph-store-sort-modal", closeModal: closeModal, onCancel: closeModal, children: [SP_JSX.jsx("h2", { children: copy.sortBy }), SP_JSX.jsx(Focusable$4, { className: "ph-store-sort-options", "flow-children": "column", noFocusRing: true, children: ["name", "newest", "updated"].map((option) => (SP_JSX.jsx(DialogButton$4, { className: value === option ? "ph-selected" : "", onClick: () => choose(option), children: sortLabel(option, copy) }, option))) })] }));
 }
 function openSortPicker(value, copy, onChange) {
     let modal;
@@ -33543,7 +37305,7 @@ function PluginCollection({ title, items, collectionKey, shared, onOpen, onBack,
         openSortPicker(sort, shared.copy, setSort);
     }, [sort, shared.copy]);
     const guardedBack = useGuardedCancel(onBack);
-    return (SP_JSX.jsxs(Focusable$2, { className: "ph-store-tab-body ph-store-flow", "flow-children": "column", noFocusRing: true, onCancel: guardedBack, onCancelButton: guardedBack, onCancelActionDescription: shared.copy.back, onOptionsButton: showSort, onOptionsActionDescription: shared.copy.sortBy, children: [SP_JSX.jsx(ListHeader, { title: title, sort: sort, copy: shared.copy }), SP_JSX.jsxs("div", { className: "ph-store-toolbar", children: [toolbarStart, SP_JSX.jsx(SourceFilters, { value: source, onChange: setSource, copy: shared.copy })] }), SP_JSX.jsx(PluginRows, { plugins: filtered, shared: shared, onOpen: onOpen, manage: manage })] }));
+    return (SP_JSX.jsxs(Focusable$4, { className: "ph-store-tab-body ph-store-flow", "flow-children": "column", noFocusRing: true, onCancel: guardedBack, onCancelButton: guardedBack, onCancelActionDescription: shared.copy.back, onOptionsButton: showSort, onOptionsActionDescription: shared.copy.sortBy, children: [SP_JSX.jsx(ListHeader, { title: title, sort: sort, copy: shared.copy }), SP_JSX.jsxs("div", { className: "ph-store-toolbar", children: [toolbarStart, SP_JSX.jsx(SourceFilters, { value: source, onChange: setSource, copy: shared.copy })] }), SP_JSX.jsx(PluginRows, { plugins: filtered, shared: shared, onOpen: onOpen, manage: manage })] }));
 }
 function PluginDetail({ plugin, shared, onBack }) {
     const [release, setRelease] = useState$1(null);
@@ -33595,16 +37357,16 @@ function PluginDetail({ plugin, shared, onBack }) {
     const description = readme || plugin.longDescription || plugin.shortDescription;
     const galleryMedia = media.filter((item) => item.url !== activeCover
         && !(activeCover === bundledPluginCover(plugin.repository) && item.url === plugin.coverUrl));
-    return (SP_JSX.jsxs(Focusable$2, { className: "ph-store-tab-body ph-store-detail ph-store-flow", "flow-children": "column", noFocusRing: true, onCancel: guardedBack, onCancelButton: guardedBack, onCancelActionDescription: shared.copy.back, children: [SP_JSX.jsxs(Focusable$2, { className: "ph-store-detail-heading", "flow-children": "row", noFocusRing: true, children: [SP_JSX.jsx(Focusable$2, { className: "ph-store-detail-hero", "flow-children": "none", onOKActionDescription: shared.copy.select, onActivate: (event) => {
+    return (SP_JSX.jsxs(Focusable$4, { className: "ph-store-tab-body ph-store-detail ph-store-flow", "flow-children": "column", noFocusRing: true, onCancel: guardedBack, onCancelButton: guardedBack, onCancelActionDescription: shared.copy.back, children: [SP_JSX.jsxs(Focusable$4, { className: "ph-store-detail-heading", "flow-children": "row", noFocusRing: true, children: [SP_JSX.jsx(Focusable$4, { className: "ph-store-detail-hero", "flow-children": "none", onOKActionDescription: shared.copy.select, onActivate: (event) => {
                             stopEvent(event);
                             if (activeCover)
                                 openStoreMedia({ kind: "image", url: activeCover, alt: plugin.name }, shared.copy);
-                        }, children: SP_JSX.jsx(PluginImage, { plugin: plugin, fallbackSources: coverSources, onImageLoaded: setActiveCover }) }), SP_JSX.jsxs("div", { className: "ph-store-detail-summary", children: [SP_JSX.jsx(SourceBadge, { source: plugin.catalogSource }), SP_JSX.jsx("h1", { className: "ph-store-detail-title", children: plugin.name }), SP_JSX.jsxs("div", { className: "ph-store-detail-status", children: [installed ? SP_JSX.jsxs("span", { children: [shared.copy.installedVersion, ": ", installed.version || "?"] }) : null, SP_JSX.jsxs("span", { children: [shared.copy.latestVersion, ": ", latestVersion || "?"] })] }), SP_JSX.jsxs(Focusable$2, { className: "ph-store-actions", "flow-children": "row", noFocusRing: true, children: [SP_JSX.jsx(PluginActionButton, { plugin: currentPlugin, shared: shared }), versions.some((item) => compareVersions(item.version, latestVersion) < 0) && SP_JSX.jsx(DialogButton$2, { className: "ph-store-action", "aria-label": shared.copy.chooseVersion, title: shared.copy.chooseVersion, onOKActionDescription: shared.copy.chooseVersion, onClick: () => showModal$1(SP_JSX.jsx(VersionPicker, { plugin: plugin, shared: shared, versions: versions }), window, { bNeverPopOut: true }), children: SP_JSX.jsx(TbHistory, {}) }), SP_JSX.jsx(UninstallButton, { plugin: plugin, shared: shared })] })] })] }), galleryMedia.length ? (SP_JSX.jsxs("section", { className: "ph-store-media-section", children: [SP_JSX.jsx("h2", { children: shared.copy.media }), SP_JSX.jsx(Focusable$2, { className: "ph-store-media-strip", "flow-children": "row", noFocusRing: true, children: galleryMedia.map((item) => SP_JSX.jsx(SafeMedia, { item: item, copy: shared.copy }, item.url)) })] })) : null, loading ? (SP_JSX.jsx("div", { className: "ph-store-empty", children: SP_JSX.jsx(SteamSpinner, {}) })) : (SP_JSX.jsxs(ScrollReader, { copy: shared.copy, onBack: onBack, children: [SP_JSX.jsx(MarkdownBlocks, { markdown: description }), SP_JSX.jsx("h2", { children: shared.copy.releaseNotes }), releaseNotes
+                        }, children: SP_JSX.jsx(PluginImage, { plugin: plugin, fallbackSources: coverSources, onImageLoaded: setActiveCover }) }), SP_JSX.jsxs("div", { className: "ph-store-detail-summary", children: [SP_JSX.jsx(SourceBadge, { source: plugin.catalogSource }), SP_JSX.jsx("h1", { className: "ph-store-detail-title", children: plugin.name }), SP_JSX.jsxs("div", { className: "ph-store-detail-status", children: [installed ? SP_JSX.jsxs("span", { children: [shared.copy.installedVersion, ": ", installed.version || "?"] }) : null, SP_JSX.jsxs("span", { children: [shared.copy.latestVersion, ": ", latestVersion || "?"] })] }), SP_JSX.jsxs(Focusable$4, { className: "ph-store-actions", "flow-children": "row", noFocusRing: true, children: [SP_JSX.jsx(PluginActionButton, { plugin: currentPlugin, shared: shared }), versions.some((item) => compareVersions(item.version, latestVersion) < 0) && SP_JSX.jsx(DialogButton$4, { className: "ph-store-action", "aria-label": shared.copy.chooseVersion, title: shared.copy.chooseVersion, onOKActionDescription: shared.copy.chooseVersion, onClick: () => showModal$1(SP_JSX.jsx(VersionPicker, { plugin: plugin, shared: shared, versions: versions }), window, { bNeverPopOut: true }), children: SP_JSX.jsx(TbHistory, {}) }), SP_JSX.jsx(UninstallButton, { plugin: plugin, shared: shared })] })] })] }), galleryMedia.length ? (SP_JSX.jsxs("section", { className: "ph-store-media-section", children: [SP_JSX.jsx("h2", { children: shared.copy.media }), SP_JSX.jsx(Focusable$4, { className: "ph-store-media-strip", "flow-children": "row", noFocusRing: true, children: galleryMedia.map((item) => SP_JSX.jsx(SafeMedia, { item: item, copy: shared.copy }, item.url)) })] })) : null, loading ? (SP_JSX.jsx("div", { className: "ph-store-empty", children: SP_JSX.jsx(SteamSpinner, {}) })) : (SP_JSX.jsxs(ScrollReader, { copy: shared.copy, onBack: onBack, children: [SP_JSX.jsx(MarkdownBlocks, { markdown: description }), SP_JSX.jsx("h2", { children: shared.copy.releaseNotes }), releaseNotes
                         ? SP_JSX.jsx(MarkdownBlocks, { markdown: releaseNotes })
                         : SP_JSX.jsx("p", { children: shared.copy.releaseNotesUnavailable })] }))] }));
 }
 function CategoryLink({ title, onOpen, copy }) {
-    return (SP_JSX.jsx(Focusable$2, { className: "ph-store-section-link", onActivate: (event) => { stopEvent(event); onOpen(); }, onOKButton: (event) => { stopEvent(event); onOpen(); }, onOKActionDescription: copy.openCategory, children: SP_JSX.jsx("h2", { children: title }) }));
+    return (SP_JSX.jsx(Focusable$4, { className: "ph-store-section-link", onActivate: (event) => { stopEvent(event); onOpen(); }, onOKButton: (event) => { stopEvent(event); onOpen(); }, onOKActionDescription: copy.openCategory, children: SP_JSX.jsx("h2", { children: title }) }));
 }
 function FeaturedSlider({ plugins, shared, onOpen }) {
     const [index, setIndex] = useState$1(0);
@@ -33616,7 +37378,7 @@ function FeaturedSlider({ plugins, shared, onOpen }) {
     const move = (delta) => {
         setIndex((value) => (value + delta + plugins.length) % plugins.length);
     };
-    return (SP_JSX.jsxs("div", { className: "ph-store-featured-shell", children: [SP_JSX.jsxs(Focusable$2, { className: "ph-store-featured-slide", "flow-children": "none", onActivate: (event) => { stopEvent(event); onOpen(active); }, onOKButton: (event) => { stopEvent(event); onOpen(active); }, onOKActionDescription: shared.copy.select, actionDescriptionMap: {
+    return (SP_JSX.jsxs("div", { className: "ph-store-featured-shell", children: [SP_JSX.jsxs(Focusable$4, { className: "ph-store-featured-slide", "flow-children": "none", onActivate: (event) => { stopEvent(event); onOpen(active); }, onOKButton: (event) => { stopEvent(event); onOpen(active); }, onOKActionDescription: shared.copy.select, actionDescriptionMap: {
                     [GamepadButton$1.DIR_LEFT]: shared.copy.previous,
                     [GamepadButton$1.DIR_RIGHT]: shared.copy.next,
                 }, onButtonDown: (event) => {
@@ -33661,7 +37423,7 @@ function DiscoverTab(shared) {
             .filter((category) => category !== "Playhub" && category !== "Novità")
             .sort((left, right) => left.localeCompare(right)),
     ];
-    return (SP_JSX.jsxs(Focusable$2, { className: "ph-store-tab-body ph-store-flow", "flow-children": "column", noFocusRing: true, onCancel: guardedBack, onCancelButton: guardedBack, onCancelActionDescription: shared.copy.back, children: [SP_JSX.jsx("section", { className: "ph-store-section", children: SP_JSX.jsx(FeaturedSlider, { plugins: featured, shared: shared, onOpen: (plugin) => setView({ kind: "detail", plugin }) }) }), categories.map((category) => {
+    return (SP_JSX.jsxs(Focusable$4, { className: "ph-store-tab-body ph-store-flow", "flow-children": "column", noFocusRing: true, onCancel: guardedBack, onCancelButton: guardedBack, onCancelActionDescription: shared.copy.back, children: [SP_JSX.jsx("section", { className: "ph-store-section", children: SP_JSX.jsx(FeaturedSlider, { plugins: featured, shared: shared, onOpen: (plugin) => setView({ kind: "detail", plugin }) }) }), categories.map((category) => {
                 let items = shared.plugins.filter((plugin) => pluginInCategory(plugin, category));
                 if (category === "Playhub") {
                     items = items.filter((plugin) => !featuredRepositories.has(plugin.repository.toLocaleLowerCase("en-US")));
@@ -33745,7 +37507,7 @@ function SearchTab({ active, ...shared }) {
         stopEvent(event);
         openSortPicker(sort, shared.copy, setSort);
     };
-    return (SP_JSX.jsxs(Focusable$2, { className: "ph-store-tab-body ph-store-flow", "flow-children": "column", noFocusRing: true, onCancel: guardedBack, onCancelButton: guardedBack, onCancelActionDescription: shared.copy.back, onOptionsButton: showSort, onOptionsActionDescription: shared.copy.sortBy, children: [SP_JSX.jsx(ListHeader, { title: shared.copy.search, sort: sort, copy: shared.copy }), SP_JSX.jsx("div", { className: "ph-store-search-shell", children: SP_JSX.jsx(TextField, { label: shared.copy.searchPlaceholder, value: query, onChange: (event) => setQuery(event.target.value) }) }), SP_JSX.jsx("div", { className: "ph-store-toolbar", children: SP_JSX.jsx(SourceFilters, { value: source, onChange: setSource, copy: shared.copy }) }), SP_JSX.jsx(PluginRows, { plugins: results, shared: shared, onOpen: setDetail })] }));
+    return (SP_JSX.jsxs(Focusable$4, { className: "ph-store-tab-body ph-store-flow", "flow-children": "column", noFocusRing: true, onCancel: guardedBack, onCancelButton: guardedBack, onCancelActionDescription: shared.copy.back, onOptionsButton: showSort, onOptionsActionDescription: shared.copy.sortBy, children: [SP_JSX.jsx(ListHeader, { title: shared.copy.search, sort: sort, copy: shared.copy }), SP_JSX.jsx("div", { className: "ph-store-search-shell", children: SP_JSX.jsx(TextField, { label: shared.copy.searchPlaceholder, value: query, onChange: (event) => setQuery(event.target.value) }) }), SP_JSX.jsx("div", { className: "ph-store-toolbar", children: SP_JSX.jsx(SourceFilters, { value: source, onChange: setSource, copy: shared.copy }) }), SP_JSX.jsx(PluginRows, { plugins: results, shared: shared, onOpen: setDetail })] }));
 }
 function PluginStorePage() {
     const locale = useStoreLocale();
@@ -33815,7 +37577,7 @@ function PluginStorePage() {
         return () => { alive = false; };
     }, [plugins, installed]);
     if (error) {
-        return (SP_JSX.jsxs("div", { className: "ph-store-page", children: [SP_JSX.jsx("style", { children: STORE_STYLE }), SP_JSX.jsx("div", { className: "ph-store-empty", children: SP_JSX.jsxs("div", { children: [SP_JSX.jsx("p", { children: copy.catalogUnavailable }), SP_JSX.jsx(DialogButton$2, { onClick: () => load(true), children: copy.retry })] }) })] }));
+        return (SP_JSX.jsxs("div", { className: "ph-store-page", children: [SP_JSX.jsx("style", { children: STORE_STYLE }), SP_JSX.jsx("div", { className: "ph-store-empty", children: SP_JSX.jsxs("div", { children: [SP_JSX.jsx("p", { children: copy.catalogUnavailable }), SP_JSX.jsx(DialogButton$4, { onClick: () => load(true), children: copy.retry })] }) })] }));
     }
     if (!plugins) {
         return (SP_JSX.jsxs("div", { className: "ph-store-page", children: [SP_JSX.jsx("style", { children: STORE_STYLE }), SP_JSX.jsxs("div", { className: "ph-store-empty", children: [SP_JSX.jsx(SteamSpinner, {}), SP_JSX.jsx("span", { children: copy.loading })] })] }));
@@ -33845,6 +37607,19 @@ var playhubWordmark$1 = 'http://127.0.0.1:1337/plugins/Playhub/assets/playhub-wo
 
 // Stable persisted IDs: audio is Video (third); performance is Audio (fourth).
 const CONTROL_TABS = ["home", "store", "audio", "performance", "graphics", "controller", "decky"];
+const CONTROL_SECTION_IDS = ["topbar-date", "device", "device/details", "news", "daily-history", "measurement", "display", "mixer", "devices", "power", "game", "shaders", "radeon", "lossless", "agent"];
+function normalizeExpandedSections(value) {
+    if (!Array.isArray(value))
+        return [];
+    const expanded = new Set(value.slice(0, 64).filter(id => typeof id === "string"));
+    return CONTROL_SECTION_IDS.filter(id => expanded.has(id));
+}
+function toggleControlSection(current, id) {
+    const expanded = normalizeExpandedSections(current);
+    if (!CONTROL_SECTION_IDS.includes(id))
+        return expanded;
+    return normalizeExpandedSections(expanded.includes(id) ? expanded.filter(value => value !== id) : [...expanded, id]);
+}
 function visibleControlTabs(prefs, deckyAvailable) {
     const visible = prefs.order.filter(id => !prefs.hidden.includes(id) && (id !== "decky" || deckyAvailable));
     return visible.length ? visible : ["home"];
@@ -33863,7 +37638,7 @@ function normalizeControlPreferences(value) {
     const active = valid(value?.active) && eligible(value.active) && !hidden.includes(value.active) ? value.active : order.find(id => eligible(id) && !hidden.includes(id));
     const dateFormats = ["auto", "dd_mm_yyyy", "dd_mm_yy", "yyyy_mm_dd", "dd_month_yyyy", "weekday_dd_month", "weekday_short_dd_month", "month_dd_yyyy", "month_short_dd_yyyy", "iso"];
     const topbarDateFormat = dateFormats.includes(value?.topbarDateFormat) ? value.topbarDateFormat : "auto";
-    return { order, hidden, active, deckyHostEnabled, topbarDateEnabled: value?.topbarDateEnabled !== false, topbarDateFormat, topbarClockLeft: value?.topbarClockLeft === true, collapsed: [...new Set((Array.isArray(value?.collapsed) ? value.collapsed : []).filter((id) => typeof id === "string" && id.length < 80))] };
+    return { order, hidden, active, deckyHostEnabled, topbarDateEnabled: value?.topbarDateEnabled !== false, topbarDateFormat, topbarClockLeft: value?.topbarClockLeft === true, expandedSections: normalizeExpandedSections(value?.expandedSections), collapsed: [...new Set((Array.isArray(value?.collapsed) ? value.collapsed : []).filter((id) => typeof id === "string" && id.length < 80))] };
 }
 
 const createTabEditor = (selected = "home") => ({ selected, draftOrder: null });
@@ -34811,7 +38586,7 @@ function getOnboardingActionCopy(locale, finish) {
     return { before, after: finish ? last : next };
 }
 
-const css$1 = `
+const css$2 = `
 .ph-oi{width:100%;max-width:var(--ph-oi-max,320px);min-width:0;height:var(--ph-oi-height,130px);flex:none;margin:0 auto;position:relative;overflow:hidden;pointer-events:none;user-select:none;container-type:inline-size;color:rgba(255,255,255,.88)}
 .ph-oi *{box-sizing:border-box;pointer-events:none}
 .ph-oi-stage{position:absolute;width:280px;height:104px;left:50%;top:50%;margin-left:-140px;margin-top:-52px;transform:scale(calc(var(--ph-oi-scale,1) * var(--ph-oi-shrink,1)));transform-origin:center;isolation:isolate}
@@ -34951,7 +38726,7 @@ function PluginTiles({ disconnected }) {
 }
 function OnboardingIllustration({ view, scale = 1, height }) {
     const size = { "--ph-oi-scale": scale, ...(height ? { "--ph-oi-height": `${height}px`, "--ph-oi-max": "100%" } : {}) };
-    return SP_JSX.jsxs("div", { className: "ph-oi", "aria-hidden": "true", "data-onboarding-illustration": view, style: size, children: [SP_JSX.jsx("style", { children: css$1 }), SP_JSX.jsxs("div", { className: "ph-oi-stage", children: [view === 'intro' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-tile ph-oi-panel", children: SP_JSX.jsx(TbLayoutDashboard, {}) }), SP_JSX.jsx("span", { className: "ph-oi-tile ph-oi-panel", children: SP_JSX.jsx(TbDeviceGamepad2, {}) }), SP_JSX.jsx("span", { className: "ph-oi-tile ph-oi-panel", children: SP_JSX.jsx(TbPlugConnected, {}) }), SP_JSX.jsx("span", { className: "ph-oi-baseline" })] }), view === 'playhub' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("span", { className: "ph-oi-window", children: [SP_JSX.jsx("span", { className: "ph-oi-window-bar" }), SP_JSX.jsx("span", { className: "ph-oi-mini", children: SP_JSX.jsx(TbLayoutDashboard, {}) }), SP_JSX.jsx("span", { className: "ph-oi-mini", children: SP_JSX.jsx(TbWindow, {}) }), SP_JSX.jsx("span", { className: "ph-oi-mini", children: SP_JSX.jsx(TbPhoto, {}) })] }), SP_JSX.jsx("span", { className: "ph-oi-gamepad", children: SP_JSX.jsx(TbDeviceGamepad2, {}) }), SP_JSX.jsx("span", { className: "ph-oi-mode-line" })] }), (view === 'decky' || view === 'decky-off') && SP_JSX.jsx(PluginTiles, { disconnected: view === 'decky-off' }), view === 'store' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-src ph-oi-src-a", children: SP_JSX.jsx(PlayhubIcon, {}) }), SP_JSX.jsx("span", { className: "ph-oi-src ph-oi-src-b", children: SP_JSX.jsx(TbPlugConnected, {}) }), SP_JSX.jsx("span", { className: "ph-oi-src ph-oi-src-c", children: SP_JSX.jsx(TbBrandGithub, {}) }), SP_JSX.jsx("span", { className: "ph-oi-route ph-oi-route-a" }), SP_JSX.jsx("span", { className: "ph-oi-route ph-oi-route-b" }), SP_JSX.jsx("span", { className: "ph-oi-route ph-oi-route-c" }), SP_JSX.jsx("span", { className: "ph-oi-collector" }), SP_JSX.jsx("span", { className: "ph-oi-feed" }), SP_JSX.jsxs("span", { className: "ph-oi-store-frame", children: [SP_JSX.jsx("span", { className: "ph-oi-store-bar" }), SP_JSX.jsx("span", { className: "ph-oi-store-mark", children: SP_JSX.jsx(TbBuildingStore, {}) }), SP_JSX.jsx("span", { className: "ph-oi-store-item ph-oi-store-item-a", children: SP_JSX.jsx(TbPhoto, {}) }), SP_JSX.jsx("span", { className: "ph-oi-store-item ph-oi-store-item-b", children: SP_JSX.jsx(TbMusic, {}) }), SP_JSX.jsx("span", { className: "ph-oi-store-item ph-oi-store-item-c", children: SP_JSX.jsx(TbAdjustmentsHorizontal, {}) }), SP_JSX.jsx("span", { className: "ph-oi-store-sweep" })] })] }), view === 'customize' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-tabs-line" }), SP_JSX.jsx("span", { className: "ph-oi-tile ph-oi-tab", children: SP_JSX.jsx(TbLayoutDashboard, {}) }), SP_JSX.jsx("span", { className: "ph-oi-tile ph-oi-tab", children: SP_JSX.jsx(TbMusic, {}) }), SP_JSX.jsx("span", { className: "ph-oi-tile ph-oi-tab", children: SP_JSX.jsx(TbPhoto, {}) })] }), view === 'audio' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-monitor", children: SP_JSX.jsx(TbDeviceDesktop, {}) }), SP_JSX.jsx("span", { className: "ph-oi-video-light" }), SP_JSX.jsx("span", { className: "ph-oi-slider" })] }), view === 'performance' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-speaker", children: SP_JSX.jsx(TbVolume2, {}) }), SP_JSX.jsx("span", { className: "ph-oi-slider" }), SP_JSX.jsx("span", { className: "ph-oi-wave" }), SP_JSX.jsx("span", { className: "ph-oi-wave" }), SP_JSX.jsx("span", { className: "ph-oi-wave" })] }), view === 'graphics' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-render-plane" }), SP_JSX.jsx("span", { className: "ph-oi-render-plane" }), SP_JSX.jsxs("span", { className: "ph-oi-render-image", children: [SP_JSX.jsx(TbPhoto, {}), SP_JSX.jsx("span", { className: "ph-oi-scan" })] })] }), view === 'controller' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-pad-body", children: SP_JSX.jsx(TbDeviceGamepad2, {}) }), SP_JSX.jsx("span", { className: "ph-oi-input-orbit", children: SP_JSX.jsx("span", { className: "ph-oi-input-stick" }) }), SP_JSX.jsx("span", { className: "ph-oi-input-key" }), SP_JSX.jsx("span", { className: "ph-oi-input-link" })] })] }, view)] });
+    return SP_JSX.jsxs("div", { className: "ph-oi", "aria-hidden": "true", "data-onboarding-illustration": view, style: size, children: [SP_JSX.jsx("style", { children: css$2 }), SP_JSX.jsxs("div", { className: "ph-oi-stage", children: [view === 'intro' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-tile ph-oi-panel", children: SP_JSX.jsx(TbLayoutDashboard, {}) }), SP_JSX.jsx("span", { className: "ph-oi-tile ph-oi-panel", children: SP_JSX.jsx(TbDeviceGamepad2, {}) }), SP_JSX.jsx("span", { className: "ph-oi-tile ph-oi-panel", children: SP_JSX.jsx(TbPlugConnected, {}) }), SP_JSX.jsx("span", { className: "ph-oi-baseline" })] }), view === 'playhub' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("span", { className: "ph-oi-window", children: [SP_JSX.jsx("span", { className: "ph-oi-window-bar" }), SP_JSX.jsx("span", { className: "ph-oi-mini", children: SP_JSX.jsx(TbLayoutDashboard, {}) }), SP_JSX.jsx("span", { className: "ph-oi-mini", children: SP_JSX.jsx(TbWindow, {}) }), SP_JSX.jsx("span", { className: "ph-oi-mini", children: SP_JSX.jsx(TbPhoto, {}) })] }), SP_JSX.jsx("span", { className: "ph-oi-gamepad", children: SP_JSX.jsx(TbDeviceGamepad2, {}) }), SP_JSX.jsx("span", { className: "ph-oi-mode-line" })] }), (view === 'decky' || view === 'decky-off') && SP_JSX.jsx(PluginTiles, { disconnected: view === 'decky-off' }), view === 'store' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-src ph-oi-src-a", children: SP_JSX.jsx(PlayhubIcon, {}) }), SP_JSX.jsx("span", { className: "ph-oi-src ph-oi-src-b", children: SP_JSX.jsx(TbPlugConnected, {}) }), SP_JSX.jsx("span", { className: "ph-oi-src ph-oi-src-c", children: SP_JSX.jsx(TbBrandGithub, {}) }), SP_JSX.jsx("span", { className: "ph-oi-route ph-oi-route-a" }), SP_JSX.jsx("span", { className: "ph-oi-route ph-oi-route-b" }), SP_JSX.jsx("span", { className: "ph-oi-route ph-oi-route-c" }), SP_JSX.jsx("span", { className: "ph-oi-collector" }), SP_JSX.jsx("span", { className: "ph-oi-feed" }), SP_JSX.jsxs("span", { className: "ph-oi-store-frame", children: [SP_JSX.jsx("span", { className: "ph-oi-store-bar" }), SP_JSX.jsx("span", { className: "ph-oi-store-mark", children: SP_JSX.jsx(TbBuildingStore, {}) }), SP_JSX.jsx("span", { className: "ph-oi-store-item ph-oi-store-item-a", children: SP_JSX.jsx(TbPhoto, {}) }), SP_JSX.jsx("span", { className: "ph-oi-store-item ph-oi-store-item-b", children: SP_JSX.jsx(TbMusic, {}) }), SP_JSX.jsx("span", { className: "ph-oi-store-item ph-oi-store-item-c", children: SP_JSX.jsx(TbAdjustmentsHorizontal, {}) }), SP_JSX.jsx("span", { className: "ph-oi-store-sweep" })] })] }), view === 'customize' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-tabs-line" }), SP_JSX.jsx("span", { className: "ph-oi-tile ph-oi-tab", children: SP_JSX.jsx(TbLayoutDashboard, {}) }), SP_JSX.jsx("span", { className: "ph-oi-tile ph-oi-tab", children: SP_JSX.jsx(TbMusic, {}) }), SP_JSX.jsx("span", { className: "ph-oi-tile ph-oi-tab", children: SP_JSX.jsx(TbPhoto, {}) })] }), view === 'audio' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-monitor", children: SP_JSX.jsx(TbDeviceDesktop, {}) }), SP_JSX.jsx("span", { className: "ph-oi-video-light" }), SP_JSX.jsx("span", { className: "ph-oi-slider" })] }), view === 'performance' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-speaker", children: SP_JSX.jsx(TbVolume2, {}) }), SP_JSX.jsx("span", { className: "ph-oi-slider" }), SP_JSX.jsx("span", { className: "ph-oi-wave" }), SP_JSX.jsx("span", { className: "ph-oi-wave" }), SP_JSX.jsx("span", { className: "ph-oi-wave" })] }), view === 'graphics' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-render-plane" }), SP_JSX.jsx("span", { className: "ph-oi-render-plane" }), SP_JSX.jsxs("span", { className: "ph-oi-render-image", children: [SP_JSX.jsx(TbPhoto, {}), SP_JSX.jsx("span", { className: "ph-oi-scan" })] })] }), view === 'controller' && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("span", { className: "ph-oi-pad-body", children: SP_JSX.jsx(TbDeviceGamepad2, {}) }), SP_JSX.jsx("span", { className: "ph-oi-input-orbit", children: SP_JSX.jsx("span", { className: "ph-oi-input-stick" }) }), SP_JSX.jsx("span", { className: "ph-oi-input-key" }), SP_JSX.jsx("span", { className: "ph-oi-input-link" })] })] }, view)] });
 }
 
 var playhubWordmark = 'http://127.0.0.1:1337/plugins/Playhub/assets/playhub-wordmark-large-b86af753.png';
@@ -36239,28 +40014,741 @@ function useOnboardingControlShowcase(enabled, ready, visible, active, customizi
 }
 
 const rows = {
-    en: ["Device name", "Model", "Processor", "Graphics", "Memory", "Total local storage", "Windows edition", "Windows version", "Windows Update", "Loading device information...", "Unavailable", "Could not open Windows Update.", "Could not load device information."],
-    it: ["Nome dispositivo", "Modello", "Processore", "GPU", "Memoria", "Archiviazione locale totale", "Edizione Windows", "Versione Windows", "Windows Update", "Caricamento informazioni dispositivo...", "Non disponibile", "Impossibile aprire Windows Update.", "Impossibile caricare le informazioni del dispositivo."],
-    de: ["Gerätename", "Modell", "Prozessor", "Grafik", "Arbeitsspeicher", "Lokaler Gesamtspeicher", "Windows-Edition", "Windows-Version", "Windows Update", "Geräteinformationen werden geladen...", "Nicht verfügbar", "Windows Update konnte nicht geöffnet werden.", "Geräteinformationen konnten nicht geladen werden."],
-    es: ["Nombre del dispositivo", "Modelo", "Procesador", "GPU", "Memoria", "Almacenamiento local total", "Edición de Windows", "Versión de Windows", "Windows Update", "Cargando información del dispositivo...", "No disponible", "No se pudo abrir Windows Update.", "No se pudo cargar la información del dispositivo."],
-    fr: ["Nom de l'appareil", "Modèle", "Processeur", "GPU", "Mémoire", "Stockage local total", "Édition de Windows", "Version de Windows", "Windows Update", "Chargement des informations de l'appareil...", "Indisponible", "Impossible d'ouvrir Windows Update.", "Impossible de charger les informations de l'appareil."],
-    pt: ["Nome do dispositivo", "Modelo", "Processador", "GPU", "Memória", "Armazenamento local total", "Edição do Windows", "Versão do Windows", "Windows Update", "Carregando informações do dispositivo...", "Indisponível", "Não foi possível abrir o Windows Update.", "Não foi possível carregar as informações do dispositivo."],
-    ru: ["Имя устройства", "Модель", "Процессор", "Видеокарта", "Память", "Общий локальный объём", "Выпуск Windows", "Версия Windows", "Windows Update", "Загрузка сведений об устройстве...", "Недоступно", "Не удалось открыть Windows Update.", "Не удалось загрузить сведения об устройстве."],
-    uk: ["Ім'я пристрою", "Модель", "Процесор", "Відеокарта", "Пам'ять", "Загальний локальний обсяг", "Випуск Windows", "Версія Windows", "Windows Update", "Завантаження відомостей про пристрій...", "Недоступно", "Не вдалося відкрити Windows Update.", "Не вдалося завантажити відомості про пристрій."],
-    ja: ["デバイス名", "モデル", "プロセッサー", "GPU", "メモリ", "ローカルストレージ合計", "Windows エディション", "Windows バージョン", "Windows Update", "デバイス情報を読み込み中...", "利用不可", "Windows Update を開けませんでした。", "デバイス情報を読み込めませんでした。"],
-    ko: ["장치 이름", "모델", "프로세서", "GPU", "메모리", "전체 로컬 저장 공간", "Windows 에디션", "Windows 버전", "Windows Update", "장치 정보 불러오는 중...", "사용 불가", "Windows Update를 열 수 없습니다.", "장치 정보를 불러올 수 없습니다."],
-    zh: ["设备名称", "型号", "处理器", "GPU", "内存", "本地存储总容量", "Windows 版本类别", "Windows 版本号", "Windows Update", "正在加载设备信息...", "不可用", "无法打开 Windows Update。", "无法加载设备信息。"],
-    hi: ["डिवाइस का नाम", "मॉडल", "प्रोसेसर", "GPU", "मेमोरी", "कुल स्थानीय स्टोरेज", "Windows संस्करण", "Windows संस्करण संख्या", "Windows Update", "डिवाइस की जानकारी लोड हो रही है...", "उपलब्ध नहीं", "Windows Update नहीं खुल सका।", "डिवाइस की जानकारी लोड नहीं हो सकी।"],
+    en: ["Device controls", "Windows controls", "Available", "Readback", "Manual commands", "Manual mode required", "Not detected", "Needs verification", "Requires this device", "The selected profile differs from the detected hardware.", "Check again", "Performance profiles", "Fan speed", "Power limits", "Charge limit", "Display", "Power mode", "Battery status", "Temperatures", "RGB lighting", "Vibration intensity"],
+    it: ["Controlli dispositivo", "Controlli Windows", "Disponibile", "Lettura confermata", "Comandi manuali", "Richiede modalità Manuale", "Non rilevato", "Da verificare", "Richiede questo dispositivo", "Il profilo selezionato è diverso dall’hardware rilevato.", "Verifica di nuovo", "Profili prestazioni", "Velocità ventole", "Limiti di potenza", "Limite di carica", "Schermo", "Modalità energetica", "Stato batteria", "Temperature", "Illuminazione RGB", "Intensità vibrazione"],
+    de: ["Gerätesteuerung", "Windows-Steuerung", "Verfügbar", "Ausgelesen", "Manuelle Befehle", "Manueller Modus erforderlich", "Nicht erkannt", "Nicht bestätigt", "Dieses Gerät erforderlich", "Das ausgewählte Profil entspricht nicht der erkannten Hardware.", "Erneut prüfen", "Leistungsprofile", "Lüfterdrehzahl", "Leistungsgrenzen", "Ladelimit", "Bildschirm", "Energiemodus", "Akkustatus", "Temperaturen", "RGB-Beleuchtung", "Vibrationsstärke"],
+    es: ["Controles del dispositivo", "Controles de Windows", "Disponible", "Lectura confirmada", "Órdenes manuales", "Requiere modo Manual", "No detectado", "Sin verificar", "Requiere este dispositivo", "El perfil seleccionado no coincide con el hardware detectado.", "Comprobar de nuevo", "Perfiles de rendimiento", "Velocidad del ventilador", "Límites de potencia", "Límite de carga", "Pantalla", "Modo de energía", "Estado de la batería", "Temperaturas", "Iluminación RGB", "Intensidad de vibración"],
+    fr: ["Commandes de l’appareil", "Commandes Windows", "Disponible", "Lecture confirmée", "Commandes manuelles", "Mode Manuel requis", "Non détecté", "À vérifier", "Cet appareil est requis", "Le profil sélectionné diffère du matériel détecté.", "Vérifier à nouveau", "Profils de performances", "Vitesse des ventilateurs", "Limites de puissance", "Limite de charge", "Écran", "Mode d’alimentation", "État de la batterie", "Températures", "Éclairage RGB", "Intensité des vibrations"],
+    pt: ["Controles do dispositivo", "Controles do Windows", "Disponível", "Leitura confirmada", "Comandos manuais", "Requer modo Manual", "Não detectado", "Por verificar", "Requer este dispositivo", "O perfil selecionado difere do hardware detectado.", "Verificar novamente", "Perfis de desempenho", "Velocidade das ventoinhas", "Limites de potência", "Limite de carga", "Tela", "Modo de energia", "Estado da bateria", "Temperaturas", "Iluminação RGB", "Intensidade da vibração"],
+    ru: ["Управление устройством", "Управление Windows", "Доступно", "Подтверждено чтением", "Ручные команды", "Нужен ручной режим", "Не обнаружено", "Требует проверки", "Требуется это устройство", "Выбранный профиль отличается от обнаруженного оборудования.", "Проверить снова", "Профили производительности", "Скорость вентиляторов", "Лимиты мощности", "Лимит заряда", "Экран", "Режим питания", "Состояние аккумулятора", "Температуры", "RGB-подсветка", "Интенсивность вибрации"],
+    uk: ["Керування пристроєм", "Керування Windows", "Доступно", "Підтверджено читанням", "Ручні команди", "Потрібен ручний режим", "Не виявлено", "Потребує перевірки", "Потрібен цей пристрій", "Вибраний профіль відрізняється від виявленого обладнання.", "Перевірити знову", "Профілі продуктивності", "Швидкість вентиляторів", "Обмеження потужності", "Межа заряду", "Екран", "Режим живлення", "Стан акумулятора", "Температури", "RGB-підсвічування", "Інтенсивність вібрації"],
+    ja: ["デバイスの操作", "Windows の操作", "利用可能", "読み取り確認済み", "手動コマンド", "手動モードが必要", "未検出", "未確認", "このデバイスが必要", "選択したプロファイルと検出されたハードウェアが異なります。", "再確認", "パフォーマンスプロファイル", "ファンの回転数", "電力制限", "充電上限", "ディスプレイ", "電源モード", "バッテリー状態", "温度", "RGB ライティング", "振動の強さ"],
+    ko: ["장치 제어", "Windows 제어", "사용 가능", "읽기 확인됨", "수동 명령", "수동 모드 필요", "감지되지 않음", "확인 필요", "해당 장치 필요", "선택한 프로필이 감지된 하드웨어와 다릅니다.", "다시 확인", "성능 프로필", "팬 속도", "전력 제한", "충전 한도", "화면", "전원 모드", "배터리 상태", "온도", "RGB 조명", "진동 강도"],
+    zh: ["设备控制", "Windows 控制", "可用", "已确认读数", "手动命令", "需要手动模式", "未检测到", "待验证", "需要此设备", "所选配置与检测到的硬件不同。", "重新检查", "性能配置", "风扇转速", "功率限制", "充电上限", "显示器", "电源模式", "电池状态", "温度", "RGB 灯光", "振动强度"],
+    hi: ["डिवाइस नियंत्रण", "Windows नियंत्रण", "उपलब्ध", "रीडबैक की पुष्टि", "मैन्युअल कमांड", "मैन्युअल मोड ज़रूरी", "नहीं मिला", "जाँच की ज़रूरत", "यह डिवाइस चाहिए", "चुनी गई प्रोफ़ाइल और मिले हुए हार्डवेयर में अंतर है।", "फिर जाँचें", "प्रदर्शन प्रोफ़ाइल", "पंखे की रफ़्तार", "पावर सीमाएँ", "चार्ज सीमा", "डिस्प्ले", "पावर मोड", "बैटरी स्थिति", "तापमान", "RGB रोशनी", "कंपन की तीव्रता"],
 };
-function deviceInfoLocale(locale) {
-    const aliases = { english: "en", italian: "it", german: "de", spanish: "es", latam: "es", french: "fr", brazilian: "pt", portuguese: "pt", russian: "ru", ukrainian: "uk", japanese: "ja", koreana: "ko", schinese: "zh", tchinese: "zh", hindi: "hi" };
-    const key = locale.toLowerCase();
-    const row = rows[(aliases[key] ?? key.split(/[-_]/)[0])] ?? rows.en;
-    return { name: row[0], model: row[1], cpu: row[2], gpu: row[3], ram: row[4], storage: row[5], edition: row[6], version: row[7], update: row[8], loading: row[9], unavailable: row[10], openError: row[11], loadError: row[12] };
+function deviceCapabilitiesLocale(locale) {
+    const aliases = { english: "en", italian: "it", german: "de", spanish: "es", latam: "es", french: "fr", portuguese: "pt", brazilian: "pt", russian: "ru", ukrainian: "uk", japanese: "ja", koreana: "ko", schinese: "zh", tchinese: "zh", hindi: "hi" };
+    const key = aliases[locale.toLowerCase()] ?? locale.toLowerCase().split(/[-_]/)[0];
+    const r = rows[key] ?? rows.en;
+    return { title: r[0], windows: r[1], mismatch: r[9], retry: r[10], labels: { presets: r[11], fans: r[12], "power-limits": r[13], "charge-limit": r[14], "windows-display": r[15], "windows-power": r[16], "windows-battery": r[17], temperatures: r[18], rgb: r[19], vibration: r[20] },
+        statuses: { available: r[2], windows: r[2], readback: r[3], "manual-commands": r[4], "read-only": r[3], "manual-required": r[5], unavailable: r[6], pending: r[7], "hardware-required": r[8] } };
+}
+
+const { DialogButton: DialogButton$3, Focusable: Focusable$3 } = _global_DFL;
+const ids = new Set(["windows-display", "windows-power", "windows-battery", "presets", "fans", "temperatures", "power-limits", "charge-limit", "rgb", "vibration"]);
+const css$1 = `.ph-device-capabilities{display:grid;gap:10px;min-width:0;padding:12px 0;border-top:1px solid #ffffff18}.ph-device-capability-list{display:grid;gap:10px;margin:0}.ph-device-capability-row{display:grid;grid-template-columns:18px minmax(0,1fr);gap:8px;align-items:start}.ph-device-capability-row>svg{width:16px;height:16px;margin-top:2px;opacity:.65}.ph-device-capability-row[data-available=true]>svg{color:#9bd7a7;opacity:1}.ph-device-capability-row dt{font-size:13px;line-height:1.4}.ph-device-capability-row dd{margin:2px 0 0;font-size:11px;line-height:1.4;color:#c5cbd1;overflow-wrap:anywhere}.ph-device-capability-mismatch{display:flex;gap:8px;font-size:12px;line-height:1.45;color:#ffe467}.ph-device-capability-mismatch svg{width:16px;height:16px;flex:none;margin-top:2px}.ph-device-capabilities .ph-device-actions button{justify-content:flex-start;white-space:normal;min-width:0}.ph-device-capabilities>strong{font-size:13px}`;
+function DeviceCapabilities({ selection, effective, detected, locale, openVideo, openPerformance }) {
+    const copy = deviceCapabilitiesLocale(locale), device = deviceInfoLocale(locale);
+    const [report, setReport] = _global_SP_REACT.useState();
+    const [failed, setFailed] = _global_SP_REACT.useState(false);
+    const [busy, setBusy] = _global_SP_REACT.useState(true);
+    const [attempt, setAttempt] = _global_SP_REACT.useState(0);
+    const epoch = _global_SP_REACT.useRef(0);
+    _global_SP_REACT.useEffect(() => {
+        const generation = ++epoch.current;
+        let active = true;
+        setReport(undefined);
+        setFailed(false);
+        setBusy(true);
+        const timer = window.setTimeout(() => { if (active && epoch.current === generation) {
+            setFailed(true);
+            setBusy(false);
+            active = false;
+        } }, 12000);
+        void call("get_device_capabilities", selection).then(value => {
+            if (!active || epoch.current !== generation)
+                return;
+            if (value?.status !== "ready" || value.selection !== selection || value.effective !== effective || value.detected !== detected || !Array.isArray(value.controls)
+                || value.controls.some(row => !ids.has(row.id) || typeof row.available !== "boolean" || !Object.prototype.hasOwnProperty.call(copy.statuses, row.status)
+                    || !["video", "performance", "device"].includes(row.destination)
+                    || row.id === "temperatures" && row.available && (!Array.isArray(row.values) || row.values.length !== 2 || row.values.every(v => v === null)
+                        || row.values.some(v => v !== null && (typeof v !== "number" || !Number.isInteger(v) || v < 1 || v > 125)))
+                    || effective !== detected && !row.id.startsWith("windows-") && row.available))
+                throw new Error("Device controls unavailable");
+            setReport(value);
+        }).catch(() => { if (active && epoch.current === generation)
+            setFailed(true); }).finally(() => {
+            window.clearTimeout(timer);
+            if (active && epoch.current === generation)
+                setBusy(false);
+        });
+        return () => { active = false; ++epoch.current; window.clearTimeout(timer); };
+    }, [selection, effective, detected, attempt]);
+    const current = report?.selection === selection && report.effective === effective && report.detected === detected ? report : undefined;
+    const rows = current?.controls ?? [];
+    const video = rows.some(row => row.available && row.destination === "video") ? openVideo : undefined;
+    const performance = rows.some(row => row.available && row.destination === "performance") ? openPerformance : undefined;
+    return SP_JSX.jsxs(Focusable$3, { className: "ph-device-capabilities", "flow-children": "column", children: [SP_JSX.jsx("style", { children: css$1 }), SP_JSX.jsx("strong", { children: current?.coverage === "windows" ? copy.windows : copy.title }), effective !== detected && SP_JSX.jsxs("div", { className: "ph-device-capability-mismatch", role: "status", children: [SP_JSX.jsx(TbInfoCircle, { "aria-hidden": "true" }), SP_JSX.jsx("span", { children: copy.mismatch })] }), busy && SP_JSX.jsx("div", { className: "ph-device-detail", role: "status", children: device.loading }), failed && SP_JSX.jsx("div", { className: "ph-device-detail", role: "status", children: device.loadError }), current && SP_JSX.jsx("dl", { className: "ph-device-capability-list", children: rows.map(row => SP_JSX.jsxs("div", { className: "ph-device-capability-row", "data-available": row.available, children: [row.available ? SP_JSX.jsx(TbCheck, { "aria-hidden": "true" }) : SP_JSX.jsx(TbMinus, { "aria-hidden": "true" }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("dt", { children: copy.labels[row.id] }), SP_JSX.jsxs("dd", { children: [copy.statuses[row.status], row.id === "fans" && row.available && Array.isArray(row.values) && SP_JSX.jsxs("span", { children: [" \u00B7 ", row.values.map(v => v ?? "—").join(" / "), " RPM"] }), row.id === "temperatures" && row.available && Array.isArray(row.values) && SP_JSX.jsxs("span", { children: [" \u00B7 CPU ", row.values[0] ?? "—", " / GPU ", row.values[1] ?? "—", " \u00B0C"] })] })] })] }, row.id)) }), (video || performance) && SP_JSX.jsxs(Focusable$3, { className: "ph-device-actions", "flow-children": "column", children: [video && SP_JSX.jsxs(DialogButton$3, { onClick: video, children: [SP_JSX.jsx("span", { children: device.video }), SP_JSX.jsx(TbChevronRight, { "aria-hidden": "true" })] }), performance && SP_JSX.jsxs(DialogButton$3, { onClick: performance, children: [SP_JSX.jsx("span", { children: device.power }), SP_JSX.jsx(TbChevronRight, { "aria-hidden": "true" })] })] }), (failed || rows.some(row => row.status === "pending" || row.status === "unavailable")) && SP_JSX.jsx(DialogButton$3, { disabled: busy, onClick: () => setAttempt(value => value + 1), children: copy.retry })] });
+}
+
+const words$1 = {
+    en: ["Lighting and vibration", "Lighting", "Color", "Vibration", "Solid", "Pulse", "Rainbow", "Off", "Low", "Medium", "High", "Apply", "Restore previous settings", "Current", "Left", "Right", "Device state changed. Review the current settings."],
+    it: ["Illuminazione e vibrazione", "Illuminazione", "Colore", "Vibrazione", "Fissa", "Pulsazione", "Arcobaleno", "Spenta", "Bassa", "Media", "Alta", "Applica", "Ripristina le impostazioni precedenti", "Attuale", "Sinistra", "Destra", "Lo stato del dispositivo è cambiato. Controlla le impostazioni attuali."],
+    de: ["Beleuchtung und Vibration", "Beleuchtung", "Farbe", "Vibration", "Statisch", "Pulsierend", "Regenbogen", "Aus", "Niedrig", "Mittel", "Hoch", "Anwenden", "Vorherige Einstellungen wiederherstellen", "Aktuell", "Links", "Rechts", "Der Gerätestatus hat sich geändert. Prüfe die aktuellen Einstellungen."],
+    es: ["Iluminación y vibración", "Iluminación", "Color", "Vibración", "Fija", "Pulsación", "Arcoíris", "Apagada", "Baja", "Media", "Alta", "Aplicar", "Restaurar los ajustes anteriores", "Actual", "Izquierda", "Derecha", "El estado del dispositivo ha cambiado. Revisa los ajustes actuales."],
+    fr: ["Éclairage et vibrations", "Éclairage", "Couleur", "Vibrations", "Fixe", "Pulsation", "Arc-en-ciel", "Désactivé", "Faible", "Moyen", "Fort", "Appliquer", "Rétablir les réglages précédents", "Actuel", "Gauche", "Droite", "L’état de l’appareil a changé. Vérifiez les réglages actuels."],
+    pt: ["Iluminação e vibração", "Iluminação", "Cor", "Vibração", "Fixa", "Pulsação", "Arco-íris", "Desligada", "Baixa", "Média", "Alta", "Aplicar", "Restaurar as definições anteriores", "Atual", "Esquerda", "Direita", "O estado do dispositivo mudou. Reveja as definições atuais."],
+    ru: ["Подсветка и вибрация", "Подсветка", "Цвет", "Вибрация", "Постоянная", "Пульсация", "Радуга", "Выкл.", "Низкая", "Средняя", "Высокая", "Применить", "Восстановить предыдущие настройки", "Сейчас", "Слева", "Справа", "Состояние устройства изменилось. Проверьте текущие настройки."],
+    uk: ["Підсвічування та вібрація", "Підсвічування", "Колір", "Вібрація", "Постійне", "Пульсація", "Веселка", "Вимкнено", "Низька", "Середня", "Висока", "Застосувати", "Відновити попередні налаштування", "Поточне", "Ліворуч", "Праворуч", "Стан пристрою змінився. Перевірте поточні налаштування."],
+    ja: ["照明と振動", "照明", "色", "振動", "固定", "点滅", "レインボー", "オフ", "弱", "中", "強", "適用", "以前の設定に戻す", "現在", "左", "右", "デバイスの状態が変わりました。現在の設定を確認してください。"],
+    ko: ["조명 및 진동", "조명", "색상", "진동", "고정", "맥동", "무지개", "끄기", "약하게", "보통", "강하게", "적용", "이전 설정 복원", "현재", "왼쪽", "오른쪽", "장치 상태가 변경되었습니다. 현재 설정을 확인하세요."],
+    zh: ["灯光与振动", "灯光", "颜色", "振动", "常亮", "呼吸", "彩虹", "关闭", "低", "中", "高", "应用", "恢复之前的设置", "当前", "左侧", "右侧", "设备状态已更改。请检查当前设置。"],
+    hi: ["रोशनी और कंपन", "रोशनी", "रंग", "कंपन", "स्थिर", "धड़कती", "इंद्रधनुष", "बंद", "कम", "मध्यम", "तेज़", "लागू करें", "पिछली सेटिंग बहाल करें", "वर्तमान", "बायाँ", "दायाँ", "डिवाइस की स्थिति बदल गई है। वर्तमान सेटिंग जाँचें।"],
+};
+const pickerWords = {
+    en: ["Hue", "Saturation", "Lightness"], it: ["Tonalità", "Saturazione", "Luminosità"],
+    de: ["Farbton", "Sättigung", "Helligkeit"], es: ["Tono", "Saturación", "Luminosidad"],
+    fr: ["Teinte", "Saturation", "Luminosité"], pt: ["Matiz", "Saturação", "Luminosidade"],
+    ru: ["Тон", "Насыщенность", "Светлота"], uk: ["Тон", "Насиченість", "Світлість"],
+    ja: ["色相", "彩度", "明度"], ko: ["색조", "채도", "명도"],
+    zh: ["色相", "饱和度", "明度"], hi: ["रंगत", "संतृप्ति", "हल्कापन"],
+};
+const modes = ["solid", "pulse", "rainbow", "off"];
+const vibrationLevels = ["low", "medium", "high", "off"];
+const hex$1 = (value) => typeof value === "string" && /^[a-f0-9]{6}$/.test(value);
+function validAyaneoSnapshot(value) {
+    const v = value;
+    return !!v && v.ok === true && v.available === true && v.provider === "ayaneo3-hid"
+        && typeof v.token === "string" && /^[a-f0-9]{64}$/.test(v.token)
+        && typeof v.writeAvailable === "boolean" && typeof v.restoreAvailable === "boolean"
+        && typeof v.manualRecoveryRequired === "boolean" && !(v.manualRecoveryRequired && v.writeAvailable)
+        && v.readbackKind === "vendor-hid-status" && !!v.state && modes.includes(v.state.leftMode)
+        && modes.includes(v.state.rightMode) && hex$1(v.state.leftRgb) && hex$1(v.state.rightRgb)
+        && vibrationLevels.includes(v.state.vibration) && !!v.modules
+        && [2, 4, 6, 8, 66, 68, 70, 72].includes(v.modules.left)
+        && [16, 18, 20, 22, 80, 82, 84, 86].includes(v.modules.right);
+}
+const sameState = (a, b) => !!a && !!b && a.leftMode === b.leftMode && a.rightMode === b.rightMode
+    && a.leftRgb === b.leftRgb && a.rightRgb === b.rightRgb && a.vibration === b.vibration;
+const draftFrom = (snapshot) => ({ rgbMode: snapshot.state.leftMode, rgbHex: snapshot.state.leftRgb, vibration: snapshot.state.vibration });
+/** In-process UI lifecycle, using the real component's RPC dependencies. */
+class AyaneoControlModel {
+    constructor(services) {
+        this.services = services;
+        this.view = { editing: false, busy: false };
+        this.stopped = false;
+        this.revision = 0;
+        this.edits = {};
+    }
+    publish() { if (!this.stopped)
+        this.services.changed({ ...this.view }); }
+    async read() {
+        if (!this.reading) {
+            const pending = this.services.read();
+            this.reading = pending;
+            void pending.finally(() => { if (this.reading === pending)
+                this.reading = undefined; }).catch(() => { });
+        }
+        return this.reading;
+    }
+    accept(snapshot, reset) {
+        this.view.snapshot = snapshot;
+        if (reset) {
+            this.view.draft = draftFrom(snapshot);
+            this.view.editing = false;
+            this.edits = {};
+        }
+    }
+    async refresh() {
+        if (this.stopped || this.view.busy || !this.services.visible())
+            return;
+        const generation = this.revision;
+        try {
+            const reply = await this.read();
+            if (this.stopped || generation !== this.revision || !this.services.visible())
+                return;
+            if (!validAyaneoSnapshot(reply)) {
+                this.view = { editing: false, busy: false, error: "failed" };
+            }
+            else {
+                const changed = !!this.view.snapshot && this.view.snapshot.token !== reply.token;
+                const edited = this.view.editing;
+                this.accept(reply, !edited || changed);
+                this.view.error = changed && edited ? "changed" : undefined;
+            }
+        }
+        catch {
+            if (!this.stopped && generation === this.revision)
+                this.view = { editing: false, busy: false, error: "failed" };
+        }
+        this.publish();
+    }
+    edit(patch) {
+        if (this.stopped || this.view.busy || !this.view.snapshot?.writeAvailable || this.view.snapshot.manualRecoveryRequired)
+            return;
+        const next = { ...this.view.draft, ...patch };
+        if (!modes.includes(next.rgbMode) || !hex$1(next.rgbHex) || !vibrationLevels.includes(next.vibration))
+            return;
+        const actual = this.view.snapshot.state;
+        if ("rgbMode" in patch || "rgbHex" in patch) {
+            if (next.rgbMode === actual.leftMode && next.rgbMode === actual.rightMode && next.rgbHex === actual.leftRgb && next.rgbHex === actual.rightRgb) {
+                delete this.edits.rgbMode;
+                delete this.edits.rgbHex;
+            }
+            else {
+                this.edits.rgbMode = next.rgbMode;
+                this.edits.rgbHex = next.rgbHex;
+            }
+        }
+        if ("vibration" in patch) {
+            if (next.vibration === actual.vibration)
+                delete this.edits.vibration;
+            else
+                this.edits.vibration = next.vibration;
+        }
+        this.view.draft = next;
+        this.view.editing = Object.keys(this.edits).length > 0;
+        this.view.error = undefined;
+        this.publish();
+    }
+    async run(action) {
+        const original = this.view.snapshot, draft = this.view.draft;
+        if (this.stopped || this.view.busy || !original || !draft || !this.services.visible()
+            || (action === "apply" ? !original.writeAvailable || original.manualRecoveryRequired || !this.view.editing : !original.restoreAvailable))
+            return;
+        this.view.busy = true;
+        this.view.error = undefined;
+        const generation = ++this.revision;
+        this.publish();
+        const edits = { ...this.edits };
+        const current = () => !this.stopped && generation === this.revision && this.services.visible();
+        try {
+            if (this.reading)
+                await this.reading.catch(() => { });
+            if (!current())
+                return;
+            const fresh = await this.read();
+            if (!current())
+                return;
+            if (!validAyaneoSnapshot(fresh) || fresh.token !== original.token) {
+                if (validAyaneoSnapshot(fresh))
+                    this.accept(fresh, true);
+                else {
+                    this.view.snapshot = undefined;
+                    this.view.draft = undefined;
+                }
+                this.view.error = "changed";
+                return;
+            }
+            if (action === "apply" ? !fresh.writeAvailable || fresh.manualRecoveryRequired : !fresh.restoreAvailable) {
+                this.accept(fresh, true);
+                this.view.error = "failed";
+                return;
+            }
+            // No asynchronous gap or untrusted UI value is introduced after this fence.
+            const result = action === "apply"
+                ? await this.services.apply({ token: fresh.token, ...edits })
+                : await this.services.restore({ token: fresh.token });
+            if (!current())
+                return;
+            const actual = await this.read();
+            if (!current())
+                return;
+            if (!validAyaneoSnapshot(actual)) {
+                this.view.snapshot = undefined;
+                this.view.draft = undefined;
+                this.view.editing = false;
+                this.view.error = "failed";
+                return;
+            }
+            this.accept(actual, true);
+            this.view.error = result.ok === true && validAyaneoSnapshot(result) && result.token === actual.token
+                && sameState(result.state, actual.state) && (action !== "apply" || result.verified === true) ? undefined : "failed";
+        }
+        catch {
+            if (current()) {
+                this.view.snapshot = undefined;
+                this.view.draft = undefined;
+                this.view.editing = false;
+                this.view.error = "failed";
+            }
+        }
+        finally {
+            this.view.busy = false;
+            this.publish();
+        }
+    }
+    dispose() { this.stopped = true; this.revision++; }
+}
+function hexToHsl(value) {
+    const [r, g, b] = [0, 2, 4].map(offset => parseInt(value.slice(offset, offset + 2), 16) / 255);
+    const high = Math.max(r, g, b), low = Math.min(r, g, b), delta = high - low, light = (high + low) / 2;
+    const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * light - 1));
+    const hue = delta === 0 ? 0 : (high === r ? ((g - b) / delta) % 6 : high === g ? (b - r) / delta + 2 : (r - g) / delta + 4) * 60;
+    return [(hue + 360) % 360, saturation * 100, light * 100];
+}
+function pickerHex(value) {
+    const match = /^hsla\(\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)%,\s*(\d+(?:\.\d+)?)%,\s*1\s*\)$/.exec(value);
+    if (!match)
+        return;
+    const [h, s, l] = match.slice(1).map(Number);
+    if (h > 360 || s > 100 || l > 100)
+        return;
+    const a = s / 100 * Math.min(l / 100, 1 - l / 100);
+    return [0, 8, 4].map(n => {
+        const k = (n + h / 30) % 12;
+        return Math.round(255 * (l / 100 - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, "0");
+    }).join("");
+}
+function AyaneoColorPicker({ locale, color, closeModal, onConfirm }) {
+    const copy = words$1[deviceLanguage(locale)], labels = pickerWords[deviceLanguage(locale)], common = controlLocale(locale);
+    const initial = hexToHsl(color);
+    const [hue, setHue] = SP_REACT.useState(initial[0]), [saturation, setSaturation] = SP_REACT.useState(initial[1]), [lightness, setLightness] = SP_REACT.useState(initial[2]);
+    const selected = pickerHex(`hsla(${hue}, ${saturation}%, ${lightness}%, 1)`);
+    return SP_JSX.jsx(DFL.ConfirmModal, { strTitle: copy[2], strOKButtonText: copy[11], strCancelButtonText: common.back, bAllowFullSize: true, bOKDisabled: !selected, onCancel: closeModal, closeModal: closeModal, onOK: () => { if (selected) {
+            onConfirm(selected);
+            closeModal();
+        } }, children: SP_JSX.jsxs("div", { className: "qsCardBody", style: { display: "grid", gap: 12, minWidth: 0 }, children: [SP_JSX.jsx("div", { "aria-label": `#${(selected ?? color).toUpperCase()}`, style: { height: 44, borderRadius: 6, border: "1px solid rgba(255,255,255,.4)", background: `#${selected ?? color}`, marginBottom: 12 } }), SP_JSX.jsx(DFL.SliderField, { label: labels[0], min: 0, max: 360, step: 1, value: hue, showValue: true, editableValue: true, bottomSeparator: "none", onChange: setHue }), SP_JSX.jsx(DFL.SliderField, { label: labels[1], min: 0, max: 100, step: 1, value: saturation, showValue: true, editableValue: true, valueSuffix: "%", bottomSeparator: "none", onChange: setSaturation }), SP_JSX.jsx(DFL.SliderField, { label: labels[2], min: 0, max: 100, step: 1, value: lightness, showValue: true, editableValue: true, valueSuffix: "%", bottomSeparator: "none", onChange: setLightness })] }) });
+}
+function Ayaneo3ControllerControls({ locale, deviceKey, active = true }) {
+    const copy = words$1[deviceLanguage(locale)], common = controlLocale(locale), device = deviceInfoLocale(locale);
+    const [view, setView] = SP_REACT.useState({ editing: false, busy: false });
+    const model = SP_REACT.useRef(undefined);
+    const modal = SP_REACT.useRef(undefined);
+    SP_REACT.useEffect(() => {
+        let stopped = false, timer;
+        setView({ editing: false, busy: false });
+        const visible = () => active && document.visibilityState !== "hidden";
+        const owner = new AyaneoControlModel({
+            read: () => call("get_ayaneo3_controller"),
+            apply: request => call("set_ayaneo3_controller", request),
+            restore: request => call("restore_ayaneo3_controller", request),
+            visible, changed: next => { if (!stopped)
+                setView(next); },
+        });
+        model.current = owner;
+        const refresh = async () => {
+            window.clearTimeout(timer);
+            await owner.refresh();
+            window.clearTimeout(timer);
+            if (!stopped)
+                timer = window.setTimeout(() => void refresh(), 750);
+        };
+        const changed = () => { window.clearTimeout(timer); void refresh(); };
+        void refresh();
+        window.addEventListener("focus", changed);
+        document.addEventListener("visibilitychange", changed);
+        return () => {
+            stopped = true;
+            owner.dispose();
+            if (model.current === owner)
+                model.current = undefined;
+            window.clearTimeout(timer);
+            modal.current?.Close();
+            modal.current = undefined;
+            window.removeEventListener("focus", changed);
+            document.removeEventListener("visibilitychange", changed);
+        };
+    }, [deviceKey, active]);
+    const selectColor = () => {
+        const owner = model.current, initial = owner?.view.snapshot, draft = owner?.view.draft;
+        if (!owner || owner.view.busy || !initial?.writeAvailable || !draft)
+            return;
+        let popup;
+        popup = DFL.showModal(SP_JSX.jsx(AyaneoColorPicker, { locale: locale, color: draft.rgbHex, closeModal: () => { popup?.Close(); if (modal.current === popup)
+                modal.current = undefined; }, onConfirm: value => {
+                if (hex$1(value) && model.current === owner && owner.view.snapshot?.token === initial.token && !owner.view.busy)
+                    owner.edit({ rgbHex: value });
+            } }), window, { bNeverPopOut: true });
+        modal.current = popup;
+    };
+    const snapshot = view.snapshot, draft = view.draft;
+    const disabled = view.busy || !snapshot?.writeAvailable || snapshot.manualRecoveryRequired;
+    const modeName = (mode) => copy[4 + modes.indexOf(mode)];
+    const vibeName = (vibration) => copy[vibration === "off" ? 7 : 8 + vibrationLevels.indexOf(vibration)];
+    return SP_JSX.jsxs("div", { className: "qsCardBody qsDropdownFullWidth", "aria-busy": view.busy, children: [SP_JSX.jsxs("div", { className: "qsMeta", children: ["AYANEO 3 \u00B7 ", copy[0], " \u00B7 ", device.experimental] }), snapshot && draft ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: copy[1], layout: "below", bottomSeparator: "none", selectedOption: draft.rgbMode, disabled: disabled, rgOptions: modes.map(mode => ({ data: mode, label: modeName(mode) })), onChange: ({ data }) => { if (modes.includes(data))
+                            model.current?.edit({ rgbMode: data }); } }), SP_JSX.jsx(DFL.ButtonItem, { label: copy[2], layout: "below", bottomSeparator: "none", disabled: disabled || draft.rgbMode === "off" || draft.rgbMode === "rainbow", onClick: selectColor, children: SP_JSX.jsxs("span", { style: { display: "inline-flex", alignItems: "center", gap: 8 }, children: [SP_JSX.jsx("span", { "aria-hidden": "true", style: { width: 18, height: 18, borderRadius: 4, border: "1px solid currentColor", background: `#${draft.rgbHex}` } }), "#", draft.rgbHex.toUpperCase()] }) }), SP_JSX.jsx(DFL.DropdownItem, { label: copy[3], layout: "below", bottomSeparator: "none", selectedOption: draft.vibration, disabled: disabled, rgOptions: vibrationLevels.map(level => ({ data: level, label: vibeName(level) })), onChange: ({ data }) => { if (vibrationLevels.includes(data))
+                            model.current?.edit({ vibration: data }); } }), SP_JSX.jsxs("div", { className: "qsMeta", children: [copy[13], ": ", copy[14], " ", modeName(snapshot.state.leftMode), " #", snapshot.state.leftRgb.toUpperCase(), " · ", copy[15], " ", modeName(snapshot.state.rightMode), " #", snapshot.state.rightRgb.toUpperCase(), " · ", copy[3], " ", vibeName(snapshot.state.vibration)] }), view.editing && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: disabled, onClick: () => void model.current?.run("apply"), children: copy[11] }), snapshot.restoreAvailable && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: view.busy, onClick: () => void model.current?.run("restore"), children: copy[12] })] }) : SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: common.unavailable }), (view.error || snapshot?.manualRecoveryRequired) && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: view.error === "changed" ? copy[16] : common.saveError }), (!snapshot || view.error || snapshot.manualRecoveryRequired) && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: view.busy, onClick: () => void model.current?.refresh(), children: common.retry })] });
+}
+
+const words = {
+    en: ["Vibration", "Off", "Low", "High", "Apply", "Restore previous settings", "Current", "Device state changed. Review the current settings."],
+    it: ["Vibrazione", "Spenta", "Bassa", "Alta", "Applica", "Ripristina le impostazioni precedenti", "Attuale", "Lo stato del dispositivo è cambiato. Controlla le impostazioni attuali."],
+    de: ["Vibration", "Aus", "Niedrig", "Hoch", "Anwenden", "Vorherige Einstellungen wiederherstellen", "Aktuell", "Der Gerätestatus hat sich geändert. Prüfe die aktuellen Einstellungen."],
+    es: ["Vibración", "Apagada", "Baja", "Alta", "Aplicar", "Restaurar los ajustes anteriores", "Actual", "El estado del dispositivo ha cambiado. Revisa los ajustes actuales."],
+    fr: ["Vibrations", "Désactivé", "Faible", "Fort", "Appliquer", "Rétablir les réglages précédents", "Actuel", "L’état de l’appareil a changé. Vérifiez les réglages actuels."],
+    pt: ["Vibração", "Desligada", "Baixa", "Alta", "Aplicar", "Restaurar as definições anteriores", "Atual", "O estado do dispositivo mudou. Reveja as definições atuais."],
+    ru: ["Вибрация", "Выкл.", "Низкая", "Высокая", "Применить", "Восстановить предыдущие настройки", "Сейчас", "Состояние устройства изменилось. Проверьте текущие настройки."],
+    uk: ["Вібрація", "Вимкнено", "Низька", "Висока", "Застосувати", "Відновити попередні налаштування", "Поточне", "Стан пристрою змінився. Перевірте поточні налаштування."],
+    ja: ["振動", "オフ", "弱", "強", "適用", "以前の設定に戻す", "現在", "デバイスの状態が変わりました。現在の設定を確認してください。"],
+    ko: ["진동", "끄기", "약하게", "강하게", "적용", "이전 설정 복원", "현재", "장치 상태가 변경되었습니다. 현재 설정을 확인하세요."],
+    zh: ["振动", "关闭", "低", "高", "应用", "恢复之前的设置", "当前", "设备状态已更改。请检查当前设置。"],
+    hi: ["कंपन", "बंद", "कम", "तेज़", "लागू करें", "पिछली सेटिंग बहाल करें", "वर्तमान", "डिवाइस की स्थिति बदल गई है। वर्तमान सेटिंग जाँचें।"],
+};
+const rumbleLevels = ["off", "low", "high"];
+function validGpdSnapshot(v, profile) {
+    const k = v?.profile === "gpd-win-4" ? [4, 7] : v?.profile === "gpd-win-mini" ? [5, 4] : undefined;
+    return !!v && v.ok === true && v.available === true && v.provider === "gpd-v1-hid"
+        && !!k && (!profile || v.profile === profile) && typeof v.token === "string" && /^[a-f0-9]{64}$/.test(v.token)
+        && v.readbackKind === "gpd-v1-config128-checksum-double-read" && v.experimental === true && v.hardwareValidated === false
+        && typeof v.writeAvailable === "boolean" && typeof v.restoreAvailable === "boolean" && typeof v.recoveryRequired === "boolean"
+        && !(v.recoveryRequired && (v.writeAvailable || v.restoreAvailable)) && !!v.state && rumbleLevels.includes(v.state.rumble)
+        && Array.isArray(v.firmware?.k) && v.firmware.k.length === 2 && v.firmware.k.every((x, i) => Number.isInteger(x) && x === k[i])
+        && Array.isArray(v.firmware?.x) && v.firmware.x.length === 2 && v.firmware.x.every((x) => Number.isInteger(x) && x >= 0 && x <= 255);
+}
+class GpdControlModel {
+    constructor(services, profile) {
+        this.services = services;
+        this.profile = profile;
+        this.view = { editing: false, busy: false };
+        this.stopped = false;
+        this.revision = 0;
+    }
+    publish() { if (!this.stopped)
+        this.services.changed({ ...this.view }); }
+    async read() {
+        if (!this.reading) {
+            const pending = this.services.read();
+            this.reading = pending;
+            void pending.finally(() => { if (this.reading === pending)
+                this.reading = undefined; }).catch(() => { });
+        }
+        return this.reading;
+    }
+    accept(snapshot) { this.view.snapshot = snapshot; this.view.draft = snapshot.state.rumble; this.view.editing = false; }
+    async refresh() {
+        if (this.stopped || this.view.busy || !this.services.visible())
+            return;
+        const revision = this.revision;
+        try {
+            const reply = await this.read();
+            if (this.stopped || revision !== this.revision || !this.services.visible())
+                return;
+            if (!validGpdSnapshot(reply, this.profile))
+                this.view = { editing: false, busy: false, error: "failed" };
+            else if (!this.view.editing || this.view.snapshot?.token !== reply.token) {
+                const changed = this.view.editing;
+                this.accept(reply);
+                this.view.error = changed ? "changed" : undefined;
+            }
+            else
+                this.view.snapshot = reply;
+        }
+        catch {
+            if (!this.stopped && revision === this.revision)
+                this.view = { editing: false, busy: false, error: "failed" };
+        }
+        this.publish();
+    }
+    edit(value) {
+        if (this.stopped || this.view.busy || !this.services.visible() || !this.view.snapshot?.writeAvailable || this.view.snapshot.recoveryRequired || !rumbleLevels.includes(value))
+            return;
+        this.view.draft = value;
+        this.view.editing = value !== this.view.snapshot.state.rumble;
+        this.view.error = undefined;
+        this.publish();
+    }
+    async run(action) {
+        const initial = this.view.snapshot, draft = this.view.draft;
+        if (this.stopped || this.view.busy || !initial || !draft || !this.services.visible() || initial.recoveryRequired
+            || (action === "apply" ? !initial.writeAvailable || !this.view.editing : !initial.restoreAvailable))
+            return;
+        this.view.busy = true;
+        this.view.error = undefined;
+        const revision = ++this.revision;
+        this.publish();
+        const current = () => !this.stopped && revision === this.revision && this.services.visible();
+        try {
+            if (this.reading)
+                await this.reading.catch(() => { });
+            if (!current())
+                return;
+            const fresh = await this.read();
+            if (!current())
+                return;
+            if (!validGpdSnapshot(fresh, this.profile) || fresh.token !== initial.token) {
+                if (validGpdSnapshot(fresh, this.profile))
+                    this.accept(fresh);
+                else {
+                    this.view.snapshot = undefined;
+                    this.view.draft = undefined;
+                    this.view.editing = false;
+                }
+                this.view.error = "changed";
+                return;
+            }
+            if (fresh.recoveryRequired || (action === "apply" ? !fresh.writeAvailable : !fresh.restoreAvailable)) {
+                this.accept(fresh);
+                this.view.error = "failed";
+                return;
+            }
+            const result = action === "apply" ? await this.services.apply({ token: fresh.token, rumble: draft }) : await this.services.restore({ token: fresh.token });
+            if (!current())
+                return;
+            const actual = await this.read();
+            if (!current())
+                return;
+            if (!validGpdSnapshot(actual, this.profile)) {
+                this.view = { editing: false, busy: false, error: "failed" };
+                return;
+            }
+            this.accept(actual);
+            this.view.error = validGpdSnapshot(result, this.profile) && result.verified === true && result.token === actual.token && result.state.rumble === actual.state.rumble ? undefined : "failed";
+        }
+        catch {
+            if (current())
+                this.view = { editing: false, busy: false, error: "failed" };
+        }
+        finally {
+            this.view.busy = false;
+            this.publish();
+        }
+    }
+    dispose() { this.stopped = true; this.revision++; }
+}
+function GpdV1ControllerControls({ locale, deviceKey, profile, active = true }) {
+    const copy = words[deviceLanguage(locale)], common = controlLocale(locale), device = deviceInfoLocale(locale);
+    const [view, setView] = SP_REACT.useState({ editing: false, busy: false });
+    const model = SP_REACT.useRef(undefined);
+    SP_REACT.useEffect(() => {
+        let stopped = false, timer;
+        setView({ editing: false, busy: false });
+        const owner = new GpdControlModel({ read: () => call("get_gpd_v1_controller"),
+            apply: request => call("set_gpd_v1_controller", request),
+            restore: request => call("restore_gpd_v1_controller", request),
+            visible: () => active && document.visibilityState !== "hidden", changed: next => { if (!stopped)
+                setView(next); } }, profile);
+        model.current = owner;
+        const refresh = async () => { window.clearTimeout(timer); await owner.refresh(); window.clearTimeout(timer); if (!stopped)
+            timer = window.setTimeout(() => void refresh(), 1500); };
+        const changed = () => { window.clearTimeout(timer); void refresh(); };
+        void refresh();
+        window.addEventListener("focus", changed);
+        document.addEventListener("visibilitychange", changed);
+        return () => {
+            stopped = true;
+            owner.dispose();
+            if (model.current === owner)
+                model.current = undefined;
+            window.clearTimeout(timer);
+            window.removeEventListener("focus", changed);
+            document.removeEventListener("visibilitychange", changed);
+        };
+    }, [deviceKey, profile, active]);
+    const snapshot = view.snapshot, disabled = view.busy || !snapshot?.writeAvailable || snapshot.recoveryRequired;
+    const label = (level) => copy[1 + rumbleLevels.indexOf(level)];
+    return SP_JSX.jsxs("div", { className: "qsCardBody qsDropdownFullWidth", "aria-busy": view.busy, children: [SP_JSX.jsxs("div", { className: "qsMeta", children: ["GPD \u00B7 ", copy[0], " \u00B7 ", device.experimental] }), snapshot && view.draft ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: copy[0], layout: "below", bottomSeparator: "none", selectedOption: view.draft, disabled: disabled, rgOptions: rumbleLevels.map(level => ({ data: level, label: label(level) })), onChange: ({ data }) => { if (rumbleLevels.includes(data))
+                            model.current?.edit(data); } }), SP_JSX.jsxs("div", { className: "qsMeta", children: [copy[6], ": ", label(snapshot.state.rumble)] }), view.editing && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: disabled, onClick: () => void model.current?.run("apply"), children: copy[4] }), snapshot.restoreAvailable && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: view.busy || snapshot.recoveryRequired, onClick: () => void model.current?.run("restore"), children: copy[5] })] }) : SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: common.unavailable }), (view.error || snapshot?.recoveryRequired) && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: view.error === "changed" ? copy[7] : common.saveError }), (!snapshot || view.error || snapshot.recoveryRequired) && SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: view.busy, onClick: () => void model.current?.refresh(), children: common.retry })] });
+}
+
+const { DialogButton: DialogButton$2, DropdownItem: DropdownItem$2, Focusable: Focusable$2 } = _global_DFL;
+const style$1 = `
+.ph-device-settings{display:grid;gap:12px;min-width:0;padding:4px 4px 0;overflow-wrap:anywhere}
+.ph-device-identity{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:12px;padding:12px;border-radius:9px;background:rgba(255,255,255,.07)}
+.ph-device-symbol{display:grid;place-items:center;width:42px;height:42px;border-radius:8px;background:rgba(255,255,255,.09);font-size:22px}
+.ph-device-title{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;font-size:15px;line-height:1.35}
+.ph-device-experimental{font-size:10px;font-weight:600;color:#ffe467;background:#2b2819;padding:2px 5px;border-radius:4px}
+.ph-device-detail,.ph-device-hint{font-size:12px;line-height:1.45;color:#c5cbd1}
+.ph-controls .ph-device-settings .ph-device-hint{margin:0;opacity:1}
+.ph-device-status{display:grid;gap:8px;margin:0}
+.ph-device-status>div{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;padding:0 4px}
+.ph-device-battery{display:flex;align-items:center;gap:8px;padding:0 4px;font-size:13px;font-weight:600}
+.ph-device-battery>svg{flex:none}
+.ph-device-battery-health{color:#c5cbd1;font-size:12px;font-weight:400;line-height:1.45}
+.ph-device-status dt{font-size:12px;color:#c5cbd1}.ph-device-status dd{margin:0;font-size:13px;font-weight:600}
+.ph-device-actions{display:grid;gap:6px}
+.ph-device-settings>.qsCardBody{display:flex;flex-direction:column;gap:10px;min-width:0;max-width:100%;overflow-wrap:anywhere}
+.ph-device-settings>.qsCardBody .qsMeta{font-size:12px;line-height:1.45;min-width:0;max-width:100%;overflow-wrap:anywhere}
+.ph-controls .ph-device-actions button,.ph-controls button.ph-device-details{display:flex!important;align-items:center;gap:8px;min-width:0;width:100%;white-space:normal!important;text-align:left}
+.ph-device-actions svg,.ph-device-details svg{flex:none;width:16px;height:16px}
+.ph-device-details span{flex:1;min-width:0}
+.ph-device-specs{margin:0 6px;display:grid;gap:9px}.ph-device-specs dt{font-size:12px;color:#c5cbd1}.ph-device-specs dd{margin:1px 0 0;font-size:13px}
+`;
+function DeviceInfo({ copy, model }) {
+    const [info, setInfo] = _global_SP_REACT.useState();
+    const [failed, setFailed] = _global_SP_REACT.useState(false);
+    _global_SP_REACT.useEffect(() => {
+        let active = true;
+        void call("get_device_info").then(value => {
+            if (active)
+                setInfo(value);
+        }).catch(() => { if (active)
+            setFailed(true); });
+        return () => { active = false; };
+    }, []);
+    if (!info)
+        return SP_JSX.jsx("div", { className: "ph-device-detail", role: "status", children: failed ? copy.loadError : copy.loading });
+    const size = (value, divisor = 1) => value !== undefined && Number.isFinite(value) && value > 0 ? `${(value / divisor).toFixed(1)} GiB` : undefined;
+    const rows = [
+        [copy.name, info.device_name], [copy.model, model], [copy.cpu, info.cpu], [copy.gpu, info.gpu?.join(", ")],
+        [copy.ram, size(info.ram)], [copy.storage, size(info.storage_total_bytes, 1024 ** 3)],
+        [copy.edition, info.windows_edition], [copy.version, info.windows_version],
+    ];
+    return SP_JSX.jsx("dl", { className: "ph-device-specs", children: rows.map(([label, value]) => SP_JSX.jsxs("div", { children: [SP_JSX.jsx("dt", { children: label }), SP_JSX.jsx("dd", { children: value || copy.unavailable })] }, label)) });
+}
+function DeviceSettings({ locale, openVideo, openPerformance, detailsOpen = false, onDetailsToggle }) {
+    const copy = deviceInfoLocale(locale);
+    const [profile, setProfile] = _global_SP_REACT.useState();
+    const [error, setError] = _global_SP_REACT.useState();
+    const [saving, setSaving] = _global_SP_REACT.useState(false);
+    const [loadAttempt, setLoadAttempt] = _global_SP_REACT.useState(0);
+    const [batteryHealth, setBatteryHealth] = _global_SP_REACT.useState();
+    const hasBattery = profile?.power.available === true && profile.power.battery === true;
+    const active = _global_SP_REACT.useRef(false);
+    const writeInProgress = _global_SP_REACT.useRef(false);
+    _global_SP_REACT.useEffect(() => {
+        active.current = true;
+        let latest = true;
+        void call("get_device_profile").then(value => {
+            if (latest) {
+                setProfile(value);
+                setError(undefined);
+            }
+        }).catch(() => { if (latest)
+            setError("load"); });
+        return () => { latest = false; active.current = false; };
+    }, [loadAttempt]);
+    _global_SP_REACT.useEffect(() => {
+        if (!hasBattery) {
+            setBatteryHealth(undefined);
+            return;
+        }
+        let latest = true;
+        void call("get_battery_health").then(({ percent }) => {
+            if (latest && typeof percent === "number" && Number.isInteger(percent) && percent >= 0 && percent <= 100) {
+                setBatteryHealth(percent);
+            }
+        }).catch(() => { });
+        return () => { latest = false; };
+    }, [hasBattery]);
+    const select = async ({ data }) => {
+        if (writeInProgress.current || data === profile?.selection)
+            return;
+        writeInProgress.current = true;
+        setSaving(true);
+        setError(undefined);
+        try {
+            const value = await call("set_device_profile", data);
+            if (active.current)
+                setProfile(value);
+        }
+        catch {
+            if (active.current)
+                setError("save");
+        }
+        finally {
+            writeInProgress.current = false;
+            if (active.current)
+                setSaving(false);
+        }
+    };
+    if (!profile)
+        return SP_JSX.jsxs(Focusable$2, { className: "ph-device-settings", "flow-children": "column", children: [SP_JSX.jsx("style", { children: style$1 }), SP_JSX.jsx("div", { className: "ph-device-detail", role: "status", children: error === "load" ? copy.loadError : copy.loading }), error === "load" && SP_JSX.jsx(DialogButton$2, { onClick: () => { setError(undefined); setLoadAttempt(value => value + 1); }, children: copy.retry })] });
+    const profileNames = [{ id: "pc", name: copy.pc }, { id: "handheld", name: copy.handheld }, ...profile.handhelds];
+    const names = new Map(profileNames.map(({ id, name }) => [id, name]));
+    const handheld = profile.effective !== "pc";
+    const actualModel = [profile.manufacturer, profile.model].filter(Boolean).join(" ");
+    const modelLabel = profile.detected !== "pc" && profile.detected !== profile.effective ? names.get(profile.detected) ?? actualModel : actualModel;
+    const display = profile.display;
+    const power = profile.power;
+    const batteryLabel = power.source === "ac" ? copy.ac : power.source === "battery" ? copy.battery : undefined;
+    const battery = hasBattery ? [power.percent == null ? undefined : `${power.percent}%`, batteryLabel].filter(Boolean).join(" · ") : "";
+    const health = hasBattery && batteryHealth !== undefined ? `${copy.batteryHealth} · ${batteryHealth}%` : undefined;
+    const seconds = power.remainingSeconds;
+    const remaining = hasBattery && power.source === "battery" && power.discharging === true
+        && typeof seconds === "number" && Number.isInteger(seconds) && seconds >= 0 && seconds < 0xffffffff
+        ? `${copy.batteryRemaining} · ${new Intl.NumberFormat(copy.language, {
+            style: "unit", unit: "minute", unitDisplay: "short", maximumFractionDigits: 0,
+        }).format(Math.ceil(seconds / 60))}` : undefined;
+    return SP_JSX.jsxs(Focusable$2, { className: "ph-device-settings", "flow-children": "column", children: [SP_JSX.jsx("style", { children: style$1 }), SP_JSX.jsxs("div", { className: "ph-device-identity", children: [SP_JSX.jsx("div", { className: "ph-device-symbol", "aria-hidden": "true", children: handheld ? SP_JSX.jsx(TbDeviceGamepad2, {}) : SP_JSX.jsx(TbDeviceDesktop, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("div", { className: "ph-device-title", children: [SP_JSX.jsx("strong", { children: names.get(profile.effective) ?? copy.pc }), handheld && SP_JSX.jsx("span", { className: "ph-device-experimental", children: copy.experimental })] }), modelLabel && SP_JSX.jsxs("div", { className: "ph-device-detail", children: [copy.model, " \u00B7 ", modelLabel] })] })] }), SP_JSX.jsx(DropdownItem$2, { label: copy.profile, layout: "below", bottomSeparator: "none", selectedOption: profile.selection, disabled: saving, rgOptions: [{ label: copy.auto, data: "auto" }, ...profileNames.map(({ id, name }) => ({ label: name, data: id }))], onChange: select }), SP_JSX.jsx("p", { className: "ph-device-hint", children: copy.profileHint }), error === "save" && SP_JSX.jsx("div", { className: "ph-device-detail", role: "alert", children: copy.saveError }), (battery || health || remaining) && SP_JSX.jsxs("div", { className: "ph-device-battery", children: [SP_JSX.jsx(TbBattery, { "aria-hidden": "true" }), SP_JSX.jsxs("div", { children: [battery && SP_JSX.jsx("div", { children: battery }), remaining && SP_JSX.jsx("div", { className: "ph-device-battery-health", children: remaining }), health && SP_JSX.jsx("div", { className: "ph-device-battery-health", children: health })] })] }), display && SP_JSX.jsx("dl", { className: "ph-device-status", children: SP_JSX.jsxs("div", { children: [SP_JSX.jsx("dt", { children: copy.primaryDisplay }), SP_JSX.jsxs("dd", { children: [display.width, " \u00D7 ", display.height, display.hz ? ` · ${display.hz} Hz` : ""] })] }) }), SP_JSX.jsx(DeviceCapabilities, { selection: profile.selection, effective: profile.effective, detected: profile.detected, locale: locale, openVideo: openVideo, openPerformance: openPerformance }), profile.effective === "ayaneo-3" && profile.detected === "ayaneo-3" && SP_JSX.jsx(Ayaneo3ControllerControls, { deviceKey: JSON.stringify([profile.selection, profile.manufacturer, profile.model]), locale: locale, active: !saving }, JSON.stringify([profile.selection, profile.manufacturer, profile.model])), profile.effective === profile.detected && ["gpd-win-4", "gpd-win-mini"].includes(profile.detected) && SP_JSX.jsx(GpdV1ControllerControls, { deviceKey: JSON.stringify([profile.selection, profile.manufacturer, profile.model]), profile: profile.detected, locale: locale, active: !saving }, JSON.stringify([profile.selection, profile.manufacturer, profile.model])), SP_JSX.jsxs(DialogButton$2, { className: "ph-device-details", "aria-expanded": detailsOpen, onClick: onDetailsToggle, children: [SP_JSX.jsx("span", { children: copy.details }), detailsOpen ? SP_JSX.jsx(TbChevronDown, { "aria-hidden": "true" }) : SP_JSX.jsx(TbChevronRight, { "aria-hidden": "true" })] }), detailsOpen && SP_JSX.jsx(DeviceInfo, { copy: copy, model: actualModel })] });
+}
+
+// The panel preference store owns expansion across QAM openings and tab changes.
+function useControlSections(expanded, setExpanded) {
+    const toggle = _global_SP_REACT.useCallback((id) => setExpanded(current => toggleControlSection(current, id)), [setExpanded]);
+    return { expanded, toggle };
+}
+
+const translations = {
+    en: ["Charge limit", "MSI firmware"],
+    it: ["Limite di carica", "Firmware MSI"],
+    de: ["Ladegrenze", "MSI-Firmware"],
+    es: ["Límite de carga", "Firmware de MSI"],
+    fr: ["Limite de charge", "Firmware MSI"],
+    pt: ["Limite de carga", "Firmware MSI"],
+    ru: ["Предел заряда", "Прошивка MSI"],
+    uk: ["Межа заряду", "Прошивка MSI"],
+    ja: ["充電上限", "MSI ファームウェア"],
+    ko: ["충전 한도", "MSI 펌웨어"],
+    zh: ["充电上限", "MSI 固件"],
+    hi: ["चार्ज की सीमा", "MSI फ़र्मवेयर"],
+};
+function MsiChargeLimit({ locale }) {
+    const key = locale.toLowerCase().split(/[-_]/)[0];
+    const copy = translations[key] ?? translations.en;
+    const [state, setState] = SP_REACT.useState();
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [failed, setFailed] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(false);
+    const writing = SP_REACT.useRef(false);
+    const revision = SP_REACT.useRef(0);
+    SP_REACT.useEffect(() => {
+        mounted.current = true;
+        let stopped = false, reading = false;
+        const refresh = async () => {
+            if (stopped || reading || writing.current || document.visibilityState === "hidden")
+                return;
+            reading = true;
+            const observedRevision = revision.current;
+            try {
+                const result = await call("get_msi_claw_firmware");
+                if (!stopped && revision.current === observedRevision)
+                    setState(result.available ? result : undefined);
+            }
+            catch { /* Retain verified firmware state through a transient RPC failure. */ }
+            finally {
+                reading = false;
+            }
+        };
+        void refresh();
+        const onVisible = () => void refresh();
+        window.addEventListener("focus", onVisible);
+        document.addEventListener("visibilitychange", onVisible);
+        return () => {
+            stopped = true;
+            mounted.current = false;
+            window.removeEventListener("focus", onVisible);
+            document.removeEventListener("visibilitychange", onVisible);
+        };
+    }, []);
+    if (!state)
+        return null;
+    const choices = [...new Set([60, 80, 100, state.chargeLimit])].sort((a, b) => a - b);
+    const choose = async (percent) => {
+        if (writing.current || !choices.includes(percent) || percent === state.chargeLimit)
+            return;
+        revision.current++;
+        writing.current = true;
+        setBusy(true);
+        setFailed(false);
+        try {
+            const result = await call("set_msi_claw_charge_limit", {
+                token: state.token, expected: state.chargeLimit, percent,
+            });
+            if (!mounted.current)
+                return;
+            if (result.available)
+                setState(result);
+            else if (result.code === "unavailable")
+                setState(undefined);
+            setFailed(result.ok !== true);
+        }
+        catch {
+            if (mounted.current)
+                setFailed(true);
+        }
+        finally {
+            writing.current = false;
+            if (mounted.current)
+                setBusy(false);
+        }
+    };
+    return SP_JSX.jsxs("div", { className: "qsCardBody qsDropdownFullWidth", "aria-busy": busy, children: [SP_JSX.jsx(DFL.DropdownItem, { label: copy[0], description: `${copy[1]} · ${deviceInfoLocale(locale).experimental}`, bottomSeparator: "none", layout: "below", selectedOption: state.chargeLimit, disabled: busy, rgOptions: choices.map(percent => ({ data: percent, label: `${percent}%` })), onChange: ({ data }) => void choose(data) }), failed && SP_JSX.jsx("div", { className: "qsMeta", role: "status", children: controlLocale(locale).saveError })] });
 }
 
 const { Focusable: Focusable$1, DialogButton: DialogButton$1, ToggleField: ToggleField$1, DropdownItem: DropdownItem$1, ScrollPanel, GamepadButton } = _global_DFL;
-const icons = { home: TbPower, audio: TbDeviceTv, performance: TbVolume, graphics: TbPhoto, controller: TbDeviceGamepad2, store: TbShoppingBag, decky: TbPlug };
+const icons = { home: TbPower, audio: TbDeviceTv, performance: TbVolume, graphics: TbGauge, controller: TbDeviceGamepad2, store: TbShoppingBag, decky: TbPlug };
 let prefs = normalizeControlPreferences({});
 let loaded = false;
 let lastSettingsPage = 'general';
@@ -36313,13 +40801,15 @@ const css = `
 .ph-controls .ph-control-icon[aria-selected=true]{border-bottom-color:#fee505!important}
 .ph-controls .ph-control-icon.gpfocus,.ph-controls .ph-control-icon:focus-visible,.ph-controls .ph-control-icon:hover{background:#dcdedf!important;color:#171a21!important;box-shadow:inset 0 0 0 2px rgba(255,255,255,.85)!important;transform:none!important}
 .ph-control-heading{font-size:18px;font-weight:700;margin:0 18px 12px;line-height:1.35}
-.ph-control-section{width:100%;min-width:0;margin:0 0 12px;border:0!important}
+.ph-control-section{width:100%;min-width:0;margin:0 0 3px;border:0!important}
 .ph-controls [class*="PanelSection"]::after,.ph-controls [class*="Field"]::after,.ph-controls [class*="Field"]::before{display:none!important}
 .ph-controls [class*="PanelSection"],.ph-controls [class*="Field"]{border-top:0!important;border-bottom:0!important}
 .ph-controls hr,.ph-controls [role="separator"],.ph-controls [class*="FieldSeparator"],.ph-controls [class*="PanelSectionSeparator"],.ph-controls [class*="Divider"]:empty,.ph-controls [class*="divider"]:empty{display:none!important}
 .ph-controls [class*="BottomSeparator"],.ph-controls [class*="WithSeparator"]{border-top:0!important;border-bottom:0!important;box-shadow:none!important}
 .ph-controls [class*="BottomSeparator"]::before,.ph-controls [class*="BottomSeparator"]::after,.ph-controls [class*="WithSeparator"]::before,.ph-controls [class*="WithSeparator"]::after{display:none!important}
-.ph-controls .ph-control-section-title{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;min-height:42px!important;padding:10px 12px!important;display:flex!important;align-items:center;justify-content:space-between;gap:8px;border-radius:5px!important;transform:none!important;font-size:14px!important}
+.ph-controls .ph-control-section-title{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;min-height:42px!important;padding:10px 4px!important;display:flex!important;align-items:center;justify-content:space-between;gap:8px;border:0!important;background:transparent!important;color:inherit!important;border-radius:5px!important;transform:none!important;font-size:14px!important;white-space:normal!important}
+.ph-controls .ph-control-section-title.gpfocus,.ph-controls .ph-control-section-title:focus-visible,.ph-controls .ph-control-section-title:hover{background:rgba(255,255,255,.12)!important}
+.ph-control-section-title strong{font-weight:600;overflow-wrap:anywhere}
 .ph-control-section-title>span{display:flex;gap:9px;align-items:center;text-align:left;min-width:0}
 .ph-control-section-title svg{width:17px;height:17px;flex:none}
 .ph-control-section-body{padding:6px 0 12px}
@@ -36343,30 +40833,7 @@ const css = `
 .ph-controls .ph-control-settings .qsRedesign{padding:0 0 18px!important}
 .ph-controls .qsCardBody{gap:12px;padding:8px 0!important}
 `;
-function DeviceInfo({ locale }) {
-    const [info, setInfo] = _global_SP_REACT.useState();
-    const [failed, setFailed] = _global_SP_REACT.useState(false);
-    const copy = deviceInfoLocale(locale);
-    _global_SP_REACT.useEffect(() => { let alive = true; void call("get_device_info").then(value => { if (alive)
-        setInfo(value); }).catch(() => { if (alive)
-        setFailed(true); }); return () => { alive = false; }; }, []);
-    if (!info)
-        return SP_JSX.jsx("div", { role: "status", style: { padding: "8px 10px", fontSize: 12 }, children: failed ? copy.loadError : copy.loading });
-    const text = (value) => typeof value === "string" && value.trim() ? value : copy.unavailable;
-    const storage = Number.isFinite(info.storage_total_bytes) && info.storage_total_bytes > 0 ? `${(info.storage_total_bytes / (1024 ** 3)).toFixed(1)} GiB` : copy.unavailable;
-    const rows = [
-        [copy.name, text(info.device_name)],
-        [copy.model, text([info.manufacturer, info.model].filter(Boolean).join(" "))],
-        [copy.cpu, text(info.cpu)],
-        [copy.gpu, text(Array.isArray(info.gpu) ? info.gpu.filter((value) => typeof value === "string").join(", ") : info.gpu)],
-        [copy.ram, Number.isFinite(info.ram) && info.ram > 0 ? `${info.ram} GiB` : copy.unavailable],
-        [copy.storage, storage],
-        [copy.edition, text(info.windows_edition)],
-        [copy.version, text(info.windows_version)],
-    ];
-    return SP_JSX.jsx("div", { style: { fontSize: 12, lineHeight: 1.5, overflowWrap: "anywhere", padding: "4px 10px" }, children: SP_JSX.jsx("dl", { style: { margin: "0 0 18px" }, children: rows.map(([label, value]) => SP_JSX.jsxs("div", { style: { padding: "7px 0" }, children: [SP_JSX.jsx("dt", { style: { opacity: .65, marginBottom: 3 }, children: label }), SP_JSX.jsx("dd", { style: { margin: 0, fontSize: 13 }, children: value })] }, label)) }) });
-}
-function ControlCenter({ locale, origin, session, store, controller, settings, homeTitle }) {
+function ControlCenter({ locale, origin, session, store, controller, settings, homeTitle, gameAppId = 0, frameTiming, gamingMode = false }) {
     const state = _global_SP_REACT.useSyncExternalStore(subscribe, () => prefs);
     const onboardingRoot = _global_SP_REACT.useRef(null);
     _global_SP_REACT.useLayoutEffect(() => {
@@ -36412,6 +40879,11 @@ function ControlCenter({ locale, origin, session, store, controller, settings, h
     const visible = visibleControlTabs(state, deckyAvailable);
     const manualActive = visible.includes(state.active) ? state.active : visible[0] ?? "home";
     const { active, customizing, showcasing } = useOnboardingControlShowcase(origin === "qam", ready, visible, manualActive, manualCustomizing);
+    const updateExpanded = _global_SP_REACT.useCallback((change) => {
+        if (ready)
+            update({ ...prefs, expandedSections: change(prefs.expandedSections) }, locale);
+    }, [ready, locale]);
+    const { expanded, toggle: toggleSection } = useControlSections(state.expandedSections, updateExpanded);
     const hostActive = !customizing && active === "decky" && deckyAvailable;
     const editing = editor.selected;
     const edit = (action) => {
@@ -36453,7 +40925,14 @@ function ControlCenter({ locale, origin, session, store, controller, settings, h
         return !canToggleTab(state, id, deckyAvailable) ? editorCopy.lastTab : state.hidden.includes(id) ? editorCopy.show : editorCopy.hide;
     };
     const choose = (id) => update({ ...state, active: id }, locale);
-    const toggleSection = (id) => update({ ...state, collapsed: state.collapsed.includes(id) ? state.collapsed.filter(x => x !== id) : [...state.collapsed, id] }, locale);
+    const openDeviceVideo = () => {
+        choose("audio"); // Persisted tab ID for Video.
+        setCustomizing(false);
+    };
+    const openDevicePerformance = () => {
+        choose("graphics");
+        setCustomizing(false);
+    };
     const step = (direction) => {
         const index = visible.indexOf(active);
         choose(visible[(index + direction + visible.length) % visible.length]);
@@ -36484,12 +40963,68 @@ function ControlCenter({ locale, origin, session, store, controller, settings, h
                                             }, children: editorTabs.map(id => {
                                                 const Icon = icons[id];
                                                 return SP_JSX.jsx(DialogButton$1, { className: "ph-control-icon", role: "tab", "aria-label": `${copy[id]}: ${state.hidden.includes(id) ? editorCopy.hidden : editorCopy.visible}`, title: copy[id], onOKActionDescription: editorAction(id), onSecondaryActionDescription: editor.draftOrder ? editorCopy.confirm : editorCopy.move, onCancelActionDescription: editorCopy.cancel, actionDescriptionMap: { [GamepadButton.OK]: editorAction(id), [GamepadButton.SECONDARY]: editor.draftOrder ? editorCopy.confirm : editorCopy.move, [GamepadButton.CANCEL]: editorCopy.cancel }, "aria-selected": editing === id, "data-hidden": state.hidden.includes(id), "data-moving": editing === id && !!editor.draftOrder, style: { order: (editor.draftOrder ?? state.order).indexOf(id) }, onFocus: () => edit({ type: "select", id }), onGamepadFocus: () => edit({ type: "select", id }), onGamepadDirection: editor.draftOrder ? editorDirection : undefined, onSecondaryButton: (event) => { event.preventDefault?.(); event.stopPropagation?.(); edit({ type: "select", id }); edit({ type: "secondary" }); }, onCancelButton: cancelEditor, onClick: () => { edit({ type: "select", id }); edit({ type: "confirm" }); }, children: SP_JSX.jsx(Icon, {}) }, id);
-                                            }) }), SP_JSX.jsx("div", { className: "ph-control-setting-row", "aria-live": "polite", children: SP_JSX.jsxs("div", { className: "ph-selected-tab", children: [SP_JSX.jsx("span", { children: copy[editing] }), SP_JSX.jsxs("span", { className: "ph-selected-tab-status", children: [state.hidden.includes(editing) ? editorCopy.hidden : editorCopy.visible, !canToggleTab(state, editing, deckyAvailable) && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("br", {}), editorCopy.lastTab] })] })] }) }), SP_JSX.jsxs(DialogButton$1, { className: "ph-settings-action", onOKActionDescription: editorCopy.reset, onClick: () => edit({ type: "reset" }), children: [SP_JSX.jsx(TbRestore, {}), SP_JSX.jsx("span", { children: editorCopy.reset })] }), SP_JSX.jsx("p", { className: "ph-tab-reset-hint", children: editorCopy.resetHint }), SP_JSX.jsxs("div", { className: "ph-editor-following", children: [SP_JSX.jsxs("div", { style: { paddingTop: 16 }, children: [SP_JSX.jsx(ControlSection, { id: "topbar-date", title: topbarDateCopy(locale).title, locale: locale, icon: SP_JSX.jsx(TbSettings, {}), collapsed: state.collapsed.includes('topbar-date'), onToggle: toggleSection, children: SP_JSX.jsx(TopbarDateSettings, { state: state, update: update, locale: locale }) }), SP_JSX.jsx(ControlSection, { id: "device", title: copy.device, locale: locale, icon: SP_JSX.jsx(TbSettings, {}), collapsed: state.collapsed.includes('device'), onToggle: toggleSection, children: SP_JSX.jsx(DeviceInfo, { locale: locale }) })] }), SP_JSX.jsx(ControlSection, { id: "news", title: "News", locale: locale, icon: SP_JSX.jsx(TbPhoto, {}), collapsed: state.collapsed.includes("news"), onToggle: toggleSection, children: SP_JSX.jsx(HomeNewsSettings, { locale: locale }) }), SP_JSX.jsx(ControlSection, { id: "daily-history", title: historyTitle(locale), locale: locale, icon: SP_JSX.jsx(TbPhoto, {}), collapsed: state.collapsed.includes("daily-history"), onToggle: toggleSection, children: SP_JSX.jsx(HomeHistorySettings, { locale: locale }) }), SP_JSX.jsx(QuickSettingsContent, { page: "tools", locale: locale, collapsed: state.collapsed, onToggle: toggleSection }), SP_JSX.jsxs(DialogButton$1, { className: "ph-settings-action", onClick: () => { setCustomizing(false); replayPlayhubOnboarding(); }, children: [SP_JSX.jsx(TbRestore, {}), " ", getOnboardingExtraCopy(locale).replay] })] })] })] }) }) : SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(Focusable$1, { className: "ph-control-nav", "flow-children": "row", children: SP_JSX.jsxs(Focusable$1, { className: "ph-control-tabs", "flow-children": "row", role: "tablist", "aria-label": "Playhub", children: [visible.map(id => {
+                                            }) }), SP_JSX.jsx("div", { className: "ph-control-setting-row", "aria-live": "polite", children: SP_JSX.jsxs("div", { className: "ph-selected-tab", children: [SP_JSX.jsx("span", { children: copy[editing] }), SP_JSX.jsxs("span", { className: "ph-selected-tab-status", children: [state.hidden.includes(editing) ? editorCopy.hidden : editorCopy.visible, !canToggleTab(state, editing, deckyAvailable) && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("br", {}), editorCopy.lastTab] })] })] }) }), SP_JSX.jsxs(DialogButton$1, { className: "ph-settings-action", onOKActionDescription: editorCopy.reset, onClick: () => edit({ type: "reset" }), children: [SP_JSX.jsx(TbRestore, {}), SP_JSX.jsx("span", { children: editorCopy.reset })] }), SP_JSX.jsx("p", { className: "ph-tab-reset-hint", children: editorCopy.resetHint }), SP_JSX.jsxs("div", { className: "ph-editor-following", children: [SP_JSX.jsxs("div", { style: { paddingTop: 16 }, children: [SP_JSX.jsx(ControlSection, { id: "topbar-date", title: topbarDateCopy(locale).title, locale: locale, icon: SP_JSX.jsx(TbSettings, {}), collapsed: !expanded.includes('topbar-date'), onToggle: toggleSection, children: SP_JSX.jsx(TopbarDateSettings, { state: state, update: update, locale: locale }) }), !showcasing && SP_JSX.jsxs(ControlSection, { id: "device", title: copy.device, locale: locale, icon: SP_JSX.jsx(TbDeviceGamepad2, {}), collapsed: !expanded.includes('device'), onToggle: toggleSection, children: [SP_JSX.jsx(DeviceSettings, { locale: locale, openVideo: visible.includes("audio") ? openDeviceVideo : undefined, openPerformance: visible.includes("graphics") ? openDevicePerformance : undefined, detailsOpen: expanded.includes("device/details"), onDetailsToggle: () => toggleSection("device/details") }), SP_JSX.jsx(MsiChargeLimit, { locale: locale })] })] }), SP_JSX.jsx(ControlSection, { id: "news", title: "News", locale: locale, icon: SP_JSX.jsx(TbPhoto, {}), collapsed: !expanded.includes("news"), onToggle: toggleSection, children: SP_JSX.jsx(HomeNewsSettings, { locale: locale }) }), SP_JSX.jsx(ControlSection, { id: "daily-history", title: historyTitle(locale), locale: locale, icon: SP_JSX.jsx(TbPhoto, {}), collapsed: !expanded.includes("daily-history"), onToggle: toggleSection, children: SP_JSX.jsx(HomeHistorySettings, { locale: locale }) }), SP_JSX.jsx(QuickSettingsContent, { page: "tools", locale: locale, expanded: expanded, onToggle: toggleSection }), SP_JSX.jsxs(DialogButton$1, { className: "ph-settings-action", onClick: () => { setCustomizing(false); replayPlayhubOnboarding(); }, children: [SP_JSX.jsx(TbRestore, {}), " ", getOnboardingExtraCopy(locale).replay] })] })] })] }) }) : SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(Focusable$1, { className: "ph-control-nav", "flow-children": "row", children: SP_JSX.jsxs(Focusable$1, { className: "ph-control-tabs", "flow-children": "row", role: "tablist", "aria-label": "Playhub", children: [visible.map(id => {
                                             const Icon = icons[id];
                                             return SP_JSX.jsx(DialogButton$1, { className: "ph-control-icon", role: "tab", "aria-selected": active === id, "aria-label": copy[id], onOKActionDescription: copy[id], disabled: !ready, "data-playhub-onboarding": origin === "qam" ? id : undefined, onClick: () => choose(id), children: SP_JSX.jsx(Icon, {}) }, id);
                                         }), SP_JSX.jsx(DialogButton$1, { className: "ph-control-icon", "data-playhub-onboarding": origin === "qam" ? "customize" : undefined, "aria-label": copy.settings, onOKActionDescription: copy.settings, disabled: !ready, onClick: () => setCustomizing(true), children: SP_JSX.jsx(TbSettings, {}) })] }) }), active !== "decky" && (active !== "home" || homeTitle) && SP_JSX.jsx("h2", { className: "ph-control-heading", children: active === "home" ? homeTitle : copy[active] }), !hostActive && SP_JSX.jsx(ScrollPanel, { children: SP_JSX.jsx("div", { "data-playhub-onboarding-content": origin === "qam" ? active : undefined, children: active === "home" ? SP_JSX.jsx("div", { "data-playhub-onboarding-content": origin === "qam" ? "home" : undefined, children: session }) : active === "store" ? SP_JSX.jsx("div", { "data-playhub-onboarding-content": origin === "qam" ? "store" : undefined, children: store }) : active === "controller" ? SP_JSX.jsx(SP_JSX.Fragment, { children: controller }) :
-                                        SP_JSX.jsx(QuickSettingsContent, { page: active === "decky" ? "home" : active, locale: locale, collapsed: state.collapsed, onToggle: toggleSection }) }) })] })] }), origin === "qam" && !state.hidden.includes("decky") && SP_JSX.jsx(DeckyHost, { active: hostActive })] });
+                                        SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(QuickSettingsContent, { page: active === "decky" ? "home" : active, locale: locale, expanded: expanded, onToggle: toggleSection, gameAppId: gameAppId, gamingMode: gamingMode }), active === "graphics" && frameTiming && SP_JSX.jsx(ControlSection, { id: "measurement", title: quickSettingsGroups(locale).measurement, icon: SP_JSX.jsx(TbGauge, {}), locale: locale, collapsed: !expanded.includes("measurement"), onToggle: toggleSection, children: frameTiming })] }) }) })] })] }), origin === "qam" && !state.hidden.includes("decky") && SP_JSX.jsx(DeckyHost, { active: hostActive })] });
 }
+
+function validSample(raw) {
+    if (!raw || typeof raw !== "object")
+        return;
+    const sample = raw;
+    const { presentedFps, medianFrameTimeMs, p95FrameTimeMs, samples } = sample;
+    if (sample.status !== "Ready" || typeof presentedFps !== "number" || !Number.isFinite(presentedFps) || presentedFps <= 0 ||
+        typeof medianFrameTimeMs !== "number" || !Number.isFinite(medianFrameTimeMs) || medianFrameTimeMs <= 0 ||
+        typeof p95FrameTimeMs !== "number" || !Number.isFinite(p95FrameTimeMs) || p95FrameTimeMs < medianFrameTimeMs ||
+        typeof samples !== "number" || !Number.isSafeInteger(samples) || samples < 8)
+        return;
+    return { presentedFps, medianFrameTimeMs, p95FrameTimeMs, samples };
+}
+function createGameFrameComparison() {
+    let state = { appId: 0, busy: false };
+    const listeners = new Set();
+    const update = (next) => {
+        state = next;
+        listeners.forEach(listener => listener());
+    };
+    return {
+        read(appId) {
+            return state.appId === appId ? state : { appId, busy: state.busy };
+        },
+        subscribe(listener) {
+            listeners.add(listener);
+            return () => { listeners.delete(listener); };
+        },
+        reset(appId) {
+            if (!state.busy && state.appId === appId)
+                update({ appId, busy: false });
+        },
+        async capture(appId, measure) {
+            if (!Number.isInteger(appId) || appId < 1 || appId > 0xffffffff || state.busy)
+                return;
+            const previous = state.appId === appId ? state : { appId, busy: false };
+            update({ ...previous, busy: true, error: undefined });
+            let response;
+            try {
+                response = await measure(appId);
+            }
+            catch {
+                response = { status: "ProviderUnavailable" };
+            }
+            const sample = validSample(response);
+            if (sample) {
+                update(previous.first ? { ...previous, second: sample, error: undefined } : { appId, busy: false, first: sample });
+            }
+            else {
+                const status = response?.status;
+                update({ ...previous, error: typeof status === "string" && status !== "Ready" ? status : "NoData" });
+            }
+        },
+    };
+}
+const gameFrameComparison = createGameFrameComparison();
 
 const { ButtonItem: ButtonItem$1, PanelSection: PanelSection$1, PanelSectionRow: PanelSectionRow$1 } = _global_DFL;
 const copy = {
@@ -36506,188 +41041,44 @@ const copy = {
     zh: ["影格時間", "測量 FPS", "測量中…", "擷取目前遊戲的四秒樣本。", "提交的 FPS", "每格耗時", "未擷取到影格。請在遊玩時再試。", "無法測量影格。", "Windows 拒絕存取影格資料。"],
     hi: ["फ़्रेम का समय", "FPS मापें", "माप जारी है…", "चल रहे गेम का चार सेकंड का नमूना।", "प्रस्तुत FPS", "प्रति फ़्रेम समय", "कोई फ़्रेम नहीं मिला। खेलते समय फिर कोशिश करें।", "फ़्रेम का माप उपलब्ध नहीं है।", "Windows ने फ़्रेम डेटा की अनुमति नहीं दी।"],
 };
+const comparisonCopy = {
+    en: ["Measure first run", "Measure second run", "Repeat second run", "Clear results", "Use the same route and graphics settings for both runs.", "Close Quick Access within 3 seconds. The sample lasts 4 seconds.", "First", "Second", "Change", "Return to the game before the sample starts."],
+    it: ["Misura prima prova", "Misura seconda prova", "Ripeti seconda prova", "Cancella risultati", "Usa lo stesso percorso e le stesse impostazioni grafiche per entrambe le prove.", "Chiudi il menu rapido entro 3 secondi. La misura dura 4 secondi.", "Prima", "Seconda", "Variazione", "Torna al gioco prima che inizi la misurazione."],
+    de: ["Ersten Lauf messen", "Zweiten Lauf messen", "Zweiten Lauf wiederholen", "Ergebnisse löschen", "Nutze in beiden Läufen dieselbe Strecke und dieselben Grafikeinstellungen.", "Schließe den Schnellzugriff in 3 Sekunden. Die Messung dauert 4 Sekunden.", "Erster", "Zweiter", "Änderung", "Wechsle vor Messbeginn zurück ins Spiel."],
+    es: ["Medir primera prueba", "Medir segunda prueba", "Repetir segunda prueba", "Borrar resultados", "Usa el mismo recorrido y los mismos ajustes gráficos en ambas pruebas.", "Cierra el acceso rápido en 3 segundos. La medición dura 4 segundos.", "Primera", "Segunda", "Cambio", "Vuelve al juego antes de que comience la medición."],
+    fr: ["Mesurer le premier essai", "Mesurer le second essai", "Refaire le second essai", "Effacer les résultats", "Suivez le même parcours et gardez les mêmes réglages graphiques pour les deux essais.", "Fermez l’accès rapide sous 3 secondes. La mesure dure 4 secondes.", "Premier", "Second", "Écart", "Revenez au jeu avant le début de la mesure."],
+    pt: ["Medir primeiro teste", "Medir segundo teste", "Repetir segundo teste", "Limpar resultados", "Use o mesmo percurso e as mesmas definições gráficas nos dois testes.", "Feche o acesso rápido em 3 segundos. A medição dura 4 segundos.", "Primeiro", "Segundo", "Variação", "Volte ao jogo antes de a medição começar."],
+    uk: ["Виміряти перший прохід", "Виміряти другий прохід", "Повторити другий прохід", "Очистити результати", "Використовуйте той самий маршрут і налаштування графіки в обох проходах.", "Закрийте швидкий доступ за 3 секунди. Вимірювання триває 4 секунди.", "Перший", "Другий", "Зміна", "Поверніться до гри до початку вимірювання."],
+    ru: ["Измерить первый проход", "Измерить второй проход", "Повторить второй проход", "Очистить результаты", "Используйте один маршрут и одинаковые настройки графики в обоих проходах.", "Закройте быстрый доступ за 3 секунды. Измерение длится 4 секунды.", "Первый", "Второй", "Изменение", "Вернитесь в игру до начала измерения."],
+    ja: ["1 回目を測定", "2 回目を測定", "2 回目を再測定", "結果を消去", "同じルートとグラフィック設定で 2 回プレイしてください。", "3 秒以内にクイックアクセスを閉じてください。測定は 4 秒間です。", "1 回目", "2 回目", "差分", "測定開始前にゲームに戻ってください。"],
+    ko: ["첫 번째 측정", "두 번째 측정", "두 번째 다시 측정", "결과 지우기", "두 번 모두 같은 경로와 그래픽 설정을 사용하세요.", "3초 안에 빠른 메뉴를 닫으세요. 측정은 4초간 진행됩니다.", "첫 번째", "두 번째", "차이", "측정이 시작되기 전에 게임으로 돌아가세요."],
+    zh: ["測量第一次", "測量第二次", "重測第二次", "清除結果", "兩次測量請使用相同路線與畫面設定。", "請在 3 秒內關閉快速存取選單。測量將持續 4 秒。", "第一次", "第二次", "差異", "請在測量開始前返回遊戲。"],
+    hi: ["पहली बार मापें", "दूसरी बार मापें", "दूसरा माप दोहराएँ", "नतीजे साफ़ करें", "दोनों बार एक ही रास्ता और ग्राफ़िक्स सेटिंग इस्तेमाल करें।", "3 सेकंड में क्विक ऐक्सेस बंद करें। माप 4 सेकंड चलेगा।", "पहला", "दूसरा", "अंतर", "माप शुरू होने से पहले गेम में लौटें।"],
+};
 function GameFrameTiming({ appId, locale }) {
-    const [pending, setPending] = _global_SP_REACT.useState(false);
-    const [result, setResult] = _global_SP_REACT.useState(null);
-    const operation = _global_SP_REACT.useRef(0);
-    _global_SP_REACT.useEffect(() => () => { operation.current++; }, []);
-    const [title, measure, measuring, hint, fps, frame, empty, unavailable, denied] = copy[locale.split(/[-_]/)[0]] ?? copy.en;
-    const ready = result?.status === "Ready" && Number.isFinite(result.presentedFps) && Number.isFinite(result.medianFrameTimeMs);
-    const measureFrames = async () => {
-        if (pending)
-            return;
-        const id = ++operation.current;
-        setPending(true);
-        setResult(null);
-        let response;
-        try {
-            response = await call("measure_game_frames", appId);
-        }
-        catch {
-            response = { status: "ProviderUnavailable" };
-        }
-        if (id !== operation.current)
-            return;
-        setPending(false);
-        setResult(response);
-    };
-    const format = (value) => value?.toLocaleString(locale.replace(/_/g, "-"), { maximumFractionDigits: 1 });
-    return SP_JSX.jsxs(PanelSection$1, { title: title, children: [SP_JSX.jsx(PanelSectionRow$1, { children: SP_JSX.jsx(ButtonItem$1, { layout: "below", bottomSeparator: "none", disabled: pending, onClick: () => void measureFrames(), children: SP_JSX.jsx("span", { style: { whiteSpace: "normal", overflowWrap: "anywhere" }, children: pending ? measuring : measure }) }) }), SP_JSX.jsx("div", { role: "status", style: { padding: "4px 16px 12px", fontSize: 13, lineHeight: 1.5, overflowWrap: "anywhere" }, children: ready ? SP_JSX.jsxs("dl", { style: { margin: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 120px), 1fr))", gap: 8 }, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsx("dt", { children: fps }), SP_JSX.jsx("dd", { style: { margin: 0, fontWeight: 650 }, children: format(result.presentedFps) })] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("dt", { children: frame }), SP_JSX.jsxs("dd", { style: { margin: 0, fontWeight: 650 }, children: [format(result.medianFrameTimeMs), " ms"] }), Number.isFinite(result.p95FrameTimeMs) && SP_JSX.jsxs("dd", { style: { margin: 0, opacity: .72 }, children: ["P95 \u00B7 ", format(result.p95FrameTimeMs), " ms"] })] })] }) : !result ? hint : result.status === "PermissionDenied" ? denied :
-                    ["NoData", "TargetUnavailable"].includes(result.status) ? empty : unavailable })] });
-}
-
-function steamAppId(value) {
-    const id = Number(value);
-    return Number.isInteger(id) && id >= -2147483648 && id <= 4294967295 ? id >>> 0 : 0;
-}
-// Explicit main-window QAM handoff. The game's native overlay stays owned by Steam.
-function createControlledQamFocus(deps) {
-    let pending;
-    let disposed = false;
-    let openingMain = false;
-    let closedAt = -Infinity, closedApp = 0;
-    let delegatedAt = -Infinity, delegatedApp = 0;
-    const systemKeys = new Map();
-    const now = deps.now ?? (() => Date.now());
-    const report = (promise) => { void promise.catch(deps.warn); };
-    const invalidate = (restore) => {
-        const request = pending;
-        pending = undefined;
-        if (request)
-            report(restore ? deps.close(request.id) : deps.release(request.id));
-    };
-    return {
-        opened(tab, side = 2) {
-            if (disposed || openingMain)
-                return;
-            if (pending) {
-                pending.side = side;
-                return;
-            }
-            const app = deps.runningApp();
-            if (!(app > 0) || !deps.mainMenu())
-                return;
-            if (app === delegatedApp && now() - delegatedAt < 220)
-                return;
-            const request = { id: deps.requestId(), app, side, acquired: false };
-            pending = request;
-            void (async () => {
-                try {
-                    if (deps.gameBar) {
-                        let delegated = false;
-                        try {
-                            delegated = (await deps.gameBar(request.id, app, true)).ok === true;
-                        }
-                        finally {
-                            try {
-                                await deps.gameBar(request.id, app, false);
-                            }
-                            catch (error) {
-                                deps.warn(error);
-                            }
-                        }
-                        if (disposed || pending !== request)
-                            return;
-                        if (delegated) {
-                            delegatedApp = app;
-                            delegatedAt = now();
-                            pending = undefined;
-                            return;
-                        }
-                    }
-                    // Unknown/failed native-overlay enumeration fails closed: it cannot
-                    // justify moving the user's foreground away from a working overlay.
-                    if (await deps.nativeOverlayAvailable(app)) {
-                        if (pending === request)
-                            pending = undefined;
-                        return;
-                    }
-                    if (disposed || pending !== request)
-                        return;
-                    if (deps.runningApp() !== app) {
-                        invalidate(false);
-                        return;
-                    }
-                    const main = deps.mainMenu();
-                    if (!main) {
-                        invalidate(false);
-                        return;
-                    }
-                    // Ask native policy before opening anything in Steam. A delegated
-                    // UWP/Game Bar session must not receive a forced main-menu open.
-                    const acquired = await deps.acquire(request.id, app);
-                    if (disposed || pending !== request || deps.runningApp() !== app) {
-                        if (pending === request)
-                            pending = undefined;
-                        report(deps.release(request.id));
-                        return;
-                    }
-                    if (!acquired.ok) {
-                        pending = undefined;
-                        return;
-                    }
-                    request.acquired = true;
-                    if (deps.mainMenu() !== main) {
-                        invalidate(true);
-                        return;
-                    }
-                    if (main.GetOpenSideMenu() !== request.side) {
-                        openingMain = true;
-                        try {
-                            if (request.side === 2)
-                                main.OpenQuickAccessMenu(tab);
-                            else if (typeof main.OpenSideMenu === "function")
-                                main.OpenSideMenu(1);
-                            else {
-                                invalidate(true);
-                                return;
-                            }
-                        }
-                        finally {
-                            openingMain = false;
-                        }
-                    }
-                    if (disposed || pending !== request || deps.runningApp() !== app || main.GetOpenSideMenu() !== request.side) {
-                        if (pending === request)
-                            invalidate(deps.runningApp() === app);
-                        else
-                            report(deps.release(request.id));
-                        return;
-                    }
-                }
-                catch (error) {
-                    if (pending === request)
-                        invalidate(request.acquired);
-                    deps.warn(error);
-                }
-            })();
-        },
-        systemKey(event) {
-            if (disposed || event?.ePressed === false || event?.bPressed === false || (event?.eKey !== 0 && event?.eKey !== 1))
-                return;
-            const time = now(), key = `${event.nControllerIndex ?? -1}:${event.eKey}`;
-            if (time - (systemKeys.get(key) ?? -Infinity) < 220)
-                return;
-            systemKeys.set(key, time);
-            if (systemKeys.size > 64) {
-                systemKeys.clear();
-                systemKeys.set(key, time);
-            }
-            // Steam may already have closed the menu for this same key event.
-            if (deps.runningApp() === closedApp && time - closedAt < 220)
-                return;
-            this.opened(undefined, event.eKey === 1 ? 2 : 1);
-        },
-        closed() {
-            if (!openingMain) {
-                closedAt = now();
-                closedApp = deps.runningApp();
-                invalidate(true);
-            }
-        },
-        applicationSelected() { invalidate(false); },
-        dispose() { disposed = true; invalidate(false); },
-    };
+    const language = locale.split(/[-_]/)[0];
+    const [title, , measuring, , fps, frame, empty, unavailable, denied] = copy[language] ?? copy.en;
+    const [measureFirst, measureSecond, repeat, clear, hint, prepare, firstLabel, secondLabel, change, returnToGame] = comparisonCopy[language] ?? comparisonCopy.en;
+    const [result, setResult] = _global_SP_REACT.useState(() => gameFrameComparison.read(appId));
+    _global_SP_REACT.useEffect(() => {
+        const sync = () => setResult(gameFrameComparison.read(appId));
+        const unsubscribe = gameFrameComparison.subscribe(sync);
+        sync();
+        return unsubscribe;
+    }, [appId]);
+    const { busy, first, second, error } = result;
+    const measure = second ? repeat : first ? measureSecond : measureFirst;
+    const format = (value, signed = false) => value.toLocaleString(locale.replace(/_/g, "-"), {
+        maximumFractionDigits: 2, signDisplay: signed ? "exceptZero" : "auto",
+    });
+    const message = busy ? prepare : error === "GameNotForeground" ? returnToGame :
+        error === "PermissionDenied" ? denied : error === "NoData" || error === "TargetUnavailable" ? empty : error ? unavailable : hint;
+    const rows = first ? [
+        { label: fps, before: first.presentedFps, after: second?.presentedFps, unit: "" },
+        { label: frame, before: first.medianFrameTimeMs, after: second?.medianFrameTimeMs, unit: " ms" },
+        { label: "P95", before: first.p95FrameTimeMs, after: second?.p95FrameTimeMs, unit: " ms" },
+    ] : [];
+    return SP_JSX.jsxs(PanelSection$1, { title: title, children: [SP_JSX.jsx(PanelSectionRow$1, { children: SP_JSX.jsx(ButtonItem$1, { layout: "below", bottomSeparator: "none", disabled: busy, onClick: () => void gameFrameComparison.capture(appId, id => call("measure_game_frames", id, true)), children: SP_JSX.jsx("span", { style: { whiteSpace: "normal", overflowWrap: "anywhere" }, children: busy ? measuring : measure }) }) }), SP_JSX.jsxs("div", { role: "status", style: { padding: "4px 16px 12px", fontSize: 13, lineHeight: 1.5, overflowWrap: "anywhere" }, children: [SP_JSX.jsx("div", { children: message }), !busy && !error && SP_JSX.jsx("div", { style: { opacity: .74 }, children: prepare }), first && SP_JSX.jsx("dl", { style: { display: "grid", gap: 8, margin: "12px 0 0" }, children: rows.map(({ label, before, after, unit }) => SP_JSX.jsxs("div", { children: [SP_JSX.jsx("dt", { style: { fontWeight: 650 }, children: label }), SP_JSX.jsxs("dd", { style: { margin: 0, display: "flex", flexWrap: "wrap", columnGap: 12 }, children: [SP_JSX.jsxs("span", { children: [firstLabel, " \u00B7 ", format(before), unit] }), after !== undefined && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("span", { children: [secondLabel, " \u00B7 ", format(after), unit] }), SP_JSX.jsxs("span", { children: [change, " \u00B7 ", format(Number((after - before).toFixed(2)), true), unit] })] })] })] }, label)) })] }), first && SP_JSX.jsx(PanelSectionRow$1, { children: SP_JSX.jsx(ButtonItem$1, { layout: "below", bottomSeparator: "none", disabled: busy, onClick: () => gameFrameComparison.reset(appId), children: SP_JSX.jsx("span", { style: { whiteSpace: "normal", overflowWrap: "anywhere" }, children: clear }) }) })] });
 }
 
 const style = `
@@ -36781,15 +41172,2134 @@ function installDeckyIpcRecovery(options) {
     return () => { alive = false; timers.forEach(options.cancel); };
 }
 
-function installControlledQamFocus() {
+const guideDebounceMs = 220;
+const coldBrowserWaits = [220, ...Array(34).fill(80)];
+const shortcutGameId = (app) => ((BigInt(app) << 32n) | 0x02000000n).toString();
+function createXboxCompanionOverlay(deps) {
+    let disposed = false;
+    let activeRequest;
+    let pendingCold;
+    let lastGuideAt = -Infinity;
+    let menuIntent;
+    let lastKeyboard;
+    let lastClose;
+    let menuPreparation;
+    let coldOwner;
+    const matchingBrowser = (infos, app, gameId) => infos.some(info => String(info?.gameID ?? "") === gameId || matchesOverlayApp(info, app));
+    const closedSince = (app, since, overlayPid, companionPid) => lastClose?.app === app
+        && (lastClose.pid === overlayPid || lastClose.pid === companionPid) && lastClose.at >= since;
+    const wantedMenu = (app) => menuIntent?.app === app ? menuIntent.menu : "main";
+    const menuMethod = (app) => wantedMenu(app) === "quick" ? "OpenQuickAccessMenu" : "OpenMainMenu";
+    async function showMenu(app, overlay, proof, keyboard, canceled, recovery = false) {
+        deps.trace?.(`menu-state-request keyboard=${keyboard} recovery=${recovery}`);
+        const target = await waitForOverlay(() => findOverlayWindow(deps.windows(), overlay), canceled, () => deps.delay(40));
+        if (canceled() || typeof target?.MenuStore?.[menuMethod(app)] !== "function") {
+            deps.trace?.(`menu-window-unavailable recovery=${recovery} canceled=${canceled()}`);
+            return;
+        }
+        // Wait for the exact browser before the final foreground/keyboard proof.
+        await deps.delay(40);
+        if (canceled()) {
+            deps.trace?.("menu-delay-expired");
+            return;
+        }
+        // A cold Valve browser can be ready while the exact game still owns
+        // foreground. Authenticate the recent native replay before mounting its
+        // menu; requiring an already-open menu here creates a bootstrap cycle.
+        const current = await deps.verify(app, overlay.unPID, keyboard, !keyboard);
+        if (canceled() || !current.ok || current.gameId !== overlay.gameID || current.companionPid !== proof.companionPid
+            || !Number.isSafeInteger(current.companionPid) || Number(current.companionPid) <= 0 || Number(current.companionPid) > 0xffffffff
+            || current.overlayPid !== overlay.unPID
+            || (keyboard && current.keyboardAt !== proof.keyboardAt)) {
+            deps.trace?.(`menu-ownership-changed recovery=${recovery}`);
+            return;
+        }
+        if (keyboard && current.foregroundScope !== 1 && current.foregroundScope !== 2)
+            return;
+        const currentWindow = findOverlayWindow(deps.windows(), overlay);
+        const method = menuMethod(app);
+        if (currentWindow === target && typeof currentWindow?.MenuStore?.[method] === "function") {
+            const menu = currentWindow.MenuStore;
+            let preparing = false, menuChanged = false;
+            const stopObserving = deps.observeMenu?.(menu, () => { if (!preparing)
+                menuChanged = true; });
+            if (!stopObserving) {
+                deps.trace?.("menu-ownership-unavailable");
+                return;
+            }
+            let side = method === "OpenQuickAccessMenu" ? 2 : 1;
+            const before = menu.GetOpenSideMenu?.();
+            const preparation = {};
+            const ownerRequest = activeRequest;
+            const preparedAt = deps.now();
+            menuPreparation = preparation;
+            let committed = false;
+            try {
+                // Guide+A can change the requested side while this same replay starts.
+                // Follow that intent once, without issuing another native open request.
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    if (canceled() || menuChanged || findOverlayWindow(deps.windows(), overlay) !== currentWindow
+                        || currentWindow.MenuStore !== menu)
+                        return;
+                    const requestedMethod = menuMethod(app);
+                    side = requestedMethod === "OpenQuickAccessMenu" ? 2 : 1;
+                    if (coldOwner && coldOwner.request === ownerRequest)
+                        coldOwner.phase = "menu";
+                    preparing = true;
+                    try {
+                        if (requestedMethod === "OpenQuickAccessMenu")
+                            menu.OpenQuickAccessMenu(menu.GetQuickAccessTab?.() ?? 0);
+                        else
+                            menu.OpenMainMenu();
+                    }
+                    finally {
+                        preparing = false;
+                    }
+                    if (menu.GetOpenSideMenu?.() !== side) {
+                        deps.trace?.("menu-preparation-suppressed");
+                        return;
+                    }
+                    // Steam's own composition observer must publish the mounted menu.
+                    // No native foreground rule or focus API is changed by this step.
+                    if (keyboard)
+                        await deps.delay(150);
+                    if (canceled() || menuChanged)
+                        return;
+                    if (requestedMethod !== menuMethod(app))
+                        continue;
+                    const shown = await deps.verify(app, overlay.unPID, keyboard, true);
+                    if (canceled() || menuChanged)
+                        return;
+                    if (requestedMethod !== menuMethod(app))
+                        continue;
+                    if (!shown.ok || shown.gameId !== overlay.gameID
+                        || shown.companionPid !== current.companionPid || shown.overlayPid !== overlay.unPID
+                        || shown.foregroundScope !== 2 || shown.overlayOpen !== true
+                        || (keyboard && shown.keyboardAt !== current.keyboardAt)
+                        || findOverlayWindow(deps.windows(), overlay) !== currentWindow
+                        || currentWindow.MenuStore !== menu || menu.GetOpenSideMenu?.() !== side) {
+                        deps.trace?.("menu-composition-unconfirmed");
+                        return;
+                    }
+                    deps.useSteamMenuLayout?.();
+                    await deps.setOverlayState(overlay.gameID, 2);
+                    committed = true;
+                    if (canceled() || menuChanged || findOverlayWindow(deps.windows(), overlay) !== currentWindow
+                        || currentWindow.MenuStore !== menu || menu.GetOpenSideMenu?.() !== side)
+                        return;
+                    if (requestedMethod !== menuMethod(app))
+                        continue;
+                    if (recovery)
+                        deps.onColdRecovery?.();
+                    deps.trace?.(`menu-requested recovery=${recovery}`);
+                    return;
+                }
+            }
+            finally {
+                stopObserving();
+                if (menuPreparation === preparation) {
+                    menuPreparation = undefined;
+                    // Roll back only a menu this request mounted into an empty exact
+                    // browser. Never close a pre-existing or subsequently replaced menu.
+                    if (!committed && !menuChanged && before === 0 && !disposed && deps.runningApp() === app && activeRequest === ownerRequest
+                        && !closedSince(app, preparedAt, overlay.unPID, current.companionPid)
+                        && findOverlayWindow(deps.windows(), overlay) === currentWindow
+                        && currentWindow.MenuStore === menu && menu.GetOpenSideMenu?.() === side)
+                        menu.CloseSideMenus?.();
+                }
+            }
+        }
+    }
+    async function recoverCold(app, gameId, request, started, delivery, retained) {
+        const { companionPid, overlayPid, keyboardAt } = delivery;
+        if (!delivery.ok || delivery.gameId !== gameId || !Number.isInteger(companionPid) || !companionPid || companionPid < 0
+            || !Number.isInteger(overlayPid) || !overlayPid || overlayPid < 0
+            || !Number.isSafeInteger(keyboardAt) || keyboardAt == null || keyboardAt < 0) {
+            deps.trace?.("cold-delivery-refused");
+            return;
+        }
+        if (disposed || pendingCold !== request || deps.runningApp() !== app)
+            return;
+        const owner = { request, app, companionPid, overlayPid, phase: "bootstrap",
+            overlay: retained?.overlay, window: retained?.window };
+        coldOwner = owner;
+        deps.trace?.(`cold-delivered elapsed=${Math.round(deps.now() - started)} pending=${pendingCold === request}`);
+        // Delivery starts the native replay. Its first Valve browser can register
+        // after 780 ms; give that initialization its own bounded window rather
+        // than spending it on the preceding identity/RPC checks.
+        const browserDeadline = deps.now() + 3000;
+        const invalid = () => disposed || deps.runningApp() !== app || deps.now() > browserDeadline
+            || closedSince(app, started, overlayPid, companionPid)
+            || (retained && retained.window.MenuStore !== retained.menu)
+            || (owner.window && findOverlayWindow(deps.windows(), owner.overlay) !== owner.window);
+        const canceled = () => pendingCold !== request || invalid();
+        for (const wait of coldBrowserWaits) {
+            await deps.delay(wait);
+            if (canceled()) {
+                deps.trace?.(`cold-canceled elapsed=${Math.round(deps.now() - started)} active=${Boolean(activeRequest)}`);
+                return;
+            }
+            if (activeRequest)
+                continue;
+            const infos = await deps.browserInfo();
+            if (canceled() || !Array.isArray(infos)) {
+                deps.trace?.("cold-browser-query-expired");
+                return;
+            }
+            const overlay = selectOverlay(infos.filter(info => Number(info?.unPID) === overlayPid
+                && String(info?.gameID) === gameId), app);
+            if (!overlay) {
+                if (matchingBrowser(infos.filter(info => Number(info?.unPID) === overlayPid), app, gameId)) {
+                    deps.trace?.("cold-browser-identity-ambiguous");
+                    return;
+                }
+                continue;
+            }
+            if (overlay.gameID !== gameId || overlay.unPID !== overlayPid)
+                return;
+            owner.overlay = overlay;
+            const initialWindow = findOverlayWindow(deps.windows(), overlay);
+            if (owner.window && initialWindow !== owner.window)
+                return;
+            owner.window = initialWindow;
+            deps.trace?.("native-browser-ready");
+            const proof = await deps.verify(app, overlayPid, true, false);
+            if (canceled())
+                return;
+            if (activeRequest)
+                continue;
+            if (!proof.ok || proof.gameId !== gameId || proof.companionPid !== companionPid || proof.overlayPid !== overlayPid
+                || (proof.foregroundScope !== 1 && proof.foregroundScope !== 2)
+                || !Number.isSafeInteger(proof.keyboardAt) || Number(proof.keyboardAt) <= keyboardAt) {
+                deps.trace?.("native-replay-proof-refused");
+                return;
+            }
+            const target = findOverlayWindow(deps.windows(), overlay);
+            const side = target?.MenuStore?.GetOpenSideMenu?.();
+            if (proof.foregroundScope === 2 && proof.overlayOpen === true && side === (wantedMenu(app) === "quick" ? 2 : 1)) {
+                deps.useSteamMenuLayout?.();
+                return;
+            }
+            if (typeof proof.overlayOpen !== "boolean")
+                return;
+            // A validated activation callback and this retry share the same state/menu path.
+            pendingCold = undefined;
+            activeRequest = request;
+            lastKeyboard = { gameId, at: Number(proof.keyboardAt) };
+            await showMenu(app, overlay, proof, true, () => activeRequest !== request || invalid(), true);
+            return;
+        }
+        deps.trace?.(`cold-browser-wait-finished active=${Boolean(activeRequest)}`);
+    }
+    async function open(keyboard, eventPid = 0, eventAppId = 0, controllerGuide = false) {
+        const app = deps.runningApp();
+        if (disposed || activeRequest || app < 0x80000000)
+            return;
+        const started = deps.now();
+        if (!keyboard && started - lastGuideAt < guideDebounceMs)
+            return;
+        if (!keyboard) {
+            lastGuideAt = started;
+            pendingCold = undefined;
+        }
+        const request = {};
+        activeRequest = request;
+        const canceled = () => disposed || activeRequest !== request || deps.runningApp() !== app || deps.now() - started > 1500;
+        const closedWithGuide = (overlayPid, companionPid) => !keyboard
+            && closedSince(app, started - guideDebounceMs, overlayPid, companionPid);
+        try {
+            const infos = await deps.browserInfo();
+            if (canceled() || !Array.isArray(infos))
+                return;
+            const exactGameId = shortcutGameId(app);
+            const overlay = selectOverlay(infos, app);
+            if (!overlay) {
+                if (!controllerGuide || (lastClose?.app === app && lastClose.at >= started - guideDebounceMs)
+                    || matchingBrowser(infos, app, exactGameId))
+                    return;
+                // The native replay can create the first Valve browser before the RPC returns.
+                pendingCold = request;
+                activeRequest = undefined;
+                const delivery = await deps.requestColdOpen(app);
+                if (pendingCold === request)
+                    await recoverCold(app, exactGameId, request, started, delivery);
+                return;
+            }
+            if (overlay.gameID !== exactGameId || closedWithGuide(overlay.unPID)
+                || (keyboard && !matchesOverlayApp({ appID: eventAppId, gameID: exactGameId }, app)))
+                return;
+            const verified = await deps.verify(app, overlay.unPID, keyboard, false);
+            if (canceled() || closedWithGuide(overlay.unPID, verified.companionPid))
+                return;
+            if (!verified.ok) {
+                if (!controllerGuide || !deps.useSteamMenuLayout)
+                    return;
+                // Valve can open a registered overlay before the open request checks
+                // the game's foreground. Confirm the already-open companion in place.
+                for (const wait of [40, 120, 200]) {
+                    await deps.delay(wait);
+                    if (canceled() || closedWithGuide(overlay.unPID))
+                        return;
+                    const current = await deps.verify(app, overlay.unPID, false, true);
+                    if (canceled() || closedWithGuide(overlay.unPID, current.companionPid))
+                        return;
+                    if (current.ok && current.gameId === exactGameId && current.overlayPid === overlay.unPID
+                        && current.foregroundScope === 2 && current.overlayOpen === true) {
+                        const target = findOverlayWindow(deps.windows(), overlay);
+                        if (target?.MenuStore?.GetOpenSideMenu?.() === (wantedMenu(app) === "quick" ? 2 : 1))
+                            deps.useSteamMenuLayout();
+                        else
+                            await showMenu(app, overlay, current, false, () => canceled() || closedWithGuide(overlay.unPID, current.companionPid));
+                        return;
+                    }
+                }
+                return;
+            }
+            if (verified.gameId !== exactGameId)
+                return;
+            if (!keyboard && controllerGuide && verified.foregroundScope === 1 && verified.overlayOpen === false) {
+                // Back leaves Valve's browser registered. Its document may still
+                // report focus while the real game owns foreground. Every new Guide
+                // must therefore request a new authenticated native activation, just
+                // as the first Guide did, before mounting anything in that browser.
+                if (verified.overlayPid !== overlay.unPID || !Number.isSafeInteger(verified.companionPid)
+                    || Number(verified.companionPid) <= 0 || Number(verified.companionPid) > 0xffffffff)
+                    return;
+                const retainedWindow = findOverlayWindow(deps.windows(), overlay);
+                const retainedMenu = retainedWindow?.MenuStore;
+                if (!retainedWindow || !retainedMenu)
+                    return;
+                pendingCold = request;
+                activeRequest = undefined;
+                const delivery = await deps.requestColdOpen(app);
+                if (pendingCold === request && delivery.companionPid === verified.companionPid
+                    && delivery.overlayPid === overlay.unPID && findOverlayWindow(deps.windows(), overlay) === retainedWindow
+                    && retainedWindow.MenuStore === retainedMenu)
+                    await recoverCold(app, exactGameId, request, started, delivery, { overlay, window: retainedWindow, menu: retainedMenu });
+                return;
+            }
+            if (keyboard) {
+                if (eventPid !== overlay.unPID && eventPid !== verified.companionPid)
+                    return;
+                const at = verified.keyboardAt ?? 0;
+                if (!Number.isSafeInteger(at) || at <= 0 || (lastKeyboard?.gameId === exactGameId && at <= lastKeyboard.at))
+                    return;
+                lastKeyboard = { gameId: exactGameId, at };
+                pendingCold = undefined;
+            }
+            await showMenu(app, overlay, verified, keyboard, () => canceled() || closedWithGuide(overlay.unPID, verified.companionPid));
+        }
+        catch {
+            deps.trace?.("activation-failed");
+            // Steam retains its native handling if the scoped companion is unavailable.
+        }
+        finally {
+            if (activeRequest === request)
+                activeRequest = undefined;
+            if (pendingCold === request)
+                pendingCold = undefined;
+            if (coldOwner?.request === request)
+                coldOwner = undefined;
+        }
+    }
+    return {
+        async recover(app, menu = "main") {
+            if (!disposed && deps.runningApp() === app)
+                menuIntent = { app, menu };
+            if (disposed || activeRequest || pendingCold || deps.runningApp() !== app || app < 0x80000000)
+                return;
+            const started = deps.now(), request = {};
+            deps.trace?.("fallback-started");
+            pendingCold = request;
+            try {
+                // The same authenticated native replay also handles a Valve browser
+                // that exists but never displayed the menu after the initial Guide.
+                const proof = await deps.verify(app, 0, false, false);
+                if (disposed || pendingCold !== request || deps.runningApp() !== app || !proof.ok
+                    || (lastClose?.app === app && lastClose.at >= started)
+                    || proof.gameId !== shortcutGameId(app) || proof.overlayOpen || proof.foregroundScope !== 1)
+                    return;
+                const delivery = await deps.requestColdOpen(app);
+                if (pendingCold === request)
+                    await recoverCold(app, shortcutGameId(app), request, started, delivery);
+                else
+                    deps.trace?.("cold-request-replaced");
+            }
+            catch {
+                deps.trace?.("cold-request-failed");
+            }
+            finally {
+                if (pendingCold === request)
+                    pendingCold = undefined;
+                if (activeRequest === request)
+                    activeRequest = undefined;
+                if (coldOwner?.request === request)
+                    coldOwner = undefined;
+            }
+        },
+        guide(event) {
+            if ((event?.eKey === 0 || event?.eKey === 1) && event.ePressed !== false && event.bPressed !== false) {
+                const app = deps.runningApp(), menu = event.eKey === 1 ? "quick" : "main";
+                const index = event.nControllerIndex;
+                const controllerGuide = typeof index === "number" && Number.isInteger(index) && index >= 0;
+                if (controllerGuide && menuIntent?.app === app && menuIntent.menu === menu
+                    && (pendingCold || coldOwner?.app === app && activeRequest === coldOwner.request)
+                    && deps.now() - lastGuideAt >= guideDebounceMs) {
+                    // A second real Guide is a new user intent, not a startup close
+                    // notification. Retire this replay instead of reopening its menu.
+                    activeRequest = pendingCold = undefined;
+                    coldOwner = undefined;
+                    lastGuideAt = deps.now();
+                    return;
+                }
+                if (menuIntent?.app === app && menuIntent.menu !== menu) {
+                    // Guide+A arrives as a second edge while the same native replay is
+                    // starting. Retain that replay and let its final menu read the intent.
+                    if (activeRequest || pendingCold) {
+                        menuIntent = { app, menu };
+                        return;
+                    }
+                    lastGuideAt = -Infinity;
+                }
+                menuIntent = { app, menu };
+                void open(false, 0, 0, controllerGuide);
+            }
+        },
+        activated(pid, appId, active, userInitiated) {
+            if (disposed || !Number.isInteger(pid) || pid <= 0)
+                return;
+            if (active === true)
+                void open(true, pid, appId);
+            else if (active === false) {
+                const app = deps.runningApp();
+                if (app >= 0x80000000 && matchesOverlayApp({ appID: appId, gameID: shortcutGameId(app) }, app)) {
+                    const owner = coldOwner;
+                    if (userInitiated === false && owner?.app === app && owner.overlayPid === pid && owner.phase === "bootstrap"
+                        && (pendingCold === owner.request || activeRequest === owner.request)) {
+                        try {
+                            const current = owner.overlay ? findOverlayWindow(deps.windows(), owner.overlay) : undefined;
+                            // An old browser may retain a mounted DOM menu after Back.
+                            // It is not native activation evidence during this new replay.
+                            if (!owner.window || current === owner.window) {
+                                deps.trace?.("cold-initial-inactive");
+                                return;
+                            }
+                        }
+                        catch { /* An uncertain or replaced menu remains a close. */ }
+                    }
+                    lastClose = { app, pid, at: deps.now() };
+                }
+            }
+        },
+        invalidate() { activeRequest = pendingCold = undefined; coldOwner = undefined; lastClose = undefined; menuIntent = undefined; },
+        dispose() { disposed = true; activeRequest = pendingCold = undefined; coldOwner = undefined; menuIntent = undefined; },
+    };
+}
+
+// A finite, user-triggered visibility check. A registered but hidden Valve
+// browser does not mean that the Guide command produced a usable menu.
+function createSteamOverlayFallback(deps) {
+    let generation = 0, disposed = false;
+    const now = deps.now ?? (() => Date.now());
+    const schedule = deps.schedule ?? ((callback, ms) => setTimeout(callback, ms));
+    const cancel = deps.cancel ?? (timer => clearTimeout(timer));
+    const visibleBefore = (app, deadline, menu) => new Promise(resolve => {
+        const timer = schedule(() => resolve(false), Math.max(0, deadline - now()));
+        // A cold or closing browser can reject enumeration. The native recovery
+        // still authenticates the game and its own surface before changing focus.
+        void Promise.resolve().then(() => deps.visible(app, menu)).then(value => { cancel(timer); resolve(value === true); }, () => { cancel(timer); resolve(false); });
+    });
+    return {
+        guide(event) {
+            if (disposed || (event?.eKey !== 0 && event?.eKey !== 1) || event.ePressed === false || event.bPressed === false
+                || !Number.isInteger(event.nControllerIndex) || Number(event.nControllerIndex) < 0)
+                return;
+            const version = ++generation, app = deps.runningApp(), deadline = now() + 1500;
+            const menu = event.eKey === 1 ? "quick" : "main";
+            if (!Number.isInteger(app) || app < 0x80000000 || app > 0xffffffff)
+                return;
+            const cancelled = () => disposed || version !== generation || deps.runningApp() !== app;
+            void (async () => {
+                try {
+                    // Observe early opens too: closing a menu before the deadline must
+                    // never cause this request to bring it back.
+                    for (;;) {
+                        if (cancelled() || await visibleBefore(app, deadline, menu) || cancelled())
+                            return;
+                        const remaining = deadline - now();
+                        if (remaining <= 0)
+                            break;
+                        await deps.delay(Math.min(100, remaining));
+                    }
+                    if (!cancelled())
+                        await deps.recover(app, menu);
+                }
+                catch { /* Steam's own input handling remains available. */ }
+            })();
+        },
+        invalidate() { generation++; },
+        dispose() { disposed = true; generation++; },
+    };
+}
+
+function createSteamMirrorGuideAdmission(deps) {
+    const recent = new Map();
+    let latestDispatched;
+    const trace = (stage) => { try {
+        deps.trace(stage);
+    }
+    catch { } };
+    const scope = () => { try {
+        return deps.scope();
+    }
+    catch {
+        trace("drop-scope-read");
+        return undefined;
+    } };
+    const valid = (e) => {
+        const s = scope();
+        const reason = !s ? "scope" : s.disposed ? "disposed" : !s.enabled ? "capability"
+            : s.app !== e.app ? "app" : s.revision !== e.revision ? "revision" : undefined;
+        if (reason)
+            trace(`drop-${reason}`);
+        return !reason;
+    };
+    const finish = async (edge) => {
+        if (!valid(edge) || !edge.fallback || edge.absenceDone || deps.pending() || deps.active())
+            return;
+        edge.absenceDone = true;
+        let absent = false;
+        try {
+            absent = await deps.verifiedAbsent(edge.app);
+        }
+        catch {
+            trace("absence-unknown");
+            return;
+        }
+        if (!valid(edge))
+            return;
+        if (absent && !deps.pending() && !deps.active()) {
+            trace("verified-absence-original");
+            edge.fallback();
+        }
+    };
+    return {
+        signal(origin, menu, fallback) {
+            const s = scope();
+            if (!s) {
+                trace("drop-scope-unknown");
+                return true;
+            }
+            if (!Number.isSafeInteger(s.app)) {
+                trace("drop-app-unknown");
+                return true;
+            }
+            if (s.disposed || !s.enabled || s.app < 0x80000000 || s.app > 0xffffffff) {
+                trace("drop-entry");
+                return false;
+            }
+            let now;
+            try {
+                now = deps.now();
+            }
+            catch {
+                trace("drop-clock-unknown");
+                return true;
+            }
+            if (!Number.isFinite(now) || now < 0) {
+                trace("drop-clock-unknown");
+                return true;
+            }
+            trace(`received origin=${origin} intent=${menu} at=${Math.round(now)} app=${s.app} rev=${s.revision}`);
+            const previous = recent.get(menu);
+            // Quick Access selects the pending side. A repeated notification of
+            // that SAME opening is idempotent; Main remains a toggle/cancel.
+            if (menu === "quick" && previous && previous === latestDispatched && previous.pending
+                && previous.app === s.app && previous.revision === s.revision) {
+                let opening = false;
+                try {
+                    opening = deps.pending();
+                }
+                catch {
+                    trace("drop-pending-unknown");
+                    return true;
+                }
+                if (opening && valid(previous)) {
+                    previous.origins.add(origin);
+                    previous.fallback ?? (previous.fallback = fallback);
+                    trace(`coalesced-pending-quick origin=${origin}`);
+                    return true;
+                }
+            }
+            // Two observers of one press may be separated by native/CEF work. During
+            // the same open/close transaction, pair each opposite-origin edge once.
+            // Outside the pending Quick selection above, same-origin edges remain toggles.
+            if (previous && previous.app === s.app && previous.revision === s.revision
+                && (menu !== "quick" || previous === latestDispatched) && !previous.origins.has(origin)
+                && now >= previous.at && (now - previous.at <= 80 || previous.pending)) {
+                previous.origins.add(origin);
+                previous.fallback ?? (previous.fallback = fallback);
+                if (!previous.pending)
+                    void finish(previous).catch(() => trace("fallback-rejected"));
+                trace(`coalesced origin=${origin} intent=${menu}`);
+                return true;
+            }
+            const edge = { app: s.app, revision: s.revision, menu, at: now, origins: new Set([origin]), pending: true, fallback };
+            recent.set(menu, edge);
+            latestDispatched = edge;
+            if (!valid(edge))
+                return true;
+            let operation;
+            try {
+                trace(`dispatch intent=${menu}`);
+                operation = deps.guide(menu);
+            }
+            catch {
+                edge.pending = false;
+                trace("request-threw");
+                return true;
+            }
+            void Promise.resolve(operation).then(async () => {
+                edge.pending = false;
+                if (!valid(edge))
+                    return;
+                trace(`request-settled pending=${deps.pending()} active=${deps.active()}`);
+                // Unknown/rejected ownership probes never invoke native Home fallback.
+                // Only the existing verifier's explicit resolved absence does so.
+                await finish(edge);
+            }).catch(() => { edge.pending = false; trace("request-rejected"); });
+            return true;
+        },
+        invalidate() { recent.clear(); latestDispatched = undefined; },
+    };
+}
+
+const keys = ["sessionId", "generation", "gameId", "sourceHwnd", "sourceCookie", "destinationHwnd", "destinationCookie",
+    "ownerPid", "ownerBirth", "gamePid", "gameBirth"];
+const u64 = (v) => typeof v === "string" && /^[1-9]\d{0,19}$/.test(v) && BigInt(v) <= 0xffffffffffffffffn;
+const shown = (m) => /^[a-f0-9]{64}$/i.test(m.sessionId)
+    && keys.filter(k => k !== "sessionId" && k !== "ownerPid" && k !== "gamePid").every(k => u64(m[k]))
+    && [m.ownerPid, m.gamePid].every(p => Number.isInteger(p) && p > 0 && p <= 0xffffffff)
+    && u64(m.expiresAt) && u64(m.observedAt) && BigInt(m.expiresAt) > BigInt(m.observedAt)
+    && m.protocol === 1 && m.state === "shown" && (m.actualScope === 1 || m.actualScope === 3 && m.ownedForegroundPhase === 1)
+    && m.preparedCurrent === true && m.shownCurrent === true && m.leaseCurrent === true && m.cleanupComplete === false;
+// These are original Steam navigation objects. This capability never grants
+// native input authority and never changes OS foreground or application root.
+function steamMirrorNavigation(proof, navigation, windows, current, now) {
+    try {
+        const { app, browser, overlay, menu, mirror, intent } = proof;
+        if (!shown(mirror) || mirror.gameId !== browser.gameID || app !== Number(BigInt(mirror.gameId) >> 32n))
+            return;
+        const deadline = now() + 250;
+        const nav = navigation(), parent = overlay.BrowserWindow ?? overlay.m_BrowserWindow, parentDoc = parent?.document;
+        const context = overlay.GetFocusNavContext?.();
+        if (!nav || !parentDoc || !context || context.RootWindow !== parent || context.m_controller !== nav)
+            return;
+        const id = intent === "quick" ? "QuickAccess-NA" : "MainNavMenuContainer", side = intent === "quick" ? 2 : 1;
+        const matches = Array.from(context.m_rgGamepadNavigationTrees ?? []).filter((t) => t?.id === id
+            && t.WindowContext === context && t.Window?.closed !== true && t.Root?.Element?.isConnected === true
+            && t.Root.Element.ownerDocument === t.Window.document && t.BIsEnabled?.() === true
+            && t.Root.Element.getClientRects().length > 0);
+        if (matches.length !== 1)
+            return;
+        const tree = matches[0], win = tree.Window, doc = win.document, root = tree.Root, element = root.Element;
+        let attempted = false;
+        const valid = () => {
+            const list = windows(), info = overlay.params?.browserInfo;
+            return current() && navigation() === nav && Array.isArray(list) && list.includes(overlay)
+                && overlay.IsGamepadUIOverlayWindow?.() === true && String(info?.m_gameID) === browser.gameID
+                && Number(info?.m_unPID) === browser.unPID && Number(info?.m_nBrowserID) === browser.nBrowserID
+                && (overlay.BrowserWindow ?? overlay.m_BrowserWindow) === parent && parent.closed !== true
+                && parent.document === parentDoc && overlay.MenuStore === menu && menu.GetOpenSideMenu?.() === side
+                && overlay.GetFocusNavContext?.() === context && context.RootWindow === parent && context.m_controller === nav
+                && context.m_rgGamepadNavigationTrees?.includes(tree)
+                && context.m_rgGamepadNavigationTrees.filter((t) => t?.id === id && t.WindowContext === context).length === 1
+                && context.BIsGamepadInputSuppressed?.() !== true
+                && tree.id === id && tree.WindowContext === context && tree.Window === win && win.closed !== true && win.document === doc
+                && tree.Root === root && root.Element === element && element.isConnected === true && element.ownerDocument === doc
+                && tree.BIsEnabled?.() === true && element.getClientRects().length > 0 && current();
+        };
+        const read = (next) => {
+            const empty = { attempted, contextExact: false, treeExact: false, nodeExact: false, confirmed: false };
+            try {
+                if (!shown(next) || !keys.every(key => next[key] === mirror[key]) || !valid())
+                    return empty;
+                const activeContext = nav.GetActiveContext?.(), activeTree = nav.GetActiveNavTree?.();
+                let within = false;
+                for (let t = activeTree, depth = 0; t && depth < 16; t = t.Parent, depth++)
+                    if (t === tree) {
+                        within = true;
+                        break;
+                    }
+                const node = activeTree?.GetLastFocusedNode?.(), el = node?.Element;
+                const contextExact = activeContext === context && context.BIsActive?.() === true && context.ActiveWindow === win;
+                const treeExact = Boolean(activeTree && within && activeTree.Window?.document === doc);
+                const nodeExact = Boolean(node && node.BHasFocus?.() === true && el?.isConnected === true
+                    && el.ownerDocument === doc && element.contains(el));
+                if (!valid())
+                    return empty;
+                return { attempted, contextExact, treeExact, nodeExact, confirmed: contextExact && treeExact && nodeExact };
+            }
+            catch {
+                return empty;
+            }
+        };
+        return {
+            read,
+            activate() {
+                try {
+                    const ready = () => valid() && Number.isFinite(now()) && now() <= deadline && current();
+                    if (!ready() || typeof context.OnActivate !== "function" || typeof tree.Activate !== "function"
+                        || (intent === "quick" && typeof menu.SetQuickAccessContentFocusRequested !== "function"))
+                        return read(mirror);
+                    attempted = true;
+                    context.OnActivate(win);
+                    if (!ready())
+                        return read(mirror);
+                    tree.Activate(true);
+                    if (!ready())
+                        return read(mirror);
+                    if (intent === "quick")
+                        menu.SetQuickAccessContentFocusRequested(true);
+                }
+                catch { /* A replaced tree grants no retry or foreign focus restore. */ }
+                return read(mirror);
+            },
+        };
+    }
+    catch {
+        return;
+    }
+}
+
+const uint64 = (value) => typeof value === "string" && /^[1-9]\d{0,19}$/.test(value)
+    && BigInt(value) <= 0xffffffffffffffffn;
+const pid = (value) => typeof value === "number" && Number.isInteger(value) && value > 0 && value <= 0xffffffff;
+const identityKeys = ["sessionId", "generation", "gameId", "sourceHwnd", "sourceCookie", "destinationHwnd", "destinationCookie",
+    "ownerPid", "ownerBirth", "gamePid", "gameBirth"];
+function identifiedMirror(reply) {
+    const value = reply?.mirror;
+    if (!reply?.ok || !value || value.protocol !== 1 || !/^[0-9a-f]{64}$/i.test(value.sessionId)
+        || !pid(reply.overlayPid) || !pid(reply.companionPid) || reply.gameId !== value.gameId
+        || value.ownerPid !== reply.companionPid || !pid(value.gamePid)
+        || !identityKeys.filter(key => !["sessionId", "ownerPid", "gamePid"].includes(key)).every(key => uint64(value[key]))
+        || !uint64(value.expiresAt) || !uint64(value.observedAt))
+        return;
+    return Object.freeze({ ...value });
+}
+function currentMirror(reply, state) {
+    const value = identifiedMirror(reply);
+    if (!value || BigInt(value.expiresAt) <= BigInt(value.observedAt)
+        || value.leaseCurrent !== true || value.preparedCurrent !== true
+        || (value.actualScope !== 1 && !(value.actualScope === 3 && value.ownedForegroundPhase === 1 && value.state === "shown" && value.shownCurrent === true))
+        || (value.state !== "prepared" && value.state !== "shown")
+        || (state && value.state !== state) || (value.state === "shown" && value.shownCurrent !== true))
+        return;
+    return Object.freeze({ ...value });
+}
+function same(a, b) {
+    return identityKeys.every(key => a[key] === b[key]);
+}
+function sameRetired(a, b) {
+    // DestroyOwned clears the destination HWND/cookie. The retained source,
+    // generation and process identities still identify this terminal snapshot.
+    return a.state === "closed" && a.leaseCurrent === false && a.cleanupComplete === true
+        && identityKeys.filter(key => key !== "destinationHwnd" && key !== "destinationCookie").every(key => a[key] === b[key])
+        && (a.destinationHwnd === "0" || a.destinationHwnd === b.destinationHwnd)
+        && (a.destinationCookie === "0" || a.destinationCookie === b.destinationCookie);
+}
+// Read-only lineage. This function NEVER returns a current mirror or input proof.
+function mirrorContinuation(reply, parent) {
+    const c = reply?.continuation;
+    if (!reply.ok || !c || c.protocol !== 1 || ![1, 2, 3, 4].includes(c.phase) || c.inputAuthority !== false || c.visualAuthority !== false || typeof c.cleanupComplete !== "boolean")
+        return;
+    if (reply.companionPid !== parent.ownerPid || reply.gameId !== parent.gameId || c.ownerPid !== parent.ownerPid || c.ownerBirth !== parent.ownerBirth || c.gamePid !== parent.gamePid || c.gameBirth !== parent.gameBirth || c.gameId !== parent.gameId || c.sessionId !== parent.sessionId || c.sourceHwnd !== parent.sourceHwnd || c.sourceCookie !== parent.sourceCookie || c.parentGeneration !== parent.generation)
+        return;
+    for (const k of ["guideEpoch", "parentGeneration", "gapDeadline", "observedAt", "readAt", "ownerBirth", "gameBirth", "gameId", "sourceHwnd", "sourceCookie", "originalLeaseExpiry"])
+        if (!uint64(c[k]))
+            return;
+    const canonicalZero = (v) => v === "0" || uint64(v);
+    if (!canonicalZero(c.ticketLow) || !canonicalZero(c.ticketHigh) || (c.ticketLow === "0" && c.ticketHigh === "0") || !canonicalZero(c.resumedGeneration) || !canonicalZero(c.preparationExpiresAt))
+        return;
+    const seen = BigInt(c.observedAt), read = BigInt(c.readAt), gap = BigInt(c.gapDeadline), oldEnd = BigInt(c.originalLeaseExpiry);
+    if (read < seen || read - seen > 250n || gap > oldEnd)
+        return;
+    if (c.phase === 1 && (c.resumedGeneration !== "0" || c.preparationExpiresAt !== "0" || gap <= read || gap - read > 500n))
+        return;
+    if ((c.phase === 2 || c.phase === 4) && (!uint64(c.resumedGeneration) || BigInt(c.resumedGeneration) <= BigInt(c.parentGeneration) || !uint64(c.preparationExpiresAt) || BigInt(c.preparationExpiresAt) <= read || BigInt(c.preparationExpiresAt) - read > 5000n))
+        return;
+    if (c.phase === 3 && c.resumedGeneration !== "0" && BigInt(c.resumedGeneration) <= BigInt(c.parentGeneration))
+        return;
+    return Object.freeze({ ...c });
+}
+// Composition belongs to this serial queue; the native worker owns controller
+// layout commands. Native scope 3 identifies its confirmed owned overlay handoff.
+function createSteamMirrorOverlay(deps) {
+    let disposed = false, revision = 0, wanted = false, openingVersion = 0, openingApp = 0;
+    let intent = "main";
+    let owner;
+    let serial = Promise.resolve();
+    const trace = (stage) => { try {
+        deps.trace?.(stage);
+    }
+    catch { } };
+    const enqueue = (work) => {
+        serial = serial.then(work).catch(() => { trace("mirror-operation-failed"); });
+        return serial;
+    };
+    const live = (app, version) => !disposed && revision === version && deps.runningApp() === app;
+    const wantedFor = (app) => wanted && (owner?.app === app
+        || openingVersion !== 0 && openingApp === app);
+    function captureMenu(value, side) {
+        if (!value.browser || !value.window || !value.menu)
+            return;
+        const parent = value.window.BrowserWindow ?? value.window.m_BrowserWindow, document = parent?.document;
+        if (!document || parent.closed === true)
+            return;
+        return { browser: value.browser, window: value.window, menu: value.menu, parent, document, side };
+    }
+    function closeOwnedMenu(value, version) {
+        const held = value.menuReceipt;
+        if (!held)
+            return true; // No original menu was mounted by this owner.
+        const local = () => owner === value && value.menuReceipt === held && revision === version;
+        const bound = () => local() && value.browser === held.browser && value.window === held.window && value.menu === held.menu
+            && held.window.MenuStore === held.menu && (held.window.BrowserWindow ?? held.window.m_BrowserWindow) === held.parent
+            && held.parent.closed !== true && held.parent.document === held.document && local();
+        const current = () => local() && deps.runningApp() === value.app
+            && findOverlayWindow(deps.windows(), held.browser) === held.window && bound();
+        // Replacement/user navigation is not ours to close, even after native cleanup.
+        if (!current())
+            return true;
+        const side = held.menu.GetOpenSideMenu?.();
+        if (!local())
+            return true;
+        if (side !== held.side) {
+            if (side === 0 || side === 1 || side === 2) {
+                value.menuReceipt = undefined;
+                return true;
+            }
+            return false;
+        }
+        const close = held.menu.CloseSideMenus;
+        if (typeof close !== "function")
+            return false;
+        if (!current())
+            return true;
+        // Finish provider calls before the last side read. Only the retained local
+        // tuple/document/revision barrier follows it before invoking the original.
+        const finalSide = held.menu.GetOpenSideMenu?.();
+        if (!bound())
+            return true;
+        if (finalSide !== held.side)
+            return finalSide === 0 || finalSide === 1 || finalSide === 2;
+        try {
+            Reflect.apply(close, held.menu, []);
+        }
+        catch { /* Readback decides cleanup, not the call's return/throw. */ }
+        if (!current())
+            return true;
+        const after = held.menu.GetOpenSideMenu?.();
+        if (!local())
+            return true;
+        if (after !== 0)
+            return false;
+        value.menuReceipt = undefined;
+        trace("mirror-owned-menu-closed");
+        return true;
+    }
+    function noteContinuation(value, reply, started) {
+        const parent = value.continuation?.parent ?? value.mirror, c = mirrorContinuation(reply, parent);
+        if (!c || c.phase === 3 || !value.menuReceipt || reply.overlayPid !== value.overlayPid) {
+            value.continuation = undefined;
+            return;
+        }
+        const old = value.continuation?.marker;
+        if (old && (c.ticketLow !== old.ticketLow || c.ticketHigh !== old.ticketHigh || c.guideEpoch !== old.guideEpoch))
+            return;
+        const remaining = Number(BigInt(c.phase === 1 ? c.gapDeadline : c.preparationExpiresAt) - BigInt(c.readAt));
+        const limit = started + remaining;
+        value.continuation = { marker: c, parent, localDeadline: old?.phase === c.phase ? Math.min(value.continuation.localDeadline, limit) : limit };
+        return c;
+    }
+    function passiveCurrent(value) { return owner === value && wanted && value.continuation?.marker.phase === 1 && deps.now() < value.continuation.localDeadline; }
+    async function reread(value, state) {
+        const started = deps.now(), reply = await deps.read(value.app, value.overlayPid);
+        noteContinuation(value, reply, started);
+        const proof = currentMirror(reply, state);
+        return proof && reply.overlayPid === value.overlayPid && same(proof, value.mirror) ? proof : undefined;
+    }
+    function replacementSession(reply, value) {
+        const session = reply?.mirrorSessionId;
+        return typeof session === "string" && /^[0-9a-f]{64}$/.test(session)
+            && session !== value.mirror.sessionId.toLowerCase()
+            && reply.gameId === value.mirror.gameId && pid(reply.companionPid) && pid(reply.overlayPid)
+            && (reply.ok === true && reply.mirror?.sessionId === session
+                || reply.ok === false && reply.error === "mirror-not-prepared" && reply.mirror == null);
+    }
+    async function releaseReplacedOwner(value, observed) {
+        if (owner !== value)
+            return true;
+        if (observed?.ok === true && !replacementSession(observed, value))
+            return false;
+        const version = revision;
+        // A missing old host is unknown, not proof of retirement. Discovery must
+        // authenticate a different wrapper/game/companion session (including birth).
+        const reply = observed && replacementSession(observed, value) ? observed : await deps.read(value.app, 0);
+        if (owner !== value)
+            return true;
+        if (revision !== version || !replacementSession(reply, value))
+            return false;
+        owner = undefined;
+        trace("mirror-session-replaced");
+        // Drop only this local receipt. Never send old Close/Set0 to the new session.
+        return true;
+    }
+    async function retire(value) {
+        if (owner !== value)
+            return true;
+        const version = revision;
+        // Keep the owner through a rejected/unknown close so retry or dispose can
+        // still retire it. A snapshot never grants authority over a replacement.
+        for (let attempt = 0; attempt < 4 && owner === value; attempt++) {
+            try {
+                const before = await deps.read(value.app, value.overlayPid);
+                const active = currentMirror(before);
+                if (active && !same(active, value.mirror)) {
+                    owner = undefined;
+                    return true;
+                }
+                if (!before?.ok && deps.runningApp() !== value.app) {
+                    owner = undefined;
+                    return true;
+                }
+                if (!before?.ok && await releaseReplacedOwner(value, before))
+                    return true;
+                const terminal = before?.ok && before.mirror?.protocol === 1 && sameRetired(before.mirror, value.mirror);
+                if (!terminal)
+                    await deps.command(value.app, value.overlayPid, "close", active ?? value.mirror);
+                const after = terminal ? before : await deps.read(value.app, value.overlayPid);
+                const closed = after?.mirror;
+                if (after?.ok === true && closed?.protocol === 1 && sameRetired(closed, value.mirror)) {
+                    value.nativeCloseRequired || (value.nativeCloseRequired = value.mirror.ownedForegroundPhase === 1 || closed.ownedForegroundPhase === 1);
+                    if (owner === value && revision === version && deps.runningApp() === value.app && (!value.nativeCloseRequired || !value.closeStateAttempted)) {
+                        if (value.nativeCloseRequired)
+                            value.closeStateAttempted = true;
+                        await deps.setOverlayState(value.mirror.gameId, 0);
+                    }
+                    // Native visual cleanup and focus restoration are distinct from the
+                    // real renderer becoming inactive. Retain this exact owner meanwhile.
+                    if (value.nativeCloseRequired && closed.ownedForegroundPhase !== 2) {
+                        trace("mirror-native-close-pending");
+                        if (attempt < 3)
+                            await deps.delay(40 * (attempt + 1));
+                        continue;
+                    }
+                    if (!closeOwnedMenu(value, version)) {
+                        trace("mirror-owned-menu-close-unconfirmed");
+                        if (attempt < 3)
+                            await deps.delay(40 * (attempt + 1));
+                        continue;
+                    }
+                    if (owner === value)
+                        owner = undefined;
+                    trace("mirror-retired");
+                    return true;
+                }
+                const replacement = currentMirror(after);
+                if (replacement && !same(replacement, value.mirror)) {
+                    owner = undefined;
+                    return true;
+                }
+            }
+            catch {
+                trace("mirror-close-unconfirmed");
+            }
+            if (attempt < 3)
+                await deps.delay(40 * (attempt + 1));
+        }
+        return owner !== value;
+    }
+    async function open(app, version) {
+        if (!live(app, version))
+            return;
+        if (owner && !await retire(owner))
+            return;
+        if (!live(app, version))
+            return;
+        const delivery = await deps.prepare(app);
+        if (!delivery?.ok || !pid(delivery.overlayPid) || !pid(delivery.companionPid))
+            return;
+        const deadline = deps.now() + 3500;
+        const receipt = identifiedMirror(delivery);
+        let value = receipt && (receipt.state === "preparing" || receipt.state === "prepared" || receipt.state === "shown")
+            ? { app, overlayPid: delivery.overlayPid, mirror: receipt } : undefined;
+        if (!value)
+            return; // The mirror-only endpoint must return its real admission.
+        if (value)
+            owner = value;
+        trace("mirror-admitted");
+        let mountedIntent = intent;
+        let finalMount;
+        let finalUiCurrent;
+        let finalNavigation;
+        try {
+            if (!live(app, version))
+                return;
+            if (value)
+                deps.admitted?.(app, value.mirror);
+            let preparedSource;
+            while (live(app, version) && deps.now() < deadline) {
+                const reply = await deps.read(app, delivery.overlayPid);
+                if (!live(app, version))
+                    return;
+                const mirror = currentMirror(reply);
+                if (mirror && mirror.gameId === delivery.gameId && mirror.ownerPid === delivery.companionPid) {
+                    if (value && !same(value.mirror, mirror))
+                        return;
+                    value = { app, overlayPid: delivery.overlayPid, mirror };
+                    owner = value;
+                    preparedSource = mirror;
+                    break;
+                }
+                await deps.delay(25);
+            }
+            // This is the just-returned, exact Prepared read. No await occurred after
+            // it; a second identical RPC adds latency without closing an async gap.
+            if (!value || !preparedSource || !live(app, version))
+                return;
+            trace("mirror-prepared");
+            // Set2 creates Valve's cold gamepad browser. Waiting for MenuStore first
+            // would make the first opening depend on a browser that does not exist.
+            await deps.setOverlayState(value.mirror.gameId, 2);
+            if (!live(app, version))
+                return;
+            while (live(app, version) && deps.now() < deadline) {
+                const infos = await deps.browserInfo();
+                if (!live(app, version))
+                    return;
+                const browser = Array.isArray(infos) ? selectOverlay(infos.filter(info => Number(info?.unPID) === value.overlayPid
+                    && String(info?.gameID) === value.mirror.gameId), app) : undefined;
+                const target = browser ? findOverlayWindow(deps.windows(), browser) : undefined;
+                if (target?.MenuStore && browser) {
+                    value.browser = browser;
+                    value.window = target;
+                    value.menu = target.MenuStore;
+                    break;
+                }
+                await deps.delay(25);
+            }
+            if (!value.browser || !value.window || !live(app, version))
+                return;
+            const uiCurrent = () => Boolean(value?.browser && live(app, version)
+                && findOverlayWindow(deps.windows(), value.browser) === value.window && value.window.MenuStore === value.menu
+                && live(app, version)); // A UI getter may synchronously reenter cancellation.
+            // Keep this read: Set2/browser creation above is asynchronous. No menu
+            // mutation is allowed without a fresh same-generation native lease.
+            const proof = await reread(value);
+            if (!proof || !uiCurrent())
+                return;
+            mountedIntent = intent;
+            finalUiCurrent = uiCurrent;
+            const mount = (requested) => {
+                if (!value?.browser || !live(app, version) || findOverlayWindow(deps.windows(), value.browser) !== value.window
+                    || value.window.MenuStore !== value.menu)
+                    return false;
+                const method = value.menu[requested === "quick" ? "OpenQuickAccessMenu" : "OpenMainMenu"];
+                const tab = requested === "quick" ? value.menu.GetQuickAccessTab?.() ?? 0 : undefined;
+                const receipt = captureMenu(value, requested === "quick" ? 2 : 1);
+                if (typeof method !== "function" || !receipt || !uiCurrent())
+                    return false;
+                value.menuReceipt = receipt;
+                Reflect.apply(method, value.menu, requested === "quick" ? [tab] : []);
+                mountedIntent = requested;
+                return live(app, version) && value.menu.GetOpenSideMenu?.() === (requested === "quick" ? 2 : 1);
+            };
+            finalMount = mount;
+            const focusShown = (shown) => {
+                if (!value)
+                    return;
+                value.mirror = shown;
+                const held = value, requested = mountedIntent;
+                held.navigation = deps.navigation && steamMirrorNavigation({ app, browser: held.browser, overlay: held.window,
+                    menu: held.menu, mirror: shown, intent: requested }, deps.navigation, deps.windows, () => live(app, version) && owner === held && intent === requested && same(held.mirror, shown), deps.now);
+                if (held.navigation?.activate().attempted)
+                    trace("mirror-navigation-requested");
+            };
+            finalNavigation = focusShown;
+            if (!mount(mountedIntent))
+                return;
+            trace("mirror-menu-ready");
+            // Mount is synchronous but may reenter/replace a store. Check the exact
+            // UI again. Show independently reauthenticates native ownership, current
+            // expiry and renderer readiness; client snapshot flags are not authority.
+            if (!uiCurrent())
+                return;
+            const queued = await deps.command(app, value.overlayPid, "show", proof);
+            if (queued?.ok === true)
+                trace("mirror-show-queued");
+            if (queued?.ok !== true || !live(app, version))
+                return;
+            while (live(app, version) && deps.now() < deadline) {
+                const shown = await reread(value, "shown");
+                if (!live(app, version))
+                    return;
+                if (intent !== mountedIntent) {
+                    const current = shown ?? await reread(value);
+                    if (!current || !live(app, version) || !mount(intent))
+                        return;
+                    continue;
+                }
+                if (shown) {
+                    focusShown(shown);
+                    if (!live(app, version))
+                        return;
+                    if (intent !== mountedIntent) {
+                        if (!mount(intent))
+                            return;
+                        continue;
+                    }
+                    trace("mirror-shown");
+                    return;
+                }
+                await deps.delay(25);
+            }
+        }
+        finally {
+            if (value && owner === value) {
+                let keep = false;
+                try {
+                    const final = live(app, version) ? await reread(value, "shown") : undefined;
+                    keep = (Boolean(final) || passiveCurrent(value)) && live(app, version);
+                    if (keep && final) {
+                        // An intent can arrive during this last native await. Reuse its
+                        // fresh Shown proof; never prepare, compose or show a second time.
+                        for (let attempt = 0; keep && intent !== mountedIntent && attempt < 2; attempt++) {
+                            if (!finalUiCurrent?.() || !finalMount?.(intent)) {
+                                keep = false;
+                                break;
+                            }
+                            finalNavigation?.(final);
+                        }
+                        keep = keep && live(app, version) && intent === mountedIntent && (!finalUiCurrent || finalUiCurrent());
+                        if (keep && value.navigation)
+                            trace(value.navigation.read(final).confirmed
+                                ? "mirror-navigation-confirmed" : "mirror-navigation-pending");
+                    }
+                }
+                catch {
+                    keep = false; /* A failed observer retires the owned tuple through native validation. */
+                }
+                if (!keep)
+                    await retire(value);
+            }
+        }
+    }
+    async function switchShownMenu(value, app, version, previous, requested) {
+        if (!value.browser || !value.window || !value.menu)
+            return false;
+        const browser = value.browser, window = value.window, menu = value.menu;
+        const uiCurrent = () => owner === value && live(app, version) && intent === requested
+            && findOverlayWindow(deps.windows(), browser) === window && window.MenuStore === menu
+            && owner === value && live(app, version) && intent === requested;
+        const first = await reread(value, "shown");
+        if (!first || !uiCurrent())
+            return false;
+        const infos = await deps.browserInfo();
+        const observed = Array.isArray(infos) ? selectOverlay(infos.filter(info => Number(info?.unPID) === value.overlayPid
+            && String(info?.gameID) === first.gameId), app) : undefined;
+        if (!observed || observed.unPID !== browser.unPID || observed.nBrowserID !== browser.nBrowserID
+            || observed.appID !== browser.appID || observed.gameID !== browser.gameID || !uiCurrent())
+            return false;
+        // Switching sides uses the already shown native generation. Retiring it
+        // here introduces a visible gap and races the next native preparation.
+        const proofStartedAt = deps.now();
+        const proof = await reread(value, "shown");
+        const proofReturnedAt = deps.now();
+        if (!proof || !uiCurrent())
+            return false;
+        if (!uint64(proof.readAt) || BigInt(proof.readAt) < BigInt(proof.observedAt)
+            || BigInt(proof.readAt) >= BigInt(proof.expiresAt)) {
+            trace("mirror-menu-switch-expired");
+            return true;
+        }
+        const proofLifetime = Number(BigInt(proof.expiresAt) - BigInt(proof.readAt));
+        const commitCurrent = () => {
+            if (!uiCurrent())
+                return false;
+            const now = deps.now();
+            return Number.isFinite(now) && now >= proofReturnedAt && proofReturnedAt >= proofStartedAt
+                && now - proofReturnedAt <= 250 && now - proofStartedAt + 50 < proofLifetime
+                && owner === value && live(app, version) && intent === requested;
+        };
+        const selected = menu.GetOpenSideMenu?.(), desired = requested === "quick" ? 2 : 1;
+        if (selected !== (previous === "quick" ? 2 : 1) && selected !== desired)
+            return false;
+        const method = requested === "quick" ? menu.OpenQuickAccessMenu : menu.OpenMainMenu;
+        const tab = requested === "quick" ? menu.GetQuickAccessTab?.() ?? 0 : undefined;
+        const receipt = captureMenu(value, requested === "quick" ? 2 : 1);
+        if (typeof method !== "function" || !receipt)
+            return false;
+        if (!commitCurrent()) {
+            trace("mirror-menu-switch-expired");
+            return true;
+        }
+        value.menuReceipt = receipt;
+        try {
+            if (selected !== desired) {
+                if (requested === "quick")
+                    method.call(menu, tab, true);
+                else
+                    method.call(menu);
+            }
+            if (!uiCurrent() || menu.GetOpenSideMenu?.() !== (requested === "quick" ? 2 : 1))
+                return true;
+            value.mirror = proof;
+            value.navigation = deps.navigation && steamMirrorNavigation({ app, browser, overlay: window, menu, mirror: proof, intent: requested }, deps.navigation, deps.windows, () => uiCurrent() && same(value.mirror, proof), deps.now);
+            value.navigation?.activate();
+            const after = await reread(value, "shown");
+            if (after && uiCurrent() && menu.GetOpenSideMenu?.() === (requested === "quick" ? 2 : 1)) {
+                value.mirror = after;
+                trace("mirror-menu-switched");
+            }
+        }
+        catch {
+            trace("mirror-menu-switch-unconfirmed");
+        }
+        // Once the original menu API was called, a replacement or user action
+        // owns the current UI. Do not retry by closing and creating another menu.
+        return true;
+    }
+    let polling = false, pollQueued = false;
+    async function pollContinuation() {
+        const value = owner, version = revision;
+        if (disposed || !wanted || !value || openingVersion || polling)
+            return;
+        polling = true;
+        try {
+            const started = deps.now(), reply = await deps.read(value.app, value.overlayPid);
+            if (owner !== value || !live(value.app, version) || !wanted)
+                return;
+            const marker = noteContinuation(value, reply, started), proof = currentMirror(reply), identified = identifiedMirror(reply);
+            if (proof && same(proof, value.mirror)) {
+                value.mirror = proof;
+                return;
+            }
+            if (marker?.phase === 1 && passiveCurrent(value)) {
+                trace("mirror-passive-intent-retained");
+                return;
+            }
+            if (marker?.phase === 2 && value.continuation && deps.now() < value.continuation.localDeadline && identified?.state === "preparing" && identified.generation === marker.resumedGeneration
+                && identified.preparedCurrent === false && identified.shownCurrent === false && identified.leaseCurrent === false && identified.actualScope === 0
+                && identityKeys.filter(k => k !== "generation" && k !== "destinationHwnd" && k !== "destinationCookie").every(k => identified[k] === value.continuation.parent[k])) {
+                trace("mirror-fresh-continuation-preparing");
+                return; // no display, input, Set2 or stale Show authority.
+            }
+            if (marker && (marker.phase === 2 || marker.phase === 4) && value.continuation && deps.now() < value.continuation.localDeadline && proof && proof.generation === marker.resumedGeneration) {
+                const parent = value.continuation.parent;
+                if (!identityKeys.filter(k => k !== "generation" && k !== "destinationHwnd" && k !== "destinationCookie").every(k => proof[k] === parent[k]) || !value.browser || findOverlayWindow(deps.windows(), value.browser) !== value.window || value.window.MenuStore !== value.menu || !value.menuReceipt || value.menu.GetOpenSideMenu?.() !== value.menuReceipt.side)
+                    return;
+                const browser = value.window.BrowserWindow ?? value.window.m_BrowserWindow;
+                if (browser !== value.menuReceipt.parent || browser.closed === true || browser.document !== value.menuReceipt.document)
+                    return;
+                value.mirror = proof;
+                value.navigation = undefined;
+                deps.admitted?.(value.app, proof); // fresh tuple, no old lease/menu/focus replay.
+                if (proof.state === "prepared") {
+                    const queued = await deps.command(value.app, value.overlayPid, "show", proof);
+                    if (owner !== value || !live(value.app, version) || !wanted)
+                        return;
+                    if (!queued?.ok) {
+                        await retire(value);
+                        return;
+                    }
+                    const after = currentMirror(await deps.read(value.app, value.overlayPid), "shown");
+                    if (after && owner === value && live(value.app, version) && same(after, proof)) {
+                        value.mirror = after;
+                        trace("mirror-fresh-continuation-shown");
+                    }
+                }
+                else
+                    trace("mirror-fresh-continuation-shown");
+                return;
+            }
+            if (proof && !same(proof, value.mirror) && !marker)
+                return; // unrelated tuple is never adopted.
+            await retire(value);
+        }
+        catch {
+            if (owner === value && !passiveCurrent(value))
+                await retire(value);
+        }
+        finally {
+            polling = false;
+        }
+    }
+    return {
+        guide(menu) {
+            const app = deps.runningApp();
+            if (disposed || app < 0x80000000 || app > 0xffffffff)
+                return;
+            if (wanted && intent !== menu && openingVersion !== 0 && openingApp === app) {
+                // Guide+A emits Guide first, then Quick Access. Both edges belong to
+                // one opening; the existing preparation mounts the final intent.
+                intent = menu;
+                return serial;
+            }
+            // An intent from a previous game cannot consume this game's first Guide.
+            // Only the same app's admitted owner or still-pending opening can toggle closed.
+            const previousIntent = intent;
+            const switching = wantedFor(app) && owner?.app === app && intent !== menu && openingVersion === 0 ? owner : undefined;
+            const closing = wantedFor(app) && intent === menu;
+            const previousOpening = openingVersion, pendingAtIntent = previousOpening !== 0;
+            wanted = !closing;
+            intent = menu;
+            const version = ++revision;
+            if (!closing && !switching) {
+                openingVersion = version;
+                openingApp = app;
+            }
+            return enqueue(async () => {
+                if (switching && owner === switching && await switchShownMenu(switching, app, version, previousIntent, menu))
+                    return;
+                if (!live(app, version))
+                    return;
+                let reopen = !closing;
+                if (closing && owner && !pendingAtIntent) {
+                    // Back can close native presentation without a CEF activation edge.
+                    // Its next Guide starts a new generation rather than consuming an
+                    // extra press to dismiss a stale JavaScript owner.
+                    const held = owner, reply = await deps.read(app, held.overlayPid);
+                    const terminal = reply?.ok === true && reply.mirror?.protocol === 1 && sameRetired(reply.mirror, held.mirror);
+                    const replaced = live(app, version) && !terminal && await releaseReplacedOwner(held, reply);
+                    if (live(app, version) && (terminal || replaced)) {
+                        reopen = wanted = true;
+                        openingVersion = version;
+                        openingApp = app;
+                    }
+                }
+                if (!reopen) {
+                    if (owner)
+                        await retire(owner);
+                }
+                else {
+                    try {
+                        await open(app, version);
+                    }
+                    finally {
+                        if (live(app, version) && !owner)
+                            wanted = false;
+                    }
+                }
+            }).finally(() => {
+                if (openingVersion === version || closing && openingVersion === previousOpening) {
+                    openingVersion = 0;
+                    openingApp = 0;
+                }
+            });
+        },
+        poll() { if (pollQueued || disposed || !wanted || !owner)
+            return serial; pollQueued = true; return enqueue(pollContinuation).finally(() => { pollQueued = false; }); },
+        close() { wanted = false; ++revision; return enqueue(async () => { if (owner)
+            await retire(owner); }); },
+        recover(menu) {
+            if (disposed || wantedFor(deps.runningApp()))
+                return serial;
+            return this.guide(menu);
+        },
+        invalidate() { wanted = false; ++revision; return enqueue(async () => { if (owner)
+            await retire(owner); }); },
+        dispose() { disposed = true; wanted = false; ++revision; return enqueue(async () => { if (owner)
+            await retire(owner); }); },
+        get active() { return owner !== undefined; },
+        get pendingApp() { return !disposed && wanted && openingVersion !== 0 && openingApp === deps.runningApp() ? openingApp : 0; },
+        get shown() { return owner?.mirror.state === "shown" && !(owner.continuation && (owner.continuation.marker.phase === 1 || owner.continuation.marker.phase === 2) && owner.mirror.generation === owner.continuation.parent.generation); },
+        settled() { return serial; },
+    };
+}
+
+const uint = (value) => Number.isInteger(value) && Number(value) > 0 && Number(value) <= 0xffffffff;
+const decimal = (value) => typeof value === "string" && /^[1-9]\d{0,19}$/.test(value) && BigInt(value) <= 0xffffffffffffffffn;
+const hex = (value) => typeof value === "string" && /^[a-f0-9]{64}$/i.test(value);
+const token = (value) => typeof value === "string" && /^[a-f0-9]{32}$/.test(value);
+const identity = ["canonicalAppId", "fullGameId", "observedGameId", "sessionId", "gamePid", "gameBirth", "wrapperPid", "wrapperBirth", "steamPid", "steamBirth", "companionPid", "companionBirth", "overlayPid", "overlayBirth", "gameWindow"];
+const sameNativeGame = (a, b) => identity.every(key => a[key] === b[key]);
+function validNativeGame(p, app, elapsed = 0) {
+    return !!p && p.protocol === 1 && p.routingOnly === true && p.canonicalAppId === app && uint(app) && app >= 0x80000000
+        && decimal(p.fullGameId) && p.fullGameId === ((BigInt(app) << 32n) | 0x02000000n).toString()
+        && decimal(p.observedGameId) && hex(p.sessionId)
+        && [p.gamePid, p.wrapperPid, p.steamPid, p.companionPid, p.overlayPid].every(uint)
+        && p.gamePid !== p.wrapperPid && p.overlayPid !== p.gamePid && p.overlayPid !== p.companionPid
+        && [p.gameBirth, p.wrapperBirth, p.steamBirth, p.companionBirth, p.overlayBirth, p.gameWindow, p.observedAt, p.expiresAt].every(decimal)
+        && Number.isFinite(elapsed) && elapsed >= 0 && BigInt(p.expiresAt) > BigInt(p.observedAt)
+        && BigInt(p.expiresAt) - BigInt(p.observedAt) <= 1500n
+        && BigInt(p.expiresAt) - BigInt(p.observedAt) > BigInt(Math.ceil(elapsed) + 50);
+}
+function bindNativeGameBrowser(proof, infos, store) {
+    if (!Array.isArray(infos))
+        return undefined;
+    const matches = infos.filter(value => value?.unPID === proof.overlayPid
+        && (String(value.gameID) === proof.observedGameId
+            || proof.observedGameId === proof.fullGameId && String(value.gameID) === String(proof.canonicalAppId))
+        && uint(value.nBrowserID) && uint(value.appID));
+    if (matches.length !== 1)
+        return undefined;
+    const info = matches[0], rendererToken = String(info.gameID), browserId = info.nBrowserID, appId = info.appID;
+    const target = store?.m_mapOverlayPopupByPID?.get(proof.overlayPid);
+    const win = target?.BrowserWindow ?? target?.m_BrowserWindow, doc = win?.document, menu = target?.MenuStore;
+    if (!target || !win || !doc || !menu || typeof menu.OpenMainMenu !== "function"
+        || typeof menu.OpenQuickAccessMenu !== "function" || typeof menu.GetQuickAccessTab !== "function")
+        return undefined;
+    const current = () => store?.m_mapOverlayPopupByPID?.get(proof.overlayPid) === target && Array.isArray(store?.OverlayWindows)
+        && store.OverlayWindows.includes(target) && target.IsGamepadUIOverlayWindow?.() === true
+        && (target.BrowserWindow ?? target.m_BrowserWindow) === win && win.closed !== true && win.document === doc && target.MenuStore === menu
+        && target.params?.browserInfo?.m_unPID === proof.overlayPid && target.params.browserInfo.m_nBrowserID === browserId
+        && target.params.browserInfo.m_unAppID === appId && String(target.params.browserInfo.m_gameID) === rendererToken;
+    if (!current())
+        return undefined;
+    return { browser: { overlayPid: proof.overlayPid, browserId, appId }, rendererToken, target, win, doc, menu, store, current };
+}
+// Coordinate only a synchronous original native-window system-key consumer.
+// The registered Playhub SystemKey observer owns the same press; no time-based
+// deduplication, native callback, input event or focus state is fabricated here.
+function coordinateNativeOriginalMenus(target, current, observerCurrent, trace) {
+    let enabled = true, depth = 0;
+    const installed = [];
+    const stop = () => {
+        enabled = false;
+        for (const hook of installed.splice(0).reverse())
+            try {
+                if (Object.getOwnPropertyDescriptor(hook.object, hook.key)?.value !== hook.wrapper)
+                    continue;
+                if (hook.original)
+                    Object.defineProperty(hook.object, hook.key, hook.original);
+                else
+                    Reflect.deleteProperty(hook.object, hook.key);
+            }
+            catch { /* A retained wrapper is passive after enabled=false. */ }
+    };
+    try {
+        const context = target?.GetFocusNavContext?.(), nav = context?.m_controller, sources = nav?.m_rgGamepadInputSources;
+        if (!context || !nav || !Array.isArray(sources))
+            return;
+        const matches = sources.filter(source => source?.m_NavController === nav
+            && typeof source.OnSystemButtonPress === "function" && typeof source.HandleSystemKeyEvents === "function");
+        if (matches.length !== 1 || typeof target.OnHomeButtonPressed !== "function" || typeof target.OnQuickAccessButtonPressed !== "function")
+            return;
+        const source = matches[0];
+        const live = () => {
+            try {
+                if (!enabled || !observerCurrent() || !current())
+                    return false;
+                const next = target.GetFocusNavContext?.();
+                return next === context && next.m_controller === nav && nav.m_rgGamepadInputSources === sources && sources.includes(source)
+                    && source.m_NavController === nav && installed.every(hook => Object.getOwnPropertyDescriptor(hook.object, hook.key)?.value === hook.wrapper)
+                    && observerCurrent() && current() && enabled;
+            }
+            catch {
+                return false;
+            }
+        };
+        const install = (object, key, make) => {
+            const descriptor = Object.getOwnPropertyDescriptor(object, key), original = object[key];
+            if (typeof original !== "function" || descriptor && !("value" in descriptor))
+                throw new Error("Original menu accessor unavailable");
+            const wrapper = make(original);
+            Object.defineProperty(object, key, { configurable: true, writable: true, enumerable: descriptor?.enumerable ?? false, value: wrapper });
+            installed.push({ object, key, original: descriptor, wrapper });
+        };
+        install(source, "OnSystemButtonPress", original => function (...args) {
+            if (this !== source)
+                return Reflect.apply(original, this, args);
+            depth++;
+            try {
+                return Reflect.apply(original, this, args);
+            }
+            finally {
+                depth--;
+            }
+        });
+        for (const [key, menu] of [["OnHomeButtonPressed", "main"], ["OnQuickAccessButtonPressed", "quick"]]) {
+            install(target, key, original => function (...args) {
+                if (this === target && depth > 0 && live()) {
+                    try {
+                        trace?.(`coordinated-original-system-menu intent=${menu}`);
+                    }
+                    catch { }
+                    return; // The original SystemKey source and Playhub observer still execute.
+                }
+                return Reflect.apply(original, this, args);
+            });
+        }
+        if (!live()) {
+            stop();
+            return;
+        }
+        return stop;
+    }
+    catch {
+        stop();
+        return;
+    }
+}
+// Lower only the original Hidden request for this authenticated native session.
+// Opens, foreign calls and stale grants keep the original receiver/arguments.
+function coordinateNativeOriginalClose(api, fullGameId, rendererToken, current, target, cleanupCurrent) {
+    if (!decimal(fullGameId) || !decimal(rendererToken) || fullGameId === rendererToken || !api)
+        return;
+    let enabled = true, closing = false;
+    let descriptor, original, wrapper;
+    let nav, cancelOriginal, cancelWrapper, cancelDescriptor;
+    let cancelFrame;
+    const stop = () => {
+        enabled = false;
+        try {
+            if (nav && Object.getOwnPropertyDescriptor(nav, "OnButtonActionInternal")?.value === cancelWrapper) {
+                if (cancelDescriptor)
+                    Object.defineProperty(nav, "OnButtonActionInternal", cancelDescriptor);
+                else
+                    Reflect.deleteProperty(nav, "OnButtonActionInternal");
+            }
+        }
+        catch { /* A retained wrapper is passive after enabled=false. */ }
+        try {
+            if (Object.getOwnPropertyDescriptor(api, "SetOverlayState")?.value !== wrapper)
+                return;
+            if (descriptor)
+                Object.defineProperty(api, "SetOverlayState", descriptor);
+            else
+                Reflect.deleteProperty(api, "SetOverlayState");
+        }
+        catch { /* A retained wrapper is passive after enabled=false. */ }
+    };
+    try {
+        descriptor = Object.getOwnPropertyDescriptor(api, "SetOverlayState");
+        if (descriptor && !("value" in descriptor))
+            return;
+        original = api.SetOverlayState;
+        if (typeof original !== "function")
+            return;
+        wrapper = function (...args) {
+            if (!enabled)
+                return Reflect.apply(original, this, args);
+            let forwarded = args;
+            const frame = cancelFrame;
+            if (this === api && args.length === 2 && args[0] === fullGameId && args[1] === 0)
+                try {
+                    if (Object.getOwnPropertyDescriptor(api, "SetOverlayState")?.value === wrapper && (current() || frame && frame === cancelFrame && frame.cleanup())
+                        && Object.getOwnPropertyDescriptor(api, "SetOverlayState")?.value === wrapper && enabled)
+                        forwarded = [rendererToken, args[1]];
+                }
+                catch { /* Unknown ownership delegates unchanged; never invent Closed. */ }
+            if (frame && frame === cancelFrame && this === api && forwarded.length === 2
+                && forwarded[1] === 0 && forwarded[0] === rendererToken)
+                frame.nativeAttempted = true;
+            return Reflect.apply(original, this, forwarded);
+        };
+        Object.defineProperty(api, "SetOverlayState", descriptor ? { ...descriptor, value: wrapper }
+            : { configurable: true, writable: true, enumerable: false, value: wrapper });
+        if (target && cleanupCurrent) {
+            const context = target.GetFocusNavContext?.(), root = target.BrowserWindow ?? target.m_BrowserWindow, menu = target.MenuStore;
+            nav = context?.m_controller;
+            const bound = () => enabled && target.GetFocusNavContext?.() === context && context?.m_controller === nav
+                && context.RootWindow === root && (target.BrowserWindow ?? target.m_BrowserWindow) === root && target.MenuStore === menu
+                && Object.getOwnPropertyDescriptor(api, "SetOverlayState")?.value === wrapper
+                && Object.getOwnPropertyDescriptor(nav, "OnButtonActionInternal")?.value === cancelWrapper;
+            const cleanup = () => bound() && cleanupCurrent() && bound() && enabled && !closing;
+            cancelDescriptor = nav && Object.getOwnPropertyDescriptor(nav, "OnButtonActionInternal");
+            if (nav && (!cancelDescriptor || "value" in cancelDescriptor) && typeof nav.OnButtonActionInternal === "function"
+                && typeof menu?.GetOpenSideMenu === "function" && typeof nav.GetActiveContext === "function") {
+                cancelOriginal = nav.OnButtonActionInternal;
+                cancelWrapper = function (...args) {
+                    let frame;
+                    try {
+                        // Installed Steam pR.CANCEL=2; source 1=gamepad, 2=keyboard simulator.
+                        const tree = context?.m_LastActiveNavTree, child = tree?.Window, doc = child?.document;
+                        // OnButtonDown is captured by Steam's input-source registration. Its
+                        // original body calls this method dynamically on the same manager.
+                        if (this === nav && args[0] === true && args[1] === 2 && (args[2] === 1 || args[2] === 2)
+                            && args[4] !== true && args[5] === undefined && args[6] === undefined
+                            && current() && cleanup() && nav.GetActiveContext() === context && context.BIsGamepadInputSuppressed?.() === false
+                            && (tree?.id === "MainNavMenuContainer" || tree?.id === "QuickAccess-NA") && tree.WindowContext === context
+                            && context.ActiveWindow === child && tree.Root?.Element?.ownerDocument === doc && doc?.hasFocus?.() === true
+                            && menu.GetOpenSideMenu() === (tree.id === "MainNavMenuContainer" ? 1 : 2) && cleanup()
+                            && context.m_LastActiveNavTree === tree && context.ActiveWindow === child && nav.GetActiveContext() === context)
+                            frame = { nativeAttempted: false, cleanup };
+                    }
+                    catch { /* An unknown receiver delegates without a native effect. */ }
+                    const previous = cancelFrame;
+                    if (frame)
+                        cancelFrame = frame;
+                    let result;
+                    try {
+                        result = Reflect.apply(cancelOriginal, this, args);
+                    }
+                    finally {
+                        cancelFrame = previous;
+                    }
+                    if (frame && !frame.nativeAttempted)
+                        try {
+                            // Original B/Escape already hid this exact menu. Supply only the
+                            // missing native Hidden dispatch; actual FALSE still owns cleanup.
+                            if (menu.GetOpenSideMenu() === 0 && cleanup()) {
+                                closing = true;
+                                const sent = Reflect.apply(original, api, [rendererToken, 0]);
+                                void Promise.resolve(sent).catch(() => { });
+                            }
+                        }
+                        catch { /* Invoked outcome is unknown; never repeat or invent FALSE. */ }
+                    return result;
+                };
+                Object.defineProperty(nav, "OnButtonActionInternal", cancelDescriptor ? { ...cancelDescriptor, value: cancelWrapper }
+                    : { configurable: true, writable: true, enumerable: false, value: cancelWrapper });
+            }
+        }
+        return stop;
+    }
+    catch {
+        stop();
+        return;
+    }
+}
+// Authenticated producer work ends BEFORE the final routing-proof Read.
+// Network transit and the complete final Read remain in this upper age bound.
+function nativeInputProofAgeUpper(reply, elapsed) {
+    if (!Number.isFinite(elapsed) || elapsed < 0 || !Number.isSafeInteger(Math.ceil(elapsed)))
+        return;
+    const duration = reply?.proofProducedAfterMs;
+    if (duration === undefined || duration === null)
+        return Math.ceil(elapsed); // Legacy remains conservative.
+    if (!Number.isSafeInteger(duration) || duration < 0 || duration > elapsed)
+        return;
+    return Math.ceil(elapsed) - duration;
+}
+const readyForNativeMenu = (reply) => reply?.ok === true
+    && (reply.inputMode === "owned-relay" && reply.inputReady === true && reply.ordinaryReady !== true
+        || reply.inputMode === "ordinary" && reply.ordinaryReady === true && reply.noOwnedOverride === true && reply.inputReady !== true
+        || reply.inputMode === "ordinary-menu" && reply.ordinaryReady === true && reply.inputReady === false
+            && reply.noOwnedOverride === false && reply.menuLayoutReady === true);
+function createSteamNativeGameOverlay(deps) {
+    let disposed = false, version = 0, wanted = false, intent = "main", intentApp = 0, opening = 0;
+    let owner, serial = Promise.resolve();
+    const trace = (stage) => { try {
+        deps.trace?.(stage);
+    }
+    catch { } };
+    // Diagnostics read only JSON own data descriptors, never invoke DTO getters.
+    const ownData = (value, key) => value && typeof value === "object"
+        ? Object.getOwnPropertyDescriptor(value, key)?.value : undefined;
+    const scalar = (value) => typeof value === "boolean" || typeof value === "number" ? String(value)
+        : typeof value === "string" && value.length <= 64 ? value : "unknown";
+    const scope = () => { try {
+        return deps.scope();
+    }
+    catch {
+        return undefined;
+    } };
+    const current = (app, revision, v) => {
+        const s = scope();
+        return !disposed && !s?.disposed && s?.app === app && s.revision === revision && version === v && wanted && intentApp === app;
+    };
+    const uiCurrent = (o) => {
+        const b = o.binding, sameStore = deps.windowStore() === b.store, sameBrowser = b.current(), now = deps.now(), s = scope();
+        const contextCurrent = sameStore && sameBrowser && !disposed && !s?.disposed && s?.app === o.app && s.revision === o.revision;
+        const proofCurrent = contextCurrent && validNativeGame(o.proof, o.app, now - o.at);
+        const okay = proofCurrent && owner === o;
+        if (!okay)
+            trace(`ui-current-refused store=${sameStore} browser=${sameBrowser} context=${contextCurrent} proof=${proofCurrent} own=${owner === o}`);
+        return okay;
+    };
+    const cleanupBinding = (o) => {
+        // A retained original callback is cleanup evidence after expiry, never a renewed UI/input grant.
+        const sameStore = deps.windowStore() === o.binding.store, sameBrowser = o.binding.current();
+        return sameStore && sameBrowser && owner === o;
+    };
+    const input = (o, action, callback) => deps.input({
+        appId: o.app, action, expectedNative: o.proof, browser: o.binding.browser, ownerToken: o.token, generation: o.generation, callback,
+    });
+    const stopRenew = (o) => { if (o.renewTimer !== undefined) {
+        deps.cancel(o.renewTimer);
+        o.renewTimer = undefined;
+    } };
+    const cancel = async (o) => {
+        stopRenew(o);
+        if (!o.token || o.cancelSent)
+            return;
+        o.cancelSent = true;
+        // Cancel revokes this request; it NEVER fabricates a native false/resume.
+        try {
+            const result = await input(o, "cancel");
+            o.cancelConfirmed = result?.ok === true && result.ownerToken === o.token && result.generation === o.generation
+                && !!result.nativeGame && sameNativeGame(o.proof, result.nativeGame);
+        }
+        catch {
+            trace("cancel-uncertain");
+        }
+    };
+    const confirmActualClosed = (o, callback, result) => {
+        // A newer actual TRUE during the0ACK await owns newer cleanup debt.
+        if (o.callbackSerial !== BigInt(callback.serial) || result?.ok !== true || result.closed !== true || result.cleanupComplete !== true)
+            return;
+        o.closed = true;
+        if (owner === o) {
+            owner = undefined;
+            wanted = false;
+            version++;
+        }
+        trace("closed-native-confirmed");
+    };
+    const flushPreReadyCallback = (o) => {
+        const callback = o.preReadyLast;
+        if (!o.token || !callback || BigInt(callback.serial) <= o.queuedPreReadyCallback)
+            return;
+        o.queuedPreReadyCallback = BigInt(callback.serial);
+        o.eventSerial = o.eventSerial.catch(() => { }).then(async () => {
+            if (o.closed || o.callbackSerial !== BigInt(callback.serial))
+                return;
+            if (!o.cancelConfirmed) {
+                trace("deferred-callback-cancel-unconfirmed");
+                return;
+            }
+            // Actual TRUE is cleanup evidence on the already-revoked bridge, never
+            // a readiness/renew grant. A superseded FALSE cannot retire this owner.
+            const result = await input(o, callback.active ? "active" : "closed", callback);
+            if (!callback.active)
+                confirmActualClosed(o, callback, result);
+        }).catch(() => trace("deferred-callback-uncertain"));
+    };
+    const abortBeforeDispatch = async (o) => {
+        if (o.dispatched || o.trueSeen || !o.token || !o.generation)
+            return false;
+        try {
+            const reply = await input(o, "abort");
+            return !o.dispatched && !o.trueSeen && reply?.ok === true && reply.aborted === true && reply.closed !== true
+                && reply.cleanupComplete === true && reply.ownerToken === o.token && reply.generation === o.generation
+                && !!reply.nativeGame && sameNativeGame(o.proof, reply.nativeGame);
+        }
+        catch {
+            trace("abort-before-dispatch-uncertain");
+            return false;
+        }
+    };
+    const releaseOriginalMenu = (o) => {
+        const close = o.releaseOriginalClose, menu = o.releaseOriginalMenu;
+        o.releaseOriginalClose = undefined;
+        o.releaseOriginalMenu = undefined;
+        try {
+            close?.();
+        }
+        catch { }
+        try {
+            menu?.();
+        }
+        catch { }
+    };
+    const retire = async (o, closeOnly = false) => {
+        o.closing = true;
+        releaseOriginalMenu(o);
+        stopRenew(o);
+        if (!o.dispatched && await abortBeforeDispatch(o)) {
+            if (owner === o)
+                owner = undefined;
+            trace("aborted-before-dispatch-cleanup-confirmed"); // Local retirement, never native FALSE/Closed or a resume claim.
+            return;
+        }
+        if (o.readyGranted && !o.dispatched)
+            await cancel(o);
+        if ((o.readyGranted || o.dispatched) && !o.closed && !o.zeroRequested && !uiCurrent(o) && cleanupBinding(o)) {
+            // A long-open UI may outlive its routing proof. Refresh the SAME tuple before Set0; no new input grant.
+            const started = deps.now(), s = scope();
+            if (s?.app === o.app && s.revision === o.revision && !s.disposed && !disposed)
+                try {
+                    const fresh = await deps.proof(o.app);
+                    if (fresh?.ok && fresh.kind === "native-game" && validNativeGame(fresh.nativeGame, o.app, deps.now() - started)
+                        && sameNativeGame(o.proof, fresh.nativeGame) && owner === o) {
+                        o.proof = fresh.nativeGame;
+                        o.at = started;
+                    }
+                }
+                catch {
+                    trace("close-proof-unknown");
+                }
+        }
+        if ((o.readyGranted || o.dispatched) && !o.closed && !o.zeroRequested && uiCurrent(o)) {
+            // Set0 is only the exact original renderer token while its original game is current.
+            o.zeroRequested = true;
+            try {
+                await deps.setOverlayState(o.binding.rendererToken, 0);
+            }
+            catch {
+                trace("close-uncertain");
+            }
+            if (closeOnly)
+                return; // Keep callback binding until the actual false/0-ACK, even on an uncertain Set0.
+        }
+        await cancel(o);
+        if (o.readyGranted || o.dispatched)
+            return; // Keep cleanup debt through exact false/0-ACK.
+        if (owner === o)
+            owner = undefined;
+    };
+    const scheduleRenew = (o) => {
+        if (o.renewTimer !== undefined || o.renewInFlight || owner !== o || disposed || o.closing || o.cancelSent || o.closed || !o.trueSeen)
+            return;
+        o.renewTimer = deps.schedule(() => {
+            o.renewTimer = undefined;
+            if (owner !== o || disposed || o.closing || o.cancelSent || o.closed || !o.trueSeen)
+                return;
+            o.renewInFlight = true;
+            void (async () => {
+                const started = deps.now(), reply = await deps.proof(o.app);
+                if (owner !== o || disposed || o.closing || o.cancelSent || o.closed)
+                    return;
+                if (!reply?.ok || reply.kind !== "native-game" || !validNativeGame(reply.nativeGame, o.app, deps.now() - started)
+                    || !sameNativeGame(o.proof, reply.nativeGame) || !cleanupBinding(o))
+                    throw new Error("Native renewal ownership unavailable");
+                o.proof = reply.nativeGame;
+                o.at = started;
+                if (!uiCurrent(o))
+                    throw new Error("Native renewal no longer current");
+                const renewed = await input(o, "renew", o.lastTrue);
+                if (owner !== o || disposed || o.closing || o.cancelSent || o.closed)
+                    return;
+                if (!readyForNativeMenu(renewed) || renewed.inputMode !== o.inputMode)
+                    throw new Error("Native renewal refused");
+            })().catch(async () => { trace("renew-uncertain"); await retire(o); }).finally(() => {
+                o.renewInFlight = false;
+                scheduleRenew(o); // One actual settlement, one next timer; never a queued RPC backlog.
+            });
+        }, 400);
+    };
+    const menu = (o, v) => {
+        if (!current(o.app, o.revision, v) || !uiCurrent(o))
+            return false;
+        if (intent === "quick") {
+            const tab = o.binding.menu.GetQuickAccessTab();
+            if (!current(o.app, o.revision, v) || !uiCurrent(o))
+                return false;
+            o.binding.menu.OpenQuickAccessMenu(tab, true);
+        }
+        else
+            o.binding.menu.OpenMainMenu();
+        return current(o.app, o.revision, v) && uiCurrent(o);
+    };
+    const open = async (app, revision, v, initial) => {
+        let held, stage = "proof";
+        const start = initial?.at ?? deps.now();
+        try {
+            const reply = initial?.reply ?? await deps.proof(app);
+            if (!current(app, revision, v)) {
+                trace("open-refused stage=post-proof-intent");
+                return { handled: true };
+            }
+            if (reply?.ok === true && (reply.kind === "absent" || reply.kind === "packaged") && !reply.nativeGame)
+                return { handled: false };
+            if (reply?.ok !== true || reply.kind !== "native-game" || !validNativeGame(reply.nativeGame, app, deps.now() - start)) {
+                trace("open-refused stage=proof-reply");
+                return { handled: true };
+            }
+            stage = "browser-info";
+            const proof = reply.nativeGame, infos = await deps.browserInfo();
+            if (!current(app, revision, v) || !validNativeGame(proof, app, deps.now() - start)) {
+                trace("open-refused stage=post-browser-intent-proof");
+                return { handled: true };
+            }
+            const binding = bindNativeGameBrowser(proof, infos, deps.windowStore());
+            if (!binding) {
+                trace("open-refused stage=original-browser-binding");
+                return { handled: true };
+            }
+            held = { app, revision, proof, at: start, binding, readyGranted: false, dispatched: false, trueSeen: false, closed: false,
+                closing: false, zeroRequested: false, idleInvalidated: false, callbackSerial: 0n, eventSerial: Promise.resolve(), cancelSent: false, renewInFlight: false, preReadyCleanup: false, queuedPreReadyCallback: 0n };
+            owner = held;
+            const readyAt = deps.now();
+            stage = "input-prepare";
+            const ready = await input(held, "prepare");
+            const readyProof = ownData(ready, "nativeGame");
+            trace(`prepare-receipt mode=${scalar(ownData(ready, "inputMode"))} ok=${scalar(ownData(ready, "ok"))} inputReady=${scalar(ownData(ready, "inputReady"))} ordinaryReady=${scalar(ownData(ready, "ordinaryReady"))} noOwnedOverride=${scalar(ownData(ready, "noOwnedOverride"))} menuLayoutReady=${scalar(ownData(ready, "menuLayoutReady"))} producerMs=${scalar(ownData(ready, "proofProducedAfterMs"))} observed=${scalar(ownData(readyProof, "observedAt"))} expires=${scalar(ownData(readyProof, "expiresAt"))}`);
+            const readyElapsed = deps.now() - readyAt, readyAge = nativeInputProofAgeUpper(ready, readyElapsed);
+            // Adopt even a late receipt so cancellation can retire its exact owned request.
+            if (token(ready?.ownerToken) && decimal(ready?.generation)) {
+                held.token = ready.ownerToken;
+                held.generation = ready.generation;
+            }
+            held.readyGranted = readyForNativeMenu(ready) && !!held.token && !!held.generation
+                && !!ready.nativeGame && sameNativeGame(proof, ready.nativeGame);
+            if (held.preReadyLast) {
+                // These are actual original-host events observed before receipt adoption.
+                // Never draw. Revoke first, then forward only the still-latest actual
+                // callback with its original serial as cleanup-only provenance.
+                held.preReadyCleanup = true;
+                held.closing = true;
+                held.eventSerial = held.eventSerial.catch(() => { }).then(() => cancel(held));
+                flushPreReadyCallback(held);
+                await held.eventSerial;
+                return { handled: true };
+            }
+            if (!readyForNativeMenu(ready) || !held.token || !held.generation || readyAge === undefined || readyElapsed >= 4950 || !validNativeGame(ready.nativeGame, app, readyAge)
+                || !sameNativeGame(proof, ready.nativeGame)) {
+                trace(`open-refused stage=input-ready-receipt retainedReady=${held.readyGranted}`);
+                return { handled: true };
+            }
+            held.inputMode = ready.inputMode;
+            held.proof = ready.nativeGame;
+            held.at = readyAt + (Math.ceil(readyElapsed) - readyAge);
+            if (!current(app, revision, v) || !uiCurrent(held)) {
+                trace("open-refused stage=post-ready-ui");
+                return { handled: true };
+            }
+            const originalOwner = held;
+            held.releaseOriginalMenu = deps.coordinateOriginalMenu?.(binding.target, () => owner === originalOwner
+                && originalOwner.readyGranted && !originalOwner.closed && !originalOwner.closing && !originalOwner.cancelSent && uiCurrent(originalOwner));
+            held.releaseOriginalClose = deps.coordinateOriginalClose?.(held.proof.fullGameId, binding.rendererToken, () => {
+                if (owner !== originalOwner || !wanted || intentApp !== originalOwner.app || !originalOwner.readyGranted || !originalOwner.dispatched
+                    || !originalOwner.trueSeen || originalOwner.closed || originalOwner.closing || originalOwner.cancelSent || !uiCurrent(originalOwner))
+                    return false;
+                // uiCurrent contains browser/scope getters: recheck local revocation last.
+                return owner === originalOwner && wanted && intentApp === originalOwner.app && originalOwner.readyGranted && originalOwner.dispatched
+                    && originalOwner.trueSeen && !originalOwner.closed && !originalOwner.closing && !originalOwner.cancelSent && !disposed;
+            }, binding.target, () => {
+                if (owner !== originalOwner || !originalOwner.readyGranted || !originalOwner.dispatched || !originalOwner.trueSeen
+                    || originalOwner.closed || originalOwner.closing || originalOwner.cancelSent || disposed || !cleanupBinding(originalOwner))
+                    return false;
+                return owner === originalOwner && originalOwner.readyGranted && originalOwner.dispatched && originalOwner.trueSeen
+                    && !originalOwner.closed && !originalOwner.closing && !originalOwner.cancelSent && !disposed;
+            });
+            if (deps.coordinateOriginalClose && held.proof.fullGameId !== binding.rendererToken && !held.releaseOriginalClose) {
+                trace("open-refused stage=original-close-routing");
+                return { handled: true };
+            }
+            if (!current(app, revision, v) || !uiCurrent(held)) {
+                trace("open-refused stage=post-menu-lane-ui");
+                return { handled: true };
+            }
+            deps.admitted?.(app, held.proof, binding.browser); // Cleanup receipt only, not Mirror.Shown or a scope grant.
+            if (!current(app, revision, v) || !uiCurrent(held)) {
+                trace("open-refused stage=post-admitted-ui");
+                return { handled: true };
+            }
+            held.dispatched = true; // Any throw after this point is an uncertain dispatch, never Closed.
+            stage = "set2";
+            await deps.setOverlayState(held.binding.rendererToken, 2);
+            trace(`set2-returned app=${app} host=${held.proof.overlayPid} browser=${binding.browser.browserId}`);
+            stage = "menu";
+            if (!menu(held, v)) {
+                trace("open-refused stage=post-set2-menu");
+                return { handled: true };
+            }
+            trace(`opened app=${app} host=${held.proof.overlayPid} browser=${binding.browser.browserId}`);
+            return { handled: true };
+        }
+        catch {
+            trace(`open-unknown stage=${stage}`);
+            return { handled: true };
+        }
+        finally {
+            if (held && (!current(app, revision, v) || !held.dispatched))
+                await retire(held);
+            if (opening === app)
+                opening = 0;
+            if (!owner && version === v)
+                wanted = false;
+        }
+    };
+    const queue = (operation) => { serial = serial.catch(() => { }).then(operation); return serial; };
+    return {
+        guide(next) {
+            const s = scope();
+            if (disposed || !s || s.disposed || !uint(s.app) || s.app < 0x80000000)
+                return Promise.resolve({ handled: true });
+            const same = wanted && intentApp === s.app;
+            if (same && intent === next) {
+                wanted = false;
+                version++;
+                return queue(async () => { if (owner)
+                    await retire(owner, true); return { handled: true }; });
+            }
+            if (same && opening === s.app) {
+                intent = next;
+                return serial;
+            }
+            intent = next;
+            intentApp = s.app;
+            wanted = true;
+            const v = ++version;
+            return queue(async () => {
+                if (!current(s.app, s.revision, v))
+                    return { handled: true };
+                if (owner?.closing) {
+                    const old = owner;
+                    if (!old.idleInvalidated)
+                        return { handled: true }; // Unknown close is never absence.
+                    const at = deps.now(), reply = await deps.proof(s.app), fresh = reply?.nativeGame;
+                    if (!current(s.app, s.revision, v) || owner !== old || reply?.ok !== true || reply.kind !== "native-game"
+                        || !validNativeGame(fresh, s.app, deps.now() - at) || fresh.sessionId === old.proof.sessionId
+                        || fresh.gamePid === old.proof.gamePid && fresh.gameBirth === old.proof.gameBirth
+                        || fresh.wrapperPid === old.proof.wrapperPid && fresh.wrapperBirth === old.proof.wrapperBirth)
+                        return { handled: true };
+                    // Positive new retained session after observed app0 permits LOCAL forget only.
+                    // No Set0/Closed/resume is sent for either session; the new server input receipt stands alone.
+                    stopRenew(old);
+                    releaseOriginalMenu(old);
+                    owner = undefined;
+                    opening = s.app;
+                    return open(s.app, s.revision, v, { reply, at });
+                }
+                if (owner && owner.app === s.app && uiCurrent(owner) && !owner.closed) {
+                    menu(owner, v);
+                    return { handled: true };
+                }
+                if (owner)
+                    await retire(owner);
+                if (!current(s.app, s.revision, v))
+                    return { handled: true };
+                opening = s.app;
+                return open(s.app, s.revision, v);
+            });
+        },
+        activated(pid, appId, active) {
+            const o = owner;
+            if (!o || typeof active !== "boolean" || pid !== o.binding.browser.overlayPid || appId !== o.binding.browser.appId)
+                return;
+            // Native callback has no BID/birth: bind it to this retained browser/session. A missing UI is not Closed.
+            if (!cleanupBinding(o)) {
+                trace("callback-owner-unknown");
+                return;
+            }
+            o.nativeActive = active;
+            if (o.preReadyCleanup || !o.dispatched && !o.readyGranted) {
+                if (active) {
+                    o.trueSeen = true;
+                    trace("pre-ready-native-true-cleanup-only");
+                }
+                if (o.trueSeen) {
+                    o.preReadyLast = { ...o.binding.browser, active, serial: (++o.callbackSerial).toString() };
+                    if (o.preReadyCleanup)
+                        flushPreReadyCallback(o);
+                }
+                return; // Actual cleanup provenance only; no active/renew/Set2 grant.
+            }
+            // The server's sticky revoke/expiry fence may record a late TRUE for cleanup,
+            // but must never renew 769/readiness from this callback intent.
+            if (active)
+                o.trueSeen = true;
+            else if (!o.trueSeen && !o.cancelSent)
+                return;
+            if (!active) {
+                o.closing = true;
+                stopRenew(o);
+                releaseOriginalMenu(o);
+            }
+            const callback = { ...o.binding.browser, active, serial: (++o.callbackSerial).toString() };
+            if (active)
+                o.lastTrue = callback;
+            o.eventSerial = o.eventSerial.catch(() => { }).then(async () => {
+                if (o.closed)
+                    return;
+                const result = await input(o, active ? "active" : "closed", callback);
+                if (active && readyForNativeMenu(result) && result.inputMode === o.inputMode)
+                    scheduleRenew(o);
+                if (!active)
+                    confirmActualClosed(o, callback, result);
+            }).catch(() => trace("callback-uncertain"));
+        },
+        invalidate() {
+            if (owner && scope()?.observedApp === 0)
+                owner.idleInvalidated = true;
+            wanted = false;
+            version++;
+            return queue(async () => { if (owner)
+                await retire(owner); });
+        },
+        dispose() { disposed = true; wanted = false; version++; return queue(async () => { if (owner)
+            await retire(owner); }); },
+        visibility(app) {
+            const o = owner;
+            if (disposed || !o || o.app !== app || !o.readyGranted || !o.dispatched || o.closed || !cleanupBinding(o))
+                return;
+            const serial = o.callbackSerial, nativeActive = o.nativeActive;
+            const copy = Object.freeze({ app: o.app, entry: o.binding.target, pid: o.binding.browser.overlayPid, browserId: o.binding.browser.browserId,
+                nativeApp: o.binding.browser.appId, rendererToken: o.binding.rendererToken, active: nativeActive === true, serial: serial.toString() });
+            // This copy can only hide the HUD. Expiry/cancel is not a native FALSE,
+            // so keep the exact binding until the real callback or owner retirement.
+            return !disposed && owner === o && !o.closed && o.readyGranted && o.dispatched
+                && o.callbackSerial === serial && o.nativeActive === nativeActive ? copy : undefined;
+        },
+        get active() { return !!owner && !owner.closed; }, get pendingApp() { return opening; },
+        owns(app) { return owner?.app === app || opening === app; },
+        recover(next) { return wanted && intentApp === scope()?.app ? serial : this.guide(next); },
+        settled() { return serial; }, eventsSettled() { return owner?.eventSerial ?? Promise.resolve(); },
+    };
+}
+
+const companionScopeMs = 300;
+const mainWindowRefreshDelays = [50, 200, 600, 1500];
+function shortcutAppId(gameId) {
+    if (typeof gameId !== "string" || !/^\d{11,20}$/.test(gameId))
+        return 0;
+    const id = BigInt(gameId);
+    if ((id & 0xffffffffn) !== 0x02000000n)
+        return 0;
+    const appId = id >> 32n;
+    return appId >= 0x80000000n && appId <= 0xffffffffn ? Number(appId) : 0;
+}
+function installControlledQamFocus(onMirrorAdmitted, onNativeAdmitted) {
     const ui = _global_DFL;
     const steam = window.SteamClient;
+    const windowStore = () => window.SteamUIStore?.WindowStore ?? ui.Router?.WindowStore;
+    const observedUiApp = () => {
+        const store = window.SteamUIStore;
+        const raw = store && "MainRunningAppID" in store ? store.MainRunningAppID : ui.Router?.MainRunningAppID;
+        return raw == null ? null : steamAppId(raw);
+    };
+    const observedRunningApp = () => observedUiApp() ?? 0;
+    let ownedDispatcher;
+    const runningApp = () => ownedDispatcher?.app() ?? observedRunningApp();
+    const mainWindow = () => windowStore()?.GamepadUIMainWindowInstance;
     const main = () => {
-        const store = window.SteamUIStore?.WindowStore ?? ui.Router?.WindowStore;
-        const instance = store?.GamepadUIMainWindowInstance;
+        const instance = mainWindow();
         return instance?.IsGamepadUIOverlayWindow?.() === true ? undefined : instance?.MenuStore;
     };
+    let canUseCompanion = typeof steam?.Overlay?.SetOverlayState === "function"
+        && typeof steam.Overlay.RegisterForOverlayActivated === "function"
+        && typeof steam.Overlay.GetOverlayBrowserInfo === "function";
+    let sessionRevision = 0;
+    let homeRevision = 0;
+    let disposed = false;
+    let systemGuideObserverCurrent = false;
+    let coldProbe;
+    const verify = (app, pid, keyboard, menu) => call("verify_xbox_steam_overlay", app, pid, keyboard, menu);
+    const matchingBrowser = (infos, app) => infos.some(info => shortcutAppId(info?.gameID) === app || matchesOverlayApp(info, app));
+    const bounded = (check) => new Promise((resolve, reject) => {
+        const timer = window.setTimeout(() => reject(new Error("Companion ownership is still unknown")), companionScopeMs);
+        const done = (result) => { window.clearTimeout(timer); resolve(result); };
+        void check.then(done, error => { window.clearTimeout(timer); reject(error); });
+    });
+    const coldCompanion = (app) => {
+        if (disposed || !canUseCompanion || app < 0x80000000 || runningApp() !== app)
+            return Promise.resolve(false);
+        const now = Date.now();
+        if (coldProbe?.app === app && now < coldProbe.expires)
+            return coldProbe.available;
+        const available = bounded(Promise.resolve().then(() => verify(app, 0, false, false)).then(result => {
+            if (result?.ok === false)
+                return false;
+            if (result?.ok === true && shortcutAppId(result.gameId) === app
+                && Number.isSafeInteger(result.companionPid) && Number(result.companionPid) > 0
+                && Number(result.companionPid) <= 0xffffffff)
+                return true;
+            throw new Error("Companion ownership was not verified");
+        }));
+        coldProbe = { app, expires: now + companionScopeMs, available };
+        return available;
+    };
     const patches = [];
+    const storePatches = [];
+    const mainPatches = [];
+    let observedStore;
+    let attachedMain;
+    let attachedMenu;
+    let refreshTimers = [];
     let serial = 0;
     const prefix = `qam-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const send = async (action, requestId, appId) => {
@@ -36802,7 +43312,7 @@ function installControlledQamFocus() {
         return response.json();
     };
     const control = createControlledQamFocus({
-        runningApp: () => steamAppId(window.SteamUIStore?.MainRunningAppID ?? ui.Router?.MainRunningAppID),
+        runningApp,
         nativeOverlayAvailable: async (app) => {
             if (typeof steam?.Overlay?.GetOverlayBrowserInfo !== "function")
                 throw new Error("Native overlay identity unavailable");
@@ -36812,80 +43322,515 @@ function installControlledQamFocus() {
             // Browser information itself is evidence of a native overlay; it need
             // not already have a visible gamepad browser window to remain untouched.
             const identity = selectOverlay(infos, app);
-            if (!identity && infos.some(info => Number(info?.appID) === app))
+            if (identity)
+                return true;
+            if (matchingBrowser(infos, app))
                 throw new Error("Ambiguous native overlay identity");
-            return identity !== null;
+            return coldCompanion(app);
         },
         mainMenu: main,
-        gameBar: (requestId, appId, pressed) => call$1("request_uwp_gamebar", { requestId, appId, pressed }),
         acquire: (id, appId) => send("acquire", id, appId), close: id => send("close", id), release: id => send("release", id),
         requestId: () => `${prefix}-${++serial}`,
         warn: error => console.warn("[Playhub QAM] Controlled focus unavailable", error),
     });
-    const patch = (object, method, handler) => {
+    let mirrorApp = 0;
+    const mirror = createSteamMirrorOverlay({
+        runningApp,
+        prepare: async (app) => {
+            const revision = sessionRevision, started = performance.now();
+            logToAgent(`Steam mirror Guide: prepare-start app=${app} rev=${revision}`);
+            try {
+                const expected = ownedDispatcher?.expected(app);
+                if (observedRunningApp() !== app && !expected)
+                    return { ok: false };
+                const reply = expected
+                    ? await call("prepare_owned_mirror_presentation", app, expected)
+                    : await call("prepare_mirror_presentation", app);
+                if (expected && reply?.ok !== true && !reply?.mirror)
+                    ownedDispatcher?.invalidate();
+                logToAgent(`Steam mirror Guide: prepare-result ok=${reply?.ok === true} receipt=${Boolean(reply?.mirror)} state=${reply?.mirror?.state ?? "none"} elapsed=${Math.round(performance.now() - started)} revChanged=${revision !== sessionRevision} disposed=${disposed}`);
+                // Return even a canceled receipt: the coordinator must adopt and retire
+                // the exact delivered generation before evaluating its own liveness.
+                return reply;
+            }
+            catch (error) {
+                logToAgent(`Steam mirror Guide: prepare-rejected elapsed=${Math.round(performance.now() - started)} revChanged=${revision !== sessionRevision}`);
+                throw error;
+            }
+        },
+        admitted: (app, presentation) => {
+            if (!disposed && runningApp() === app) {
+                mirrorApp = app;
+                onMirrorAdmitted?.(app, presentation);
+            }
+        },
+        read: (app, overlayPid) => call("get_mirror_presentation", app, overlayPid),
+        command: (app, overlayPid, action, expected) => call("set_mirror_presentation", app, overlayPid, action, expected),
+        browserInfo: () => steam.Overlay.GetOverlayBrowserInfo(),
+        windows: () => windowStore()?.OverlayWindows,
+        navigation: () => window.SteamUIStore?.NavigationManager ?? ui.Router?.NavigationManager,
+        setOverlayState: (gameId, state) => Promise.resolve(steam.Overlay.SetOverlayState(gameId, state)),
+        delay: ms => new Promise(resolve => window.setTimeout(resolve, ms)),
+        now: () => Date.now(),
+        trace: stage => logToAgent(`Steam mirror: ${stage}`),
+    });
+    const mirrorContinuationTimer = typeof window.setInterval === "function" ? window.setInterval(() => { if (!disposed && mirror.active)
+        void mirror.poll(); }, 50) : undefined;
+    const nativeGame = createSteamNativeGameOverlay({
+        scope: () => ({ app: runningApp(), observedApp: observedUiApp(), revision: sessionRevision, disposed }),
+        now: () => performance.now(),
+        proof: app => call("get_native_game_overlay", app, ownedDispatcher?.expected(app)),
+        input: request => call("set_native_game_overlay_input", request.appId, request.action, request.expectedNative, request.browser, request.ownerToken, request.generation, request.callback),
+        browserInfo: () => steam.Overlay.GetOverlayBrowserInfo(), windowStore,
+        schedule: (callback, ms) => window.setTimeout(callback, ms), cancel: timer => window.clearTimeout(timer),
+        admitted: (app, proof, browser) => { if (!disposed && runningApp() === app)
+            onNativeAdmitted?.(app, proof, browser); },
+        coordinateOriginalMenu: (target, current) => coordinateNativeOriginalMenus(target, current, () => systemGuideObserverCurrent && !disposed && canUseCompanion, stage => logToAgent(`Steam native game overlay: ${stage}`)),
+        coordinateOriginalClose: (fullGameId, rendererToken, current, target, cleanupCurrent) => coordinateNativeOriginalClose(steam.Overlay, fullGameId, rendererToken, current, target, cleanupCurrent),
+        setOverlayState: (gameId, state) => Promise.resolve(steam.Overlay.SetOverlayState(gameId, state)),
+        trace: stage => logToAgent(`Steam native game overlay: ${stage}`),
+    });
+    const routeGuide = async (menu) => {
+        const app = runningApp(), revision = sessionRevision;
+        const result = await nativeGame.guide(menu);
+        // Only the server's positive actual-host absence allows the existing mirror path.
+        if (result?.handled === false && !disposed && runningApp() === app && sessionRevision === revision)
+            return mirror.guide(menu);
+    };
+    const guideAdmission = createSteamMirrorGuideAdmission({
+        scope: () => ({ app: runningApp(), revision: sessionRevision, disposed, enabled: canUseCompanion }),
+        now: () => performance.now(),
+        guide: routeGuide, pending: () => nativeGame.pendingApp === runningApp() || mirror.pendingApp === runningApp(),
+        active: () => nativeGame.active || mirror.active,
+        verifiedAbsent: async (app) => (await coldCompanion(app)) === false,
+        trace: stage => logToAgent(`Steam mirror Guide: ${stage}`),
+    });
+    ownedDispatcher = createOwnedLaunchDispatcher({
+        scope: () => {
+            const store = window.SteamUIStore ?? ui.Router;
+            const apps = store?.RunningApps;
+            const receiver = readSteamGuideReceiver(mainWindow(), store?.ActiveWindowInstance ?? windowStore()?.ActiveWindowInstance, window.FocusedAppWindowStore);
+            return { receiver, observedApp: observedUiApp(), revision: sessionRevision, context: windowStore(), disposed, enabled: canUseCompanion,
+                runningShortcuts: Array.isArray(apps) ? apps.slice(0, 9).map(value => steamAppId(value?.appid)).filter(value => value >= 0x80000000) : [] };
+        },
+        now: () => performance.now(),
+        discover: (observed, candidate) => call("get_owned_game_route", observed, candidate),
+        signal: (origin, menu, fallback) => guideAdmission.signal(origin, menu, fallback),
+        schedule: (callback, ms) => window.setTimeout(callback, ms), cancel: timer => window.clearTimeout(timer),
+        trace: stage => logToAgent(`Steam owned launch: ${stage}`),
+    });
+    const releaseGameConsumer = canUseCompanion ? registerOwnedGameConsumer({
+        app: () => ownedDispatcher.app(), expected: app => ownedDispatcher.expected(app), resolveApp: () => ownedDispatcher.resolveApp(),
+        nativeOverlay: app => nativeGame.visibility(app),
+    }) : () => { };
+    const companion = canUseCompanion ? createXboxCompanionOverlay({
+        runningApp,
+        browserInfo: () => steam.Overlay.GetOverlayBrowserInfo(),
+        requestColdOpen: async (app) => {
+            const revision = sessionRevision;
+            if (disposed || runningApp() !== app)
+                return { ok: false };
+            // RequestOpen authenticates the exact live game/companion and native
+            // foreground before writing its one-shot pipe. A second 300 ms
+            // availability probe here can reject a healthy authenticated request.
+            const result = await call("request_xbox_steam_overlay", app);
+            if (disposed || sessionRevision !== revision || runningApp() !== app)
+                return { ok: false };
+            return result;
+        },
+        verify,
+        windows: () => windowStore()?.OverlayWindows,
+        setOverlayState: (gameId, state) => Promise.resolve(steam.Overlay.SetOverlayState(gameId, state)),
+        observeMenu: (menu, changed) => {
+            if (typeof ui.afterPatch !== "function")
+                return undefined;
+            const owned = [];
+            const stop = () => {
+                for (const patch of owned.splice(0).reverse())
+                    try {
+                        patch.unpatch();
+                    }
+                    catch { }
+            };
+            try {
+                for (const method of ["OpenSideMenu", "CloseSideMenus"]) {
+                    if (typeof menu?.[method] !== "function") {
+                        stop();
+                        return undefined;
+                    }
+                    owned.push(ui.afterPatch(menu, method, (_args, result) => { changed(); return result; }));
+                }
+                return stop;
+            }
+            catch {
+                stop();
+                return undefined;
+            }
+        },
+        delay: ms => new Promise(resolve => window.setTimeout(resolve, ms)),
+        now: () => Date.now(),
+        onColdRecovery: () => logToAgent("Xbox Steam companion requested the exact Valve overlay state after cold Guide."),
+        trace: stage => logToAgent(`Steam overlay recovery: ${stage}`),
+    }) : undefined;
+    const fallback = createSteamOverlayFallback({
+        runningApp,
+        visible: async (app, menu) => {
+            if (mirrorApp === app) {
+                const proof = await call("get_mirror_presentation", app, 0);
+                if (disposed || runningApp() !== app)
+                    return false;
+                return proof?.ok === true && proof.mirror?.protocol === 1 && proof.mirror.state === "shown"
+                    && proof.mirror.shownCurrent === true && proof.mirror.leaseCurrent === true
+                    && (proof.mirror.actualScope === 1 || proof.mirror.actualScope === 3 && proof.mirror.ownedForegroundPhase === 1);
+            }
+            const infos = await steam.Overlay.GetOverlayBrowserInfo();
+            if (!Array.isArray(infos))
+                throw new Error("Overlay visibility unavailable");
+            const windows = windowStore()?.OverlayWindows;
+            if (!Array.isArray(windows))
+                return false;
+            for (const candidate of windows) {
+                const info = candidate?.params?.browserInfo;
+                if (candidate?.IsGamepadUIOverlayWindow?.() !== true
+                    || !matchesOverlayApp({ appID: app, gameID: String(info?.m_gameID ?? "") }, app)
+                    || String(info?.m_gameID ?? "") !== ((BigInt(app) << 32n) | 0x02000000n).toString()
+                    || !infos.some(value => Number(value?.unPID) === Number(info.m_unPID)
+                        && Number(value?.nBrowserID) === Number(info.m_nBrowserID) && matchesOverlayApp(value, app)))
+                    continue;
+                const browser = candidate.BrowserWindow ?? candidate.m_BrowserWindow;
+                const menuStore = candidate.MenuStore;
+                const side = menuStore?.GetOpenSideMenu?.();
+                if (!browser?.document?.body || browser.closed || side !== (menu === "quick" ? 2 : 1))
+                    continue;
+                // CEF can retain document focus after Back has returned to the game.
+                // Only the native exact companion proof can confirm a usable overlay.
+                const proof = await verify(app, Number(info.m_unPID), false, true);
+                if (!disposed && runningApp() === app && Array.isArray(windowStore()?.OverlayWindows)
+                    && windowStore().OverlayWindows.includes(candidate)
+                    && candidate.MenuStore === menuStore && menuStore?.GetOpenSideMenu?.() === (menu === "quick" ? 2 : 1)
+                    && (candidate.BrowserWindow ?? candidate.m_BrowserWindow) === browser && !browser.closed
+                    && proof?.ok && shortcutAppId(proof.gameId) === app && proof.overlayPid === Number(info.m_unPID)
+                    && Number.isSafeInteger(proof.companionPid) && Number(proof.companionPid) > 0
+                    && Number(proof.companionPid) <= 0xffffffff
+                    && proof.foregroundScope === 2 && proof.overlayOpen === true)
+                    return true;
+            }
+            return false;
+        },
+        recover: async (app, menu) => {
+            if (!disposed && canUseCompanion && runningApp() === app) {
+                // The mirror-only endpoint authenticates before its one delivery. An
+                // absent/unknown mirror cannot trigger the legacy keyboard-open path.
+                const revision = sessionRevision;
+                const result = await nativeGame.recover(menu);
+                if (result?.handled === false && !disposed && runningApp() === app && sessionRevision === revision)
+                    await mirror.recover(menu);
+            }
+        },
+        delay: ms => new Promise(resolve => window.setTimeout(resolve, ms)),
+    });
+    const applicationSelected = () => {
+        sessionRevision++;
+        guideAdmission.invalidate();
+        ownedDispatcher?.invalidate();
+        homeRevision++;
+        coldProbe = undefined;
+        mirrorApp = 0;
+        void nativeGame.invalidate();
+        void mirror.invalidate();
+        companion?.invalidate();
+        fallback.invalidate();
+        control.applicationSelected();
+    };
+    const register = (registration) => {
+        patches.push({ unpatch: () => {
+                if (typeof registration === "function")
+                    registration();
+                else if (typeof registration?.unregister === "function")
+                    registration.unregister();
+                else
+                    registration?.Unregister?.();
+            } });
+    };
+    const patch = (object, method, handler, list = patches) => {
         if (typeof object?.[method] === "function")
-            patches.push(ui.afterPatch(object, method, handler));
+            list.push(ui.afterPatch(object, method, handler));
+    };
+    const unpatch = (list) => {
+        for (const entry of list.splice(0).reverse())
+            try {
+                entry.unpatch();
+            }
+            catch { }
+    };
+    const refreshMainHooks = () => {
+        if (disposed)
+            return;
+        const store = windowStore();
+        if (store !== observedStore) {
+            unpatch(storePatches);
+            observedStore = store;
+            try {
+                // Steam updates the desired-window map synchronously in this method.
+                patch(store, "UpdateDesiredWindows", (_args, result) => {
+                    try {
+                        windowChanged();
+                    }
+                    catch (error) {
+                        console.warn("[Playhub QAM] Steam window refresh unavailable", error);
+                    }
+                    return result;
+                }, storePatches);
+            }
+            catch (error) {
+                console.warn("[Playhub QAM] Steam window store hook unavailable", error);
+            }
+        }
+        const menu = main();
+        const instance = menu ? mainWindow() : undefined;
+        if (instance === attachedMain && menu === attachedMenu)
+            return;
+        if (attachedMain)
+            applicationSelected();
+        unpatch(mainPatches);
+        attachedMain = instance;
+        attachedMenu = menu;
+        if (!instance || !menu)
+            return;
+        const current = () => !disposed && mainWindow() === instance && main() === menu;
+        try {
+            if (companion && typeof ui.replacePatch === "function" && typeof ui.callOriginal === "symbol") {
+                for (const [method, intent, origin] of [["OnHomeButtonPressed", "main", "home"],
+                    ["OnQuickAccessButtonPressed", "quick", "quick"]]) {
+                    if (typeof instance[method] !== "function")
+                        continue;
+                    const ownedPatch = ui.replacePatch(instance, method, function (args) {
+                        if (!current())
+                            return ui.callOriginal;
+                        const version = ++homeRevision;
+                        const fallback = () => {
+                            if (current() && version === homeRevision)
+                                ownedPatch.original.apply(this, args);
+                        };
+                        return ownedDispatcher.signal(origin, intent, fallback) ? undefined : ui.callOriginal;
+                    });
+                    mainPatches.push(ownedPatch);
+                }
+            }
+            patch(menu, "OpenSideMenu", (args, result) => {
+                const side = Number(args[0]);
+                if (current() && (side === 1 || side === 2) && menu.GetOpenSideMenu() === side)
+                    control.opened(menu.GetQuickAccessTab?.(), side);
+                return result;
+            }, mainPatches);
+            patch(menu, "CloseSideMenus", (_args, result) => {
+                if (current() && menu.GetOpenSideMenu() === 0) {
+                    homeRevision++;
+                    control.closed();
+                }
+                return result;
+            }, mainPatches);
+        }
+        catch (error) {
+            unpatch(mainPatches);
+            console.warn("[Playhub QAM] Steam main window hooks unavailable", error);
+        }
+    };
+    const cancelMainRefresh = () => {
+        for (const timer of refreshTimers)
+            window.clearTimeout(timer);
+        refreshTimers = [];
+    };
+    const windowChanged = () => {
+        if (disposed)
+            return;
+        cancelMainRefresh();
+        refreshMainHooks();
+        // The Steam notification can precede creation of the replacement browser.
+        refreshTimers = mainWindowRefreshDelays.map(delay => window.setTimeout(refreshMainHooks, delay));
+    };
+    const dispose = () => {
+        disposed = true;
+        systemGuideObserverCurrent = false;
+        if (mirrorContinuationTimer !== undefined)
+            window.clearInterval(mirrorContinuationTimer);
+        guideAdmission.invalidate();
+        releaseGameConsumer();
+        ownedDispatcher?.dispose();
+        cancelMainRefresh();
+        companion?.dispose();
+        void nativeGame.dispose();
+        void mirror.dispose();
+        fallback.dispose();
+        control.dispose();
+        unpatch(mainPatches);
+        unpatch(storePatches);
+        unpatch(patches);
     };
     try {
         // These are global Steam menu events, independent of the mounted Decky tab.
-        const menu = main();
-        patch(menu, "OpenSideMenu", (args, result) => {
-            const side = Number(args[0]);
-            if ((side === 1 || side === 2) && menu.GetOpenSideMenu() === side)
-                control.opened(menu.GetQuickAccessTab?.(), side);
-            return result;
-        });
-        patch(menu, "CloseSideMenus", (_args, result) => {
-            if (menu.GetOpenSideMenu() === 0)
-                control.closed();
-            return result;
-        });
-        patch(ui.Navigation, "OpenQuickAccessMenu", (args, result) => { control.opened(args[0]); return result; });
+        refreshMainHooks();
+        if (!attachedMain)
+            windowChanged();
+        // Steam owns the native desired-window callback slot. Observe its completed
+        // store update above so Desktop/Big Picture creation keeps that callback.
+        patch(ui.Navigation, "OpenQuickAccessMenu", (args, result) => { refreshMainHooks(); control.opened(args[0]); return result; });
         // Library navigation selects Steam/an app. QAM pages (including Playhub
         // Dashboard) must retain the handoff while the user works inside them.
         const navigating = (args) => {
             if (typeof args[0] === "string" && /^\/library(?:\/|$)/.test(args[0]))
-                control.applicationSelected();
+                applicationSelected();
         };
         if (typeof ui.Router?.Navigate === "function")
             patches.push(ui.beforePatch(ui.Router, "Navigate", navigating));
         if (typeof ui.Navigation?.Navigate === "function")
             patches.push(ui.beforePatch(ui.Navigation, "Navigate", navigating));
         if (typeof steam?.Apps?.RunGame === "function")
-            patches.push(ui.beforePatch(steam.Apps, "RunGame", () => control.applicationSelected()));
+            patches.push(ui.beforePatch(steam.Apps, "RunGame", (args) => {
+                refreshMainHooks();
+                applicationSelected();
+                ownedDispatcher?.noteLaunch(args[0]);
+            }));
+        try {
+            patch(steam?.Apps, "RaiseWindowForGame", (args, result) => {
+                const appId = shortcutAppId(args[0]);
+                if (appId && main())
+                    void call("resume_xbox_game", appId).catch(() => { });
+                return result;
+            });
+        }
+        catch (error) {
+            console.warn("[Playhub] Xbox resume hook unavailable", error);
+        }
         // The event's nAppID describes the input configuration (the real desktop
         // layout can report 413080 or 0), not necessarily the running shortcut.
         // Native acquire verifies the actual foreground game and selected app.
         const system = steam?.System?.UI;
         if (typeof system?.RegisterForSystemKeyEvents === "function") {
-            const registration = system.RegisterForSystemKeyEvents((event) => control.systemKey(event));
-            patches.push({ unpatch: () => {
-                    if (typeof registration === "function")
-                        registration();
-                    else if (typeof registration?.unregister === "function")
-                        registration.unregister();
+            const systemGuideRegistration = system.RegisterForSystemKeyEvents((event) => {
+                refreshMainHooks();
+                runningApp();
+                if (canUseCompanion && (event?.eKey === 0 || event?.eKey === 1) && event.ePressed !== false && event.bPressed !== false) {
+                    if (ownedDispatcher.signal("system", event.eKey === 1 ? "quick" : "main"))
+                        return; // One common pipeline; no parallel legacy route or replay.
+                }
+                companion?.guide(event);
+                fallback.guide(event);
+                control.systemKey(event);
+            });
+            register(systemGuideRegistration);
+            systemGuideObserverCurrent = typeof systemGuideRegistration === "function" || typeof systemGuideRegistration?.unregister === "function"
+                || typeof systemGuideRegistration?.Unregister === "function";
+        }
+        if (companion) {
+            try {
+                register(steam.Overlay.RegisterForOverlayActivated((pid, appId, active, userInitiated) => {
+                    if (nativeGame.owns(runningApp())) {
+                        nativeGame.activated(pid, appId, active);
+                        return; // Actual game-host lease never feeds the sidecar/mirror input route.
+                    }
+                    if (mirrorApp === runningApp()) {
+                        if (active === false && mirror.shown && userInitiated !== false
+                            && matchesOverlayApp({ appID: appId, gameID: ((BigInt(runningApp()) << 32n) | 0x02000000n).toString() }, runningApp()))
+                            void mirror.close();
+                    }
                     else
-                        registration?.Unregister?.();
-                } });
+                        companion.activated(pid, appId, active, userInitiated);
+                    if (active === false && matchesOverlayApp({ appID: appId,
+                        gameID: ((BigInt(runningApp()) << 32n) | 0x02000000n).toString() }, runningApp()))
+                        fallback.invalidate();
+                }));
+            }
+            catch (error) {
+                canUseCompanion = false;
+                companion.dispose();
+                console.warn("[Playhub] Xbox companion overlay events unavailable", error);
+            }
         }
     }
     catch (error) {
-        control.dispose();
-        for (const entry of patches.reverse())
-            try {
-                entry.unpatch();
-            }
-            catch { }
+        dispose();
         console.warn("[Playhub QAM] Menu hooks unavailable", error);
         return () => { };
     }
-    return () => {
-        control.dispose();
-        for (const entry of patches.reverse())
+    return dispose;
+}
+
+// Steam pairs overlay activation with ForceConfiguratorFocus(active). Its
+// deactivation handler can lose the overlay instance before sending false.
+// This receipt authorizes only one cleanup after the retained game has exited;
+// it never represents a getter for Steam's unobservable native focus flag.
+function createSteamConfiguratorReturn() {
+    let claim;
+    return {
+        admitted(app, mirror, input) {
+            if (!Number.isInteger(app) || app < 0x80000000 || app > 0xffffffff || !input
+                || typeof input.ForceConfiguratorFocus !== "function" || mirror.protocol !== 1
+                || (mirror.state === "preparing" ? mirror.actualScope !== 0 && mirror.actualScope !== 1
+                    : mirror.actualScope !== 1 && !(mirror.actualScope === 3 && mirror.ownedForegroundPhase === 1 && mirror.state === "shown"
+                        && mirror.preparedCurrent === true && mirror.shownCurrent === true && mirror.leaseCurrent === true))
+                || !["preparing", "prepared", "shown"].includes(mirror.state)
+                || !/^[0-9a-f]{64}$/i.test(mirror.sessionId) || !Number.isInteger(mirror.gamePid) || mirror.gamePid <= 0
+                || mirror.gamePid > 0xffffffff || !/^[1-9]\d{0,19}$/.test(mirror.gameBirth)
+                || BigInt(mirror.gameBirth) > 0xffffffffffffffffn
+                || mirror.gameId !== ((BigInt(app) << 32n) | 0x02000000n).toString())
+                return;
+            if (claim?.app === app && claim.session === mirror.sessionId && claim.gamePid === mirror.gamePid
+                && claim.gameBirth === mirror.gameBirth && claim.input === input)
+                return;
+            claim = { app, session: mirror.sessionId, gamePid: mirror.gamePid, gameBirth: mirror.gameBirth, input, attempted: false };
+        },
+        nativeAdmitted(app, native, browser, input) {
+            // An original-game-host admission is cleanup-only. It is never a MirrorPresentation.
+            if (!Number.isInteger(app) || app < 0x80000000 || app > 0xffffffff || !input
+                || typeof input.ForceConfiguratorFocus !== "function" || native.protocol !== 1 || native.routingOnly !== true
+                || native.canonicalAppId !== app || native.fullGameId !== ((BigInt(app) << 32n) | 0x02000000n).toString()
+                || typeof native.sessionId !== "string" || !/^[0-9a-f]{64}$/i.test(native.sessionId)
+                || typeof native.observedGameId !== "string" || !/^[1-9]\d{0,19}$/.test(native.observedGameId)
+                || BigInt(native.observedGameId) > 0xffffffffffffffffn || !Number.isInteger(native.gamePid)
+                || native.gamePid <= 0 || native.gamePid > 0xffffffff || typeof native.gameBirth !== "string" || !/^[1-9]\d{0,19}$/.test(native.gameBirth)
+                || BigInt(native.gameBirth) > 0xffffffffffffffffn || !Number.isInteger(native.overlayPid) || native.overlayPid <= 0
+                || native.overlayPid > 0xffffffff || native.overlayPid === native.companionPid || native.overlayPid === native.gamePid
+                || browser.overlayPid !== native.overlayPid || !Number.isInteger(browser.browserId) || browser.browserId <= 0
+                || browser.browserId > 0xffffffff || !Number.isInteger(browser.appId) || browser.appId < 0 || browser.appId > 0xffffffff)
+                return;
+            if (claim?.app === app && claim.session === native.sessionId && claim.gamePid === native.gamePid
+                && claim.gameBirth === native.gameBirth && claim.input === input)
+                return;
+            claim = { app, session: native.sessionId, gamePid: native.gamePid, gameBirth: native.gameBirth, input, attempted: false };
+        },
+        forget() { claim = undefined; },
+        pending(app) { return claim?.app === app && claim.attempted === false; },
+        async release(app, context, current, input) {
+            const held = claim;
+            const valid = () => {
+                const currentNow = current() && context.isCurrent();
+                return currentNow && claim === held && held != null && !held.attempted && held.app === app
+                    && context.exitedGame?.pid === held.gamePid && context.exitedGame.birth === held.gameBirth
+                    && !context.signal.aborted;
+            };
+            if (!held || !valid() || input() !== held.input)
+                return false;
             try {
-                entry.unpatch();
+                // The native service revalidates the retained process death, canonical
+                // app, Steam window PID/birth and actual foreground after this await.
+                if (!await context.confirmForeground() || !valid())
+                    return false;
+                const receiver = input(), call = receiver?.ForceConfiguratorFocus;
+                if (receiver !== held.input || typeof call !== "function" || !valid())
+                    return false;
+                if (input() !== receiver || !valid())
+                    return false;
+                // Reserve before dispatch: a synchronous callback or an ambiguous throw
+                // cannot issue a second global-lane release for this owned session.
+                held.attempted = true;
+                call.call(receiver, false);
+                return true; // Dispatch only. A real native controller event is proof.
             }
-            catch { }
+            catch {
+                return false;
+            }
+        },
     };
 }
 
@@ -37253,118 +44198,388 @@ function openPluginStore() {
         console.warn("Playhub Plugin Store: rotta non raggiungibile", error);
     }
 }
-function restoreSteamNavigationFocus(reason) {
-    const store = _global_DFL?.Router?.WindowStore;
-    const main = store?.GamepadUIMainWindowInstance;
+function currentSteamGame() {
+    return steamAppId(window.SteamUIStore?.MainRunningAppID ?? _global_DFL.Router?.MainRunningAppID);
+}
+function steamWindowStore() {
+    return window.SteamUIStore?.WindowStore ?? _global_DFL?.Router?.WindowStore;
+}
+function bigPictureMainWindow() {
+    const main = steamWindowStore()?.GamepadUIMainWindowInstance;
+    return main?.IsGamepadUIOverlayWindow?.() === false ? main : undefined;
+}
+function steamNavigationController() {
+    return _global_DFL?.getFocusNavController?.() ?? window.FocusNavController;
+}
+function returnOverlayWindows(appId) {
+    const store = steamWindowStore();
+    const windows = store?.OverlayWindows;
+    return Array.isArray(windows) ? windows : store?.GetOverlayInstances?.(appId);
+}
+function matchesReturnOverlay(overlay, appId) {
+    const info = overlay.params?.browserInfo;
+    return matchesOverlayApp({ appID: info?.m_unAppID, gameID: info?.m_gameID }, appId);
+}
+function restoreSteamNavigationFocus(reason, exitedApp, retainedOverlay, nativeForegroundConfirmed = false) {
+    const main = bigPictureMainWindow();
     const browserWindow = main?.m_BrowserWindow ?? main?.BrowserWindow;
-    const context = main?.m_FocusNavContext;
-    if (!main || !browserWindow || !context)
+    const context = main?.GetFocusNavContext?.() ?? main?.m_FocusNavContext;
+    const canRestore = () => bigPictureMainWindow() === main && isSteamNavigationReturnApp(currentSteamGame(), exitedApp);
+    if (!main || !browserWindow || !context || !canRestore() || context.BIsGamepadInputSuppressed?.() === true)
         return false;
-    if (browserWindow.document?.querySelector?.(".ph-dashboard")) {
-        return focusDashboardSurface();
-    }
-    const controller = _global_DFL?.getFocusNavController?.() ?? window.FocusNavController;
-    const hasRealFocus = () => {
-        const activeContext = controller?.GetActiveContext?.() ?? controller?.m_ActiveContext;
-        const active = activeContext === context || context.BIsActive?.() === true;
-        const documentFocused = browserWindow.document?.hasFocus?.() === true;
-        const navigationFocused = !!browserWindow.document?.querySelector?.(".gpfocus");
-        return active && documentFocused && navigationFocused;
-    };
-    try {
-        browserWindow.SteamClient?.Window?.BringToFront?.(1);
-    }
-    catch { }
-    try {
-        browserWindow.SteamClient?.Window?.MarkLastFocused?.();
-    }
-    catch { }
-    if (hasRealFocus())
-        return true;
-    try {
-        browserWindow.focus?.();
-    }
-    catch { }
-    try {
-        if (!context.BIsActive?.())
-            context.OnActivate?.(browserWindow);
-        main.FocusApplicationRoot?.();
-        browserWindow.SteamClient?.Window?.SetKeyFocus?.(true);
-    }
-    catch {
-        return false;
-    }
-    const focused = hasRealFocus();
-    if (focused)
-        logToAgent(`focus Steam ripristinato (${reason})`);
+    const controller = steamNavigationController();
+    const activeContext = () => typeof controller?.GetActiveContext === "function"
+        ? controller.GetActiveContext() : controller?.m_ActiveContext;
+    const pointsToMain = () => controller ? activeContext() === context : context.BIsActive?.() === true;
+    const ownsContext = () => pointsToMain() && context.BIsActive?.() !== false
+        && (context.ActiveWindow == null || context.ActiveWindow === browserWindow);
+    const nativeForeground = () => nativeForegroundConfirmed && canRestore();
+    const mayFocusMain = () => canRestore() && (browserWindow.document?.hasFocus?.() === true || nativeForeground());
+    const focused = recoverSteamNavigation({
+        hasDocumentFocus: () => canRestore() && browserWindow.document?.hasFocus?.() === true,
+        hasNativeForeground: nativeForeground,
+        hasNavigationFocus: () => {
+            if (!canRestore() || !ownsContext())
+                return false;
+            if (typeof controller?.GetActiveNavTree === "function") {
+                const tree = controller.GetActiveNavTree();
+                return Boolean(tree && hasVisibleSteamNavigationFocus(browserWindow.document, tree));
+            }
+            return hasVisibleSteamNavigationFocus(browserWindow.document, context.m_LastActiveFocusNavTree ?? context.m_LastActiveNavTree);
+        },
+        requestKeyFocus: () => {
+            if (!canRestore() || bigPictureMainWindow() !== main)
+                return;
+            // Foregrounding SDL alone can leave Win32 focus on the container. Steam's
+            // own activation targets its CEF child as well, under the fresh exit proof.
+            if (nativeForegroundConfirmed)
+                browserWindow.SteamClient?.Window?.BringToFront?.(1);
+            if (canRestore())
+                browserWindow.SteamClient?.Window?.SetKeyFocus?.(true);
+        },
+        focusApplication: () => {
+            if (!canRestore())
+                return;
+            if (!ownsContext()) {
+                const previous = activeContext();
+                const released = previous != null && previous !== context && releaseExitedSteamOverlay(exitedApp, browserWindow, canRestore, activeContext, () => controller?.GetActiveNavTree?.(), returnOverlayWindows, retainedOverlay, matchesReturnOverlay, nativeForeground);
+                if (previous != null && previous !== context && !released)
+                    return;
+                const mayActivateMain = () => mayFocusMain() && (activeContext() == null || activeContext() === context);
+                if (!mayActivateMain())
+                    return;
+                if (!ownsContext())
+                    context.OnActivate?.(browserWindow);
+                // An overlay can leave the main context internally active even though
+                // Steam's navigation controller no longer points to it.
+                if (!ownsContext() && mayActivateMain()
+                    && context.BIsActive?.() === true && context.ActiveWindow === browserWindow) {
+                    context.OnDeactivate?.(browserWindow);
+                    if (mayActivateMain())
+                        context.OnActivate?.(browserWindow);
+                }
+            }
+            if (!canRestore() || !ownsContext())
+                return;
+            if (browserWindow.document?.querySelector?.(".ph-dashboard"))
+                focusDashboardSurface();
+            else {
+                main.FocusApplicationRoot?.();
+                const tree = controller?.GetActiveNavTree?.();
+                if (canRestore() && ownsContext() && exitedApp > 0
+                    && main.MenuStore?.GetOpenSideMenu?.() === 0 && !main.m_ModalManager?.modals?.length
+                    && !hasVisibleSteamNavigationFocus(browserWindow.document, tree)) {
+                    // Steam's root activation preserves an existing node, even when that
+                    // node belongs to a hidden running-game panel. Focus the actual game
+                    // action on this exact route before declaring navigation restored.
+                    const classes = _global_DFL.findModule?.((value) => value?.AppActionButton && value?.ActionButtonAndStatusPanel && value?.AppDetailSectionList);
+                    focusReturnedSteamGameAction(browserWindow.document, main.m_locationPathname, exitedApp, undefined, classes);
+                }
+            }
+        },
+    });
     return focused;
 }
-function installSteamNavigationFocusRecovery() {
-    const timers = new Set();
-    const clearTimers = () => {
-        timers.forEach((timer) => window.clearTimeout(timer));
-        timers.clear();
-    };
-    const schedule = (reason) => {
-        clearTimers();
-        [0, 100, 280, 650].forEach((delay) => {
-            const timer = window.setTimeout(() => {
-                timers.delete(timer);
-                if (restoreSteamNavigationFocus(reason))
-                    clearTimers();
-            }, delay);
-            timers.add(timer);
-        });
-    };
-    return {
-        schedule,
-        uninstall: clearTimers,
-    };
-}
-function startOpenRequestWatcher(onFocusRecovery) {
+function startOpenRequestWatcher(configuratorReturn) {
     let alive = true;
     let inFlight = false;
-    let focusRecoveryVersion;
-    let focusRecoveryPending = false;
-    const timer = window.setInterval(async () => {
-        if (!alive || inFlight)
+    let runAgain = false;
+    let launchRevision = 0;
+    let armGame = 0, fastArmUntil = 0, nextArm = 0, armed = false, arming = false;
+    let launchPatch;
+    const steam = window.SteamClient;
+    const overlayScope = createSteamOverlayReturnScope(matchesReturnOverlay);
+    const rememberOverlay = (appId) => {
+        if (appId <= 0) {
+            overlayScope.observe(appId, undefined);
             return;
+        }
+        // A new RunGame can precede Steam clearing the old app's overlay list.
+        if (launchRevision > 0 && (!armed || armGame !== appId)) {
+            overlayScope.observe(appId, undefined);
+            return;
+        }
+        try {
+            const controller = steamNavigationController();
+            overlayScope.observe(appId, returnOverlayWindows(appId), controller?.GetActiveContext?.() ?? controller?.m_ActiveContext);
+        }
+        catch { /* Steam can remove the browser while the event is delivered. */ }
+    };
+    const layout = typeof steam?.URL?.ExecuteSteamURL === "function"
+        ? createSteamReturnControllerLayout(url => {
+            try {
+                steam.URL.ExecuteSteamURL(url);
+                logToAgent(url.endsWith("/769") ? "Steam Input menu layout restored after game exit" : "Steam Input automatic layout restored");
+            }
+            catch (error) {
+                console.warn("Playhub Dashboard: Steam Input layout unavailable", error);
+            }
+        }, (callback, delay) => window.setTimeout(callback, delay), timer => window.clearTimeout(timer), () => activeSteamController(window.ControllerStore))
+        : undefined;
+    const keyFocusReset = createSteamKeyFocusReset((callback, delay) => window.setTimeout(callback, delay), timer => window.clearTimeout(timer));
+    const focusRecovery = createSteamNavigationRecovery(confirmBigPictureForeground, async (appId, usedCompanion, recovery) => {
+        const target = bigPictureMainWindow();
+        const targetWindow = target?.m_BrowserWindow ?? target?.BrowserWindow;
+        const targetDocument = targetWindow?.document;
+        const mayResetKeys = () => {
+            const runningStore = window.SteamUIStore ?? _global_DFL.Router;
+            const currentWindow = target?.m_BrowserWindow ?? target?.BrowserWindow;
+            const context = target?.GetFocusNavContext?.() ?? target?.m_FocusNavContext;
+            return alive && recovery.isCurrent() && appId > 0 && target && bigPictureMainWindow() === target
+                && targetWindow && targetWindow.closed !== true && currentWindow === targetWindow
+                && targetWindow.document === targetDocument && targetDocument
+                && isConfirmedSteamIdle(runningStore?.MainRunningAppID, runningStore?.IsAnyAppRunning?.())
+                && context && context.RootWindow === targetWindow && context.BIsGamepadInputSuppressed?.() !== true
+                && target.MenuStore?.GetOpenSideMenu?.() === 0 && !target.m_ModalManager?.modals?.length
+                && typeof targetWindow.SteamClient?.Window?.SetKeyFocus === "function";
+        };
+        if (mayResetKeys()) {
+            await keyFocusReset.reset({
+                context: recovery,
+                canRestore: mayResetKeys,
+                hasRealFocus: () => targetDocument?.hasFocus?.() === true
+                    && targetDocument.body?.classList?.contains("WindowFocus") === true,
+                setKeyFocus: value => targetWindow.SteamClient.Window.SetKeyFocus(value),
+            });
+        }
+        if (!alive || !recovery.isCurrent() || !await recovery.confirmForeground())
+            return false;
+        const focused = restoreSteamNavigationFocus("chiusura gioco", launchPatch ? appId : 0, overlayScope.get(appId), true);
+        if (focused)
+            overlayScope.clear();
+        if (launchPatch && appId > 0) {
+            const main = bigPictureMainWindow();
+            const returnedWindow = main?.m_BrowserWindow ?? main?.BrowserWindow;
+            const document = returnedWindow?.document;
+            // A verified exit may leave Steam routing input to the running-game
+            // view while the launcher helper retires.
+            if (currentSteamGame() === appId && (usedCompanion || main?.m_locationPathname === "/apprunning"))
+                layout?.begin(appId, currentSteamGame());
+            if (document?.hasFocus?.() === true && main?.MenuStore?.GetOpenSideMenu?.() === 0 && !main?.m_ModalManager?.modals?.length) {
+                // The running-game page is a placeholder. Windows has confirmed
+                // exit, so replace it with the game page while Steam retires the shortcut.
+                if (main.m_locationPathname === "/apprunning")
+                    navigateReturnedSteamGame(main, appId);
+                // A still-retiring shortcut renders Resume/Stop and can replace the
+                // focused button later. Wait for Steam to retire it before selecting
+                // the actual Play action and completing this recovery.
+                const runningStore = window.SteamUIStore ?? _global_DFL.Router;
+                if (!isConfirmedSteamIdle(runningStore?.MainRunningAppID, runningStore?.IsAnyAppRunning?.()))
+                    return false;
+                if (main.m_locationPathname !== `/library/app/${appId}`) {
+                    navigateReturnedSteamGame(main, appId);
+                    return false;
+                }
+                const classes = _global_DFL.findModule?.((value) => value?.AppActionButton && value?.ActionButtonAndStatusPanel && value?.AppDetailSectionList);
+                const playFocused = focusReturnedSteamGameAction(document, main.m_locationPathname, appId, undefined, classes);
+                const tree = steamNavigationController()?.GetActiveNavTree?.();
+                const button = document.activeElement;
+                const highlighted = button?.matches?.(".gpfocus") === true || Boolean(button?.querySelector?.(".gpfocus"));
+                if (!focused || !playFocused || !document.hasFocus() || !document.body?.classList?.contains("WindowFocus")
+                    || !highlighted || !hasVisibleSteamNavigationFocus(document, tree))
+                    return false;
+                const input = () => window.SteamClient?.Input;
+                const canReleaseConfigurator = () => {
+                    const store = window.SteamUIStore;
+                    const currentMain = bigPictureMainWindow();
+                    const currentWindow = currentMain?.m_BrowserWindow ?? currentMain?.BrowserWindow;
+                    const context = currentMain?.GetFocusNavContext?.() ?? currentMain?.m_FocusNavContext;
+                    const controller = steamNavigationController();
+                    const active = controller?.GetActiveContext?.();
+                    const modals = currentMain?.m_ModalManager?.modals;
+                    const activeTree = controller?.GetActiveNavTree?.();
+                    return alive && recovery.isCurrent() && currentMain === main && currentWindow === returnedWindow && currentWindow?.document === document
+                        && currentWindow?.closed !== true && store?.IsAnyAppRunning?.() === false
+                        && isConfirmedSteamIdle(store?.MainRunningAppID, false)
+                        && currentMain?.m_locationPathname === `/library/app/${appId}`
+                        && context != null && active === context && context.RootWindow === currentWindow
+                        && context.ActiveWindow === currentWindow && context.BIsActive?.() === true
+                        && context.BIsGamepadInputSuppressed?.() === false
+                        && currentMain?.MenuStore?.GetOpenSideMenu?.() === 0 && Array.isArray(modals) && modals.length === 0
+                        && document.hasFocus() === true && document.body?.classList?.contains("WindowFocus") === true
+                        && document.activeElement === button && (button?.matches?.(".gpfocus") === true || Boolean(button?.querySelector?.(".gpfocus")))
+                        && hasVisibleSteamNavigationFocus(document, activeTree);
+                };
+                if (await configuratorReturn.release(appId, recovery, canReleaseConfigurator, input))
+                    logToAgent("Steam native configurator focus released after owned mirror game exit");
+                if (!alive || !recovery.isCurrent() || configuratorReturn.pending(appId))
+                    return false;
+                logToAgent("Steam Play action focused after game exit");
+                return true;
+            }
+            return false;
+        }
+        return focused;
+    }, currentSteamGame);
+    const apps = steam?.Apps;
+    try {
+        if (typeof apps?.RunGame === "function" && typeof _global_DFL.beforePatch === "function") {
+            launchPatch = _global_DFL.beforePatch(apps, "RunGame", () => {
+                configuratorReturn.forget();
+                layout?.release();
+                overlayScope.clear();
+                launchRevision++;
+                armGame = 0;
+                armed = false;
+                focusRecovery.launchStarted();
+            });
+        }
+    }
+    catch (error) {
+        console.warn("Playhub Dashboard: could not observe Steam game launches", error);
+    }
+    const modeCommands = installSteamModeCommands(window, {
+        alive: () => alive,
+        exit: () => {
+            layout?.release();
+            overlayScope.clear();
+            focusRecovery.cancel(0);
+            clearDashboardChrome();
+            Navigation?.CloseSideMenus?.();
+            if (typeof steam?.UI?.ExitBigPictureMode !== "function")
+                throw new Error("Steam desktop transition unavailable");
+            return steam.UI.ExitBigPictureMode();
+        },
+        readDesktop: async () => {
+            if (typeof steam?.UI?.GetUIMode !== "function" || typeof steam?.UI?.GetDesiredSteamUIWindows !== "function")
+                return false;
+            let timer = 0;
+            try {
+                const observation = Promise.all([steam.UI.GetUIMode(), steam.UI.GetDesiredSteamUIWindows()]).then(([mode, desired]) => mode === 7 && Array.isArray(desired) && desired.some(value => value?.windowType === 5)
+                    && !desired.some(value => value?.windowType === 0));
+                return await Promise.race([observation, new Promise(resolve => { timer = window.setTimeout(() => resolve(false), 200); })]);
+            }
+            finally {
+                window.clearTimeout(timer);
+            }
+        },
+        ack: acknowledgeSteamModeCommand,
+        now: () => performance.now(),
+        delay: ms => new Promise(resolve => window.setTimeout(resolve, ms)),
+    });
+    async function poll(urgent = false) {
+        if (!alive)
+            return;
+        overlayFocusObserver.refresh();
+        if (inFlight) {
+            runAgain || (runAgain = urgent);
+            return;
+        }
         inFlight = true;
         try {
+            const activeApp = currentSteamGame();
+            rememberOverlay(activeApp);
+            const main = bigPictureMainWindow();
+            layout?.observe(activeApp, (main?.m_BrowserWindow ?? main?.BrowserWindow)?.document?.hasFocus?.() === true);
+            const knownArmApp = readOwnedGameApp(activeApp);
+            const selectedArmApp = armed && armGame === knownArmApp ? knownArmApp : resolveOwnedGameApp(activeApp);
+            const armApp = typeof selectedArmApp === "number" ? selectedArmApp : await selectedArmApp;
+            if (!alive)
+                return;
+            const now = Date.now();
+            if (armGame !== armApp) {
+                armGame = armApp;
+                fastArmUntil = now + 20000;
+                nextArm = 0;
+                armed = false;
+            }
+            if (armApp && !armed && !arming && now >= nextArm && bigPictureMainWindow()) {
+                const revision = launchRevision;
+                arming = true;
+                // Steam reports the shortcut before some launchers create a game window.
+                nextArm = now + (now < fastArmUntil ? 1000 : 5000);
+                void call("arm_big_picture_return", armApp).then(result => {
+                    if (!alive || revision !== launchRevision || armGame !== armApp || readOwnedGameApp(currentSteamGame()) !== armApp)
+                        return;
+                    armed = result?.ok === true;
+                    if (armed) {
+                        rememberOverlay(armApp);
+                        focusRecovery.gameArmed();
+                    }
+                }).catch(() => { }).finally(() => { arming = false; });
+            }
             const signal = await consumeOpenRequest();
-            if (signal.exitBigPicture) {
-                focusRecoveryPending = false;
-                focusRecoveryVersion = signal.focusRecovery;
-                clearDashboardChrome();
-                Navigation?.CloseSideMenus?.();
-                window.SteamClient?.UI?.ExitBigPictureMode?.();
+            if (!alive)
+                return;
+            if (signal.steamModeCommand) {
+                await modeCommands.process(signal.steamModeCommand);
                 return;
             }
             if (signal.open) {
+                focusRecovery.cancel(signal.focusRecovery);
                 openDashboard();
+                return;
             }
-            if (focusRecoveryVersion === undefined) {
-                focusRecoveryVersion = signal.focusRecovery;
-            }
-            else if (signal.focusRecovery !== focusRecoveryVersion) {
-                focusRecoveryVersion = signal.focusRecovery;
-                focusRecoveryPending = true;
-            }
-            if (focusRecoveryPending && signal.steamForeground) {
-                focusRecoveryPending = false;
-                onFocusRecovery();
-            }
+            await focusRecovery.observe(signal.focusRecovery, signal.steamForeground);
         }
         catch (error) {
             console.warn("Playhub Dashboard: attesa dell'apertura non riuscita", error);
         }
         finally {
             inFlight = false;
+            if (runAgain) {
+                runAgain = false;
+                void poll();
+            }
         }
-    }, 500);
+    }
+    const wakeup = createSteamNavigationWakeup(() => { void poll(true); }, (callback, delay) => window.setTimeout(callback, delay), id => window.clearTimeout(id));
+    const onFocus = () => { overlayFocusObserver.refresh(); if (bigPictureMainWindow())
+        wakeup.wake(); };
+    const overlayFocusObserver = observeSteamOverlayFocus(() => window.FocusedAppWindowStore, (appId, pid) => {
+        if (appId === 0 || pid === 0)
+            onFocus();
+        else
+            rememberOverlay(currentSteamGame());
+    });
+    overlayFocusObserver.refresh();
+    const timer = window.setInterval(() => poll(), 500);
+    const steamUi = window.SteamClient?.System?.UI;
+    const subscriptions = [];
+    try {
+        const focus = steamUi?.RegisterForFocusChangeEvents?.(onFocus);
+        if (focus)
+            subscriptions.push(focus);
+    }
+    catch (error) {
+        console.warn("Playhub Dashboard: could not observe Steam focus changes", error);
+    }
     return () => {
         alive = false;
+        focusRecovery.cancel();
+        configuratorReturn.forget();
+        layout?.release();
+        overlayScope.clear();
+        overlayFocusObserver.dispose();
+        wakeup.stop();
         window.clearInterval(timer);
+        for (const subscription of subscriptions) {
+            try {
+                subscription.unregister?.();
+            }
+            catch { /* Steam may have already disposed the browser view. */ }
+        }
+        launchPatch?.unpatch();
     };
 }
 // ---------------------------------------------------------------------------
@@ -37441,8 +44656,8 @@ function Content({ origin = "decky" }) {
         return () => { alive = false; stopStatus(); };
     }, []);
     const gameAppId = steamAppId(window.SteamUIStore?.MainRunningAppID ?? _global_DFL.Router?.MainRunningAppID);
-    return (SP_JSX.jsx(ControlCenter, { locale: locale, origin: origin, homeTitle: local.controlCentre, session: SP_JSX.jsxs(SP_JSX.Fragment, { children: [!status && SP_JSX.jsx(PanelSection, { children: SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsxs("div", { role: "status", style: { margin: "8px 0 16px", padding: "16px", borderRadius: 10,
-                                background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.12)" }, children: [SP_JSX.jsx("div", { style: { fontSize: 16, fontWeight: 650, marginBottom: 8 }, children: optional.Title }), SP_JSX.jsx("div", { style: { fontSize: 13, lineHeight: 1.5, opacity: .8 }, children: optional.AgentRequired })] }) }) }), origin === "qam" && status && gameAppId !== 0 && SP_JSX.jsx(GameFrameTiming, { appId: gameAppId, locale: locale }, gameAppId), SP_JSX.jsxs(PanelSection, { children: [SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ButtonItem, { disabled: !dashboardEnabled || !status, bottomSeparator: "none", layout: "below", onClick: () => openDashboard(), children: "Playhub Dashboard" }) }), SP_JSX.jsxs(PanelSectionRow, { children: [SP_JSX.jsx("style", { children: `
+    return (SP_JSX.jsx(ControlCenter, { locale: locale, origin: origin, homeTitle: local.controlCentre, gameAppId: gameAppId, gamingMode: status?.currentMode === "Gaming", frameTiming: origin === "qam" && status && gameAppId !== 0 ? SP_JSX.jsx(GameFrameTiming, { appId: gameAppId, locale: locale }, gameAppId) : null, session: SP_JSX.jsxs(SP_JSX.Fragment, { children: [!status && SP_JSX.jsx(PanelSection, { children: SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsxs("div", { role: "status", style: { margin: "8px 0 16px", padding: "16px", borderRadius: 10,
+                                background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.12)" }, children: [SP_JSX.jsx("div", { style: { fontSize: 16, fontWeight: 650, marginBottom: 8 }, children: optional.Title }), SP_JSX.jsx("div", { style: { fontSize: 13, lineHeight: 1.5, opacity: .8 }, children: optional.AgentRequired })] }) }) }), SP_JSX.jsxs(PanelSection, { children: [SP_JSX.jsx(PanelSectionRow, { children: SP_JSX.jsx(ButtonItem, { disabled: !dashboardEnabled || !status, bottomSeparator: "none", layout: "below", onClick: () => openDashboard(), children: "Playhub Dashboard" }) }), SP_JSX.jsxs(PanelSectionRow, { children: [SP_JSX.jsx("style", { children: `
             @keyframes phShortcutPulse { 0%,100% { opacity:.62; transform:scale(.96); } 50% { opacity:1; transform:scale(1); } }
             @keyframes phShortcutTravel { 0%,100% { transform:translateX(-3px); opacity:.35; } 50% { transform:translateX(3px); opacity:1; } }
             .ph-dashboard-shortcut { box-sizing:border-box; width:100%; padding:9px 16px 14px; color:rgba(255,255,255,.88); }
@@ -37501,7 +44716,9 @@ var index = definePlugin(() => {
     const uninstallOnboarding = installOptionalHook("Onboarding", () => installPlayhubOnboarding(() => currentLocale));
     const uninstallDeckyHost = installOptionalHook("Decky host", () => initDeckyHost(() => call("get_panel_preferences")));
     const uninstallQuickSettings = installOptionalHook("Quick settings", installQuickSettings);
-    const uninstallControlledQamFocus = installOptionalHook("QAM focus", installControlledQamFocus);
+    const configuratorReturn = createSteamConfiguratorReturn();
+    const uninstallControlledQamFocus = installOptionalHook("QAM focus", () => installControlledQamFocus((app, presentation) => configuratorReturn.admitted(app, presentation, window.SteamClient?.Input), (app, proof, browser) => configuratorReturn.nativeAdmitted(app, proof, browser, window.SteamClient?.Input)));
+    const uninstallLivePerformance = installOptionalHook("Performance monitor", installLivePerformance);
     void initializeQamPreferences().catch(error => console.warn('[Playhub QAM] Preferences unavailable', error));
     let uninstallHomeNews = () => { };
     try {
@@ -37514,8 +44731,7 @@ var index = definePlugin(() => {
     // finestra primaria invece di mostrarla soltanto dopo il primo effect React.
     void preloadDashboardWindows();
     void preloadPluginStoreCatalog().catch(() => { });
-    const steamFocusRecovery = installSteamNavigationFocusRecovery();
-    const stopOpenRequestWatcher = startOpenRequestWatcher(() => steamFocusRecovery.schedule("chiusura gioco"));
+    const stopOpenRequestWatcher = startOpenRequestWatcher(configuratorReturn);
     const uninstallNavigationHaptics = installOptionalHook("Navigation haptics", installNavigationHaptics);
     const uninstallPlayhubQam = initPlayhubQam({ content: SP_JSX.jsx(Content, { origin: "qam" }), icon: SP_JSX.jsx(PlayhubIcon, {}), title: SP_JSX.jsx("div", { style: { paddingInline: 16, boxSizing: "border-box" }, children: playhubTitle }) });
     const uninstallPowerMenuPatch = installOptionalHook("Power menu", () => installPowerMenuPatch(() => ({ gaming: t().switchGaming, desktop: t().switchDesktop }), (mode) => confirmModeSwitch(mode, () => { void post(`/mode/${mode}/switch`).catch((error) => toaster.toast({ title: "Playhub", body: String(error) })); })));
@@ -37548,8 +44764,8 @@ var index = definePlugin(() => {
             const cleanups = [
                 stopDeckyIpcRecovery,
                 uninstallCircles, disposeDisplayConfirmation, uninstallOnboarding,
-                uninstallDeckyHost, uninstallQuickSettings, uninstallControlledQamFocus, uninstallHomeNews,
-                clearDashboardChrome, () => steamFocusRecovery.uninstall(),
+                uninstallDeckyHost, uninstallQuickSettings, uninstallControlledQamFocus, uninstallLivePerformance, uninstallHomeNews,
+                clearDashboardChrome,
                 stopOpenRequestWatcher, uninstallNavigationHaptics,
                 uninstallPowerMenuPatch, uninstallPlayhubQam,
             ];

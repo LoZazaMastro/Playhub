@@ -22,7 +22,7 @@ public interface IQamFocusWindows
 // Only the chosen Steam window's layer is changed; unrelated windows are untouched.
 public sealed class ControlledQamFocusService : IDisposable
 {
-    private sealed record Session(string Id, long Generation, QamWindowIdentity Source, QamWindowIdentity Steam, bool WasTopmost);
+    private sealed record Session(string Id, uint AppId, long Generation, QamWindowIdentity Source, QamWindowIdentity Steam, bool WasTopmost);
     private readonly IQamFocusWindows _windows;
     private readonly object _sync = new();
     private readonly HashSet<string> _cancelled = new(StringComparer.Ordinal);
@@ -32,23 +32,26 @@ public sealed class ControlledQamFocusService : IDisposable
     private long _generation;
     public ControlledQamFocusService(IQamFocusWindows windows, bool gaming) { _windows = windows; _gaming = gaming; }
 
-    // Normal COM UWP sessions use Game Bar. Keep their discovery/fullscreen/exit
-    // association, but never turn Guide into an automatic Steam focus handoff.
-    internal static bool AllowsAutomaticGame(bool steamTree, bool normalUwp) => steamTree && !normalUwp;
+    // COM activation associates a UWP session for discovery and exit handling.
+    // The controlled Steam handoff still requires a game in Steam's process tree.
+    internal static bool AllowsAutomaticGame(bool exactSteamApp, bool normalUwp) => exactSteamApp && !normalUwp;
 
-    public QamFocusResult Acquire(string id, uint appId = 0)
+    public QamFocusResult Acquire(string id, uint appId)
     {
         lock (_sync)
         {
-            if (string.IsNullOrWhiteSpace(id) || id.Length > 100) return Result(false, id, "Invalid request.");
+            if (string.IsNullOrWhiteSpace(id) || id.Length > 100 || appId == 0) return Result(false, id, "Invalid request.");
             if (!_gaming || _cancelled.Contains(id)) return Result(false, id, "Request cancelled or mode changed.");
             if (_session is { } current)
-                return Result(current.Id == id, id, current.Id == id ? "Already acquired." : "Another menu owns focus.");
+            {
+                bool matches = current.Id == id && current.AppId == appId;
+                return Result(matches, id, matches ? "Already acquired." : "Another menu owns focus.");
+            }
             var source = _windows.CaptureGame(appId);
             var steam = _windows.CaptureSteam();
             if (source is null || steam is null || !_windows.IsValid(source.Value) || !_windows.IsValid(steam.Value))
                 return Result(false, id, "No exact live game and Steam window.");
-            var session = new Session(id, _generation, source.Value, steam.Value, _windows.IsTopmost(steam.Value));
+            var session = new Session(id, appId, _generation, source.Value, steam.Value, _windows.IsTopmost(steam.Value));
             _session = session;
             if (!_windows.SetTopmost(session.Steam, true) || !_windows.Activate(session.Steam)
                 || !_windows.IsSteamForeground(session.Steam))

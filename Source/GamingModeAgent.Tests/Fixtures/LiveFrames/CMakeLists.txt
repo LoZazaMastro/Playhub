@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.20)
+project(PlayhubFramePresentFixture LANGUAGES CXX)
+add_executable(PlayhubFramePresentFixture FramePresent.cpp)
+target_compile_features(PlayhubFramePresentFixture PRIVATE cxx_std_17)
+target_compile_definitions(PlayhubFramePresentFixture PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_link_libraries(PlayhubFramePresentFixture PRIVATE d3d11 dxgi user32)
+set_property(TARGET PlayhubFramePresentFixture PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

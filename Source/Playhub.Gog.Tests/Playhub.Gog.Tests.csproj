@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Playhub/Services/GogService.cs" Link="GogService.cs" />
+    <Compile Include="../Playhub/Models/UwpGameEntry.cs" Link="UwpGameEntry.cs" />
+  </ItemGroup>
+</Project>

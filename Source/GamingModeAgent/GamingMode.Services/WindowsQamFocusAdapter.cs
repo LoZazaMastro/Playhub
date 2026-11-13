@@ -6,14 +6,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows.Threading;
-using Microsoft.Win32;
 
 namespace GamingMode.Services;
 
 internal sealed class WindowsQamFocusAdapter : IQamFocusWindows, IDisposable
 {
     private readonly GamingWindowFocusService _games;
-    private readonly string _steamRoot;
+    private readonly string? _configuredSteamPath;
     private readonly Thread _thread;
     private readonly WinEventCallback _callback;
     private Dispatcher? _dispatcher;
@@ -22,11 +21,7 @@ internal sealed class WindowsQamFocusAdapter : IQamFocusWindows, IDisposable
     public WindowsQamFocusAdapter(GamingWindowFocusService games, string? configuredSteamPath)
     {
         _games = games;
-        string path = configuredSteamPath ?? "";
-        if (string.IsNullOrWhiteSpace(path)) path = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Valve\Steam", "SteamPath", null) as string ?? "";
-        if (string.IsNullOrWhiteSpace(path)) path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Steam");
-        path = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"'));
-        _steamRoot = path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? Path.GetDirectoryName(Path.GetFullPath(path))! : Path.GetFullPath(path);
+        _configuredSteamPath = configuredSteamPath;
         _callback = (_, kind, hwnd, objectId, childId, _, _) =>
         {
             if (hwnd != 0 && (kind == 3 || (objectId == 0 && childId == 0))) Changed?.Invoke();
@@ -37,16 +32,19 @@ internal sealed class WindowsQamFocusAdapter : IQamFocusWindows, IDisposable
     }
     public QamWindowIdentity? CaptureGame(uint appId)
     {
-        if (!_games.TryGetQamSource(out nint hwnd, out uint gamePid)) return null;
-        // Normal UWP activation belongs to Game Bar, including a positively
-        // verified session that also happens to be visible in Steam's tree.
+        if (appId == 0 || !_games.TryGetQamSource(out nint hwnd, out uint gamePid)) return null;
+        // A verified COM-activated UWP session has its own window lifecycle.
+        // Keep the main-window handoff limited to ordinary tracked sessions.
         if (!ControlledQamFocusService.AllowsAutomaticGame(
-            OverlaySteamArtworkResolver.IsSteamGameProcess((int)gamePid),
+            OverlaySteamArtworkResolver.IsTrackedAppProcess((int)gamePid, appId),
             UwpSteamSessionAssociation.Find(gamePid, appId) is not null)) return null;
         return Capture(hwnd, gamePid);
     }
-    public QamWindowIdentity? CaptureSteam()
+    public QamWindowIdentity? CaptureSteam() => CaptureSteam(_configuredSteamPath);
+
+    internal static QamWindowIdentity? CaptureSteam(string? configuredSteamPath)
     {
+        if (SteamInstallationPath.FindRoot(configuredSteamPath) is not { } steamRoot) return null;
         // Verified Big Picture uses SDL_app (localized window title). CEF
         // popup/overlay browsers are not the main compositor, even if larger.
         nint[] main = OverlayWindowTools.FindSteamWindows().Where(hwnd =>
@@ -55,23 +53,27 @@ internal sealed class WindowsQamFocusAdapter : IQamFocusWindows, IDisposable
             GetClassName(hwnd, name, name.Capacity);
             if (name.ToString() != "SDL_app" || GetWindow(hwnd, 4) != 0
                 || (GetWindowLongPtr(hwnd, -20).ToInt64() & (0x80 | 0x08000000)) != 0) return false;
-            GetWindowThreadProcessId(hwnd, out uint pid);
-            try
-            {
-                using Process process = Process.GetProcessById((int)pid);
-                string path = process.MainModule?.FileName ?? "";
-                // Require the installed Steam image, not merely its basename.
-                string executable = Path.GetFileName(path);
-                return Path.GetFullPath(path).StartsWith(_steamRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
-                    StringComparison.OrdinalIgnoreCase) && (executable.Equals("steam.exe", StringComparison.OrdinalIgnoreCase)
-                    || executable.Equals("steamwebhelper.exe", StringComparison.OrdinalIgnoreCase));
-            }
-            catch { return false; }
+            return BelongsToSteam(hwnd, steamRoot);
         }).ToArray();
         // Two plausible main windows are not a license to choose one by area.
         return main.Length == 1 ? Capture(main[0], 0) : null;
     }
-    private static QamWindowIdentity? Capture(nint hwnd, uint gamePid)
+
+    internal static bool BelongsToSteam(nint window, string steamRoot)
+    {
+        GetWindowThreadProcessId(window, out uint pid);
+        try
+        {
+            using Process process = Process.GetProcessById((int)pid);
+            string path = process.MainModule?.FileName ?? "";
+            string executable = Path.GetFileName(path);
+            return Path.GetFullPath(path).StartsWith(Path.TrimEndingDirectorySeparator(steamRoot) + Path.DirectorySeparatorChar,
+                StringComparison.OrdinalIgnoreCase) && (executable.Equals("steam.exe", StringComparison.OrdinalIgnoreCase)
+                || executable.Equals("steamwebhelper.exe", StringComparison.OrdinalIgnoreCase));
+        }
+        catch { return false; }
+    }
+    internal static QamWindowIdentity? Capture(nint hwnd, uint gamePid)
     {
         GetWindowThreadProcessId(hwnd, out uint pid);
         long birth = Birth(pid), gameBirth = gamePid == 0 ? 0 : Birth(gamePid);
@@ -79,13 +81,15 @@ internal sealed class WindowsQamFocusAdapter : IQamFocusWindows, IDisposable
     }
     public bool IsValid(QamWindowIdentity window)
     {
-        if (!IsWindow(window.Handle) || !IsWindowVisible(window.Handle)) return false;
-        GetWindowThreadProcessId(window.Handle, out uint pid);
-        if (pid != window.OwnerPid || Birth(pid) != window.OwnerBirth) return false;
+        if (!IsWindowOwnerCurrent(window)) return false;
         if (window.GamePid == 0) return true;
         return Birth(window.GamePid) == window.GameBirth
             && _games.TryGetQamGameProcess(window.Handle, out uint gamePid) && gamePid == window.GamePid;
     }
+
+    internal static bool IsWindowOwnerCurrent(QamWindowIdentity window) =>
+        IsWindow(window.Handle) && IsWindowVisible(window.Handle)
+        && GetWindowThreadProcessId(window.Handle, out uint pid) != 0 && pid == window.OwnerPid && Birth(pid) == window.OwnerBirth;
     public bool IsSteamForeground(QamWindowIdentity steam)
     {
         if (!IsValid(steam)) return false;
@@ -103,20 +107,26 @@ internal sealed class WindowsQamFocusAdapter : IQamFocusWindows, IDisposable
     public bool Activate(QamWindowIdentity window)
     {
         if (!IsValid(window)) return false;
+        return ActivateWindow(window.Handle, () => IsValid(window));
+    }
+
+    internal static bool ActivateWindow(nint window, Func<bool> stillAllowed)
+    {
         PeekMessage(out _, 0, 0, 0, 0);
         uint current = GetCurrentThreadId();
-        uint target = GetWindowThreadProcessId(window.Handle, out _);
+        uint target = GetWindowThreadProcessId(window, out _);
         uint foreground = GetWindowThreadProcessId(GetForegroundWindow(), out _);
         bool targetAttached = target != current && target != 0 && AttachThreadInput(current, target, true);
         bool foregroundAttached = foreground != current && foreground != target && foreground != 0 && AttachThreadInput(current, foreground, true);
         try
         {
-            if (IsIconic(window.Handle)) ShowWindow(window.Handle, 9);
-            BringWindowToTop(window.Handle);
-            SetForegroundWindow(window.Handle);
-            if (GetForegroundWindow() != window.Handle) SwitchToThisWindow(window.Handle, true);
+            if (!stillAllowed()) return false;
+            if (IsIconic(window)) ShowWindow(window, 9);
+            BringWindowToTop(window);
+            SetForegroundWindow(window);
+            if (GetForegroundWindow() != window && stillAllowed()) SwitchToThisWindow(window, true);
             // No synthetic keyboard input and no success based on an activation request.
-            return GetForegroundWindow() == window.Handle;
+            return GetForegroundWindow() == window;
         }
         finally
         {

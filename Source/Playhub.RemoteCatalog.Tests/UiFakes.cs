@@ -61,6 +61,10 @@ namespace Playhub
         private static void InvalidatePluginAllViews() { }
         private static void InvalidateFeaturedFrames() { }
         private static void UpdatePluginPublicationOrder() { }
+        private static void SaveNavigationPosition() { }
+        private static void RestoreNavigationPosition() { }
+        private static string PluginStoreKey(DeckyPluginInfo plugin) => PluginChronology.Identity(plugin);
+        private event Action<IReadOnlySet<string>>? PluginPresentationChanged;
         private void RenderVisiblePluginView()
         {
             IntegrationTests.Check(_pluginCardsDirty && _pluginManagementDirty, "Views not invalidated.");
@@ -70,6 +74,39 @@ namespace Playhub
         private void ShowPluginUpdatesNotification() => _pluginUpdateNotifications++;
         private static bool IsIntegratedGamingModePlugin(DeckyPluginInfo plugin) => plugin.Name == "Gaming Mode";
         private Task RefreshPluginsAsync() => RefreshRemoteAwarePluginsAsync();
+
+        internal static async Task RunStoreNoOpRefreshTests()
+        {
+            var window = new MainWindow();
+            window._currentPageTag = "plugins";
+            window._bundledPluginCatalogTask = Task.FromResult(new RemotePluginCatalog { CatalogRevision = 1 });
+            window._catalog.Loader = (_, _, _) => Task.FromResult<IReadOnlyList<DeckyPluginInfo>>(new[]
+            {
+                new DeckyPluginInfo { Name = "Retained", RepositorySlug = "fixture/retained", Version = "1" }
+            });
+            await window.RefreshRemoteAwarePluginsAsync(queueRemote: false);
+            var original = window._plugins.Single(); int notifications = 0, presentationUpdates = 0;
+            window._plugins.CollectionChanged += (_, _) => notifications++;
+            window.PluginPresentationChanged += changed => presentationUpdates += changed.Count;
+            for (var index = 2; index <= 7; index++)
+            {
+                window._bundledPluginCatalogTask = Task.FromResult(new RemotePluginCatalog { CatalogRevision = index });
+                await window.RefreshRemoteAwarePluginsAsync(queueRemote: false);
+            }
+            IntegrationTests.Check(window._renders == 1 && notifications == 0 && presentationUpdates == 0 &&
+                ReferenceEquals(window._plugins.Single(), original) && window._visiblePluginCatalogRevision == 7,
+                "Identical production refresh rebuilt views, lost retained identity or failed to commit source revision.");
+            window._catalog.Loader = (_, _, _) => Task.FromResult<IReadOnlyList<DeckyPluginInfo>>(new[]
+            {
+                new DeckyPluginInfo { Name = "Retained", RepositorySlug = "fixture/retained", Version = "2", HasUpdate = true }
+            });
+            await window.RefreshRemoteAwarePluginsAsync(queueRemote: false);
+            IntegrationTests.Check(window._renders == 2 && notifications == 0 && presentationUpdates == 1 &&
+                ReferenceEquals(window._plugins.Single(), original) && original.Version == "2" && original.HasUpdate,
+                "Changed production metadata did not notify actual presentation while retaining its model.");
+            window.CancelPluginPublicationRefresh(); await window._remotePluginPublicationRefreshCompletion;
+            Console.WriteLine("PASS production Store refresh: six no-op revisions and one real presentation update.");
+        }
 
         internal static async Task RunCatalogUiTests()
         {
@@ -146,9 +183,9 @@ namespace Playhub
             window.DispatcherQueue.RunNext();
             await WaitFor(() => !window._remotePluginCatalogRefreshQueued);
             await window._remotePluginReleaseRefreshCompletion;
-            IntegrationTests.Check(window._renders == 4 && window._visiblePluginCatalogRevision == bundled.CatalogRevision + 2,
-                "New plugin releases did not refresh the UI when catalog revision stayed unchanged.");
-            IntegrationTests.Check(window._pluginUpdateNotifications == window._renders,
+            IntegrationTests.Check(window._renders == 3 && window._visiblePluginCatalogRevision == bundled.CatalogRevision + 2,
+                "Release bookkeeping rebuilt unchanged visible plugin data.");
+            IntegrationTests.Check(window._pluginUpdateNotifications >= window._renders,
                 "Plugin update notification was not refreshed after background release discovery.");
             window._catalog.ReleaseRefresher = () => Task.FromResult(false);
 #endif
@@ -212,7 +249,7 @@ namespace Playhub
             window._catalog.Loader = (_, _, _) => { loads++; return Task.FromResult<IReadOnlyList<DeckyPluginInfo>>(new[] { replacement }); };
             await window.RefreshRemoteAwarePluginsAsync(queueRemote: false);
             IntegrationTests.Check(!window._pluginCatalogRefreshDeferred && loads == 2 && window._renders == 1 &&
-                ReferenceEquals(window._plugins[0], replacement) && fixture.Handler.Calls == 0,
+                ReferenceEquals(window._plugins[0], original) && original.Name == replacement.Name && fixture.Handler.Calls == 0,
                 "Resuming browsing failed to commit the deferred local catalog exactly once without a membership request.");
             window.CancelPluginPublicationRefresh();
             await window._remotePluginPublicationRefreshCompletion;

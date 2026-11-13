@@ -1,0 +1,42 @@
+{
+  "version": "3.3.1",
+  "upstreamTag": "v3.3.1",
+  "official": true,
+  "files": [
+    {
+      "path": "LICENSE",
+      "size": 18092,
+      "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643"
+    },
+    {
+      "path": "NOTICE.txt",
+      "size": 858,
+      "sha256": "317368dcaf257318eb1e8752b0aab0b726e712eb4eafa76bebea5365ca20e414"
+    },
+    {
+      "path": "PluginLoader.exe",
+      "size": 15631955,
+      "sha256": "68ca1ebf3711c23057bd6734a8055399119b31d8812b254f8918f1f69af4d142"
+    },
+    {
+      "path": "PluginLoader_noconsole.exe",
+      "size": 15632613,
+      "sha256": "8b7a36146591a3d3b54ba69c986dc508e2aea21f56652520b21e1126deebe65b"
+    },
+    {
+      "path": "release-metadata.json",
+      "size": 17535,
+      "sha256": "ee565c900c41e601629e871b5c7ee4332a97dec22f8c0a7530e4ef25f2bbd3a3"
+    },
+    {
+      "path": "SOURCE.json",
+      "size": 521,
+      "sha256": "302a76fe0b915c151409edf1ef9b0b2fd9707c4b62d516a04bbed504469bbca7"
+    },
+    {
+      "path": "sources/Decky-v3.3.1-Source.zip",
+      "size": 466542,
+      "sha256": "abef6c5cfc9ace34de059e46886228cf2fe8a854ad542120ed23852296df494a"
+    }
+  ]
+}

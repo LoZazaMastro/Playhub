@@ -430,7 +430,7 @@ public static class OverlayWindowTools
 
 	internal sealed class ProcessLease : IDisposable
 	{
-		private readonly Microsoft.Win32.SafeHandles.SafeFileHandle _handle;
+		private readonly Microsoft.Win32.SafeHandles.SafeWaitHandle _handle;
 		internal long CreatedAt { get; }
 		private ProcessLease(nint handle, long created)
 		{
@@ -444,14 +444,26 @@ public static class OverlayWindowTools
 		{
 			nint handle = OpenProcess(0x00101000, false, unchecked((uint)processId));
 			if (handle == 0) return null;
-			using var temporary = new Microsoft.Win32.SafeHandles.SafeFileHandle(handle, false);
+			using var temporary = new Microsoft.Win32.SafeHandles.SafeWaitHandle(handle, false);
 			if (GetProcessTimes(temporary, out long created, out _, out _, out _)) return new(handle, created);
 			CloseHandle(handle);
 			return null;
 		}
+		internal async Task WaitForExitAsync(CancellationToken token)
+		{
+			var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+			var wait = ThreadPool.RegisterWaitForSingleObject(new ProcessWaitHandle(_handle), (_, _) => completion.TrySetResult(),
+				null, Timeout.Infinite, executeOnlyOnce: true);
+			try { await completion.Task.WaitAsync(token).ConfigureAwait(false); }
+			finally { wait.Unregister(null); }
+		}
+		private sealed class ProcessWaitHandle : WaitHandle
+		{
+			internal ProcessWaitHandle(Microsoft.Win32.SafeHandles.SafeWaitHandle handle) { SafeWaitHandle = handle; }
+		}
 		public void Dispose() => _handle.Dispose();
-		[DllImport("kernel32.dll")] private static extern uint WaitForSingleObject(Microsoft.Win32.SafeHandles.SafeFileHandle handle, uint milliseconds);
-		[DllImport("kernel32.dll", SetLastError = true)] private static extern bool GetProcessTimes(Microsoft.Win32.SafeHandles.SafeFileHandle handle,
+		[DllImport("kernel32.dll")] private static extern uint WaitForSingleObject(Microsoft.Win32.SafeHandles.SafeWaitHandle handle, uint milliseconds);
+		[DllImport("kernel32.dll", SetLastError = true)] private static extern bool GetProcessTimes(Microsoft.Win32.SafeHandles.SafeWaitHandle handle,
 			out long creation, out long exit, out long kernel, out long user);
 	}
 
@@ -654,6 +666,12 @@ public static class OverlayWindowTools
 
 	internal static bool IsVisibleGameSurface(nint window) =>
 		IsUsableWindow(window) && IsWindowVisible(window) && !IsIconic(window) && !IsCloaked(window)
+		&& GetWindowRect(window, out Rect rect) && rect.Right - rect.Left >= 220 && rect.Bottom - rect.Top >= 120;
+
+	// An authenticated game's loading window can stop pumping messages. Its
+	// overlay and exit watcher must remain available through that interval.
+	internal static bool IsPresentGameSurface(nint window) =>
+		window != 0 && IsWindow(window) && IsWindowVisible(window) && !IsIconic(window) && !IsCloaked(window)
 		&& GetWindowRect(window, out Rect rect) && rect.Right - rect.Left >= 220 && rect.Bottom - rect.Top >= 120;
 
 	public static bool IsUsableWindow(nint window)

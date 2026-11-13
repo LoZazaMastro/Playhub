@@ -1,8 +1,24 @@
 # Changelog
 
-## 2.6.0 (in development)
+## 2.6.0
 
-- Reduced Gaming Mode's background work when the Windows desktop shell is already running.
+Playhub 2.6.0 brings more of your PC within reach of the controller, with new monitoring tools, device-aware settings and more reliable game launching.
+
+**Update Launch Curtain to 2.5.9 and TrailerHero to 1.7.3 as soon as possible.** These updates fix launch coverage, game focus handoff and trailer playback with the current Steam client.
+
+### What's new
+
+- A live performance display with FPS, frame-time graphs and system statistics. Choose Steam or Playhub as the source, adjust the detail level and screen position, and use a transparent background or your preferred text color.
+- Experimental handheld profiles with model-specific controls for power, cooling, charging, lighting and vibration. Available controls depend on the device and its Windows support.
+- An audio mixer for separate system and game volume, with Quick Settings that remember which sections you left open.
+- Discord joins the Plugin Store as a separate Windows plugin, with its own packaged client for voice, channels and conversations. Its first release appears in What's New and the featured selection.
+
+### Improvements
+
+- Improved Epic Games and GOG discovery, including newer Epic installation records and GOG launch settings.
+- Improved Xbox game tracking, game focus handoff and the return to Big Picture.
+- Improved Decky startup and recovery when Steam closes or reopens.
+- Stabilized the top-bar date during Steam redraws and stopped keyboard navigation from triggering controller vibration.
 
 ## 2.5.5
 

@@ -36,8 +36,6 @@ public sealed class PlayhubSettings
     // memorizzata, così Playhub resta centrato sul display corrente.
     public int WindowWidth { get; set; }
     public int WindowHeight { get; set; }
-    // Xbox Game Bar automatica: l'agente non conosce
-    // EnableXboxGameBar e al riavvio lo riporta al default (true), perdendo la scelta
-    // dell'utente. La verità durevole vive qui.
-    public bool XboxGameBarEnabled { get; set; } = true;
+    // Keep the previous preference when rewriting existing settings files.
+    public bool XboxGameBarEnabled { get; set; }
 }

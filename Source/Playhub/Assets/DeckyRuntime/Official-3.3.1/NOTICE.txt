@@ -1,0 +1,16 @@
+Decky Loader v3.3.1
+
+Unmodified official Windows x64 executables published by Steam Deck Homebrew.
+The release asset sizes and SHA-256 digests were verified against the official
+GitHub release metadata included in release-metadata.json. No Playhub changes
+are made to these executables.
+
+Decky Loader is licensed under GNU GPL version 2. The original license and
+preferred upstream source, including build workflows and dependency locks,
+are included in LICENSE and sources/Decky-v3.3.1-Source.zip.
+Source commit: ffd103b9c1a4ce5bf305e7c0998eda6e05457dad.
+Upstream: https://github.com/SteamDeckHomebrew/decky-loader
+Release: https://github.com/SteamDeckHomebrew/decky-loader/releases/tag/v3.3.1
+
+Playhub's external lifecycle host is a separate application. It does not
+patch, inject code into, rebuild or replace the loader's Python runtime.

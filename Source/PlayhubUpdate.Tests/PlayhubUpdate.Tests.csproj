@@ -13,6 +13,9 @@
     <Compile Include="..\Playhub\Services\PlayhubUpdateService.cs" Link="PlayhubUpdateService.cs" />
     <Compile Include="..\Playhub\Services\PlayhubUpdatePolicy.cs" Link="PlayhubUpdatePolicy.cs" />
     <Compile Include="..\PlayhubSetup\Installer.cs" Link="Installer.cs" />
+    <Compile Include="..\PlayhubSetup\ControllerDriverPolicy.cs" Link="ControllerDriverPolicy.cs" />
+    <Compile Include="..\PlayhubSetup\ControllerDriverDependency.cs" Link="ControllerDriverDependency.cs" />
+    <Compile Include="..\PlayhubSetup\ControllerDriverPayloadTrust.cs" Link="ControllerDriverPayloadTrust.cs" />
     <Compile Include="..\PlayhubSetup\SetupSession.cs" Link="SetupSession.cs" />
     <Compile Include="..\Shared\EditorialPhotoMigration.cs" Link="EditorialPhotoMigration.cs" />
     <Compile Include="..\Shared\GamingModeInstallationPolicy.cs" Link="GamingModeInstallationPolicy.cs" />

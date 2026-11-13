@@ -14,6 +14,23 @@ const compiled = ts.transpileModule(source, {
 const exports = {};
 vm.runInNewContext(compiled, { exports, URL, Set, Map, Date, Number, JSON, Intl });
 
+test("published Discord stays featured across catalog order without becoming Steamcord", () => {
+  const raw = readFileSync(join(here, "..", "..", "..", "catalog", "plugins.json"), "utf8");
+  const parsed = exports.parseCatalog(raw);
+  const discord = parsed.plugins.find((plugin) => plugin.repository === "LoZazaMastro/Playhub-Discord");
+  assert.equal(discord?.name, "Discord");
+  assert.equal(discord?.installFolder, "Discord");
+  assert.equal(discord?.keywords.includes("featured"), true);
+  assert.equal(discord?.aliases.some((alias) => /steamcord/i.test(alias)), false);
+  assert.equal(exports.resolveInstallArtifact(discord)?.name, "Discord_Installer-1.0.1.zip");
+  for (const plugins of [parsed.plugins, [...parsed.plugins].reverse()]) {
+    const selection = exports.featuredPlugins(plugins, 10);
+    assert.equal(selection.some((plugin) => plugin === discord), true);
+    assert.ok(selection.filter((plugin) => plugin.catalogSource === "playhub").length >= 2);
+    assert.equal(new Set(selection.map((plugin) => plugin.repository.toLowerCase())).size, selection.length);
+  }
+});
+
 test("canonical catalog parses without duplicating content and hides the integrated Playhub plugin", () => {
   const raw = readFileSync(join(here, "..", "..", "..", "catalog", "plugins.json"), "utf8");
   const original = JSON.parse(raw).plugins.filter((plugin) => plugin.active !== false);

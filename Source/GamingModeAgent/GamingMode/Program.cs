@@ -12,6 +12,8 @@ internal static class Program
 	[STAThread]
 	private static int Main(string[] args)
 	{
+		if (args is [GameExecutionQosOwner.Command])
+			return GameExecutionQosOwner.RunAsync().GetAwaiter().GetResult();
 		try
 		{
 			// Preview is deliberately isolated from the agent and every mode-switch command.

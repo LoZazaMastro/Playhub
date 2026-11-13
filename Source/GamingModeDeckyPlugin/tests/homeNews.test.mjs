@@ -14,9 +14,7 @@ test('news keeps native row objects and reorders without cloning their contents'
  assert.equal(out.nativeNewsRows({props:{children:[]}}).length,0);
  assert.equal(out.nativeNewsRows({props:{children:[activity,activity,updated]}}),null);
 });
-test('Audio and Video render directly even if previous categories were collapsed',()=>{
- const quick=fs.readFileSync(new URL('../src/quickSettings/index.tsx',import.meta.url),'utf8');
- assert.match(quick,/if \(tab === "audio" \|\| tab === "performance"\) return <div/);
+test('the control center retains the selected tab title',()=>{
  const center=fs.readFileSync(new URL('../src/ControlCenter.tsx',import.meta.url),'utf8');
  assert.match(center,/active !== "decky" && \(active !== "home" \|\| homeTitle\) && <h2 className="ph-control-heading">\{active === "home" \? homeTitle : copy\[active\]\}/);
 });

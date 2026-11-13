@@ -9,6 +9,8 @@ internal sealed class TrustedSteamFiles : IDisposable
     private readonly string _root;
     private readonly List<FileStream> _files = [];
     private TrustedSteamFiles(string root) => _root = root;
+    internal IReadOnlyList<string> ComponentPaths => _files.Select(file => file.Name).ToArray();
+    internal string TrackingLog => Path.Combine(_root, "logs", "gameprocess_log.txt");
     internal bool UnchangedRoot() => Path.GetFullPath(SteamInstallation.Root).Equals(_root, StringComparison.OrdinalIgnoreCase);
 
     internal static TrustedSteamFiles Open()

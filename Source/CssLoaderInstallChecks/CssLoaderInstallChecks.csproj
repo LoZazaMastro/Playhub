@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Playhub/Services/CssLoaderInstallService.cs" Link="CssLoaderInstallService.cs" />
+    <Content Include="../Playhub/Plugins/CSS Loader/CSS-Loader-Startup-2.1.5.zip" Link="Plugins/CSS Loader/CSS-Loader-Startup-2.1.5.zip" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,16 @@
+This project was bootstrapped from the Decky Plugin Template and uses the
+standard Decky plugin build/runtime scaffolding.
+
+    Decky Plugin Template
+    Copyright (c) 2022-2024, Steam Deck Homebrew
+    Licensed under the BSD 3-Clause License.
+    https://github.com/SteamDeckHomebrew/decky-plugin-template
+
+Weather 2.1.0 adds its own integrated top-bar weather badge and does not bundle
+or copy CSS Loader source code. CSS Loader source may be useful as a reference
+when understanding how Steam UI customization is commonly applied, but this
+plugin distribution does not include CSS Loader code.
+
+All original code in this repository is distributed under the terms stated in
+the accompanying LICENSE file. The attribution above is retained to satisfy the
+BSD 3-Clause notice requirement of the template it is based on.

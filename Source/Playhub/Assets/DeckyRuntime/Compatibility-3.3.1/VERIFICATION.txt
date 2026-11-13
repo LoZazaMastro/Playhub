@@ -1,0 +1,41 @@
+.......
+----------------------------------------------------------------------
+Ran 7 tests in 0.067s
+
+OK
+Exception while connecting to or reading page events expected fixture target replaced
+The Tab SharedJSContext socket has been disconnected while listening for messages.
+Exception while connecting to or reading page events expected fixture target replaced
+The Tab SharedJSContext socket has been disconnected while listening for messages.
+Exception while connecting to or reading page events expected fixture target replaced
+The Tab SharedJSContext socket has been disconnected while listening for messages.
+The Tab SharedJSContext socket has been disconnected while listening for messages.
+.......
+----------------------------------------------------------------------
+Ran 7 tests in 0.063s
+
+OK
+Exception while connecting to or reading page events expected fixture target replaced
+The Tab SharedJSContext socket has been disconnected while listening for messages.
+Exception while connecting to or reading page events expected fixture target replaced
+The Tab SharedJSContext socket has been disconnected while listening for messages.
+Exception while connecting to or reading page events expected fixture target replaced
+The Tab SharedJSContext socket has been disconnected while listening for messages.
+The Tab SharedJSContext socket has been disconnected while listening for messages.
+PASS frozen loopback discovery -> 404 handshake -> replacement websocket -> inject -> exact cleanup console {'json': 2, 'stale': 1, 'live': 1, 'injection': 1}
+PASS frozen loopback discovery -> 404 handshake -> replacement websocket -> inject -> exact cleanup console {'json': 3, 'stale': 1, 'live': 2, 'injection': 1}
+PASS frozen Page.enable close console
+PASS frozen Page.enable error console
+PASS frozen Page.enable events console
+PASS frozen Page.enable cancel console
+PASS frozen Page.enable timeout console
+PASS frozen Page.enable flood console
+PASS frozen loopback discovery -> 404 handshake -> replacement websocket -> inject -> exact cleanup noconsole {'json': 2, 'stale': 1, 'live': 1, 'injection': 1}
+PASS frozen loopback discovery -> 404 handshake -> replacement websocket -> inject -> exact cleanup noconsole {'json': 3, 'stale': 1, 'live': 2, 'injection': 1}
+PASS frozen Page.enable close noconsole
+PASS frozen Page.enable error noconsole
+PASS frozen Page.enable events noconsole
+PASS frozen Page.enable cancel noconsole
+PASS frozen Page.enable timeout noconsole
+PASS frozen Page.enable flood noconsole
+30/30 frozen-bytecode fault/loopback checks passed; GUI/CUI and Python314 payload verified. No loader process launched.

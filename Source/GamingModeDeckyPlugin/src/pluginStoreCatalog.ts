@@ -414,7 +414,9 @@ export function featuredPlugins(plugins: CatalogPlugin[], limit = 6): CatalogPlu
   const requestedLimit = Math.max(0, Math.floor(limit));
   if (!requestedLimit) return [];
 
-  const playhub = plugins.filter((plugin) => plugin.catalogSource === "playhub").sort(compareCatalogAdded);
+  const playhub = plugins.filter((plugin) => plugin.catalogSource === "playhub").sort((a, b) =>
+    Number(b.keywords.some((keyword) => keyword.toLowerCase() === "featured")) -
+      Number(a.keywords.some((keyword) => keyword.toLowerCase() === "featured")) || compareCatalogAdded(a, b));
   const required = FEATURED_DECKY_REPOSITORIES.map((repository) => plugins.find((plugin) =>
     plugin.catalogSource === "decky-store" &&
     plugin.repository.toLocaleLowerCase("en-US") === repository.toLocaleLowerCase("en-US"),

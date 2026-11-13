@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><TreatWarningsAsErrors>true</TreatWarningsAsErrors></PropertyGroup>
+ <ItemGroup><Compile Include="../GamingModeAgent/GamingMode.Services/FirstContent/*.cs" Link="%(Filename)%(Extension)" /></ItemGroup>
+ <ItemGroup>
+  <Compile Include="../GamingModeAgent/GamingMode.Services/LaunchCurtainCoverController.cs" Link="ActualController.cs" />
+  <Compile Include="../GamingModeAgent/GamingMode.Services/LaunchCurtainCoverEndpoints.cs" Link="ActualEndpoints.cs" />
+  <Compile Include="../GamingModeAgent/GamingMode.Services/LaunchCurtainPublisherChannel.cs" Link="ActualPublisherChannel.cs" />
+  <FrameworkReference Include="Microsoft.AspNetCore.App" />
+ </ItemGroup>
+ <ItemGroup><None Update="observed-frame-facts.json" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+</Project>

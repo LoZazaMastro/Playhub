@@ -1,7 +1,7 @@
 {
-  "version": "1.7.2",
+  "version": "1.7.3",
   "repository": "LoZazaMastro/TrailerHero",
-  "sha256": "292cf6f0af571a1747f4353cafa952a225cf0d8047174c63dedd5f35da254415",
-  "bundled": true,
-  "runtimeRevision": 5
+  "sha256": "f13787950f78145efc1ec05f49b9bed79fcdac5c1634844ee4b68d7a2396ff95",
+  "bundled": false,
+  "runtimeRevision": 1
 }

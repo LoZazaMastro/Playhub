@@ -1,0 +1,236 @@
+[
+  {
+    "name": "aiohappyeyeballs",
+    "version": "2.7.1",
+    "source_url": "https://files.pythonhosted.org/packages/ce/f4/eec0465c2f67b2664688d0240b3212d5196fd89e741df67ddb81f8d35658/aiohappyeyeballs-2.7.1.tar.gz",
+    "source_file": "sources\\dependencies\\aiohappyeyeballs-2.7.1.tar.gz",
+    "sha256": "065665c041c42a5938ed220bdcd7230f22527fbec085e1853d2402c8a3615d9d",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\aiohappyeyeballs-2.7.1\\LICENSE"
+    ]
+  },
+  {
+    "name": "aiohttp",
+    "version": "3.14.5",
+    "source_url": "https://files.pythonhosted.org/packages/6c/4c/bdccd81e9ee225b69c60e7766c9a5b05364f118f4d383713b89a682d772d/aiohttp-3.14.5.tar.gz",
+    "source_file": "sources\\dependencies\\aiohttp-3.14.5.tar.gz",
+    "sha256": "5558a7f5a05af9ecf744af91e5baefc436f93c9333e656c27ec253f9a6bbe178",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\aiohttp-3.14.5\\LICENSE.txt",
+      "licenses\\python-dependencies\\aiohttp-3.14.5\\LICENSE"
+    ]
+  },
+  {
+    "name": "aiohttp-cors",
+    "version": "0.7.0",
+    "source_url": "https://files.pythonhosted.org/packages/44/9e/6cdce7c3f346d8fd487adf68761728ad8cd5fbc296a7b07b92518350d31f/aiohttp-cors-0.7.0.tar.gz",
+    "source_file": "sources\\dependencies\\aiohttp-cors-0.7.0.tar.gz",
+    "sha256": "4d39c6d7100fd9764ed1caf8cebf0eb01bf5e3f24e2e073fda6234bc48b19f5d",
+    "locked": true,
+    "license_files": []
+  },
+  {
+    "name": "aiohttp-jinja2",
+    "version": "1.6",
+    "source_url": "https://files.pythonhosted.org/packages/e6/39/da5a94dd89b1af7241fb7fc99ae4e73505b5f898b540b6aba6dc7afe600e/aiohttp-jinja2-1.6.tar.gz",
+    "source_file": "sources\\dependencies\\aiohttp-jinja2-1.6.tar.gz",
+    "sha256": "a3a7ff5264e5bca52e8ae547bbfd0761b72495230d438d05b6c0915be619b0e2",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\aiohttp-jinja2-1.6\\LICENSE"
+    ]
+  },
+  {
+    "name": "aiosignal",
+    "version": "1.4.0",
+    "source_url": "https://files.pythonhosted.org/packages/61/62/06741b579156360248d1ec624842ad0edf697050bbaf7c3e46394e106ad1/aiosignal-1.4.0.tar.gz",
+    "source_file": "sources\\dependencies\\aiosignal-1.4.0.tar.gz",
+    "sha256": "f47eecd9468083c2029cc99945502cb7708b082c232f9aca65da147157b251c7",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\aiosignal-1.4.0\\LICENSE"
+    ]
+  },
+  {
+    "name": "async-timeout",
+    "version": "5.0.1",
+    "source_url": "https://files.pythonhosted.org/packages/a5/ae/136395dfbfe00dfc94da3f3e136d0b13f394cba8f4841120e34226265780/async_timeout-5.0.1.tar.gz",
+    "source_file": "sources\\dependencies\\async_timeout-5.0.1.tar.gz",
+    "sha256": "d9321a7a3d5a6a5e187e824d2fa0793ce379a202935782d555d6e9d2735677d3",
+    "locked": true,
+    "license_files": []
+  },
+  {
+    "name": "attrs",
+    "version": "26.1.0",
+    "source_url": "https://files.pythonhosted.org/packages/9a/8e/82a0fe20a541c03148528be8cac2408564a6c9a0cc7e9171802bc1d26985/attrs-26.1.0.tar.gz",
+    "source_file": "sources\\dependencies\\attrs-26.1.0.tar.gz",
+    "sha256": "d03ceb89cb322a8fd706d4fb91940737b6642aa36998fe130a9bc96c985eff32",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\attrs-26.1.0\\LICENSE"
+    ]
+  },
+  {
+    "name": "certifi",
+    "version": "2026.10.19",
+    "source_url": "https://files.pythonhosted.org/packages/a6/bd/1436c50cc46699de0230fbaacc1d1de7bfec413176099949e9d5112e88f2/certifi-2026.10.19.tar.gz",
+    "source_file": "sources\\dependencies\\certifi-2026.10.19.tar.gz",
+    "sha256": "035c1e85572b141bf1c3a3eff0e33a8eb74917522f2559075ff8d2fea780a1ae",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\certifi-2026.10.19\\LICENSE"
+    ]
+  },
+  {
+    "name": "frozenlist",
+    "version": "1.8.0",
+    "source_url": "https://files.pythonhosted.org/packages/2d/f5/c831fac6cc817d26fd54c7eaccd04ef7e0288806943f7cc5bbf69f3ac1f0/frozenlist-1.8.0.tar.gz",
+    "source_file": "sources\\dependencies\\frozenlist-1.8.0.tar.gz",
+    "sha256": "3ede829ed8d842f6cd48fc7081d7a41001a56f1f38603f9d49bf3020d59a31ad",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\frozenlist-1.8.0\\LICENSE"
+    ]
+  },
+  {
+    "name": "idna",
+    "version": "3.20",
+    "source_url": "https://files.pythonhosted.org/packages/f5/08/8eea9d4b8302028f3abb2c0813953f7aec26d33b7a8960ed760e65ff29fa/idna-3.20.tar.gz",
+    "source_file": "sources\\dependencies\\idna-3.20.tar.gz",
+    "sha256": "a7db850025b95ded1eae8a46181a1a6c56c92c96f0e2b005d9ff8dc0210cab44",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\idna-3.20\\LICENSE.md"
+    ]
+  },
+  {
+    "name": "jinja2",
+    "version": "3.1.6",
+    "source_url": "https://files.pythonhosted.org/packages/df/bf/f7da0350254c0ed7c72f3e33cef02e048281fec7ecec5f032d4aac52226b/jinja2-3.1.6.tar.gz",
+    "source_file": "sources\\dependencies\\jinja2-3.1.6.tar.gz",
+    "sha256": "0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\jinja2-3.1.6\\LICENSE.txt"
+    ]
+  },
+  {
+    "name": "markupsafe",
+    "version": "3.0.4",
+    "source_url": "https://files.pythonhosted.org/packages/38/9b/e422a865e1d5d57d0e509b4e0bf1c1a70a7f6382c29a5aa428df994c8bc8/markupsafe-3.0.4.tar.gz",
+    "source_file": "sources\\dependencies\\markupsafe-3.0.4.tar.gz",
+    "sha256": "2e9ad7dd851bf45fab9f75cbff4cb493fee9979e8d8c7c9c3ee119022518edd6",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\markupsafe-3.0.4\\LICENSE.txt"
+    ]
+  },
+  {
+    "name": "multidict",
+    "version": "6.9.1",
+    "source_url": "https://files.pythonhosted.org/packages/d6/99/1d4d69c3512d0ddbfa3a1b69cfd9a151012ab2eb4eabbb096201b1f0b7d8/multidict-6.9.1.tar.gz",
+    "source_file": "sources\\dependencies\\multidict-6.9.1.tar.gz",
+    "sha256": "0f06e60fa190aa7abd0914c2a766736fdc8e9f34878c4346338534b73d1b20e2",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\multidict-6.9.1\\LICENSE"
+    ]
+  },
+  {
+    "name": "packaging",
+    "version": "24.2",
+    "source_url": "https://files.pythonhosted.org/packages/d0/63/68dbb6eb2de9cb10ee4c9c14a0148804425e13c4fb20d61cce69f53106da/packaging-24.2.tar.gz",
+    "source_file": "sources\\dependencies\\packaging-24.2.tar.gz",
+    "sha256": "c228a6dc5e932d346bc5739379109d49e8853dd8223571c7c5b55260edc0b97f",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\packaging-24.2\\LICENSE",
+      "licenses\\python-dependencies\\packaging-24.2\\LICENSE.APACHE",
+      "licenses\\python-dependencies\\packaging-24.2\\LICENSE.BSD"
+    ]
+  },
+  {
+    "name": "propcache",
+    "version": "0.5.4",
+    "source_url": "https://files.pythonhosted.org/packages/b3/9a/9fbf4e4ec0c2d7f1c32519fff782ef467859b8faa9fbc5331a96f6395d43/propcache-0.5.4.tar.gz",
+    "source_file": "sources\\dependencies\\propcache-0.5.4.tar.gz",
+    "sha256": "ff6b113f50bc066a698db5d944d2c6dc7507168dd3341e255a8892fd0715a558",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\propcache-0.5.4\\LICENSE",
+      "licenses\\python-dependencies\\propcache-0.5.4\\NOTICE"
+    ]
+  },
+  {
+    "name": "pyinstaller",
+    "version": "6.22.3",
+    "source_url": "https://files.pythonhosted.org/packages/63/41/f90302845945abd4ed647933ff5ee7c6ac93983187be67f897b6cb613331/pyinstaller-6.22.3.tar.gz",
+    "source_file": "sources\\dependencies\\pyinstaller-6.22.3.tar.gz",
+    "sha256": "05eb2f5615503e72939a7224d68b4aff572c6b0438ee4a17d0a4b481f399362d",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\pyinstaller-6.22.3\\COPYING.txt"
+    ]
+  },
+  {
+    "name": "pyinstaller-hooks-contrib",
+    "version": "2026.9",
+    "source_url": "https://files.pythonhosted.org/packages/96/25/e47c6188228281372be7e9911a93931e01ec8798c02c93abd680b9b9521f/pyinstaller_hooks_contrib-2026.9.tar.gz",
+    "source_file": "sources\\dependencies\\pyinstaller_hooks_contrib-2026.9.tar.gz",
+    "sha256": "2748767901acb5cecd1304652b6c7add5bffcff1d71d01207fe24a5d42942a56",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\pyinstaller-hooks-contrib-2026.9\\LICENSE"
+    ]
+  },
+  {
+    "name": "setproctitle",
+    "version": "1.3.8",
+    "source_url": "https://files.pythonhosted.org/packages/49/b0/6b8a516c5a9e9630bd5293db78314ac012f690305fe93beadea388626efb/setproctitle-1.3.8.tar.gz",
+    "source_file": "sources\\dependencies\\setproctitle-1.3.8.tar.gz",
+    "sha256": "cafe209d064a6efb88cb45a03e97981ff8832802b2b5d009dde0197a3b7b41c8",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\setproctitle-1.3.8\\LICENSE"
+    ]
+  },
+  {
+    "name": "typing-extensions",
+    "version": "4.16.0",
+    "source_url": "https://files.pythonhosted.org/packages/f6/cc/6253133b5bb138fc3306cebfbda2c520f545d36b5be2c7255cc528bb45d6/typing_extensions-4.16.0.tar.gz",
+    "source_file": "sources\\dependencies\\typing_extensions-4.16.0.tar.gz",
+    "sha256": "dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\typing-extensions-4.16.0\\LICENSE"
+    ]
+  },
+  {
+    "name": "watchdog",
+    "version": "4.0.2",
+    "source_url": "https://files.pythonhosted.org/packages/4f/38/764baaa25eb5e35c9a043d4c4588f9836edfe52a708950f4b6d5f714fd42/watchdog-4.0.2.tar.gz",
+    "source_file": "sources\\dependencies\\watchdog-4.0.2.tar.gz",
+    "sha256": "b4dfbb6c49221be4535623ea4474a4d6ee0a9cef4a80b20c28db4d858b64e270",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\watchdog-4.0.2\\AUTHORS",
+      "licenses\\python-dependencies\\watchdog-4.0.2\\COPYING",
+      "licenses\\python-dependencies\\watchdog-4.0.2\\LICENSE"
+    ]
+  },
+  {
+    "name": "yarl",
+    "version": "1.25.1",
+    "source_url": "https://files.pythonhosted.org/packages/75/16/e8be8e2fb175bbf41a0680381a319f1199fae256588241a2ac8677eafb49/yarl-1.25.1.tar.gz",
+    "source_file": "sources\\dependencies\\yarl-1.25.1.tar.gz",
+    "sha256": "03dd38de09bc213e9a8b29761eec33ee1d5318dac0e49d8af36e4d27830e23a7",
+    "locked": true,
+    "license_files": [
+      "licenses\\python-dependencies\\yarl-1.25.1\\LICENSE",
+      "licenses\\python-dependencies\\yarl-1.25.1\\NOTICE"
+    ]
+  }
+]

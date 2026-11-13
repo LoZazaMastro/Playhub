@@ -1,9 +1,10 @@
 import { SP_REACT as React, DFL } from './decky';
 import { HistoryConfirmHint, historyActionCopy, openHistoryImage } from './historyInteractions';
 import { call } from './controlBackend';
-import { historyImages, applyHistoryMedia } from './historyImages';
+import { historyImages, historyPhotoIntegrity, applyHistoryMedia } from './historyImages';
 import { useHistoryPhoto } from './useHistoryPhoto';
 import { orderHistoryImages, historyHeadingCover } from './historyMedia';
+const historyDigest = (image: { url: string }) => historyPhotoIntegrity[image.url]?.sha256;
 const { Focusable, DialogButton, Navigation } = DFL as any;
 const labels: Record<string,string[]> = {
  it:['Accade oggi','La storia dei videogiochi, un giorno alla volta','In questo giorno','','Dietro la storia','Continua su Wikipedia','Immagine: crediti e licenza','Prepariamo la storia di oggi…','Storia non disponibile. Riprova','Ultima storia disponibile','Fonte: Wikipedia · testo CC BY-SA 4.0'],
@@ -83,7 +84,7 @@ function Block({story,chapter,index,locale}:{story:Story;chapter?:Chapter;index:
  const mediaThemeId=story.editorial.media_id??story.editorial.id;
  const all=historyImages[mediaThemeId]??[];
  const [failed,setFailed]=React.useState<string[]>([]);
- const ordered=orderHistoryImages(all,chapter,index,story.editorial.chapters,{image_file:story.editorial.intro_image_file,image_role:story.editorial.intro_image_role});
+ const ordered=orderHistoryImages(all,chapter,index,story.editorial.chapters,{image_file:story.editorial.intro_image_file,image_role:story.editorial.intro_image_role},historyDigest);
  const media=ordered.find(image=>!failed.includes(image.url));
  const photo=useHistoryPhoto(media?.url);
  const lang=locale.split(/[-_]/)[0];
@@ -104,7 +105,7 @@ function RelatedStory({story,locale}:{story:Story;locale:string}) {
  const [expanded,setExpanded]=React.useState(()=>expandedRelatedStories.has(storyKey));
  const lastActivation=React.useRef(0);
  const all=historyImages[story.editorial.media_id??story.editorial.id]??[];
- const media=orderHistoryImages(all,undefined,0,story.editorial.chapters,{image_file:story.editorial.intro_image_file,image_role:story.editorial.intro_image_role})[0];
+ const media=orderHistoryImages(all,undefined,0,story.editorial.chapters,{image_file:story.editorial.intro_image_file,image_role:story.editorial.intro_image_role},historyDigest)[0];
  const photo=useHistoryPhoto(media?.url);
  const toggle=()=>{const now=Date.now();if(now-lastActivation.current<350)return;lastActivation.current=now;setExpanded(value=>{if(value)expandedRelatedStories.delete(storyKey);else expandedRelatedStories.add(storyKey);return !value;});};
  return <div className="ph-history-related">

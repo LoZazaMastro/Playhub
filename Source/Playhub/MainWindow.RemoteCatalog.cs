@@ -80,16 +80,20 @@ public sealed partial class MainWindow
             }
             _pluginCatalogRefreshDeferred = false;
             PluginCatalogService.ApplyPublicationDates(loaded, _pluginPublicationDates);
-            InvalidatePluginAllViews();
-            InvalidateFeaturedFrames();
-            _plugins.Clear();
-            foreach (var plugin in loaded.Where(plugin => !IsIntegratedGamingModePlugin(plugin)))
-                _plugins.Add(plugin);
+            var reconciliation = PluginCatalogReconciliation.Apply(_plugins.ToArray(),
+                loaded.Where(plugin => !IsIntegratedGamingModePlugin(plugin)).ToArray(), PluginStoreKey);
             _visiblePluginCatalogRevision = baseline.CatalogRevision;
             _visiblePluginCatalogContentVersion = RemotePluginCatalogService.ComputeContentVersion(baseline);
-            _pluginCardsDirty = true;
-            _pluginManagementDirty = true;
-            RenderVisiblePluginView();
+            if (reconciliation.HasChanges)
+            {
+                SaveNavigationPosition();
+                PluginCatalogReconciliation.Synchronize(_plugins, reconciliation.Plugins);
+                PluginPresentationChanged?.Invoke(reconciliation.Changed);
+                _pluginCardsDirty = true;
+                _pluginManagementDirty = true;
+                RenderVisiblePluginView();
+                RestoreNavigationPosition();
+            }
             ShowPluginUpdatesNotification();
             if (queueRemote) QueueRemotePluginCatalogRefresh();
             QueuePluginPublicationRefresh();

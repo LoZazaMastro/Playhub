@@ -10,34 +10,52 @@ namespace Playhub.Services;
 
 /// <summary>
 /// Trova i giochi installati dell'Epic Games Store leggendo i manifest
-/// in %ProgramData%\Epic\EpicGamesLauncher\Data\Manifests\*.item.
+/// dai manifest del launcher e dai record InstalledItems v4 di Epic.
 /// L'installazione resta all'Epic Games Launcher: qui generiamo solo le voci
 /// da importare come scorciatoie Steam (l'eseguibile reale del gioco).
 /// </summary>
 public sealed class EpicGamesService
 {
-    private static string ManifestsDir => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-        "Epic", "EpicGamesLauncher", "Data", "Manifests");
-
     public Task<IReadOnlyList<UwpGameEntry>> ScanAsync() => Task.Run<IReadOnlyList<UwpGameEntry>>(Scan);
 
-    private static IReadOnlyList<UwpGameEntry> Scan()
+    private static IReadOnlyList<UwpGameEntry> Scan() => Scan(EpicManifestPaths.Read(),
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "Epic", "EpicOnlineServicesShared", "InstallHelper", "InstalledItems"));
+
+    internal static IReadOnlyList<UwpGameEntry> Scan(IEnumerable<string> directories, string? installedItems = null)
     {
-        var dir = ManifestsDir;
-        if (!Directory.Exists(dir))
+        var games = new List<UwpGameEntry>();
+        var launcherRecords = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var dir in directories)
         {
-            return Array.Empty<UwpGameEntry>();
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(dir, "*.item"))
+                {
+                    launcherRecords.Add(Path.GetFileNameWithoutExtension(file));
+                    var entry = TryParse(file);
+                    if (entry is not null) games.Add(entry);
+                }
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
         }
 
-        var games = new List<UwpGameEntry>();
-        foreach (var file in Directory.EnumerateFiles(dir, "*.item"))
+        if (!string.IsNullOrWhiteSpace(installedItems))
         {
-            var entry = TryParse(file);
-            if (entry is not null)
+            try
             {
-                games.Add(entry);
+                foreach (var file in Directory.EnumerateFiles(installedItems, "*.egi"))
+                {
+                    // Even a malformed/incomplete launcher record takes priority:
+                    // an older helper record must not revive its installation.
+                    if (launcherRecords.Contains(Path.GetFileNameWithoutExtension(file))) continue;
+                    var entry = EpicInstalledItem.TryParse(file);
+                    if (entry is not null) games.Add(entry);
+                }
             }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
         }
 
         return games
@@ -57,6 +75,8 @@ public sealed class EpicGamesService
             var installLocation = GetString(root, "InstallLocation");
             var launchExe = GetString(root, "LaunchExecutable");
             var displayName = GetString(root, "DisplayName");
+            if (!global::Playhub.GameSession.EpicShortcutArguments.HasCatalog(GetString(root, "CatalogNamespace"),
+                GetString(root, "CatalogItemId"), GetString(root, "AppName"))) return null;
 
             if (string.IsNullOrWhiteSpace(installLocation) || string.IsNullOrWhiteSpace(launchExe))
             {
@@ -98,6 +118,9 @@ public sealed class EpicGamesService
                 LocalExecutablePath = exePath,
                 Executable = exePath,
                 SourceLaunchArguments = GetString(root, "LaunchCommand"),
+                EpicNamespace = GetString(root, "CatalogNamespace"),
+                EpicCatalogItemId = GetString(root, "CatalogItemId"),
+                EpicAppName = GetString(root, "AppName"),
                 FileSize = size
             };
         }

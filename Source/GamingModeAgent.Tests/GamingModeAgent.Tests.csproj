@@ -10,11 +10,50 @@
 
   <ItemGroup>
 	<Compile Include="Program.cs" />
+	<Compile Include="SteamModeCommandTests.cs" />
+    <Compile Include="SteamModeSettlementTests.cs" />
+    <Compile Include="..\GamingModeAgent\GamingMode.Services\SteamModeSettlement.cs" Link="SteamModeSettlement.cs" />
+    <Compile Include="SteamThemeForegroundTransitionTests.cs" />
+    <Compile Include="..\GamingModeAgent\GamingMode.Services\SteamThemeForegroundTransition.cs" Link="SteamThemeForegroundTransition.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\SteamModeCommandState.cs" Link="SteamModeCommandState.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\BigPictureReturnPolicy.cs" Link="BigPictureReturnPolicy.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\XboxCompanionOverlaySession.Scope.cs" Link="XboxCompanionOverlaySession.Scope.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\XboxCompanionOverlaySession.ValvePolicy.cs" Link="XboxCompanionOverlaySession.ValvePolicy.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\Win32SteamSessionAssociation.Policy.cs" Link="Win32SteamSessionAssociation.Policy.cs" />
+	<Compile Include="Win32SteamSessionTests.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\XboxCompanionOverlaySession.UwpPolicy.cs" Link="XboxCompanionOverlaySession.UwpPolicy.cs" />
+	<Compile Include="UwpCompanionPolicyTests.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\NativeSteamOverlayHost.Policy.cs" Link="NativeSteamOverlayHost.Policy.cs" />
+	<Compile Include="NativeSteamOverlayHostTests.cs" />
+	<Compile Include="../Shared/LegacyXboxGameBarWatcher.cs" Link="LegacyXboxGameBarWatcher.cs" />
 	<Compile Include="PresentMonFrameCollectorTests.cs" />
+	<Compile Include="PresentMonLiveTests.cs" />
+	<Compile Include="LivePerformanceControllerTests.cs" />
+    <Compile Include="LivePerformanceHudStackingTests.cs" />
+    <Compile Include="..\GamingModeAgent\GamingMode.Services\LivePerformanceHudStacking.cs" Link="LivePerformanceHudStacking.cs" />
+	<Compile Include="LivePerformanceSystemUsageTests.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\LivePerformanceSystemUsage.cs" Link="LivePerformanceSystemUsage.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\LivePerformanceEndpoints.cs" Link="LivePerformanceEndpoints.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\XboxShellBroker.cs" Link="XboxShellBroker.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\LivePerformanceController.cs" Link="LivePerformanceController.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\LivePerformanceSettingsStore.cs" Link="LivePerformanceSettingsStore.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\LivePerformanceHudModels.cs" Link="LivePerformanceHudModels.cs" />
+	<Compile Include="PresentMonLiveProof.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\PresentMonLiveMetrics.cs" Link="PresentMonLiveMetrics.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\PresentMonLiveCollector.cs" Link="PresentMonLiveCollector.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\PresentMonLiveWindowsCapture.cs" Link="PresentMonLiveWindowsCapture.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\FrameMeasurementTargetPolicy.cs" Link="FrameMeasurementTargetPolicy.cs" />
+	<Compile Include="GameExecutionQosTests.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\GameExecutionQos.cs" Link="GameExecutionQos.cs" />
+	<Compile Include="SteamDownloadPowerLeaseTests.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\SteamDownloadPowerLease.cs" Link="SteamDownloadPowerLease.cs" />
+	<Compile Include="GameAudioVolumeTests.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\GameAudioVolumeService.cs" Link="GameAudioVolumeService.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\PresentMonFrameCollector.cs" Link="PresentMonFrameCollector.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\PresentMonFrameMetrics.cs" Link="PresentMonFrameMetrics.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\PresentMonWindowsCapture.cs" Link="PresentMonWindowsCapture.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\SteamGameIdentityPolicy.cs" Link="SteamGameIdentityPolicy.cs" />
+	<Compile Include="..\GamingModeAgent\GamingMode.Services\SteamInstallationPath.cs" Link="SteamInstallationPath.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\BackgroundProcessPolicy.cs" Link="BackgroundProcessPolicy.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\ControllerHapticPatterns.cs" Link="ControllerHapticPatterns.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\SteamUiHapticsGate.cs" Link="SteamUiHapticsGate.cs" />
@@ -28,4 +67,5 @@
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\FullscreenWindowGeometry.cs" Link="FullscreenWindowGeometry.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\OverlaySteamArtwork.cs" Link="OverlaySteamArtwork.cs" />
   </ItemGroup>
+  <ItemGroup><FrameworkReference Include="Microsoft.AspNetCore.App" /></ItemGroup>
 </Project>

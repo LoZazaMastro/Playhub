@@ -16,6 +16,10 @@
     <Compile Include="../Playhub/Services/PluginCatalogService.cs" Link="PluginCatalogService.cs" />
     <Compile Include="../Playhub/Services/PluginCatalogService.Releases.cs" Link="PluginCatalogService.Releases.cs" />
     <Compile Include="../Playhub/Models/DeckyPluginInfo.cs" Link="DeckyPluginInfo.cs" />
+    <Compile Include="../Playhub/Services/PluginCatalogReconciliation.cs" Link="PluginCatalogReconciliation.cs" />
+    <Compile Include="../Playhub/Services/PluginViewRefresh.cs" Link="PluginViewRefresh.cs" />
+    <Compile Include="../Playhub/Services/PluginCollectionRefresh.cs" Link="PluginCollectionRefresh.cs" />
+    <Compile Include="../Playhub/Services/PluginChronology.cs" Link="PluginChronology.cs" />
     <Compile Include="../Playhub/MainWindow.RemoteCatalog.cs" Link="MainWindow.RemoteCatalog.cs" />
     <Content Include="../../catalog/plugins.json" Link="Assets/PluginCatalog/store-catalog.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../Playhub/Assets/PluginCatalog/external-plugins.json" Link="Assets/PluginCatalog/external-plugins.json" CopyToOutputDirectory="PreserveNewest" />

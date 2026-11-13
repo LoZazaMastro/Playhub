@@ -1,0 +1,110 @@
+diff --git a/PresentData/PresentMonTraceSession.cpp b/PresentData/PresentMonTraceSession.cpp
+index b908461..cfac1d2 100644
+--- a/PresentData/PresentMonTraceSession.cpp
++++ b/PresentData/PresentMonTraceSession.cpp
+@@ -598,6 +598,7 @@ ULONG PMTraceSession::Start(
+ 
+ void PMTraceSession::Stop()
+ {
++    const std::lock_guard liveGuard(mLiveOutputMutex);
+     ULONG status = 0;
+ 
+     // Stop the session
+@@ -635,6 +636,15 @@ void PMTraceSession::Stop()
+     }
+ }
+ 
++ULONG PMTraceSession::FlushRealtimeEvents() const
++{
++    const std::lock_guard liveGuard(mLiveOutputMutex);
++    if (!mIsRealtimeSession || mSessionHandle == 0) return ERROR_SUCCESS;
++    TraceProperties properties = {};
++    properties.Wnode.BufferSize = (ULONG)sizeof(TraceProperties);
++    properties.LoggerNameOffset = offsetof(TraceProperties, mSessionName);
++    return ControlTraceW(mSessionHandle, nullptr, &properties, EVENT_TRACE_CONTROL_FLUSH);
++}
+ ULONG StopNamedTraceSession(wchar_t const* sessionName)
+ {
+     TraceProperties sessionProps = {};
+diff --git a/PresentData/PresentMonTraceSession.hpp b/PresentData/PresentMonTraceSession.hpp
+index 621d283..e637be1 100644
+--- a/PresentData/PresentMonTraceSession.hpp
++++ b/PresentData/PresentMonTraceSession.hpp
+@@ -5,6 +5,7 @@
+ #include "../IntelPresentMon/CommonUtilities/SampleStatistics.h"
+ #include "IFilterBuildListener.h"
+ 
++#include <mutex>
+ struct PMTraceConsumer;
+ 
+ struct EtwStatus {
+@@ -58,6 +59,8 @@ struct PMTraceSession {
+                 wchar_t const* sessionName,    // Required session name
+                 bool enableProviders = true);  // Enable providers on start
+     void Stop();
++    ULONG FlushRealtimeEvents() const;
++    mutable std::mutex mLiveOutputMutex;
+     ULONG StartProviders();
+     void StopProviders();
+ 
+diff --git a/PresentMon/CommandLine.cpp b/PresentMon/CommandLine.cpp
+index 7b07408..adbaa3e 100644
+--- a/PresentMon/CommandLine.cpp
++++ b/PresentMon/CommandLine.cpp
+@@ -269,6 +269,7 @@ void PrintUsage()
+         LR"(--multi_csv)",        LR"(Create a separate CSV file for each captured process.)",
+         LR"(--no_csv)",           LR"(Do not create any output CSV file.)",
+         LR"(--no_console_stats)", LR"(Do not display active swap chains and frame statistics in the console.)",
++        LR"(--live_output_ms 20|50|100)", LR"(Flush this realtime session and update stdout at the specified interval.)",
+         LR"(--qpc_time)",         LR"(Output the CPU start time as a performance counter value.)",
+         LR"(--qpc_time_ms)",      LR"(Output the CPU start time as a performance counter value converted to milliseconds.)",
+         LR"(--date_time)",        LR"(Output the CPU start time as a date and time with nanosecond precision.)",
+@@ -388,6 +389,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
+     args->mHotkeyModifiers = MOD_NOREPEAT;
+     args->mHotkeyVirtualKeyCode = 0;
+     args->mPresentEventCircularBufferSize = 0;
++    args->mLiveOutputMilliseconds = 0;
+     args->mConsoleOutput = ConsoleOutput::Statistics;
+     args->mTrackDisplay = true;
+     args->mTrackInput = true;
+@@ -469,6 +471,8 @@ bool ParseCommandLine(int argc, wchar_t** argv)
+         else if (ParseArg(argv[i], L"terminate_after_timed"))      { args->mTerminateAfterTimer      = true; continue; }
+         else if (ParseArg(argv[i], L"set_circular_buffer_size"))   { if (ParseValue(argv, argc, &i, &args->mPresentEventCircularBufferSize)) { continue; } }
+ 
++        else if (ParseArg(argv[i], L"live_output_ms")) { if (ParseValue(argv, argc, &i, &args->mLiveOutputMilliseconds) && (args->mLiveOutputMilliseconds == 20 || args->mLiveOutputMilliseconds == 50 || args->mLiveOutputMilliseconds == 100)) continue; return false; }
++
+         // Beta options:
+         else if (ParseArg(argv[i], L"track_frame_type"))      { args->mTrackFrameType      = true; continue; }
+         else if (ParseArg(argv[i], L"track_hw_measurements")) { args->mTrackPMMeasurements = true; continue; }
+diff --git a/PresentMon/OutputThread.cpp b/PresentMon/OutputThread.cpp
+index 2713bc8..ff53a8b 100644
+--- a/PresentMon/OutputThread.cpp
++++ b/PresentMon/OutputThread.cpp
+@@ -1,4 +1,4 @@
+-// Copyright (C) 2017-2024 Intel Corporation
++﻿// Copyright (C) 2017-2024 Intel Corporation
+ // Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved
+ // SPDX-License-Identifier: MIT
+ 
+@@ -630,7 +630,8 @@ void Output(PMTraceSession const* pmSession)
+         }
+ 
+         // Sleep to reduce overhead.
+-        Sleep(100);
++        if (args.mLiveOutputMilliseconds != 0) pmSession->FlushRealtimeEvents();
++        Sleep(args.mLiveOutputMilliseconds == 0 ? 100 : args.mLiveOutputMilliseconds);
+     }
+ 
+     // Close all CSV and process handles
+diff --git a/PresentMon/PresentMon.hpp b/PresentMon/PresentMon.hpp
+index 9b15d93..46a69ff 100644
+--- a/PresentMon/PresentMon.hpp
++++ b/PresentMon/PresentMon.hpp
+@@ -83,6 +83,7 @@ struct CommandLineArgs {
+     UINT mHotkeyModifiers;
+     UINT mHotkeyVirtualKeyCode;
+     UINT mPresentEventCircularBufferSize;
++    UINT mLiveOutputMilliseconds;
+     TimeUnit mTimeUnit;
+     CSVOutput mCSVOutput;
+     ConsoleOutput mConsoleOutput;

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="PlayhubControllerDriverRequired" Value="true" />
+    <Compile Include="..\PlayhubSetup\ControllerDriverPolicy.cs" Link="ControllerDriverPolicy.cs" />
+    <Compile Include="..\PlayhubSetup\ControllerDriverDependency.cs" Link="ControllerDriverDependency.cs" />
+    <Compile Include="..\PlayhubSetup\ControllerDriverPayloadTrust.cs" Link="ControllerDriverPayloadTrust.cs" />
+    <Compile Include="..\PlayhubSetup\Loc.cs" Link="Loc.cs" />
+  </ItemGroup>
+</Project>

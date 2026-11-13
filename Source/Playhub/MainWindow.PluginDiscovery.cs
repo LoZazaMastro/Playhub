@@ -124,7 +124,7 @@ public sealed partial class MainWindow
     };
 
     private static bool IsFeaturedPluginCandidate(DeckyPluginInfo plugin) =>
-        plugin.IsPlayhubPlugin ||
+        plugin.IsPlayhubPlugin || PluginFeaturedSelection.IsPinned(plugin) ||
         (string.Equals(plugin.CatalogSource, "decky-store", StringComparison.OrdinalIgnoreCase) &&
             PopularDeckyPluginIds.Contains(plugin.CatalogPluginId));
 
@@ -133,11 +133,7 @@ public sealed partial class MainWindow
     {
         var shuffled = OrderPluginDiscoveryCategory(state, candidates)
             .DistinctBy(PluginStoreKey, StringComparer.OrdinalIgnoreCase).ToList();
-        var selected = shuffled.Where(plugin => plugin.IsPlayhubPlugin)
-            .Take(3)
-            .Concat(shuffled.Where(plugin => !plugin.IsPlayhubPlugin).Take(5))
-            .Select(PluginStoreKey).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        return shuffled.Where(plugin => selected.Contains(PluginStoreKey(plugin))).ToList();
+        return PluginFeaturedSelection.Select(shuffled).ToList();
     }
 
     private void OpenPluginCategory(string category)

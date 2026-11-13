@@ -93,6 +93,32 @@ internal static class PresentMonFrameCollectorTests
         Expect(FrameMeasurementStatus.TimedOut, collector.CaptureAsync(Target, CancellationToken.None).GetAwaiter().GetResult());
         Check(platform.Child.Kills == 1 && platform.Stopped.All(session => session == platform.Started.Single()),
             "watchdog is bounded and retries only its own trace");
+
+        platform = new Platform();
+        collector = Collector(platform);
+        pending = collector.CaptureAsync(Target, CancellationToken.None, TimeSpan.FromSeconds(3), () => true);
+        Expect(FrameMeasurementStatus.Busy, collector.CaptureAsync(Target, CancellationToken.None).GetAwaiter().GetResult());
+        platform.TargetLease.End();
+        Expect(FrameMeasurementStatus.TargetUnavailable, pending.GetAwaiter().GetResult());
+        Check(platform.Started.Count == 0, "the target exited before measurement, so no trace starts");
+
+        platform = new Platform();
+        collector = Collector(platform);
+        using var canceled = new CancellationTokenSource();
+        pending = collector.CaptureAsync(Target, canceled.Token, TimeSpan.FromSeconds(3), () => true);
+        canceled.Cancel();
+        Expect(FrameMeasurementStatus.Canceled, pending.GetAwaiter().GetResult());
+        Expect(FrameMeasurementStatus.GameNotForeground,
+            collector.CaptureAsync(Target, CancellationToken.None, TimeSpan.FromMilliseconds(10), () => false).GetAwaiter().GetResult());
+        Check(platform.Started.Count == 0, "no trace starts without the current game window");
+
+        var csv = new StringBuilder(Header).AppendLine();
+        Add(csv, Pid, "0x42", 60);
+        platform = new Platform { CompleteOnStart = true, Csv = csv.ToString() };
+        collector = Collector(platform);
+        Expect(FrameMeasurementStatus.Ready,
+            collector.CaptureAsync(Target, CancellationToken.None, TimeSpan.FromMilliseconds(10), () => true).GetAwaiter().GetResult());
+        Check(platform.Started.Count == 1 && platform.Stopped.Count == 1, "a ready foreground trace completes and releases its session");
     }
 
     internal static void VerifyCleanup()

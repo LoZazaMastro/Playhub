@@ -1,0 +1,5 @@
+Discord silhouette: Font Awesome Free 5.15.4 by Fonticons, Inc., via react-icons FaDiscord.
+Source: https://github.com/FortAwesome/Font-Awesome/blob/5.15.4/svgs/brands/discord.svg
+Icons licensed CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
+The original silhouette is unchanged, rendered white on a Discord blurple background.
+Discord is a trademark of Discord Inc.; the logo represents the Discord integration.
