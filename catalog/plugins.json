@@ -515,7 +515,7 @@
       "updatedAt": "2026-08-22T10:52:12Z"
     },
     {
-      "active": true,
+      "active": false,
       "name": "Discord",
       "installFolder": "Discord",
       "author": "LoZazaMastro, based on Steamcord by Necrosiak",
@@ -545,8 +545,7 @@
         "Windows",
         "noloc",
         "catalog-added:2026-11-13",
-        "first-release:2026-11-13",
-        "featured"
+        "first-release:2026-11-13"
       ],
       "aliases": [
         "Discord",
@@ -12796,5 +12795,5 @@
       "longDescription": "WiFi optimizations for game streaming and online play. Survives sleep and updates."
     }
   ],
-  "catalogRevision": 13
+  "catalogRevision": 14
 }
