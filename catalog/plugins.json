@@ -515,7 +515,7 @@
       "updatedAt": "2026-08-22T10:52:12Z"
     },
     {
-      "active": false,
+      "active": true,
       "name": "Discord",
       "installFolder": "Discord",
       "author": "LoZazaMastro, based on Steamcord by Necrosiak",
@@ -21929,5 +21929,5 @@
       "updatedAt": "2026-11-12T05:37:24Z"
     }
   ],
-  "catalogRevision": 15
+  "catalogRevision": 16
 }
