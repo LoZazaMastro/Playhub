@@ -521,12 +521,12 @@
       "author": "LoZazaMastro, based on Steamcord by Necrosiak",
       "repository": "LoZazaMastro/Playhub-Discord",
       "repositoryUrl": "https://github.com/LoZazaMastro/Playhub-Discord",
-      "version": "1.0.2",
-      "releaseAssetName": "Discord_Installer-1.0.2.zip",
-      "catalogReleaseUrl": "https://github.com/LoZazaMastro/Playhub-Discord/releases/download/v1.0.2/Discord_Installer-1.0.2.zip",
-      "releasePublishedAt": "2026-11-14T12:57:33Z",
+      "version": "1.0.3",
+      "releaseAssetName": "Discord_Installer-1.0.3.zip",
+      "catalogReleaseUrl": "https://github.com/LoZazaMastro/Playhub-Discord/releases/download/v1.0.3/Discord_Installer-1.0.3.zip",
+      "releasePublishedAt": "2026-11-14T18:07:04Z",
       "firstPublishedAt": "2026-11-13T13:44:30Z",
-      "updatedAt": "2026-11-14T12:57:33Z",
+      "updatedAt": "2026-11-14T18:07:04Z",
       "category": "Playhub",
       "shortDescription": "Discord voice, channels and conversations, built into Playhub for Windows.",
       "longDescription": "Discord voice, channels and conversations, built into Playhub for Windows.",
@@ -21929,5 +21929,5 @@
       "updatedAt": "2026-11-12T05:37:24Z"
     }
   ],
-  "catalogRevision": 18
+  "catalogRevision": 19
 }
