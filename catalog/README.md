@@ -42,13 +42,21 @@ the catalog record. Omitted bundled records survive. Disabling a record does
 not uninstall an already installed plugin.
 
 The 19 October workbook added 47 records and removed LumaDeck. The 10 November
-workbook adds 158 repositories and updates 20 release pins. The catalog has 401
-records, including 13 Playhub entries, 108 Decky Store entries and 280 external
-entries. Two Playhub entries are disabled. The workbook import receipts record
+workbook adds 158 repositories and updates 20 release pins. The catalog has 672
+records, including 14 Playhub entries, 108 Decky Store entries and 550 external
+entries. Three Playhub entries are disabled. The workbook import receipts record
 source rows, package hashes where verified, and reasons for exclusions.
 Package checks cover the pinned ZIP, Decky manifest, compiled frontend and
 publisher metadata. Runtime compatibility depends on the plugin and its
 supported platforms.
+
+The 14 November DeckyHub reconciliation adds 270 records from the pinned public
+registry after release-manifest and compiled-frontend checks. Original publisher
+copy is recorded in `deckyhub-description-provenance-2026-11-14.json`; the complete
+298-entry comparison and 28 held identities/packages are recorded in
+`deckyhub-import-2026-11-14.json`. A catalog listing is not a Windows compatibility
+endorsement. Web Browser remains available but carries `exclude-featured`; the
+updated featured selector enforces that flag, while older clients may not.
 
 A bundled snapshot and last-good disk cache render first. Background refresh
 reads the public file every six hours or on explicit Store refresh. Changed

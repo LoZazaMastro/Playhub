@@ -1,0 +1,1935 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-11-14T08:41:28Z",
+  "catalogRevision": 15,
+  "policy": "Publisher description and language preserved from the released plugin.json; introductory README excerpt used only if publish.description is absent. README formatting-only removal is recorded. Existing workbook provenance is not altered.",
+  "registryUrl": "https://raw.githubusercontent.com/mazillka/deckyhub-registry/36088569614690e8c9094845f1db1b95069b27de/registry/apps.json",
+  "sources": [
+    {
+      "repository": "1m93/DeckyEclipse",
+      "sourceUrl": "https://github.com/1m93/DeckyEclipse/releases/download/v0.2.0/Eclipse-0.2.0.zip",
+      "field": "Eclipse/plugin.json:publish.description",
+      "sourceSha256": "5f4bc82ae7d4cf82c21779e252e261b92592a7e9b1b19aaccf5bc3a6e61bfaeb",
+      "descriptionSha256": "00694629ac5ebc501259f8c5f17bd7187a8504d5ad9e44884eb377831df5290f"
+    },
+    {
+      "repository": "228co/dsh-deck-pet",
+      "sourceUrl": "https://github.com/228co/dsh-deck-pet/releases/download/v0.1.1/dsh-deck-pet.zip",
+      "field": "dsh-deck-pet/plugin.json:publish.description",
+      "sourceSha256": "00a7dfe85f9b245cc2f33e7e7cebc86c5beb6b0162037ef855aaee583a819fc5",
+      "descriptionSha256": "f122253221037259a5a19ff4cfd55ab0486702e0a793c16c4c05c60b90fbcae2"
+    },
+    {
+      "repository": "3570548848/dsh-decky",
+      "sourceUrl": "https://github.com/3570548848/dsh-decky/releases/download/v0.1.15/dsh-decky.zip",
+      "field": "dsh-decky/plugin.json:publish.description",
+      "sourceSha256": "5084f8545c7216683d119c26c7b6c75733125fc0a1fc2620fe0d4bb8af8f5fe0",
+      "descriptionSha256": "09bb00e12b3a40a8b1ab9911362ff9de9112a4dd0ac8004396bbc6c47056fe45"
+    },
+    {
+      "repository": "60plus/DeckyCache",
+      "sourceUrl": "https://github.com/60plus/DeckyCache/releases/download/v0.4.8/DeckyCache-0.4.8.zip",
+      "field": "DeckyCache/plugin.json:publish.description",
+      "sourceSha256": "f0a0c33e9e6ce7d845fe61f4151d9d21442f9bbc1d788e7a0318dab099a83651",
+      "descriptionSha256": "2bf3acc6d0d566f88fd4bf9c4625b7e69875ea148437588fe999eab8c62ff7ca"
+    },
+    {
+      "repository": "aanze/deckops-decky",
+      "sourceUrl": "https://github.com/aanze/deckops-decky/releases/download/v0.3.1/deckops.zip",
+      "field": "deckops/plugin.json:publish.description",
+      "sourceSha256": "0957d2eb226abc70009db792f986cc3da9905ae525f42215d4c40bead7597d56",
+      "descriptionSha256": "de378c27a7397a64f3d05119fff20c893f36030b6eb400c0e21925fdbec526dc"
+    },
+    {
+      "repository": "aaron-pengx/ntfs-mount-keeper",
+      "sourceUrl": "https://github.com/aaron-pengx/ntfs-mount-keeper/releases/download/v1.0.0/ntfs-mount-keeper.zip",
+      "field": "ntfs-mount-keeper/plugin.json:publish.description",
+      "sourceSha256": "decfb17ff16e0467382ea8243a6d0ef51995902809cbed1c38682c9d69c539ce",
+      "descriptionSha256": "3e700a1f69b873c9f756fda72b0117644a514e4dfe9a39e2cb2ee287f7358684"
+    },
+    {
+      "repository": "abduznik/decky-navidrome-player",
+      "sourceUrl": "https://github.com/abduznik/decky-navidrome-player/releases/download/v0.1.3/navidrome-player-0.1.3-x86_64.zip",
+      "field": "navidrome-player/plugin.json:publish.description",
+      "sourceSha256": "4f1a034cc4e780fc8b3d22afde5810a53aa54ddb2a476f5734b43054f528b251",
+      "descriptionSha256": "a7913f8fb01c7f41c80ba7c97675504529baf6e3b8a6bcdae847ca68cd72080c"
+    },
+    {
+      "repository": "adammhal/mercury-odin",
+      "sourceUrl": "https://github.com/adammhal/mercury-odin/releases/download/steamdeck-v0.1.0/Mercury-SteamDeck.zip",
+      "field": "Mercury/plugin.json:publish.description",
+      "sourceSha256": "d1e76334f765e287286efed4f992bceef3a76c30835e0b502e51c74b0a7bb36c",
+      "descriptionSha256": "c3b6108453ebcd15be76fe2703286f8958ca9d6447a9f67fad5a2d03c54be67a"
+    },
+    {
+      "repository": "AdrianBonpin/deckyvault",
+      "sourceUrl": "https://github.com/AdrianBonpin/deckyvault/releases/download/v1.1.0/plugin-v1.1.0.zip",
+      "field": "plugin.json:publish.description",
+      "sourceSha256": "89ce618d3ef45dcc2a2e20edeb5d74a851cd20236b7933f756cda3a959de15c1",
+      "descriptionSha256": "f4cf4499a39130936739afb7432b83b61842523732e27bec3cb6286858b1fc42"
+    },
+    {
+      "repository": "ajustinjames/decky-portal",
+      "sourceUrl": "https://github.com/ajustinjames/decky-portal/releases/download/v0.1.1/Portal.zip",
+      "field": "Portal/plugin.json:publish.description",
+      "sourceSha256": "af3561793c2778de71a5efd275d4fcac12acbc6a03c70b8f898d026a8e9f4425",
+      "descriptionSha256": "a4e7ae2543c37866121fec9190be552eff598ad169f4fa5cbcf28eed7a250508"
+    },
+    {
+      "repository": "Ak4ai/decky-trailer-hero",
+      "sourceUrl": "https://github.com/Ak4ai/decky-trailer-hero/releases/download/v0.1.0/Trailer-Hero-v0.1.0.zip",
+      "field": "Trailer Hero/plugin.json:publish.description",
+      "sourceSha256": "aeaf09495cf7f3bf37e8a0dfc924db1e5138580e321b9d101bb9eaf0f6136431",
+      "descriptionSha256": "6f996d6881001516b105fbbe396c1b3912f3da7889cbf708091d77527edd66cd"
+    },
+    {
+      "repository": "AkazaRenn/SDH-DeckAutoUpdate",
+      "sourceUrl": "https://github.com/AkazaRenn/SDH-DeckAutoUpdate/releases/download/20261020152152/SDH-DeckAutoUpdate.zip",
+      "field": "SDH-DeckAutoUpdate/plugin.json:publish.description",
+      "sourceSha256": "a9d9f655f91b738bfb37f3f5ed20b8ad41a8192800d9039a1aa3ffaae9352f47",
+      "descriptionSha256": "1182452a5b077daac86a3c8373b29a72d69cfc103a32e0c6ce2babce3e370210"
+    },
+    {
+      "repository": "alf1995/PlayTime-Tracker",
+      "sourceUrl": "https://github.com/alf1995/PlayTime-Tracker/releases/download/v1.0.1/PlayTime-Tracker-v0.1.0-INSTALL.zip",
+      "field": "PlayTime-Tracker/README.md:paragraph[1] (formatting only removed)",
+      "sourceSha256": "2243baf37ce4f67c51a2ba789c7888b4279a4c15223e980428c228ec5defa6f6",
+      "originalExcerpt": "**PlayTime Tracker** es un plugin para [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) que registra el tiempo de juego en SteamOS y muestra estadísticas desde el menú de acceso rápido de Steam.",
+      "originalExcerptSha256": "6099a6c38d1edec40ae58cb67103dd9c527a7a6aa2e2892170029af31fefc726",
+      "descriptionSha256": "086691b8c81cc689dfa3e5ff3c471bf3c342ff152a649e8cab74a7ebb9ab55cb"
+    },
+    {
+      "repository": "Algorithm0/AmneziaVPN-DeckyLoader",
+      "sourceUrl": "https://github.com/Algorithm0/AmneziaVPN-DeckyLoader/releases/download/v0.1.0/Amnezia.Deck.zip",
+      "field": "Amnezia Deck/plugin.json:publish.description",
+      "sourceSha256": "22ae59cb6696d596f460a12a6e2dd4d0ec159d80ceedb6d1d67beeb02b1ee6b6",
+      "descriptionSha256": "f99b45f09b8cdce881f8f4bb750530d867b6024bcf03d6d75365612fa1b77030"
+    },
+    {
+      "repository": "Alyenax/Decky-Animated-Screensaver",
+      "sourceUrl": "https://github.com/Alyenax/Decky-Animated-Screensaver/releases/download/v1.0.1/Decky-Animated-Screensaver-v1.0.1.zip",
+      "field": "Decky-Animated-Screensaver/plugin.json:publish.description",
+      "sourceSha256": "589168d2c979f138d7c0248878f9497db97cd82f05449c83baaf89fde9d9e7bd",
+      "descriptionSha256": "d90f0c662ed7e61a9012aab475863fb5990418d65d0587565c44aa04b30f975d"
+    },
+    {
+      "repository": "Alyenax/PongBar",
+      "sourceUrl": "https://github.com/Alyenax/PongBar/releases/download/v0.1.0/PongBar-v0.1.0.zip",
+      "field": "PongBar/plugin.json:publish.description",
+      "sourceSha256": "d7bb14dad8343531b0b61b8bbb776f6dde533db5e6221db7131f48312158103d",
+      "descriptionSha256": "58d69847daa3531bd5cb7f61765dcb0cac5d8de3a81003040f0cbb3a2e5d6870"
+    },
+    {
+      "repository": "anslwy/decky-onexgpu",
+      "sourceUrl": "https://github.com/anslwy/decky-onexgpu/releases/download/v0.1.4/decky-onexgpu.zip",
+      "field": "decky-onexgpu/plugin.json:publish.description",
+      "sourceSha256": "34d02aa5d01460b31651c033cb379313a9ec8d29858bc5e659c6f35415565cc4",
+      "descriptionSha256": "0478c28c035a7e3a91d7037c01e2ec9cf41d7e1267ff1176983b53841d7452c2"
+    },
+    {
+      "repository": "arttttt/DeckyScaler",
+      "sourceUrl": "https://github.com/arttttt/DeckyScaler/releases/download/2026.10.24/DeckyScaler.zip",
+      "field": "DeckyScaler/plugin.json:publish.description",
+      "sourceSha256": "bb6d34e8b9acce68fd30a9a3814e1af5247e9147b105654d66f399a49258af92",
+      "descriptionSha256": "10e46dbbcbd0decd65357d92e00b248ffab2c0be4e2a3b01e7067fa72e431a31"
+    },
+    {
+      "repository": "b-ostrov/hiddify-steam-deck-vpn",
+      "sourceUrl": "https://github.com/b-ostrov/hiddify-steam-deck-vpn/releases/download/v1.3.18/decky-hiddify-v1.3.18.zip",
+      "field": "decky-hiddify/plugin.json:publish.description",
+      "sourceSha256": "ffbb58d7fdec884f83a3aa30b14d7a570ece5865aacadf6764064e697bf0e057",
+      "descriptionSha256": "4de31a05d4129f1555e6033410e42cabaf87280b4ec87a7f40692402808792ca"
+    },
+    {
+      "repository": "babi723/decky-backlog-picker",
+      "sourceUrl": "https://github.com/babi723/decky-backlog-picker/releases/download/v1.3.0/decky-backlog-picker-v1.3.0.zip",
+      "field": "decky-backlog-picker/README.md:paragraph[1] (formatting only removed)",
+      "sourceSha256": "8117ed5a76e36ff5b17fb300f507415c58d08579c21466a3e6560ead78df6d38",
+      "originalExcerpt": "Can't decide what to play from your massive Steam backlog? Let **Backlog Picker** choose for you!",
+      "originalExcerptSha256": "04b37a5f948ceb0298193154f6c0cb31970539d2b7c3f2b0bd1feb34306ba515",
+      "descriptionSha256": "8b90dde17bee1097ef4494799f0af563a1ccf5acb27570bca99b6b0ab62d8c7b"
+    },
+    {
+      "repository": "BakaPute/ArmadaLSFG",
+      "sourceUrl": "https://github.com/BakaPute/ArmadaLSFG/releases/download/v0.1.5/ArmadaLSFG-v0.1.5.zip",
+      "field": "ArmadaLSFG/plugin.json:publish.description",
+      "sourceSha256": "ef308368ac4122ff45bbac4e5f81e1ae11fe4aa3196129ef402112524ebd643a",
+      "descriptionSha256": "a2a59da5ce336f581bc3f76af11e4516396f1952065a9c8f846d858869eda5cb"
+    },
+    {
+      "repository": "bassobr/Decky-CachyOS-Updater",
+      "sourceUrl": "https://github.com/bassobr/Decky-CachyOS-Updater/releases/download/v0.1.4/cachyos-updater-0.1.4.zip",
+      "field": "CachyOS Updater/plugin.json:publish.description",
+      "sourceSha256": "22c5d504302828327ba99eff9b039cc19b456253dd0bd5fcc2830157979e5fe0",
+      "descriptionSha256": "b96ec5cee932b95c117e282d2134c70c97aad5389a0a0aca44f68f7f3c809a8a"
+    },
+    {
+      "repository": "bassobr/Decky-Wifi-Streaming-Optimizer",
+      "sourceUrl": "https://github.com/bassobr/Decky-Wifi-Streaming-Optimizer/releases/download/v0.15.1/wifi-optimizer-streaming-0.15.1.zip",
+      "field": "WiFi Optimizer Streaming/plugin.json:publish.description",
+      "sourceSha256": "0a4c6bb83e44f2aff2bfab9013a8dd5d96bc3d15650ea25d9a8985650a1d052c",
+      "descriptionSha256": "e6dd8eefc21361ff7792d81f1a56a9745aae5998ce026a0c126b899d994b23d4"
+    },
+    {
+      "repository": "bassobr/decky-wowup",
+      "sourceUrl": "https://github.com/bassobr/decky-wowup/releases/download/v0.2.0/wow-addons-0.2.0.zip",
+      "field": "WoW Addons/plugin.json:publish.description",
+      "sourceSha256": "9c2d56d892cdae07b1a2db037a52db1bdb23df1cbb3959bb36671c7a0472d139",
+      "descriptionSha256": "62150d236a4d52c948cab350cb5c90fadc941a7109fc425db5a9131c2a1ae84e"
+    },
+    {
+      "repository": "basuev/amneziawg-deck",
+      "sourceUrl": "https://github.com/basuev/amneziawg-deck/releases/download/v0.1.0/AmneziaWG.zip",
+      "field": "AmneziaWG/plugin.json:publish.description",
+      "sourceSha256": "f16211d58e7dde6519b11bd7942c92eb608705e995d6a77290357810442043fc",
+      "descriptionSha256": "f16f9b0555a61af2af19f8a24ed970b5effa3deaacf5344fd16a83fc931a32db"
+    },
+    {
+      "repository": "beaglemoo/decky-speaker-boost",
+      "sourceUrl": "https://github.com/beaglemoo/decky-speaker-boost/releases/download/v1.0.0/Speaker-Boost.zip",
+      "field": "Speaker Boost/plugin.json:publish.description",
+      "sourceSha256": "30637f290bb3d88629480af1f36e110fdb23f480047e58692fcfd831fe28cd5e",
+      "descriptionSha256": "27b6bfc683ed307564d7007fb299a79ee2946fc0751e94952ab6f2bfcda7bde8"
+    },
+    {
+      "repository": "bellyokelly-ship-it/jbl",
+      "sourceUrl": "https://raw.githubusercontent.com/bellyokelly-ship-it/jbl/v0.3.0-9/README.md",
+      "field": "README.md:paragraph[1] (formatting only removed)",
+      "sourceSha256": "00c33a29f2465e14d903402cc8d282c18a569e04540b3d932f7f82b54aa86c14",
+      "originalExcerpt": "> Ultimate Steam Deck optimization plugin for Decky Loader",
+      "originalExcerptSha256": "6f785e6ae2fdbd4a7d2948efe52bc765cf7d7dd69a727f6cb4b428964c33d06a",
+      "descriptionSha256": "e6e9499e6a2f7b653dd72d5738d3672b2652e71d3e8eab1ccd3160b6d69d25a6"
+    },
+    {
+      "repository": "BirikuSistema/decky-recents-filter",
+      "sourceUrl": "https://github.com/BirikuSistema/decky-recents-filter/releases/download/v0.5.5/decky-recents-filter.zip",
+      "field": "decky-recents-filter/plugin.json:publish.description",
+      "sourceSha256": "7a710cf7a1e859cc74a48ca667cfda6a54868ef270a165c1016d637e6c04f0e1",
+      "descriptionSha256": "3b316755850a3b65fa1eb6a5c4baead91939eec8fdb526568da99fabe1da191b"
+    },
+    {
+      "repository": "Bluin0/DeckyWardenVault",
+      "sourceUrl": "https://github.com/Bluin0/DeckyWardenVault/releases/download/v0.4.12/decky-bitwarden-v0.4.12.zip",
+      "field": "decky-bitwarden/plugin.json:publish.description",
+      "sourceSha256": "af9929d721c047e101d762e1eb0c1a607a618e740bece48396cbd92a59d63365",
+      "descriptionSha256": "48a74145e7235c83902bc940530a676f70de41a7c1ea3ac66d654ac5c9976bf4"
+    },
+    {
+      "repository": "BradleySharp/amethyst-deploy-decky",
+      "sourceUrl": "https://github.com/BradleySharp/amethyst-deploy-decky/releases/download/v0.1.0/amethyst-deploy-v0.1.0.zip",
+      "field": "Amethyst Deploy/plugin.json:publish.description",
+      "sourceSha256": "9e1a6cd87e98c5b194d969a2db70bc9ad78b8b47f13220013384dac90b6cf415",
+      "descriptionSha256": "d2d2458c5784203e0d0b749f3505eff6c2d8b7e3ac704b185aa7b2b5bd997950"
+    },
+    {
+      "repository": "branchingjade/boot-volume",
+      "sourceUrl": "https://github.com/branchingjade/boot-volume/releases/download/v1.4.0/BootVolume.zip",
+      "field": "plugin.json:publish.description",
+      "sourceSha256": "b828d8e1a3320a9ab9dffe7c578ef5eed3292966b2d6cd6404e57fdb4365c95d",
+      "descriptionSha256": "f2d970deefde2caeff84fbed82e16605af4775909ffc3c5dc704baaf529bd8ab"
+    },
+    {
+      "repository": "branchingjade/reboot-to-windows",
+      "sourceUrl": "https://github.com/branchingjade/reboot-to-windows/releases/download/v1.0.1/RebootToWindows.zip",
+      "field": "plugin.json:publish.description",
+      "sourceSha256": "16e244e09fc9206d775447a61a8cadd4c0b27b8449aee07cfc08a8e62f3ffe10",
+      "descriptionSha256": "14f0cd078681650434c2a34c8b11aae9b3656a2c01d258ddc252d02af461ac5d"
+    },
+    {
+      "repository": "breakmylegs/qbittorrent-monitor",
+      "sourceUrl": "https://github.com/breakmylegs/qbittorrent-monitor/releases/download/v0.5.0/qbittorrent-monitor.zip",
+      "field": "qbittorrent-monitor/plugin.json:publish.description",
+      "sourceSha256": "e01876970a6c14979ba0e47c5a828d9b019072f4a5738d3e0a21bd8238320b75",
+      "descriptionSha256": "be086849de80e703059ffecd822f0630dc9f75c0381de33a783605590d019e90"
+    },
+    {
+      "repository": "breakmylegs/sabnzbd-monitor",
+      "sourceUrl": "https://github.com/breakmylegs/sabnzbd-monitor/releases/download/v0.5.0/sabnzbd-monitor.zip",
+      "field": "sabnzbd-monitor/plugin.json:publish.description",
+      "sourceSha256": "d2804fc7e456d58294759f8388188f3d4f4c9b95d58ec900daa4da70b57fbbee",
+      "descriptionSha256": "cae6882e11ffa959aba4f00f1975bcdc5f118e6e637b678a341fa8056b886ff1"
+    },
+    {
+      "repository": "breakmylegs/tuning-advisor",
+      "sourceUrl": "https://github.com/breakmylegs/tuning-advisor/releases/download/v0.10.0/tuning-advisor.zip",
+      "field": "tuning-advisor/plugin.json:publish.description",
+      "sourceSha256": "a76f1a5503b4fec74b7d46eba5f578c516e9929b4ac2f5f07fddda750ac43e00",
+      "descriptionSha256": "8b2c1b7f15384abf17d26d80bfefa6c605fe66671a6267b08ebe42a549d5cf94"
+    },
+    {
+      "repository": "BrenticusMaximus/CriticDeck",
+      "sourceUrl": "https://github.com/BrenticusMaximus/CriticDeck/releases/download/v1.0.1/CriticDeck-build-2026-02-23-202315-EST.zip",
+      "field": "CriticDeck/plugin.json:publish.description",
+      "sourceSha256": "a1b578d4c70acab8e93fc39ca42152ca7bbc32e59701a3aa43d6573d99b642ea",
+      "descriptionSha256": "475f65d0de31519b072338e7ebcdf2d0dc08559068a24a8e7a9f3de7dff4c5e0"
+    },
+    {
+      "repository": "BrenticusMaximus/FriendsBar",
+      "sourceUrl": "https://github.com/BrenticusMaximus/FriendsBar/releases/download/v1.0.4/FriendsBar-build-2026-03-03-115300-EST.zip",
+      "field": "FriendsBar/plugin.json:publish.description",
+      "sourceSha256": "b7c21ec136d4f1ac084d202e73601586309fdbd3816eb28a2131ec27ead03040",
+      "descriptionSha256": "82ca9a4392b428ebb68e13bf63ec4faecbc67e7085f550018f07f153c937fe82"
+    },
+    {
+      "repository": "BrenticusMaximus/RainWaveBuddy",
+      "sourceUrl": "https://github.com/BrenticusMaximus/RainWaveBuddy/releases/download/v1.0.0/RainWaveBuddy-build-2026-02-26-235208-EST.zip",
+      "field": "RainWaveBuddy/plugin.json:publish.description",
+      "sourceSha256": "efa58bb741e2cc2f8ed5f47b05d527e8af0cd346f410b61d462d86e4714f5c1f",
+      "descriptionSha256": "4b6dfc4f0160822475a6e4a338b7101316a439df27d65fc051f0eab0fc422592"
+    },
+    {
+      "repository": "burghr/decky-xodus-chat",
+      "sourceUrl": "https://github.com/burghr/decky-xodus-chat/releases/download/v0.1.0/decky-xodus-chat-0.1.0.zip",
+      "field": "decky-xodus-chat/plugin.json:publish.description",
+      "sourceSha256": "99ae9b02eb8c049052c247a1863833bdcd55d521b5172e837ff92370c3b07a09",
+      "descriptionSha256": "c72b541a7fb064a4906fa87e35b0e39aa813542a779ec25997ca764c21888e98"
+    },
+    {
+      "repository": "BwahFox/deckycord",
+      "sourceUrl": "https://github.com/BwahFox/deckycord/releases/download/v0.2.0/deckycord.zip",
+      "field": "deckycord/plugin.json:publish.description",
+      "sourceSha256": "09e1cb7e35035dfff0f8e19de4d8d918961e7fca5f374c8346d33746433f71fa",
+      "descriptionSha256": "1ad20646d0be483f0aa1eca00436a7549b4c28823a5291e9e6e93fd4271146d9"
+    },
+    {
+      "repository": "CapraAudio/CapraLink",
+      "sourceUrl": "https://github.com/CapraAudio/CapraLink/releases/download/v0.3.1/CapraLink-Decky-0.3.1.zip",
+      "field": "CapraLink/plugin.json:publish.description",
+      "sourceSha256": "75fd2a2039233da3b259c7f27e6f7b7f927c23fa1217caae47362b0efd8977ed",
+      "descriptionSha256": "824cf5531548ea8881d9f46711f7f7fbf131caa9dc43db5bd13cfe017575315b"
+    },
+    {
+      "repository": "ccc007ccc/ForzaHorizon-DualSense-SteamOS",
+      "sourceUrl": "https://github.com/ccc007ccc/ForzaHorizon-DualSense-SteamOS/releases/download/v0.1.1/ForzaHorizon-DualSense.zip",
+      "field": "ForzaHorizon-DualSense/plugin.json:publish.description",
+      "sourceSha256": "44ef557585e9a687899c680979b1285d70076b3d9bb9d047143f2be945b2bb6a",
+      "descriptionSha256": "f2d9704dea63e918646f74e39d30e3d80c4610904e06e0942ad07c6dc014d507"
+    },
+    {
+      "repository": "ccc007ccc/mihomo-decky",
+      "sourceUrl": "https://github.com/ccc007ccc/mihomo-decky/releases/download/v0.1.0/mihomo-decky-0.1.0.zip",
+      "field": "mihomo-decky/plugin.json:publish.description",
+      "sourceSha256": "ed9f97a4f5485916250055346360b0da199f7fb68ad368fa5651d29e39e1fb6f",
+      "descriptionSha256": "5aaea3393b97fac102991ed940110fc27fd1e76a5fcfedbbe9653b3323e0294a"
+    },
+    {
+      "repository": "cedricdelpoux/steam-deck-colorful",
+      "sourceUrl": "https://github.com/cedricdelpoux/steam-deck-colorful/releases/download/v1.0.0/Colorful.zip",
+      "field": "Colorful/plugin.json:publish.description",
+      "sourceSha256": "272dd1dc5bf39f2a72e7505dec7b990babc97f90d770e03844bc14fbf260b6f1",
+      "descriptionSha256": "216a23b301cdcd3a1d0bcbaa379c2ef3aad91561ffa608263eb33df05b08660f"
+    },
+    {
+      "repository": "cernoh/travelling-deck",
+      "sourceUrl": "https://github.com/cernoh/travelling-deck/releases/download/v0.1.1/travelling-deck-v0.1.1.zip",
+      "field": "travelling-deck/plugin.json:publish.description",
+      "sourceSha256": "0160ecfdef84037f39ec244192ba80b138e809c4be468b91b44f3bf75bd1f463",
+      "descriptionSha256": "66f7640e4fea3d916485f1570fc4825a8be1b07a21f6f43d25ac75290ca55c61"
+    },
+    {
+      "repository": "chenasraf/decky-emudeck-romm",
+      "sourceUrl": "https://github.com/chenasraf/decky-emudeck-romm/releases/download/v0.5.0/decky-emudeck-romm.zip",
+      "field": "decky-emudeck-romm/plugin.json:publish.description",
+      "sourceSha256": "f74c4ca583ee4bbbf205e463b96a11cb5593d23023d66ac9f1eb9a32b1efd60c",
+      "descriptionSha256": "7f15157bd5e3583036d094d8a0874bc594945cb330c50395ac1bbe001d77f697"
+    },
+    {
+      "repository": "chmodmasx/PSDeck",
+      "sourceUrl": "https://github.com/chmodmasx/PSDeck/releases/download/v0.1.0-alpha.2/PSDeck-Decky.zip",
+      "field": "PSDeck/plugin.json:publish.description",
+      "sourceSha256": "4c81a13b8c822a1b237181cd3cacb0a280859081302b980a62dd2d897cda538a",
+      "descriptionSha256": "6da7ee289269627bb6e9a43797f5ef78e2f4fa8d94750e0a286ebbe27aeffe7c"
+    },
+    {
+      "repository": "christopherl/decky-gyro-dsu",
+      "sourceUrl": "https://github.com/christopherl/decky-gyro-dsu/releases/download/v0.4.0/GyroDSU-0.4.0.zip",
+      "field": "GyroDSU/plugin.json:publish.description",
+      "sourceSha256": "57cc27ccd3cd8e5ca7cea9b08cf8857483fc03a2b1e4ef58c7407b0e4f0c9db3",
+      "descriptionSha256": "05a038a18a9a651c0b3b19738cd957a322df48ad52730de50fe9c83d82b1ce37"
+    },
+    {
+      "repository": "Congmeims/Decky-Flow",
+      "sourceUrl": "https://github.com/Congmeims/Decky-Flow/releases/download/v0.10.0/decky-flow-0.10.0.zip",
+      "field": "decky-flow/plugin.json:publish.description",
+      "sourceSha256": "30a7cae69677d71abc6c33d4e9714a3de50188b7dbe31bc01fb6ac7425fd8e0a",
+      "descriptionSha256": "468d56a666b46d10c70bcdcd009a7d6435d8dc8c00cb4419accbd94ea602a2a8"
+    },
+    {
+      "repository": "D0minatorX/rogcontrol",
+      "sourceUrl": "https://github.com/D0minatorX/rogcontrol/releases/download/v1.0.3.0/ROG-Control-Decky-v0.1.5.zip",
+      "field": "ROG-Control/plugin.json:publish.description",
+      "sourceSha256": "c0af9aff4f883389507561b36b2bca535beb94cb8f537a3e8714422a92c2a520",
+      "descriptionSha256": "8f58ce4402cf93c4d1c837ec9b6d9e21940b2c5f8707725dea66e3e187755162"
+    },
+    {
+      "repository": "danielcamilo1/decky-cloud-saves",
+      "sourceUrl": "https://github.com/danielcamilo1/decky-cloud-saves/releases/download/v0.1.0/Deck-Cloud-Saves-v0.1.0.zip",
+      "field": "Deck Cloud Saves/plugin.json:publish.description",
+      "sourceSha256": "c51225227f52e6a01b6e0f709ada4c2e462ebd4f2da74dbd9715176823e06b4d",
+      "descriptionSha256": "5c70154cc50030b09dbdc2300c3a3af9e47be76326f6947f8a60fc67d259306e"
+    },
+    {
+      "repository": "danielcamilo1/decky-digimon-sts-team-builder",
+      "sourceUrl": "https://github.com/danielcamilo1/decky-digimon-sts-team-builder/releases/download/v1.3.0/decky-digimon-sts-team-builder-v1.3.0.zip",
+      "field": "Digimon Time Stranger Team Builder/plugin.json:publish.description",
+      "sourceSha256": "d373e49e75e983a8c6c7aba8dcaeb27d6083944284553ebeecea626f4976912a",
+      "descriptionSha256": "74560af8642760c13750e7425d7d0bec048c689a04d4f7b68cd2b6239da06635"
+    },
+    {
+      "repository": "danielcamilo1/decky-local-saves-sync",
+      "sourceUrl": "https://github.com/danielcamilo1/decky-local-saves-sync/releases/download/v0.2.0/decky-local-saves-sync.zip",
+      "field": "Local Saves Sync/plugin.json:publish.description",
+      "sourceSha256": "db333d99f4dafd3609cab65360f3104b11517e9f71cf23ac9995fc489b268d74",
+      "descriptionSha256": "fec5b7c59be6ccbc159a33bef87a6ede31f10dc7a5e0df48fc037164b50a2185"
+    },
+    {
+      "repository": "DarkTiengo/decky-hyperhdr-toggle",
+      "sourceUrl": "https://github.com/DarkTiengo/decky-hyperhdr-toggle/releases/download/v0.5.4/hyperhdr-toggle.zip",
+      "field": "hyperhdr-toggle/plugin.json:publish.description",
+      "sourceSha256": "35635afdaeda63a5479513168766625c40acc6ff85177b4470c9daa02b21b519",
+      "descriptionSha256": "93331920914ce5d413a2ffec60f71efba00c6612072af0b203fcf749d5caaac3"
+    },
+    {
+      "repository": "DavidDeNicola/decky-drive-label",
+      "sourceUrl": "https://github.com/DavidDeNicola/decky-drive-label/releases/download/v1.0.0/DriveLabel.zip",
+      "field": "DriveLabel/plugin.json:publish.description",
+      "sourceSha256": "399e07ff951be5dc42a388531600108fd0da58e4dc0a303981bb14e1e3866bac",
+      "descriptionSha256": "4d72f8287647b5f107381cf6ccc9df68d94f4291fe0118288c4789626714cc0e"
+    },
+    {
+      "repository": "dawoodtogoo2020-code/HelixSR-Decky",
+      "sourceUrl": "https://github.com/dawoodtogoo2020-code/HelixSR-Decky/releases/download/v0.1.47/HelixSR-Decky-0.1.47.zip",
+      "field": "HelixSR-Decky/plugin.json:publish.description",
+      "sourceSha256": "1d493e60a5c91883493ae3d288e94327b67cb829a2c3c9b9b65157f1f3e6c78b",
+      "descriptionSha256": "a7499290ec1dbc7f7158002acc2a660d7cb92b1088dca8ee6d8791d6f2465270"
+    },
+    {
+      "repository": "dawoodtogoo2020-code/HelixSR-Decky-Armada",
+      "sourceUrl": "https://github.com/dawoodtogoo2020-code/HelixSR-Decky-Armada/releases/download/v0.5.0-adreno-preview/HelixSR-Decky-Armada-0.5.0-adreno-preview.zip",
+      "field": "HelixSR-Decky-Armada/plugin.json:publish.description",
+      "sourceSha256": "c8bd1a4ba5bb6197cddb1e89787ce51ea9553a19af33c08b20dbbda285ebfd55",
+      "descriptionSha256": "2e4c4035f7faa20edbbfbe8fecef835345decac71a817b15d9b83c410a1f2e5f"
+    },
+    {
+      "repository": "ddordie/NewFreedeck-arm64",
+      "sourceUrl": "https://github.com/ddordie/NewFreedeck-arm64/releases/download/v0.3-arm64/NewFreedeck-v0.3-arm64-fixed5.zip",
+      "field": "NewFreedeck/plugin.json:publish.description",
+      "sourceSha256": "ffa0f0a412dea431188d535a0578fcb6bb207c5dbdb9f1fb93afb53796d27c97",
+      "descriptionSha256": "7b7f057f5190d696ee4caca9b6c89d05cba83b2bac2f43a71154e494aa8e2a74"
+    },
+    {
+      "repository": "deamos/steamos-orphan",
+      "sourceUrl": "https://github.com/deamos/steamos-orphan/releases/download/v1.0.1/steamos-orphan.zip",
+      "field": "steamos-orphan/plugin.json:publish.description",
+      "sourceSha256": "6992e47c8f822470ffd6e3f8ed11af2e4f4510a0b35e14f0da601eaa30ff92ea",
+      "descriptionSha256": "bfd6aef444bf36165302d7f9264bddc0adb18e73586b84b9310710a6706d3ca3"
+    },
+    {
+      "repository": "DeckFilter/sdhq-plugin",
+      "sourceUrl": "https://github.com/DeckFilter/sdhq-plugin/releases/download/v1.0.0/sdhq-plugin.zip",
+      "field": "sdhq-plugin/plugin.json:publish.description",
+      "sourceSha256": "3ec0a4c55ba175dfaacb8317b209c776b3c39a3afb54ff9159d6ea6a6e195fb0",
+      "descriptionSha256": "91dfe0931e6122c9c56688ac61e3ce167bcfdddd3b60f48637d900828e5fc4f6"
+    },
+    {
+      "repository": "Diegocorp/decky-speedhack",
+      "sourceUrl": "https://github.com/Diegocorp/decky-speedhack/releases/download/v0.3/SpeedHack.zip",
+      "field": "SpeedHack/plugin.json:publish.description",
+      "sourceSha256": "069e040e18699a0d4cfbc0528f4558233f0fad862d5768fe4591197f6711659a",
+      "descriptionSha256": "f743ac0e6269991cf2896df0dada888fc996241643fe3ed39b25bfda4f65dcf9"
+    },
+    {
+      "repository": "divanikus/decky-reboot-menu",
+      "sourceUrl": "https://github.com/divanikus/decky-reboot-menu/releases/download/v0.1.4/reboot-menu-0.1.4.zip",
+      "field": "reboot-menu/plugin.json:publish.description",
+      "sourceSha256": "3cc6182944c346c2305f1117b0747e4ebd984de2162612ae863e6760360d4fac",
+      "descriptionSha256": "598b094f2b0722bc684b3c3c21a3e8371c4b28a93f0dd5a56c69836d42642ca5"
+    },
+    {
+      "repository": "DoomTay/Decky-CustomCloud",
+      "sourceUrl": "https://github.com/DoomTay/Decky-CustomCloud/releases/download/v0.8.5/Decky.CustomCloud.zip",
+      "field": "Decky CustomCloud/plugin.json:publish.description",
+      "sourceSha256": "e640b13da18018d943d726a9a819a7a937d7ac5e31c6c88250cf44255599b00d",
+      "descriptionSha256": "c59b722d7378921038de6bbb4f670ca07ec2bfe72150c606310a6d558130da62"
+    },
+    {
+      "repository": "dr1s/decky-podman-compose",
+      "sourceUrl": "https://github.com/dr1s/decky-podman-compose/releases/download/v0.4.1/decky-podman-compose-v0.4.1.zip",
+      "field": "decky-podman-compose/plugin.json:publish.description",
+      "sourceSha256": "fb763b792f5d17d54f97e01566680f8bbed8afe83621cba24c17d54c07298c4b",
+      "descriptionSha256": "43f27fe919e1f220c2b5ea22daadd3af8d91ae73d1c3dfb47ed497f61c980f63"
+    },
+    {
+      "repository": "DraskeLabs/drafg-decky",
+      "sourceUrl": "https://github.com/DraskeLabs/drafg-decky/releases/download/v0.2.5/DraFG.zip",
+      "field": "DraFG/plugin.json:publish.description",
+      "sourceSha256": "c9da3290c321aee9e12fa57d45a7c2e8d33266ae22ad0f5b2d90026c02b5e6aa",
+      "descriptionSha256": "16b7cca582e806754e01662f586085d0bf0dac95c5fffefd7c9cbddef2c0f2a5"
+    },
+    {
+      "repository": "drewano/decky-handheld-rgb",
+      "sourceUrl": "https://github.com/drewano/decky-handheld-rgb/releases/download/v1.0.1/decky-rgb.zip",
+      "field": "decky-rgb/README.md:paragraph[2] (formatting only removed)",
+      "sourceSha256": "ac38697943f79008adf2183c4b5588f2147df2bbf7bd9127b94a782c6c051c31",
+      "originalExcerpt": "**Decky plugin that brings universal RGB LED control to handheld gaming consoles running SteamOS, Armada OS, or Bazzite.**",
+      "originalExcerptSha256": "38312fbc35cfa5cdcfe72691dbc201ccd4cf866c4ba3fa6fa8a31ced6cf079ec",
+      "descriptionSha256": "0f140c828e2bfe99d5d48ee40d43b24eeeee4d9fd5c9e9a259f9bf05cd6da67d"
+    },
+    {
+      "repository": "drewboardman/decky-wifi-guard",
+      "sourceUrl": "https://github.com/drewboardman/decky-wifi-guard/releases/download/v0.1.2/decky-wifi-guard-0.1.2.zip",
+      "field": "Wi-Fi Guard/plugin.json:publish.description",
+      "sourceSha256": "031584f26cb9bfd6f63daaacbf6dafd4380c085be8b8e3c6b5884048ffa5035c",
+      "descriptionSha256": "fe62bc3433d84078a65f396139de5ab4cad7c3cc9db4bc1f440628d7c59db4f8"
+    },
+    {
+      "repository": "dv-89/decky-remote",
+      "sourceUrl": "https://github.com/dv-89/decky-remote/releases/download/v0.1.13/decky-remote-0.1.13.zip",
+      "field": "decky-remote/plugin.json:publish.description",
+      "sourceSha256": "b4da97cb4ce4f594e5769ff7071277a0f46272e19dbad8b632492ec2d44a2bb4",
+      "descriptionSha256": "e5adbe7aae83445dc7d062617a76252fd4a43725f71d1139f83b1fe23e839099"
+    },
+    {
+      "repository": "dylwww/decky-nts",
+      "sourceUrl": "https://raw.githubusercontent.com/dylwww/decky-nts/v1.0.4/README.md",
+      "field": "README.md:paragraph[2] (formatting only removed)",
+      "sourceSha256": "269c93a709f0a1233cb1c0d5009f0b934bc4ffdc8d1e6f33d628c3a3f25e43fb",
+      "originalExcerpt": "This is a Decky Loader plugin that lets you stream **NTS 1** and **NTS 2** directly from the Steam Deck sidebar, with live show metadata and artwork — no external players, no browser, no backend services.",
+      "originalExcerptSha256": "c7ffbd6a5e0b5ad8070f6983e11fc3aa6b7a149487bd988f19fb147ae7a52183",
+      "descriptionSha256": "6233a1e206e3f76a368fcd534a9c215729a3e6b04202833682c57845ed8b291d"
+    },
+    {
+      "repository": "ebdevag/optideck-deckdeals",
+      "sourceUrl": "https://github.com/ebdevag/optideck-deckdeals/releases/download/v1.1.1-beta/optideck-deckdeals-v1.1.1-beta.zip",
+      "field": "Deckdeals/plugin.json:publish.description",
+      "sourceSha256": "e21842b02ea9ddf6d7ba532986a7eef97e2524d7b5c22beb0d4ff34d21012ca6",
+      "descriptionSha256": "ddf39e9cb125c789c3be83b8f4105457ecdcaab3d0318ed7989227c098e33eeb"
+    },
+    {
+      "repository": "EdinH86/memoryeditor",
+      "sourceUrl": "https://github.com/EdinH86/memoryeditor/releases/download/v0.5.0/memoryeditor-0.5.0.zip",
+      "field": "memoryeditor/README.md:paragraph[1] (formatting only removed)",
+      "sourceSha256": "edc436ce777611d2b7deb2818e6c68fcdb8e0c8e6627e924af41c46906b72707",
+      "originalExcerpt": "A scanmem wrapper in a [decky-loader](https://github.com/SteamDeckHomebrew/decky-loader) plugin.",
+      "originalExcerptSha256": "f5caabdb2505eff2c8ea57ef54fc0f5b3b79f25e425722b8b32407ab6afb8ac3",
+      "descriptionSha256": "7e59606daf878dd3e042149edebe44257a74fbae5282924d93c45f332066f266"
+    },
+    {
+      "repository": "egionCode/moon_profile",
+      "sourceUrl": "https://github.com/egionCode/moon_profile/releases/download/v1.0.0/moonprofile-decky-v1.0.0.zip",
+      "field": "moonprofile/plugin.json:publish.description",
+      "sourceSha256": "56beaa2099e85b967a22cbb4aecee7648088b9c649cc5b9ed701915f6dca6cf9",
+      "descriptionSha256": "eb17349eb7d67ddf635eb564b36be6197e5f65a75b4ebcbc9509c4bde3dc42cc"
+    },
+    {
+      "repository": "Elias02345/sonnenschein",
+      "sourceUrl": "https://github.com/Elias02345/sonnenschein/releases/download/v0.2.9-test/Sonnenschein-Decky-Plugin-0.2.9-test.zip",
+      "field": "sonnenschein/plugin.json:publish.description",
+      "sourceSha256": "dbb8336ac3c08ea3fb48b37777d1e09a333dfcad8b7bfb4c8bedfd8f1a3dcd20",
+      "descriptionSha256": "cc7bd996f4e802d4c255a262c7ec0d8e4c1462b15b56e328100fc6c121a4a793"
+    },
+    {
+      "repository": "enjihn/cec-volume-osd-decky",
+      "sourceUrl": "https://github.com/enjihn/cec-volume-osd-decky/releases/download/v1.0.0-rc.1/cec-volume-osd-1.0.0-rc.1.zip",
+      "field": "CEC Volume OSD/plugin.json:publish.description",
+      "sourceSha256": "99d44a6df0c014428bf5200dc71d9cba28350aeb9f0a3b43cecbd5ba6e056a5c",
+      "descriptionSha256": "f3a4efb4ae87308605986c04109b2e423e74ed7c9c4a9b1ef9da1f554bc2771d"
+    },
+    {
+      "repository": "enjihn/steamos-ddplus-decky",
+      "sourceUrl": "https://github.com/enjihn/steamos-ddplus-decky/releases/download/v1.0.0-beta.1/steamos-ddplus-decky-1.0.0-beta.1.zip",
+      "field": "steamos-ddplus/plugin.json:publish.description",
+      "sourceSha256": "fa84a8fdd464ad0b27dc473c0ae5c19bd139beee32e47d3fa2aaa1eeaabef774",
+      "descriptionSha256": "cc9b258897600b7614a9c4257423f73f4ede32e646b6bc175e57ea85e0344771"
+    },
+    {
+      "repository": "enzodiloreto/helixsr-decky-plugin-muse",
+      "sourceUrl": "https://github.com/enzodiloreto/helixsr-decky-plugin-muse/releases/download/v0.6.11/helixsr-muse-plugin-v0.6.11.zip",
+      "field": "helixsr-muse-plugin/plugin.json:publish.description",
+      "sourceSha256": "3f4c5e8ca1a71d2329cd8ee28463577393219a5b9b6ae6e9c2e6301d57912e7a",
+      "descriptionSha256": "4eeba982155b9e0e8be592d5aa1229226f706b5cd53304fbc559efdd3ffce456"
+    },
+    {
+      "repository": "episode6/moonlight-steam-sync-decky",
+      "sourceUrl": "https://github.com/episode6/moonlight-steam-sync-decky/releases/download/v0.13.2/Moonlight-Sync.zip",
+      "field": "Moonlight Sync/plugin.json:publish.description",
+      "sourceSha256": "2eab8bbbb52f86d3ad4fe9910c470e1ca3fb59d7509c72166bfb3be9256000df",
+      "descriptionSha256": "7243d99b560a7ab5ad0772b393720a03f3f9b3ac71106cc67d992a27a6c2eeb8"
+    },
+    {
+      "repository": "ergolyam/awim-deck",
+      "sourceUrl": "https://github.com/ergolyam/awim-deck/releases/download/v1.1.9/awim-deck-v1.1.9.zip",
+      "field": "awim-deck/plugin.json:publish.description",
+      "sourceSha256": "4b5a9b5ba03fbb8cc706f31859215d609cb300a47a4eb9f269adf8abb2149ea7",
+      "descriptionSha256": "4f1f943036240ea69358c07861ea293f40f54e4f35994e27bf2316b04404ce97"
+    },
+    {
+      "repository": "evanjs/decky-recorder-fork",
+      "sourceUrl": "https://github.com/evanjs/decky-recorder-fork/releases/download/v0.4.7/decky-recorder.zip",
+      "field": "Decky Recorder/plugin.json:publish.description",
+      "sourceSha256": "9ebd690f454aec8f518a803851e4ea7f3e7624093e87f62c02ec0bfebd8430bb",
+      "descriptionSha256": "2a7ee2692fa1aebab9941ec8ae779d2c60438fddcd332de01f4d66b75d87c9c6"
+    },
+    {
+      "repository": "f-ever/decky-efibootmgr",
+      "sourceUrl": "https://github.com/f-ever/decky-efibootmgr/releases/download/v0.0.2/EFI_Boot_Manager_v0.0.2.zip",
+      "field": "EFI Boot Manager/plugin.json:publish.description",
+      "sourceSha256": "2844b014e3cb0ebcab8361636a2e7e21def038203fd17dfc6658f5c2486ccf9c",
+      "descriptionSha256": "20284c0b40883206c273142e193d5c8a6afdfc6262e7560ae3a7647840cc324f"
+    },
+    {
+      "repository": "FAILINATOR5000/decky-stormbreaker",
+      "sourceUrl": "https://github.com/FAILINATOR5000/decky-stormbreaker/releases/download/v1.1.1/Stormbreaker-1.1.1.zip",
+      "field": "decky-stormbreaker/plugin.json:publish.description",
+      "sourceSha256": "be7c3cf5aff23eb1f1d92d1598fa1bbdf28f3d967eabfcd85715086a9d7015a5",
+      "descriptionSha256": "3c46ae1d9ada260db3116bdd67d6a6f99b2f2226dd087dbc5cc80f1dc3c51d07"
+    },
+    {
+      "repository": "FelPikachu/GameBridge",
+      "sourceUrl": "https://github.com/FelPikachu/GameBridge/releases/download/v0.19.0-beta.5/GameBridge-v0.19.0-beta.5.zip",
+      "field": "GameBridge/plugin.json:publish.description",
+      "sourceSha256": "17981f4bd00993132531221ffc4fe59c0c8c3e14824e58064b7ec86b54d95b13",
+      "descriptionSha256": "696c6bbe4469ed9b0b368a2653c5525f7d30e32b61d3a3119ad1e1ee59386429"
+    },
+    {
+      "repository": "fewtarius/nimo-rgb",
+      "sourceUrl": "https://github.com/fewtarius/nimo-rgb/releases/download/v0.2.0/nimo-rgb.zip",
+      "field": "Nimo RGB/plugin.json:publish.description",
+      "sourceSha256": "9732c746c8e975773766c538c69087a7930fc50692d8566cfbb69919f705e34a",
+      "descriptionSha256": "c5133c1b2423d3bbec4d02d145e67c47269df56d89949ca3825a78909ed9d67c"
+    },
+    {
+      "repository": "FGOD1983/ControllerPriority",
+      "sourceUrl": "https://github.com/FGOD1983/ControllerPriority/releases/download/v1.2.8/ControllerPriority.zip",
+      "field": "ControllerPriority/README.md:paragraph[4] (formatting only removed)",
+      "sourceSha256": "90edfc83e934442bf602b86faa8650254955d2842834f1def5ca9462ba7e86ad",
+      "originalExcerpt": "**ControllerPriority** is a Decky Loader plugin for the Steam Deck that automatically manages your controller order. It ensures that an external controller (like a PS5, Xbox, or Switch Pro controller) is always recognized as **Player 1** by hiding the internal Steam Deck controller the moment an external one is connected.",
+      "originalExcerptSha256": "13935ae1cc252fa4a0a02d460d80b7bc34c549cd0d9836959ea7aaa12804a520",
+      "descriptionSha256": "749621c3f9d33ddc3fb9255d23032c2ee6706fc3e77b36dd7b6803fcb3f292a6"
+    },
+    {
+      "repository": "fishersonic/Decky-CCD-Control-395",
+      "sourceUrl": "https://github.com/fishersonic/Decky-CCD-Control-395/releases/download/v0.2.3/ccd-control-395-v0.2.3.zip",
+      "field": "ccd-control-395/plugin.json:publish.description",
+      "sourceSha256": "5913fc90038c7cbb6f4bb69f1737ef7b2f4059eb8ae6d68739f036cd22492a41",
+      "descriptionSha256": "18d46c6762ec778fe791cf44da31d555392c243eec0ba70bea408036854290fb"
+    },
+    {
+      "repository": "FlashWreck/net-merge-decky",
+      "sourceUrl": "https://github.com/FlashWreck/net-merge-decky/releases/download/v1.0.4/net-merge-decky.zip",
+      "field": "net-merge-decky/plugin.json:publish.description",
+      "sourceSha256": "89ec12aa05dffca028673b1f45a304e420ac10964498c7cb750cc5b5033b638a",
+      "descriptionSha256": "b3e75ae47357e94f64eb714e1d2f8bf17ebb7aa841f3eac39063e3702fbd9f26"
+    },
+    {
+      "repository": "FlightDan/Opti2XMX",
+      "sourceUrl": "https://github.com/FlightDan/Opti2XMX/releases/download/v0.3.4/opti2xmx-0.3.4.zip",
+      "field": "opti2xmx/plugin.json:publish.description",
+      "sourceSha256": "60120e7e4d1914b49805c1a3499bffc43c3833e5190b3896d0f8f3ab72482bcf",
+      "descriptionSha256": "de8f8c61cbd35a7843cb375478e4e8bc7ce2c4c1dcf1565fb29c26b7d6155254"
+    },
+    {
+      "repository": "Forlarin/deck-doctor",
+      "sourceUrl": "https://github.com/Forlarin/deck-doctor/releases/download/v0.5.0/deck-doctor.zip",
+      "field": "deck-doctor/plugin.json:publish.description",
+      "sourceSha256": "710de4301218afa8cf5ee062acaf3d4ca227b6a32cfad877fc6b35b70cbc9509",
+      "descriptionSha256": "c6c813813b4dfd8104234587e8136d871b32edfe08a85f4c1114b4315e1720ef"
+    },
+    {
+      "repository": "FunkyByte1/Moddy",
+      "sourceUrl": "https://github.com/FunkyByte1/Moddy/releases/download/nightly-d24d8a1/moddy-nightly-d24d8a1.zip",
+      "field": "moddy/plugin.json:publish.description",
+      "sourceSha256": "e42518ed0e0f51795504792e26f2a8338e54e45e2a497f1274f7c88483920921",
+      "descriptionSha256": "3270788d5015c028654ed29789186aed45b9c7e61f936cab8e5b5c78adf44922"
+    },
+    {
+      "repository": "gangoogle/decky-dsh-chat",
+      "sourceUrl": "https://github.com/gangoogle/decky-dsh-chat/releases/download/v0.1.1/decky-dsh-chat-v0.1.1.zip",
+      "field": "dsh-chat/plugin.json:publish.description",
+      "sourceSha256": "5266a4ffbe53d4fd641c9cae4f54d9be1a5d425699d2f4e1b7254c08acb58fb6",
+      "descriptionSha256": "546e568b81b66a90b8a7bdc8f0afcd3645bc1fa0a5b82830362ab63f2eea405a"
+    },
+    {
+      "repository": "GaricST/AutoWhite",
+      "sourceUrl": "https://github.com/GaricST/AutoWhite/releases/download/v1.0.0/AutoWhite-1.0.0.zip",
+      "field": "AutoWhite/plugin.json:publish.description",
+      "sourceSha256": "69dec4e78c330d2c51ce24f3232070bb1f2a113703cb5759504ac3202461b9f1",
+      "descriptionSha256": "81e873ec6eff71415465f0e7a7a44a79199e897d017240a3be8bcd76de1aa09e"
+    },
+    {
+      "repository": "geecaleb/CopyDeck",
+      "sourceUrl": "https://github.com/geecaleb/CopyDeck/releases/download/v0.1.0/CopyDeck.zip",
+      "field": "CopyDeck/plugin.json:publish.description",
+      "sourceSha256": "1ab5560d5c3d2c05c3b963c59dd3e3c770ca57990a85a86b1745bfefb2f6f15e",
+      "descriptionSha256": "14e651ce1d41ae6ccc18749247cb2e00e3c075ab8e59e70d90a8af44f0ef93c5"
+    },
+    {
+      "repository": "gloverthe/deck-muse",
+      "sourceUrl": "https://github.com/gloverthe/deck-muse/releases/download/v0.0.9/deck-muse-plugin.zip",
+      "field": "deck-muse/plugin.json:publish.description",
+      "sourceSha256": "e8ec658362940440014808d96c0e5bf59168484ea50cc169cef87da5ed776667",
+      "descriptionSha256": "5dbd1a19ff1c3df1c1942ffc55fa0ea4ef024cb036fa895d643c0a23a7762a99"
+    },
+    {
+      "repository": "GoldDGaro/V-Deck",
+      "sourceUrl": "https://github.com/GoldDGaro/V-Deck/releases/download/v0.2.0/V-Deck-v0.2.0.zip",
+      "field": "V-Deck/plugin.json:publish.description",
+      "sourceSha256": "50bc5c4b90ad86b8504fd0a397d705c11f8661e846c5d67b95f6ea3db862be9d",
+      "descriptionSha256": "c3966d6533c8a08213e584f8e3deaea0b6e305b49c7472e626d5f091398e1b08"
+    },
+    {
+      "repository": "Hardwell-L/decky-claw-ex-control",
+      "sourceUrl": "https://github.com/Hardwell-L/decky-claw-ex-control/releases/download/v0.6.7/decky-claw-ex-control-0.6.7-decky.zip",
+      "field": "Claw EX Control/plugin.json:publish.description",
+      "sourceSha256": "43c2bce4eae00689297acd8e13ecad767bdb45aa5f3193b7e4f5f63e11a586a6",
+      "descriptionSha256": "97819c77472425e0401702283629e38657c2b07ccbdd5e200f7b120830fda38d"
+    },
+    {
+      "repository": "hayschan/decky-speed-test-China",
+      "sourceUrl": "https://github.com/hayschan/decky-speed-test-China/releases/download/v2.0.5/decky-speed-test-China.zip",
+      "field": "decky-speed-test-China/plugin.json:publish.description",
+      "sourceSha256": "46a8298107a935ba773c9f6ef22a0756435d662496570e2f6cc968dc71235f83",
+      "descriptionSha256": "d71e11d918c950fa2a6f7792f7895f7b768eaee61e4f4c76b1a3b2d9b5a69d77"
+    },
+    {
+      "repository": "hileydson/New-Suspend-Mode",
+      "sourceUrl": "https://github.com/hileydson/New-Suspend-Mode/releases/download/v3.7.3/NewSuspendMode.zip",
+      "field": "NewSuspendMode/plugin.json:publish.description",
+      "sourceSha256": "c76cb0f915047e5df3afd7121f0cee46f6ab6d82773079069360388cadd238dc",
+      "descriptionSha256": "a3dc37f12420abf3fe3cdc26452fe57cb537136d460bb610b45718eed7e925e5"
+    },
+    {
+      "repository": "Hokage-git/steambooster-decky",
+      "sourceUrl": "https://github.com/Hokage-git/steambooster-decky/releases/download/v0.1.6/SteamBooster-Decky-v0.1.6.zip",
+      "field": "steambooster-decky/plugin.json:publish.description",
+      "sourceSha256": "e3742dbd5ff872bf2581b280a55b3d7d99bb8390c82ec3e6843989f30a6e0689",
+      "descriptionSha256": "f572c17c2d63c30b37f5d30abe783ee246733fc267395d8d591eead9f8d79fee"
+    },
+    {
+      "repository": "honjow/hhd-decky",
+      "sourceUrl": "https://github.com/honjow/hhd-decky/releases/download/v1.0.0/hhd-decky.zip",
+      "field": "hhd-decky/plugin.json:publish.description",
+      "sourceSha256": "58d987dc92348e1a2c857db395a0e584a33a8516683e5658ce9caa26fe456269",
+      "descriptionSha256": "aa9f5832cb8846dc5806d7d4db5c5380746a538bcc97579397c30cff8b9c7641"
+    },
+    {
+      "repository": "IktaS/deck-jisho",
+      "sourceUrl": "https://github.com/IktaS/deck-jisho/releases/download/prerelease-7/Decky.Jisho.zip",
+      "field": "Decky Jisho/plugin.json:publish.description",
+      "sourceSha256": "943c2104540d41e1f56c559f1a566ec13be62277cd164d991f5bd5799e10a256",
+      "descriptionSha256": "f473c4dda20f242c804bc3196046c4cb9d41116277279355300501c50eb2bcab"
+    },
+    {
+      "repository": "impuls42/decky-opencode",
+      "sourceUrl": "https://github.com/impuls42/decky-opencode/releases/download/v0.1.0/decky-opencode-v0.1.0.zip",
+      "field": "decky-opencode/plugin.json:publish.description",
+      "sourceSha256": "6a8ee99bce10baf24ede46794732e94c0e48054410d031b2e6a593c224058a73",
+      "descriptionSha256": "7108281fb2c65b520179c853eb1646b3f48c2b3f06ed896bfa37123ba2b4a14e"
+    },
+    {
+      "repository": "infernokun/SyncDeck",
+      "sourceUrl": "https://github.com/infernokun/SyncDeck/releases/download/v1.4.2/SyncDeck.zip",
+      "field": "SyncDeck/plugin.json:publish.description",
+      "sourceSha256": "33338718418166c158946964606bc4a1740725d63cf48690d0cc1ed595e36049",
+      "descriptionSha256": "a9ca1dbf97f7b0d9a724005824de3b2260dd0ea41794192120378f28861af77b"
+    },
+    {
+      "repository": "inthe92/decky-auto-ac3",
+      "sourceUrl": "https://github.com/inthe92/decky-auto-ac3/releases/download/0.2.5/Decky-Dolby-Digital-0_2_5.zip",
+      "field": "decky-dolby-transcoder/plugin.json:publish.description",
+      "sourceSha256": "a69415d4ee5147fbd80266cea6b28c4a00677259b1d7843d512f7da0eec61195",
+      "descriptionSha256": "08ca0668ceff25f5e534d910219c357ed4c903ef88788cf9933b7f02903f2861"
+    },
+    {
+      "repository": "jacobdonahoe/decky-game-optimizer",
+      "sourceUrl": "https://github.com/jacobdonahoe/decky-game-optimizer/releases/download/v0.1.0/decky-game-optimizer-v0.1.0.zip",
+      "field": "decky-game-optimizer/plugin.json:publish.description",
+      "sourceSha256": "0a998059b328f6ebe55824c504c6e3281e0cba44d0915f077817b6951474c2f5",
+      "descriptionSha256": "630a94ba473cfa27d7d0ead43a9cb31f1c19d46f327b177ebeb50d33bc5913e6"
+    },
+    {
+      "repository": "Janleyx/DeckBridge",
+      "sourceUrl": "https://github.com/Janleyx/DeckBridge/releases/download/v1.1.0/DeckBridge-1.1.0.zip",
+      "field": "DeckBridge/plugin.json:publish.description",
+      "sourceSha256": "e8bf1ebb2cdf4229a33d017f6ec9078c0a2ccf67b136771a95693380934c4ab3",
+      "descriptionSha256": "cbb608e136a5fc5351c5c606e151850be046d3867a9a5f64ec9e92de725f4f0d"
+    },
+    {
+      "repository": "JayPrates/cliplink-decky",
+      "sourceUrl": "https://github.com/JayPrates/cliplink-decky/releases/download/v1.2.2/ClipLink.zip",
+      "field": "ClipLink/plugin.json:publish.description",
+      "sourceSha256": "1777c91143a208b257a75d2e383553394a2251e24806f5739a295282f048ed95",
+      "descriptionSha256": "72a56feb9493aa149860c8f8589d7959bf23f874e4428d5a0a74ac02b0560efb"
+    },
+    {
+      "repository": "JayPrates/deckdrop-decky",
+      "sourceUrl": "https://github.com/JayPrates/deckdrop-decky/releases/download/v1.2.0/DeckDrop.zip",
+      "field": "DeckDrop/plugin.json:publish.description",
+      "sourceSha256": "93bed4607467df28f8f14c829321ed97d9a4b9df759b78febde1ea4b85e38f70",
+      "descriptionSha256": "4421b346e774dc50e316ab67805508d689c33fff408b1a8b7d2f91304d36e122"
+    },
+    {
+      "repository": "JayPrates/nothing-ear-control-decky",
+      "sourceUrl": "https://github.com/JayPrates/nothing-ear-control-decky/releases/download/v1.2.0/NothingEarControl.zip",
+      "field": "NothingEarControl/plugin.json:publish.description",
+      "sourceSha256": "ccf328d7f64eaa6761fafa199cad4d85e58128b4879224d52cfe837112e8d483",
+      "descriptionSha256": "5923f44eaa518a7cf5c70c87eacd42920d9bf1733ed012967c1fcbf2ae155c8f"
+    },
+    {
+      "repository": "JDLKMR/Decky-Profile-Launcher-Legacy-Legacy",
+      "sourceUrl": "https://github.com/JDLKMR/Decky-Profile-Launcher-Legacy-Legacy/releases/download/v1.1.0/Profile-Launcher.zip",
+      "field": "Profile-Launcher/plugin.json:publish.description",
+      "sourceSha256": "813f76af7d2fd065e4f4bab535e3157ea01854c69c1b37c75d78de2c4141f261",
+      "descriptionSha256": "3f16a6850255b061620c24cc6cfd2e9080a00af0293c433f49c33eb3f279b0e1"
+    },
+    {
+      "repository": "JDLKMR/Decky-ROM-Manager-Legacy",
+      "sourceUrl": "https://github.com/JDLKMR/Decky-ROM-Manager-Legacy/releases/download/v1.0.0/ROM-Manager.zip",
+      "field": "ROM-Manager/plugin.json:publish.description",
+      "sourceSha256": "e6593ace10c3e92f68f6072fb423da31486b224683d70ff2771a367570d669ed",
+      "descriptionSha256": "ded622891d3fbe678c3d4d0cc7b76da49257334437fa4ba76f9457a0f134ac9a"
+    },
+    {
+      "repository": "JDLKMR/Decky-Script-Assigner-Legacy",
+      "sourceUrl": "https://github.com/JDLKMR/Decky-Script-Assigner-Legacy/releases/download/v1.0.0/Script-Assigner.zip",
+      "field": "Script-Assigner/plugin.json:publish.description",
+      "sourceSha256": "e4affac9dc91d8440b7869d7534c0f8099bd6c656d84f8cf31804e4dcc8c0366",
+      "descriptionSha256": "3ef0238dbbb8a17dd217698766fcb030b7e4d3b68e8fee22ff8fb85d2b8b85a5"
+    },
+    {
+      "repository": "jeanbottein/DeckaTV",
+      "sourceUrl": "https://github.com/jeanbottein/DeckaTV/releases/download/v3.1.2/deckatv.zip",
+      "field": "DeckaTV/plugin.json:publish.description",
+      "sourceSha256": "29198d323624737c7a0c86521c4c599ee026946ca29b119f253f7b501633c1cb",
+      "descriptionSha256": "85b9121e90f1265b56032959fa9431c280e61b92ef993e59046f8b520cc52e34"
+    },
+    {
+      "repository": "jeanbottein/ReshadeckPlus",
+      "sourceUrl": "https://github.com/jeanbottein/ReshadeckPlus/releases/download/v2.1.0/reshadeckplus-2.1.0.zip",
+      "field": "ReshadeckPlus/plugin.json:publish.description",
+      "sourceSha256": "5ab8bb25e3115c8af2b61f125517aafba163d4f287d13bac4fbc7d28c28b588a",
+      "descriptionSha256": "8c49776002f184e8c4db45076dccb2754ecce9640be2e8442b2ad8e409b92dfb"
+    },
+    {
+      "repository": "johngrantdev/moonshine-decky",
+      "sourceUrl": "https://github.com/johngrantdev/moonshine-decky/releases/download/v0.1.0/moonshine-decky-v0.1.0.zip",
+      "field": "moonshine-decky/plugin.json:publish.description",
+      "sourceSha256": "7a538be19481e7635b10dc36a6e0562e15e0894fdabba481f21722b023e0771f",
+      "descriptionSha256": "3c0cffce682198bceef61238d90202cf31fb5a5242847a425f6bb03fd7522821"
+    },
+    {
+      "repository": "JoseArkadio/decky-nonsteam-sync",
+      "sourceUrl": "https://github.com/JoseArkadio/decky-nonsteam-sync/releases/download/v0.1.0/NonSteam-Sync.zip",
+      "field": "NonSteam Sync/plugin.json:publish.description",
+      "sourceSha256": "ebdb9c12fcb86b97fd23e68dee25e5f93cf604dce3024f99114a1ef9a88ef497",
+      "descriptionSha256": "d23d4f629a1f97a1f9374f29e05a0d134ed1a528fd9da8f0c109e5e73714f8e8"
+    },
+    {
+      "repository": "joshmans/decky-nas-mount",
+      "sourceUrl": "https://github.com/joshmans/decky-nas-mount/releases/download/v0.2.0/NAS-Mount-0.2.0.zip",
+      "field": "NAS Mount/plugin.json:publish.description",
+      "sourceSha256": "1a8f9cba68b6099ba9d1f1aa9a69e38c3b137afca7ff2ea20c507b5faa14dcca",
+      "descriptionSha256": "f8c1157009e73383bfc62c3ebd1d3c57a552bed30c858b35adc753e5acfaedc8"
+    },
+    {
+      "repository": "justradical/decky-optiscaler-arm64ec",
+      "sourceUrl": "https://github.com/justradical/decky-optiscaler-arm64ec/releases/download/1.0.0/OptiScaler.zip",
+      "field": "OptiScaler/plugin.json:publish.description",
+      "sourceSha256": "98627c63f935b499394df4921edb8ed9d05f200a3e9c58d918c56f2e7278d525",
+      "descriptionSha256": "a01e45577eb7a16e7a62fd02609b4b38c559a5c9d9ed21f3a42361789729d756"
+    },
+    {
+      "repository": "K1ngst0m/MudfishDecky",
+      "sourceUrl": "https://github.com/K1ngst0m/MudfishDecky/releases/download/v0.1.0/MudfishDecky-v0.1.0.zip",
+      "field": "MudfishDecky/plugin.json:publish.description",
+      "sourceSha256": "09b130be71f12c3a25cdbd3c83b62d07deb7d86ac9a522ee3ded9903eab6ad8a",
+      "descriptionSha256": "83790607a35566eae042eadc8ca3301361a6ae230778a612827ebf01b78bc2bd"
+    },
+    {
+      "repository": "K1tsune12/deck-animations",
+      "sourceUrl": "https://github.com/K1tsune12/deck-animations/releases/download/v0.16.5/Deck-Animations.zip",
+      "field": "Deck Animations/plugin.json:publish.description",
+      "sourceSha256": "7bcc1583fb5f73b8043afa8daf038b92496943026b0385b555b9f3c0f0e5e495",
+      "descriptionSha256": "d86691e0ac595655aa6fd653eab2fe749cd52d68229d5f6a3b065cbe6963c653"
+    },
+    {
+      "repository": "K1tsune12/decky-position-toasts",
+      "sourceUrl": "https://github.com/K1tsune12/decky-position-toasts/releases/download/v0.1.4/decky-position-toasts.zip",
+      "field": "Decky Position Toasts/plugin.json:publish.description",
+      "sourceSha256": "55716d151fd8eb69a9b2efe84ce5e59cf567295c3998f0810b4450ce762cee10",
+      "descriptionSha256": "49af98ffd52d2b7b60625561a5dd7aa5160da9fbb76f63b0811a434c241caf64"
+    },
+    {
+      "repository": "K1tsune12/decky-sound-toasts",
+      "sourceUrl": "https://github.com/K1tsune12/decky-sound-toasts/releases/download/v0.2.5/decky-sound-toasts.zip",
+      "field": "Decky Sound Toasts/plugin.json:publish.description",
+      "sourceSha256": "84d021c1f208102b1643d7701110e253c5537b720ee266f46e9e1073c7efa90f",
+      "descriptionSha256": "b947c30b760ab0321485540719eae3a14d736f6b51eeed904971278ce171b320"
+    },
+    {
+      "repository": "kanonjeong-ops/gfxprofile",
+      "sourceUrl": "https://raw.githubusercontent.com/kanonjeong-ops/gfxprofile/v0.1.0/README.md",
+      "field": "README.md:paragraph[1] (formatting only removed)",
+      "sourceSha256": "596933b6c47509f9a9213ef6c21260735adba86c980f68d459589c00311e3bc8",
+      "originalExcerpt": "eGPU Game Config Swap is a Decky Loader plugin for SteamOS. A game can need different graphics settings when an eGPU dock is connected and when it is disconnected, but the game keeps the same configuration after the GPU changes. This plugin stores an \"eGPU\" profile and an \"Internal\" profile for each registered game, then lets you switch profiles with one button.",
+      "originalExcerptSha256": "6570924eaa1072573d220add83199ec5147ce3ccee820b198dcc00ecaabbd6a9",
+      "descriptionSha256": "6570924eaa1072573d220add83199ec5147ce3ccee820b198dcc00ecaabbd6a9"
+    },
+    {
+      "repository": "Ken5998/armada-box64",
+      "sourceUrl": "https://github.com/Ken5998/armada-box64/releases/download/v0.2.6/ArmadaBox64-v0.2.6.zip",
+      "field": "ArmadaBox64/plugin.json:publish.description",
+      "sourceSha256": "dbc29b71a51820ad512b59f97d018549dc553aa35ad1577d0a3cec873a7c73a3",
+      "descriptionSha256": "855f8b6b7bc27e14b45346c218f803d888415633428ddc5d4e34c91ac1c74677"
+    },
+    {
+      "repository": "kEnder242/decky-trailers",
+      "sourceUrl": "https://github.com/kEnder242/decky-trailers/releases/download/v1.0.0/DeckyTrailers.zip",
+      "field": "DeckyTrailers/plugin.json:publish.description",
+      "sourceSha256": "c38a9d9a5b7c185b3cb3b9de4646e7f564a9de4a1df0501be4db8f2f59e03e9d",
+      "descriptionSha256": "d374ac44b3aaa53b95efbeadc5da9be22a4e0058ea85c8387ed0663faaffed43"
+    },
+    {
+      "repository": "Kernien/dock-display",
+      "sourceUrl": "https://github.com/Kernien/dock-display/releases/download/v1.0.0/dock-display.zip",
+      "field": "dock-display/plugin.json:publish.description",
+      "sourceSha256": "c415c2fcd6158dd959af1b494683434cd6dafcda0c06b117a5cf6bc829d26fd2",
+      "descriptionSha256": "8766566029f29a65af391edacc93e3f71d32131ee8f2a0f5d9db141b86c17d50"
+    },
+    {
+      "repository": "kevindurb/xreal-linux",
+      "sourceUrl": "https://github.com/kevindurb/xreal-linux/releases/download/v0.1.1/xreal-control.zip",
+      "field": "plugin.json:publish.description",
+      "sourceSha256": "e557f3dc022c9ead433622dcf4b821baef89e1a159111f2d9279ef203a4c6992",
+      "descriptionSha256": "ade7cfd35af747fd4265432241b85e71e44e389b78858a38b4613138e50f33fe"
+    },
+    {
+      "repository": "Kevni92/decky-codex",
+      "sourceUrl": "https://github.com/Kevni92/decky-codex/releases/download/v0.1.0-preview.23/Decky.Codex.zip",
+      "field": "Decky Codex/plugin.json:publish.description",
+      "sourceSha256": "ccfa89348d39711a0bbd7ffa32cc1724275fcb8811cea4f60d7d37a132cdc176",
+      "descriptionSha256": "cbc7f0bd3991b3655c69f9d6696ff18d5c7494ebd7b7d51a515bca79100fc99b"
+    },
+    {
+      "repository": "killdano/control-cult-decky",
+      "sourceUrl": "https://github.com/killdano/control-cult-decky/releases/download/v1.3.1/control-cult-decky.zip",
+      "field": "NoobDeity/plugin.json:publish.description",
+      "sourceSha256": "088f2d506756279088ae0f692072549e707c837980937757a0ac85d79008c018",
+      "descriptionSha256": "cd2ee5bd492ffb5ef5517a86902258697708a92244abe37288767c8e110811f1"
+    },
+    {
+      "repository": "KimaCuda/decky-steamhunter",
+      "sourceUrl": "https://github.com/KimaCuda/decky-steamhunter/releases/download/v1.0.1/steam-hunter-for-deck.zip",
+      "field": "steam-hunter-for-deck/plugin.json:publish.description",
+      "sourceSha256": "46d195f935faea2f1f923ecf2a00ca5544038bca5d82561864c33d2e4d80e8ea",
+      "descriptionSha256": "595858a973332a0a4166990c4997bedc192cf77e1dffd164cffb4b5fa0a6092d"
+    },
+    {
+      "repository": "kongdayan/decky-agent-remote",
+      "sourceUrl": "https://github.com/kongdayan/decky-agent-remote/releases/download/v0.5.0/agent-remote-v0.5.0.zip",
+      "field": "agent-remote/plugin.json:publish.description",
+      "sourceSha256": "3bb2e76907fae4a35a6f85322294cb65ccb51dc3d47046db3cec361be040473f",
+      "descriptionSha256": "9e3f575930a6ab1207a2cb0cd3f978825c867953fb2476cf1414aa4daa3733b0"
+    },
+    {
+      "repository": "konst2/Decky-Translator-RU",
+      "sourceUrl": "https://github.com/konst2/Decky-Translator-RU/releases/download/0.22.0/DeckyTranslatorRu.zip",
+      "field": "decky-translator-ru/plugin.json:publish.description",
+      "sourceSha256": "cac7a8e05b477879614570962dd1342766bdc3db832b6cc1bade096d4c16e313",
+      "descriptionSha256": "650297169e6a7d49b32c3c6c43a33e043060a9a874e2322f83307f3bfaa470b7"
+    },
+    {
+      "repository": "koua29/decky-fsg",
+      "sourceUrl": "https://github.com/koua29/decky-fsg/releases/download/v0.4.0/FSG.zip",
+      "field": "FSG/plugin.json:publish.description",
+      "sourceSha256": "34167481e91a0bf74507a293c9900da83406c70290fd1ef3c7665f7ec50ee032",
+      "descriptionSha256": "a52cf18ccd2fcccba7726c9f62a352b1102cd0995b52a0be77ac6b9cf7cade7a"
+    },
+    {
+      "repository": "koua29/decky-stwebsrv",
+      "sourceUrl": "https://github.com/koua29/decky-stwebsrv/releases/download/v0.2.0/STWebSRV.zip",
+      "field": "STWebSRV/plugin.json:publish.description",
+      "sourceSha256": "3c6c220924c9b3506b6d10ae803205cf2e7c027d79f1c69a32a682ac5adc1318",
+      "descriptionSha256": "13f1dfb3ee055b43137b860487da7ad1d02abde6e022d6446267a0fc10aeec22"
+    },
+    {
+      "repository": "koua29/savewaypoint",
+      "sourceUrl": "https://github.com/koua29/savewaypoint/releases/download/v0.2.0/SaveWaypoint.zip",
+      "field": "SaveWaypoint/plugin.json:publish.description",
+      "sourceSha256": "fdedcad38f406ff4605c82bde87a474b35e04838b055be6e80a136a6075505ab",
+      "descriptionSha256": "48409ffb214782a62c88a0e915f78b712bb4441464175552e983906a3c36d79d"
+    },
+    {
+      "repository": "Koutasora/Elemental-DeckKeys",
+      "sourceUrl": "https://github.com/Koutasora/Elemental-DeckKeys/releases/download/v1.1.0/Elemental-DeckKeys.zip",
+      "field": "Elemental-DeckKeys/files/decky/plugin.json:publish.description",
+      "sourceSha256": "95279fc76893bae30b36f797562506e706c48cb19d613952bb16a2d92ac33548",
+      "descriptionSha256": "0f19475212856870f86e98b592991691e0355ce082e1e659275ab78be5ea0ab6"
+    },
+    {
+      "repository": "kromossomom-debug/decky-switch2-dashboard",
+      "sourceUrl": "https://github.com/kromossomom-debug/decky-switch2-dashboard/releases/download/v1.4.0/switch2-dashboard.zip",
+      "field": "switch2-dashboard/plugin.json:publish.description",
+      "sourceSha256": "5471071a2353f08dfb91b2863bafc6a5abee9a9211fae488a940e02a1825b1c3",
+      "descriptionSha256": "1367f954bdfbd88ac9ac6e0ffa97f29338729297b2a8847d3c19128a3c7f9e97"
+    },
+    {
+      "repository": "Lakeland97/timeout-decky-plugin",
+      "sourceUrl": "https://github.com/Lakeland97/timeout-decky-plugin/releases/download/v0.2.0-alpha/timeout-decky-plugin.zip",
+      "field": "timeout-decky-plugin/plugin.json:publish.description",
+      "sourceSha256": "60c71ba25ff45167616603a42df70c9aabc22cb3ee32fdb4c711db446a99ab03",
+      "descriptionSha256": "597741c9fd84aca84cd4c9c91198b2de3c81a9132afa39b84c3676d953a9397d"
+    },
+    {
+      "repository": "lbr88-labs/decky-grim-dawn-item-assistant",
+      "sourceUrl": "https://github.com/lbr88-labs/decky-grim-dawn-item-assistant/releases/download/v0.3.3/decky-grim-dawn-item-assistant.zip",
+      "field": "decky-grim-dawn-item-assistant/plugin.json:publish.description",
+      "sourceSha256": "fa90f81706513fa512fbde03a864e8859e487738d6873b9bed7cb8ce13a76d55",
+      "descriptionSha256": "a5a1aee1a3b789e1a78107c69be03853cfe0dc5f5f5b3f19f1f0e22e903b5cd0"
+    },
+    {
+      "repository": "leoredrum/Ai-deck",
+      "sourceUrl": "https://github.com/leoredrum/Ai-deck/releases/download/v0.5.1/ai-deck.zip",
+      "field": "ai-deck/plugin.json:publish.description",
+      "sourceSha256": "aee686b3528b777cbc88e0dca8c0433899cb46bd9338888d8980b73ecdbbf099",
+      "descriptionSha256": "f79cc6f7213bf1a5af8f2ffda0cc5dc07c1eb300f7b5620d6ec93546f59d63d0"
+    },
+    {
+      "repository": "lesnuages/deckshock4-toggle",
+      "sourceUrl": "https://github.com/lesnuages/deckshock4-toggle/releases/download/v0.2.0/deckshock4-toggle-v0.2.0.zip",
+      "field": "deckshock4-toggle/plugin.json:publish.description",
+      "sourceSha256": "f684a4ec2525e186d80c77e75d4b6006a0f00b4c146da5297d3d14cf7ec8b768",
+      "descriptionSha256": "3b6c514ccdeccb6067e6ca7c2707bcc8d9398f8ac68031f6db24232b6ed08c66"
+    },
+    {
+      "repository": "Lexodeus/DiscordDeck",
+      "sourceUrl": "https://github.com/Lexodeus/DiscordDeck/releases/download/v0.3.0/DiscordDeck.zip",
+      "field": "DiscordDeck/plugin.json:publish.description",
+      "sourceSha256": "1005d892886ad7cf1cf66f07625ee04fe0df8a3314593a40b4f234276c064d42",
+      "descriptionSha256": "2c570baf56d7d763f4572cd33eb570044b0100b7508d4f4d0b9c409b7dacb1bb"
+    },
+    {
+      "repository": "linkj-r/decky-waydroid-toolbox",
+      "sourceUrl": "https://github.com/linkj-r/decky-waydroid-toolbox/releases/download/v0.1.4/WaydroidToolbox.zip",
+      "field": "WaydroidToolbox/plugin.json:publish.description",
+      "sourceSha256": "302c54bfaaaceca3de4a32d5f6f13cdaf0913f4a0d178262ad78de63d215419d",
+      "descriptionSha256": "263b4837544db8ab81d0c9f8baa24708a17dabb91a0487b7a06ded447aba8a04"
+    },
+    {
+      "repository": "Liquid-co/OpenSave",
+      "sourceUrl": "https://github.com/Liquid-co/OpenSave/releases/download/v2.4.1/OpenSave-decky-plugin.zip",
+      "field": "OpenSave/plugin.json:publish.description",
+      "sourceSha256": "626e25f63a69d9209659ad848ccd57c5871095c0a3da5182bd9e56205df73661",
+      "descriptionSha256": "3d32507710cdcc8d2ab2a6b2733c92521f37beab44d1f3391686ba26ec7a86b0"
+    },
+    {
+      "repository": "Livonsky/decky-neutron",
+      "sourceUrl": "https://github.com/Livonsky/decky-neutron/releases/download/v0.1.3/DeckyNeutron-v0.1.3.zip",
+      "field": "NeutronNavigator/plugin.json:publish.description",
+      "sourceSha256": "d342a1d6a8d7882f20f50537888f669a0bce66c12f85e75a00c5f0986cc06526",
+      "descriptionSha256": "6daa727cecc2fab94eb495abc0f19ae8c1ce7e33b9dcd3ee28ef0ace1d7a55da"
+    },
+    {
+      "repository": "Logic-mle/decky-guide",
+      "sourceUrl": "https://github.com/Logic-mle/decky-guide/releases/download/v1.0.0/DeckyGuide-v1.0.0.zip",
+      "field": "DeckyGuide/plugin.json:publish.description",
+      "sourceSha256": "f6f8850a43dd96a99e63631195f86619d9c0434e30a5de9ce21153d4739af371",
+      "descriptionSha256": "a2f1eee444e024546ae9a1015b657416bf368b58cfa3219e9978833213e197bf"
+    },
+    {
+      "repository": "lonsdaleite/Ally-Fix",
+      "sourceUrl": "https://github.com/lonsdaleite/Ally-Fix/releases/download/v1.3.3/Ally-Fix-v1.3.3.zip",
+      "field": "Ally Fix/plugin.json:publish.description",
+      "sourceSha256": "2373719f51785210d381c517b1091869c59242f813bbdf1d709279748c788482",
+      "descriptionSha256": "8616bb5c5c9231119fad82ad73a754ea7f949e9b4a551320a0e3d4afebb42405"
+    },
+    {
+      "repository": "lonsdaleite/steam-games-info",
+      "sourceUrl": "https://github.com/lonsdaleite/steam-games-info/releases/download/v1.1.3/steam-games-info-v1.1.3.zip",
+      "field": "Steam Games Info/plugin.json:publish.description",
+      "sourceSha256": "1359fdd7d79a4c1269e10bd1d261314f401f8ac32b17bdcd5d5e49d2e9b75707",
+      "descriptionSha256": "215c123cb38c6ccc53ca3a79e71c03ac293553237582207a4bcb020d2359a861"
+    },
+    {
+      "repository": "Lui92/decky-protondb-collections",
+      "sourceUrl": "https://raw.githubusercontent.com/Lui92/decky-protondb-collections/decky-protondb-collections-v0.1.0-alpha.6/README.md",
+      "field": "README.md:paragraph[1] (formatting only removed)",
+      "sourceSha256": "22c76494faa70275bb673d3120f47ecfc8c019bfbfb9855a9fcf9567aaa72353",
+      "originalExcerpt": "Creates Steam collections based on ProtonDB compatibility tiers and optionally syncs them to Tab Master.",
+      "originalExcerptSha256": "947d79c36cbb800ea0762314f9e4bcd3b341c2414f7c15c0c87ca1efe11bd35c",
+      "descriptionSha256": "947d79c36cbb800ea0762314f9e4bcd3b341c2414f7c15c0c87ca1efe11bd35c"
+    },
+    {
+      "repository": "lutyjj/perigee",
+      "sourceUrl": "https://github.com/lutyjj/perigee/releases/download/v0.2.0/perigee.zip",
+      "field": "perigee/plugin.json:publish.description",
+      "sourceSha256": "3c366c3561fee47454a94fc5c2784f3f86f1c740b5e956fbfa24d8432d1f12ac",
+      "descriptionSha256": "acd4ae8b467e1c83899d127f59f8a1333d4c90bcc936ab81d1389525976b86a5"
+    },
+    {
+      "repository": "M15t/decky-egpu-helper",
+      "sourceUrl": "https://github.com/M15t/decky-egpu-helper/releases/download/v0.2.3/decky-egpu-helper.zip",
+      "field": "egpu-gamescope/plugin.json:publish.description",
+      "sourceSha256": "c5f33e9aa5a8e84cfe3a26c0c184dad2f9ed90c1dfb396c9088b9c177f296379",
+      "descriptionSha256": "d3472acd99d96de79681377c133a9e1ef0e466ee14ab80363fff26837759acd3"
+    },
+    {
+      "repository": "m1kuk1m/decky-yomi-sync",
+      "sourceUrl": "https://github.com/m1kuk1m/decky-yomi-sync/releases/download/v1.0.0/decky-yomi-sync.zip",
+      "field": "decky-yomi-sync/README.md:paragraph[2] (formatting only removed)",
+      "sourceSha256": "1bdc5bcc67a15ceddf1dc84047b5c202b673f2d2d7a88001472d372e3beb1bea",
+      "originalExcerpt": "YomiDeck is a Decky Loader plugin for Steam Deck that captures in-game screenshots and wirelessly synchronizes them to the [YomiLLM](https://github.com/m1kuk1m/YomiLLM) Android application for real-time Japanese text recognition (OCR), furigana annotation, sentence grammar breakdown, and AI-powered dialogue parsing.",
+      "originalExcerptSha256": "8ef0cef7b00403cfef06eda5f8cc91d81d7bb680f589f541262e19e027c03b83",
+      "descriptionSha256": "565ce777b4f78044c36c65c2a6a99de2291a96cfcc76f7762499935d2ac80fd2"
+    },
+    {
+      "repository": "m2aadhil/decky-xbox-wireless-helper",
+      "sourceUrl": "https://github.com/m2aadhil/decky-xbox-wireless-helper/releases/download/v1.2.1/decky-xbox-wireless-helper.zip",
+      "field": "decky-xbox-wireless-helper/plugin.json:publish.description",
+      "sourceSha256": "6b513ea77879304f9052ee03f425a6a1757606f183a5171ec95be502c4edda79",
+      "descriptionSha256": "43615f11e218eeb3188c9f5fb5e33bf07542d048d9d211802efee466323bf91e"
+    },
+    {
+      "repository": "Ma-Rang/dolphin-remote-decky",
+      "sourceUrl": "https://github.com/Ma-Rang/dolphin-remote-decky/releases/download/v0.1.1/Dolphin_Remote.zip",
+      "field": "Dolphin Remote/plugin.json:publish.description",
+      "sourceSha256": "fc8af9658e3a9a79f3002d34421209b8c374ddddb31c394a2d7c27ee56e02786",
+      "descriptionSha256": "4234831d5f6d3e391bf1490113bfb51f9ddd53af51073dab5feb916b9ae5d25e"
+    },
+    {
+      "repository": "Marshy-Madness/decky-smart-launcher",
+      "sourceUrl": "https://github.com/Marshy-Madness/decky-smart-launcher/releases/download/v0.1.0/decky-smart-launcher-0.1.0.zip",
+      "field": "decky-smart-launcher/plugin.json:publish.description",
+      "sourceSha256": "3a7bd781466e1057121200c4e8a8b54c4e5ca68f191fc3b2b85295d40510ce49",
+      "descriptionSha256": "8d500827336ac560a2b413c23e03ef2060af22a59481d85744f97b213d0921d8"
+    },
+    {
+      "repository": "matteocrippa/decky-tower-control",
+      "sourceUrl": "https://github.com/matteocrippa/decky-tower-control/releases/download/v0.1.5/Tower.Control-v0.1.5.zip",
+      "field": "Tower Control/plugin.json:publish.description",
+      "sourceSha256": "50774908b02774cbf723b3a685d5c2635e491cd76c8860f4460673d24e16a457",
+      "descriptionSha256": "517447615b615b7b864f8ebf18259f316263b82d4a1277f43c46214dd8a2b378"
+    },
+    {
+      "repository": "mdeloughry/azeroth-addons",
+      "sourceUrl": "https://github.com/mdeloughry/azeroth-addons/releases/download/v0.1.9/azeroth-addons.zip",
+      "field": "azeroth-addons/plugin.json:publish.description",
+      "sourceSha256": "ac3dd3758e9289ada2602e6dd684532ebb5f122ea3dab0ae821509e7642e96e6",
+      "descriptionSha256": "11281945622d7201eeac3a7b0531a2f2501d460659eff26c24e55b166fe7f04e"
+    },
+    {
+      "repository": "mdusmb/decky-player",
+      "sourceUrl": "https://github.com/mdusmb/decky-player/releases/download/v0.1.0/decky-player-0.1.0.zip",
+      "field": "decky-player/plugin.json:publish.description",
+      "sourceSha256": "b56dd074614d17c2f70aa31a7e57e065ccda135c620d02fa39422e98dac19ac6",
+      "descriptionSha256": "36564c68501b2e851dd90a8a02834f412c96b978a5b312fc7e65ff5a0d06bf34"
+    },
+    {
+      "repository": "michaelravecabrera/Decky-Notes",
+      "sourceUrl": "https://github.com/michaelravecabrera/Decky-Notes/releases/download/v0.1.0/DeckyNotes.zip",
+      "field": "Decky Notes/plugin.json:publish.description",
+      "sourceSha256": "966f0ab5b4b73b0c6c9b34c990c88a6ca97d82430bfe351a6ea3583397460509",
+      "descriptionSha256": "f290cae51485cc1afd2c8663484200f446941ee8e626c17c554be05198e452bd"
+    },
+    {
+      "repository": "michpalm/showreel",
+      "sourceUrl": "https://github.com/michpalm/showreel/releases/download/v0.1.1/showreel.zip",
+      "field": "showreel/plugin.json:publish.description",
+      "sourceSha256": "d4a7659c7de2686b17f948098e6f3c4d7792fd35222da78926d988031d5df361",
+      "descriptionSha256": "f6f5ea439a5bd5bbd1ebd518759319544edea93b8fcc5181d537858ec47a6c44"
+    },
+    {
+      "repository": "miguellara999/Decky-APDetail",
+      "sourceUrl": "https://github.com/miguellara999/Decky-APDetail/releases/download/v0.1.0/APDetail-v0.1.0.zip",
+      "field": "APDetail/plugin.json:publish.description",
+      "sourceSha256": "29f73cfc22e674bea48399f1b88c410b539356981d1907c88d572b4fa524fde1",
+      "descriptionSha256": "33f917ff7f65f584761ff2bc6e52d33511cb9d82bce0afe296d27400653d8d5b"
+    },
+    {
+      "repository": "MikeAdamRGB/Open-Game-Launcher",
+      "sourceUrl": "https://github.com/MikeAdamRGB/Open-Game-Launcher/releases/download/v2.1.3/Open-Game-Launcher-Decky.zip",
+      "field": "Open-Game-Launcher/plugin.json:publish.description",
+      "sourceSha256": "81832e5abe768750de184554ae5f4db5359b1a75a15e36760dbca2d5a28c6472",
+      "descriptionSha256": "19e42d6dac00dcbeffeda671a1fed81347ed93792d7be4c7abb3144cadf06926"
+    },
+    {
+      "repository": "mix3d/bc250-perf-profile-switcher",
+      "sourceUrl": "https://github.com/mix3d/bc250-perf-profile-switcher/releases/download/v1.3.0/bc250-power.zip",
+      "field": "bc250-power/plugin.json:publish.description",
+      "sourceSha256": "95e5be2687cf592be5a153e0fa13db3aca95e8a8a3c3577110a1d8b6eb68d1a7",
+      "descriptionSha256": "633cdad919291bae04d81163c9014918b363eb4856089471bbef17f65e7e63ad"
+    },
+    {
+      "repository": "moi952/decky-nvidia-update",
+      "sourceUrl": "https://github.com/moi952/decky-nvidia-update/releases/download/v0.4.0/decky-nvidia-update-v0.4.0.zip",
+      "field": "decky-nvidia-update/plugin.json:publish.description",
+      "sourceSha256": "d848dba672715f308e35216a7d14f929cda979faf725f95b52471a927f260517",
+      "descriptionSha256": "3f0b427cca0d584d85c174d9984ff33b58e3a532e24e1a1fe7582eac511502fc"
+    },
+    {
+      "repository": "mpcallahan/DeckyHourNotifications",
+      "sourceUrl": "https://github.com/mpcallahan/DeckyHourNotifications/releases/download/v1.0/DeckyHourNotificationsV1.0.zip",
+      "field": "DeckyHourNotifications/plugin.json:publish.description",
+      "sourceSha256": "df87707fd7c1527e0e872e216589dc3a7c5713378bef1c817e5b9b27057081b0",
+      "descriptionSha256": "204e6e1e0cdf1d48661ca88dc5d1346bd053bb74d62daf6f7a97ed0dd253fede"
+    },
+    {
+      "repository": "Mujtaba-Alsaleh/DeckyLoader-Plugin-Palia-NPC-Gift-Tracker",
+      "sourceUrl": "https://github.com/Mujtaba-Alsaleh/DeckyLoader-Plugin-Palia-NPC-Gift-Tracker/releases/download/1.0.0/Palia.NPC.Weekly.Gifts.Tracker.zip",
+      "field": "Palia NPC Weekly Gifts Tracker/plugin.json:publish.description",
+      "sourceSha256": "57c63d919b2978fd53fb4ec2460ff70c6e10c9a8ca50ec553548ada485fe2038",
+      "descriptionSha256": "0301144391ba75341ad2b890a44b71eb596d56a62c10fdf7244937c56a9fc061"
+    },
+    {
+      "repository": "musika08/clarity",
+      "sourceUrl": "https://github.com/musika08/clarity/releases/download/v0.1.1/clarity-0.1.1.zip",
+      "field": "clarity/plugin.json:publish.description",
+      "sourceSha256": "b41c38d7af92423f5ffbfeff3acdf6c6f190143444ecfff6a4c60f81058bc6d7",
+      "descriptionSha256": "727b9aa42c621d6db56c73b5028571eec43726095a0ec15a1451333bb0523831"
+    },
+    {
+      "repository": "musika08/decky-control-center",
+      "sourceUrl": "https://github.com/musika08/decky-control-center/releases/download/v0.1.1/control-center-0.1.1.zip",
+      "field": "control-center/plugin.json:publish.description",
+      "sourceSha256": "46b5535de1edf18d73b2597f7d2fef5967cc540ac7e2464d553c553ba0afeb03",
+      "descriptionSha256": "a9be396d8cf1beb540ab4f62d80ff2c2fe7ef5a6240e19690381a021968853b7"
+    },
+    {
+      "repository": "musika08/overdrive",
+      "sourceUrl": "https://github.com/musika08/overdrive/releases/download/v0.2.1/overdrive-0.2.1.zip",
+      "field": "overdrive/plugin.json:publish.description",
+      "sourceSha256": "db38d580c6882ae071edafe49ccd923c212b3933f47ce0ab376ee1d0ad3cef6d",
+      "descriptionSha256": "a883a32e803177fb1b245c8fc7e883bd37cccd8cd8ecc64f64726ab2833d5490"
+    },
+    {
+      "repository": "MWGIH/SCopy",
+      "sourceUrl": "https://github.com/MWGIH/SCopy/releases/download/decky-latest/SCopy.zip",
+      "field": "SCopy/plugin.json:publish.description",
+      "sourceSha256": "721bcd5e92d7f4c25a9ecb832c0a475707d88fb6e0c949ac29a3dde7cccf04ba",
+      "descriptionSha256": "4f440dcbe0ffa417dc60c73a7f36a8f9531932db5043963757bc5da36180be22"
+    },
+    {
+      "repository": "mydanyi/armada-installer",
+      "sourceUrl": "https://github.com/mydanyi/armada-installer/releases/download/v0.3.0/armada-installer-0.3.0.zip",
+      "field": "armada-installer/README.md:paragraph[3] (formatting only removed)",
+      "sourceSha256": "d104c76b915b471253fa4dc9fd5eb2d83ff363d2808946f9ce28a11fcf538c16",
+      "originalExcerpt": "Decky plugin for [ArmadaOS](https://github.com/armada-os/armada) that installs\r\nArmada onto the internal disk from the SD-card installer environment, and that\r\ncan also create an Armada game library in the Linux reserve partition of a TF\r\ncard while keeping the Android storage on that card. Both modes work without a Steam account, a game\r\nlibrary or a sign-in, and neither writes to a disk the user did not confirm.",
+      "originalExcerptSha256": "c1e142c957cc529becf425bdf93c7b1e2ae315609352cc14146ab7f9d35d8495",
+      "descriptionSha256": "6d19da43eab56ef79d7fcb827d41daa85f2403ba3324ff9981a8665229382b60"
+    },
+    {
+      "repository": "N3ruk/Sharp-Filter-Selector",
+      "sourceUrl": "https://github.com/N3ruk/Sharp-Filter-Selector/releases/download/v1.2.0/sharp-filter-selector-v1.2.0.zip",
+      "field": "sharp-filter-selector/plugin.json:publish.description",
+      "sourceSha256": "12571865143b37db515f4fca5c8e0ff61ce01228a0269d915c648540db634325",
+      "descriptionSha256": "8a80faab49ace4ed45c57ce8b3295744d41a3dfdd4718f5d5bb2b244bf23936d"
+    },
+    {
+      "repository": "namquang93/decky-windows-tool",
+      "sourceUrl": "https://github.com/namquang93/decky-windows-tool/releases/download/v1.5.0/DeckyWindowsTools_v1.5.0.zip",
+      "field": "DeckyWindowsTools/plugin.json:publish.description",
+      "sourceSha256": "e29b5a304830fd9d5eb0ea0af522551f60b92afc74489ab7d999aa30cd3d5f48",
+      "descriptionSha256": "d10319c959b04df3ffcceb17f4c71a1cd4297b348dfdfae4e47cc6005f475780"
+    },
+    {
+      "repository": "neatsorg/livetranslate-decky",
+      "sourceUrl": "https://github.com/neatsorg/livetranslate-decky/releases/download/v0.1.1/livetranslate-decky-0.1.1.zip",
+      "field": "livetranslate-decky/plugin.json:publish.description",
+      "sourceSha256": "8a6cd43dff09832027480d4a02a5ee6e39ab70004f1960e96227b58e01a3e7dc",
+      "descriptionSha256": "e543a049ccc6d4266b88ee43bbb8bee3c52b8c50bd325958d739437c0124d18a"
+    },
+    {
+      "repository": "neokura/AnyDeck",
+      "sourceUrl": "https://github.com/neokura/AnyDeck/releases/download/v0.2.0-alpha.13/anydeck-v0.2.0-alpha.13.zip",
+      "field": "anydeck/plugin.json:publish.description",
+      "sourceSha256": "7e51dcc2a55404bef9015847622726fc7897a925ae6cc29c625ae780dbe3a268",
+      "descriptionSha256": "b3bd7d2a23c79ffb0ebad383c1ee7e0c62f61ebb179740782a2bf8ad3d17550d"
+    },
+    {
+      "repository": "NeonPimpZ/decky-ssh-toggle",
+      "sourceUrl": "https://raw.githubusercontent.com/NeonPimpZ/decky-ssh-toggle/v1.0.0/README.md",
+      "field": "README.md:paragraph[1] (formatting only removed)",
+      "sourceSha256": "c7e244b4af0c4a385fb28e3fb1d5928eb4928c6db29025f2525e209dad7dedfc",
+      "originalExcerpt": "A [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plugin for the Steam Deck that lets you toggle SSH on and off directly from the Quick Access Menu.",
+      "originalExcerptSha256": "15f81bab94d0a019939e5ee2c69a57e1706213ec4f53b5ba487ddcaf78538368",
+      "descriptionSha256": "9b010702054d95faa1a171e4f76d6c1716267f56b1debf44b481790e1e37700c"
+    },
+    {
+      "repository": "NeoSloth/MangoPeel",
+      "sourceUrl": "https://github.com/NeoSloth/MangoPeel/releases/download/v0.1.2/MangoPeel-Neo.zip",
+      "field": "mangopeel_neo/plugin.json:publish.description",
+      "sourceSha256": "4fe72302e666580456b0d21968e58155081a07360a19096890add40b482f04d0",
+      "descriptionSha256": "1834503882372cf6b031cc1312987f5e0b1d25c10c17718b1e9e99a9326a06fd"
+    },
+    {
+      "repository": "nicholasyoannou/steamdeck-backup",
+      "sourceUrl": "https://github.com/nicholasyoannou/steamdeck-backup/releases/download/v0.1.0/steam-deck-backup-decky.zip",
+      "field": "steam-deck-backup/plugin.json:publish.description",
+      "sourceSha256": "f70a6b72ce56f70ac141645b8d73c3c582a634182e701918f7293c4447615bac",
+      "descriptionSha256": "e885c537b981d59e6f16ae5c92beb3912226528dd117f739f231b274e1937b32"
+    },
+    {
+      "repository": "Nico8324/CouchLink",
+      "sourceUrl": "https://github.com/Nico8324/CouchLink/releases/download/v0.4.1/CouchLink.zip",
+      "field": "CouchLink/plugin.json:publish.description",
+      "sourceSha256": "5f3d9ae2fab686758feb84176a7246c1614946412255dbaa5594fd77aa3e4a94",
+      "descriptionSha256": "d2435bbe49c0d2d7c0e8abdfd8e3072b2c8cb229f71a15b6b20daf0192a0fd78"
+    },
+    {
+      "repository": "nikitautiu/decky-armada-trackpad",
+      "sourceUrl": "https://github.com/nikitautiu/decky-armada-trackpad/releases/download/v0.2.1/decky-armada-trackpad-0.2.1.zip",
+      "field": "decky-armada-trackpad/plugin.json:publish.description",
+      "sourceSha256": "2ac42b21b3f1651c9952b47191333170bbed2784f61d86af074a37f902755f4b",
+      "descriptionSha256": "31bf902bd9288babbae6985122f4d09e561aa51f63a504a8649c185df970125f"
+    },
+    {
+      "repository": "niwia/Uran",
+      "sourceUrl": "https://github.com/niwia/Uran/releases/download/v0.8.1/Uran.zip",
+      "field": "Uran/plugin.json:publish.description",
+      "sourceSha256": "bb3f70403ecf49310be2762951976f9907c537761201f52f9d8c2b362350d1c2",
+      "descriptionSha256": "e653764c0faafcaadc02a3f1da18f5ef4543ea5a1246fbd1cd9995175e28addf"
+    },
+    {
+      "repository": "NotHavocc/ps5-hwcon-plugin",
+      "sourceUrl": "https://github.com/NotHavocc/ps5-hwcon-plugin/releases/download/v1.6.1/ps5-hwcon-plugin.zip",
+      "field": "ps5-hardware-control/plugin.json:publish.description",
+      "sourceSha256": "875aa38a5492e5c8f68edce04d12a455ebabda9097d92b72300d0d17cf3d3e0e",
+      "descriptionSha256": "2c2dcb67c5b908186c7531339ec7ae4b0a4f4a0818b8e0f2f9a4efc9e524775d"
+    },
+    {
+      "repository": "nphil/decky-QAM",
+      "sourceUrl": "https://github.com/nphil/decky-QAM/releases/download/v1.0.0/decky-QAM.zip",
+      "field": "decky-QAM/plugin.json:publish.description",
+      "sourceSha256": "53badc6444782461a792f90f162144641ba974190d45075117313a8141b89a08",
+      "descriptionSha256": "1559b008f637e4bae2bca24da70a23821bec3b7d9ac9235f7d8076da5b6981fb"
+    },
+    {
+      "repository": "nucat176/decky-16x10-fixes",
+      "sourceUrl": "https://github.com/nucat176/decky-16x10-fixes/releases/download/v0.1.18/16x10-fixes.zip",
+      "field": "16x10-fixes/plugin.json:publish.description",
+      "sourceSha256": "53dd61ddb7f9c01c35cfaeb765445dba6b400a4656266525d7d66e8fb2e293b9",
+      "descriptionSha256": "c7346c0d800294853ad7dda78cb4a5f41babf40831c0b5d8b935fc1444da16ff"
+    },
+    {
+      "repository": "otisabiburada/friend-plaza",
+      "sourceUrl": "https://github.com/otisabiburada/friend-plaza/releases/download/3.1.0/friend-plaza.zip",
+      "field": "Friend Plaza/plugin.json:publish.description",
+      "sourceSha256": "eaf276f632e9208d6b6fd0aa7a316ef2c09275ba3c647d8056620d862609530a",
+      "descriptionSha256": "a8719adb268932aca3cce4d80b7549540e0a81a669f4c7e16d93f46633368f49"
+    },
+    {
+      "repository": "ovenham/rog-ally-x20-steamos-speaker-qam-fix",
+      "sourceUrl": "https://github.com/ovenham/rog-ally-x20-steamos-speaker-qam-fix/releases/download/v1.0.3/x20-fixes.zip",
+      "field": "x20-fixes/plugin.json:publish.description",
+      "sourceSha256": "7ffdccaac00de1622dfed8e536af08a7adbf95b96a347927da57c31054d2f080",
+      "descriptionSha256": "1c37c679be14c0900773ff1ce68f9ee5e92b73f1d7b3f3a8530dd6c89492d89e"
+    },
+    {
+      "repository": "PacificSilent/decky-screen-colors",
+      "sourceUrl": "https://github.com/PacificSilent/decky-screen-colors/releases/download/v1.0.0/decky-screen-colors.zip",
+      "field": "Screen Colors/plugin.json:publish.description",
+      "sourceSha256": "e12722263ec3a8ebaea68d934b4316124bb8b5f6eae6c772e20ec88db10b7f67",
+      "descriptionSha256": "50b93854aebb2e9b6bec8b8259c92b5f00f837953ff93e2113ab2a05e5863572"
+    },
+    {
+      "repository": "Pashka0950/vibrance-deck",
+      "sourceUrl": "https://github.com/Pashka0950/vibrance-deck/releases/download/v1.0.0/Vibrance.zip",
+      "field": "Vibrance/plugin.json:publish.description",
+      "sourceSha256": "f2149b4eea1a353130b6d34460a5ffcea642503088df2d87808b5234ba1b8d0a",
+      "descriptionSha256": "d58272b3b047e19bcbaad02891f9b164c566ac60fabd5a1389948f18dc2d2a56"
+    },
+    {
+      "repository": "PatrikTheDev/HyperionCapture",
+      "sourceUrl": "https://github.com/PatrikTheDev/HyperionCapture/releases/download/v0.0.7/HyperionCapture.zip",
+      "field": "HyperionCapture/plugin.json:publish.description",
+      "sourceSha256": "7c27597f0475e742680c9dfca06a91eeaaa6c73ffbacd275a4cb34b378753ba5",
+      "descriptionSha256": "5d32bf03ced362ae627acc9a30e09c51bbbf94cfb6e72700f5591bccae8b827f"
+    },
+    {
+      "repository": "paulorband/decky-system-monitor",
+      "sourceUrl": "https://github.com/paulorband/decky-system-monitor/releases/download/v0.2.6/decky-system-monitor.zip",
+      "field": "decky-system-monitor/plugin.json:publish.description",
+      "sourceSha256": "836523c984c1d7bde4cf322980fa284059b8e007f8fde6ecf170520b401e3395",
+      "descriptionSha256": "93aefaca507e3711c7ddce2953822b17c6dfc084426343824b740d9eac605b7f"
+    },
+    {
+      "repository": "PedroReyVarela/AllyFanControl-",
+      "sourceUrl": "https://github.com/PedroReyVarela/AllyFanControl-/releases/download/v1.0.3/AllyFanControl-v1.0.3.zip",
+      "field": "AllyFanControl/README.md:paragraph[1] (formatting only removed)",
+      "sourceSha256": "4e93b54fd6d2bd6af9a39781add0bd31d8c684348c33e5682aed7f491bd4e109",
+      "originalExcerpt": "Plugin de Decky Loader para control de curvas de ventilador en la **ROG Ally Z1 Extreme**.",
+      "originalExcerptSha256": "661920a8fbc350db3264d91738cfbd7c7d89a54daa0079a729a97c41047ef818",
+      "descriptionSha256": "42622100b73e758dd8b435d9492359f1167219935b02e498aab6640b90e400e8"
+    },
+    {
+      "repository": "Picardas/Decky-WoL",
+      "sourceUrl": "https://github.com/Picardas/Decky-WoL/releases/download/v1.1.0/Decky-WoL.zip",
+      "field": "Decky-WoL/plugin.json:publish.description",
+      "sourceSha256": "591db9396018801f1314d8703091c3875e128a03b3793aa0c858e25087062e87",
+      "descriptionSha256": "093e18bd2eaa801bfb20362a7f9a69360f3dd6d2bc0be563ed77103ab58c2bbf"
+    },
+    {
+      "repository": "ProblemFactory/decky-plugins",
+      "sourceUrl": "https://github.com/ProblemFactory/decky-plugins/releases/download/v1.2.2/TetherBoost.zip",
+      "field": "TetherBoost/plugin.json:publish.description",
+      "sourceSha256": "84776c007149fedb735544a19ec4170b87a7a039fc7300262e123d1ba8211499",
+      "descriptionSha256": "c309d5aae6abe85d51743b50c1524f79cb38a0e75c4a2ee720e33fd0e50ae7ef"
+    },
+    {
+      "repository": "ProjectsConsoles/PS-XMB",
+      "sourceUrl": "https://github.com/ProjectsConsoles/PS-XMB/releases/download/v1.0.13/PS-XMB.zip",
+      "field": "PS-XMB/plugin.json:publish.description",
+      "sourceSha256": "ab4e7fcb4f1f42d6db1cf5579aa95f47e2bfde3ce3b7b8fc90f3e53b52ff2551",
+      "descriptionSha256": "4c27fa2c4a75d656e296d11a62a22c4f362dcabff5a1ae2df39a5158f2f1f135"
+    },
+    {
+      "repository": "pymmog/decky-pwm-control",
+      "sourceUrl": "https://github.com/pymmog/decky-pwm-control/releases/download/1.0.0/PWMControl.zip",
+      "field": "PWMControl/plugin.json:publish.description",
+      "sourceSha256": "aec766b0b2e22973d5141247987c2bc7b0903f6bf8e7ee2c27568c38baaf9584",
+      "descriptionSha256": "4123ad0db87a65530a53f9d50f7e98f781346cb23cc326d9e9ffa8540cd202fe"
+    },
+    {
+      "repository": "quentingeorgel/decky-gitupdater",
+      "sourceUrl": "https://github.com/quentingeorgel/decky-gitupdater/releases/download/v0.1.2/decky-gitupdater.zip",
+      "field": "plugin.json:publish.description",
+      "sourceSha256": "6a2e54d0ada00b46313b943948279209dc0d188da369db238b8cff90f42722a8",
+      "descriptionSha256": "73bee120f914959de1eff273adb5335a0b287774da651c68081cfea08506b936"
+    },
+    {
+      "repository": "quietgear/decky-cloud-reader",
+      "sourceUrl": "https://github.com/quietgear/decky-cloud-reader/releases/download/v1.0.9/decky-cloud-reader.zip",
+      "field": "decky-cloud-reader/plugin.json:publish.description",
+      "sourceSha256": "e82c6fe600fe8dad0c3c52ee11042d3fd43a1828c96fafc648d3a9880900cc6c",
+      "descriptionSha256": "29b0c6d08e3b2f803a6aa8e8a1f9cbf55af05de4e504aeac12c224dc13553bcd"
+    },
+    {
+      "repository": "Raanh/DeckyPiP",
+      "sourceUrl": "https://github.com/Raanh/DeckyPiP/releases/download/1.0/DeckyPiP-1.0.0.zip",
+      "field": "DeckyPiP-1.0.0/plugin.json:publish.description",
+      "sourceSha256": "fc18ebe94747dba50d8391d8ec64b78854a50d863d7a79d29a3f45b3a9acc98d",
+      "descriptionSha256": "e658e1db4c04cd1f02aafe47a03b4bf1d9a3bc6b17eb93b66712d05b3023fb02"
+    },
+    {
+      "repository": "Raanh/WF-Decky",
+      "sourceUrl": "https://github.com/Raanh/WF-Decky/releases/download/v0.4.8/WF-Decky-v0.4.8.zip",
+      "field": "warframe-market/plugin.json:publish.description",
+      "sourceSha256": "a4b181b03faecb3e5a14eb48e691cf31b604c5c2647d44dc32c359cc20adf7ec",
+      "descriptionSha256": "bdb22e187c236def9f6d8b3a05a259949d89aed5fa6497f126046b299df03887"
+    },
+    {
+      "repository": "Raindropx/Decky-LLM-Translator",
+      "sourceUrl": "https://github.com/Raindropx/Decky-LLM-Translator/releases/download/v0.5.1/Decky.LLM.Translator.zip",
+      "field": "decky-llm-translator/plugin.json:publish.description",
+      "sourceSha256": "130a0f3637bb3876a59181db012d30bf35513b433b70268644ef8e77c0669da5",
+      "descriptionSha256": "46e15098b6e3f8b90f4f7d72501b4ad9b692d3eb7e3544a586dc021958a4b223"
+    },
+    {
+      "repository": "razoomnik/decky-odin-gyro",
+      "sourceUrl": "https://github.com/razoomnik/decky-odin-gyro/releases/download/v0.1.14/OdinGyro-v0.1.14.zip",
+      "field": "OdinGyro/plugin.json:publish.description",
+      "sourceSha256": "8225779f5e0172b2b80c406da488d696a520971bc6577c0d16f383756d23fda8",
+      "descriptionSha256": "1536547dc98e7917c54bdad0ecdcef296e9e8205b77dcb464b1c592459e81810"
+    },
+    {
+      "repository": "RemakeCode/sentinel",
+      "sourceUrl": "https://github.com/RemakeCode/sentinel/releases/download/v2.1.1/sentinel-decky-plugin-2.1.1.zip",
+      "field": "sentinel/plugin.json:publish.description",
+      "sourceSha256": "ebc43005d7023069adcdc71d556773deb8b1993abdf45f527b9028417ef86da9",
+      "descriptionSha256": "d81682f0b734f3b87137add29e6d4a36502a743db6dc49fb02919578c074745d"
+    },
+    {
+      "repository": "rommapp/ludo",
+      "sourceUrl": "https://github.com/rommapp/ludo/releases/download/v1.0.0-beta.32/Ludo-v1.0.0-beta.32-decky.zip",
+      "field": "ludo/plugin.json:publish.description",
+      "sourceSha256": "63ec995c46f215ead8512069da096a2cef5c6a62aa48b205ed486ba7f33cdd70",
+      "descriptionSha256": "e1afc5a64b685dbf24f03834021c9fa6da24e178f4a1670796070de8a0d907c3"
+    },
+    {
+      "repository": "RyanWReid/claude-deck",
+      "sourceUrl": "https://github.com/RyanWReid/claude-deck/releases/download/v0.9.1/claude-deck.zip",
+      "field": "claude-deck/plugin.json:publish.description",
+      "sourceSha256": "4cc40c829e60b565f7c7c0d10338ab525cb32f884497a9737ad86be73940c8f6",
+      "descriptionSha256": "232ac02e8af5907fe741d494265a92966a2741392e22af5cb2858e214615a0b0"
+    },
+    {
+      "repository": "Sabissimo/decky-flight-mode-prep",
+      "sourceUrl": "https://github.com/Sabissimo/decky-flight-mode-prep/releases/download/v0.1.1/decky-flight-mode-prep.zip",
+      "field": "decky-flight-mode-prep/plugin.json:publish.description",
+      "sourceSha256": "ff8cba1b20c855f61e161606b94a9eec2141b786de7e4761f7a1c7062501faeb",
+      "descriptionSha256": "b2fda1801d3728d17c2043fe26ed2bf9a7af956d28278eebf5721132948c229f"
+    },
+    {
+      "repository": "Sabissimo/decky-grimoire",
+      "sourceUrl": "https://github.com/Sabissimo/decky-grimoire/releases/download/v0.1.3/decky-grimoire.zip",
+      "field": "decky-grimoire/plugin.json:publish.description",
+      "sourceSha256": "b3d50749121c07d5a73614ef38790962b83b15de3ca23701726c2652fbcc2c16",
+      "descriptionSha256": "d2e5bc3f87b500cba65bce7ad707437dc6380db85c535a29c474a54913a88961"
+    },
+    {
+      "repository": "Sabissimo/decky-wrapped",
+      "sourceUrl": "https://github.com/Sabissimo/decky-wrapped/releases/download/v0.1.1/decky-wrapped.zip",
+      "field": "decky-wrapped/plugin.json:publish.description",
+      "sourceSha256": "df0c51cfed23b7035188246f1c82166d0938e0b069ba45c61b9a14f90ddfd670",
+      "descriptionSha256": "7def816a1aef99b8ce610840ba29a17ad9b622dedd2fd806f394f63e66125e29"
+    },
+    {
+      "repository": "sanicki/decky-rotate-screen",
+      "sourceUrl": "https://github.com/sanicki/decky-rotate-screen/releases/download/v1.0.0/DeckyRotateScreen.zip",
+      "field": "DeckyRotateScreen/plugin.json:publish.description",
+      "sourceSha256": "a933a12682b4e5ed7a35cd12c2133ed70991bbf41a7d000eb8a6624b758dcabf",
+      "descriptionSha256": "4b04aa30c53ee54ce26c875111a46b732a84350a0854b0fd244a7efe9c3d6e0a"
+    },
+    {
+      "repository": "Sci-fi-Borg/fhds-in-decky-loader",
+      "sourceUrl": "https://github.com/Sci-fi-Borg/fhds-in-decky-loader/releases/download/v0.1.0/fhds-decky-v0.1.0.zip",
+      "field": "fhds-decky/plugin.json:publish.description",
+      "sourceSha256": "eab7278f841ef026a14de8337642c88dd51dbb148d277689cd6ab2349030ac56",
+      "descriptionSha256": "6e721b733c769ccf55102bacb9d95225249fc5fa90ae9f557f44c6772ffcaf11"
+    },
+    {
+      "repository": "sebastianuxd/decky-stt-keyboard",
+      "sourceUrl": "https://github.com/sebastianuxd/decky-stt-keyboard/releases/download/v1.2.2/decky-stt-keyboard-v1.2.2.zip",
+      "field": "STT Keyboard/plugin.json:publish.description",
+      "sourceSha256": "c73f8152756ca987580a406b4ac5350b275523410eac2d2bfe031bde5f27e7c3",
+      "descriptionSha256": "52707222bc2ccce2429a7ec00a357593524391dcf473bb19b4f220747636615d"
+    },
+    {
+      "repository": "shadeov/decky-prism",
+      "sourceUrl": "https://github.com/shadeov/decky-prism/releases/download/v1.0.0/Decky-Prism-v1.0.0.zip",
+      "field": "Decky Prism/plugin.json:publish.description",
+      "sourceSha256": "4c6207b0a619c6b938f0ba89671d1035704b77b92235dff834438df87a01f60d",
+      "descriptionSha256": "58cd17a75f0ccc951193ca10937a5814f1fe96d8c8bc50c8792f7de2bcfb33c9"
+    },
+    {
+      "repository": "Shadoww23/proton-picker-decky",
+      "sourceUrl": "https://github.com/Shadoww23/proton-picker-decky/releases/download/v0.1.0/ProtonPickerDecky-0.1.0.zip",
+      "field": "plugin.json:publish.description",
+      "sourceSha256": "0f079da6938344c7106dc99dc18c526797046485c1b497411d9258f1f02f173a",
+      "descriptionSha256": "31384f622169033324543056a758e386fab564312f98614ae253c5c899d6da17"
+    },
+    {
+      "repository": "shaifvier/Diablo-Loot-Filter-Decky-plugin",
+      "sourceUrl": "https://github.com/shaifvier/Diablo-Loot-Filter-Decky-plugin/releases/download/v0.2.0-beta.1/diablo-loot-filters-preview-v0.2.0-beta.1.zip",
+      "field": "diablo-loot-filters-preview/plugin.json:publish.description",
+      "sourceSha256": "7f8c0e7a07d895810e24ae7a41be7e2ca4aed218473e90e139b38776ed264c12",
+      "descriptionSha256": "eff9d3be6719052931d74b7596be7cd44dde06407a9797d6385555be7b839419"
+    },
+    {
+      "repository": "shaka456/custom-resolution",
+      "sourceUrl": "https://github.com/shaka456/custom-resolution/releases/download/v1.0/custom-resolution-v1.0.zip",
+      "field": "plugin.json:publish.description",
+      "sourceSha256": "56a08b0d6109d08fbbe1c6ee833fd2153b39fc5abe0fe9de5845251440fe9436",
+      "descriptionSha256": "406bbc837059dcfebca8c11f10fc08dcc2ea8b17e1b92330202b8db89253c730"
+    },
+    {
+      "repository": "SkorcherX/SaveLocker-Decky",
+      "sourceUrl": "https://github.com/SkorcherX/SaveLocker-Decky/releases/download/v0.2.2/SaveLocker.zip",
+      "field": "SaveLocker/plugin.json:publish.description",
+      "sourceSha256": "f4838c42c6ef763af07e6eb673e5077426ef82766717deb379e2b71b0b520b4d",
+      "descriptionSha256": "052199c1b1101fd392d84137b3ebeda1e8563f54e29899c899e76ecf96c636e1"
+    },
+    {
+      "repository": "sleoier/HandheldFanTweaker",
+      "sourceUrl": "https://github.com/sleoier/HandheldFanTweaker/releases/download/v0.2.1/HandheldFanTweaker.zip",
+      "field": "HandheldFanTweaker/plugin.json:publish.description",
+      "sourceSha256": "6119c0b96c61af7bb063096f2c0ab537cf0b6a09073ee1aa6474a775775eda06",
+      "descriptionSha256": "3dfb7516772b9ee9bc7afb86dbf3d3327514c76537731b97a454c4c749421d9d"
+    },
+    {
+      "repository": "soberdeer/browsec-decky",
+      "sourceUrl": "https://github.com/soberdeer/browsec-decky/releases/download/v1.0.0/Browsec-Decky-1.0.0.zip",
+      "field": "Browsec Decky/plugin.json:publish.description",
+      "sourceSha256": "43436d7f52a920af4e1fd4e60af491478377c1cb3f251cfbe495ed98a031244b",
+      "descriptionSha256": "b93e00a48781287a120d8879b5d0d3cb337c3f8dc682c79c06117ca7a405b133"
+    },
+    {
+      "repository": "spacemeowx2/rabbit-digger-pro",
+      "sourceUrl": "https://github.com/spacemeowx2/rabbit-digger-pro/releases/download/v0.1.0/rabbit-digger-pro-decky.zip",
+      "field": "rabbit-digger-pro/plugin.json:publish.description",
+      "sourceSha256": "838cf4caffcf4479b3ee9b065d72166d4ec9b9d7895c5a49869274e6e86295da",
+      "descriptionSha256": "bb24446904f1ff0c3bc978b2d976e465f1370ddfb311d35a41eae5a63e9802b2"
+    },
+    {
+      "repository": "SpiderNic96/dimensions-toypad-aio",
+      "sourceUrl": "https://github.com/SpiderNic96/dimensions-toypad-aio/releases/download/v1.1.0/dimensions-toypad-release.zip",
+      "field": "dimensions-toypad/plugin.json:publish.description",
+      "sourceSha256": "7762117410c56e4d81b88e1e63970da57f6595c975bad02a484d3a5ee266e694",
+      "descriptionSha256": "724ec0699c720f07092a2784a42bdf087ec4fbd2b9b873f8ca988debddea0df0"
+    },
+    {
+      "repository": "srsholmes/onexplayer-apex-bazzite-fixes",
+      "sourceUrl": "https://github.com/srsholmes/onexplayer-apex-bazzite-fixes/releases/download/build-b696161/OneXPlayer_Apex_Tools.zip",
+      "field": "OneXPlayer Apex Tools/plugin.json:publish.description",
+      "sourceSha256": "7740bfb4a7c0f57dfe3f8e982ab90279c11f821758cb00c95505297c5c9eab1a",
+      "descriptionSha256": "9349e914d7f50999fc370d57abf90579ca86b4cf0387f653c286565aa0945e10"
+    },
+    {
+      "repository": "Steamdeckchecker/SDC-Benchmark-",
+      "sourceUrl": "https://github.com/Steamdeckchecker/SDC-Benchmark-/releases/download/V1.7.1/SDC-Benchmark-v1.7.1.zip",
+      "field": "sdc-benchmark/plugin.json:publish.description",
+      "sourceSha256": "5658505c0007f2c9e720b238a6499272f41db9a3d6cd5bbd2f9047971082e9a7",
+      "descriptionSha256": "4a5a35ed92a31364e1df6e8d6d9946682f077c62d583d1e61a198d0e67902f88"
+    },
+    {
+      "repository": "stensmir/xg-mobile-linux",
+      "sourceUrl": "https://github.com/stensmir/xg-mobile-linux/releases/download/v0.2.1/XG-Mobile.zip",
+      "field": "XG-Mobile/plugin.json:publish.description",
+      "sourceSha256": "eaad8aabd7191cc004e5726d3bae609cad5a6d9b15dfdc76d72a125d601c62a9",
+      "descriptionSha256": "5dd74c90e1710311e9e4f79215ab0f8ab728c43021476d33e7468ca30ff4cb0f"
+    },
+    {
+      "repository": "steve133t/decky-wake-on-controller",
+      "sourceUrl": "https://raw.githubusercontent.com/steve133t/decky-wake-on-controller/v1.0.24/README.md",
+      "field": "README.md:paragraph[1] (formatting only removed)",
+      "sourceSha256": "c5a14e435a13e6e4fef6dc1197e4fa1518542c3db0f7e659590dc359cc1f8800",
+      "originalExcerpt": "A [Decky Loader](https://decky.xyz) plugin for the Steam Deck that lets you wake it from sleep by pressing the home button on any paired Bluetooth controller — just like an Xbox or PlayStation console.",
+      "originalExcerptSha256": "d83e1f0fd080bde3fb47a93767cc925292be72079bfa1ba7651dfbbaeb59033c",
+      "descriptionSha256": "7eacbf12d7df6dbcde499a6af3a1f8e3a5e941e0b8bffef213cd5d09d2c9416a"
+    },
+    {
+      "repository": "sunim87/decky-eclipse",
+      "sourceUrl": "https://github.com/sunim87/decky-eclipse/releases/download/v0.2.7/Decky-Eclipse-v0.2.7.zip",
+      "field": "Decky Eclipse/plugin.json:publish.description",
+      "sourceSha256": "9f6eb62b204b300e06309e3ba12ecbf19c87863cb20a0f4fb884d04c81645f6c",
+      "descriptionSha256": "4672763736d73f37bd2dbdda7d0f1ad73dc16c97279d5d55befa9d69414a1753"
+    },
+    {
+      "repository": "tayicknay/deck-cec-remote",
+      "sourceUrl": "https://github.com/tayicknay/deck-cec-remote/releases/download/v0.2.0/cec-remote.zip",
+      "field": "cec-remote/plugin.json:publish.description",
+      "sourceSha256": "5768d5cfb3c51df01715517e6033b9ddbf51cec3f3d890ad14de895c5ff32900",
+      "descriptionSha256": "bf85a840af82f7892958bf62b6492a0b79d0b0636ba89688c235e98403cdda49"
+    },
+    {
+      "repository": "The412Banner/FusionHUD",
+      "sourceUrl": "https://github.com/The412Banner/FusionHUD/releases/download/decky-v0.3.2/FusionHUD-decky-0.3.2.zip",
+      "field": "FusionHUD/plugin.json:publish.description",
+      "sourceSha256": "f799250a81aae9cbb476972cc0538dbb8061c5ef29120c8251525bc397f1408e",
+      "descriptionSha256": "8820a99698f821530ed5ee31da4edfbe4e8fb0eb5c89bbab393a6d5269ca7e3f"
+    },
+    {
+      "repository": "thegreat7man/ssh-helper-decky",
+      "sourceUrl": "https://github.com/thegreat7man/ssh-helper-decky/releases/download/v1.1.1/ssh-helper-v1.1.1.zip",
+      "field": "ssh-helper-decky/plugin.json:publish.description",
+      "sourceSha256": "109e33582193ed2b539aae8605fb1344d2e691b1dd9cc7c25b3717e55de8d53a",
+      "descriptionSha256": "c125685b3375e51e18679d735ad3a3b0b2cbd946b4d4a1922de0cf9f43251ff2"
+    },
+    {
+      "repository": "TheOmega-hash/decky-openwincontrols",
+      "sourceUrl": "https://github.com/TheOmega-hash/decky-openwincontrols/releases/download/v0.1.0/OpenWinControls-0.1.0.zip",
+      "field": "OpenWinControls/plugin.json:publish.description",
+      "sourceSha256": "8a8d000fcab03a3330c3330a60e7e8bace4e8c1acf901b09fbed844e4fbf1cb5",
+      "descriptionSha256": "c26f153d4acaeabba02ff09260e05f32d18c77a4d32e962748940ba0dac00d75"
+    },
+    {
+      "repository": "timshen91/z13-decky",
+      "sourceUrl": "https://github.com/timshen91/z13-decky/releases/download/v0.1.1/z13-decky.zip",
+      "field": "z13-decky/plugin.json:publish.description",
+      "sourceSha256": "844d1cff94fed3eac5a362b016cf120a609fdeedf18d4a44633c44c6df345414",
+      "descriptionSha256": "309d5ea3f42888c6edfa6e9bd334fbf473db39096baaff81ef943cae7d40986d"
+    },
+    {
+      "repository": "TiPSilva/egpu-switch",
+      "sourceUrl": "https://github.com/TiPSilva/egpu-switch/releases/download/v0.3.4/egpu-switch.zip",
+      "field": "egpu-switch/plugin.json:publish.description",
+      "sourceSha256": "23e4e3cf94cad22a00f3257c6586198e4deb62023f8206d1e87eed990b075170",
+      "descriptionSha256": "3d4b2bc26864c21027fe484fb7d316cf23830fd5ef742f5ccc390263f9dbccc2"
+    },
+    {
+      "repository": "Tman600/Booty",
+      "sourceUrl": "https://github.com/Tman600/Booty/releases/download/v1.0.0/Booty.zip",
+      "field": "Booty/plugin.json:publish.description",
+      "sourceSha256": "fc11cd1cd5fc3f40b17dd35957ba04c2dd21adf731c7ae219808e05eb3c1e210",
+      "descriptionSha256": "260309b00fb1ef9855e08a9ba34ab9f83483e4243a045ce82d53bb17b04b3326"
+    },
+    {
+      "repository": "tomsch/decky-display-switcher",
+      "sourceUrl": "https://github.com/tomsch/decky-display-switcher/releases/download/v2.0.4/display-switcher-2.0.4.zip",
+      "field": "display-switcher/plugin.json:publish.description",
+      "sourceSha256": "513b794975e3168f26fd212b6b8049398bc5af4748d8dbb58afc316201625e7e",
+      "descriptionSha256": "d163a8d086fa0893cf6cad45b23661eeaf953107dafe8f2b7389138f53ba2586"
+    },
+    {
+      "repository": "tuthan/steamos-companion-decky",
+      "sourceUrl": "https://github.com/tuthan/steamos-companion-decky/releases/download/v0.5.18/steamos-companion-decky-0.5.18.zip",
+      "field": "steamos-companion/plugin.json:publish.description",
+      "sourceSha256": "2dd0bbe007d7e03a82de6c26864657fda3eaa7b6bcb10239d669c86299d217be",
+      "descriptionSha256": "10bc0c65436b00ff7d3fb2680ad6be1907e9affa3b172c59ef22c45a334c2cad"
+    },
+    {
+      "repository": "TuxLux40/decky-claude",
+      "sourceUrl": "https://github.com/TuxLux40/decky-claude/releases/download/v1.0.15/decky-claude.zip",
+      "field": "decky-claude/README.md:paragraph[3] (formatting only removed)",
+      "sourceSha256": "8b1bc966e799b587df70f6796caec04efc99293c4b5883db215ddea7cdd64923",
+      "originalExcerpt": "**Claude Code on your Steam machine, controlled from your phone — built to debug Steam without leaving Gaming Mode.**",
+      "originalExcerptSha256": "1de0c9ee86195c6280f944c58a044f147b2262e2bfbc17eca8f112e516e23bb4",
+      "descriptionSha256": "82aa1adc0cf20bd42cc6b26de6d8ef56085ffde7d723858b14094cc17a79e2f3"
+    },
+    {
+      "repository": "Twsts/steamos-cec-toolkit",
+      "sourceUrl": "https://github.com/Twsts/steamos-cec-toolkit/releases/download/v0.1.27/steamos-cec-toolkit-decky.zip",
+      "field": "steamos-cec-toolkit/plugin.json:publish.description",
+      "sourceSha256": "b92ce95c9be7e4af57947f8cc6f751fe8962cb47da93b386ad25f3a700cb0906",
+      "descriptionSha256": "a556d0ccf17dd5d2db845e79a77cdaec5f6f7aee52c6cb0207140d0a8f39b968"
+    },
+    {
+      "repository": "Twsts/steamos-lact-toolkit",
+      "sourceUrl": "https://github.com/Twsts/steamos-lact-toolkit/releases/download/v0.1.27/steamos-lact-toolkit.zip",
+      "field": "steamos-lact-toolkit/decky/plugin.json:publish.description",
+      "sourceSha256": "c306c536cb53172e404ac476ec65051626395dfb2071db9f6d189d729eba9155",
+      "descriptionSha256": "f4538780f71f494557de381b831eeb9026c91bfc5daf32c43780a56e60a417a7"
+    },
+    {
+      "repository": "tyrypyrking/AmneziaVpnToggle",
+      "sourceUrl": "https://github.com/tyrypyrking/AmneziaVpnToggle/releases/download/v0.1.0/AmneziaVpnToggle.zip",
+      "field": "AmneziaVpnToggle/plugin.json:publish.description",
+      "sourceSha256": "912f8a2a7a4b37a542988971bc59ee5df11284ed0956a91f49e48c0691ed8df0",
+      "descriptionSha256": "73cd8b83ced5c29052139ed0e374f51b433243415be6ddb2cccb20c8dff69ef9"
+    },
+    {
+      "repository": "UnforgettableJuan/Decky-Roku-Remote",
+      "sourceUrl": "https://github.com/UnforgettableJuan/Decky-Roku-Remote/releases/download/v0.5/Roku-Remote-v0.5.0.zip",
+      "field": "roku-remote/plugin.json:publish.description",
+      "sourceSha256": "90fd9abcfec7f0daa67451847707d45f12d6dbfc30fa77ed87533a78dbcd340d",
+      "descriptionSha256": "f404978ab915477a12565cddd10a965339cceb299de46bee129c2c446d7f14e5"
+    },
+    {
+      "repository": "username54321-dotcom/Decky-STPlugin",
+      "sourceUrl": "https://github.com/username54321-dotcom/Decky-STPlugin/releases/download/v1.2.5/STPlugin-v1.2.5.zip",
+      "field": "STPlugin/plugin.json:publish.description",
+      "sourceSha256": "7b79b0eb51c11760626ae42693d69e0af40e190bf006d0bfa29886dde84a4f07",
+      "descriptionSha256": "1ae39aaaf5b37fe45b9c78c7e99db01ea49fa5fe2bedad4842442d7de5c5154e"
+    },
+    {
+      "repository": "v1k0d3n/monoink",
+      "sourceUrl": "https://github.com/v1k0d3n/monoink/releases/download/v0.1.2/monoink.zip",
+      "field": "monoink/plugin.json:publish.description",
+      "sourceSha256": "c7ebe090ba68fbf9244cef4bea10276f235172c9e3a0bfa7daca5b1d313a907d",
+      "descriptionSha256": "5a636f340d886487984cb53f9b173d07a7f8c3ac372d5849b87b2a215b676b34"
+    },
+    {
+      "repository": "Vaddum/vkbasalt-decky",
+      "sourceUrl": "https://github.com/Vaddum/vkbasalt-decky/releases/download/v1.3.0/vkbasalt-manager_v1.3.0.zip",
+      "field": "vkbasalt-manager/plugin.json:publish.description",
+      "sourceSha256": "c71567f05ca9cc58d2cda4db75159edeaa34803c4c0a89ce5ed387f329dda63c",
+      "descriptionSha256": "badf9320439d083eef9e934673504b5db66b2d5c6d53999d78ee654b8c36a7e3"
+    },
+    {
+      "repository": "Vahn84/decky-hostsleep",
+      "sourceUrl": "https://github.com/Vahn84/decky-hostsleep/releases/download/v0.5.0/HostSleep.zip",
+      "field": "HostSleep/plugin.json:publish.description",
+      "sourceSha256": "0ecab0c8c0837aa9aad9cec8e1c33639e5bbe720ec8c055fa51f2b3eb48b472f",
+      "descriptionSha256": "a8107fe5bb597af82178a218cc21ac0b602046f0d65c7f60d7ce1bbbed998224"
+    },
+    {
+      "repository": "Vegetenks/SteamU",
+      "sourceUrl": "https://github.com/Vegetenks/SteamU/releases/download/v0.2.9/SteamU-v0.2.9.zip",
+      "field": "steamu/plugin.json:publish.description",
+      "sourceSha256": "d2212dcf669996298ddbdf7050b70c852697573901cf9b5b050a9a7ac077f552",
+      "descriptionSha256": "0107e8b8268646f0487b532d49507ea3c9a659922500b8f0dc12edd362df382a"
+    },
+    {
+      "repository": "venatrix-ritz/Gleipnir",
+      "sourceUrl": "https://raw.githubusercontent.com/venatrix-ritz/Gleipnir/v0.2.1/README.md",
+      "field": "README.md:paragraph[3] (formatting only removed)",
+      "sourceSha256": "23c0ae7def015a7f74eb254e8b7ce50cb92b113ea9ad11b4241f7bacf515e518",
+      "originalExcerpt": "A [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plugin for the **AYN Thor** on **Armada OS** that holds the battery at **80 %** while plugged in, to slow battery wear. Named for the thin ribbon that bound Fenrir: a small thing that restrains a large force.",
+      "originalExcerptSha256": "aef8f2dbe17e2f314e6827c39e342628e742985ea2ae141a965572f8d829d962",
+      "descriptionSha256": "1ae4e5e1d34aa3004dae9866b9eb8f537fc0a814ffc623679ac5b2671cbd8be2"
+    },
+    {
+      "repository": "venatrix-ritz/Ratatoskr",
+      "sourceUrl": "https://raw.githubusercontent.com/venatrix-ritz/Ratatoskr/v0.1.0/README.md",
+      "field": "README.md:paragraph[2] (formatting only removed)",
+      "sourceSha256": "5dc2326f6111a3349cb6d5ab859dd7e213ff5b4fd6aa10bd6e71e1141674f8b7",
+      "originalExcerpt": "A [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plugin and virtual input driver for the **AYN Thor** (dual-screen handheld, Armada OS). It turns the lower 3.92\" AMOLED screen into a **trackpad**, a **keyboard**, a **split** of both, or a **quick-settings and hardware monitor** for games on the main screen, with no launcher in the way.",
+      "originalExcerptSha256": "0b120d42dabbbd38b373084410cacce2224c1cafdff7676e221d4246d5b1ecbb",
+      "descriptionSha256": "434cb40d5b3290b25029b86f431354a133de9cc9714324989bea68100bc56afa"
+    },
+    {
+      "repository": "vibekun/CarouFix",
+      "sourceUrl": "https://github.com/vibekun/CarouFix/releases/download/v1.0.0/CarouFix.zip",
+      "field": "CarouFix/plugin.json:publish.description",
+      "sourceSha256": "d9cf0c8a68beb43a3760b435cc0525a1bf33efa8a0cf49b6d3994e8d9c94eacf",
+      "descriptionSha256": "f23122fca5a8542cdaa592a4dba2dbcde017a28de896c62666795bea4dc04319"
+    },
+    {
+      "repository": "viktor-malieichyk/yasgm",
+      "sourceUrl": "https://github.com/viktor-malieichyk/yasgm/releases/download/v0.3.0/yasgm-decky-0.3.0.zip",
+      "field": "yasgm/plugin.json:publish.description",
+      "sourceSha256": "8032c9c9bca5b54a277cd84b4dce3a1157479d6022f9ca6a82fd17a25592183e",
+      "descriptionSha256": "e6659f9f91354a62b9366e0bace3ea869eca0d87367fd029a3a57c37a66d8928"
+    },
+    {
+      "repository": "vindeckyy/slipstream",
+      "sourceUrl": "https://github.com/vindeckyy/slipstream/releases/download/v0.24.0/slipstream-v0.24.0.zip",
+      "field": "slipstream/plugin.json:publish.description",
+      "sourceSha256": "83d9043ab5c7e75cf51370bcf7c25017454069b146c8a066883c3e05d9d7659a",
+      "descriptionSha256": "2928774d83e2317842fa12094941f6e62edb36facea0e4e9c0805173649cfae1"
+    },
+    {
+      "repository": "VitProg/allycenter",
+      "sourceUrl": "https://github.com/VitProg/allycenter/releases/download/1.6.0/allycenter-v1.6.0.zip",
+      "field": "plugin.json:publish.description",
+      "sourceSha256": "1f2942367291f4de8ea8159ba39d0ebad881320f18235f9a0198dfc8724d7f6a",
+      "descriptionSha256": "c4d32395e43979709dacd5ff95f2fac9fa072a7a06d43b37b41da8a1c61a83d4"
+    },
+    {
+      "repository": "wankyo83/Decky-AI",
+      "sourceUrl": "https://github.com/wankyo83/Decky-AI/releases/download/v0.1.6/decky-ai-plugin-v0.1.6.zip",
+      "field": "Decky-AI/plugin.json:publish.description",
+      "sourceSha256": "bab0da9950bd830e2981cd61edae5b376e90b079754a57d9fdb1dc135652e1f2",
+      "descriptionSha256": "773c3257d3e43f967a269c9c3c84ffd5c79b2e86468518cc01c40fa1561855eb"
+    },
+    {
+      "repository": "wavessevaw/GFG-Extreme",
+      "sourceUrl": "https://github.com/wavessevaw/GFG-Extreme/releases/download/v3.4.4/GFG-Extreme-v3_4_4.zip",
+      "field": "GFG-Extreme/plugin.json:publish.description",
+      "sourceSha256": "af650aab4ee441770172737cdfa780d5171a7128e1f2fe03037154d397288622",
+      "descriptionSha256": "19675754e910f92989cb3fe105cedfa91c0c2024428fcac1f109a3e07b0a813f"
+    },
+    {
+      "repository": "waynegeng/GCM-Launcher",
+      "sourceUrl": "https://github.com/waynegeng/GCM-Launcher/releases/download/v0.1.1/GCM-Launcher-v0.1.1.zip",
+      "field": "GCM-Launcher/plugin.json:publish.description",
+      "sourceSha256": "6707b1107a8092fbf431b898624adec1927191e9b63be5e1c05fcac8fe7bb33b",
+      "descriptionSha256": "565a73ee36a639d6dfad403144f331e8858a7c2b569c045e21e466b10ab31fd1"
+    },
+    {
+      "repository": "Weicoz/decky-easytier",
+      "sourceUrl": "https://github.com/Weicoz/decky-easytier/releases/download/v1.0.6/decky-easytier.zip",
+      "field": "decky-easytier/plugin.json:publish.description",
+      "sourceSha256": "3d585ff46612a10168b704c2ce2c0a3336a4e61508161be14f223a768535823c",
+      "descriptionSha256": "d27c11e0b482d448d93f6d3c4007213ed8d87104e3230a8963a00f49480c119c"
+    },
+    {
+      "repository": "WilliamG007/legion-go2-leds",
+      "sourceUrl": "https://github.com/WilliamG007/legion-go2-leds/releases/download/v1.0.9/LegionGo2LEDs.zip",
+      "field": "LegionGo2Lights/plugin.json:publish.description",
+      "sourceSha256": "8495df504f56c924adffdc8c63235461de7bbe2b0dc079178dcdddf07291c95d",
+      "descriptionSha256": "e305e65353d586acee3ae20d2be98fd3ebb221a53bf9ac1fbf57d6357fbf1fcb"
+    },
+    {
+      "repository": "wolfg1969/retroarch-ai-translate",
+      "sourceUrl": "https://github.com/wolfg1969/retroarch-ai-translate/releases/download/v1.0.1/retroarch-ai-translate.zip",
+      "field": "retroarch-ai-translate/plugin.json:publish.description",
+      "sourceSha256": "d211bfa5e9ba2b1c0e12191f8804ced320ebb3d1deca78b8d264b0a927bb714b",
+      "descriptionSha256": "6deb9b087dda1341d4239b9afc684c42ed75cfdbcdff7597de59f19c5d36c02c"
+    },
+    {
+      "repository": "worldnine/Decky-Translator-LLM",
+      "sourceUrl": "https://github.com/worldnine/Decky-Translator-LLM/releases/download/v0.10.2/Translator.LLM.zip",
+      "field": "Translator LLM/plugin.json:publish.description",
+      "sourceSha256": "eb939391a4de043a1894c8b52d74ac26a3436549fb80150577d0eda7400925cb",
+      "descriptionSha256": "6760c43711ab95fdbe171de1aab312c83f22aad89e0b7acf7e82a9086ae4ee9a"
+    },
+    {
+      "repository": "WuKavin/decky-zerotier-manager",
+      "sourceUrl": "https://github.com/WuKavin/decky-zerotier-manager/releases/download/v1.0.0/zerotier-manager.zip",
+      "field": "zerotier-manager/plugin.json:publish.description",
+      "sourceSha256": "7a10633e5ee6bef777fb5c7b5c9a6b0febffc4e2262796239df760835b79e8d3",
+      "descriptionSha256": "77ba205b6b06fe20859593594c9ab5282924d6b0338b80827a27e5a4cb60729e"
+    },
+    {
+      "repository": "wx40217/decky-brightness",
+      "sourceUrl": "https://github.com/wx40217/decky-brightness/releases/download/v0.1.5/decky-brightness-floor-0.1.5.zip",
+      "field": "decky-brightness-floor/plugin.json:publish.description",
+      "sourceSha256": "44fd821471c14d7eb17b5a0de5e43058a5495792e6d3426c35240839aeaa195b",
+      "descriptionSha256": "da1cfb2adad2205d33703a055a63757c43ba8ec49de707f79417098952c1ff51"
+    },
+    {
+      "repository": "XiaoMinghui/DeckyAlly",
+      "sourceUrl": "https://github.com/XiaoMinghui/DeckyAlly/releases/download/v0.2.0/DeckyAlly-0.2.0.zip",
+      "field": "DeckyAlly/plugin.json:publish.description",
+      "sourceSha256": "0f3787fd51dca6ba3df5595cf14590841567ea91249743976e6397af4406eb3c",
+      "descriptionSha256": "02ff1341b65982d51f112b3a29bc161c6ea149d029e174829d9aaac6e863ed5f"
+    },
+    {
+      "repository": "xinkiex/Lego2-pad",
+      "sourceUrl": "https://github.com/xinkiex/Lego2-pad/releases/download/v1.0.0/frickpad.zip",
+      "field": "FrickPad/plugin.json:publish.description",
+      "sourceSha256": "620f7571814524a95b0289c3a47791a406663a43021e760c3dab74fa6cc99633",
+      "descriptionSha256": "34780c94455188275f2e8b8df68bd2718c33cbdd39d67f2476da755d5a8161d3"
+    },
+    {
+      "repository": "xmfan/decky-pinyin",
+      "sourceUrl": "https://github.com/xmfan/decky-pinyin/releases/download/v0.7.6/Decky-Pinyin-0.7.6-offline.zip",
+      "field": "decky-pinyin/plugin.json:publish.description",
+      "sourceSha256": "ea5a98fc73c86047151394379342606c6071b23ccc6ac50262efb74235930a35",
+      "descriptionSha256": "dcc148bef8d4ec3a9c4fb9a727b35b05a1d4ddefcc24f4f6162a32a17e914255"
+    },
+    {
+      "repository": "xXJSONDeruloXx/decky-dlss-enabler",
+      "sourceUrl": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/v0.3.0-dlss4.5.3/DLSS.Enabler.zip",
+      "field": "DLSS Enabler/plugin.json:publish.description",
+      "sourceSha256": "bcfd342df61cfcffdbdc08a6bc76f99286f81ac48c87e347f0b8717e8c13cc46",
+      "descriptionSha256": "4756c833d3313183bbd5b023be638cbf75e2505bdcab33701d3b8d037cd2fcb6"
+    },
+    {
+      "repository": "xXJSONDeruloXx/hibernado",
+      "sourceUrl": "https://github.com/xXJSONDeruloXx/hibernado/releases/download/v1.4.0/Hibernado.zip",
+      "field": "Hibernado/plugin.json:publish.description",
+      "sourceSha256": "66b1eadd616da39e7b2be6e6daa8d21d4f97be412bc5b916ed4b644976503a41",
+      "descriptionSha256": "b484125875fe503efc7223ce6881622a646a95ebcecff3cea8e7dcabf0a1fb4f"
+    },
+    {
+      "repository": "yataktyni/decky-ukr-badge",
+      "sourceUrl": "https://github.com/yataktyni/decky-ukr-badge/releases/download/v2.0.0/release.zip",
+      "field": "decky-ukr-badge/plugin.json:publish.description",
+      "sourceSha256": "1a06a36f8fbc9fbad3e6cdebdd0ce25065973a9495c842b3a57b0d78d83495e8",
+      "descriptionSha256": "0c695c6b44c95758e825bf04917441cad853ed51266b11e34f46c7d5608992ba"
+    },
+    {
+      "repository": "YifePlayte/RayNeo-Control",
+      "sourceUrl": "https://github.com/YifePlayte/RayNeo-Control/releases/download/v1.0.0/RayNeo-Control.zip",
+      "field": "RayNeo-Control/plugin.json:publish.description",
+      "sourceSha256": "edcaa14f828840e51833bbffb6e5ef46cf9795930b37cbd3770350af5b8782af",
+      "descriptionSha256": "5bbbc82c75f5e9c6e5353e48ab75d10d49790eff4309acfe6a37329a59cfdfe4"
+    },
+    {
+      "repository": "YunXi-X/Decky-ai-assistant",
+      "sourceUrl": "https://github.com/YunXi-X/Decky-ai-assistant/releases/download/v0.1/decky-ai-assistant-v0.1.zip",
+      "field": "plugin.json:publish.description",
+      "sourceSha256": "65168164f5b06d1874b05735a64f89b53d32d82357cbf232329ece9de37dc9aa",
+      "descriptionSha256": "69a2abaf22443f6acfaff8db19a45c4ca8c8594128c33a7a435b4800f6e53127"
+    },
+    {
+      "repository": "Zach-Allen/decky-audiobookshelf",
+      "sourceUrl": "https://github.com/Zach-Allen/decky-audiobookshelf/releases/download/v0.1.0-alpha.12/decky-audiobookshelf-0.1.0-alpha.12.zip",
+      "field": "decky-audiobookshelf/plugin.json:publish.description",
+      "sourceSha256": "e1e54af506bd4ac30d0e554917a2408c71ec2838ebc1a7a7e2d298412452b40a",
+      "descriptionSha256": "9fc1636aab3f94962910c18b2a7db63ae9fac21be73e3ef97e671ebdfb12db63"
+    },
+    {
+      "repository": "ZacharyQin/decky-sideloader",
+      "sourceUrl": "https://github.com/ZacharyQin/decky-sideloader/releases/download/v0.4.0/decky-sideloader-0.4.0.zip",
+      "field": "decky-sideloader/plugin.json:publish.description",
+      "sourceSha256": "cbb77d851ef2c131b428105f49dc644560d6785beabdd5d4f568061c9448a862",
+      "descriptionSha256": "2c58bcb490f594a3065a5a48d4ca9b7955f6b0a3454b431ee18d210283121800"
+    },
+    {
+      "repository": "ZacharyQin/power-timeline",
+      "sourceUrl": "https://github.com/ZacharyQin/power-timeline/releases/download/v0.3.13/power-timeline-0.3.13.zip",
+      "field": "power-timeline/plugin.json:publish.description",
+      "sourceSha256": "4a8908ffc91ebd6414a996c0cc694bcc96af580b971d1cf4ea0add5fd818ad06",
+      "descriptionSha256": "78dc567efd767ac48916e7eb0904ea5f541854936dbc885dcef02ac6ca00cfbe"
+    },
+    {
+      "repository": "ZaparooProject/zaparoo-decky",
+      "sourceUrl": "https://github.com/ZaparooProject/zaparoo-decky/releases/download/v1.0.0/Zaparoo.zip",
+      "field": "Zaparoo/plugin.json:publish.description",
+      "sourceSha256": "40e45bac48971838c8a3b74470c049832c0c5578d9050652f99f5d58aed44238",
+      "descriptionSha256": "310df9bcf7139aac4bcfc753ba17eef7666e81355e0c6953c2ebc3fc5302089e"
+    },
+    {
+      "repository": "Zensenshi/JarnGrip",
+      "sourceUrl": "https://github.com/Zensenshi/JarnGrip/releases/download/v0.10.0/JarnGrip-0.10.0.zip",
+      "field": "JarnGrip/README.md:paragraph[1] (formatting only removed)",
+      "sourceSha256": "1d0284646f8a476ee2d173ce0713fa33fe9d5d8e9f66e1bf49014594b0313193",
+      "originalExcerpt": "A touch control pad for the AYN Thor's bottom screen, built for World of Warcraft, Final Fantasy XI and other MMOs. Named after Járngreipr, Thor's iron gloves.",
+      "originalExcerptSha256": "c879b2c34422c8079bffcc6009193cc7620da17ad06a954130080a532dda00bf",
+      "descriptionSha256": "c879b2c34422c8079bffcc6009193cc7620da17ad06a954130080a532dda00bf"
+    }
+  ]
+}
