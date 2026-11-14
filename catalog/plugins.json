@@ -10,10 +10,10 @@
       "author": "LoZazaMastro",
       "repository": "LoZazaMastro/Playhub-Artworks",
       "repositoryUrl": "https://github.com/LoZazaMastro/Playhub-Artworks",
-      "version": "1.1.9",
-      "releaseAssetName": "Playhub-Artworks-1.1.9_Installer.zip",
-      "catalogReleaseUrl": "https://github.com/LoZazaMastro/Playhub-Artworks/releases/download/1.1.9/Playhub-Artworks-1.1.9_Installer.zip",
-      "releasePublishedAt": "2026-10-03T18:28:34Z",
+      "version": "1.1.10",
+      "releaseAssetName": "Playhub-Artworks-1.1.10_Installer.zip",
+      "catalogReleaseUrl": "https://github.com/LoZazaMastro/Playhub-Artworks/releases/download/1.1.10/Playhub-Artworks-1.1.10_Installer.zip",
+      "releasePublishedAt": "2026-11-14T14:23:36Z",
       "category": "Playhub",
       "shortDescription": "The right artwork for every game in your library.",
       "longDescription": "Playhub Artworks brings artwork management into Big Picture with a controller-first experience: search, choose, and apply covers, banners, heroes, logos, and icons without returning to the desktop.\n\n## What it does\n• Searches for artwork across SteamGridDB, IGDB, PlayStation Store, Nintendo eShop, Xbox, AlphaCoders, iiDB, and IGN.\n• Remembers your filters and most recently used source separately for each artwork type.\n• Creates Perfect Heroes and Perfect Banners by blending a background and logo, with adjustable position, scale, opacity, and shadow.\n• Lets you leave the logo out of the composition when you only want the background.\n• Positions and resizes game logos just like Steam.\n• Displays square covers throughout the library and across every Home shelf, including Steam banners.\n• Fills in missing artwork for your entire library in the background.\n\n## Note\n• Searches using SteamGridDB require a personal API key, which is stored only on your PC.",
@@ -42,7 +42,7 @@
         "Playhub-Artworks"
       ],
       "firstPublishedAt": "2026-09-02T20:42:06Z",
-      "updatedAt": "2026-10-03T18:28:34Z"
+      "updatedAt": "2026-11-14T14:23:36Z"
     },
     {
       "active": true,
@@ -21929,5 +21929,5 @@
       "updatedAt": "2026-11-12T05:37:24Z"
     }
   ],
-  "catalogRevision": 17
+  "catalogRevision": 18
 }
