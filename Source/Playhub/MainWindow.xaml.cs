@@ -7139,7 +7139,7 @@ by Valve.";
     // Salvataggio istantaneo: chiamato a ogni modifica dei controlli Gaming Mode.
     private void AutoSaveGaming()
     {
-        if (_loadingGaming) return;
+        if (_loadingGaming || _loadingSettings) return;
         _ = SaveGamingConfigAsync();
     }
 
@@ -8206,6 +8206,8 @@ by Valve.";
         _mouseDelayBox.Value = _gamingConfig.Gaming.AutoHideMouseCursorAfterMs;
         _apiPortBox.Value = _gamingConfig.Safety.ApiPort;
         _splashLogoBox.Text = _gamingConfig.Gaming.Splash.LogoPath ?? "";
+        SelectComboKey(_splashLogoCombo, SplashLogoSelection.FromSavedPath(_gamingConfig.Gaming.Splash.LogoPath,
+            Path.Combine(AppPaths.GamingModePackage, "assets"), SplashLogoOptions.Select(option => option.Key)));
         _gamingToggles["splashAnimation"].IsOn = _gamingConfig.Gaming.Splash.AnimationEnabled;
         _refreshAnimationSettings?.Invoke();
         _splashMinBox.Value = _gamingConfig.Gaming.Splash.MinVisibleMs;

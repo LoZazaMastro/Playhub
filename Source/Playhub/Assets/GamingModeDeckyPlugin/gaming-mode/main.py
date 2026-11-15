@@ -65,10 +65,6 @@ _onex_fan_spec.loader.exec_module(_onex_fan_module)
 _lenovo_tdp_spec = importlib.util.spec_from_file_location("playhub_lenovo_other_tdp", os.path.join(os.path.dirname(__file__), "quick_settings", "lenovo_other_tdp.py"))
 _lenovo_tdp_module = importlib.util.module_from_spec(_lenovo_tdp_spec)
 _lenovo_tdp_spec.loader.exec_module(_lenovo_tdp_module)
-_ayaneo3_spec = importlib.util.spec_from_file_location("playhub_ayaneo3_controller", os.path.join(os.path.dirname(__file__), "quick_settings", "ayaneo3_controller.py"))
-_ayaneo3_module = importlib.util.module_from_spec(_ayaneo3_spec)
-sys.modules[_ayaneo3_spec.name] = _ayaneo3_module
-_ayaneo3_spec.loader.exec_module(_ayaneo3_module)
 _gpd_v1_spec = importlib.util.spec_from_file_location("playhub_gpd_v1_controller", os.path.join(os.path.dirname(__file__), "quick_settings", "gpd_v1_controller.py"))
 _gpd_v1_module = importlib.util.module_from_spec(_gpd_v1_spec)
 sys.modules[_gpd_v1_spec.name] = _gpd_v1_module
@@ -85,6 +81,63 @@ def _firmware_board(identity):
 _execution_spec = importlib.util.spec_from_file_location("playhub_game_execution_profiles", os.path.join(os.path.dirname(__file__), "quick_settings", "game_execution_profiles.py"))
 _execution_module = importlib.util.module_from_spec(_execution_spec)
 _execution_spec.loader.exec_module(_execution_module)
+
+
+class _OptionalAyaneo3Controller:
+    """Load optional hardware code only for its matched probe or explicit RPC.
+
+    A reduced Decky Python runtime must still serve Audio and core controls.
+    """
+    def __init__(self):
+        self._lock = threading.RLock()
+        self._controller = None
+        self._disposed = False
+
+    def _call(self, operation, *args):
+        with self._lock:
+            if self._disposed:
+                return self._unavailable("disposed")
+            try:
+                if self._controller is None:
+                    name = "playhub_ayaneo3_controller"
+                    module = sys.modules.get(name)
+                    if module is None:
+                        spec = importlib.util.spec_from_file_location(name, os.path.join(
+                            os.path.dirname(__file__), "quick_settings", "ayaneo3_controller.py"))
+                        module = importlib.util.module_from_spec(spec)
+                        sys.modules[name] = module
+                        try:
+                            spec.loader.exec_module(module)
+                        except BaseException:
+                            if sys.modules.get(name) is module:
+                                sys.modules.pop(name, None)
+                            raise
+                    self._controller = module.Ayaneo3Controller()
+                return getattr(self._controller, operation)(*args)
+            except ImportError:
+                return self._unavailable("dependency_unavailable")
+
+    @staticmethod
+    def _unavailable(reason):
+        return {"ok": False, "available": False, "provider": "ayaneo3-hid",
+                "reason": reason, "writeAvailable": False,
+                "manualRecoveryRequired": False}
+
+    def get(self):
+        return self._call("get")
+
+    def apply(self, request):
+        return self._call("apply", request)
+
+    def restore(self, request):
+        return self._call("restore", request)
+
+    def dispose(self):
+        with self._lock:
+            self._disposed = True
+            if self._controller is not None:
+                return self._controller.dispose()
+            return {"ok": True, "restored": False}
 
 
 # Retrying the restore forever re-toggles the panel every 30 s, which on an
@@ -552,7 +605,7 @@ class Plugin(QuickSettingsPlugin):
             lambda: _firmware_board(self._device_profiles.identity()), self._run_handheld_firmware_command, _runtime._powershell_path)
         self._lenovo_tdp = _lenovo_tdp_module.LenovoOtherTdp(
             self._device_profiles.identity, self._run_handheld_firmware_command, _runtime._powershell_path)
-        self._ayaneo3_controller = _ayaneo3_module.Ayaneo3Controller()
+        self._ayaneo3_controller = _OptionalAyaneo3Controller()
         self._gpd_v1_controller = _gpd_v1_module.GpdV1Controller()
         self._device_capabilities = _device_capabilities_module.DeviceCapabilities(
             self._get_device_profile_sync, self._device_profiles.identity, {
