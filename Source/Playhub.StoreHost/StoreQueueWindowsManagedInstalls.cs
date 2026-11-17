@@ -220,7 +220,7 @@ public sealed partial class StoreQueueEngine
         && (receipt.LibraryKind!="gamePass"||package.StoreProductId==(receipt.InstallProductId??receipt.Key.Id))
         && string.Equals(package.PackageFamilyName, receipt.PackageFamilyName, StringComparison.OrdinalIgnoreCase)
         && Path.IsPathFullyQualified(package.InstallLocation) && Directory.Exists(package.InstallLocation) && MatchesWindowsDestination(package.InstallLocation, receipt.TargetRoot);
-    static bool KnownIncompleteWindowsInstall(StoreDownloadJob job,WindowsManagedReceipt receipt)=>receipt.TargetVolume is not null&&receipt.CliExitCode is not 5&&job.State==StoreJobState.Completed&&job.TotalBytes is >0&&job.DownloadedBytes<job.TotalBytes;
+    static bool KnownIncompleteWindowsInstall(StoreDownloadJob job,WindowsManagedReceipt receipt)=>!receipt.FinalDeploymentConfirmed&&receipt.TargetVolume is not null&&receipt.CliExitCode is not 5&&job.State==StoreJobState.Completed&&job.TotalBytes is >0&&job.DownloadedBytes<job.TotalBytes;
     async Task<bool> WindowsDeploymentCompleteAsync(WindowsManagedReceipt receipt)
     {
         if(WindowsManagedRuntime is not IWindowsStoreInstallDestinationRuntime)return true;
@@ -228,11 +228,16 @@ public sealed partial class StoreQueueEngine
     }
     void ReconcileWindowsInstallInventoryLocked()
     {
-        foreach(var receipt in windowsManagedReceipts.Values)
+        // Only the newest current-account attempt can qualify present inventory.
+        // Old hidden partial receipts must never veto a later full deployment.
+        var current=windowsManagedReceipts.Values.Where(r=>r.TargetVolume is not null&&Connected(r.Key.Store,r.AccountRevision)
+            &&jobs.Any(j=>j.JobId==r.JobId&&j.AccountRevision==r.AccountRevision&&j.State is not(StoreJobState.Canceled or StoreJobState.Failed))
+            &&!clearedCanceledJobs.Contains(r.JobId)&&jobAccountIdentities.GetValueOrDefault(r.JobId)==accountIdentities.GetValueOrDefault(r.Key.Store))
+            .GroupBy(r=>r.Key).Select(group=>group.OrderByDescending(r=>r.RequestedAt).First());
+        foreach(var receipt in current)
         {
-            var job=jobs.Find(j=>j.JobId==receipt.JobId);
-            if(job is null||receipt.TargetVolume is null||job.State is StoreJobState.Canceled or StoreJobState.Failed)continue;
-            if((!WindowsManagedTerminal(job)||KnownIncompleteWindowsInstall(job,receipt))&&games.TryGetValue(job.Key,out var game))
+            var job=jobs.Single(j=>j.JobId==receipt.JobId);
+            if((!WindowsManagedTerminal(job)||KnownIncompleteWindowsInstall(job,receipt))&&games.TryGetValue(job.Key,out var game)&&game.AccountRevision==receipt.AccountRevision)
                 games[job.Key]=game with{IsInstalled=false,IsLaunchable=false};
         }
     }
@@ -314,7 +319,7 @@ public sealed partial class StoreQueueEngine
                         ArtworkUrl:metadata.ArtworkUrl,ArtworkFallbackUrls:metadata.ArtworkFallbackUrls,ArtworkKind:metadata.ArtworkUrl is null?null:"cover",LibraryKind:jobs[index].LibraryKind??receipt.LibraryKind,InstallProvider:metadata.InstallProvider);
                 if(game?.AccountRevision==receipt.AccountRevision)
                 {
-                    var installed=game with{IsInstalled=true,IsLaunchable=launch is not null,InstallPath=package.InstallLocation};
+                    var installed=game with{IsInstalled=true,IsLaunchable=launch is not null,InstallPath=package.InstallLocation,UnavailableReason=game.UnavailableReason=="uninstalled"?null:game.UnavailableReason};
                     if(!games.TryGetValue(receipt.Key,out var current)||current!=installed){games[receipt.Key]=installed;changed=true;}
                 }
             }

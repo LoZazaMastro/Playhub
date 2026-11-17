@@ -92,7 +92,7 @@ public sealed partial class StoreQueueEngine
             if(failure is null)
             {
                 if(Connected(StoreKind.Xbox,preparation.AccountRevision)&&accountIdentities.GetValueOrDefault(StoreKind.Xbox)==plan.AccountIdentity&&ReferenceEquals(games.GetValueOrDefault(plan.Key),game))
-                    games[plan.Key]=game with{IsInstalled=false,IsLaunchable=false,InstallPath=null};
+                    games[plan.Key]=game with{IsInstalled=false,IsLaunchable=false,InstallPath=null,UnavailableReason="uninstalled"};
                 Changed();
             }
             var result=Result(failure is null,failure);Remember(requestId,fingerprint,result);return result;

@@ -11,7 +11,7 @@ export type StoreKey = { store: "epic" | "gog" | "xbox" | "amazon"; id: string }
 export type StoreJob = { jobId: string; key: StoreKey; accountRevision: number; title: string; state: string; revision: number; downloadedBytes: number;
   totalBytes?: number; bytesPerSecond?: number; progressPercent?: number; canPause: boolean; canResume: boolean; canCancel: boolean; canRemove?: boolean; removalKind?:"cleanup"|"history"|"windowsRequest"|null; libraryKind?:string|null; canDownloadNow?: boolean; installPath: string; reasonCode?: string | null; errorCode?: string | null; updatedAt?:string };
 export type StoreOwnedGame = { appId: number; key: StoreKey; executable: string; arguments: string; startDirectory: string; title: string;
-  accountCurrent: boolean; nativeApplicationId?:string|null;manifestExecutable?:string|null;game?: { title?:string;libraryKind?:string|null;accountRevision: number; isInstalled: boolean; isLaunchable: boolean }; job?: StoreJob };
+  accountCurrent: boolean; nativeApplicationId?:string|null;manifestExecutable?:string|null;game?: { title?:string;libraryKind?:string|null;accountRevision: number; isInstalled: boolean; isLaunchable: boolean;installPath?:string|null;unavailableReason?:string|null }; job?: StoreJob };
 type Plan = { libraryKind?:string|null;requestId: string; claimId: string; key: StoreKey; accountRevision: number; title: string; executable: string; arguments: string; startDirectory: string; appId?: number; createdAppId?: number };
 type Reply<T> = { ok: boolean; data?: T; errorCode?: string };
 let owned: ReadonlyMap<number, StoreOwnedGame> = new Map();
@@ -366,7 +366,9 @@ async function removeUninstalledSteamShortcuts(rows:readonly StoreOwnedGame[],cu
  if(typeof apps?.RemoveShortcut!=="function"||typeof store?.GetAppOverviewByAppID!=="function")return;
  for(const row of rows){
   if(!sameContext())return;
-  if(!ownedShortcutIdentity(row)||row.game?.isInstalled!==false||row.job&&!["completed","canceled","failed"].includes(row.job.state))continue;
+  // An inventory miss is not uninstall authority. Only the persisted successful
+  // explicit-uninstall receipt may retire a Steam shortcut and its ownership.
+  if(!ownedShortcutIdentity(row)||row.game?.isInstalled!==false||row.game.unavailableReason!=="uninstalled"||row.game.installPath!==null||row.job&&!["completed","canceled","failed"].includes(row.job.state))continue;
   const present=store.GetAppOverviewByAppID(row.appId);
   if(present){
    const proof=await readShortcut(row.appId,value=>[value.strShortcutExe,value.strShortcutLaunchOptions,value.strShortcutStartDir].every(field=>typeof field==="string"));
@@ -374,7 +376,7 @@ async function removeUninstalledSteamShortcuts(rows:readonly StoreOwnedGame[],cu
    // A fresh registry/game snapshot fences account/reinstall races before the
    // only destructive native call. Never remove a manually edited shortcut.
    const latest=(await storeRequest<StoreOwnedGame[]>("steam-owned")).find(value=>value.appId===row.appId&&ownedShortcutIdentity(value)===ownedShortcutIdentity(row));
-   if(!sameContext()||!latest||latest.game?.isInstalled!==false||latest.job&&!["completed","canceled","failed"].includes(latest.job.state))continue;
+   if(!sameContext()||!latest||latest.game?.isInstalled!==false||latest.game.unavailableReason!=="uninstalled"||latest.game.installPath!==null||latest.job&&!["completed","canceled","failed"].includes(latest.job.state))continue;
    const again=await readShortcut(row.appId,value=>[value.strShortcutExe,value.strShortcutLaunchOptions,value.strShortcutStartDir].every(field=>typeof field==="string"));if(!again||!sameContext()||!matchingShortcut(again,row,row.appId))continue;
    await Promise.resolve(apps.RemoveShortcut(row.appId));
    for(let attempt=0;attempt<40&&sameContext()&&store.GetAppOverviewByAppID(row.appId);attempt++)await new Promise(resolve=>setTimeout(resolve,50));

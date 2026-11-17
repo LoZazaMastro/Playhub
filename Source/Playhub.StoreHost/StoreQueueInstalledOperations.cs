@@ -81,6 +81,7 @@ public sealed partial class StoreQueueEngine : IStoreInstalledGameService
         long expectedLibraryRevision,string? expectedInstallPath,CancellationToken cancellationToken=default)
     {
         StoreUninstallPreparation Denied(string error) => new(key, expectedAccountRevision, expectedLibraryRevision, null, null, now(), false, error);
+        if(await PrepareAbsentUninstallAsync(key,expectedAccountRevision,expectedLibraryRevision,expectedInstallPath,cancellationToken) is {} absent)return absent;
         if (key.Store == StoreKind.Xbox) return await PrepareXboxUninstallAsync(key, expectedAccountRevision, expectedLibraryRevision, cancellationToken,expectedInstallPath);
         StoreLibraryGame selected;long selectedAccountContext;
         await gate.WaitAsync(cancellationToken);
@@ -138,6 +139,7 @@ public sealed partial class StoreQueueEngine : IStoreInstalledGameService
 
     public async Task<StoreCommandResult> UninstallAsync(StoreUninstallPreparation preparation, Guid requestId, CancellationToken cancellationToken = default)
     {
+        if(await UninstallAbsentAsync(preparation,requestId,cancellationToken) is {} absent)return absent;
         if (preparation.Key.Store == StoreKind.Xbox) return await XboxUninstallAsync(preparation, requestId, cancellationToken);
         StoreOwnedUninstallPlan plan; StoreLibraryGame game;
         var fingerprint = "uninstall:" + JsonSerializer.Serialize(preparation);
@@ -170,7 +172,7 @@ public sealed partial class StoreQueueEngine : IStoreInstalledGameService
             installedOperationStores.Remove(plan.Key.Store); providerOperations--;
             if (failure == null)
             {
-                games[plan.Key] = game with { IsInstalled = false, IsLaunchable = false, InstallPath = null };
+                games[plan.Key] = game with { IsInstalled = false, IsLaunchable = false, InstallPath = null, UnavailableReason = "uninstalled" };
                 legacyInstallReceipts.Remove(plan.Key);
                 Changed();
             }

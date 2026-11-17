@@ -302,13 +302,22 @@ public sealed partial class StoreQueueEngine : IStoreLibraryService, IStoreDownl
             if (InstalledOperationBusy(store)) return Result(false, "provider_busy");
             if (!Connected(store, expectedAccountRevision)) return Result(false, "account_changed");
             if (found.Count > 50000 || found.Any(g => string.IsNullOrWhiteSpace(g.Id) || g.Id.Length > 256 || string.IsNullOrWhiteSpace(g.Title)) || found.Select(g => g.Id).Distinct(StringComparer.Ordinal).Count() != found.Count) return Result(false, "invalid_library");
+            var previousInstalled=games.Values.Where(g=>g.Key.Store==store&&g.AccountRevision==expectedAccountRevision&&g.IsInstalled&&g.InstallPath is not null).ToDictionary(g=>g.Key);
+            var explicitUninstalls=games.Values.Where(g=>g.Key.Store==store&&g.AccountRevision==expectedAccountRevision&&g.UnavailableReason=="uninstalled"&&g.InstallPath is null).ToDictionary(g=>g.Key);
             DropUninstalled(store,preservePendingJobs:true);
+            foreach(var removed in explicitUninstalls)games[removed.Key]=removed.Value;
             foreach (var g in found)
             {
                 var cap = Provider(store).Capabilities;
                 if (!g.CanInstall) cap = cap with { InstallKind = StoreInstallKind.Unavailable, UnavailableReason = "title_not_installable" };
                 var key = new StoreGameKey(store, g.Id);
-                games[key] = new(key, g.Title, expectedAccountRevision, cap, g.InstallPath != null, g.Launchable, g.InstallPath, store.ToString().ToLowerInvariant() + ":" + g.Id, g.RequiredBytes, cap.UnavailableReason, g.ArtworkUrl, g.ArtworkFallbackUrls, g.ArtworkUrl == null ? null : "cover", g.LibraryKind,g.InstallProvider);
+                string? installPath=g.InstallPath;bool launchable=g.Launchable;
+                if(installPath is null&&previousInstalled.TryGetValue(key,out var previous)&&Directory.Exists(previous.InstallPath)
+                    &&games.TryGetValue(key,out var present)&&present.IsInstalled&&present.UnavailableReason!="uninstalled"
+                    &&jobs.Any(j=>j.Key==key&&j.State==StoreJobState.Completed&&j.AccountRevision==expectedAccountRevision
+                        &&StringComparer.OrdinalIgnoreCase.Equals(j.InstallPath,previous.InstallPath)&&jobAccountIdentities.GetValueOrDefault(j.JobId)==accountIdentities.GetValueOrDefault(store)))
+                {installPath=previous.InstallPath;launchable=previous.IsLaunchable;}
+                games[key] = new(key, g.Title, expectedAccountRevision, cap, installPath != null, launchable, installPath, store.ToString().ToLowerInvariant() + ":" + g.Id, g.RequiredBytes, installPath is null&&explicitUninstalls.ContainsKey(key)?"uninstalled":cap.UnavailableReason, g.ArtworkUrl, g.ArtworkFallbackUrls, g.ArtworkUrl == null ? null : "cover", g.LibraryKind,g.InstallProvider);
             }
             for (var i = 0; i < jobs.Count; i++)
             {
@@ -622,7 +631,7 @@ public sealed partial class StoreQueueEngine : IStoreLibraryService, IStoreDownl
                         ProviderLaunch? launch=null;
                         try{launch=await Provider(j.Key.Store).ResolveLaunchAsync(j.Key.Id,j.InstallPath,CancellationToken.None);}
                         catch(Exception error)when(error is not OutOfMemoryException){ }
-                        games[j.Key]=g with{IsInstalled=true,IsLaunchable=launch is not null,InstallPath=j.InstallPath};
+                        games[j.Key]=g with{IsInstalled=true,IsLaunchable=launch is not null,InstallPath=j.InstallPath,UnavailableReason=g.UnavailableReason=="uninstalled"?null:g.UnavailableReason};
                     }
                 }
             }
