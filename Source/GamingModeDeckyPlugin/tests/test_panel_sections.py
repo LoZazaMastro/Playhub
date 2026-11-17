@@ -58,9 +58,9 @@ class PanelSectionPersistenceTests(unittest.TestCase):
                          ["device/details", "power"])
         self.assertEqual(self.save(plugin, dict(expandedSections=["unknown"] * 64 + ["power"]))["expandedSections"], [])
 
-    def test_backend_and_frontend_share_all_fifteen_stable_ids(self):
+    def test_backend_and_frontend_share_stable_ids(self):
         expected = ["topbar-date", "device", "device/details", "news", "daily-history", "measurement",
-                    "display", "mixer", "devices", "power", "game", "shaders", "radeon", "lossless", "agent"]
+                    "display", "mixer", "devices", "power", "game", "shaders", "nvidia", "radeon", "lossless", "agent"]
         self.assertEqual(self.save(self.instance(), dict(expandedSections=expected * 2))["expandedSections"], expected)
 
     def test_independent_local_settings_stores_do_not_share_section_state(self):

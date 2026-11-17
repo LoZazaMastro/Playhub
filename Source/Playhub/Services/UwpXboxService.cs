@@ -329,7 +329,8 @@ public sealed partial class UwpXboxService
             return;
         }
 
-        var cacheDirectory = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb", global::Playhub.Services.CoverFormat.CoverCacheFolder(CoverFormat));
+        string expectedFormat = global::Playhub.Services.CoverFormat.Normalize(CoverFormat);
+        var cacheDirectory = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb", global::Playhub.Services.CoverFormat.CoverCacheFolder(expectedFormat));
         Directory.CreateDirectory(cacheDirectory);
         using var gate = new SemaphoreSlim(4);
         using var metadataGate = new SemaphoreSlim(4);
@@ -348,8 +349,11 @@ public sealed partial class UwpXboxService
                 await metadataGate.WaitAsync();
                 try
                 {
+                    var sourceCurrent = ImportArtworkDownload.SourceCurrent(game);
                     var matches = await SearchSteamGridDbGamesAsync(game.Name, steamGridDbApiKey);
-                    var best = matches.FirstOrDefault();
+                    if (!sourceCurrent() || game.SteamGridDbGameId > 0
+                        || expectedFormat != global::Playhub.Services.CoverFormat.Normalize(CoverFormat)) return;
+                    var best = matches.FirstOrDefault(item => NormalizeTitle(item.Name) == NormalizeTitle(game.Name));
                     if (best is not null)
                     {
                         game.Name = best.Name;
@@ -365,35 +369,28 @@ public sealed partial class UwpXboxService
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(game.SteamGridDbCoverPath) && File.Exists(game.SteamGridDbCoverPath))
-            {
-                return;
-            }
+            if (game.SteamGridDbArtworkDisabled || game.ArtworkChoices.ContainsKey("cover")
+                || expectedFormat != global::Playhub.Services.CoverFormat.Normalize(CoverFormat)) return;
+            string ownedCache = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb");
+            if (ImportArtworkDownload.CoverMatches(game, expectedFormat, ownedCache)) return;
+            ImportedArtworkSelection.ClearAutomatic(game, "cover");
 
-            // Identità UNICA per la cache: se l'AUMID è vuoto (giochi locali non
-            // impostati correttamente) ripiega su exe/nome, così due giochi non
-            // finiscono mai a condividere la stessa cover.
-            var coverIdentity = !string.IsNullOrWhiteSpace(game.Aumid) ? game.Aumid
-                : !string.IsNullOrWhiteSpace(game.LocalExecutablePath) ? game.LocalExecutablePath
-                : !string.IsNullOrWhiteSpace(game.Executable) ? game.Executable
-                : game.Name;
-            var cacheKey = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(coverIdentity)))
-                .Substring(0, 24)
-                .ToLowerInvariant();
-            var cached = FindExistingImage(cacheDirectory, cacheKey);
+            var cacheKey = ImportArtworkDownload.CacheIdentity(game);
+            var lease = ImportArtworkDownload.Lease.Begin(game, "cover");
+            var cached = ImportArtworkDownload.Cached(cacheDirectory, cacheKey) ?? FindExistingImage(cacheDirectory, cacheKey);
             if (!string.IsNullOrWhiteSpace(cached))
             {
-                game.SteamGridDbCoverPath = cached;
+                lease.Apply(() => { if (expectedFormat == global::Playhub.Services.CoverFormat.Normalize(CoverFormat)) game.SteamGridDbCoverPath = cached; });
                 return;
             }
 
             await gate.WaitAsync();
             try
             {
-                var downloaded = await TryDownloadSteamGridDbCoverAsync(game.Name, cacheDirectory, cacheKey, steamGridDbApiKey, game.SteamGridDbGameId);
-                if (!string.IsNullOrWhiteSpace(downloaded))
+                var downloaded = await TryDownloadSteamGridDbCoverAsync(game.Name, cacheDirectory, cacheKey, steamGridDbApiKey, game.SteamGridDbGameId, expectedFormat);
+                if (!string.IsNullOrWhiteSpace(downloaded) && expectedFormat == global::Playhub.Services.CoverFormat.Normalize(CoverFormat))
                 {
-                    game.SteamGridDbCoverPath = downloaded;
+                    lease.Apply(() => game.SteamGridDbCoverPath = downloaded);
                 }
             }
             catch
@@ -557,54 +554,42 @@ public sealed partial class UwpXboxService
 
     public async Task<bool> RefreshSteamGridDbCoverAsync(UwpGameEntry game, string steamGridDbApiKey)
     {
-        if (game.SteamGridDbArtworkDisabled || string.IsNullOrWhiteSpace(steamGridDbApiKey))
-        {
-            return false;
-        }
-
-        var cacheDirectory = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb", global::Playhub.Services.CoverFormat.CoverCacheFolder(CoverFormat));
-        Directory.CreateDirectory(cacheDirectory);
-        var cacheKey = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(game.Aumid)))
-            .Substring(0, 24)
-            .ToLowerInvariant();
-        foreach (var extension in new[] { ".png", ".jpg", ".jpeg", ".webp" })
-        {
-            var cached = Path.Combine(cacheDirectory, cacheKey + extension);
-            try { if (File.Exists(cached)) File.Delete(cached); } catch { }
-        }
-
-        game.SteamGridDbCoverPath = "";
-        var downloaded = await TryDownloadSteamGridDbCoverAsync(
-            game.Name, cacheDirectory, cacheKey, steamGridDbApiKey, game.SteamGridDbGameId);
-        if (string.IsNullOrWhiteSpace(downloaded))
-        {
-            return false;
-        }
-
-        game.SteamGridDbCoverPath = downloaded;
-        ImportedArtworkSelection.Choose(game, "cover", downloaded);
-        ApplyArtworkToExistingSteamShortcuts(game, "cover", downloaded);
-        return true;
+        if (game.SteamGridDbArtworkDisabled || string.IsNullOrWhiteSpace(steamGridDbApiKey)) return false;
+        string directory = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb", global::Playhub.Services.CoverFormat.CoverCacheFolder(CoverFormat));
+        Directory.CreateDirectory(directory);
+        string key = ImportArtworkDownload.CacheIdentity(game);
+        string expectedFormat = global::Playhub.Services.CoverFormat.Normalize(CoverFormat);
+        var lease = ImportArtworkDownload.Lease.Begin(game, "cover");
+        string? downloaded;
+        try { downloaded = await TryDownloadSteamGridDbCoverAsync(game.Name, directory, key, steamGridDbApiKey, game.SteamGridDbGameId, expectedFormat); }
+        catch (Exception e) when (e is HttpRequestException or IOException or InvalidDataException or InvalidOperationException or OperationCanceledException or JsonException) { return false; }
+        if (string.IsNullOrWhiteSpace(downloaded) || expectedFormat != global::Playhub.Services.CoverFormat.Normalize(CoverFormat)) return false;
+        bool applied = false;
+        return lease.Apply(() => { ImportedArtworkSelection.Choose(game, "cover", downloaded); applied = ApplyArtworkToExistingSteamShortcuts(game, "cover", downloaded); }) && applied;
     }
 
     public async Task<IReadOnlyList<SteamGridArtworkOption>> GetSteamGridDbArtworkAsync(
         UwpGameEntry game,
         string artworkType,
-        string steamGridDbApiKey)
+        string steamGridDbApiKey, CancellationToken ct = default)
     {
         if (game.SteamGridDbArtworkDisabled || string.IsNullOrWhiteSpace(steamGridDbApiKey))
         {
             return Array.Empty<SteamGridArtworkOption>();
         }
 
+        var sourceCurrent = ImportArtworkDownload.SourceCurrent(game);
+        string expectedFormat = global::Playhub.Services.CoverFormat.Normalize(CoverFormat);
+        int previousId = game.SteamGridDbGameId;
         var gameId = game.SteamGridDbGameId > 0
             ? game.SteamGridDbGameId
-            : await FindSteamGridDbGameIdAsync(game.Name, steamGridDbApiKey);
+            : await FindSteamGridDbGameIdAsync(game.Name, steamGridDbApiKey, ct);
         if (gameId is null)
         {
             return Array.Empty<SteamGridArtworkOption>();
         }
 
+        if (!sourceCurrent() || game.SteamGridDbGameId != previousId) throw new OperationCanceledException("Artwork source changed.");
         game.SteamGridDbGameId = gameId.Value;
         var coverDimensions = global::Playhub.Services.CoverFormat.GridDimensions(CoverFormat);
         var endpoint = NormalizeArtworkType(artworkType) switch
@@ -617,15 +602,10 @@ public sealed partial class UwpXboxService
             _ => $"grids/game/{gameId}?dimensions={coverDimensions}"
         };
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, "https://www.steamgriddb.com/api/v2/" + endpoint);
-        request.Headers.Add("Authorization", $"Bearer {steamGridDbApiKey}");
-        using var response = await _http.SendAsync(request);
-        if (!response.IsSuccessStatusCode)
-        {
-            return Array.Empty<SteamGridArtworkOption>();
-        }
-
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var raw = await ImportArtworkDownload.ReadAsync(_http, new Uri("https://www.steamgriddb.com/api/v2/" + endpoint), steamGridDbApiKey, ct);
+        if (!sourceCurrent() || game.SteamGridDbGameId != gameId.Value
+            || NormalizeArtworkType(artworkType) == "cover" && expectedFormat != global::Playhub.Services.CoverFormat.Normalize(CoverFormat)) throw new OperationCanceledException("Artwork source changed.");
+        using var document = JsonDocument.Parse(raw);
         if (!document.RootElement.TryGetProperty("data", out var data))
         {
             return Array.Empty<SteamGridArtworkOption>();
@@ -650,6 +630,8 @@ public sealed partial class UwpXboxService
             })
             .Where(option => option is not null)
             .Cast<SteamGridArtworkOption>()
+            .Where(option => NormalizeArtworkType(artworkType) != "cover" || option.Width > 0 && option.Height > 0
+                && (global::Playhub.Services.CoverFormat.IsSquare(CoverFormat) ? option.Width == option.Height : option.Height > option.Width))
             .DistinctBy(option => option.Url, StringComparer.OrdinalIgnoreCase)
             .Take(30)
             .ToList();
@@ -657,9 +639,9 @@ public sealed partial class UwpXboxService
 
     public async Task<IReadOnlyList<SteamGridArtworkOption>> GetOfficialSteamArtworkAsync(
         UwpGameEntry game,
-        string artworkType)
+        string artworkType, CancellationToken ct = default)
     {
-        var appId = await ResolveSteamAppIdAsync(game);
+        var appId = await ResolveSteamAppIdAsync(game, ct);
         if (appId <= 0)
         {
             return Array.Empty<SteamGridArtworkOption>();
@@ -694,7 +676,7 @@ public sealed partial class UwpXboxService
         foreach (var (fileName, width, height) in candidates)
         {
             var url = $"https://cdn.cloudflare.steamstatic.com/steam/apps/{appId}/{fileName}";
-            if (await RemoteFileExistsAsync(url))
+            if (await RemoteFileExistsAsync(url, ct))
             {
                 options.Add(new SteamGridArtworkOption(url, url, width, height));
             }
@@ -703,7 +685,7 @@ public sealed partial class UwpXboxService
         return options;
     }
 
-    private async Task<int> ResolveSteamAppIdAsync(UwpGameEntry game)
+    private async Task<int> ResolveSteamAppIdAsync(UwpGameEntry game, CancellationToken ct = default)
     {
         if (game.SteamAppId != 0)
         {
@@ -721,14 +703,7 @@ public sealed partial class UwpXboxService
         {
             var url = "https://store.steampowered.com/api/storesearch/?l=english&cc=us&term="
                 + Uri.EscapeDataString(name);
-            using var response = await _http.GetAsync(url);
-            if (!response.IsSuccessStatusCode)
-            {
-                game.SteamAppId = -1;
-                return -1;
-            }
-
-            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            using var document = JsonDocument.Parse(await ImportArtworkDownload.ReadAsync(_http, new Uri(url), ct: ct));
             if (!document.RootElement.TryGetProperty("items", out var items) ||
                 items.ValueKind != JsonValueKind.Array)
             {
@@ -737,7 +712,6 @@ public sealed partial class UwpXboxService
             }
 
             var wanted = NormalizeTitle(name);
-            var first = 0;
             foreach (var item in items.EnumerateArray())
             {
                 if (!item.TryGetProperty("id", out var idProperty) || !idProperty.TryGetInt32(out var id))
@@ -746,11 +720,6 @@ public sealed partial class UwpXboxService
                 }
 
                 var itemName = item.TryGetProperty("name", out var nameProperty) ? nameProperty.GetString() ?? "" : "";
-                if (first == 0)
-                {
-                    first = id;
-                }
-
                 if (NormalizeTitle(itemName) == wanted)
                 {
                     game.SteamAppId = id;
@@ -758,14 +727,11 @@ public sealed partial class UwpXboxService
                 }
             }
 
-            game.SteamAppId = first > 0 ? first : -1;
-            return game.SteamAppId;
-        }
-        catch
-        {
             game.SteamAppId = -1;
             return -1;
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch { return -1; }
     }
 
     private static string NormalizeTitle(string value)
@@ -782,12 +748,12 @@ public sealed partial class UwpXboxService
         return builder.ToString();
     }
 
-    private async Task<bool> RemoteFileExistsAsync(string url)
+    private async Task<bool> RemoteFileExistsAsync(string url, CancellationToken ct = default)
     {
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Head, url);
-            using var response = await _http.SendAsync(request);
+            using var response = await _http.SendAsync(request, ct);
             if (response.IsSuccessStatusCode)
             {
                 return true;
@@ -801,36 +767,40 @@ public sealed partial class UwpXboxService
 
             using var ranged = new HttpRequestMessage(HttpMethod.Get, url);
             ranged.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(0, 0);
-            using var rangedResponse = await _http.SendAsync(ranged);
+            using var rangedResponse = await _http.SendAsync(ranged, HttpCompletionOption.ResponseHeadersRead, ct);
             return rangedResponse.IsSuccessStatusCode;
         }
-        catch
-        {
-            return false;
-        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch { return false; }
     }
 
     public async Task<bool> DownloadAndApplySteamGridDbArtworkAsync(
-        UwpGameEntry game,
-        string artworkType,
-        SteamGridArtworkOption artwork)
+        UwpGameEntry game, string artworkType, SteamGridArtworkOption artwork, CancellationToken ct = default)
     {
-        var normalizedType = NormalizeArtworkType(artworkType);
-        var cacheKey = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(game.Aumid)))
-            .Substring(0, 24)
-            .ToLowerInvariant();
-        var cacheDirectory = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb", "selected", cacheKey);
-        Directory.CreateDirectory(cacheDirectory);
-
-        var local = File.Exists(artwork.Url);
-        var imageUri = local ? null : new Uri(artwork.Url);
-        var extension = NormalizeImageExtension(Path.GetExtension(local ? artwork.Url : imageUri!.AbsolutePath));
-        var destination = Path.Combine(cacheDirectory, normalizedType + extension);
-        if (local) File.Copy(artwork.Url, destination, true);
-        else await File.WriteAllBytesAsync(destination, await _http.GetByteArrayAsync(imageUri!));
-        SetSelectedArtworkPath(game, normalizedType, destination);
-        ImportedArtworkSelection.Choose(game, normalizedType, destination);
-        return ApplyArtworkToExistingSteamShortcuts(game, normalizedType, destination);
+        string type = NormalizeArtworkType(artworkType), identity = ImportArtworkDownload.Identity(game);
+        string directory = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb", "selected", identity);
+        Directory.CreateDirectory(directory);
+        var lease = ImportArtworkDownload.Lease.Begin(game, type);
+        string destination;
+        if (File.Exists(artwork.Url))
+        {
+            // Explicit local files retain the existing supported formats, including ICO.
+            if (new FileInfo(artwork.Url).Length is < 16 or > 25 * 1024 * 1024) throw new InvalidDataException("Unsupported local artwork size.");
+            var bytes = await File.ReadAllBytesAsync(artwork.Url, ct);
+            string extension = NormalizeImageExtension(Path.GetExtension(artwork.Url));
+            destination = Path.Combine(directory, type + "-" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)).ToLowerInvariant() + extension);
+            string temporary = destination + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try { await File.WriteAllBytesAsync(temporary, bytes, ct); ct.ThrowIfCancellationRequested(); File.Move(temporary, destination, true); }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
+        }
+        else
+        {
+            var bytes = await ImportArtworkDownload.ReadAsync(_http, new Uri(artwork.Url), ct: ct);
+            destination = await ImportArtworkDownload.SaveAsync(directory, identity, type, bytes, ct);
+        }
+        ct.ThrowIfCancellationRequested();
+        bool applied = false;
+        return lease.Apply(() => { ImportedArtworkSelection.Choose(game, type, destination); applied = ApplyArtworkToExistingSteamShortcuts(game, type, destination); }) && applied;
     }
 
     public async Task<string> ExportSelectedToSteamAsync(IEnumerable<UwpGameEntry> games, string steamGridDbApiKey = "")
@@ -1110,27 +1080,19 @@ public sealed partial class UwpXboxService
         }
     }
 
-    private async Task<int?> FindSteamGridDbGameIdAsync(string gameName, string apiKey)
+    private async Task<int?> FindSteamGridDbGameIdAsync(string gameName, string apiKey, CancellationToken ct = default)
     {
-        var searchUrl = $"https://www.steamgriddb.com/api/v2/search/autocomplete/{Uri.EscapeDataString(gameName)}";
-        using var request = new HttpRequestMessage(HttpMethod.Get, searchUrl);
-        request.Headers.Add("Authorization", $"Bearer {apiKey}");
-        using var response = await _http.SendAsync(request);
-        if (!response.IsSuccessStatusCode)
-        {
-            return null;
-        }
-
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var searchUrl = new Uri($"https://www.steamgriddb.com/api/v2/search/autocomplete/{Uri.EscapeDataString(gameName)}");
+        using var document = JsonDocument.Parse(await ImportArtworkDownload.ReadAsync(_http, searchUrl, apiKey, ct));
         if (!document.RootElement.TryGetProperty("data", out var data))
         {
             return null;
         }
 
-        var first = data.EnumerateArray().FirstOrDefault();
-        return first.ValueKind != JsonValueKind.Undefined && first.TryGetProperty("id", out var id)
-            ? id.GetInt32()
-            : null;
+        foreach (var item in data.EnumerateArray())
+            if (item.TryGetProperty("id", out var id) && id.TryGetInt32(out int value) && value > 0
+                && item.TryGetProperty("name", out var name) && NormalizeTitle(name.GetString() ?? "") == NormalizeTitle(gameName)) return value;
+        return null;
     }
 
     private static int? ReadReleaseYear(JsonElement item)
@@ -1289,54 +1251,28 @@ public sealed partial class UwpXboxService
         return null;
     }
 
-    private async Task<string?> TryDownloadSteamGridDbCoverAsync(string gameName, string cacheDirectory, string cacheKey, string apiKey, int preferredGameId = 0)
+    private async Task<string?> TryDownloadSteamGridDbCoverAsync(string gameName, string cacheDirectory, string cacheKey, string apiKey, int preferredGameId = 0, string? expectedFormat = null)
     {
-        var gameId = preferredGameId > 0
-            ? preferredGameId
-            : await FindSteamGridDbGameIdAsync(gameName, apiKey) ?? 0;
-        if (gameId <= 0)
+        expectedFormat ??= global::Playhub.Services.CoverFormat.Normalize(CoverFormat);
+        if (expectedFormat != global::Playhub.Services.CoverFormat.Normalize(CoverFormat)) return null;
+        int id = preferredGameId > 0 ? preferredGameId : await FindSteamGridDbGameIdAsync(gameName, apiKey) ?? 0;
+        if (id <= 0) return null;
+        var source = new UwpGameEntry { Name = gameName, SteamGridDbGameId = id };
+        var options = await GetSteamGridDbArtworkAsync(source, "cover", apiKey);
+        foreach (var option in options.Take(3))
         {
-            return null;
+            try
+            {
+                var bytes = await ImportArtworkDownload.ReadAsync(_http, new Uri(option.Url));
+                string path = await ImportArtworkDownload.SaveAsync(cacheDirectory, cacheKey, "cover", bytes, default);
+                await ImportArtworkDownload.RequireCoverShapeAsync(path, expectedFormat, default);
+                if (expectedFormat != global::Playhub.Services.CoverFormat.Normalize(CoverFormat)) return null;
+                await ImportArtworkDownload.IndexAsync(cacheDirectory, cacheKey, path, default);
+                return path;
+            }
+            catch (Exception e) when (e is HttpRequestException or IOException or InvalidDataException or InvalidOperationException or OperationCanceledException or ArgumentException or System.Runtime.InteropServices.COMException) { }
         }
-
-        var gridsDimensions = global::Playhub.Services.CoverFormat.GridDimensions(CoverFormat);
-        var gridsUrl = $"https://www.steamgriddb.com/api/v2/grids/game/{gameId}?dimensions={gridsDimensions}";
-        using var gridsRequest = new HttpRequestMessage(HttpMethod.Get, gridsUrl);
-        gridsRequest.Headers.Add("Authorization", $"Bearer {apiKey}");
-        using var gridsResponse = await _http.SendAsync(gridsRequest);
-        if (!gridsResponse.IsSuccessStatusCode)
-        {
-            return null;
-        }
-
-        using var gridsDoc = JsonDocument.Parse(await gridsResponse.Content.ReadAsStringAsync());
-        if (!gridsDoc.RootElement.TryGetProperty("data", out var gridsData))
-        {
-            return null;
-        }
-
-        var firstGrid = gridsData.EnumerateArray().FirstOrDefault();
-        if (firstGrid.ValueKind == JsonValueKind.Undefined || !firstGrid.TryGetProperty("url", out var urlProperty))
-        {
-            return null;
-        }
-
-        var imageUrl = urlProperty.GetString();
-        if (string.IsNullOrWhiteSpace(imageUrl) || !Uri.TryCreate(imageUrl, UriKind.Absolute, out var imageUri))
-        {
-            return null;
-        }
-
-        var extension = Path.GetExtension(imageUri.AbsolutePath).ToLowerInvariant();
-        if (extension is not (".png" or ".jpg" or ".jpeg" or ".webp"))
-        {
-            extension = ".jpg";
-        }
-
-        var destination = Path.Combine(cacheDirectory, cacheKey + extension);
-        var bytes = await _http.GetByteArrayAsync(imageUri);
-        await File.WriteAllBytesAsync(destination, bytes);
-        return destination;
+        return null;
     }
 
     private static void TryBackupShortcuts(string source, string destination)
@@ -1426,65 +1362,55 @@ public sealed partial class UwpXboxService
     private async Task PopulateMissingSteamGridDbArtworkAsync(List<UwpGameEntry> games, string steamGridDbApiKey)
     {
         using var gate = new SemaphoreSlim(3);
-        var tasks = games.Select(async game =>
+        await Task.WhenAll(games.Select(async game =>
         {
             await gate.WaitAsync();
             try
             {
-                if (game.SteamGridDbArtworkDisabled)
-                {
-                    return;
-                }
-
-                var cacheKey = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
-                        Encoding.UTF8.GetBytes(game.Aumid)))
-                    .Substring(0, 24)
-                    .ToLowerInvariant();
-                var cacheDirectory = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb", "auto", cacheKey);
-                Directory.CreateDirectory(cacheDirectory);
-
-                foreach (var artworkType in new[] { "cover", "banner", "hero", "logo", "icon" })
+                if (game.SteamGridDbArtworkDisabled) return;
+                string identity = ImportArtworkDownload.Identity(game);
+                string directory = Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb", "auto", identity);
+                Directory.CreateDirectory(directory);
+                string expectedFormat = global::Playhub.Services.CoverFormat.Normalize(CoverFormat);
+                foreach (string type in ImportedArtworkSelection.Types)
                 {
                     try
                     {
-                        if (game.ArtworkChoices.ContainsKey(artworkType)) continue;
-                        var currentPath = GetSelectedArtworkPath(game, artworkType);
-                        if (!string.IsNullOrWhiteSpace(currentPath) && File.Exists(currentPath))
+                        if (type == "cover" && !ImportArtworkDownload.CoverMatches(game, CoverFormat, Path.Combine(AppPaths.LocalDataRoot, "cache", "steamgriddb")))
+                            ImportedArtworkSelection.ClearAutomatic(game, "cover");
+                        if (game.ArtworkChoices.ContainsKey(type) || File.Exists(GetSelectedArtworkPath(game, type))) continue;
+                        string assetDirectory = type == "cover" ? Path.Combine(directory, global::Playhub.Services.CoverFormat.CoverCacheFolder(CoverFormat)) : directory;
+                        Directory.CreateDirectory(assetDirectory);
+                        var cacheLease = ImportArtworkDownload.Lease.Begin(game, type);
+                        string cacheKey = type + "-" + ImportArtworkDownload.CacheIdentity(game);
+                        string? cached = ImportArtworkDownload.Cached(assetDirectory, cacheKey);
+                        if (cached is not null) { cacheLease.Apply(() => SetSelectedArtworkPath(game, type, cached)); continue; }
+                        var options = await GetSteamGridDbArtworkAsync(game, type, steamGridDbApiKey);
+                        if (game.SteamGridDbArtworkDisabled || game.ArtworkChoices.ContainsKey(type) || File.Exists(GetSelectedArtworkPath(game, type))) continue;
+                        var lease = ImportArtworkDownload.Lease.Begin(game, type);
+                        cacheKey = type + "-" + ImportArtworkDownload.CacheIdentity(game);
+                        cached = ImportArtworkDownload.Cached(assetDirectory, cacheKey);
+                        if (cached is not null) { lease.Apply(() => SetSelectedArtworkPath(game, type, cached)); continue; }
+                        foreach (var option in options.Take(3))
                         {
-                            continue;
+                            try
+                            {
+                                var bytes = await ImportArtworkDownload.ReadAsync(_http, new Uri(option.Url));
+                                string path = await ImportArtworkDownload.SaveAsync(assetDirectory, identity, type, bytes, default);
+                                if (type == "cover") await ImportArtworkDownload.RequireCoverShapeAsync(path, expectedFormat, default);
+                                if ((type != "cover" || expectedFormat == global::Playhub.Services.CoverFormat.Normalize(CoverFormat))
+                                    && lease.Apply(() => SetSelectedArtworkPath(game, type, path)))
+                                    await ImportArtworkDownload.IndexAsync(assetDirectory, cacheKey, path, default);
+                                break;
+                            }
+                            catch (Exception e) when (e is HttpRequestException or IOException or InvalidDataException or InvalidOperationException or OperationCanceledException or ArgumentException or System.Runtime.InteropServices.COMException) { }
                         }
-
-                        var options = await GetSteamGridDbArtworkAsync(game, artworkType, steamGridDbApiKey);
-                        var artwork = options.FirstOrDefault();
-                        if (artwork is null)
-                        {
-                            continue;
-                        }
-
-                        var imageUri = new Uri(artwork.Url);
-                        var extension = NormalizeImageExtension(Path.GetExtension(imageUri.AbsolutePath));
-                        var destination = Path.Combine(cacheDirectory, artworkType + extension);
-                        var bytes = await _http.GetByteArrayAsync(imageUri);
-                        await File.WriteAllBytesAsync(destination, bytes);
-                        SetSelectedArtworkPath(game, artworkType, destination);
                     }
-                    catch
-                    {
-                        // One unavailable category must not prevent the other
-                        // missing artwork types from being assigned.
-                    }
+                    catch (Exception e) when (e is HttpRequestException or IOException or InvalidDataException or InvalidOperationException or OperationCanceledException or ArgumentException or JsonException or System.Runtime.InteropServices.COMException) { }
                 }
             }
-            catch
-            {
-            }
-            finally
-            {
-                gate.Release();
-            }
-        });
-
-        await Task.WhenAll(tasks);
+            finally { gate.Release(); }
+        }));
     }
 
     private static string GetSelectedArtworkPath(UwpGameEntry game, string artworkType)

@@ -85,6 +85,44 @@ The complete license is included in LICENSE-Shortcuts. Source is maintained in
 src/QamShortcutsView.tsx and src/qamIcons.ts. Tabler icon artwork is MIT; its
 original copyright and license notice are preserved in src/qamIcons.ts.
 
+## Steam main-menu integration
+
+Store digitali uses the shared Steam menu registry from All Access. Its
+BSD-3-Clause copyright and license terms are included in
+`third-party/steam-menu/LICENSE`.
+
+## Digital Stores achievements
+
+Epic and GOG provider adaptations in the native store broker derive from
+Unifideck Release-0.8.0 by mubaraknumann and the Unifideck contributors,
+https://github.com/mubaraknumann/unifideck/tree/Release-0.8.0.
+Those adapted files retain GPL-3.0-or-later headers. Their complete license,
+source reference and Windows changes are recorded in the installed
+`StoreLibrary/Notices/Unifideck-0.8.0-NOTICE.txt` and `GPL-3.0.txt`.
+
+`src/StoreAchievementsRuntime.ts` and the Steam query publisher are original
+Playhub code, Copyright (c) 2026 LoZazaMastro, MIT. The publisher was moved from
+Playhub Metadata so store account, cache, native Steam presentation and unlock
+notification ownership all reside in Digital Stores.
+
+## Digital Stores partner logos
+
+The EA app, Ubisoft Connect and Battle.net badges use the original icons from
+the respective official installed Windows launchers, extracted on 2026-11-16.
+Names and logo artwork belong to Electronic Arts, Ubisoft and Blizzard
+Entertainment respectively. They identify the installation provider reported
+by Microsoft's product metadata and do not imply affiliation or endorsement.
+These assets retain their owners' rights and are not covered by Playhub's
+original-code MIT license. Source details: `assets/store-provider-logos-NOTICE.txt`.
+
+## Inter font
+
+Digital Stores embeds the unmodified Inter Variable font locally. Inter is
+Copyright 2016 The Inter Project Authors and licensed under the SIL Open Font
+License 1.1. The font, full license and source provenance are included under
+`assets/fonts/InterVariable.woff2`, `assets/fonts/OFL.txt` and
+`assets/fonts/provenance.json`.
+
 ## GPD V1 controller settings
 
 The optional GPD Win4 / Mini 2024 integration uses protocol facts from

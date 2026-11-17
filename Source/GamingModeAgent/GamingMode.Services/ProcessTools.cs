@@ -270,7 +270,7 @@ public sealed class ProcessTools
 		return text;
 	}
 
-	public bool StartExplorer(bool background = false)
+	public bool StartExplorer(bool background = false, Func<bool>? canContinue = null)
 	{
 		try
 		{
@@ -278,28 +278,25 @@ public sealed class ProcessTools
 			if (upgraded > 0) _logger.Info($"Protected {upgraded} Decky startup entry/entries against duplicate launches.");
 		}
 		catch (Exception exception) { _logger.Error("Could not protect Decky autostart.", exception); }
-		if (IsExplorerShellRunning())
-		{
-			return true;
-		}
 		try
 		{
-			using Process? explorer = Process.Start(new ProcessStartInfo
+			var ready = ExplorerShellReadiness.Ensure(IsExplorerShellRunning, () =>
 			{
-				FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"),
-				UseShellExecute = true,
-				WindowStyle = background ? ProcessWindowStyle.Hidden : ProcessWindowStyle.Normal
-			});
-			for (int attempt = 0; attempt < 40; attempt++)
-			{
-				if (IsExplorerShellRunning())
+				using Process? explorer = Process.Start(new ProcessStartInfo
 				{
-					_logger.Info("Explorer desktop shell is running.");
-					return true;
-				}
-				Thread.Sleep(100);
+					FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"),
+					UseShellExecute = true,
+					WindowStyle = background ? ProcessWindowStyle.Hidden : ProcessWindowStyle.Normal
+				});
+			}, () => canContinue?.Invoke() != false, Thread.Sleep, () => Environment.TickCount64);
+			if (ready == ExplorerShellReadyResult.Ready)
+			{
+				_logger.Info("Explorer desktop shell is running.");
+				return true;
 			}
-			_logger.Error("Explorer launched but its desktop shell did not become ready.");
+			_logger.Error(ready == ExplorerShellReadyResult.Cancelled
+				? "Explorer startup wait was cancelled."
+				: "Explorer launched but its desktop shell did not become ready within twelve seconds.");
 			return false;
 		}
 		catch (Exception exception)

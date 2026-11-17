@@ -77,13 +77,35 @@ public sealed partial class MainWindow
         ? plugin.Name switch
         {
             "Quick Settings" or "Shortcuts" or "Playhub Notifications" or "Weather" => "Strumenti e utilità",
-            "Playhub Artworks" or "Launch Curtain" or "Now Playing" or "ThemeDeck" or "TrailerHero" or "Playhub Surround" => "Personalizzazione e media",
+            "Now Playing" or "Playhub Surround" => "Audio",
+            "Playhub Artworks" or "Launch Curtain" or "ThemeDeck" or "TrailerHero" => "Personalizzazione e media",
             "Playhub Metadata" => "Libreria e giochi",
             "News" => "Social e community",
             "Proton VPN" => "Sistema e hardware",
-            _ => NormalizePluginStoreCategory(plugin.Category)
+            _ => PluginTopicCategory(plugin.Name, plugin.Category)
         }
-        : NormalizePluginStoreCategory(plugin.Category);
+        : PluginTopicCategory(plugin.Name, plugin.Category);
+
+    private static string PluginTopicCategory(string name, string category)
+    {
+        if (name.Contains("achievement", StringComparison.OrdinalIgnoreCase) || name.Equals("sam", StringComparison.OrdinalIgnoreCase)) return "Achievement";
+        if (new[] { "museck", "museek", "music control", "virtual surround sound", "volume boost", "game theme music", "volume mixer", "audio loader", "decky music", "audioforge", "decksoundpad", "audio switcher", "gamethememusic-ng", "youtube music", "apple music", "spotify connect", "youtube music player", "speaker boost", "bootvolume", "cec volume osd", "deck muse", "nothing ear control", "decky sound toasts", "audiobookshelf", "finally screenshot sound" }.Contains(name, StringComparer.OrdinalIgnoreCase)) return "Audio";
+        return category.Split('/')[0].Trim().ToLowerInvariant() switch
+        {
+            "audio" or "musica" => "Audio",
+            "accessibilità" => "Accessibilità",
+            "controller" or "bluetooth" => "Controller",
+            "grafica" or "gpu" => "Grafica",
+            "rete" or "rete e strumenti" => "Rete e strumenti",
+            "achievement" => "Achievement",
+            "libreria" or "home" or "launcher" or "prezzi" or "modding" or "cheat engine" or "trainer" => "Libreria e giochi",
+            "personalizzazione" or "temi" or "video" or "registrazione" or "screenshot" or "streaming" => "Personalizzazione e media",
+            "messaggistica" => "Social e community",
+            "hardware" or "sistema" or "storage" or "rgb" or "display" or "usb" => "Sistema e hardware",
+            "gestione plugin" or "ui" => "Strumenti e utilità",
+            _ => NormalizePluginStoreCategory(category)
+        };
+    }
 
     private static bool PluginBelongsToCategory(DeckyPluginInfo plugin, string category) =>
         string.Equals(category, "Novità", StringComparison.OrdinalIgnoreCase)
@@ -114,7 +136,6 @@ public sealed partial class MainWindow
         36,  // SteamGridDB
         37,  // Discord Status
         52,  // Game Theme Music
-        59,  // Web Browser
         61,  // TabMaster
         63,  // Free Loader
         66,  // PlayTime
@@ -124,9 +145,9 @@ public sealed partial class MainWindow
     };
 
     private static bool IsFeaturedPluginCandidate(DeckyPluginInfo plugin) =>
-        plugin.IsPlayhubPlugin || PluginFeaturedSelection.IsPinned(plugin) ||
+        !PluginFeaturedSelection.IsExcluded(plugin) && (plugin.IsPlayhubPlugin || PluginFeaturedSelection.IsPinned(plugin) ||
         (string.Equals(plugin.CatalogSource, "decky-store", StringComparison.OrdinalIgnoreCase) &&
-            PopularDeckyPluginIds.Contains(plugin.CatalogPluginId));
+            PopularDeckyPluginIds.Contains(plugin.CatalogPluginId)));
 
     private static List<DeckyPluginInfo> SelectFeaturedPlugins(PluginDiscoveryCategoryState state,
         IReadOnlyList<DeckyPluginInfo> candidates)

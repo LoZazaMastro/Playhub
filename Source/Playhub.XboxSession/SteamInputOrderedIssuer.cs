@@ -5,7 +5,8 @@ internal sealed class SteamInputOrderedIssuer(
     Func<bool> steamCurrent, Func<bool> gameCurrent, Func<bool> controllerCurrent, Func<long> clock,
     Func<SteamInputOrderedIssuer.MirrorLease, bool> presentationCurrent,
     Func<bool> neutralHeld, SteamInputOrderedIssuer.IChannel channel,
-    Func<SteamInputOrderedIssuer.NativeOverlayInputLease,bool>? nativePresentationCurrent = null)
+    Func<SteamInputOrderedIssuer.NativeOverlayInputLease,bool>? nativePresentationCurrent = null,
+    Func<SteamInputOrderedIssuer.NativeVisibleInputLease,bool>? nativeVisibleCurrent = null)
 {
     internal enum InputRoute { OwnedSessionPad, SteamOrdinary }
     internal readonly record struct Receipt(object Identity, uint Layout);
@@ -30,6 +31,10 @@ internal sealed class SteamInputOrderedIssuer(
         long ExpiresAt,SteamRawInputRelayTrial.SessionBinding Session,long Epoch,
         SteamInputSessionOutput.ReaderBinding? Reader,uint HostPid,long HostBirth,uint BrowserId,
         uint NativeAppId,ulong ObservedGameId,ulong AdmissionSerial) : IInputLease;
+    // Original Valve surface input: no destination, old host token or own-Shown proof.
+    internal sealed record NativeVisibleInputLease(Guid Owner,string SessionId,ulong Generation,ulong GameId,
+        long ExpiresAt,SteamRawInputRelayTrial.SessionBinding Session,long Epoch,
+        SteamInputSessionOutput.ReaderBinding? Reader,ulong GuideEpoch,ulong SourceHwnd,ulong SourceCookie) : IInputLease;
     internal enum Phase { Game, WaitingForReader, WaitingForPriorCommand, WaitingForMenuAck, Menu,
         Returning, WaitingForAutomaticAck, ResumeAllowed, Uncertain }
     private readonly int worker = Environment.CurrentManagedThreadId;
@@ -84,6 +89,7 @@ internal sealed class SteamInputOrderedIssuer(
     {
         MirrorLease m => presentationCurrent(m),
         NativeOverlayInputLease n => nativePresentationCurrent?.Invoke(n) == true,
+        NativeVisibleInputLease n => nativeVisibleCurrent?.Invoke(n) == true,
         _ => false
     };
     private static bool Valid(IInputLease m) => m.Owner != Guid.Empty && m.Generation > 0
@@ -92,7 +98,8 @@ internal sealed class SteamInputOrderedIssuer(
         && m.GameId == m.Session.GameId && m.ExpiresAt > 0
         && (m is not NativeOverlayInputLease n || n.HostPid>0 && n.HostBirth>0
             && n.HostPid!=m.Session.GamePid && n.HostPid!=m.Session.CompanionPid
-            && n.BrowserId>0 && n.ObservedGameId>0 && n.AdmissionSerial>0);
+            && n.BrowserId>0 && n.ObservedGameId>0 && n.AdmissionSerial>0)
+        && (m is not NativeVisibleInputLease v || v.Reader is {} nativeReader && nativeReader.Valid && v.GuideEpoch>0 && v.SourceHwnd>0 && v.SourceCookie>0);
     private bool SameSession(SteamRawInputRelayTrial.SessionBinding binding) => session.Valid
         && session.SameRetainedSession(binding) && session.Source == binding.Source;
     internal bool Begin(MirrorLease lease) => BeginLease(lease);
@@ -100,6 +107,10 @@ internal sealed class SteamInputOrderedIssuer(
     {
         Worker();
         return route==InputRoute.OwnedSessionPad && lease.Reader is not null && BeginLease(lease);
+    }
+    internal bool BeginNativeVisible(NativeVisibleInputLease lease)
+    {
+        Worker();return route==InputRoute.OwnedSessionPad && BeginLease(lease);
     }
     private bool BeginLease(IInputLease lease)
     {
@@ -113,6 +124,7 @@ internal sealed class SteamInputOrderedIssuer(
     }
     internal bool Renew(MirrorLease lease) => RenewLease(lease);
     internal bool RenewNative(NativeOverlayInputLease lease) => RenewLease(lease);
+    internal bool RenewNativeVisible(NativeVisibleInputLease lease) => RenewLease(lease);
     private bool RenewLease(IInputLease lease)
     {
         Worker();
@@ -123,16 +135,21 @@ internal sealed class SteamInputOrderedIssuer(
         if (CurrentPresentation()) return true;
         if(ReferenceEquals(presentation,lease)) Close(lease.Owner); return false;
     }
-    private static bool SameNativeIdentity(IInputLease before,IInputLease after) => before is not NativeOverlayInputLease a
-        || after is NativeOverlayInputLease b && a.HostPid==b.HostPid && a.HostBirth==b.HostBirth
+    private static bool SameNativeIdentity(IInputLease before,IInputLease after) => before switch
+    {
+        NativeOverlayInputLease a => after is NativeOverlayInputLease b && a.HostPid==b.HostPid && a.HostBirth==b.HostBirth
             && a.BrowserId==b.BrowserId && a.NativeAppId==b.NativeAppId && a.ObservedGameId==b.ObservedGameId
-            && a.AdmissionSerial==b.AdmissionSerial;
+            && a.AdmissionSerial==b.AdmissionSerial,
+        NativeVisibleInputLease a => after is NativeVisibleInputLease b && a.GuideEpoch==b.GuideEpoch
+            && a.SourceHwnd==b.SourceHwnd && a.SourceCookie==b.SourceCookie,
+        _ => true
+    };
     internal bool ReaderRetired(SteamInputSessionOutput.ReaderBinding binding, SteamRawInputRelayTrial.ReaderOutcome outcome)
     {
         Worker();
         if (route!=InputRoute.OwnedSessionPad || State != Phase.WaitingForReader || presentation is not { Reader: {} expected } lease || binding != expected || !outcome.CanResume
             || outcome.ReaderPid != binding.ReaderPid || outcome.ReaderBirth != binding.ReaderBirth || outcome.Epoch != binding.Epoch
-            || presentation is NativeOverlayInputLease && outcome.EndReason!=RelayExit.OverlayOpened
+            || presentation is NativeOverlayInputLease or NativeVisibleInputLease && outcome.EndReason!=RelayExit.OverlayOpened
             || !OutputReady() || !CurrentPresentation()) return false;
         retiredEpoch = binding.Epoch; State = Phase.WaitingForPriorCommand; return true;
     }
@@ -158,12 +175,29 @@ internal sealed class SteamInputOrderedIssuer(
         // does not prohibit cleanup of this issuer's own override.
         return ReturnAutomatic();
     }
-    internal void Tick()
+    internal NativeVisibleInputLease? HeldNativeVisible(Guid owner)
+    {
+        Worker();return presentation is NativeVisibleInputLease held&&held.Owner==owner?held:null;
+    }
+    // Slow command launch/ACK can outlive the last250ms physical sample.
+    // Only the private NativeVisible worker may replace that sample with a
+    // genuinely fresh SAME source lease; no clock-derived extension is made.
+    private bool CurrentAfterNativeRefresh(Func<NativeVisibleInputLease,NativeVisibleInputLease?>? refresh)
+    {
+        if(CurrentPresentation())return true;
+        if(refresh is null||presentation is not NativeVisibleInputLease held
+            ||State is not (Phase.WaitingForPriorCommand or Phase.WaitingForMenuAck or Phase.Menu))return false;
+        var state=State;ulong stamp=authority;
+        var next=refresh(held);
+        if(next is null||State!=state||authority!=stamp||!ReferenceEquals(presentation,held))return false;
+        return next.ExpiresAt==held.ExpiresAt?CurrentPresentation():RenewNativeVisible(next);
+    }
+    internal void Tick(Func<NativeVisibleInputLease,NativeVisibleInputLease?>? refreshNativeVisible=null)
     {
         Worker();
         if (!steamCurrent() || !StillOwned()) { presentation = null; State = Phase.Uncertain; return; }
         var active = presentation;
-        if (active is not null && (!controllerCurrent() || !CurrentPresentation())) Close(active.Owner);
+        if (active is not null && (!controllerCurrent() || !CurrentAfterNativeRefresh(refreshNativeVisible))) Close(active.Owner);
         if (State == Phase.WaitingForPriorCommand)
         {
             if (!Settled()) return;
@@ -172,10 +206,14 @@ internal sealed class SteamInputOrderedIssuer(
             var started = channel.Start(769, latest, () => State == Phase.WaitingForPriorCommand && OutputReady() && CurrentPresentation());
             if (started is null) { presentation = null; State = Phase.Uncertain; return; }
             pending = latest = started; menuAuthority = ++authority;
-            State = presentation is not null && CurrentPresentation() ? Phase.WaitingForMenuAck : Phase.Returning;
+            if(presentation is not null&&CurrentAfterNativeRefresh(refreshNativeVisible)) State=Phase.WaitingForMenuAck;
+            else ReturnAutomatic(); // Revokes/nulls the holder before any automatic cleanup.
         }
         if (State == Phase.WaitingForMenuAck && Settled())
-            State = CurrentPresentation() ? Phase.Menu : Phase.Returning;
+        {
+            if(CurrentAfterNativeRefresh(refreshNativeVisible)) State=Phase.Menu;
+            else ReturnAutomatic();
+        }
         if (State == Phase.Returning)
         {
             // Failed delivery still belongs to our exact launcher and may have

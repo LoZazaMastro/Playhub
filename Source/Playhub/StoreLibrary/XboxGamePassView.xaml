@@ -1,0 +1,29 @@
+<UserControl
+    x:Class="Playhub.StoreLibrary.XboxGamePassView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    HorizontalContentAlignment="Stretch" Tag="noloc">
+    <StackPanel Spacing="16">
+        <TextBlock x:Name="Description" Style="{StaticResource PlayhubBodyTextStyle}" TextWrapping="Wrap" />
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <AutoSuggestBox x:Name="Search" QueryIcon="Find" TextChanged="SearchChanged" MinWidth="0" />
+            <Button x:Name="Refresh" Grid.Column="1" Click="RefreshClicked" Style="{StaticResource PlayhubSecondaryButtonStyle}" />
+        </Grid>
+        <InfoBar x:Name="Status" IsOpen="False" IsClosable="False" />
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <StackPanel Spacing="4">
+                <TextBlock x:Name="Summary" Style="{StaticResource PlayhubBodyTextStyle}" TextWrapping="Wrap" />
+                <TextBlock x:Name="CacheDate" FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
+            </StackPanel>
+            <ProgressRing x:Name="Loading" Grid.Column="1" Width="24" Height="24" IsActive="False" />
+        </Grid>
+        <StackPanel x:Name="Cards" HorizontalAlignment="Stretch" />
+        <StackPanel x:Name="Empty" Spacing="8" Padding="24,32" HorizontalAlignment="Center">
+            <FontIcon Glyph="&#xE7FC;" FontSize="32" Opacity="0.55" />
+            <TextBlock x:Name="EmptyTitle" FontSize="18" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
+            <TextBlock x:Name="EmptyBody" Style="{StaticResource PlayhubBodyTextStyle}" TextAlignment="Center" MaxWidth="480" TextWrapping="Wrap" />
+        </StackPanel>
+    </StackPanel>
+</UserControl>

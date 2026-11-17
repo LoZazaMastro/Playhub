@@ -141,6 +141,11 @@ export interface LosslessStatus {
   multiplier?: number;
   hotkey?: string;
   scaling_active?: boolean;
+  scaling_requested?: boolean;
+  capture_active?: boolean;
+  capture_state?: "active" | "suspended" | "pending" | "failed" | "inactive" | "unknown";
+  control_token?: string;
+  control_busy?: boolean;
   settings_found?: boolean;
   settings?: LosslessProfileSettings;
   runtime?: Record<string, any>;
@@ -152,6 +157,14 @@ export interface LosslessStatus {
     reported_at?: string;
   };
   can_scale?: boolean;
+}
+export interface LosslessCommandResult {
+  ok: boolean;
+  message?: string;
+  control_token?: string;
+  control_busy?: boolean;
+  active?: boolean;
+  runtime?: Record<string, any>;
 }
 export interface LosslessProfileSettings {
   activation_delay_ms: number;
@@ -285,10 +298,12 @@ export const setTdp = (watts: number) => {
 };
 
 // Lossless Scaling
-export const getLosslessStatus = () => call<[], LosslessStatus>("get_lossless_status");
+export const getLosslessStatus = (resolve_token?: string) =>
+  call<[{ resolve_token?: string }], LosslessStatus>("get_lossless_status", { resolve_token });
 export const launchLossless = () => call<[], { ok: boolean; running: boolean; message: string }>("launch_lossless");
-export const setLosslessScaling = (enabled: boolean) =>
-  call<[{ enabled: boolean }], { ok: boolean; active: boolean; message: string }>("set_lossless_scaling", { enabled });
+export const setLosslessScaling = (enabled: boolean, expected_control_token: string, expected_app_id: number) =>
+  call<[{ enabled: boolean; expected_control_token: string; expected_app_id: number }],
+    LosslessCommandResult>("set_lossless_scaling", { enabled, expected_control_token, expected_app_id });
 export const setSteamOverlayActive = (
   active: boolean,
   overlayPid = 0,
@@ -309,10 +324,10 @@ export const setSteamOverlayActive = (
     app_id: appId,
     user_initiated: userInitiated,
   });
-export const setLosslessSetting = (key: string, value: string | number | boolean) =>
-  call<[{ key: string; value: string | number | boolean }], any>(
+export const setLosslessSetting = (key: string, value: string | number | boolean, expected_control_token: string, expected_app_id: number) =>
+  call<[{ key: string; value: string | number | boolean; expected_control_token: string; expected_app_id: number }], LosslessCommandResult>(
     "set_lossless_setting",
-    { key, value },
+    { key, value, expected_control_token, expected_app_id },
   );
 export const getLosslessProfile = (appId: number, title: string) =>
   call<[{ app_id: number; title: string }], LosslessGameProfile>(

@@ -29,6 +29,19 @@ internal sealed class SteamInputSessionOutput(Func<IGuardedXboxRelayOutput> crea
             return !disposed && ReferenceEquals(output, held) && neutral;
         }
     }
+    internal ReaderBinding? ReleasedReader => current is { Released:true,ReleaseConfirmed:true } reader ? reader.Binding : null;
+    internal bool MatchesSession(SteamRawInputRelayTrial.SessionBinding binding) => original is { } held
+        && held.SameRetainedSession(binding) && held.Source == binding.Source;
+    internal bool RebindWindow(SteamRawInputRelayTrial.ReaderOutcome stopped,SteamRawInputRelayTrial.SessionBinding next,long epoch,Func<bool> scopeCurrent)
+    {
+        var reader=current;var held=original;
+        bool Exact()=>!disposed&&reader is {Released:true,ReleaseConfirmed:true}&&ReferenceEquals(current,reader)
+            &&original==held&&held is {} prior&&prior.SameGameLifetime(next)&&next.Valid&&epoch>lastEpoch
+            &&stopped.CanResume&&reader.Binding.Session==prior&&reader.Binding.ReaderPid==stopped.ReaderPid
+            &&reader.Binding.ReaderBirth==stopped.ReaderBirth&&reader.Binding.Epoch==stopped.Epoch&&lastEpoch==stopped.Epoch;
+        if(!Exact()||!NeutralHeld||!scopeCurrent()||!Exact())return false;
+        original=next;return true;
+    }
     internal ReaderLease? Borrow(ReaderBinding binding, Func<bool> canForward, Func<RelayExit?>? readSubmitPause = null)
     {
         if (disposed || !binding.Valid || current is { ReleaseConfirmed: false } || binding.Epoch <= lastEpoch

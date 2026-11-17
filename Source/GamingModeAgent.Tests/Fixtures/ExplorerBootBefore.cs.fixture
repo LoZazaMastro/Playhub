@@ -1,0 +1,64 @@
+// Production regression baseline before the Explorer boot-readiness fix.
+public bool StartExplorer(bool background = false)
+	{
+		try
+		{
+			int upgraded = Playhub.Shared.DeckyStartupGuard.UpgradeExistingAutostart();
+			if (upgraded > 0) _logger.Info($"Protected {upgraded} Decky startup entry/entries against duplicate launches.");
+		}
+		catch (Exception exception) { _logger.Error("Could not protect Decky autostart.", exception); }
+		if (IsExplorerShellRunning())
+		{
+			return true;
+		}
+		try
+		{
+			using Process? explorer = Process.Start(new ProcessStartInfo
+			{
+				FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"),
+				UseShellExecute = true,
+				WindowStyle = background ? ProcessWindowStyle.Hidden : ProcessWindowStyle.Normal
+			});
+			for (int attempt = 0; attempt < 40; attempt++)
+			{
+				if (IsExplorerShellRunning())
+				{
+					_logger.Info("Explorer desktop shell is running.");
+					return true;
+				}
+				Thread.Sleep(100);
+			}
+			_logger.Error("Explorer launched but its desktop shell did not become ready.");
+			return false;
+		}
+		catch (Exception exception)
+		{
+			_logger.Error("Failed to start Explorer.", exception);
+			return false;
+		}
+	}
+public async Task ApplyBootModeAsync(bool isShellHost)
+	{
+		_logger.Info(isShellHost ? "Applying boot mode from Gaming Mode shell." : "Applying boot mode from startup agent.");
+		ModeConfig config = _store.LoadConfig();
+		ModeKind? requestedNextBootMode = config.NextBootMode;
+		ModeKind mode = requestedNextBootMode ?? config.DefaultMode;
+		if (SafeModeGuard.ShouldForceDesktop(_paths))
+		{
+			SafeModeGuard.ApplySafeDefaults(config);
+			_store.SaveConfig(config);
+			_shellTools.RestoreExplorerShell();
+			requestedNextBootMode = null;
+			mode = ModeKind.Desktop;
+			_logger.Info("Safe desktop bypass was triggered.");
+		}
+		if (config.NextBootMode.HasValue)
+		{
+			config.NextBootMode = null;
+			_store.SaveConfig(config);
+		}
+		await ApplyModeAsync(mode, $"Applied {mode} at login", interactive: false, restoreStartupApps: false);
+		ModeKind modeKind = ((!requestedNextBootMode.HasValue) ? mode : config.DefaultMode);
+		_shellTools.SetShellForMode(modeKind);
+		_logger.Info($"Future sign-in shell set to {modeKind}.");
+	}

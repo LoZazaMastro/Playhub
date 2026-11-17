@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -13,6 +13,9 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(PlayhubAppContainerBridgeSha256)' != ''">
     <AssemblyMetadata Include="PlayhubAppContainerBridgeSha256" Value="$(PlayhubAppContainerBridgeSha256)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlayhubExplorerFreeUwpActivation)' == 'true' and '$(PlayhubSteamCompanionSha256)' != ''">
+    <AssemblyMetadata Include="PlayhubExplorerFreeUwpActivation" Value="true" />
   </ItemGroup>
   <ItemGroup Condition="'$(PlayhubSteamCompanionSha256)' != ''">
     <AssemblyMetadata Include="PlayhubSteamCompanionSha256" Value="$(PlayhubSteamCompanionSha256)" />
@@ -41,12 +44,15 @@
   <ItemGroup><Compile Include="../Shared/EpicLaunchWindows.cs" Link="EpicLaunchWindows.cs" /></ItemGroup>
   <ItemGroup><Compile Include="../Shared/EpicLaunchCatalog.cs" Link="EpicLaunchCatalog.cs" /></ItemGroup>
   <ItemGroup><Compile Include="../Shared/EpicLaunchPayload.cs" Link="EpicLaunchPayload.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/StoreGdkLaunchDefinition.cs" Link="StoreGdkLaunchDefinition.cs" /></ItemGroup>
   <ItemGroup>
     <Content Include="Native\InputFencePrototype\PlayhubInputFence.dll" Link="PlayhubInputFence.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <Content Include="Native\InputFencePrototype\MinHook\LICENSE.txt" Link="XboxSession\licenses\InputFence-MinHook.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
   <Target Name="VerifyInputFencePrototype" BeforeTargets="PrepareForBuild">
     <GetFileHash Files="$(MSBuildProjectDirectory)\Native\InputFencePrototype\PlayhubInputFence.dll" Algorithm="SHA256"><Output TaskParameter="Items" ItemName="_InputFenceHash" /></GetFileHash>
-    <Error Condition="'%(_InputFenceHash.FileHash)' != 'C2EDEFEC2BAE213A1C9CAEC6837E6E9FEF66ECC9248AC8680A6A3882B312DBF4'" Text="The input fence prototype DLL is not the reviewed pinned build." />
+    <Error Condition="'%(_InputFenceHash.FileHash)' != '56B3CAA72A789E00DA92DFE04C4B1B4E116188E54909803A3ACDCF49194F260C'" Text="The input fence prototype DLL is not the reviewed pinned build." />
   </Target>
+
+  <ItemGroup><Compile Include="../Playhub.GameSession/UwpStoreCompanionBinding.cs" Link="UwpStoreCompanionBinding.cs" /><Compile Include="../Shared/StoreLibraryModels.cs" Link="StoreLibraryModels.cs" /><Compile Include="../Shared/StorePrivateLaunchModels.cs" Link="StorePrivateLaunchModels.cs" /><Compile Include="../Playhub.StoreHost/StoreLibraryService.cs" Link="StoreLibraryService.cs" /></ItemGroup>
 </Project>

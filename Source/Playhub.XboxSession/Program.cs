@@ -135,6 +135,7 @@ internal sealed class HandoffRuntime(GdkLaunchPlan plan, string aumid, IUwpRunti
     private bool _observed;
     public long Now => _runtime.Now;
     public bool ShellReady => _runtime.ShellReady;
+    public bool PrepareDirectActivation() => _runtime.PrepareDirectActivation();
     public void StartShell() => _runtime.StartShell();
     public void Delay(int milliseconds) => _runtime.Delay(milliseconds);
     public void Log(string message) => PackagedLaunchLog.Info(message);

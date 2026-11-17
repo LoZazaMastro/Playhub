@@ -28,6 +28,10 @@ try
     Check(GamingModeInstallationPolicy.HasSameAgentPayload(package, installed), "Successful update has exact payload bytes after the process exits");
     GamingModeAgentUpdate.Ensure(package, installed, script, () => throw new InvalidOperationException("Identical bytes must skip"));
     Check(starts == 1, "Identical bytes skip the installer regardless of timestamps or version");
+    var restarted = new FakeProcess(true, 0, null);
+    GamingModeAgentUpdate.Ensure(package, installed, script, () => { starts++; return restarted; }, 17, restartRequired: true);
+    Check(starts == 2 && restarted.Disposed && restarted.WaitBudget == 17,
+        "An exact agent stopped before extraction uses the normal installer/restart even when payload bytes match");
     Reset(); var timeout = new FakeProcess(false, 0, null);
     Fails(GamingModeUpdateFailure.TimedOut, () => timeout, "An installer timeout is a setup failure");
     Check(timeout.Aborted && timeout.ExitReads == 0 && timeout.Disposed,

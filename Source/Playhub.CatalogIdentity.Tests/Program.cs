@@ -88,19 +88,17 @@ await Run("Unknown trusted marker cannot fall back to an inherited catalog repos
     Check(loaded.Single(p => p.IsInstalled).RepositorySlug == "another/windows-fork",
         "A trusted marker miss fell back to the inherited repository.");
 });
-await Run("Local Discord candidate is separate and has no fictional release repository", async () =>
+await Run("Retired Discord stays absent even with a complete stale local bundle", async () =>
 {
     using var files = new Fixture("another-plugin", "Another plugin", "", "");
     files.DiscordBundle();
+    var retired = catalog.Plugins.Single(p => p.Repository == "LoZazaMastro/Playhub-Discord") with { Active = false };
+    Check(!retired.Active, "The canonical catalog must retain the inactive Discord tombstone.");
     var loaded = await new PluginCatalogService().LoadAsync(files.Bundled, files.Installed,
-        catalog with { Plugins = Array.Empty<RemotePluginCatalogEntry>() });
-    var discord = loaded.Single(p => p.CatalogSource == "bundled-local");
-    Check(discord.Name == "Discord" && discord.FolderName == "playhub-discord" && discord.Version == "1.0.0" &&
-        discord.RepositorySlug == "" && discord.RepositoryUrl == "" && discord.CatalogReleaseZipUrl is null &&
-        discord.IsPlayhubPlugin && !discord.IsInstalled && discord.InstallerZip is not null,
-        "The local candidate borrowed a public release identity or did not expose its bundle.");
-    Check(PluginCatalogService.LocalizedShortDescription(discord, "it") == discord.ShortDescription,
-        "Original English developer copy was translated.");
+        catalog with { Plugins = new[] { retired } });
+    Check(loaded.All(p => p.CatalogSource != "bundled-local" && p.RepositorySlug != retired.Repository) &&
+        loaded.All(p => p.Name != "Discord") && loaded.Single().IsInstalled,
+        "A stale archive resurrected the retired catalog entry.");
 });
 await Run("Installed Playhub Discord fork retains local identity despite upstream credits", async () =>
 {
@@ -110,7 +108,7 @@ await Run("Installed Playhub Discord fork retains local identity despite upstrea
     var upstream = windows with { Name = "Steamcord", Repository = "Necrosiak/Steamcord", InstallFolder = "Steamcord" };
     var loaded = await new PluginCatalogService().LoadAsync(files.Bundled, files.Installed,
         catalog with { Plugins = new[] { upstream } });
-    Check(loaded.Count(p => p.IsInstalled) == 1 && loaded.Single(p => p.IsInstalled).CatalogSource == "bundled-local" &&
+    Check(loaded.Count(p => p.IsInstalled) == 1 && loaded.Single(p => p.IsInstalled).CatalogSource == "installed" &&
         !loaded.Single(p => p.RepositorySlug == upstream.Repository).IsInstalled,
         "The installed Windows fork was mistaken for the original Steamcord plugin.");
 });
@@ -122,10 +120,10 @@ foreach (var installedName in new[] { "Discord", "disCORD", "renamed-discord" })
         files.DiscordBundle(); files.AddPlugin(installedName, "Discord", packageName: "playhub-discord");
         var loaded = await new PluginCatalogService().LoadAsync(files.Bundled, files.Installed,
             catalog with { Plugins = Array.Empty<RemotePluginCatalogEntry>() });
-        var actual = loaded.Single(p => p.CatalogSource == "bundled-local");
+        var actual = loaded.Single(p => p.IsInstalled && p.Name == "Discord");
         Check(loaded.Count(p => p.IsInstalled) == 1 && actual.IsInstalled && actual.FolderName == installedName &&
             actual.InstalledFolder == Path.Combine(files.Installed, installedName) && actual.InstalledVersion == "0.9.0" &&
-            actual.RepositorySlug == "" && actual.HasUpdate,
+            actual.CatalogSource == "installed" && !actual.HasUpdate && actual.InstallerZip is null,
             "The installed fork was duplicated, renamed or assigned the upstream release channel.");
     });
 }
@@ -136,7 +134,7 @@ await Run("One verified Discord fork wins without touching an unrelated canonica
     files.AddPlugin("playhub-discord", "Other software", packageName: "another-package");
     var loaded = await new PluginCatalogService().LoadAsync(files.Bundled, files.Installed,
         catalog with { Plugins = Array.Empty<RemotePluginCatalogEntry>() });
-    var actual = loaded.Single(p => p.CatalogSource == "bundled-local");
+    var actual = loaded.Single(p => p.IsInstalled && p.Name == "Discord");
     Check(actual.IsInstalled && actual.FolderName == "Discord" && loaded.Count(p => p.IsInstalled) == 2 &&
         loaded.Single(p => p.FolderName == "playhub-discord").CatalogSource == "installed",
         "An unrelated occupied canonical folder was adopted or overwritten.");
@@ -157,7 +155,7 @@ await Run("Discord display name and an unknown package never adopt the Windows f
     files.DiscordBundle(); files.DiscordPackage("another-discord");
     var loaded = await new PluginCatalogService().LoadAsync(files.Bundled, files.Installed,
         catalog with { Plugins = Array.Empty<RemotePluginCatalogEntry>() });
-    Check(!loaded.Single(p => p.CatalogSource == "bundled-local").IsInstalled &&
+    Check(loaded.All(p => p.CatalogSource != "bundled-local") &&
         loaded.Single(p => p.IsInstalled).FolderName == "Discord",
         "An unknown package was adopted from its display name alone.");
 });
@@ -179,7 +177,7 @@ await Run("A linked canonical Discord folder is never adopted or overwritten", a
     Directory.CreateSymbolicLink(Path.Combine(files.Installed, "playhub-discord"), Path.Combine(files.Installed, "Discord"));
     var loaded = await new PluginCatalogService().LoadAsync(files.Bundled, files.Installed,
         catalog with { Plugins = Array.Empty<RemotePluginCatalogEntry>() });
-    var actual = loaded.Single(p => p.CatalogSource == "bundled-local");
+    var actual = loaded.Single(p => p.IsInstalled && p.FolderName == "Discord");
     Check(actual.IsInstalled && actual.FolderName == "Discord" &&
         actual.InstalledFolder != Path.Combine(files.Installed, "playhub-discord"),
         "A linked directory became the fork's update destination.");
@@ -214,7 +212,7 @@ await Run("Unrelated Discord name cannot claim the bundled Windows fork", async 
     files.DiscordBundle();
     var loaded = await new PluginCatalogService().LoadAsync(files.Bundled, files.Installed,
         catalog with { Plugins = Array.Empty<RemotePluginCatalogEntry>() });
-    Check(!loaded.Single(p => p.CatalogSource == "bundled-local").IsInstalled &&
+    Check(loaded.All(p => p.CatalogSource != "bundled-local") &&
         loaded.Single(p => p.IsInstalled).CatalogSource == "installed",
         "A shared display name claimed the bundled fork.");
 });
@@ -285,7 +283,7 @@ await Run("Published Discord replaces its local bundle and preserves Steamcord i
 {
     using var files = new Fixture("Discord", "Discord", "Necrosiak/Steamcord", "");
     files.DiscordBundle(); files.DiscordPackage();
-    var published = catalog.Plugins.Single(p => p.Repository == "LoZazaMastro/Playhub-Discord");
+    var published = catalog.Plugins.Single(p => p.Repository == "LoZazaMastro/Playhub-Discord") with { Active = true };
     var upstream = windows with { Name = "Steamcord", Repository = "Necrosiak/Steamcord", InstallFolder = "Steamcord" };
     var loaded = await new PluginCatalogService().LoadAsync(files.Bundled, files.Installed,
         catalog with { Plugins = new[] { published, upstream } });
@@ -304,7 +302,7 @@ await Run("Published Discord adopts a verified renamed folder without a local bu
 {
     using var files = new Fixture("renamed-discord", "Discord", "Necrosiak/Steamcord", "");
     files.DiscordPackage();
-    var published = catalog.Plugins.Single(p => p.Repository == "LoZazaMastro/Playhub-Discord");
+    var published = catalog.Plugins.Single(p => p.Repository == "LoZazaMastro/Playhub-Discord") with { Active = true };
     var loaded = await new PluginCatalogService().LoadAsync(files.Bundled, files.Installed,
         catalog with { Plugins = new[] { published } });
     Check(loaded.Count == 1 && loaded.Single().RepositorySlug == published.Repository &&
@@ -315,26 +313,26 @@ await Run("Published Discord never adopts an unrelated Discord package", async (
 {
     using var files = new Fixture("Discord", "Discord", "", "");
     files.DiscordPackage("another-discord");
-    var published = catalog.Plugins.Single(p => p.Repository == "LoZazaMastro/Playhub-Discord");
+    var published = catalog.Plugins.Single(p => p.Repository == "LoZazaMastro/Playhub-Discord") with { Active = true };
     var loaded = await new PluginCatalogService().LoadAsync(files.Bundled, files.Installed,
         catalog with { Plugins = new[] { published } });
     Check(!loaded.Single(p => p.RepositorySlug == published.Repository).IsInstalled,
         "A shared display name adopted an unrelated client.");
 });
-await Run("Pinned Discord survives shuffled featured selection with three suite plugins", () =>
+await Run("Pinned suite item survives shuffled featured selection with three suite plugins", () =>
 {
     var suite = Enumerable.Range(0, 12).Select(i => new DeckyPluginInfo {
         Name = "Suite " + i, RepositorySlug = "owner/suite" + i, IsPlayhubPlugin = true }).ToArray();
-    var discord = new DeckyPluginInfo { Name = "Discord", RepositorySlug = "LoZazaMastro/Playhub-Discord",
-        IsPlayhubPlugin = true, Keywords = "discord voice featured" };
+    var pinned = new DeckyPluginInfo { Name = "Pinned suite item", RepositorySlug = "owner/pinned-suite",
+        IsPlayhubPlugin = true, Keywords = "featured" };
     var external = Enumerable.Range(0, 8).Select(i => new DeckyPluginInfo {
         Name = "Decky " + i, RepositorySlug = "owner/decky" + i, IsPlayhubPlugin = false }).ToArray();
     var random = new Random(8417);
     for (var pass = 0; pass < 1000; pass++)
     {
-        var input = suite.Append(discord).Concat(external).OrderBy(_ => random.Next()).ToArray();
+        var input = suite.Append(pinned).Concat(external).OrderBy(_ => random.Next()).ToArray();
         var selected = PluginFeaturedSelection.Select(input);
-        Check(selected.Count == 8 && selected.First() == discord &&
+        Check(selected.Count == 8 && selected.First() == pinned &&
             selected.Count(p => p.IsPlayhubPlugin) == 3 &&
             selected.Select(PluginChronology.Identity).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 8,
             "Featured rotation lost the pin, suite quota or unique identity.");
@@ -342,7 +340,7 @@ await Run("Pinned Discord survives shuffled featured selection with three suite 
     Check(!PluginFeaturedSelection.IsPinned(new DeckyPluginInfo { Keywords = "notfeatured featured-suffix" }) &&
         PluginFeaturedSelection.IsPinned(new DeckyPluginInfo { Keywords = "FEATURED" }),
         "Pin matching must use an exact case-insensitive keyword.");
-    Check(PluginFeaturedSelection.Select(new[] { discord, discord }).Count == 1,
+    Check(PluginFeaturedSelection.Select(new[] { pinned, pinned }).Count == 1,
         "A pinned duplicate created two slides.");
     return Task.CompletedTask;
 });
@@ -357,6 +355,15 @@ await Run("Weather candidate keeps its actual newer bundled version", async () =
         catalog with { Plugins = new[] { weather } });
     Check(loaded.Single().Version == "2.1.1" && loaded.Single().HasUpdate,
         "Old remote catalog metadata masked the local Weather fix.");
+});
+await Run("Featured exclusions preserve browse entries even when pinned or the only candidate", () =>
+{
+    var browser = new DeckyPluginInfo { RepositorySlug = "jessebofill/DeckWebBrowser", CatalogSource = "decky-store", CatalogPluginId = 59, Keywords = "featured", Name = "Web Browser" };
+    Check(PluginFeaturedSelection.Select(new[] { browser }).Count == 0, "A sole pinned browser re-entered the featured fallback.");
+    var remoteExcluded = new DeckyPluginInfo { RepositorySlug = "example/plugin", Keywords = "FEATURED EXCLUDE-FEATURED", IsPlayhubPlugin = false };
+    Check(PluginFeaturedSelection.Select(new[] { remoteExcluded }).Count == 0, "Remote featured exclusion was ignored.");
+    Check(browser.Name == "Web Browser" && browser.CatalogPluginId == 59, "Featured filtering changed the browse identity.");
+    return Task.CompletedTask;
 });
 Console.WriteLine($"{total - failures}/{total} passed; {failures} failed.");
 return failures == 0 ? 0 : 1;

@@ -13,11 +13,13 @@ import shortcuts from "../assets/plugin-covers/shortcuts.jpg";
 import themeDeck from "../../Playhub/Assets/PluginImages/ThemeDeck.jpg";
 import trailerHero from "../../Playhub/Assets/PluginImages/TrailerHero.jpg";
 import weather from "../../Playhub/Assets/PluginImages/Weather.jpg";
+import discord from "../../Playhub/Assets/PluginImages/Discord.png";
 import { isSafeHttpsUrl, isSafeRepository } from "./pluginStoreCatalog";
 import deckyStoreBadge from "../assets/source-badges/decky-store.png";
 import playhubBadge from "../assets/source-badges/playhub.png";
 
 const PLAYHUB_COVERS: Record<string, string> = {
+  "lozazamastro/playhub-discord": discord,
   "lozazamastro/launch-curtain": launchCurtain,
   "lozazamastro/news": news,
   "lozazamastro/now-playing": nowPlaying,

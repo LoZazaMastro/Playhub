@@ -1,5 +1,5 @@
 import { DialogButton, DropdownItem, ToggleField } from "@decky/ui";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { call } from "../controlBackend";
 import { controlLocale } from "../controlCenterLocale";
 import { shaderCacheCopy } from "./shaderCacheLocale";
@@ -45,7 +45,9 @@ const copy: Record<string, readonly string[]> = {
 };
 const aliases: Record<string, string> = { italian: "it", german: "de", spanish: "es", latam: "es", french: "fr", brazilian: "pt", portuguese: "pt", russian: "ru", ukrainian: "uk", japanese: "ja", koreana: "ko", schinese: "zh", tchinese: "zh", hindi: "hi" };
 
-export function ShaderCompatibility({ appId, locale }: { appId: number; locale: string }) {
+export function ShaderCompatibility({ appId, locale, renderSection }: {
+  appId: number; locale: string; renderSection?: (body: ReactNode) => ReactNode;
+}) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [report, setReport] = useState<Report>();
@@ -61,7 +63,9 @@ export function ShaderCompatibility({ appId, locale }: { appId: number; locale: 
     const generation = ++epoch.current;
     setInventory(undefined); setReport(undefined);
     void inspect(generation);
-    return () => { mounted.current = false; ++epoch.current; };
+    const onFocus = () => { if (mounted.current && !running.current) void inspect(epoch.current); };
+    window.addEventListener("focus", onFocus);
+    return () => { mounted.current = false; ++epoch.current; window.removeEventListener("focus", onFocus); };
   }, [appId]);
   const text = shaderCacheCopy(locale);
   const [check, eligible, unsupported, unknown, listed, noAdapter] = copy[aliases[locale] ?? locale.split(/[-_]/)[0]] ?? copy.en;
@@ -100,13 +104,16 @@ export function ShaderCompatibility({ appId, locale }: { appId: number; locale: 
     finally { if (current(generation)) { running.current = false; setBusy(false); } }
   }
   const driver = inventory?.nvidia;
+  // Use the same driver capability and server-issued proof required by Apply.
+  // Cache inventory or a GPU brand/support report alone cannot expose a control.
+  if (driver?.available !== true || typeof driver.token !== "string" || !driver.token) return null;
   const dirty = driver?.available && (enabled !== driver.enabled || limit !== (driver.defaultLimit ? "default" : driver.limit));
   const options: {data:number|"default";label:string}[] = [{data:"default",label:`${text.driverDefault}${driver?.driverDefault !== undefined ? ` · ${shaderLimit(driver.driverDefault)}` : ""}`},
     ...[1024,4096,10240,16384,102400].map(value => ({data:value,label:shaderLimit(value)}))];
   // Preserve custom/unknown limits without silently selecting another preset.
   if (typeof limit === "number" && !options.some(value => value.data === limit)) options.push({data:limit,label:`${text.current} · ${shaderLimit(limit)}`});
 
-  return <div className="qsCardBody">
+  const body = <div className="qsCardBody">
     <DialogButton disabled={busy} onClick={() => void inspect()}>{busy ? controlLocale(locale).loading : text.refresh}</DialogButton>
     {failed && <div className="qsMeta" role="status">{controlLocale(locale).unavailable}</div>}
     {inventory && <div aria-live="polite" style={{display:"grid",gap:10}}>
@@ -133,4 +140,5 @@ export function ShaderCompatibility({ appId, locale }: { appId: number; locale: 
       {appId !== 0 && <div>{report.game.state === "provider_listed" ? `${report.game.title} — ${listed}` : unknown}</div>}
     </div>}
   </div>;
+  return renderSection ? renderSection(body) : body;
 }

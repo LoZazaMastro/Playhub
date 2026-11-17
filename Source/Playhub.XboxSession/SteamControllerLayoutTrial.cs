@@ -43,7 +43,7 @@ internal static class SteamControllerLayoutTrial
         if (!typeof(SteamControllerLayoutTrial).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
             .Any(item => item.Key == Feature && item.Value == "true")) return null;
 
-        return new Worker(token => Run(steam, gameId, target, parent, foreground, overlay, token));
+        return new Worker(token => RunPreference(steam, gameId, target, parent, foreground, overlay, token));
     }
 
     // The shared relay is admitted only by the same live physical Steam
@@ -61,7 +61,7 @@ internal static class SteamControllerLayoutTrial
             {
                 if (cancellation.IsCancellationRequested) return;
                 using var target = new RetainedWin32InputTarget(game,pid,birth);
-                if (target.IsCurrent()) Run(steam,gameId,target,parent,foreground,overlay,cancellation,requireOwnedRelay:true,readerBootstrap:readerBootstrap);
+                if (target.IsCurrent()) RunPreference(steam,gameId,target,parent,foreground,overlay,cancellation,requireOwnedRelay:true,readerBootstrap:readerBootstrap);
             }
             catch (Exception error) { PackagedLaunchLog.Info($"Win32 Steam Controller relay ended: {error.GetType().Name}."); }
         });
@@ -280,9 +280,32 @@ internal static class SteamControllerLayoutTrial
         }
     }
 
+    private static void RunPreference(TrustedSteamFiles steam, ulong gameId, IRetainedSteamGameTarget target,
+        Process parent, Func<bool> foreground, Func<bool> overlay, CancellationToken cancellation,
+        bool requireOwnedRelay = false, SteamTrackedWrapperChain? readerBootstrap = null)
+    {
+        try
+        {
+            var preference = new SteamControllerTranslationPreference();
+            SteamControllerTranslationLifecycle.Run(
+                () => !cancellation.IsCancellationRequested && !parent.HasExited && target.IsCurrent()
+                    && (readerBootstrap is null || readerBootstrap.Current), preference.Read,
+                (enabled, current) =>
+                {
+                    bool drained = false;
+                    Run(steam, gameId, target, parent, foreground, overlay, cancellation,
+                        requireOwnedRelay, readerBootstrap, enabled, current, value => drained = value);
+                    return drained;
+                },
+                ms => cancellation.WaitHandle.WaitOne(ms));
+        }
+        catch (Exception error) { PackagedLaunchLog.Info($"Steam Controller preference worker stopped: {error.GetType().Name}."); }
+    }
+
     private static void Run(TrustedSteamFiles steam, ulong gameId, IRetainedSteamGameTarget target,
         Process parent, Func<bool> foreground, Func<bool> overlay, CancellationToken cancellation, bool requireOwnedRelay = false,
-        SteamTrackedWrapperChain? readerBootstrap = null)
+        SteamTrackedWrapperChain? readerBootstrap = null, bool translationEnabled = true, Func<bool>? translationCurrent = null,
+        Action<bool>? onRelayDrained = null)
     {
         try
         {
@@ -301,6 +324,9 @@ internal static class SteamControllerLayoutTrial
                 return;
             }
 
+            using var xboxProfile = new SteamXboxProfileWindow(target,PackagedLaunchLog.Info);
+            var originalForeground = foreground;
+            foreground = () => originalForeground() || xboxProfile.Matches(GetForegroundWindow());
             using var mutex = new Mutex(false, LayoutMutexName);
             bool acquired;
             try { acquired = mutex.WaitOne(0); }
@@ -312,16 +338,27 @@ internal static class SteamControllerLayoutTrial
             }
             if (!acquired) return;
             SteamRawInputRelayTrial? relay = null;
+            bool commandCleaned = true;
             try
             {
                 using var endpoint = SteamEndpoint.Open(steamRoot, steam.UnchangedRoot);
+                if (!translationEnabled)
+                {
+                    ServeOrdinaryMenus(gameId, target.Pid, target.Creation, endpoint,
+                        () => !cancellation.IsCancellationRequested && !parent.HasExited && target.IsCurrent()
+                            && endpoint.Current && (translationCurrent?.Invoke() ?? true), foreground, cancellation);
+                    commandCleaned = endpoint.NoOwnedOverride;
+                    return;
+                }
                 using var prototypeFence = ExperimentalInputFence.TryStart(steam,gameId,target,parent,cancellation,()=>endpoint.Current);
                 using var liveSource = SteamControllerSourceProbe.LiveSource.TryOpen(steam.ComponentPaths.Last());
                 if (liveSource is null)
                 {
                     ServeOrdinaryMenus(gameId,target.Pid,target.Creation,endpoint,
-                        ()=>!cancellation.IsCancellationRequested&&!parent.HasExited&&target.IsCurrent()&&endpoint.Current,
+                        ()=>!cancellation.IsCancellationRequested&&!parent.HasExited&&target.IsCurrent()&&endpoint.Current
+                            &&(translationCurrent?.Invoke()??true),
                         foreground,cancellation);
+                    commandCleaned = endpoint.NoOwnedOverride;
                     return;
                 }
                 bool relayPrepared = false;
@@ -330,6 +367,7 @@ internal static class SteamControllerLayoutTrial
                 bool Alive()
                 {
                     if (cancellation.IsCancellationRequested) return FailRetained("layout-cancelled");
+                    if (!(translationCurrent?.Invoke() ?? true)) return FailRetained("translation-preference-changed");
                     if (parent.HasExited) return FailRetained("wrapper-exited");
                     if (!target.IsCurrent()) return FailRetained("retained-target-not-current");
                     if (!endpoint.Current) return FailRetained("retained-steam-endpoint-not-current");
@@ -341,6 +379,9 @@ internal static class SteamControllerLayoutTrial
                 bool ExactScope() => Alive() && foreground() && (SteamMirrorInputPresentationBridge.Available
                     ? !OpeningBlocks() : !overlay());
                 using var companion = Process.GetCurrentProcess();
+                string nativeVisibleSession=Playhub.Shared.SteamMirrorWireProtocol.Session(gameId,(uint)parent.Id,
+                    parent.StartTime.ToFileTimeUtc(),target.Pid,target.Creation,(uint)companion.Id,companion.StartTime.ToFileTimeUtc());
+                Playhub.Shared.SteamMirrorNativeVisibleDto? ReadNativeVisible()=>SteamMirrorInputPresentationBridge.ReadNativeVisible(nativeVisibleSession);
                 SteamInputOrderedIssuer? mirrorIssuer = null;
                 SteamRawInputRelayTrial.SessionBinding? mirrorBinding = null;
                 SteamRawInputRelayTrial.ReaderOutcome pausedReader = default;
@@ -350,6 +391,7 @@ internal static class SteamControllerLayoutTrial
                 var ordinaryMirror=new SteamOrdinaryMirrorMenuCycle(gameId,target.Pid,target.Creation);
                 TritonSource? connectedSource = null;
                 long resumeSampleEpoch=0;
+                var unadmittedRetry=new UnadmittedReaderRetry();
                 try
                 {
                 while (Alive())
@@ -432,6 +474,21 @@ internal static class SteamControllerLayoutTrial
                             continue;
                         }
                     }
+                    if(mirrorIssuer is not null&&mirrorBinding is {} stoppedBinding&&pausedReader.ReaderPid>0)
+                    {
+                        var original=SteamNativeVisibleInputCycle.ResumeStopped(pausedReader.Epoch,stoppedBinding,pausedReader,mirrorIssuer,Alive,
+                            ()=>relay?.NeutralHeld==true,ReadNativeVisible,()=>Environment.TickCount64,
+                            ms=>cancellation.WaitHandle.WaitOne(ms),cancellation,
+                            ()=>inventoryState.Source is not {} stoppedSource
+                                ||liveSource.Read(stoppedSource)==SteamControllerSourceProbe.ConnectionStatus.Disconnected);
+                        if(original is {} resumed)
+                        {
+                            if(!resumed)return;
+                            epochs.Reset();
+                            if(cancellation.WaitHandle.WaitOne(30))return;
+                            continue;
+                        }
+                    }
                     if(mirrorIssuer is not null&&mirrorBinding is {} heldBinding&&relay?.NeutralHeld==true&&pausedReader.CanResume
                         &&(OpeningBlocks()||pausedMirrorRead?.Invoke()?.Prepared(Environment.TickCount64)==true))
                     {
@@ -457,12 +514,14 @@ internal static class SteamControllerLayoutTrial
                         bool sourceDisconnected = false;
                         SteamRawInputRelayTrial.ReaderOutcome readerOutcome = default;
                         SteamNativeOverlayInputPresentationBridge.Command? nativeAdmission=null;
+                        Playhub.Shared.SteamMirrorNativeVisibleDto? nativeVisibleAdmission=null;
                         var initialConnection = new SteamControllerSourceProbe.InitialConnection(
                             () => liveSource.Current(inventoryState.Source.Value, initialProof.RawDevice));
                         var openingPause = new OpeningPause(gameId,target.Pid,target.Creation);
                         bool PauseSourceCurrent()=>Alive()&&!sourceLease.Revoked&&initialConnection.Current()&&Alive()&&!sourceLease.Revoked;
+                        bool NativeBootstrapScope()=>PauseSourceCurrent()&&GameWindowCurrent()&&PauseSourceCurrent()&&GameWindowCurrent();
                         bool GameWindowCurrent()=>GetForegroundWindow()==window
-                            &&(owner==target.Pid||SteamControllerUwpFrameWindow.Matches(window,target.Aumid))
+                            &&(owner==target.Pid||SteamControllerUwpFrameWindow.Matches(window,target.Aumid)||xboxProfile.Matches(window))
                             &&GetWindowThreadProcessId(window,out uint currentOwner)==thread&&currentOwner==owner
                             &&GetForegroundWindow()==window;
                         bool OwnsExactWindow()
@@ -480,7 +539,7 @@ internal static class SteamControllerLayoutTrial
                             }
                             bool exact=!sourceLease.Revoked&&initialConnection.Current()
                                 &&thread!=0&&owner!=0&&GetForegroundWindow()==window&&ReaderScope()
-                                &&(owner==target.Pid||SteamControllerUwpFrameWindow.Matches(window,target.Aumid))
+                                &&(owner==target.Pid||SteamControllerUwpFrameWindow.Matches(window,target.Aumid)||xboxProfile.Matches(window))
                                 &&GetForegroundWindow()==window
                                 &&GetWindowThreadProcessId(window,out uint currentOwner)==thread&&currentOwner==owner;
                             if(!exact&&openingVeto is {} witness)
@@ -490,7 +549,7 @@ internal static class SteamControllerLayoutTrial
 
                         bool MirrorGameForeground() => Alive() && foreground() && GetForegroundWindow()==window
                             && GetWindowThreadProcessId(window,out uint actualOwner)==thread && actualOwner==owner
-                            && (owner==target.Pid || SteamControllerUwpFrameWindow.Matches(window,target.Aumid))
+                            && (owner==target.Pid || SteamControllerUwpFrameWindow.Matches(window,target.Aumid) || xboxProfile.Matches(window))
                             && GetForegroundWindow()==window && Alive();
                         SteamMirrorInputPresentation? ReadMirror() => SteamMirrorInputCycle.ReadCurrent(gameId,target.Pid,
                             target.Creation,MirrorGameForeground);
@@ -503,9 +562,11 @@ internal static class SteamControllerLayoutTrial
                                 ? OpeningBlocks() : overlay();
                             bool gameForeground = foreground();
                             if (sourceLease.Revoked || !Alive()) return null;
+                            if(SteamNativeVisibleInputCycle.Pending(ReadNativeVisible,gameId,target.Pid,target.Creation,()=>Environment.TickCount64,out var original))
+                            {nativeVisibleAdmission??=original;return RelayExit.OverlayOpened;}
                             if(SteamNativeOverlayInputCycle.Pending(gameId,target.Pid,target.Creation,out var native))
                             {nativeAdmission??=native;return RelayExit.OverlayOpened;}
-                            return menu ? RelayExit.OverlayOpened : !gameForeground ? RelayExit.FocusLost : null;
+                            return ReaderWindowPause(menu,gameForeground,GameWindowCurrent());
                         }
 
                         CommandResult Send(uint context, Func<bool>? guard)
@@ -531,6 +592,8 @@ internal static class SteamControllerLayoutTrial
                                 if(mirrorIssuer is not null&&!SteamMirrorInputCycle.Release(mirrorIssuer,()=>Environment.TickCount64,ms=>Thread.Sleep(ms)))return;
                                 mirrorIssuer=null;
                             }
+                            var readerBeforeProbe=pausedReader;var mirrorReadBeforeProbe=pausedMirrorRead;
+                            var bindingBeforeProbe=mirrorBinding;
                             mirrorBinding=binding;
                             bool PhysicalCurrent()=>Alive()&&sourceLease.Current(SteamInputEvidence.Read(inventory))&&initialConnection.Current();
                             bool newIssuer=mirrorIssuer is null;
@@ -545,7 +608,9 @@ internal static class SteamControllerLayoutTrial
                                     &&native.BrowserId==command.BrowserId&&native.NativeAppId==command.NativeAppId
                                     &&native.ObservedGameId==command.ObservedGameId&&native.GameId==command.FullGameId
                                     &&command.Serial>=native.AdmissionSerial&&endpoint.SameSteam(command.SteamPid,command.SteamBirth)
-                                    &&SteamNativeOverlayInputPresentationBridge.AuthorityCurrent(command)&&MirrorGameForeground());
+                                    &&SteamNativeOverlayInputPresentationBridge.AuthorityCurrent(command)&&MirrorGameForeground(),
+                                nativeVisible=>SteamNativeVisibleInputCycle.MatchesLease(ReadNativeVisible(),nativeVisible,Environment.TickCount64)
+                                    &&MirrorGameForeground());
                             if(newIssuer&&endpoint.CurrentReceipt is {} previous&&!mirrorIssuer.AdoptPrior(previous))return;
                             var cycle=SteamMirrorInputCycle.Run(app,epochs.Generation,binding,mirrorIssuer,Alive,OwnsExactWindow,ReadMirror,()=>
                             {
@@ -553,11 +618,16 @@ internal static class SteamControllerLayoutTrial
                                 SteamInputReaderTrial.TryRun(steam,gameId,window,thread,owner,OwnsExactWindow,cancellation,relay,
                                     inventoryState.Source,target,epochs.Generation,()=>{},out readerOutcome,
                                     ReaderSessionCurrent,ReadPause,()=>retainedFailure,readerBootstrap,
-                                    ()=>openingPause.Read(openingStop,PauseSourceCurrent));
+                                    ()=>openingPause.Read(openingStop,PauseSourceCurrent),ReadNativeVisible,NativeBootstrapScope);
                                 return readerOutcome;
                             },initialConnection.LayoutStarted,()=>Environment.TickCount64,
                                 ms=>cancellation.WaitHandle.WaitOne(ms),cancellation,opening:openingStop,
-                                nativePause:reader=>nativeAdmission is {} native
+                                nativePause:reader=>nativeVisibleAdmission is {} original
+                                    ?SteamNativeVisibleInputCycle.Run(original,epochs.Generation,binding,reader,mirrorIssuer,Alive,
+                                        ()=>relay?.NeutralHeld==true,ReadNativeVisible,()=>Environment.TickCount64,
+                                        ms=>cancellation.WaitHandle.WaitOne(ms),cancellation,
+                                        ()=>liveSource.Read(inventoryState.Source.Value)==SteamControllerSourceProbe.ConnectionStatus.Disconnected)
+                                    :nativeAdmission is {} native
                                     ?SteamNativeOverlayInputCycle.Run(native,epochs.Generation,binding,reader,mirrorIssuer,Alive,
                                         ()=>relay?.NeutralHeld==true,()=>Environment.TickCount64,ms=>cancellation.WaitHandle.WaitOne(ms),cancellation,
                                         ()=>liveSource.Read(inventoryState.Source.Value)==SteamControllerSourceProbe.ConnectionStatus.Disconnected)
@@ -566,6 +636,20 @@ internal static class SteamControllerLayoutTrial
                             sourceDisconnected=Alive()&&CanReconnectSource(readerOutcome,liveSource.Read(inventoryState.Source.Value));
                             if(sourceDisconnected){sourceLease.Revoke();relay?.ConfirmSourceDisconnected();mirrorIssuer=null;mirrorBinding=null;}
                             if(!cycle.CleanupConfirmed)return;
+                            if(unadmittedRetry.Decide(window,inventoryState.Source,readerOutcome,relay?.NoSessionOutput==true,endpoint.NoOwnedOverride) is {} retryInitial)
+                            {
+                                PackagedLaunchLog.Info($"Steam input initial reader ended before admission: reader-stopped=True; no-session-output=True; retry={retryInitial}.");
+                                if(retryInitial)epochs.Reset();
+                                continue;
+                            }
+                            bool? deferred=mirrorIssuer is {} deferredIssuer&&!sourceDisconnected?ResumeDeferredReader(readerOutcome,readerBeforeProbe,bindingBeforeProbe,binding,
+                                deferredIssuer,()=>ReaderSessionCurrent()&&NativeBootstrapScope(),()=>relay?.NeutralHeld==true,
+                                ReadNativeVisible,()=>Environment.TickCount64,ms=>cancellation.WaitHandle.WaitOne(ms),cancellation,
+                                ()=>liveSource.Read(inventoryState.Source.Value)==SteamControllerSourceProbe.ConnectionStatus.Disconnected):null;
+                            if(deferred is {} recovered){
+                                if(!recovered)return;
+                                pausedReader=readerBeforeProbe;pausedMirrorRead=mirrorReadBeforeProbe;epochs.Reset();continue;
+                            }
                             if(!readerOutcome.CanResume&&!sourceDisconnected)
                             {
                                 if(!readerOutcome.FreshAdmissionRequired||relay?.NoSessionOutput!=true)return;
@@ -583,7 +667,7 @@ internal static class SteamControllerLayoutTrial
                             if (!SteamInputReaderTrial.TryRun(steam, gameId, window, thread, owner, OwnsExactWindow,
                                 cancellation, relay, inventoryState.Source, target, epochs.Generation, queueExitRestore, out readerOutcome,
                                 ReaderSessionCurrent, ReadPause, () => retainedFailure, readerBootstrap,
-                                ()=>openingPause.Read(openingStop,PauseSourceCurrent)))
+                                ()=>openingPause.Read(openingStop,PauseSourceCurrent),ReadNativeVisible,NativeBootstrapScope))
                                 SteamControllerSourceProbe.RunLayoutTrial(steam, gameId, target, parent, OwnsExactWindow, cancellation);
                             sourceDisconnected = Alive() && CanReconnectSource(readerOutcome,
                                 liveSource.Read(inventoryState.Source.Value));
@@ -604,6 +688,12 @@ internal static class SteamControllerLayoutTrial
                             + $"automatic-restore-queued={result.RestoreQueued}.");
                         if (sourceLease.Revoked) relay?.RevokeController();
                         if (relay is null) return;
+                        if(result.Restored&&unadmittedRetry.Decide(window,inventoryState.Source,readerOutcome,relay.NoSessionOutput,endpoint.NoOwnedOverride) is {} retryUnadmitted)
+                        {
+                            PackagedLaunchLog.Info($"Steam input initial reader ended before admission: reader-stopped=True; no-session-output=True; retry={retryUnadmitted}.");
+                            if(retryUnadmitted)epochs.Reset();
+                            continue;
+                        }
                         if (!result.Restored)
                         {
                             // A launcher may outlive Send's first acknowledgement
@@ -648,14 +738,26 @@ internal static class SteamControllerLayoutTrial
                     {
                         try
                         {
-                            if (mirrorIssuer is not null) SteamMirrorInputCycle.Release(mirrorIssuer,()=>Environment.TickCount64,
-                                ms=>Thread.Sleep(ms));
+                            if (mirrorIssuer is not null)
+                            {
+                                commandCleaned = false;
+                                SteamMirrorInputCycle.Release(mirrorIssuer,()=>Environment.TickCount64, ms=>Thread.Sleep(ms));
+                                commandCleaned = mirrorIssuer.AutomaticSettled;
+                            }
                         }
-                        finally { endpoint.RestoreExitedGameLayout(() => target.HasExited); }
+                        finally
+                        {
+                            endpoint.RestoreExitedGameLayout(() => target.HasExited);
+                            commandCleaned &= endpoint.NoOwnedOverride;
+                        }
                     });
                 }
             }
-            finally { try { relay?.Dispose(); } finally { mutex.ReleaseMutex(); } }
+            finally
+            {
+                try { relay?.Dispose(); onRelayDrained?.Invoke(commandCleaned && (relay is null || relay.NoSessionOutput)); }
+                finally { mutex.ReleaseMutex(); }
+            }
         }
         catch (Exception error)
         {
@@ -680,6 +782,23 @@ internal static class SteamControllerLayoutTrial
         if(!previous.FreshAdmissionRequired||!noOutput()||!scopeCurrent())return false;
         if(!sourceConnected()||!automaticSettled()||!scopeCurrent())return false;
         return sourceConnected()&&automaticSettled()&&scopeCurrent()&&noOutput();
+    }
+
+    // A game-layout command can finish after a new overlay starts. If no new
+    // reader was even started, keep only the previous REAL stopped-reader proof.
+    // The existing typed cycle still requires fresh Native240 and new769 ACK.
+    internal static bool? ResumeDeferredReader(SteamRawInputRelayTrial.ReaderOutcome attempted,
+        SteamRawInputRelayTrial.ReaderOutcome previous,SteamRawInputRelayTrial.SessionBinding? priorBinding,
+        SteamRawInputRelayTrial.SessionBinding binding,SteamInputOrderedIssuer issuer,Func<bool> current,
+        Func<bool> neutralHeld,Func<Playhub.Shared.SteamMirrorNativeVisibleDto?> read,Func<long> clock,
+        Action<int> wait,CancellationToken cancellation,Func<bool> disconnected)
+    {
+        if(!attempted.DeferredBeforeStart)return null;
+        if(priorBinding is not {} prior||prior!=binding||!previous.CanResume
+            ||previous.EndReason!=RelayExit.OverlayOpened||!neutralHeld()||!current()
+            ||!issuer.AutomaticSettled||disconnected()||cancellation.IsCancellationRequested)return false;
+        return SteamNativeVisibleInputCycle.ResumeStopped(previous.Epoch,binding,previous,issuer,current,
+            neutralHeld,read,clock,wait,cancellation,disconnected)??false;
     }
 
     internal static bool CanReconnectSource(SteamRawInputRelayTrial.ReaderOutcome outcome,
@@ -741,6 +860,34 @@ internal static class SteamControllerLayoutTrial
         }
         catch { }
         return AutomaticRestoreStatus.Unknown;
+    }
+
+    // A valid second window of the SAME game (Xbox profile chooser included)
+    // still ends this reader's exact HWND scope. Pause its PDO before rebinding.
+    internal static RelayExit? ReaderWindowPause(bool menu,bool gameForeground,bool exactWindow)
+        => menu?RelayExit.OverlayOpened:!gameForeground||!exactWindow?RelayExit.FocusLost:null;
+
+    internal static ProcessStartInfo LayoutCommand(string steam,uint layout)
+    {
+        var start=new ProcessStartInfo(steam){UseShellExecute=false,CreateNoWindow=true};
+        start.ArgumentList.Add("-silent");
+        start.ArgumentList.Add($"steam://forceinputappid/{layout.ToString(CultureInfo.InvariantCulture)}");
+        return start;
+    }
+
+    internal sealed class UnadmittedReaderRetry
+    {
+        private (nint Window,TritonSource Source)? scope;
+        private int attempts;
+        internal bool? Decide(nint window,TritonSource? source,SteamRawInputRelayTrial.ReaderOutcome outcome,bool noOutput,bool automaticClean)
+        {
+            if(window==0||source is not {Valid:true} exact||!noOutput||!automaticClean||!outcome.ReaderStopped
+                ||outcome.Attested||outcome.SourceRemoved||outcome.CleanupConfirmed||outcome.NeutralHeld||outcome.ReaderReleased
+                ||outcome.ExplicitScopeEnded||outcome.ReaderPid!=0||outcome.ReaderBirth!=0||outcome.Epoch!=0
+                ||outcome.ParentScopeRevoked||outcome.TerminalScopeLost||outcome.StartDeferred||outcome.EndReason is not null)return null;
+            if(scope!=(window,exact)){scope=(window,exact);attempts=0;}
+            return attempts++<3;
+        }
     }
 
     internal sealed class RelayFocusEpoch
@@ -1022,8 +1169,7 @@ internal static class SteamControllerLayoutTrial
                 _pendingLayout = null;
             }
             if (!Current || lastGuard is not null && !lastGuard()) return default;
-            var start = new ProcessStartInfo(_exe.Name) { UseShellExecute = false, CreateNoWindow = true };
-            start.ArgumentList.Add($"steam://forceinputappid/{layout.ToString(CultureInfo.InvariantCulture)}");
+            var start = LayoutCommand(_exe.Name,layout);
             if (!Current || lastGuard is not null && !lastGuard()) return default;
             try
             {

@@ -12,8 +12,12 @@
 </PropertyGroup>
   <ItemGroup><Compile Include="../Shared/UwpSessionIdentity.cs" Link="UwpSessionIdentity.cs" /></ItemGroup>
   <ItemGroup><Compile Include="../Shared/EpicLaunchCatalog.cs" Link="EpicLaunchCatalog.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/EpicProtocolLaunchRequest.cs" Link="EpicProtocolLaunchRequest.cs" /></ItemGroup>
   <ItemGroup Condition="'$(PlayhubAppContainerBridgeSha256)' != ''">
     <AssemblyMetadata Include="PlayhubCupheadOverlayPilot" Value="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PlayhubExplorerFreeUwpActivation)' == 'true' and '$(PlayhubSteamCompanionSha256)' != ''">
+    <AssemblyMetadata Include="PlayhubExplorerFreeUwpActivation" Value="true" />
   </ItemGroup>
   <ItemGroup Condition="'$(PlayhubSteamCompanionSha256)' != ''">
     <AssemblyMetadata Include="PlayhubSteamCompanionSha256" Value="$(PlayhubSteamCompanionSha256)" />
@@ -28,4 +32,13 @@
   </ItemGroup>
   <ItemGroup><Compile Include="../Shared/EpicLaunchWindows.cs" Link="EpicLaunchWindows.cs" /></ItemGroup>
   <ItemGroup><Compile Include="../Shared/EpicLaunchPayload.cs" Link="EpicLaunchPayload.cs" /></ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/StoreLibraryModels.cs" Link="StoreLibraryModels.cs" />
+    <Compile Include="../Shared/StoreLibraryLaunchRequest.cs" Link="StoreLibraryLaunchRequest.cs" />
+    <Compile Include="../Shared/StorePrivateLaunchModels.cs" Link="StorePrivateLaunchModels.cs" />
+    <Compile Include="../Shared/StorePrivateLaunchClient.cs" Link="StorePrivateLaunchClient.cs" />
+    <Compile Include="../Shared/StoreLibraryUiClient.cs" Link="StoreLibraryUiClient.cs" />
+    <Compile Include="../Playhub.StoreHost/StoreLibraryService.cs" Link="StoreLibraryService.cs" />
+  </ItemGroup>
+  <ItemGroup><Compile Include="../Shared/StoreGdkLaunchDefinition.cs" Link="StoreGdkLaunchDefinition.cs" /></ItemGroup>
 </Project>

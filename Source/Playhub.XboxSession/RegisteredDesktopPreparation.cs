@@ -41,8 +41,8 @@ internal sealed class RegisteredDesktopPreparation : IDisposable
                     XNamespace ns = xml.Name.Namespace;
                     var identity = xml.Elements(ns + "Identity").SingleOrDefault()
                         ?? throw new InvalidDataException("Missing registered desktop identity.");
-                    var application = xml.Elements(ns + "Applications").SingleOrDefault()?.Elements(ns + "Application")
-                        .SingleOrDefault(value => (string?)value.Attribute("Id") == parts[1]);
+                    var applications = xml.Elements(ns + "Applications").SingleOrDefault()?.Elements(ns + "Application").ToArray() ?? [];
+                    var application = applications.SingleOrDefault(value => (string?)value.Attribute("Id") == parts[1]);
                     if (application is null) continue;
                     if (RegisteredXboxApplication.Classify(application) != RegisteredXboxApplicationKind.PackagedDesktop)
                         throw new InvalidDataException("The registered application is not a desktop game.");
@@ -51,12 +51,19 @@ internal sealed class RegisteredDesktopPreparation : IDisposable
                         || !(((string?)identity.Attribute("Name")) + "_" + fullName.Split('_')[4]).Equals(parts[0], StringComparison.OrdinalIgnoreCase))
                         throw new InvalidDataException("The registered desktop package identity differs from the requested family.");
                     string helper = Inside(root, (string?)application.Attribute("Executable"));
-                    if (!Path.GetFileName(helper).Equals("GameLaunchHelper.exe", StringComparison.OrdinalIgnoreCase))
-                        throw new InvalidDataException("The registered desktop game does not use its declared Xbox launch helper.");
+                    bool launchHelper = Path.GetFileName(helper).Equals("GameLaunchHelper.exe", StringComparison.OrdinalIgnoreCase);
                     string executable = Inside(root, command.Executable);
-                    if (executable.Equals(helper, StringComparison.OrdinalIgnoreCase))
-                        throw new InvalidDataException("The Xbox launch helper cannot be treated as the game process.");
-                    ValidateConfiguration(Read(config), identity, parts[1], executable, root);
+                    if (launchHelper)
+                    {
+                        // Preserve the existing GDK helper/game separation.
+                        if (executable.Equals(helper, StringComparison.OrdinalIgnoreCase))
+                            throw new InvalidDataException("The Xbox launch helper cannot be treated as the game process.");
+                    }
+                    else if (!helper.Equals(executable, StringComparison.OrdinalIgnoreCase))
+                        // Direct full-trust activation requires the SAME image
+                        // from AppxManifest, exact Application Id and Config.
+                        throw new InvalidDataException("The direct registered desktop image differs from the requested game.");
+                    ValidateConfiguration(Read(config), identity, parts[1], executable, root, applications.Length);
                     VerifyImage(helper); VerifyImage(executable);
                     if (result is not null) throw new InvalidDataException("Multiple registered desktop games match the activation.");
                     result = new(new(fullName, root, helper, executable), manifest, config);
@@ -69,7 +76,7 @@ internal sealed class RegisteredDesktopPreparation : IDisposable
         catch { result?.Dispose(); throw; }
     }
 
-    internal static void ValidateConfiguration(XElement config, XElement identity, string appId, string executable, string root)
+    internal static void ValidateConfiguration(XElement config, XElement identity, string appId, string executable, string root, int registeredApplications = 1)
     {
         if (config.Name != "Game") throw new InvalidDataException("Unknown Xbox launch configuration namespace.");
         var configIdentity = config.Elements("Identity").SingleOrDefault()
@@ -77,9 +84,8 @@ internal sealed class RegisteredDesktopPreparation : IDisposable
         foreach (string field in new[] { "Name", "Publisher", "Version" })
             if (!string.Equals((string?)configIdentity.Attribute(field), (string?)identity.Attribute(field), StringComparison.Ordinal))
                 throw new InvalidDataException("The Xbox launch configuration does not match the registered package identity.");
-        var entries = config.Elements("ExecutableList").SingleOrDefault()?.Elements("Executable")
-            .Where(value => (string?)value.Attribute("Id") == appId).ToArray() ?? [];
-        if (entries is not [var entry] || !Inside(root, (string?)entry.Attribute("Name")).Equals(executable, StringComparison.OrdinalIgnoreCase))
+        string? configured = Playhub.Shared.StoreGdkLaunchDefinition.Executable(new XDocument(new XElement(config)), appId, registeredApplications);
+        if (configured is null || !Inside(root, configured).Equals(executable, StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException("The Xbox launch configuration does not identify one exact game executable.");
     }
     internal static string Inside(string root, string? image)

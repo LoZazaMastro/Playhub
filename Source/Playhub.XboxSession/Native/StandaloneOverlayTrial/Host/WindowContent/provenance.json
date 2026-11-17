@@ -1,0 +1,27 @@
+{
+  "originalNativeImplementation": true,
+  "apiReferences": [
+    "https://learn.microsoft.com/en-us/windows/win32/api/windows.graphics.capture.interop/nf-windows-graphics-capture-interop-igraphicscaptureiteminterop-createforwindow",
+    "https://learn.microsoft.com/en-us/windows/apps/develop/media-authoring-processing/screen-capture",
+    "https://github.com/robmikh/Win32CaptureSample/blob/master/Win32CaptureSample/CaptureSnapshot.cpp"
+  ],
+  "sampleLicense": "MIT; API behavior consulted, no sample source copied",
+  "reused": [
+    {
+      "path": "C:\\Users\\Andrea\\AppData\\Local\\Temp\\Playhub-LC-Progress-Only-Native-v2-20261113\\worker\\ProgressCore.h",
+      "sha256": "50A288541CE8E7E092B12FF229D525CD5DD6A99353C36A178AA6C4C81F6D396A",
+      "destination": "TargetCore.h",
+      "byteExact": true
+    },
+    {
+      "path": "C:\\Users\\Andrea\\AppData\\Local\\Temp\\Playhub-LC-Progress-Only-Native-v2-20261113\\worker\\Program.cpp",
+      "sha256": "AF960869FB8CE5BA9CA161073BA5B7E9A71B88BFBB2546987D7332B237A91046",
+      "destination": "NativeGuard.h",
+      "note": "same retained QLI/session/native tuple guard plus cheap final check; no UIA calls"
+    }
+  ],
+  "systemRuntimeOnly": true,
+  "normalRights": true,
+  "noDriver": true,
+  "noSourcePromotion": true
+}

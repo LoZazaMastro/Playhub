@@ -1,0 +1,11 @@
+Amazon provider dependency inventory (2026-11-14)
+
+Playhub's C# adapter, queue changes and tests are original MIT code. Nile is an independent, unmodified GPL-3.0 dependency. No Winhanced, Heroic or Unifideck application code was copied.
+
+Nile v1.2.0: imLinguin/nile, source commit 1ed408ab51709e294034be7b1662288da840ff7f; binary SHA256 6531790C59F78CEA4A8743BF0582D5AFDA7FB887F5C143391D7339AD0F42AB88. CorrespondingSource/nile-v1.2.0-1ed408ab-source.zip is the complete upstream tree including its build workflow. Notices/Nile-GPL-3.0.txt is the upstream license. No separate user Python install is required.
+
+The onefile archive contains CPython 3.8.10 and OpenSSL 1.1.1k (PE file-version read, no execution), Python.Runtime 3.0.5 and WebView2 SDK 1.0.2957.106. Their notices and SDK package license are under Notices/Amazon. Other dependency license/source references are explicitly enumerated in amazon-runtime-provenance.json; reference versions of optional/build-only packages are not asserted to be exact embedded versions. Known embedded package-version strings are retained in the audit reference files. The archive is never unpacked into a user Python install.
+
+SharpCompress 0.50.9 is an MIT dependency used ONLY to read XZ, not to extract archive paths. Its full license and complete corresponding source archive/NuGet package are included. The host package lock fixes the exact package/content hash. Decoder input, dictionary, block count and output sizes are bounded before allocation.
+
+Runtime limitations: this upstream Nile binary uses legacy Python/OpenSSL. An updated-runtime rebuild may be preferable after a separate reproducible-build review. Completion is independently verified by the signed Amazon manifest, exact installed path/version and every file length/hash. Local Windows launch plans use the exact executable, arguments and working directory from manifest-covered fuel.json. Playhub's separate prerequisite adapter verifies declared setup bytes and uses the same Windows runner as Epic and GOG; its inert tests do not establish physical installer compatibility. No proprietary SDK is redistributed or downloaded by this launch adapter. SDK provisioning and online FuelPump/DRM compatibility are not provided or claimed. The pinned upstream README itself lists online FuelPump games as potentially unsupported.

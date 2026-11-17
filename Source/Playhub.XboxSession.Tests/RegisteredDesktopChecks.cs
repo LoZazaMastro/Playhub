@@ -73,12 +73,56 @@ internal static class RegisteredDesktopChecks
                 check(!invalid.Matches(command, preparation.Plan, handoff, 3, 300, 500), "Desktop target refuses old/recycled/foreign process, package, trust and activation identities");
         }
         denied(() => RegisteredDesktopPreparation.Prepare(command with { Executable = "GameLaunchHelper.exe" }, catalog).Dispose(), "The helper can never authorize itself as the game");
+        var optionalId = XElement.Load(config);
+        optionalId.Element("ExecutableList")!.Element("Executable")!.Attribute("Id")!.Remove();
+        optionalId.Element("ExecutableList")!.Add(new XElement("Executable", new XAttribute("Name", "MissingDebug.exe"), new XAttribute("IsDevOnly", "true")));
+        optionalId.Save(config);
+        using (var preparation = RegisteredDesktopPreparation.Prepare(command, catalog))
+            check(preparation.Executable == Path.Combine(folder, "Game.exe"), "Optional GDK Id uses one registered application and one retail PC executable, as in Killer Instinct");
+        check(GdkLaunchResolver.Resolve(command.Aumid, command.Executable, catalog).Game == Path.Combine(folder, "Game.exe"),
+            "Native GDK resolver and companion preparation use the same optional-Id contract");
+        denied(() => RegisteredDesktopPreparation.ValidateConfiguration(optionalId, identity, "Game", Path.Combine(folder, "Game.exe"), folder, 2),
+            "Missing GDK Id never guesses between multiple registered applications");
+        optionalId.Element("ExecutableList")!.Add(new XElement("Executable", new XAttribute("Name", "Other.exe")));
+        optionalId.Save(config);
+        denied(() => RegisteredDesktopPreparation.Prepare(command, catalog).Dispose(), "Multiple retail images without Id cannot authorize the companion");
         Save(duplicate: true);
         denied(() => RegisteredDesktopPreparation.Prepare(command, catalog).Dispose(), "Duplicate ExecutableList IDs refuse ambiguous desktop games");
         Save(App("Game.App", "windowsApp", "appContainer"));
         denied(() => RegisteredDesktopPreparation.Prepare(command, catalog).Dispose(), "True AppContainer games cannot enter the desktop target route");
         Save();
         denied(() => RegisteredXboxApplication.Resolve(command, new Catalog([package, package])), "Duplicate registered packages cannot authorize desktop activation");
+
+        File.Copy(Environment.ProcessPath!, Path.Combine(folder, "OtherLauncher.exe"));
+        // A direct full-trust title still requires the SAME registered AppId,
+        // manifest image and MicrosoftGame.Config image; no launcher guessing.
+        Save();
+        var directManifest = XElement.Load(manifest);
+        directManifest.Element(foundation + "Applications")!.Element(foundation + "Application")!.SetAttributeValue("Executable", "Game.exe");
+        directManifest.Save(manifest);
+        using (var direct = RegisteredDesktopPreparation.Prepare(command, catalog))
+            check(direct.Executable == Path.Combine(folder, "Game.exe") && direct.Plan.Helper == direct.Executable,
+                "Direct full-trust activation binds the exact declared and configured game image");
+        foreach (string activation in new[] { "OtherLauncher.exe", "../Game.exe", "C:Game.exe", "Game.exe:stream" })
+        {
+            directManifest.Element(foundation + "Applications")!.Element(foundation + "Application")!.SetAttributeValue("Executable", activation);
+            directManifest.Save(manifest);
+            denied(() => RegisteredDesktopPreparation.Prepare(command, catalog).Dispose(),
+                "A divergent launcher or unsafe manifest path cannot authorize a direct game");
+        }
+        directManifest.Element(foundation + "Applications")!.Element(foundation + "Application")!.SetAttributeValue("Executable", "Game.exe");
+        directManifest.Save(manifest);
+        var wrongConfig = XElement.Load(config);
+        wrongConfig.Element("ExecutableList")!.Element("Executable")!.SetAttributeValue("Name", "Other.exe");
+        wrongConfig.Save(config);
+        denied(() => RegisteredDesktopPreparation.Prepare(command, catalog).Dispose(), "Direct activation never bypasses MicrosoftGame.Config image equality");
+        Save();
+        // Reassert the original helper/game separation after direct-route tests.
+        using (var original = RegisteredDesktopPreparation.Prepare(command, catalog))
+            check(original.Plan.Helper == Path.Combine(folder, "GameLaunchHelper.exe") && original.Executable == Path.Combine(folder, "Game.exe"),
+                "The original registered Xbox helper remains distinct from its game");
+        denied(() => RegisteredDesktopPreparation.Prepare(command with { Executable = "GameLaunchHelper.exe" }, catalog).Dispose(),
+            "The original launch helper still cannot identify itself as a game");
 
         using var fake = new SafeProcessHandle(0, false);
         int Absent(SafeProcessHandle _, ref uint length, StringBuilder? value) => 15703;

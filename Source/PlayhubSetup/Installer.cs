@@ -27,7 +27,7 @@ public sealed record InstallOptions(
 public static class Installer
 {
     public const string AppName = "Playhub";
-    public const string AppVersion = "2.6.0";
+    public const string AppVersion = "3.0.0";
     public const string Publisher = "Andrea Sgarro (LoZazaMastro)";
     public const string AppExeName = "Playhub.exe";
     public const string UninstallerName = "unins-playhub.exe";
@@ -56,7 +56,8 @@ public static class Installer
             progress.Report((0.02, Loc.T("Preparing")));
             StopRunningPlayhub();
             Directory.CreateDirectory(options.InstallDir);
-
+            using var storeMaintenance = StoreLibraryUpdate.Quiesce(options.InstallDir);
+            bool agentStopped = StopRunningGamingModeForPayload(options.InstallDir);
             ExtractPayload(options.InstallDir, progress);
             Playhub.Shared.EditorialPhotoMigration.Prune(options.InstallDir, message => Debug.WriteLine(message));
 
@@ -68,7 +69,10 @@ public static class Installer
 
             progress.Report((0.89, Loc.T("InstallingGamingMode")));
             PreserveChainFreeOptIn();
-            InstallOrUpdateGamingModeSilently(options.InstallDir);
+            InstallOrUpdateGamingModeSilently(options.InstallDir, agentStopped);
+
+            BundledPlayhubMaintenance.MaintainInstalledAsync(options.InstallDir)
+                .GetAwaiter().GetResult();
 
             BundledLaunchCurtainMaintenance.MaintainInstalledAsync(options.InstallDir)
                 .GetAwaiter().GetResult();
@@ -401,6 +405,7 @@ public static class Installer
         await Task.Run(() =>
         {
             var installDir = ReadInstallDir();
+            using var storeMaintenance = StoreLibraryUpdate.Quiesce(installDir);
 
             progress.Report((0.15, Loc.T("RemovingShortcuts")));
             SafeDelete(StartMenuShortcut);
@@ -533,6 +538,41 @@ public static class Installer
         }
     }
 
+    private static bool StopRunningGamingModeForPayload(string installDir)
+    {
+        string installed = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GamingMode");
+        string bundled = Path.Combine(installDir, "Plugins", "Gaming Mode", "gaming-mode-win-x64");
+        using var own = Process.GetCurrentProcess();
+        bool stopped = false;
+        foreach (var process in Process.GetProcessesByName("GamingMode"))
+        {
+            using (process)
+            {
+                try
+                {
+                    bool Owned() => process.Id != Environment.ProcessId && process.SessionId == own.SessionId
+                        && (Playhub.Shared.GamingModeInstallationPolicy.OwnsExecutable(process.MainModule?.FileName, installed)
+                            || Playhub.Shared.GamingModeInstallationPolicy.OwnsExecutable(process.MainModule?.FileName, bundled));
+                    if (!Owned() || process.HasExited) continue;
+                    process.CloseMainWindow();
+                    if (!process.WaitForExit(3000))
+                    {
+                        // Re-read exact path/session after the graceful wait. Only
+                        // this retained process is stopped; Steam/children stay alive.
+                        if (!Owned()) throw new IOException(Loc.T("FilesInUse"));
+                        process.Kill();
+                        if (!process.WaitForExit(10000)) throw new IOException(Loc.T("FilesInUse"));
+                    }
+                    stopped = true;
+                }
+                catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception
+                    or UnauthorizedAccessException or System.Security.SecurityException)
+                { throw new IOException(Loc.T("FilesInUse"), error); }
+            }
+        }
+        return stopped;
+    }
+
     private static void InstallUWPHookSilently(string installDir)
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -571,7 +611,7 @@ public static class Installer
     // o aggiornato, il companion Gaming Mode bundlato viene installato/aggiornato
     // automaticamente (l'install.ps1 del pacchetto gestisce stop agente, copia,
     // avvio automatico e riavvio dell'agente in modo idempotente).
-    private static void InstallOrUpdateGamingModeSilently(string installDir)
+    private static void InstallOrUpdateGamingModeSilently(string installDir, bool restartRequired = false)
     {
         var existingExe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "GamingMode", "GamingMode.exe");
@@ -589,7 +629,7 @@ public static class Installer
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden
-            }));
+            }), restartRequired: restartRequired);
     }
 
     private static void RemoveUWPHook()

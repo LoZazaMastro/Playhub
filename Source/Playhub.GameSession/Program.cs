@@ -12,6 +12,8 @@ internal static class Program
     {
         try
         {
+            if (Playhub.StoreLibrary.StoreLibraryLaunchRequest.TryParse(args, "--store-library", out var storeGame))
+                return StoreLibraryGameLaunch.Run(storeGame!);
             if (args.Length > 0 && args[0] == "--epic")
             {
                 if (!EpicShortcutArguments.TryRead(args, out var request) || request is null)
@@ -82,7 +84,7 @@ internal static class GameLifetime
     // Never attach unrelated processes or set KILL_ON_JOB_CLOSE: closing this
     // helper must not terminate the game or other applications.
     internal static int Run(string executable, IEnumerable<string> arguments, string? directory = null,
-        string? rawArguments = null, bool steamCompanion = false)
+        string? rawArguments = null, bool steamCompanion = false, IReadOnlyDictionary<string, string>? environment = null)
     {
         if (!File.Exists(executable)) throw new FileNotFoundException("Game executable not found.", executable);
         using var job = new SafeFileHandle(CreateJobObject(IntPtr.Zero, null), true);
@@ -91,8 +93,10 @@ internal static class GameLifetime
         var command = new StringBuilder(string.Join(" ", new[] { executable }.Concat(arguments).Select(Quote)));
         if (!string.IsNullOrEmpty(rawArguments)) command.Append(' ').Append(rawArguments);
         var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>() };
-        if (!CreateProcess(executable, command, IntPtr.Zero, IntPtr.Zero, false, 4,
-                IntPtr.Zero, directory ?? Environment.CurrentDirectory, ref startup, out var process))
+        using var storeEnvironment = StoreLaunchEnvironment.Create(environment);
+        uint creationFlags = storeEnvironment.Pointer == IntPtr.Zero ? 4u : 4u | 0x400u;
+        if (!CreateProcess(executable, command, IntPtr.Zero, IntPtr.Zero, false, creationFlags,
+                storeEnvironment.Pointer, directory ?? Environment.CurrentDirectory, ref startup, out var process))
             throw new Win32Exception(Marshal.GetLastWin32Error());
         using var handle = new Microsoft.Win32.SafeHandles.SafeFileHandle(process.Process, true);
         using var thread = new Microsoft.Win32.SafeHandles.SafeFileHandle(process.Thread, true);

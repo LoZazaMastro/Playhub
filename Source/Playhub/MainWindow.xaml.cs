@@ -484,6 +484,9 @@ public sealed partial class MainWindow : Window
             _ = EnableMediaPlaybackAfterColdStartAsync();
         }
 
+        // Settings and their saved language are loaded before presenting migration UI.
+        _ = InitializeStoreMigrationAsync();
+
         // Re-check DeckyLoader state whenever the window regains focus
         // (e.g. after enabling Developer Mode in Windows Settings).
         Activated += async (_, _) =>
@@ -634,6 +637,7 @@ public sealed partial class MainWindow : Window
         navigation.MenuItems.Add(NavItem("Plugin Store", "plugins", Symbol.Shop));
         navigation.MenuItems.Add(NavItem("Gaming Mode", "gaming", Symbol.Play));
         navigation.MenuItems.Add(NavItem("Importa Giochi", "xbox", VectorIcon(LayerDiagonalAddPath)));
+        navigation.MenuItems.Add(NavItem("StoreLibrary.Stores", "digital-stores", Symbol.Shop));
         navigation.MenuItems.Add(NavItem("Big Picture Styler", "styler", ((char)0xE771).ToString()));
         navigation.MenuItems.Add(NavItem("Impostazioni", "settings", Symbol.Setting));
         navigation.MenuItems.Add(NavItem("Supporto", "support", VectorIcon(KoFiIconPath)));
@@ -675,6 +679,7 @@ public sealed partial class MainWindow : Window
         _pageHost.Children.Add(BuildGamingPage());
         Diag.Step("BuildShell: Xbox");
         _pageHost.Children.Add(BuildXboxPage());
+        _pageHost.Children.Add(BuildStoreLibraryPage());
         Diag.Step("BuildShell: BigPictureStyler");
         _pageHost.Children.Add(BuildBigPictureStylerPage());
         Diag.Step("BuildShell: Settings");
@@ -966,6 +971,7 @@ public sealed partial class MainWindow : Window
             }
         }
         _currentPageTag = tag;
+        SetStoreLibraryActive(tag);
         if (tag is not ("plugins" or "plugin-detail")) CancelPluginPublicationRefresh();
         if (changed && tag == "plugins" && _pluginCatalogRefreshDeferred)
             _ = RefreshRemoteAwarePluginsAsync(queueRemote: false);
@@ -4599,10 +4605,11 @@ by Valve.";
         else
         {
             foreach (var category in new[] { "Novità", "I plugin di Playhub", "Personalizzazione e media", "Libreria e giochi",
+                "Audio", "Achievement", "Controller", "Grafica", "Rete e strumenti", "Accessibilità",
                 "Social e community", "Strumenti e utilità", "Sistema e hardware" })
             {
                 var group = visible.Where(plugin => PluginBelongsToCategory(plugin, category)).ToList();
-                if (group.Count == 0) continue;
+                if (group.Count < 3) continue;
                 sections.Add(BuildPluginDiscoveryCategory(
                     category,
                     group));
@@ -6700,10 +6707,13 @@ by Valve.";
 
     private static string? PluginImagePath(DeckyPluginInfo plugin)
     {
-        var path = System.IO.Path.Combine(System.AppContext.BaseDirectory, "Assets", "PluginImages", plugin.Name + ".jpg");
-        if (System.IO.File.Exists(path))
+        foreach (var extension in new[] { ".jpg", ".png" })
         {
-            return path;
+            var path = System.IO.Path.Combine(System.AppContext.BaseDirectory, "Assets", "PluginImages", plugin.Name + extension);
+            if (System.IO.File.Exists(path))
+            {
+                return path;
+            }
         }
 
         foreach (var candidate in new[] { plugin.CoverImage, plugin.Image })
@@ -7139,7 +7149,7 @@ by Valve.";
     // Salvataggio istantaneo: chiamato a ogni modifica dei controlli Gaming Mode.
     private void AutoSaveGaming()
     {
-        if (_loadingGaming) return;
+        if (_loadingGaming || _loadingSettings) return;
         _ = SaveGamingConfigAsync();
     }
 
@@ -7182,19 +7192,20 @@ by Valve.";
 
     private async Task ExportUwpGamesAsync()
     {
+        int pendingArtwork = 0;
         var preparedGames = _uwpGames.Where(game => game.Selected).ToList();
         var result = await _uwpXbox.ExportSelectedToSteamAsync(_uwpGames, _settings.SteamGridDbApiKey);
         _uwpXbox.RefreshLibraryState(_uwpGames);
         if (result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase))
         {
-            await DeliverPreparedImportedArtworkAsync(preparedGames);
+            pendingArtwork = await DeliverPreparedImportedArtworkAsync(preparedGames);
             foreach (var game in _uwpGames.Where(game => game.InSteamLibrary))
             {
                 game.Selected = false;
             }
         }
         RenderUwpGames();
-        SetStatus(T(result), result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
+        SetStatus(T(result) + (pendingArtwork > 0 ? "\n" + string.Format(T("ImportGames.ArtworkPending"), pendingArtwork) : ""), pendingArtwork == 0 && result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
             ? InfoBarSeverity.Success
             : InfoBarSeverity.Warning);
     }
@@ -7365,19 +7376,20 @@ by Valve.";
 
     private async Task ExportExecutableGamesAsync()
     {
+        int pendingArtwork = 0;
         var preparedGames = _executableGames.Where(game => game.Selected).ToList();
         var result = await _uwpXbox.ExportSelectedToSteamAsync(_executableGames, _settings.SteamGridDbApiKey);
         _uwpXbox.RefreshLibraryState(_executableGames);
         if (result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase))
         {
-            await DeliverPreparedImportedArtworkAsync(preparedGames);
+            pendingArtwork = await DeliverPreparedImportedArtworkAsync(preparedGames);
             foreach (var game in _executableGames.Where(game => game.InSteamLibrary))
             {
                 game.Selected = false;
             }
         }
         RenderExecutableGames();
-        SetStatus(T(result), result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
+        SetStatus(T(result) + (pendingArtwork > 0 ? "\n" + string.Format(T("ImportGames.ArtworkPending"), pendingArtwork) : ""), pendingArtwork == 0 && result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
             ? InfoBarSeverity.Success
             : InfoBarSeverity.Warning);
     }
@@ -7523,32 +7535,32 @@ by Valve.";
 
     private void RenderGogGames() => RenderGameCollection(_gogGames, _gogGamesPanel);
 
+    private int _epicCatalogScanVersion;
+
     private async Task ScanEpicGamesAsync()
     {
-        _epicGames.Clear();
+        int version = ++_epicCatalogScanVersion;
         SetStatus("Cerco i giochi dell'Epic Games Store...", InfoBarSeverity.Informational);
         var scanned = (await _epicService.ScanAsync()).ToList();
+        if (version != _epicCatalogScanVersion) return;
         _uwpXbox.RefreshLibraryState(scanned);
         ApplySteamGridDbPreferences(scanned);
-        foreach (var game in scanned)
-        {
-            _epicGames.Add(game);
-        }
-
-        RenderEpicGames();
+        bool changed = Importing.InstalledGameCatalogReconciliation.Apply(_epicGames, scanned);
+        if (changed) RenderEpicGames();
         var inLibrary = _epicGames.Count(game => game.InSteamLibrary);
         SetStatus(string.Format(T("Ho trovato {0} giochi. {1} sono già in libreria."), _epicGames.Count, inLibrary), InfoBarSeverity.Success);
-        _ = LoadGameCoversAsync(_epicGames.ToList(), _epicGames, RenderEpicGames);
+        if (changed) _ = LoadGameCoversAsync(_epicGames.ToList(), _epicGames, RenderEpicGames);
     }
 
     private async Task ExportEpicGamesAsync()
     {
+        int pendingArtwork = 0;
         var preparedGames = _epicGames.Where(game => game.Selected).ToList();
         var result = await _uwpXbox.ExportSelectedToSteamAsync(_epicGames, _settings.SteamGridDbApiKey);
         _uwpXbox.RefreshLibraryState(_epicGames);
         if (result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase))
         {
-            await DeliverPreparedImportedArtworkAsync(preparedGames);
+            pendingArtwork = await DeliverPreparedImportedArtworkAsync(preparedGames);
             foreach (var game in _epicGames.Where(game => game.InSteamLibrary))
             {
                 game.Selected = false;
@@ -7556,37 +7568,37 @@ by Valve.";
         }
 
         RenderEpicGames();
-        SetStatus(T(result), result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
+        SetStatus(T(result) + (pendingArtwork > 0 ? "\n" + string.Format(T("ImportGames.ArtworkPending"), pendingArtwork) : ""), pendingArtwork == 0 && result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
             ? InfoBarSeverity.Success
             : InfoBarSeverity.Warning);
     }
 
+    private int _gogCatalogScanVersion;
+
     private async Task ScanGogGamesAsync()
     {
-        _gogGames.Clear();
+        int version = ++_gogCatalogScanVersion;
         SetStatus("Cerco i giochi di GOG...", InfoBarSeverity.Informational);
         var scanned = (await _gogService.ScanAsync()).ToList();
+        if (version != _gogCatalogScanVersion) return;
         _uwpXbox.RefreshLibraryState(scanned);
         ApplySteamGridDbPreferences(scanned);
-        foreach (var game in scanned)
-        {
-            _gogGames.Add(game);
-        }
-
-        RenderGogGames();
+        bool changed = Importing.InstalledGameCatalogReconciliation.Apply(_gogGames, scanned);
+        if (changed) RenderGogGames();
         var inLibrary = _gogGames.Count(game => game.InSteamLibrary);
         SetStatus(string.Format(T("Ho trovato {0} giochi. {1} sono già in libreria."), _gogGames.Count, inLibrary), InfoBarSeverity.Success);
-        _ = LoadGameCoversAsync(_gogGames.ToList(), _gogGames, RenderGogGames);
+        if (changed) _ = LoadGameCoversAsync(_gogGames.ToList(), _gogGames, RenderGogGames);
     }
 
     private async Task ExportGogGamesAsync()
     {
+        int pendingArtwork = 0;
         var preparedGames = _gogGames.Where(game => game.Selected).ToList();
         var result = await _uwpXbox.ExportSelectedToSteamAsync(_gogGames, _settings.SteamGridDbApiKey);
         _uwpXbox.RefreshLibraryState(_gogGames);
         if (result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase))
         {
-            await DeliverPreparedImportedArtworkAsync(preparedGames);
+            pendingArtwork = await DeliverPreparedImportedArtworkAsync(preparedGames);
             foreach (var game in _gogGames.Where(game => game.InSteamLibrary))
             {
                 game.Selected = false;
@@ -7594,7 +7606,7 @@ by Valve.";
         }
 
         RenderGogGames();
-        SetStatus(T(result), result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
+        SetStatus(T(result) + (pendingArtwork > 0 ? "\n" + string.Format(T("ImportGames.ArtworkPending"), pendingArtwork) : ""), pendingArtwork == 0 && result.StartsWith("Ho aggiunto", StringComparison.OrdinalIgnoreCase)
             ? InfoBarSeverity.Success
             : InfoBarSeverity.Warning);
     }
@@ -7646,40 +7658,46 @@ by Valve.";
             Background = new SolidColorBrush(Color.FromArgb(255, 48, 48, 52))
         };
 
-        if (File.Exists(game.SteamGridDbCoverPath))
+        var coverContent=new Grid();coverStage.Children.Add(coverContent);
+        void RefreshCoverPreview()
         {
-            coverStage.Children.Add(new Image
+            coverContent.Children.Clear();
+            if (File.Exists(game.SteamGridDbCoverPath))
             {
-                Source = new BitmapImage { DecodePixelWidth = 800, CreateOptions = BitmapCreateOptions.IgnoreImageCache, UriSource = new Uri(game.SteamGridDbCoverPath) },
-                Stretch = Stretch.UniformToFill,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Stretch
-            });
-        }
-        else if (File.Exists(game.Logo))
-        {
-            coverStage.Children.Add(new Image
+                coverContent.Children.Add(new Image
+                {
+                    Source = new BitmapImage { DecodePixelWidth = 800, CreateOptions = BitmapCreateOptions.IgnoreImageCache, UriSource = new Uri(game.SteamGridDbCoverPath) },
+                    Stretch = Stretch.UniformToFill,
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    VerticalAlignment = VerticalAlignment.Stretch
+                });
+            }
+            else if (File.Exists(game.Logo))
             {
-                Source = new BitmapImage { DecodePixelWidth = 224, UriSource = new Uri(game.Logo) },
-                Width = 112,
-                Height = 112,
-                Opacity = 1,
-                Stretch = Stretch.Uniform,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            });
-        }
-        else
-        {
-            coverStage.Children.Add(new FontIcon
+                coverContent.Children.Add(new Image
+                {
+                    Source = new BitmapImage { DecodePixelWidth = 224, CreateOptions = BitmapCreateOptions.IgnoreImageCache, UriSource = new Uri(game.Logo) },
+                    Width = 112,
+                    Height = 112,
+                    Opacity = 1,
+                    Stretch = Stretch.Uniform,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+            }
+            else
             {
-                Glyph = ((char)0xE7FC).ToString(),
-                FontSize = 60,
-                Opacity = 1,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            });
+                coverContent.Children.Add(new FontIcon
+                {
+                    Glyph = ((char)0xE7FC).ToString(),
+                    FontSize = 60,
+                    Opacity = 1,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+            }
         }
+        RefreshCoverPreview();
 
         var check = new CheckBox
         {
@@ -7733,7 +7751,11 @@ by Valve.";
         content.Children.Add(pathText);
         content.Children.Add(CreateUwpNameEditor(game));
         var actions = GameCardActionPresentation.CreateGrid();
-        var artworkButton = Button("Artwork", async () => await ShowImportedGameArtworkAsync(game));
+        var artworkButton = Button("Artwork", async () =>
+        {
+            await ShowImportedGameArtworkAsync(game);
+            if(coverStage.IsLoaded&&IsImportedGameCurrent(game))RefreshCoverPreview();
+        });
         ConfigureCardAction(artworkButton, "Artwork");
         actions.Children.Add(artworkButton);
         Grid.SetColumnSpan(artworkButton, 2);
@@ -8206,6 +8228,8 @@ by Valve.";
         _mouseDelayBox.Value = _gamingConfig.Gaming.AutoHideMouseCursorAfterMs;
         _apiPortBox.Value = _gamingConfig.Safety.ApiPort;
         _splashLogoBox.Text = _gamingConfig.Gaming.Splash.LogoPath ?? "";
+        SelectComboKey(_splashLogoCombo, SplashLogoSelection.FromSavedPath(_gamingConfig.Gaming.Splash.LogoPath,
+            Path.Combine(AppPaths.GamingModePackage, "assets"), SplashLogoOptions.Select(option => option.Key)));
         _gamingToggles["splashAnimation"].IsOn = _gamingConfig.Gaming.Splash.AnimationEnabled;
         _refreshAnimationSettings?.Invoke();
         _splashMinBox.Value = _gamingConfig.Gaming.Splash.MinVisibleMs;
@@ -8444,6 +8468,7 @@ by Valve.";
             "decky" => "decky-installation-onboarding.png",
             "gaming" => "gaming-mode-page-header.png",
             "xbox" => "import-games-onboarding.png",
+            "digital-stores" => "digital-stores-page-header.png",
             "styler" => "big-picture-styler-page-header.png",
             "settings" => "settings-page-header.png",
             _ => string.Empty
@@ -8472,19 +8497,20 @@ by Valve.";
             });
         }
 
+        bool compactHeader = tag == "digital-stores";
         var grid = new Grid
         {
             ColumnSpacing = 0,
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            MinHeight = 300,
+            MinHeight = compactHeader ? 200 : 300,
             Tag = "page-mascot-header"
         };
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(260) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(compactHeader ? 200 : 260) });
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.SizeChanged += (_, args) =>
         {
             if (args.NewSize.Width > 0)
-                grid.ColumnDefinitions[0].Width = new GridLength(Math.Clamp(args.NewSize.Width * 0.3, 200, 260));
+                grid.ColumnDefinitions[0].Width = new GridLength(Math.Clamp(args.NewSize.Width * 0.3, compactHeader ? 150 : 200, compactHeader ? 200 : 260));
         };
         Grid.SetColumn(text, 1);
         grid.Children.Add(text);
@@ -8495,8 +8521,8 @@ by Valve.";
             var image = new Image
             {
                 Source = new BitmapImage(new Uri(path)),
-                MaxWidth = 300,
-                Height = 300,
+                MaxWidth = compactHeader ? 200 : 300,
+                Height = compactHeader ? 200 : 300,
                 Stretch = Stretch.Uniform,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(-36, 0, 0, 0),
@@ -9424,6 +9450,8 @@ by Valve.";
         // Aggiorna la slide di benvenuto: la prima è costruita prima del load della
         // lingua, quindi senza questo resterebbe nella lingua di default.
         _refreshWelcomeSlide?.Invoke();
+        _storeLibraryPage?.Relocalize(_settings.Language);
+        RenderStoreMigration();
     }
 
     private string FriendlyError(Exception ex)

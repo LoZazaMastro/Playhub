@@ -6,6 +6,9 @@ internal interface ILivePerformanceSource : IDisposable
 {
     PresentMonTarget Target { get; }
     bool Current { get; }
+    // Cheap retained identity precheck only. A caller must still perform the
+    // complete Current/window validation at its final transaction barrier.
+    bool RetainedIdentityCurrent => Current;
     bool TryGetBounds(out LivePerformanceHudBounds bounds);
     LivePerformanceHudForegroundProof? ForegroundProof { get; }
 }

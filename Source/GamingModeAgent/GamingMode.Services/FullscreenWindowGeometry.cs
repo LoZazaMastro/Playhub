@@ -21,13 +21,15 @@ internal static class FullscreenWindowGeometry
 	// Read and write under the same thread-local physical coordinate context.
 	// An existing fullscreen swapchain must not receive style or resize messages.
 	internal static bool Apply(Func<FullscreenWindowBounds?> readBounds,
-		Action<FullscreenWindowBounds> resize, Func<IDisposable?>? enterPhysicalCoordinates = null)
+		Action<FullscreenWindowBounds> resize, Func<IDisposable?>? enterPhysicalCoordinates = null,
+		Func<bool>? hasVisualPriority = null)
 	{
+		if (hasVisualPriority?.Invoke() == true) return false;
 		using IDisposable? scope = (enterPhysicalCoordinates ?? PhysicalDpiScope.Enter)();
 		if (scope == null) return false;
 		FullscreenWindowBounds? bounds = readBounds();
 		if (bounds == null || !bounds.Value.Window.IsValid || !bounds.Value.Monitor.IsValid
-			|| bounds.Value.Window.Matches(bounds.Value.Monitor)) return false;
+			|| bounds.Value.Window.Matches(bounds.Value.Monitor) || hasVisualPriority?.Invoke() == true) return false;
 		resize(bounds.Value);
 		return true;
 	}

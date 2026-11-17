@@ -26,7 +26,9 @@ internal static class FirstContentProducer
     if(query.IsCompleted){
      var facts=await query.ConfigureAwait(false);query=null;
      if(!cover.Current){reason=CoverRetireReason.SourceLost;break;}
-     if(facts?.ObservedNonBlackContent==true&&cover.Current&&observer.FreshForRetirement(facts)){reason=CoverRetireReason.FirstObservedContent;break;}
+     // Compatibility reason means the first fresh opaque rendered frame,
+     // including black intros; the publisher still owns duration/audio/fade.
+     if(facts?.ObservedOpaqueContent==true&&cover.Current&&observer.FreshForRetirement(facts)){reason=CoverRetireReason.FirstObservedContent;break;}
      if(observer.LastState is not(ContentObservationState.Pending or ContentObservationState.Facts)){
       reason=observer.LastState==ContentObservationState.SourceLost?CoverRetireReason.SourceLost:CoverRetireReason.CaptureUnavailable;break;
      }

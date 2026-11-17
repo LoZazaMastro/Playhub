@@ -9,7 +9,7 @@ using Playhub.Shared;
 namespace GamingMode.Services;
 internal static partial class XboxCompanionOverlaySession
 {
- internal sealed record MirrorDecision(bool Ok,string? GameId=null,uint CompanionPid=0,uint OverlayPid=0,int ForegroundScope=0,bool OverlayOpen=false,string? SessionId=null,SteamMirrorDto? Mirror=null,bool Queued=false,string? Error=null,string? MirrorSessionId=null,SteamMirrorContinuationDto? Continuation=null);
+ internal sealed record MirrorDecision(bool Ok,string? GameId=null,uint CompanionPid=0,uint OverlayPid=0,int ForegroundScope=0,bool OverlayOpen=false,string? SessionId=null,SteamMirrorDto? Mirror=null,bool Queued=false,string? Error=null,string? MirrorSessionId=null,SteamMirrorContinuationDto? Continuation=null,SteamMirrorNativeVisibleDto? NativeVisible=null,SteamNativeVisibleInputDto? NativeVisibleInput=null);
  private sealed class MirrorOwner:IDisposable
  {
   internal required Process Wrapper,Game,Companion,Overlay;internal required ulong GameId;internal required uint GamePid;internal required long GameBirth,WrapperBirth,CompanionBirth,OverlayBirth;internal required string Name;internal required Func<bool> AssociationCurrent;internal string? Aumid;internal Win32OwnedAssociationCatalog.Lease? OwnedAssociation;
@@ -44,7 +44,7 @@ internal static partial class XboxCompanionOverlaySession
  [System.Runtime.InteropServices.DllImport("user32.dll",EntryPoint="IsWindowEnabled")] [return:System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] private static extern bool MirrorIsWindowEnabled(nint window);
  [System.Runtime.InteropServices.DllImport("user32.dll",EntryPoint="IsWindowVisible")] [return:System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] private static extern bool MirrorIsWindowVisible(nint window);
  private static async Task<byte[]?> MirrorBytes(NamedPipeClientStream pipe,int maximum,CancellationToken cancellation){byte[] buffer=new byte[maximum];int length=0;while(length<buffer.Length){int n=await pipe.ReadAsync(buffer.AsMemory(length),cancellation);if(n==0)break;length+=n;}return length>0&&length<maximum?buffer[..length]:null;}
- private static async Task<MirrorOwner?> MirrorOwnerAsync(uint appId,uint overlayPid,CancellationToken cancellation)
+ private static async Task<MirrorOwner?> MirrorOwnerAsync(uint appId,uint overlayPid,CancellationToken cancellation,Action<MirrorDecision>? discovered=null)
  {
   if(appId<0x80000000||UwpSteamSessionAssociation.ReadInstalledImages() is not { } images||SteamInstallationPath.FindRoot() is not { } root)return null;
   uint wrapperPid,gamePid;long wrapperBirth,gameBirth;ulong gameId;string? aumid=null;Func<bool> association;Win32OwnedAssociationCatalog.Lease? ownedAssociation=null;
@@ -62,7 +62,23 @@ internal static partial class XboxCompanionOverlaySession
     if(!IsProcess(companion,images.Companion,session)||companion.StartTime<wrapper.StartTime||DeckyProcessTree.Read(companion.Id)?.ParentPid!=wrapper.Id)return null;
     var bytes=await MirrorBytes(status,512,bounded.Token);var state=bytes is null?null:JsonSerializer.Deserialize<State>(bytes);if(state is null||state.GameId!=gameId||state.GamePid!=gamePid||state.GameBirth!=gameBirth)return null;
    }
-   long companionBirth=companion.StartTime.ToFileTimeUtc();var host=NativeSteamOverlayHost.Find(root,(uint)companion.Id,companionBirth,gameId,session);if(host is null||(overlayPid!=0&&host.Pid!=overlayPid))return null;overlay=Process.GetProcessById((int)host.Pid);
+   long companionBirth=companion.StartTime.ToFileTimeUtc();var host=NativeSteamOverlayHost.Find(root,(uint)companion.Id,companionBirth,gameId,session);
+   if(host is null){
+    // Metadata-only discovery may retire an old local JS receipt before the
+    // replacement renderer/browser exists. Commands never request this path.
+    if(overlayPid==0&&discovered is not null&&association()
+      &&!wrapper.HasExited&&!game.HasExited&&!companion.HasExited
+      &&wrapper.StartTime.ToFileTimeUtc()==wrapperBirth&&game.StartTime.ToFileTimeUtc()==gameBirth
+      &&companion.StartTime.ToFileTimeUtc()==companionBirth&&wrapper.SessionId==session&&game.SessionId==session&&companion.SessionId==session
+      &&IsProcess(wrapper,images.Wrapper,session)&&IsProcess(companion,images.Companion,session)
+      &&DeckyProcessTree.Read(companion.Id)?.ParentPid==wrapper.Id&&association()
+      &&!wrapper.HasExited&&!game.HasExited&&!companion.HasExited
+      &&wrapper.StartTime.ToFileTimeUtc()==wrapperBirth&&game.StartTime.ToFileTimeUtc()==gameBirth&&companion.StartTime.ToFileTimeUtc()==companionBirth)
+     discovered(new(false,gameId.ToString(CultureInfo.InvariantCulture),(uint)companion.Id,0,
+      Error:"mirror-session-discovered",MirrorSessionId:SteamMirrorWireProtocol.Session(gameId,wrapperPid,wrapperBirth,gamePid,gameBirth,(uint)companion.Id,companionBirth)));
+    return null;
+   }
+   if(overlayPid!=0&&host.Pid!=overlayPid)return null;overlay=Process.GetProcessById((int)host.Pid);
    if(!IsProcess(overlay,Path.Combine(root,"gameoverlayui64.exe"),session)||overlay.StartTime.ToFileTimeUtc()!=host.Birth||!association())return null;
    var result=new MirrorOwner{Wrapper=wrapper,Game=game,Companion=companion,Overlay=overlay,WrapperBirth=wrapperBirth,GameBirth=gameBirth,GamePid=gamePid,GameId=gameId,CompanionBirth=companionBirth,OverlayBirth=host.Birth,Name=name,Aumid=aumid,AssociationCurrent=association,OwnedAssociation=ownedAssociation};if(!result.Current())return null;transferred=true;return result;
   }finally{if(!transferred){overlay?.Dispose();companion?.Dispose();game?.Dispose();wrapper?.Dispose();ownedAssociation?.Dispose();}}
@@ -73,18 +89,49 @@ internal static partial class XboxCompanionOverlaySession
   return owner.Current()&&SteamMirrorWireProtocol.ContinuationMatchesOwner(continuation,owner.MirrorSession,(uint)owner.Companion.Id,owner.CompanionBirth,owner.GamePid,owner.GameBirth,owner.GameId,Environment.TickCount64)
     &&owner.Current()?continuation:null;
  }
+ private static SteamMirrorNativeVisibleDto? NativeVisibleForOwner(SteamMirrorNativeVisibleDto? native,MirrorOwner owner)
+ {
+  if(!owner.Current()||!SteamMirrorWireProtocol.NativeVisibleMatchesOwner(native,owner.MirrorSession,(uint)owner.Companion.Id,owner.CompanionBirth,owner.GamePid,owner.GameBirth,owner.GameId,Environment.TickCount64)
+    ||native is null||native.Phase==1&&!owner.GameForeground())return null;
+  return owner.Current()&&SteamMirrorWireProtocol.NativeVisibleMatchesOwner(native,owner.MirrorSession,(uint)owner.Companion.Id,owner.CompanionBirth,owner.GamePid,owner.GameBirth,owner.GameId,Environment.TickCount64)?native:null;
+ }
+ private static SteamNativeVisibleInputDto? NativeInputForOwner(SteamNativeVisibleInputDto? input,SteamMirrorNativeVisibleDto? native,MirrorOwner owner)
+ {
+  var verified=NativeVisibleForOwner(native,owner);
+  return owner.Current()&&SteamMirrorWireProtocol.NativeVisibleInputValid(input,verified,Environment.TickCount64)
+    &&owner.Current()&&SteamMirrorWireProtocol.NativeVisibleInputValid(input,verified,Environment.TickCount64)?input:null;
+ }
  private static async Task<SteamMirrorStatusEnvelope?> ReadMirror(MirrorOwner owner,CancellationToken cancellation){using var bounded=CancellationTokenSource.CreateLinkedTokenSource(cancellation);bounded.CancelAfter(350);using var pipe=new NamedPipeClientStream(".",owner.Name+".Mirror",PipeDirection.In,PipeOptions.Asynchronous|PipeOptions.CurrentUserOnly);await pipe.ConnectAsync(bounded.Token);if(!GetNamedPipeServerProcessId(pipe.SafePipeHandle.DangerousGetHandle(),out uint pid)||pid!=owner.Companion.Id||!owner.Current())return null;var bytes=await MirrorBytes(pipe,4096,bounded.Token);var result=bytes is null?null:JsonSerializer.Deserialize<SteamMirrorStatusEnvelope>(bytes,SteamMirrorWireProtocol.Json);return result is {Protocol:1}&&owner.Current()?result:null;}
  internal static async Task<MirrorDecision> ReadMirrorPresentationAsync(uint appId,uint overlayPid,CancellationToken cancellation,Action<string> diagnostic)
  {
-  try{using var owner=await MirrorOwnerAsync(appId,overlayPid,cancellation);if(owner is null)return new(false,Error:"owned-session-unavailable");var envelope=await ReadMirror(owner,cancellation);if(!owner.Current())return new(false,Error:"mirror-owner-changed");var continuation=ContinuationForOwner(envelope?.Continuation,owner);if(envelope is not {Available:true,Mirror:{ } mirror}||!MirrorMatchesOwner(mirror,owner))return new(false,owner.GameId.ToString(CultureInfo.InvariantCulture),(uint)owner.Companion.Id,(uint)owner.Overlay.Id,SessionId:owner.Session,Error:"mirror-not-prepared",MirrorSessionId:owner.MirrorSession,Continuation:continuation);bool foreground=owner.PresentationForeground(mirror);if(!foreground)mirror=SteamMirrorWireProtocol.RevokeForegroundFlags(mirror);continuation=ContinuationForOwner(continuation,owner);return new(true,owner.GameId.ToString(CultureInfo.InvariantCulture),(uint)owner.Companion.Id,(uint)owner.Overlay.Id,foreground?(int)mirror.ActualScope:0,false,owner.Session,mirror,MirrorSessionId:owner.MirrorSession,Continuation:continuation);}
+  try{MirrorDecision? discovery=null;using var owner=await MirrorOwnerAsync(appId,overlayPid,cancellation,value=>discovery=value);if(owner is null)return discovery??new(false,Error:"owned-session-unavailable");var envelope=await ReadMirror(owner,cancellation);if(!owner.Current())return new(false,Error:"mirror-owner-changed");var continuation=ContinuationForOwner(envelope?.Continuation,owner);var nativeVisible=NativeVisibleForOwner(envelope?.NativeVisible,owner);var nativeInput=NativeInputForOwner(envelope?.NativeVisibleInput,nativeVisible,owner);if(envelope is not {Available:true,Mirror:{ } mirror}||!MirrorMatchesOwner(mirror,owner))return new(nativeVisible is not null,owner.GameId.ToString(CultureInfo.InvariantCulture),(uint)owner.Companion.Id,(uint)owner.Overlay.Id,SessionId:owner.Session,Error:nativeVisible is null?"mirror-not-prepared":null,MirrorSessionId:owner.MirrorSession,Continuation:continuation,NativeVisible:nativeVisible,NativeVisibleInput:NativeInputForOwner(nativeInput,nativeVisible,owner));bool foreground=owner.PresentationForeground(mirror);if(!foreground)mirror=SteamMirrorWireProtocol.RevokeForegroundFlags(mirror);continuation=ContinuationForOwner(continuation,owner);return new(true,owner.GameId.ToString(CultureInfo.InvariantCulture),(uint)owner.Companion.Id,(uint)owner.Overlay.Id,foreground?(int)mirror.ActualScope:0,false,owner.Session,mirror,MirrorSessionId:owner.MirrorSession,Continuation:continuation,NativeVisible:NativeVisibleForOwner(nativeVisible,owner),NativeVisibleInput:NativeInputForOwner(nativeInput,nativeVisible,owner));}
   catch(Exception e)when(e is IOException or ArgumentException or InvalidOperationException or OverflowException or UnauthorizedAccessException or OperationCanceledException or JsonException or System.ComponentModel.Win32Exception){diagnostic("Mirror read refused: "+e.GetType().Name);return new(false,Error:"mirror-unavailable");}
  }
  internal static async Task<MirrorDecision> SetMirrorPresentationAsync(uint appId,uint overlayPid,string action,JsonElement expectedMirror,CancellationToken cancellation,Action<string> diagnostic)
  {
+  if(action=="close-native-visible")return await SetNativeVisibleCloseAsync(appId,overlayPid,expectedMirror,cancellation,diagnostic);
   if(action is not ("show" or "close")||!SteamMirrorWireProtocol.Expected(expectedMirror,out var expected)||expected is null)return new(false,Error:"invalid-mirror-command");
   try{using var owner=await MirrorOwnerAsync(appId,overlayPid,cancellation);if(owner is null)return new(false,Error:"owned-session-unavailable");var envelope=await ReadMirror(owner,cancellation);var mirror=envelope?.Mirror;if(envelope is not {Available:true}||mirror is null||!MirrorMatchesOwner(mirror,owner)||!SteamMirrorWireProtocol.Same(mirror,expected)||!owner.Current()||(action=="show"&&(!owner.GameForeground()||!SteamMirrorWireProtocol.Prepared(mirror,Environment.TickCount64))))return new(false,Error:"mirror-command-stale");
    using var bounded=CancellationTokenSource.CreateLinkedTokenSource(cancellation);bounded.CancelAfter(400);using var pipe=new NamedPipeClientStream(".",owner.Name+".MirrorControl",PipeDirection.InOut,PipeOptions.Asynchronous|PipeOptions.CurrentUserOnly);await pipe.ConnectAsync(bounded.Token);if(!GetNamedPipeServerProcessId(pipe.SafePipeHandle.DangerousGetHandle(),out uint pid)||pid!=owner.Companion.Id||!owner.Current()||(action=="show"&&!owner.GameForeground()))return new(false,Error:"mirror-owner-changed");var command=JsonSerializer.SerializeToUtf8Bytes(new SteamMirrorCommand(1,action,mirror),SteamMirrorWireProtocol.Json);await pipe.WriteAsync(command,bounded.Token);await pipe.WriteAsync(new byte[]{10},bounded.Token);var bytes=await MirrorBytes(pipe,512,bounded.Token);var answer=bytes is null?null:JsonSerializer.Deserialize<SteamMirrorCommandResult>(bytes,SteamMirrorWireProtocol.Json);return answer is {Ok:true,Queued:true}&&owner.Current()?new(true,owner.GameId.ToString(CultureInfo.InvariantCulture),(uint)owner.Companion.Id,(uint)owner.Overlay.Id,owner.GameForeground()?1:0,false,owner.Session,mirror,true):new(false,Error:"native-mirror-refused");
   }catch(Exception e)when(e is IOException or ArgumentException or InvalidOperationException or OverflowException or UnauthorizedAccessException or OperationCanceledException or JsonException or System.ComponentModel.Win32Exception){diagnostic("Mirror control refused: "+e.GetType().Name);return new(false,Error:"mirror-command-unavailable");}
+ }
+ private static async Task<MirrorDecision> SetNativeVisibleCloseAsync(uint appId,uint overlayPid,JsonElement expectedJson,CancellationToken cancellation,Action<string> diagnostic)
+ {
+  if(!SteamMirrorWireProtocol.ExpectedNativeVisible(expectedJson,Environment.TickCount64,out var expected)||expected is null)return new(false,Error:"invalid-native-visible-command");
+  try{
+   using var owner=await MirrorOwnerAsync(appId,overlayPid,cancellation);if(owner is null)return new(false,Error:"owned-session-unavailable");
+   var envelope=await ReadMirror(owner,cancellation);var native=NativeVisibleForOwner(envelope?.NativeVisible,owner);
+   if(envelope is not {Available:true}||native is null||!SteamMirrorWireProtocol.PositiveNativeVisible(native,Environment.TickCount64)||!SteamMirrorWireProtocol.SameNativeVisible(native,expected,Environment.TickCount64)||!owner.Current())return new(false,Error:"native-visible-command-stale");
+   using var bounded=CancellationTokenSource.CreateLinkedTokenSource(cancellation);bounded.CancelAfter(400);
+   using var pipe=new NamedPipeClientStream(".",owner.Name+".MirrorControl",PipeDirection.InOut,PipeOptions.Asynchronous|PipeOptions.CurrentUserOnly);await pipe.ConnectAsync(bounded.Token);
+   if(!GetNamedPipeServerProcessId(pipe.SafePipeHandle.DangerousGetHandle(),out uint pid)||pid!=owner.Companion.Id||!owner.Current()
+      ||NativeVisibleForOwner(native,owner) is null)return new(false,Error:"mirror-owner-changed");
+   var command=JsonSerializer.SerializeToUtf8Bytes(new SteamMirrorCommand(1,"close-native-visible",ExpectedNativeVisible:native),SteamMirrorWireProtocol.Json);
+   await pipe.WriteAsync(command,bounded.Token);await pipe.WriteAsync(new byte[]{10},bounded.Token);var bytes=await MirrorBytes(pipe,512,bounded.Token);
+   var answer=bytes is null?null:JsonSerializer.Deserialize<SteamMirrorCommandResult>(bytes,SteamMirrorWireProtocol.Json);
+   // Queued is not terminal. Only a subsequent exact phase2 read acknowledges source-hidden cleanup.
+   return answer is {Ok:true,Queued:true}&&owner.Current()?new(true,owner.GameId.ToString(CultureInfo.InvariantCulture),(uint)owner.Companion.Id,(uint)owner.Overlay.Id,0,false,owner.Session,Queued:true,MirrorSessionId:owner.MirrorSession,NativeVisible:native):new(false,Error:"native-visible-refused");
+  }catch(Exception e)when(e is IOException or ArgumentException or InvalidOperationException or OverflowException or UnauthorizedAccessException or OperationCanceledException or JsonException or System.ComponentModel.Win32Exception){diagnostic("Native visibility close refused: "+e.GetType().Name);return new(false,Error:"native-visible-command-unavailable");}
  }
  internal static async Task<Decision> RequestMirrorPreparationAsync(uint appId,CancellationToken cancellation,Action<string> diagnostic)
  {

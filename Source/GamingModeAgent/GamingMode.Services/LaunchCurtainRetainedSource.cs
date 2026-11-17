@@ -8,12 +8,13 @@ using Playhub.FirstContent;
 namespace GamingMode.Services;
 // App identity is resolved server-side by the existing retained association.
 // Client fields identify only its existing LC publisher and Steam cover receipt.
-internal sealed class LaunchCurtainRetainedSource:ILaunchCurtainSource
+internal sealed class LaunchCurtainRetainedSource:ILaunchCurtainSource,ILaunchCurtainSourceDiagnostics
 {
  readonly ILivePerformanceSource gameSource;readonly CurtainCoverRequest request;
  readonly Retained publisher,steam,game,frame;readonly FileStream steamImagePin,publisherImagePin;
  readonly CurtainVisualAuthority visual;readonly ContentTarget capture;
- bool disposed;
+ bool disposed;string? currentFailure;public string? CurrentFailure=>currentFailure;
+ bool Failed(string reason){currentFailure=reason;return false;}
  LaunchCurtainRetainedSource(ILivePerformanceSource source,CurtainCoverRequest r,Retained p,Retained s,Retained g,Retained f,
    FileStream image,FileStream publisherFile,CurtainVisualAuthority authority,ContentTarget target)
   =>(gameSource,request,publisher,steam,game,frame,steamImagePin,publisherImagePin,visual,capture)=(source,r,p,s,g,f,image,publisherFile,authority,target);
@@ -47,7 +48,8 @@ internal sealed class LaunchCurtainRetainedSource:ILaunchCurtainSource
     if(N.GetWindowThreadProcessId(steamWindow,out uint steamPid)!=request.SteamThread||steamPid!=request.SteamPid||steamClass!=request.SteamClass
       ||N.GetAncestor(steamWindow,2)!=steamWindow||N.GetWindow(steamWindow,4)!=0||!N.IsWindowVisible(steamWindow)||!N.IsWindowEnabled(steamWindow)||N.IsIconic(steamWindow)
       ||thread==0||framePid!=frame.Pid
-      ||N.GetAncestor(gameWindow,2)!=gameWindow||!N.GetWindowRect(gameWindow,out var gameRect)||!N.GetWindowRect(steamWindow,out var steamRect))return null;
+      ||N.GetAncestor(gameWindow,2)!=gameWindow||!FullscreenClient(gameWindow,gameClass)
+      ||!N.GetWindowRect(gameWindow,out var gameRect)||!N.GetWindowRect(steamWindow,out var steamRect))return null;
     string aumid="";
     if(frame.Pid!=game.Pid){var uwp=UwpSteamSessionAssociation.Find(game.Pid,request.AppId);
      if(uwp is null||uwp.GameBirth!=game.Birth||!UwpSteamSessionAssociation.IsOnlyRunningInstance(uwp))return null;
@@ -65,23 +67,37 @@ internal sealed class LaunchCurtainRetainedSource:ILaunchCurtainSource
  }
  public bool Current{
   get{
-   if(disposed||!gameSource.Current)return false;using var self=Process.GetCurrentProcess();uint session=(uint)self.SessionId;
-   if(!publisher.Current(session)||!steam.Current(session)||!game.Current(session)||!frame.Current(session))return false;
-   nint old=N.SetThreadDpiAwarenessContext(new(-4));if(old==0)return false;
+   if(disposed)return Failed("retained-disposed");if(!gameSource.RetainedIdentityCurrent)return Failed("game-source");using var self=Process.GetCurrentProcess();uint session=(uint)self.SessionId;
+   if(!publisher.Current(session))return Failed("publisher-process");if(!steam.Current(session))return Failed("steam-process");
+   if(!game.Current(session))return Failed("game-process");if(!frame.Current(session))return Failed("frame-process");
+   nint old=N.SetThreadDpiAwarenessContext(new(-4));if(old==0)return Failed("dpi-context");
    try{
     nint gw=(nint)visual.GameWindow,sw=(nint)visual.SteamWindow;
-    return gameSource.ForegroundProof is {} proof&&proof.WindowHandle==gw&&proof.ProcessId==frame.Pid&&proof.ProcessBirth==frame.Birth
-      &&N.GetWindowThreadProcessId(gw,out uint fp)==visual.FrameThread&&fp==frame.Pid&&Class(gw)==visual.GameClass&&N.GetAncestor(gw,2)==gw
-      &&N.GetWindowRect(gw,out var gr)&&gr.Array.SequenceEqual(visual.GameRect)
-      &&N.GetWindowThreadProcessId(sw,out uint sp)==visual.SteamThread&&sp==steam.Pid&&Class(sw)==visual.SteamClass&&N.GetAncestor(sw,2)==sw&&N.GetWindow(sw,4)==0
-      &&N.GetWindowRect(sw,out var sr)&&sr.Array.SequenceEqual(visual.SteamRect)&&N.IsWindowVisible(sw)&&N.IsWindowEnabled(sw)&&!N.IsIconic(sw)
-      &&gameSource.Current&&publisher.Current(session)&&steam.Current(session)&&frame.Current(session)&&game.Current(session)
-      &&N.GetForegroundWindow()==gw;
+    if(!(gameSource.ForegroundProof is {} proof&&proof.WindowHandle==gw&&proof.ProcessId==frame.Pid&&proof.ProcessBirth==frame.Birth))return Failed("game-foreground-proof");
+    if(!(N.GetWindowThreadProcessId(gw,out uint fp)==visual.FrameThread&&fp==frame.Pid&&Class(gw)==visual.GameClass&&N.GetAncestor(gw,2)==gw
+      &&FullscreenClient(gw,visual.GameClass)&&N.GetWindowRect(gw,out var gr)&&gr.Array.SequenceEqual(visual.GameRect)))return Failed("game-window");
+    if(!(N.GetWindowThreadProcessId(sw,out uint sp)==visual.SteamThread&&sp==steam.Pid&&Class(sw)==visual.SteamClass&&N.GetAncestor(sw,2)==sw&&N.GetWindow(sw,4)==0
+      &&N.GetWindowRect(sw,out var sr)&&sr.Array.SequenceEqual(visual.SteamRect)&&N.IsWindowVisible(sw)&&N.IsWindowEnabled(sw)&&!N.IsIconic(sw)))return Failed("steam-window");
+    if(!gameSource.Current)return Failed("game-source-after-windows");
+    // The complete final validation may have refreshed the retained window.
+    // Never carry its old proof across that refresh or infer current from the precheck.
+    if(!(gameSource.ForegroundProof is {} finalProof&&finalProof.WindowHandle==gw&&finalProof.ProcessId==frame.Pid&&finalProof.ProcessBirth==frame.Birth))return Failed("game-foreground-proof");
+    if(!publisher.Current(session))return Failed("publisher-process-after-windows");
+    if(!steam.Current(session))return Failed("steam-process-after-windows");if(!frame.Current(session))return Failed("frame-process-after-windows");if(!game.Current(session))return Failed("game-process-after-windows");
+    if(N.GetForegroundWindow()!=gw)return Failed("foreground-window");currentFailure=null;return true;
    }finally{N.SetThreadDpiAwarenessContext(old);}
   }
  }
  public Task<bool> RefreshAssociationAsync(CancellationToken stop)=>gameSource is ILivePerformanceAssociationRefresh refresh?refresh.RefreshAssociationAsync(stop):Task.FromResult(Current);
  public void Dispose(){if(disposed)return;disposed=true;gameSource.Dispose();publisher.Dispose();steam.Dispose();game.Dispose();frame.Dispose();steamImagePin.Dispose();publisherImagePin.Dispose();}
+ static bool FullscreenClient(nint window,string windowClass)
+ {
+  if(!N.GetClientRect(window,out var client))return false;
+  var start=new N.Point{X=client.Left,Y=client.Top};var end=new N.Point{X=client.Right,Y=client.Bottom};
+  var monitor=new N.Monitor{Size=Marshal.SizeOf<N.Monitor>()};nint screen=N.MonitorFromWindow(window,2);
+  return screen!=0&&N.ClientToScreen(window,ref start)&&N.ClientToScreen(window,ref end)&&N.GetMonitorInfoW(screen,ref monitor)
+    &&GameSurfaceGeometry.ClientCoversMonitor(windowClass,[start.X,start.Y,end.X,end.Y],monitor.Bounds.Array);
+ }
  static string Class(nint window){var text=new StringBuilder(256);return N.GetClassName(window,text,text.Capacity)>0?text.ToString():"";}
  sealed class Retained:IDisposable{
   readonly SafeProcessHandle process;internal uint Pid{get;}internal long Birth{get;}
@@ -93,6 +109,8 @@ internal sealed class LaunchCurtainRetainedSource:ILaunchCurtainSource
  }
  static class N{
   [StructLayout(LayoutKind.Sequential)]internal struct Rect{internal int Left,Top,Right,Bottom;internal int[] Array=>[Left,Top,Right,Bottom];}
+  [StructLayout(LayoutKind.Sequential)]internal struct Point{internal int X,Y;}
+  [StructLayout(LayoutKind.Sequential)]internal struct Monitor{internal int Size;internal Rect Bounds,Work;internal uint Flags;}
   [DllImport("kernel32.dll",SetLastError=true)]internal static extern SafeProcessHandle OpenProcess(uint access,bool inherit,uint pid);
   [DllImport("kernel32.dll")]internal static extern uint GetProcessId(SafeProcessHandle process);
   [DllImport("kernel32.dll")]internal static extern uint WaitForSingleObject(SafeProcessHandle process,uint milliseconds);
@@ -106,6 +124,10 @@ internal sealed class LaunchCurtainRetainedSource:ILaunchCurtainSource
   [DllImport("user32.dll")]internal static extern nint GetWindow(nint window,uint flags);
   [DllImport("user32.dll",EntryPoint="GetClassNameW",CharSet=CharSet.Unicode)]internal static extern int GetClassName(nint window,StringBuilder name,int count);
   [DllImport("user32.dll")]internal static extern bool GetWindowRect(nint window,out Rect rect);
+  [DllImport("user32.dll")]internal static extern bool GetClientRect(nint window,out Rect rect);
+  [DllImport("user32.dll")]internal static extern bool ClientToScreen(nint window,ref Point point);
+  [DllImport("user32.dll")]internal static extern nint MonitorFromWindow(nint window,uint flags);
+  [DllImport("user32.dll",CharSet=CharSet.Unicode)]internal static extern bool GetMonitorInfoW(nint monitor,ref Monitor info);
   [DllImport("user32.dll")]internal static extern bool IsWindowVisible(nint window);
   [DllImport("user32.dll")]internal static extern bool IsWindowEnabled(nint window);
   [DllImport("user32.dll")]internal static extern bool IsIconic(nint window);

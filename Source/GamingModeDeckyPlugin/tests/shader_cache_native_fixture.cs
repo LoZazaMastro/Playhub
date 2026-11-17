@@ -12,6 +12,16 @@ public sealed class FakeDrs : IShaderDrs {
   if(FailAfter && Writes==1)throw new Exception();return true;
  }
 }
+public sealed class RejectedCasReadFailure : IShaderDrs {
+ public ShaderState Current=new ShaderState{Enabled=true,Limit=16384,DefaultLimit=16384,EnableDefault=true,LimitDefault=true};
+ public int Reads,Writes;
+ public ShaderState Read(){if(++Reads==2)throw new Exception("read failed after rejected CAS");return Current;}
+ public bool Write(ShaderState expected,ShaderState wanted){
+  Writes++;
+  if(Writes==1){Current=new ShaderState{Enabled=false,Limit=4096,DefaultLimit=16384,EnableDefault=false,LimitDefault=false};return false;}
+  Current=wanted;return true;
+ }
+}
 public static class Fixture {
  static int count;
  static void Check(bool value,string name){if(!value)throw new Exception(name);Console.WriteLine("PASS "+name);count++;}
@@ -21,6 +31,7 @@ public static class Fixture {
   r=ShaderTransaction.Run(f,old,false,4096,false);Check(r.status=="applied"&&!r.state.Enabled&&r.state.Limit==4096&&f.Writes==1,"actual desired values read back");
   r=ShaderTransaction.Run(f,old,true,1024,false);Check(r.status=="changed"&&f.Writes==1,"stale expected state rejects write");
   f=new FakeDrs();f.RejectWrite=true;r=ShaderTransaction.Run(f,f.Read(),false,4096,false);Check(r.status=="changed"&&f.Writes==0,"change immediately before save vetoes write");
+  var rejected=new RejectedCasReadFailure();r=ShaderTransaction.Run(rejected,rejected.Current,false,4096,false);Check(r.status=="changed"&&rejected.Writes==1&&!r.state.Enabled&&r.state.Limit==4096,"rejected CAS and read failure never roll back an external desired value");
   f=new FakeDrs();f.FailBefore=true;r=ShaderTransaction.Run(f,f.Read(),false,4096,false);Check(r.status=="failed"&&r.state.Enabled&&f.Writes==1,"permission failure does not claim a changed setting");
   f=new FakeDrs();f.FailAfter=true;r=ShaderTransaction.Run(f,f.Read(),false,4096,false);Check(r.status=="restored"&&r.state.Enabled&&r.state.Limit==16384&&f.Writes==2,"save failure conditionally restores original");
   f=new FakeDrs();f.ExternalAfter=true;r=ShaderTransaction.Run(f,f.Read(),false,4096,false);Check(r.status=="changed"&&r.state.Limit==10240&&f.Writes==1,"new external setting survives rollback");

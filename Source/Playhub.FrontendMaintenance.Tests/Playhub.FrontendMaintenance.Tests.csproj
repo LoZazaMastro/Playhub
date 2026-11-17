@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net8.0-windows</TargetFramework><OutputType>Exe</OutputType><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../PlayhubSetup/ActiveDeckyPluginProof.cs" Link="ActiveDeckyPluginProof.cs" />
+    <Compile Include="../PlayhubSetup/BundledPlayhubMaintenance.cs" Link="BundledPlayhubMaintenance.cs" />
+    <Compile Include="../Playhub/Services/BundledExecutableCopy.cs" Link="BundledExecutableCopy.cs" />
+    <Compile Include="../Playhub/Services/DeckyPluginReload.cs" Link="BeforeDeckyPluginReload.cs" />
+    <Compile Include="../Shared/EditorialPhotoMigration.cs" Link="EditorialPhotoMigration.cs" />
+    <Compile Include="../PlayhubSetup/BundledPluginProcessGuard.cs" Link="BundledPluginProcessGuard.cs" />
+  </ItemGroup>
+</Project>

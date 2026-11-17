@@ -24,7 +24,7 @@ internal sealed class SteamMirrorOpeningStop(ulong gameId,uint gamePid,long game
             if(requiresNativeClose&&value.OwnedForegroundPhase==SteamMirrorOwnedForegroundPhase.None)return;
             if(value.State==0&&value.CleanupComplete&&value.DestinationWindow==0
                 &&(!requiresNativeClose||value.OwnedForegroundPhase==SteamMirrorOwnedForegroundPhase.NativeClosed)&&(value.DestinationCookie==0||value.DestinationCookie==held.DestinationCookie)
-                &&!value.PreparedCurrent&&!value.ShownCurrent&&!value.DestinationShown&&!value.DwmAttached)
+                &&!value.PreparedCurrent&&!value.ShownCurrent&&!value.DestinationShown&&!value.CompositionAttached)
             {admitted=null;closeQueued=false;requiresNativeClose=false;CancellationUnconfirmed=false;return;}
             if(value.State is 0 or 4 &&requiresNativeClose
                 &&value.OwnedForegroundPhase==SteamMirrorOwnedForegroundPhase.AwaitingNativeClose){admitted=value;return;}

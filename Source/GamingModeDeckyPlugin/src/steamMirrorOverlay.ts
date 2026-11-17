@@ -1,5 +1,56 @@
 import { findOverlayWindow, selectOverlay, type OverlayIdentity } from "./dashboardOverlay";
-import { steamMirrorNavigation, type MirrorNavigation } from "./steamMirrorNavigation";
+import { steamMirrorNavigation, steamNativeVisibleNavigation, type NativeVisibleNavigation, type MirrorNavigation } from "./steamMirrorNavigation";
+
+export interface SteamNativeVisible {
+ protocol: 1; phase: 1 | 2; sessionId: string; generation: string; gameId: string; expiresAt: string;
+ observedAt: string; readAt: string; sourceHwnd: string; sourceCookie: string; ownerPid: number; ownerBirth: string; gamePid: number; gameBirth: string;
+ physicalObservedAt: string; physicalExpiresAt: string; guideEpoch: string; receiptFrame: string; sourceFrame: string;
+ valveOpen: boolean; ownCleanupComplete: true; inputAuthority: false; visualAuthority: false;
+ baselineSamples: number; baselineMatched: number; outputSamples: number; outputMatched: number;
+}
+const number64 = (v: unknown, zero = false): v is string => typeof v === "string" && (zero ? /^(0|[1-9]\d{0,19})$/ : /^[1-9]\d{0,19}$/).test(v) && BigInt(v) <= 0xffffffffffffffffn;
+const nativePid = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v > 0 && v <= 0xffffffff;
+const count = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 2304;
+
+// This produces NO MirrorPresentation, input proof, navigation lease or Shown.
+export function nativeVisibleRecord(reply: MirrorReply, parent: MirrorPresentation, phase: 1 | 2 = 1): SteamNativeVisible | undefined {
+ const n = reply?.nativeVisible;
+ if (reply?.ok !== true || !n || n.protocol !== 1 || n.phase !== phase || !/^[0-9a-f]{64}$/.test(n.sessionId)
+   || !nativePid(n.ownerPid) || !nativePid(n.gamePid) || reply.companionPid !== n.ownerPid || !nativePid(reply.overlayPid) || reply.gameId !== n.gameId
+   || n.inputAuthority !== false || n.visualAuthority !== false || n.ownCleanupComplete !== true || typeof n.valveOpen !== "boolean") return;
+ for (const k of ["generation","gameId","expiresAt","observedAt","readAt","sourceHwnd","sourceCookie","ownerBirth","gameBirth","guideEpoch"] as const) if (!number64(n[k])) return;
+ for (const k of ["physicalObservedAt","physicalExpiresAt","receiptFrame","sourceFrame"] as const) if (!number64(n[k], true)) return;
+ for (const k of ["sessionId","generation","gameId","sourceHwnd","sourceCookie","ownerPid","ownerBirth","gamePid","gameBirth"] as const) if (n[k] !== parent[k]) return;
+ const seen = BigInt(n.observedAt), read = BigInt(n.readAt);
+ if (seen > read || read - seen > 250n) return;
+ if (phase === 2) {
+  if (n.physicalObservedAt !== "0" || n.physicalExpiresAt !== "0") return;
+ } else {
+  const physical = BigInt(n.physicalObservedAt), end = BigInt(n.physicalExpiresAt), lease = BigInt(n.expiresAt);
+  if (!n.valveOpen || physical <= 0n || physical > seen || read - physical > 250n || end <= read || end - physical > 250n || end > lease
+   || lease <= read || lease - read > 5000n || BigInt(n.sourceFrame) <= BigInt(n.receiptFrame)) return;
+  if (![n.baselineSamples,n.baselineMatched,n.outputSamples,n.outputMatched].every(count)
+   || n.baselineSamples < 16 || n.outputSamples < 16 || n.baselineMatched > n.baselineSamples || n.outputMatched > n.outputSamples
+   || n.baselineMatched * 100 < n.baselineSamples * 95 || n.outputMatched * 100 < n.outputSamples * 95) return;
+ }
+ return Object.freeze({ ...n });
+}
+
+
+export interface NativeVisibleInputStatus {
+ protocol:1;state:"neutralizing"|"menu"|"returning"|"closed"|"uncertain";sessionId:string;generation:string;gameId:string;guideEpoch:string;
+ ownerPid:number;ownerBirth:string;gamePid:number;gameBirth:string;sourceHwnd:string;sourceCookie:string;observedAt:string;readAt:string;expiresAt:string;
+ neutralHeld:boolean;menuLayoutReady:boolean;inputReady:boolean;automaticSettled:boolean;sourceHidden:boolean;
+}
+export function nativeInputReady(reply:MirrorReply,n:SteamNativeVisible):NativeVisibleInputStatus|undefined {
+ const i=reply.nativeVisibleInput;
+ if(!i||i.protocol!==1||i.state!=="menu"||i.inputReady!==true||i.menuLayoutReady!==true||i.neutralHeld!==true||i.sourceHidden!==false||i.automaticSettled!==false)return;
+ for(const k of ["sessionId","generation","gameId","guideEpoch","ownerPid","ownerBirth","gamePid","gameBirth","sourceHwnd","sourceCookie"] as const)if(i[k]!==n[k])return;
+ if(![i.observedAt,i.readAt,i.expiresAt].every(v=>number64(v)))return;
+ const seen=BigInt(i.observedAt),read=BigInt(i.readAt),expiry=BigInt(i.expiresAt);
+ if(seen>read||read-seen>250n||read>BigInt(n.readAt)||BigInt(n.readAt)-seen>250n||expiry<=BigInt(n.readAt)||expiry>BigInt(n.physicalExpiresAt)||expiry-seen>250n)return;
+ return Object.freeze({...i});
+}
 
 export interface MirrorPresentation {
   protocol: 1;
@@ -38,6 +89,7 @@ export interface MirrorReply {
   overlayPid?: number;
   mirror?: MirrorPresentation;
   continuation?: MirrorContinuation;
+  nativeVisible?: SteamNativeVisible; nativeVisibleInput?: NativeVisibleInputStatus;
   // Read-only authenticated session discovery, not presentation authority.
   mirrorSessionId?: string;
   error?: string;
@@ -48,6 +100,7 @@ interface Dependencies {
   prepare(app: number): Promise<MirrorReply>;
   read(app: number, overlayPid: number): Promise<MirrorReply>;
   command(app: number, overlayPid: number, action: "show" | "close", expected: MirrorPresentation): Promise<{ ok: boolean }>;
+  closeNativeVisible?(app: number, overlayPid: number, expected: SteamNativeVisible): Promise<{ ok: boolean }>;
   browserInfo(): Promise<unknown>;
   windows(): unknown;
   navigation?(): any;
@@ -60,7 +113,7 @@ interface Dependencies {
 }
 
 type MenuReceipt = { browser: OverlayIdentity; window: any; menu: any; parent: any; document: any; side: 1 | 2 };
-type Owner = { continuation?: { marker:MirrorContinuation; parent:MirrorPresentation; localDeadline:number }; menuReceipt?: MenuReceipt; nativeCloseRequired?: boolean; closeStateAttempted?: boolean; app: number; overlayPid: number; mirror: MirrorPresentation; browser?: OverlayIdentity; window?: any; menu?: any; navigation?: MirrorNavigation };
+type Owner = { nativeRevocationRequested?:boolean; nativeVisible?: SteamNativeVisible; nativeSourceSeen?:SteamNativeVisible; nativeNavigation?:NativeVisibleNavigation; nativeNavigationIntent?:"main"|"quick"; nativeNavigationAttempted?:boolean; nativeNavigationConfirmed?:boolean; nativeInputReadySeen?:boolean; nativeInputUntil?:number; nativeLocalUntil?: number; continuation?: { marker:MirrorContinuation; parent:MirrorPresentation; localDeadline:number }; menuReceipt?: MenuReceipt; nativeCloseRequired?: boolean; closeStateAttempted?: boolean; app: number; overlayPid: number; mirror: MirrorPresentation; browser?: OverlayIdentity; window?: any; menu?: any; navigation?: MirrorNavigation };
 const uint64 = (value: unknown): value is string => typeof value === "string" && /^[1-9]\d{0,19}$/.test(value)
   && BigInt(value) <= 0xffffffffffffffffn;
 const pid = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value > 0 && value <= 0xffffffff;
@@ -178,36 +231,167 @@ export function createSteamMirrorOverlay(deps: Dependencies) {
   }
   function passiveCurrent(value:Owner) {return owner===value&&wanted&&value.continuation?.marker.phase===1&&deps.now()<value.continuation.localDeadline;}
   async function reread(value: Owner, state?: "prepared" | "shown") {
-    const started=deps.now(),reply = await deps.read(value.app, value.overlayPid);
+    const version=revision,started=deps.now(),reply = await deps.read(value.app, value.overlayPid);
     noteContinuation(value,reply,started);
+    if(adoptNative(value,reply,started,version))return;
     const proof = currentMirror(reply, state);
     return proof && reply.overlayPid === value.overlayPid && same(proof, value.mirror) ? proof : undefined;
   }
-  function replacementSession(reply: MirrorReply, value: Owner) {
+  function replacementSession(reply: MirrorReply, value: Owner, app = value.app) {
     const session = reply?.mirrorSessionId;
-    return typeof session === "string" && /^[0-9a-f]{64}$/.test(session)
+    return pid(app) && app >= 0x80000000 && typeof session === "string" && /^[0-9a-f]{64}$/.test(session)
       && session !== value.mirror.sessionId.toLowerCase()
-      && reply.gameId === value.mirror.gameId && pid(reply.companionPid) && pid(reply.overlayPid)
-      && (reply.ok === true && reply.mirror?.sessionId === session
-        || reply.ok === false && reply.error === "mirror-not-prepared" && reply.mirror == null);
+      && reply.gameId === ((BigInt(app) << 32n) | 0x02000000n).toString() && pid(reply.companionPid)
+      && (pid(reply.overlayPid) && (reply.ok === true && reply.mirror?.sessionId === session
+          || reply.ok === false && reply.error === "mirror-not-prepared" && reply.mirror == null)
+        || reply.ok === false && reply.error === "mirror-session-discovered" && reply.overlayPid === 0
+          && reply.mirror == null && reply.nativeVisible == null && reply.nativeVisibleInput == null && reply.continuation == null);
   }
   async function releaseReplacedOwner(value: Owner, observed?: MirrorReply) {
     if (owner !== value) return true;
-    if (observed?.ok === true && !replacementSession(observed, value)) return false;
+    const app = deps.runningApp();
+    if (!pid(app) || app < 0x80000000) return false;
+    const prior = app === value.app ? observed : undefined;
+    if (prior?.ok === true && !replacementSession(prior, value, app)) return false;
     const version = revision;
     // A missing old host is unknown, not proof of retirement. Discovery must
     // authenticate a different wrapper/game/companion session (including birth).
-    const reply = observed && replacementSession(observed, value) ? observed : await deps.read(value.app, 0);
+    const reply = prior && replacementSession(prior, value, app) ? prior : await deps.read(app, 0);
     if (owner !== value) return true;
-    if (revision !== version || !replacementSession(reply, value)) return false;
+    if (revision !== version || deps.runningApp() !== app || !replacementSession(reply, value, app)) return false;
     owner = undefined;
     trace("mirror-session-replaced");
     // Drop only this local receipt. Never send old Close/Set0 to the new session.
     return true;
   }
-  async function retire(value: Owner) {
+  function nativeUiCurrent(value: Owner, version: number): boolean {
+    const held=value.menuReceipt, browser=value.browser;
+    return owner===value && live(value.app,version) && Boolean(browser && value.window && value.menu && held
+      && findOverlayWindow(deps.windows(),browser)===value.window && value.window.MenuStore===value.menu
+      && held.menu===value.menu && held.window===value.window && held.parent?.closed!==true && held.parent?.document===held.document
+      && (value.window.BrowserWindow??value.window.m_BrowserWindow)===held.parent)
+      && owner===value && live(value.app,version);
+  }
+  function adoptNative(value:Owner,reply:MirrorReply,started:number,version:number):boolean {
+    const n=nativeVisibleRecord(reply,value.mirror),now=deps.now();
+    if(!deps.closeNativeVisible || reply.overlayPid!==value.overlayPid || !n || value.nativeVisible && value.nativeVisible.guideEpoch!==n.guideEpoch || !nativeUiCurrent(value,version) || !Number.isFinite(started) || !Number.isFinite(now) || now<started)return false;
+    // Remember the separately authenticated source mode for cleanup only.
+    // A slow RPC grants no local display/navigation/input freshness, and its
+    // already-closed own destination can never prove this source is hidden.
+    value.nativeSourceSeen=n;
+    const remaining=Number(BigInt(n.physicalExpiresAt)-BigInt(n.readAt));
+    if(now-started>=remaining){trace("native-visible-rpc-budget-pending");return false;}
+    value.nativeVisible=n;value.nativeLocalUntil=now+remaining-(now-started);value.continuation=undefined;
+    const input=nativeInputReady(reply,n);
+    value.nativeInputUntil=input?now+Math.min(remaining,Number(BigInt(input.expiresAt)-BigInt(n.readAt)))-(now-started):undefined;
+    if(input && value.nativeInputUntil!==undefined && value.nativeInputUntil>now && deps.navigation){
+      if(!value.nativeInputReadySeen){value.nativeInputReadySeen=true;trace("native-visible-input-ready");}
+      if(value.nativeNavigationIntent!==intent){value.nativeNavigation=undefined;value.nativeNavigationAttempted=false;value.nativeNavigationIntent=intent;}
+      value.nativeNavigation ??= steamNativeVisibleNavigation({app:value.app,browser:value.browser!,overlay:value.window,menu:value.menu,
+        nativeVisible:n,intent},deps.navigation,deps.windows,()=>nativeUiCurrent(value,version)&&nativeCurrent(value)
+          &&value.nativeInputUntil!==undefined&&deps.now()<value.nativeInputUntil,deps.now);
+      if(value.nativeNavigation && !value.nativeNavigationAttempted && !value.nativeNavigation.read(n).confirmed){
+        value.nativeNavigationAttempted=value.nativeNavigation.activate().attempted;
+        if(value.nativeNavigationAttempted)trace("native-visible-navigation-requested");
+      }
+      if(value.nativeNavigation?.read(n).confirmed&&!value.nativeNavigationConfirmed){value.nativeNavigationConfirmed=true;trace("native-visible-navigation-confirmed");}
+    } else value.nativeNavigation=undefined;
+    return nativeUiCurrent(value,version);
+  }
+  function nativeCurrent(value:Owner):boolean {
+    const now=deps.now();return Boolean(value.nativeVisible && value.nativeLocalUntil && Number.isFinite(now) && now<value.nativeLocalUntil);
+  }
+  function nativeClosedForOwner(value:Owner,reply:MirrorReply):SteamNativeVisible|undefined {
+    const terminal=nativeVisibleRecord(reply,value.mirror,2);
+    return terminal&&(!value.nativeSourceSeen||terminal.guideEpoch===value.nativeSourceSeen.guideEpoch)?terminal:undefined;
+  }
+  // Explicit user revocation is not a presentation/input capability. A stale
+  // native sample can identify our retained original menu, never make it Shown.
+  async function revokeNativeFromUser(value:Owner,version:number,reply:MirrorReply):Promise<boolean> {
+    const held=value.menuReceipt,seen=value.nativeSourceSeen;
+    if(value.nativeRevocationRequested || !held || !seen || replacementSession(reply,value))return false;
+    const keys=["sessionId","generation","gameId","sourceHwnd","sourceCookie","ownerPid","ownerBirth","gamePid","gameBirth"] as const;
+    if(!keys.every(k=>seen[k]===value.mirror[k]) || typeof reply.mirrorSessionId==="string"&&reply.mirrorSessionId!==seen.sessionId
+      || reply.gameId && reply.gameId!==seen.gameId
+      || reply.companionPid && reply.companionPid!==seen.ownerPid
+      || reply.nativeVisible && [...keys,"guideEpoch" as const].some(k=>reply.nativeVisible![k]!==seen[k]))return false;
+    const bound=()=>owner===value&&revision===version&&!disposed&&value.menuReceipt===held&&value.nativeSourceSeen===seen
+      &&value.browser===held.browser&&value.window===held.window&&value.menu===held.menu&&held.window.MenuStore===held.menu
+      &&(held.window.BrowserWindow??held.window.m_BrowserWindow)===held.parent&&held.parent.closed!==true
+      &&held.parent.document===held.document&&owner===value&&revision===version;
+    const current=()=>bound()&&nativeUiCurrent(value,version)&&bound();
+    if(!current())return false;
+    const side=held.menu.GetOpenSideMenu?.(),close=held.menu.CloseSideMenus;
+    if(!current() || side!==held.side&&side!==0)return false;
+    if(!current())return false;
+    const finalSide=held.menu.GetOpenSideMenu?.();
+    if(!bound()||finalSide!==held.side&&finalSide!==0)return false;
+    value.nativeVisible=undefined;value.nativeLocalUntil=undefined;value.nativeInputUntil=undefined;value.nativeNavigation=undefined;
+    if(finalSide!==0&&typeof close==="function"){try{Reflect.apply(close,held.menu,[]);}catch{/* Set0 is still an explicit revocation if this exact menu remains ours. */}}
+    if(!current())return false;
+    const closedSide=held.menu.GetOpenSideMenu?.();
+    if(!bound()||closedSide!==0&&closedSide!==held.side)return false;
+    value.nativeRevocationRequested=true; // At most one SDK attempt, including unknown completion.
+    await deps.setOverlayState(seen.gameId,0);
+    trace("native-visible-user-revocation");
+    return current(); // Not source-hidden; only a subsequent exact phase2 acknowledges it.
+  }
+  async function retireNative(value:Owner,version:number,explicitUserClose=false):Promise<boolean> {
+    if(!(value.nativeVisible||value.nativeSourceSeen) || !deps.closeNativeVisible)return false;
+    const started=deps.now(),first=await deps.read(value.app,value.overlayPid);
+    if(owner!==value)return true;
+    if(revision!==version)return false;
+    if(!first?.ok&&await releaseReplacedOwner(value,first))return true;
+    if(owner!==value)return true;
+    if(revision!==version)return false;
+    const elapsed=deps.now()-started;if(first?.overlayPid!==value.overlayPid||!Number.isFinite(elapsed)||elapsed<0||elapsed>250){value.nativeVisible=undefined;value.nativeLocalUntil=undefined;return false;}
+    if(owner!==value)return true;
+    const active=nativeVisibleRecord(first,value.mirror),terminal=nativeClosedForOwner(value,first);
+    if(terminal){owner=undefined;trace("native-visible-source-closed");return true;}
+    if(value.nativeRevocationRequested)return false;
+    if(explicitUserClose){
+      if(!await revokeNativeFromUser(value,version,first))return false;
+      if(active&&nativeUiCurrent(value,version))await deps.closeNativeVisible(value.app,value.overlayPid,active);
+      for(let i=0;i<4&&owner===value&&revision===version;i++){
+        const reply=await deps.read(value.app,value.overlayPid);
+        if(owner!==value||revision!==version)return owner!==value;
+        if(nativeClosedForOwner(value,reply)){owner=undefined;trace("native-visible-source-closed");return true;}
+        if(i<3)await deps.delay(25);
+      }
+      return false;
+    }
+    if(active && nativeUiCurrent(value,version)){
+      // An explicit close/invalidation owns this original source. Successful
+      // passthrough never calls this routine or tears down Valve's menu.
+      if(active.valveOpen){trace("native-visible-explicit-set0");await deps.setOverlayState(value.mirror.gameId,0);}
+      if(owner!==value)return true;
+      if(active)await deps.closeNativeVisible(value.app,value.overlayPid,active);
+      for(let i=0;i<4 && owner===value;i++){
+        const reply=await deps.read(value.app,value.overlayPid);
+        if(nativeClosedForOwner(value,reply)){owner=undefined;trace("native-visible-source-closed");return true;}
+        if(i<3)await deps.delay(25);
+      }
+      return false;
+    }
+    // No native-visible authority survives unknown/expiry. The pre-existing
+    // exact-owner retirement performs its own authenticated cleanup checks.
+    value.nativeVisible=undefined;value.nativeLocalUntil=undefined;return false;
+  }
+  async function retire(value: Owner,explicitUserClose=false) {
     if (owner !== value) return true;
     const version = revision;
+    if(value.nativeVisible||value.nativeSourceSeen){
+      // A missing old document is not a closed source. Only a different
+      // authenticated current launch may retire its local bookkeeping.
+      if(!nativeUiCurrent(value,version)&&await releaseReplacedOwner(value))return true;
+      if(owner!==value)return true;
+      if(revision!==version)return false;
+      // Automatic observation failure while still wanted does not close a
+      // native source. Only explicit close/invalidation or a terminal source
+      // receipt may retire it; never fall through to old own-Snapshot cleanup.
+      if(wanted&&live(value.app,version)&&!value.nativeRevocationRequested){trace("native-visible-passive-awaiting-fresh-proof");return false;}
+      return retireNative(value,version,explicitUserClose);
+    }
     // Keep the owner through a rejected/unknown close so retry or dispose can
     // still retire it. A snapshot never grants authority over a replacement.
     for (let attempt = 0; attempt < 4 && owner === value; attempt++) {
@@ -249,11 +433,83 @@ export function createSteamMirrorOverlay(deps: Dependencies) {
     }
     return owner !== value;
   }
-  async function open(app: number, version: number) {
+  // Only a new explicit Guide/QuickAccess edge may retire an old local
+  // native owner in favour of a strictly newer authenticated generation.
+  async function reopenNativeGeneration(value:Owner,app:number,version:number):Promise<boolean> {
+    const previous=value.nativeSourceSeen??value.nativeVisible;
+    if(!previous||owner!==value||value.app!==app||!live(app,version))return false;
+    const lineage=["sessionId","gameId","sourceHwnd","sourceCookie","ownerPid","ownerBirth","gamePid","gameBirth"] as const;
+    const newer=(parent:MirrorPresentation,guide:string)=>lineage.every(k=>parent[k]===value.mirror[k])
+      &&uint64(parent.generation)&&uint64(guide)&&BigInt(parent.generation)>BigInt(previous.generation)&&BigInt(guide)>BigInt(previous.guideEpoch);
+    const local=()=>owner===value&&!disposed&&revision===version;
+    const current=()=>local()&&deps.runningApp()===app&&local();
+    const nativeCandidate=(reply:MirrorReply)=>{
+      const parent=reply?.mirror,n=parent&&nativeVisibleRecord(reply,parent);
+      if(!parent||reply.mirrorSessionId!==parent.sessionId||parent.protocol!==1||parent.state!=="closed"||parent.cleanupComplete!==true
+        ||parent.preparedCurrent!==false||parent.shownCurrent!==false||parent.leaseCurrent!==false||parent.actualScope!==0
+        ||parent.destinationHwnd!=="0"||parent.destinationCookie!=="0"||!n||!newer(parent,n.guideEpoch))return;
+      return {parent:Object.freeze({...parent}),native:n};
+    };
+    const budget=(n:SteamNativeVisible,started:number)=>{
+      const now=deps.now(),remaining=Number(BigInt(n.physicalExpiresAt)-BigInt(n.readAt));
+      return Number.isFinite(now)&&Number.isFinite(started)&&now>=started&&now-started<remaining&&current();
+    };
+    const started=deps.now(),first=await deps.read(app,value.overlayPid);
+    if(!current())return false;
+    const candidate=nativeCandidate(first);
+    if(!candidate){
+      const parent=currentMirror(first,"prepared"),continuation=mirrorContinuation(first,value.mirror);
+      if(!parent||first.mirrorSessionId!==parent.sessionId||!continuation||!newer(parent,continuation.guideEpoch)||continuation.resumedGeneration!==parent.generation
+        ||!(continuation.phase===2||continuation.phase===4)||!uint64(parent.readAt)
+        ||BigInt(parent.readAt)<BigInt(parent.observedAt)||BigInt(parent.readAt)>=BigInt(parent.expiresAt))return false;
+      const now=deps.now(),remaining=Number(BigInt(parent.expiresAt)-BigInt(parent.readAt));
+      if(!Number.isFinite(now)||now<started||now-started>=Math.min(250,remaining)||!current())return false;
+      owner=undefined;wanted=true;trace("native-visible-explicit-generation-replaced");
+      await open(app,version,first);return true; // Actual Prepared admission, no second Open delivery.
+    }
+    if(first.overlayPid!==value.overlayPid||!budget(candidate.native,started))return false;
+    const infos=await deps.browserInfo();if(!current())return false;
+    const browser=Array.isArray(infos)?selectOverlay(infos.filter(info=>Number(info?.unPID)===value.overlayPid
+      &&String(info?.gameID)===candidate.parent.gameId),app):undefined;
+    const window=browser?findOverlayWindow(deps.windows(),browser):undefined,menu=window?.MenuStore;
+    if(!browser||!window||!menu||!current())return false;
+    const checkedAt=deps.now(),reply=await deps.read(app,value.overlayPid),fresh=nativeCandidate(reply);
+    if(!fresh||fresh.native.generation!==candidate.native.generation||fresh.native.guideEpoch!==candidate.native.guideEpoch
+      ||reply.overlayPid!==value.overlayPid||!budget(fresh.native,checkedAt)||findOverlayWindow(deps.windows(),browser)!==window
+      ||window.MenuStore!==menu||!current())return false;
+    const next:Owner={app,overlayPid:value.overlayPid,mirror:fresh.parent,browser,window,menu};
+    const receipt=captureMenu(next,intent==="quick"?2:1);
+    if(!receipt||!budget(fresh.native,checkedAt)||!current())return false;
+    // No old menu close, native close, Set0, synthetic Shown or input lease.
+    owner=next;wanted=true;next.menuReceipt=receipt;
+    next.nativeSourceSeen=fresh.native;next.nativeVisible=fresh.native;
+    next.nativeLocalUntil=checkedAt+Number(BigInt(fresh.native.physicalExpiresAt)-BigInt(fresh.native.readAt));
+    deps.admitted?.(app,fresh.parent);
+    // Guide+A may coalesce while the authenticated reads are in flight.
+    // Capture the final intent after those reads/providers, never their caller's old side.
+    for(let attempt=0;attempt<2;attempt++){
+      const requested=intent,method=menu[requested==="quick"?"OpenQuickAccessMenu":"OpenMainMenu"],tab=requested==="quick"?menu.GetQuickAccessTab?.()??0:undefined;
+      const currentReceipt=captureMenu(next,requested==="quick"?2:1);
+      if(typeof method!=="function"||!currentReceipt)return true;
+      next.menuReceipt=currentReceipt;
+      if(!live(app,version)||owner!==next||!nativeUiCurrent(next,version)||!nativeCurrent(next))return true;
+      const commitAt=deps.now();
+      if(!Number.isFinite(commitAt)||commitAt<checkedAt||commitAt>=next.nativeLocalUntil!||owner!==next||disposed||revision!==version)return true;
+      if(intent!==requested)continue; // Only local guards follow the last provider before the real API.
+      Reflect.apply(method,menu,requested==="quick"?[tab]:[]);
+      if(!live(app,version)||owner!==next||!nativeUiCurrent(next,version))return true;
+      if(intent!==requested)continue;
+      // Navigation still requires the NEW generation's actual neutral/769 ACK.
+      if(adoptNative(next,reply,checkedAt,version))trace("native-visible-explicit-generation-replaced");
+      return true;
+    }
+    return true;
+  }
+  async function open(app: number, version: number, admitted?:MirrorReply) {
     if (!live(app, version)) return;
     if (owner && !await retire(owner)) return;
     if (!live(app, version)) return;
-    const delivery = await deps.prepare(app);
+    const delivery = admitted ?? await deps.prepare(app);
     if (!delivery?.ok || !pid(delivery.overlayPid) || !pid(delivery.companionPid)) return;
     const deadline = deps.now() + 3500;
     const receipt = identifiedMirror(delivery);
@@ -348,6 +604,7 @@ export function createSteamMirrorOverlay(deps: Dependencies) {
       while (live(app, version) && deps.now() < deadline) {
         const shown = await reread(value, "shown");
         if (!live(app, version)) return;
+        if(nativeCurrent(value) && nativeUiCurrent(value,version)){if(intent!==mountedIntent&&!mount(intent))return;trace("native-visible-passthrough");return;}
         if (intent !== mountedIntent) {
           const current = shown ?? await reread(value);
           if (!current || !live(app, version) || !mount(intent)) return;
@@ -366,7 +623,8 @@ export function createSteamMirrorOverlay(deps: Dependencies) {
         let keep = false;
         try {
           const final = live(app, version) ? await reread(value, "shown") : undefined;
-          keep = (Boolean(final)||passiveCurrent(value)) && live(app, version);
+          if(nativeCurrent(value) && nativeUiCurrent(value,version)){keep=true;trace("native-visible-retained");}
+          keep = (keep||Boolean(final)||passiveCurrent(value)) && live(app, version);
           if (keep && final) {
             // An intent can arrive during this last native await. Reuse its
             // fresh Shown proof; never prepare, compose or show a second time.
@@ -383,6 +641,17 @@ export function createSteamMirrorOverlay(deps: Dependencies) {
         if (!keep) await retire(value);
       }
     }
+  }
+  async function switchNativeMenu(value:Owner,version:number,requested:"main"|"quick"):Promise<boolean>{
+    if(!value.nativeVisible)return false;
+    const started=deps.now(),reply=await deps.read(value.app,value.overlayPid);
+    if(!adoptNative(value,reply,started,version)||!nativeUiCurrent(value,version))return false;
+    const side=requested==="quick"?2:1,method=value.menu?.[requested==="quick"?"OpenQuickAccessMenu":"OpenMainMenu"];
+    const receipt=captureMenu(value,side),tab=requested==="quick"?value.menu?.GetQuickAccessTab?.()??0:undefined;
+    if(typeof method!=="function"||!receipt||!nativeCurrent(value)||!nativeUiCurrent(value,version))return false;
+    value.menuReceipt=receipt;Reflect.apply(method,value.menu,requested==="quick"?[tab]:[]);
+    if(!nativeUiCurrent(value,version))return true;
+    trace(value.menu.GetOpenSideMenu?.()===side?"native-visible-menu-switched":"native-visible-menu-switch-unconfirmed");return true;
   }
   async function switchShownMenu(value: Owner, app: number, version: number, previous: "main" | "quick", requested: "main" | "quick") {
     if (!value.browser || !value.window || !value.menu) return false;
@@ -447,11 +716,23 @@ export function createSteamMirrorOverlay(deps: Dependencies) {
   let polling=false,pollQueued=false;
   async function pollContinuation() {
     const value=owner,version=revision;
-    if(disposed||!wanted||!value||openingVersion||polling)return;
+    if(disposed||!value||!wanted&&!value.nativeRevocationRequested||openingVersion||polling)return;
     polling=true;
     try {
       const started=deps.now(),reply=await deps.read(value.app,value.overlayPid);
-      if(owner!==value||!live(value.app,version)||!wanted)return;
+      if(owner!==value||disposed||revision!==version||!wanted&&!value.nativeRevocationRequested)return;
+      if(deps.runningApp()!==value.app){await releaseReplacedOwner(value);return;}
+      if(value.nativeRevocationRequested){
+        if(nativeClosedForOwner(value,reply)){owner=undefined;trace("native-visible-source-closed");}
+        else if(await releaseReplacedOwner(value,reply)){/* Local old-session receipt only; no Close/Set0/authority transfer. */}
+        else trace("native-visible-user-close-awaiting-source-hidden");
+        return; // Passive acknowledgement only; never repeat Set0 or mint input/Shown.
+      }
+      if(value.nativeVisible&&value.nativeNavigation&&nativeCurrent(value)&&nativeUiCurrent(value,version)
+        &&value.menu.GetOpenSideMenu?.()===0&&nativeUiCurrent(value,version)){
+        wanted=false;await retire(value);trace("native-visible-original-menu-closed");return;
+      }
+      if(adoptNative(value,reply,started,version)){trace("native-visible-current");return;}
       const marker=noteContinuation(value,reply,started),proof=currentMirror(reply),identified=identifiedMirror(reply);
       if(proof&&same(proof,value.mirror)){value.mirror=proof;return;}
       if(marker?.phase===1&&passiveCurrent(value)){trace("mirror-passive-intent-retained");return;}
@@ -482,7 +763,7 @@ export function createSteamMirrorOverlay(deps: Dependencies) {
     finally {polling=false;}
   }
   return {
-    guide(menu: "main" | "quick") {
+    guide(menu: "main" | "quick", explicitNewIntent = true) {
       const app = deps.runningApp();
       if (disposed || app < 0x80000000 || app > 0xffffffff) return;
       if (wanted && intent !== menu && openingVersion !== 0 && openingApp === app) {
@@ -502,7 +783,9 @@ export function createSteamMirrorOverlay(deps: Dependencies) {
       const version = ++revision;
       if (!closing && !switching) { openingVersion = version; openingApp = app; }
       return enqueue(async () => {
-        if (switching && owner === switching && await switchShownMenu(switching, app, version, previousIntent, menu)) return;
+        const oldNative=owner;
+        if(explicitNewIntent&&oldNative&&await reopenNativeGeneration(oldNative,app,version))return;
+        if (switching && owner === switching && (switching.nativeVisible ? await switchNativeMenu(switching,version,menu) : await switchShownMenu(switching, app, version, previousIntent, menu))) return;
         if (!live(app, version)) return;
         let reopen = !closing;
         if (closing && owner && !pendingAtIntent) {
@@ -510,13 +793,13 @@ export function createSteamMirrorOverlay(deps: Dependencies) {
           // Its next Guide starts a new generation rather than consuming an
           // extra press to dismiss a stale JavaScript owner.
           const held = owner, reply = await deps.read(app, held.overlayPid);
-          const terminal = reply?.ok === true && reply.mirror?.protocol === 1 && sameRetired(reply.mirror, held.mirror);
+          const terminal = !held.nativeSourceSeen && !held.nativeVisible && !nativeVisibleRecord(reply,held.mirror) && reply?.ok === true && reply.mirror?.protocol === 1 && sameRetired(reply.mirror, held.mirror);
           const replaced = live(app, version) && !terminal && await releaseReplacedOwner(held, reply);
           if (live(app, version) && (terminal || replaced)) {
             reopen = wanted = true; openingVersion = version; openingApp = app;
           }
         }
-        if (!reopen) { if (owner) await retire(owner); }
+        if (!reopen) { if (owner) await retire(owner,true); }
         else {
           try { await open(app, version); }
           finally { if (live(app, version) && !owner) wanted = false; }
@@ -525,15 +808,16 @@ export function createSteamMirrorOverlay(deps: Dependencies) {
         if (openingVersion === version || closing && openingVersion === previousOpening) { openingVersion = 0; openingApp = 0; }
       });
     },
-    poll() { if(pollQueued||disposed||!wanted||!owner)return serial;pollQueued=true;return enqueue(pollContinuation).finally(()=>{pollQueued=false;}); },
-    close() { wanted = false; ++revision; return enqueue(async () => { if (owner) await retire(owner); }); },
+    poll() { if(pollQueued||disposed||!owner||!wanted&&!owner.nativeRevocationRequested)return serial;pollQueued=true;return enqueue(pollContinuation).finally(()=>{pollQueued=false;}); },
+    close() { wanted = false; ++revision; return enqueue(async () => { if (owner) await retire(owner,true); }); },
     recover(menu: "main" | "quick") {
       if (disposed || wantedFor(deps.runningApp())) return serial;
-      return this.guide(menu);
+      return this.guide(menu, false);
     },
     invalidate() { wanted = false; ++revision; return enqueue(async () => { if (owner) await retire(owner); }); },
     dispose() { disposed = true; wanted = false; ++revision; return enqueue(async () => { if (owner) await retire(owner); }); },
     get active() { return owner !== undefined; },
+    get nativeVisible() { return Boolean(owner && nativeCurrent(owner)); },
     get pendingApp() { return !disposed && wanted && openingVersion !== 0 && openingApp === deps.runningApp() ? openingApp : 0; },
     get shown() { return owner?.mirror.state === "shown"&&!(owner.continuation&&(owner.continuation.marker.phase===1||owner.continuation.marker.phase===2)&&owner.mirror.generation===owner.continuation.parent.generation); },
     settled() { return serial; },

@@ -1,0 +1,115 @@
+using Playhub.Services;
+using Playhub.Models;
+using System.Text.Json;
+
+public sealed class MainWindow
+{
+    /*PRODUCTION*/
+    private bool _loadingGaming = true, _loadingSettings;
+    private GamingModeConfig _gamingConfig = new();
+    private readonly Setting _settings = new();
+    private readonly ConfigService _gamingMode = new();
+    private readonly SettingsService _settingsService = new();
+    private readonly ComboBox _defaultModeCombo = new(), _splashLogoCombo = new();
+    private readonly Box _steamPathBox = new(), _steamArgsBox = new(), _deckyPathBox = new(), _sunshinePathBox = new(), _splashLogoBox = new();
+    private readonly Number _delaySteamBox = new(), _mouseDelayBox = new(), _apiPortBox = new(), _splashMinBox = new(), _splashMaxBox = new();
+    private readonly Dictionary<string, Toggle> _gamingToggles = new() { ["splashAnimation"] = new() };
+    private readonly Action? _refreshAnimationSettings;
+    private void WriteConfigIntoToggles() { }
+    private void ReadTogglesIntoConfig() { }
+    private void UpdateModeTiles() { }
+    private void UpdateLogoPreview() { }
+    private static string? EmptyToNull(string? x) => string.IsNullOrWhiteSpace(x) ? null : x;
+    private static string NormalizeModeKey(string? value) => value ?? "Desktop";
+    private static string T(string value) => value;
+    private MainWindow()
+    {
+        _defaultModeCombo.Tag = new[] {new ComboOption("Desktop","Desktop"),new ComboOption("Gaming","Gaming")};
+        _splashLogoCombo.Tag = SplashLogoOptions;
+        _defaultModeCombo.Changed = AutoSaveGaming;
+        _splashLogoCombo.Changed = AutoSaveGaming;
+        _refreshAnimationSettings = null;
+    }
+    private void Open(string json)
+    {
+        // Real initialization order: initial choice, configuration hydration, then
+        // ApplyLanguage's programmatic Items.Clear/reselection after hydration.
+        _loadingSettings = true; RefreshChoiceCombo(_splashLogoCombo, "playhub"); _loadingSettings = false;
+        _gamingConfig = JsonSerializer.Deserialize<GamingModeConfig>(json)!;
+        PopulateGamingConfigControls();
+        Relabel();
+    }
+    private void Relabel()
+    {
+        _loadingSettings = true;
+        RefreshChoiceCombo(_defaultModeCombo, NormalizeModeKey(_gamingConfig.DefaultMode));
+        RefreshChoiceCombo(_splashLogoCombo, GetComboKey(_splashLogoCombo) ?? "playhub");
+        _loadingSettings = false;
+    }
+    private static string Json(string? logo) => JsonSerializer.Serialize(new GamingModeConfig {
+        Language = "ja", DefaultMode = "Gaming", Gaming = new() {SteamArguments="-gamepadui -other",Splash=new() {LogoPath=logo,MinVisibleMs=321,MaxVisibleMs=8765}},
+        Safety = new() {ApiPort=47993}
+    });
+    public static int Run()
+    {
+        int tests=0;
+        string assets=Path.Combine(AppPaths.GamingModePackage,"assets"); Directory.CreateDirectory(Path.Combine(assets,"logos"));
+        File.WriteAllBytes(Path.Combine(assets,"base-logo.png"),[]);
+        foreach(var option in SplashLogoOptions.Where(o=>o.Key is not ("custom" or "playhub"))) File.WriteAllBytes(Path.Combine(assets,"logos",option.Key+".png"),[]);
+        void Check(bool condition,string label) { tests++; if(!condition) throw new Exception(label); }
+        foreach (string key in SplashLogoOptions.Where(o=>o.Key!="custom").Select(o=>o.Key))
+        {
+            string logo=key=="playhub"?Path.Combine(AppPaths.GamingModePackage,"assets","base-logo.png"):Path.Combine(AppPaths.GamingModePackage,"assets","logos",key+".png");
+            string original=Json(logo);
+            var first=new MainWindow(); first.Open(original);
+            Check(GetComboKey(first._splashLogoCombo)==key,"Wrong restored preset "+key);
+            Check(first._gamingMode.Saves==0 && first._settingsService.Saves==0,"Opening wrote configuration "+key);
+            Check(JsonSerializer.Serialize(first._gamingConfig)==original,"Opening changed runtime path/settings "+key);
+            first.Relabel(); Check(first._gamingMode.Saves==0,"Language refresh saved "+key);
+            // A genuine user selection still saves once, then reopening changes nothing.
+            SelectComboKey(first._splashLogoCombo,"custom");
+            Check(first._gamingMode.Saves==1,"User selection did not save once "+key);
+            Check(first._gamingMode.Last!.Gaming.Splash.LogoPath==logo,"Custom bundled path lost "+key);
+            var second=new MainWindow(); second.Open(JsonSerializer.Serialize(first._gamingMode.Last));
+            Check(second._gamingConfig.Gaming.Splash.LogoPath==logo && second._gamingMode.Saves==0,"Reopen changed saved logo "+key);
+        }
+        foreach(string? logo in new[]{null,"",Path.Combine(AppPaths.GamingModePackage,"external","steam-deck.png"),@"C:\User Images\my-logo.png",@"C:\Missing\logo.png"})
+        {
+            string original=Json(logo); var window=new MainWindow(); window.Open(original);
+            Check(GetComboKey(window._splashLogoCombo)==(string.IsNullOrWhiteSpace(logo)?"playhub":"custom"),"Custom/default picker wrong");
+            Check(window._gamingMode.Saves==0 && window._settingsService.Saves==0,"Default/custom startup saved");
+            Check(JsonSerializer.Serialize(window._gamingConfig)==original,"Default/custom configuration changed");
+        }
+        var user=new MainWindow(); user.Open(Json(Path.Combine(AppPaths.GamingModePackage,"assets","base-logo.png")));
+        SelectComboKey(user._splashLogoCombo,"steam-deck");
+        Check(user._gamingMode.Saves==1,"Steam Deck user change not saved");
+        Check(user._gamingMode.Last!.Gaming.Splash.LogoPath!.EndsWith(@"logos\steam-deck.png"),"Steam Deck runtime path wrong");
+        Check(user._gamingMode.Last.Gaming.SteamArguments=="-gamepadui -other" && user._gamingMode.Last.Gaming.Splash.MinVisibleMs==321 && user._gamingMode.Last.Safety.ApiPort==47993,"Adjacent settings changed");
+        Console.WriteLine("PASS "+tests+" production-method splash hydration/selection/JSON round-trip checks"); return 0;
+    }
+    private record ComboOption(string Key,string LabelKey);
+    private record ComboChoice(string Key,string LabelKey,string Display) { public override string ToString()=>Display; }
+    private sealed class ComboBox
+    {
+        public object? Tag; public Action? Changed; public readonly ItemList Items; private int index=-1;
+        public ComboBox(){ Items=new ItemList(this); }
+        public object? SelectedItem => index>=0&&index<Items.Count?Items[index]:null;
+        public int SelectedIndex { get=>index; set {if(index!=value){index=value;Changed?.Invoke();}} }
+        public sealed class ItemList(ComboBox owner):List<object>{public new void Clear(){base.Clear();owner.SelectedIndex=-1;}}
+    }
+    private sealed class Box{public string Text="";}
+    private sealed class Number{public double Value;}
+    private sealed class Toggle{public bool IsOn;}
+    private sealed class Setting{public string Language="ja";}
+    private sealed class ConfigService
+    {
+        public int Saves; public GamingModeConfig? Last;
+        public Task SaveConfigAsync(GamingModeConfig value){Saves++;Last=JsonSerializer.Deserialize<GamingModeConfig>(JsonSerializer.Serialize(value));return Task.CompletedTask;}
+    }
+    private sealed class SettingsService{public int Saves;public Task SaveAsync(){Saves++;return Task.CompletedTask;}}
+}
+namespace Playhub.Services
+{
+    internal static class AppPaths { public static string GamingModePackage = Path.Combine(Path.GetTempPath(),"Playhub-Issue20-Splash-20261115","fake-package"); }
+    internal static class Diag {public static void Crash(string name,Exception ex)=>throw ex;}
+}

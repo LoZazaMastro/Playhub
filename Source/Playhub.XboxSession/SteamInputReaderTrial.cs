@@ -20,7 +20,8 @@ internal static class SteamInputReaderTrial
         IRetainedSteamGameTarget target, long focusEpoch, Action queueExitRestore,
         out SteamRawInputRelayTrial.ReaderOutcome outcome, Func<bool>? retainedSessionCurrent = null, Func<RelayExit?>? readPause = null,
         Func<string?>? readRetainedFailure = null, SteamTrackedWrapperChain? readerBootstrap = null,
-        Func<RelayExit?>? readCapturedPause = null)
+        Func<RelayExit?>? readCapturedPause = null,
+        Func<Playhub.Shared.SteamMirrorNativeVisibleDto?>? readNativeVisible = null, Func<bool>? nativeBootstrapScope = null)
     {
         outcome = default;
         string? expected = ReaderDigest;
@@ -28,6 +29,7 @@ internal static class SteamInputReaderTrial
 
         try
         {
+            using var self = Process.GetCurrentProcess();
             SteamControllerSourceLease? controller = null;
             string renderer = steam.ComponentPaths.Last();
             string inventory = Path.Combine(Path.GetDirectoryName(renderer)!, "config", "virtualgamepadinfo.txt");
@@ -56,7 +58,22 @@ internal static class SteamInputReaderTrial
                 return true;
             }
             bool Current() => SessionCurrent() && ownsInput();
-            if (!Current()) return true;
+            bool NativeBootstrapCurrent()=>relay is not null&&source is {Valid:true} exact&&nativeBootstrapScope is not null
+                &&SteamRawInputRelayTrial.ReadNativeVisibleBootstrap(readNativeVisible,
+                    new(gameId,self.Id,self.StartTime.ToFileTimeUtc(),target.Pid,target.Creation,
+                        exact,steam,window,thread,owner),()=>SessionCurrent()&&nativeBootstrapScope()&&SessionCurrent())is not null;
+            // This alternative can start only an exact neutral-only reader. It
+            // never changes Current or the relay's gameplay forwarding guard.
+            bool ReaderCurrent()=>Current()||NativeBootstrapCurrent();
+            if (!ReaderCurrent())
+            {
+                if (relay is not null && source is {Valid:true} && SessionCurrent()
+                    && readCapturedPause?.Invoke()==RelayExit.OverlayOpened
+                    && nativeBootstrapScope?.Invoke()==true && SessionCurrent()
+                    && readCapturedPause?.Invoke()==RelayExit.OverlayOpened)
+                    outcome=outcome with{StartDeferred=true};
+                return true;
+            }
             if (SteamControllerSourceProbe.ReadInventory(inventory) is not [var slot] ||
                 relay is not null && new TritonSource(slot.Index, slot.Product, slot.Handle) != source)
             {
@@ -64,7 +81,15 @@ internal static class SteamInputReaderTrial
                 return true;
             }
             controller = new SteamControllerSourceLease(new TritonSource(slot.Index, slot.Product, slot.Handle));
-            if (!Current()) return true;
+            if (!ReaderCurrent())
+            {
+                if (relay is not null && source is {Valid:true} && SessionCurrent()
+                    && readCapturedPause?.Invoke()==RelayExit.OverlayOpened
+                    && nativeBootstrapScope?.Invoke()==true && SessionCurrent()
+                    && readCapturedPause?.Invoke()==RelayExit.OverlayOpened)
+                    outcome=outcome with{StartDeferred=true};
+                return true;
+            }
 
             string path = Path.Combine(AppContext.BaseDirectory, ReaderName);
             using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -74,7 +99,6 @@ internal static class SteamInputReaderTrial
                 return true;
             }
 
-            using var self = Process.GetCurrentProcess();
             var start = new ProcessStartInfo(file.Name)
             {
                 UseShellExecute = false,
@@ -92,7 +116,15 @@ internal static class SteamInputReaderTrial
                 Decimal((nuint)window), Decimal(thread), Decimal(owner)
             ];
             foreach (string argument in arguments) start.ArgumentList.Add(argument);
-            if (!Current()) return true;
+            if (!ReaderCurrent())
+            {
+                if (relay is not null && source is {Valid:true} && SessionCurrent()
+                    && readCapturedPause?.Invoke()==RelayExit.OverlayOpened
+                    && nativeBootstrapScope?.Invoke()==true && SessionCurrent()
+                    && readCapturedPause?.Invoke()==RelayExit.OverlayOpened)
+                    outcome=outcome with{StartDeferred=true};
+                return true;
+            }
 
             using var child = Process.Start(start) ?? throw new InvalidOperationException("Native input reader did not start.");
             var stderr = child.StandardError.ReadToEndAsync();
@@ -109,7 +141,7 @@ internal static class SteamInputReaderTrial
                         return true;
                     }
                     bootstrapBinding = binding; bootstrapReader = proof;
-                    outcome = relay.Run(child, steam, inventory, binding, focusEpoch, Current, cancellation, SessionCurrent, readPause, proof, readCapturedPause);
+                    outcome = relay.Run(child, steam, inventory, binding, focusEpoch, Current, cancellation, SessionCurrent, readPause, proof, readCapturedPause,readNativeVisible,nativeBootstrapScope);
                     if (outcome.EndReason == RelayExit.SessionEnded)
                     {
                         // Only facts captured by the original failing predicates;
@@ -165,6 +197,7 @@ internal static class SteamInputReaderTrial
                     // A fresh forwarding lease is forbidden while the exact
                     // previous retained reader process remains alive/unknown.
                     outcome = outcome with { ReaderStopped = child.HasExited };
+                    relay?.RememberStoppedReader(outcome);
                     try { PackagedLaunchLog.Info($"Steam input reader final outcome: reader={outcome.ReaderPid}; epoch={focusEpoch}; reason={outcome.EndReason}; can-resume={outcome.CanResume}; explicit-scope={outcome.ExplicitScopeEnded}; parent-scope={outcome.ParentScopeRevoked}; stopped={outcome.ReaderStopped}; neutral-held={outcome.NeutralHeld}; terminal-cleanup={outcome.CleanupConfirmed}."); } catch { }
                     if (target.HasExited)
                         PackagedLaunchLog.Info($"Steam input reader teardown: reap-ms={Stopwatch.GetElapsedTime(reapAt).TotalMilliseconds:F0}; exited={child.HasExited}.");

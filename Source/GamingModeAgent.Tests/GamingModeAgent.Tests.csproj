@@ -20,6 +20,7 @@
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\XboxCompanionOverlaySession.Scope.cs" Link="XboxCompanionOverlaySession.Scope.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\XboxCompanionOverlaySession.ValvePolicy.cs" Link="XboxCompanionOverlaySession.ValvePolicy.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\Win32SteamSessionAssociation.Policy.cs" Link="Win32SteamSessionAssociation.Policy.cs" />
+	<Compile Include="../Shared/EpicLaunchCatalog.cs" Link="EpicLaunchCatalog.cs" />
 	<Compile Include="Win32SteamSessionTests.cs" />
 	<Compile Include="..\GamingModeAgent\GamingMode.Services\XboxCompanionOverlaySession.UwpPolicy.cs" Link="XboxCompanionOverlaySession.UwpPolicy.cs" />
 	<Compile Include="UwpCompanionPolicyTests.cs" />

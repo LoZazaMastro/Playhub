@@ -82,6 +82,7 @@ var tests = new (string Name, Action Run)[]
 	("Active Steam sessions still exclude Steam client windows", TestActiveSessionExcludesSteam),
 	("Fullscreen windows receive no style or resize writes", TestFullscreenIsUntouched),
 	("Windowed games use physical monitor bounds and can recover again", TestPhysicalFullscreenRecovery),
+	("Curtain visual priority prevents fullscreen writes including a lease arriving during bounds read", TestCurtainFullscreenPriority),
 	("Physical coordinates fail closed and restore after exceptions", TestPhysicalScopeFailure),
 	("Native DPI scope restores the calling thread context", TestNativeDpiScope),
 	("External overlay hosts never become fullscreen game windows", TestOverlayHostExclusion)
@@ -637,6 +638,22 @@ static void TestPhysicalFullscreenRecovery()
 	Equal(true, Apply()); Equal(false, Apply()); Equal(1, writes); Equal(false, physical);
 	window = new PhysicalWindowRect(-3500, 300, -1700, 1300); // Same styles, game returns to windowed mode.
 	Equal(true, Apply()); Equal(2, writes);
+}
+
+static void TestCurtainFullscreenPriority()
+{
+	int reads = 0, writes = 0;
+	bool priority = true;
+	FullscreenWindowBounds? Bounds() { reads++; return new(new(0, 30, 3840, 2160), new(0, 0, 3840, 2160)); }
+	Equal(false, FullscreenWindowGeometry.Apply(Bounds, _ => writes++, () => new ActionScope(() => {}), () => priority));
+	Equal(0, reads); Equal(0, writes);
+	priority = false;
+	Equal(false, FullscreenWindowGeometry.Apply(() => { priority = true; return Bounds(); },
+		_ => writes++, () => new ActionScope(() => {}), () => priority));
+	Equal(1, reads); Equal(0, writes);
+	priority = false;
+	Equal(true, FullscreenWindowGeometry.Apply(Bounds, _ => writes++, () => new ActionScope(() => {}), () => priority));
+	Equal(1, writes);
 }
 
 static void TestPhysicalScopeFailure()

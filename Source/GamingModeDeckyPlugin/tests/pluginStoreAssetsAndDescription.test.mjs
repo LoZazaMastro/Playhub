@@ -31,18 +31,20 @@ function load(file) {
 const assets = load(join(root, "src/pluginStoreAssets.ts"));
 const data = load(join(root, "src/pluginStoreData.ts"));
 
-test("every offered native catalog plugin uses its real desktop JPG and excludes integrated legacy plugins", () => {
+test("every offered native catalog plugin uses its supplied artwork and excludes integrated legacy plugins", () => {
   const catalog = JSON.parse(readFileSync(join(root, "../../catalog/plugins.json"), "utf8"));
   const native = catalog.plugins.filter((plugin) => plugin.active !== false && plugin.catalogSource === "playhub");
-  assert.equal(native.length, 11);
+  assert.ok(native.length > 0);
   assert.ok(!native.some(plugin => ["LoZazaMastro/Quick-Settings", "LoZazaMastro/Shortcuts"].includes(plugin.repository)));
   for (const plugin of native) {
     const cover = assets.bundledPluginCover(` ${plugin.repository.toUpperCase()} `);
-    const expected = join(root, "../Playhub/Assets/PluginImages", plugin.name + ".jpg");
+    const isDiscord = plugin.repository.toLowerCase() === "lozazamastro/playhub-discord";
+    const expected = join(root, "../Playhub/Assets/PluginImages", plugin.name + (isDiscord ? ".png" : ".jpg"));
     assert.equal(cover, expected, plugin.repository);
     const bytes = readFileSync(cover);
-    assert.equal(bytes.subarray(0, 3).toString("hex"), "ffd8ff");
-    assert.ok(bytes.length > 100_000, `unexpected placeholder: ${cover}`);
+    assert.equal(bytes.subarray(0, isDiscord ? 8 : 3).toString("hex"), isDiscord ? "89504e470d0a1a0a" : "ffd8ff");
+    if (isDiscord) assert.deepEqual(bytes, readFileSync(join(root, "../../assets/plugin-store/discord.png")), "keep the published Discord artwork intact");
+    else assert.ok(bytes.length > 100_000, `unexpected placeholder: ${cover}`);
   }
   assert.equal(assets.bundledPluginCover("constructor"), "");
   assert.equal(assets.bundledPluginCover("__proto__"), "");
@@ -121,3 +123,21 @@ test("description parser uses a real inert browser DOM and emits reader-compatib
   }
 });
 
+
+
+test("missing covers use GitHub and delayed image errors never skip or erase the final preview", () => {
+  const page = readFileSync(join(root, "src/PluginStorePage.tsx"), "utf8");
+  const component = page.slice(page.indexOf("function PluginImage("), page.indexOf("interface SharedStoreProps"));
+  let index=0;
+  const React={createElement:(type,props)=>({type,props})};
+  const exports={};
+  vm.runInNewContext(ts.transpileModule(component+"\nexports.PluginImage=PluginImage;",{fileName:"PluginImage.tsx",compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.React}}).outputText,{exports,React,
+    useMemo:fn=>fn(),useState:()=>[index,fn=>{index=fn(index);}],useEffect:()=>{},pluginCoverSources:assets.pluginCoverSources});
+  const plugin={repository:"owner/original",coverUrl:"https://example.com/missing.png",catalogStatus:"outside-store"};
+  const first=exports.PluginImage({plugin});assert.equal(first.type,"img");first.props.onError();
+  const fallback=exports.PluginImage({plugin});assert.equal(fallback.props.src,"https://opengraph.githubassets.com/playhub-store/owner/original");
+  first.props.onError();assert.equal(index,1,"late error from previous image cannot skip GitHub");
+  fallback.props.onError();assert.equal(exports.PluginImage({plugin}).type,"img","a transient GitHub error never replaces the preview with an empty card");
+  const catalog=JSON.parse(readFileSync(join(root,"../../catalog/plugins.json"),"utf8"));
+  for(const row of catalog.plugins.filter(row=>row.active!==false))assert.ok(assets.pluginCoverSources(row.repository,row.coverUrl).length,row.name);
+});

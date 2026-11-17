@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 using System.Buffers.Binary;
+using Playhub.Shared;
+using System.Globalization;
 using System.IO.MemoryMappedFiles;
 internal interface IFenceSink { void Write(byte[] frame); }
 internal sealed class MappingSink:IFenceSink,IDisposable
@@ -23,6 +25,8 @@ internal sealed class FenceProducer:IDisposable
  readonly Func<SteamNativeOverlayInputPresentationBridge.Snapshot> nativeRead;
  readonly Func<SteamNativeOverlayInputPresentationBridge.Command,bool> nativeCurrent,nativeClosedCurrent;
  readonly Func<SteamMirrorInputPresentation,bool> mirrorSourceCurrent;
+ readonly Func<SteamNativeVisibleInputDto?> visibleRead;
+ SteamNativeVisibleInputDto? visibleOwner;long visibleDrainUntil,visibleReleaseUntil;bool visibleRevoked;
  SteamMirrorInputPresentation? admitted;long drainUntil,mirrorReleaseUntil;ulong retired,publicationGeneration=1;
  internal ulong PublicationGeneration=>publicationGeneration;
  internal uint PublicationKind {get;private set;}
@@ -31,11 +35,11 @@ internal sealed class FenceProducer:IDisposable
   :this(i,s,c,n,SteamMirrorInputPresentationBridge.Read,sourceCurrent:NativeMirrorSourceCurrent,closedNativeCurrent:SteamNativeOverlayInputPresentationBridge.FenceClosedSourceCurrent){}
  // Inert seam, same whole producer. No HTTP method exposes this constructor.
  internal FenceProducer(Identity i,IFenceSink s,Func<bool> c,Func<long> n,Func<SteamMirrorInputPresentation?> r,
-  Func<SteamNativeOverlayInputPresentationBridge.Snapshot>? nr=null,Func<SteamNativeOverlayInputPresentationBridge.Command,bool>? nc=null,Func<SteamMirrorInputPresentation,bool>? sourceCurrent=null,Func<SteamNativeOverlayInputPresentationBridge.Command,bool>? closedNativeCurrent=null)
+  Func<SteamNativeOverlayInputPresentationBridge.Snapshot>? nr=null,Func<SteamNativeOverlayInputPresentationBridge.Command,bool>? nc=null,Func<SteamMirrorInputPresentation,bool>? sourceCurrent=null,Func<SteamNativeOverlayInputPresentationBridge.Command,bool>? closedNativeCurrent=null,Func<SteamNativeVisibleInputDto?>? nativeVisibleRead=null)
  {if(i.GamePid==0||i.ProducerPid==0||i.GamePid==i.ProducerPid||i.GameBirth<=0||i.ProducerBirth<=0||i.GameWindow==0
    ||(uint)i.GameId!=0x02000000||i.GameId>>32<0x80000000||i.AuthoritySession.Length!=64||!i.AuthoritySession.All(ch=>ch is >= '0' and <= '9' or >= 'a' and <= 'f'))throw new ArgumentException();
   target=i;sink=s;current=c;clock=n;read=r;nativeRead=nr??SteamNativeOverlayInputPresentationBridge.Read;
-  nativeCurrent=nc??SteamNativeOverlayInputPresentationBridge.AuthorityCurrent;mirrorSourceCurrent=sourceCurrent??(_=>false);nativeClosedCurrent=closedNativeCurrent??(_=>false);}
+  nativeCurrent=nc??SteamNativeOverlayInputPresentationBridge.AuthorityCurrent;mirrorSourceCurrent=sourceCurrent??(_=>false);nativeClosedCurrent=closedNativeCurrent??(_=>false);visibleRead=nativeVisibleRead??SteamNativeVisibleInputCycle.ReadStatus;}
  bool Exact(SteamMirrorInputPresentation m)=>m.GameId==target.GameId&&m.GamePid==target.GamePid&&m.GameBirth==target.GameBirth
   &&m.OwnerPid==target.ProducerPid&&m.OwnerBirth==target.ProducerBirth&&m.Generation>0
   &&m.SessionId.Length==64&&m.SessionId.All(c=>c is >= '0' and <= '9' or >= 'a' and <= 'f');
@@ -48,6 +52,7 @@ internal sealed class FenceProducer:IDisposable
  internal uint Update()
  {
   var first=read();long now=clock();uint phase=0;
+  if(TryNativeVisible(first,out uint originalPhase))return originalPhase;
   if(TryNative(first,out uint nativePhase))return nativePhase;
   if(first is null){if(current()){Publish(null,4,now,now+250);return 4;}Publish(admitted,0,now,now);return 0;}
   if(!Exact(first)||!Fresh(first,now)||!current()){Publish(admitted,0,now,now);return 0;}
@@ -80,6 +85,47 @@ internal sealed class FenceProducer:IDisposable
   // Final context/clock postcheck occurs after both snapshot getters.
   if(!current()||!Fresh(last,clock())||clock()>=expiry)phase=0;
   Publish(admitted,phase,last.ReadAt,phase==0?now:expiry);return phase;
+ }
+ static ulong V(string text)=>ulong.TryParse(text,NumberStyles.None,CultureInfo.InvariantCulture,out var n)?n:0;
+ bool ExactVisible(SteamNativeVisibleInputDto n,long now)=>n.Protocol==1&&n.OwnerPid==target.ProducerPid
+  &&V(n.OwnerBirth)==(ulong)target.ProducerBirth&&n.GamePid==target.GamePid&&V(n.GameBirth)==(ulong)target.GameBirth
+  &&V(n.GameId)==target.GameId&&V(n.Generation)>0&&V(n.GuideEpoch)>0&&V(n.SourceHwnd)>0&&V(n.SourceCookie)>0
+  &&n.SessionId.Length==64&&n.SessionId.All(c=>c is >= '0' and <= '9' or >= 'a' and <= 'f')
+  &&V(n.ObservedAt)>0&&V(n.ObservedAt)<=V(n.ReadAt)&&V(n.ReadAt)<=(ulong)now&&(ulong)now-V(n.ReadAt)<=250
+  &&V(n.ExpiresAt)>(ulong)now&&V(n.ExpiresAt)>=V(n.ReadAt)&&V(n.ExpiresAt)-V(n.ReadAt)<=250;
+ static bool SameVisible(SteamNativeVisibleInputDto a,SteamNativeVisibleInputDto b)=>a.SessionId==b.SessionId
+  &&a.Generation==b.Generation&&a.GuideEpoch==b.GuideEpoch&&a.GameId==b.GameId&&a.OwnerPid==b.OwnerPid&&a.OwnerBirth==b.OwnerBirth
+  &&a.GamePid==b.GamePid&&a.GameBirth==b.GameBirth&&a.SourceHwnd==b.SourceHwnd&&a.SourceCookie==b.SourceCookie;
+ bool TryNativeVisible(SteamMirrorInputPresentation? mirror,out uint phase)
+ {
+  phase=0;var first=visibleRead();long now=clock();
+  if(first is null)return false;
+  if(!ExactVisible(first,now)||!current())return false;
+  var last=visibleRead();now=clock();
+  if(last is null||!ExactVisible(last,now)||!SameVisible(first,last)||!current())return false;
+  bool open=last.State=="menu"&&last.NeutralHeld&&last.MenuLayoutReady&&last.InputReady&&!last.SourceHidden&&!last.AutomaticSettled;
+  bool closed=last.State=="closed"&&last.SourceHidden&&last.AutomaticSettled&&!last.InputReady&&!last.MenuLayoutReady;
+  if(open)
+  {
+   if(visibleOwner is null||!SameVisible(visibleOwner,last))
+   {visibleOwner=last;visibleDrainUntil=visibleReleaseUntil=0;visibleRevoked=false;admitted=null;nativeOwner=null;++publicationGeneration;}
+   else if(visibleRevoked&&visibleDrainUntil==0)
+   {visibleRevoked=false;++publicationGeneration;} // A newly ACKed typed input grant, never a resurrected fence generation.
+   if(visibleRevoked||visibleDrainUntil!=0){Write(0,0,now,now,0,0);return true;}
+   phase=1;
+  }
+  else if(closed&&visibleOwner is not null&&!visibleRevoked&&SameVisible(visibleOwner,last)&&mirror?.Shown(now)!=true)
+  {
+   if(visibleDrainUntil==0){visibleDrainUntil=now+250;visibleReleaseUntil=now+5000;}
+   if(now>=visibleReleaseUntil)return false;
+   phase=now<visibleDrainUntil?2u:5u;
+  }
+  else return false;
+  long expiry=(long)V(last.ExpiresAt);
+  if(phase!=1)expiry=Math.Min(expiry,visibleReleaseUntil);
+  if(!current()||!ExactVisible(last,clock())||clock()>=expiry){Write(0,0,now,now,0,0);phase=0;return true;}
+  // Kind3: the real original-source cookie, with NO own destination.
+  Write(3,phase,(long)V(last.ReadAt),expiry,V(last.SourceCookie),0);return true;
  }
  static bool SameNative(SteamNativeOverlayInputPresentationBridge.Command a,SteamNativeOverlayInputPresentationBridge.Command b)
   =>a.OwnerToken==b.OwnerToken&&a.Generation==b.Generation&&a.SessionId==b.SessionId&&a.FullGameId==b.FullGameId
@@ -142,6 +188,7 @@ internal sealed class FenceProducer:IDisposable
    // must be admitted before another positive capture publication.
    if(admitted is not null)retired=Math.Max(retired,admitted.Generation);
    if(nativeOwner is not null)nativeRevoked=true;
+   if(visibleOwner is not null)visibleRevoked=true;
    readAt=clock();expiry=readAt+250;
   }
   byte[] b=new byte[128];void U32(int o,uint v)=>BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(o,4),v);

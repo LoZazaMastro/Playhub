@@ -24,8 +24,36 @@ internal sealed class SteamThemeReadinessProbe
           // Windows occlusion can hide a valid covered document from Chromium.
           // Steam's active instance plus native geometry identify the surface.
           if(window.SteamUIStore.ActiveWindowInstance!==main) return null;
+          const browserId=view.SteamClient?.Browser?.GetBrowserID?.();
+          if(!Number.isSafeInteger(browserId)||browserId<=0) return null;
+          // Steam's real startup renderer (13547/65504), never a library trailer,
+          // settings preview or the visually identical resume movie.
+          const movies=[...doc.querySelectorAll('.j78ibJaZ9aRJEMt_g81_F')].filter(node=>
+            !node.closest('._38XWp_hYqddiIdAOIcWiBK,._1L-VDdK-L39u1v2bK3OvH8,._3579bzh8xDL8Du3019J05O'));
+          if(movies.length){
+            if(movies.length!==1) return null;
+            const movie=movies[0],rect=movie.getBoundingClientRect();
+            const video=[...movie.children].find(node=>node.tagName==='VIDEO'&&!node.classList.contains('_2VUyPtEOlkX8X1EiyplQ70'));
+            const style=view.getComputedStyle(movie),videoStyle=video?view.getComputedStyle(video):null,videoRect=video?.getBoundingClientRect();
+            const quality=video?.getVideoPlaybackQuality?.();
+            const frames=quality?quality.totalVideoFrames-quality.droppedVideoFrames:
+              (video?.webkitDecodedFrameCount??0)-(video?.webkitDroppedFrameCount??0);
+            if(!movie.classList.contains('_3aJvw7qkqAwI1IzmT-em6q')||movie.classList.contains('_2T7oNkoPyaZ6mLZ4XSeDsa')
+              ||!video||video.paused||video.ended||video.readyState<2||video.videoWidth<=0||video.videoHeight<=0
+              ||!Number.isFinite(frames)||frames<1||style.display==='none'||style.visibility!=='visible'||Number(style.opacity)<=0
+              ||rect.left>2||rect.top>2||rect.right<view.innerWidth-2||rect.bottom<view.innerHeight-2
+              ||!videoStyle||videoStyle.display==='none'||videoStyle.visibility!=='visible'||Number(videoStyle.opacity)<=0
+              ||!videoRect||videoRect.width<=0||videoRect.height<=0) return null;
+            const ratio=view.devicePixelRatio;
+            if(!Number.isFinite(ratio)||ratio<=0||ratio>8||store.GamepadUIMainWindowInstance!==main||view.document!==doc
+              ||!movie.isConnected||video.parentElement!==movie) return null;
+            const documentId=[...view.crypto.getRandomValues(new Uint8Array(16))].map(n=>n.toString(16).padStart(2,'0')).join('');
+            return {main:true,browserId,documentId,receipt:{protocol:1,browserId,documentId,
+              generation:'g-'+documentId,serial:1,state:'playing',proof:'startup-movie-frame'},
+              physicalWidth:Math.round(view.innerWidth*ratio),physicalHeight:Math.round(view.innerHeight*ratio)};
+          }
           if(!gate||gate.ownerDocument!==doc||gate.ownerRoot!==doc.documentElement||gate.ownerHead!==doc.head) return null;
-          const browserId=view.SteamClient?.Browser?.GetBrowserID?.(),result=gate.read();
+          const result=gate.read();
           if(!Number.isSafeInteger(browserId)||browserId<=0||result?.browserId!==browserId) return null;
           if(store.GamepadUIMainWindowInstance!==main||view.document!==doc||view.__playhubThemeReadinessV1!==gate) return null;
           const ratio=view.devicePixelRatio;

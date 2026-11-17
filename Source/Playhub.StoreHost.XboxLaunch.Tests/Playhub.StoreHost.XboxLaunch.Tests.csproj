@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors><EnableDefaultCompileItems>false</EnableDefaultCompileItems><StartupObject>XboxLaunchChecks</StartupObject><DebugType>none</DebugType></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="../Playhub.StoreHost/*.cs" Exclude="../Playhub.StoreHost/Program.cs" Link="ActualStore/%(Filename)%(Extension)" />
+    <Compile Include="../Playhub.GameSession/*.cs" Link="ActualSession/%(Filename)%(Extension)" />
+    <Compile Include="../Shared/Store*.cs" Link="Shared/%(Filename)%(Extension)" />
+    <Compile Include="../Shared/UwpSessionIdentity.cs" Link="UwpSessionIdentity.cs" />
+    <Compile Include="../Shared/EpicLaunchCatalog.cs" Link="EpicLaunchCatalog.cs" />
+    <Compile Include="../Shared/EpicProtocolLaunchRequest.cs" Link="EpicProtocolLaunchRequest.cs" />
+    <Compile Include="../Shared/EpicLaunchWindows.cs" Link="EpicLaunchWindows.cs" />
+    <Compile Include="../Shared/EpicLaunchPayload.cs" Link="EpicLaunchPayload.cs" />
+    <PackageReference Include="SharpCompress" Version="[0.50.9]" />
+  </ItemGroup>
+<ItemGroup><Compile Include="../Playhub/Services/EpicManifestPaths.cs"/></ItemGroup></Project>

@@ -55,7 +55,7 @@ public sealed partial class MainWindow
             foreach(var item in patch){settings[item.Key]=item.Value?.DeepClone();dirty[item.Key]=item.Value?.DeepClone();}
             saves?.FieldsChanged();
         },EditorText,target=="hero"?3840d/1240d:1926d/900d, .28,.72,true,resetLogoX:25,maxPreviewHeight:420,separateAppearance:true);
-        visual.SelectTarget("background");
+        visual.SelectTarget(File.Exists(logo)&&settings["show_logo"]?.GetValue<bool>()!=false?"logo":"background");
         var canvasColumn = new StackPanel { Spacing = 16 }; canvasColumn.Children.Add(visual.Element);
         var workspace = new ArtworkEditorWorkspace(canvasColumn,sourcesBeforeInspectorWhenNarrow:true);
         var panel=new StackPanel { Spacing=18,HorizontalAlignment=HorizontalAlignment.Stretch };panel.Children.Add(workspace.Element);
@@ -69,40 +69,42 @@ public sealed partial class MainWindow
         hideSteamLogo.Checked+=(_,_)=>SeparateLogoVisibilityChanged();hideSteamLogo.Unchecked+=(_,_)=>SeparateLogoVisibilityChanged();
         var source=new ComboBox { Header=new TextBlock { Text=T("Fonte"),TextWrapping=TextWrapping.Wrap },HorizontalAlignment=HorizontalAlignment.Stretch,MinWidth=0 };
         var title=new TextBox { Header=new TextBlock { Text=T("Titolo da cercare"),TextWrapping=TextWrapping.Wrap },Text=await GameTitleQuery.ReadAsync(store,game.StableIdentity,"artwork",game.Title,session.Token),MinWidth=0 };
+        bool updatingProviders=false;
         void UpdateProviders()
         {
+            updatingProviders=true;
             string preferred=source.SelectedItem?.ToString()??"SteamGridDB",type=visual.Target=="logo"?"logo":target;
             source.Items.Clear();
             foreach(string provider in new[]{"SteamGridDB","Steam","PlayStation","Nintendo","Xbox","IGDB","AlphaCoders","iiDB","IGN"})
                 if(provider=="Steam"||ApplicationArtworkPreferences.Supports(provider.ToLowerInvariant(),type))source.Items.Add(provider);
             source.SelectedItem=source.Items.OfType<string>().FirstOrDefault(value=>value==preferred)??"SteamGridDB";
+            updatingProviders=false;
         }
         UpdateProviders();
         var searchRow=new StackPanel { Spacing=10 }; searchRow.Children.Add(title); searchRow.Children.Add(source);
         var actions=new AdaptiveImportToolbar();
         Button Action(string label)=>new() { Content=new TextBlock { Text=label,TextWrapping=TextWrapping.Wrap,TextAlignment=TextAlignment.Center },MinWidth=0,Style=StyleResource("PlayhubSecondaryButtonStyle") };
-        var find=Action(T("Cerca alternative"));actions.Children.Add(find);
         var browse=Action(T("Sfoglia"));actions.Children.Add(browse);
         var connection = BuildSteamGridDbConnectionCard();
         var results=new GridView { SelectionMode=ListViewSelectionMode.None };
-        workspace.SetSources(ArtworkEditorWorkspace.Section(T("Cerca alternative"),"\uE721",searchRow,connection,actions,results));
+        workspace.SetSources(ArtworkEditorWorkspace.Section(T("Artwork"),"\uE721",searchRow,connection,actions,results));
         workspace.Inspector.Children.Insert(0,visual.AppearanceElement);
         int searchGeneration = 0;
-        CancellationTokenSource? artworkSearch = null;
+        using var searches=new ImportArtworkSearchSession<ImportArtworkResult>();
+        string credential=_settings.SteamGridDbApiKey;
         void RefreshConnection() => connection.Visibility = source.SelectedItem?.ToString() == "SteamGridDB" && string.IsNullOrWhiteSpace(_settings.SteamGridDbApiKey) ? Visibility.Visible : Visibility.Collapsed;
         void InvalidateSearch()
         {
             searchGeneration++;
-            artworkSearch?.Cancel();
+            searches.Invalidate();
             results.Items.Clear();
-            find.IsEnabled = true;
             RefreshConnection();
         }
-        visual.TargetChanged += () => { InvalidateSearch(); UpdateProviders(); };
-        source.SelectionChanged += (_,_) => InvalidateSearch();
+        visual.TargetChanged += () => { InvalidateSearch(); UpdateProviders(); _=SearchAsync(); };
+        source.SelectionChanged += (_,_) => { if(!updatingProviders){InvalidateSearch();_=SearchAsync();} };
         title.TextChanged += (_,_) => InvalidateSearch();
         RefreshConnection();
-        session.Register(() => { searchGeneration++; artworkSearch?.Cancel(); });
+        session.Register(() => { searchGeneration++; searches.Dispose(); });
         var scroll=new ScrollViewer { Content=panel,Padding=new Thickness(0,0,24,32),HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,VerticalScrollBarVisibility=ScrollBarVisibility.Auto };
         var body=new Grid { RowSpacing=12 };body.RowDefinitions.Add(new(){Height=GridLength.Auto});body.RowDefinitions.Add(new(){Height=new GridLength(1,GridUnitType.Star)});body.Children.Add(status);Grid.SetRow(scroll,1);body.Children.Add(scroll);
         var dialogTitle=new StackPanel { Spacing=4 };
@@ -129,7 +131,7 @@ public sealed partial class MainWindow
         var windowContent=Content as FrameworkElement;
         Resize();dialog.XamlRoot.Changed+=RootChanged;
         if(windowContent is not null)windowContent.SizeChanged+=ContentChanged;
-        dialog.Opened+=(_,_)=>QueueResize();
+        dialog.Opened+=(_,_)=>{QueueResize();_=SearchAsync();};
         session.Register(()=>{dialog.XamlRoot.Changed-=RootChanged;if(windowContent is not null)windowContent.SizeChanged-=ContentChanged;nativeBackground=null;});
         async Task ComposeAsync()
         {
@@ -164,18 +166,21 @@ public sealed partial class MainWindow
             await ComposeAsync();
         }
         browse.Click+=async(_,_)=>{string type=visual.Target=="logo"?"logo":target;var path=await PickFileAsync(new[]{".png",".jpg",".jpeg",".webp"});if(!session.IsClosed&&!string.IsNullOrEmpty(path))await saves.ChangeAsync(()=>ChooseAsync(type,new(path,path,0,0)));};
-        find.Click+=async(_,_)=>
+        async Task SearchAsync(bool refresh=false)
         {
+            int generation=++searchGeneration;
             RefreshConnection();
-            if (connection.Visibility == Visibility.Visible) return;
-            artworkSearch?.Cancel();
-            using var searching = CancellationTokenSource.CreateLinkedTokenSource(session.Token);
-            artworkSearch = searching;
-            int generation = ++searchGeneration;
-            string type=visual.Target=="logo"?"logo":target;find.IsEnabled=false;results.Items.Clear();
+            if (connection.Visibility == Visibility.Visible){searches.Invalidate();results.Items.Clear();return;}
+            if(credential!=_settings.SteamGridDbApiKey){credential=_settings.SteamGridDbApiKey;searches.Invalidate(clearCache:true);}
+            string type=visual.Target=="logo"?"logo":target;
+            string provider=source.SelectedItem?.ToString()??"SteamGridDB",query=title.Text.Trim();
+            results.Items.Clear();status.Visibility=Visibility.Collapsed;
+            if(query.Length==0){searches.Invalidate();return;}
+            status.Text=T("Ricerca in corso…");status.Visibility=Visibility.Visible;
             try
             {
-                var candidates=await game.SearchStoreArtworkAsync(source.SelectedItem?.ToString()??"SteamGridDB",title.Text.Trim(),type,searching.Token);searching.Token.ThrowIfCancellationRequested();
+                var key=ImportArtworkSearchKey.Create(provider,query,type,global::Playhub.Services.CoverFormat.IsSquare(_settings.CoverFormat));
+                var candidates=await searches.SearchAsync(key,token=>game.SearchStoreArtworkAsync(provider,query,type,token),session.Token,refresh);
                 if (session.IsClosed || generation != searchGeneration) return;
                 var selectedFrames=new List<Border>();
                 double resultAspect=type=="hero"?3840d/1240d:type=="banner"?1926d/900d:1d;
@@ -191,16 +196,18 @@ public sealed partial class MainWindow
                     {
                         if (session.IsClosed || generation != searchGeneration) return;
                         choose.IsEnabled=false;
-                        try { await saves.ChangeAsync(async()=> { await ChooseAsync(type,candidate);if(!session.IsClosed)foreach(var frame in selectedFrames)frame.BorderBrush=new SolidColorBrush(ReferenceEquals(frame,thumbnail)?Microsoft.UI.Colors.Gold:Microsoft.UI.Colors.Transparent); }); }
+                        try { await saves.ChangeAsync(async()=> { await ChooseAsync(type,candidate);if(!session.IsClosed&&generation==searchGeneration)foreach(var frame in selectedFrames)frame.BorderBrush=new SolidColorBrush(ReferenceEquals(frame,thumbnail)?Microsoft.UI.Colors.Gold:Microsoft.UI.Colors.Transparent); }); }
                         finally { if(!session.IsClosed)choose.IsEnabled=true; }
                     };
                     card.Children.Add(choose);results.Items.Add(new GridViewItem { Content=card,Padding=new Thickness(8) });
                 }
+                status.Text=candidates.Count==0?T("Nessun risultato trovato."):"";
+                status.Visibility=candidates.Count==0?Visibility.Visible:Visibility.Collapsed;
             }
             catch(OperationCanceledException){}catch{if(!session.IsClosed && generation == searchGeneration){status.Text=T("Ricerca non disponibile. Riprova.");status.Visibility=Visibility.Visible;}}
-            finally{if(ReferenceEquals(artworkSearch,searching))artworkSearch=null;if(!session.IsClosed && generation == searchGeneration)find.IsEnabled=true;}
-        };
-        dialog.Closing+=async(_,args)=>{var deferral=args.GetDeferral();scroll.IsEnabled=false;try{visual.CommitPendingChanges();await saves.FlushAsync();if(!saves.HasFailure&&!compositionConfirmed)await saves.ChangeAsync(ComposeAsync);if(saves.HasFailure){args.Cancel=true;scroll.IsEnabled=true;}}finally{deferral.Complete();}};
+        }
+        title.KeyDown+=async(_,args)=>{if(args.Key==Windows.System.VirtualKey.Enter){args.Handled=true;await SearchAsync(refresh:true);}};
+        dialog.Closing+=async(_,args)=>{var deferral=args.GetDeferral();searchGeneration++;searches.Invalidate();scroll.IsEnabled=false;try{visual.CommitPendingChanges();await saves.FlushAsync();if(!saves.HasFailure&&!compositionConfirmed)await saves.ChangeAsync(ComposeAsync);if(saves.HasFailure){args.Cancel=true;scroll.IsEnabled=true;}}finally{deferral.Complete();}};
         dialog.Closed+=(_,_)=>session.Dispose();ConfigureDialogEntrance(dialog);await dialog.ShowAsync();
     }
 }

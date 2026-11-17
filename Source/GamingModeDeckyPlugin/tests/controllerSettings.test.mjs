@@ -5,7 +5,8 @@ import test from "node:test";
 import ts from "typescript";
 
 // Exercise the controller tab actually mounted by Playhub. The old standalone
-// ControllerSettings component is no longer reachable: the requested UI is feedback only.
+// ControllerSettings component is no longer reachable; the tab exposes feedback
+// and the capability-gated Translation Controller component.
 const source = fs.readFileSync(new URL("../src/index.tsx", import.meta.url), "utf8");
 const ast = ts.createSourceFile("index.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 let expression;
@@ -19,16 +20,16 @@ function fixture(enabled = false, intensity = 55) {
   const changes = [], saves = [];
   const jsx = (type, props) => ({ type, props });
   const code = ts.transpileModule(`const panel = ${expression};`, { compilerOptions: { target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
-  const context = { exports: {}, require: () => ({ jsx, jsxs: jsx }), PanelSection: "PanelSection", PanelSectionRow: "PanelSectionRow", ToggleField: "ToggleField", SliderField: "SliderField", local: { haptics: "Feedback", hapticsDescription: "Tactile response", hapticsIntensity: "Intensity" }, hapticsEnabled: enabled, hapticsIntensity: intensity, configureNavigationHaptics: value => changes.push(value), saveHapticSettings: value => saves.push(value) };
+  const context = { exports: {}, require: () => ({ jsx, jsxs: jsx }), TranslationControllerToggle: "TranslationControllerToggle", locale: "en", PanelSection: "PanelSection", PanelSectionRow: "PanelSectionRow", ToggleField: "ToggleField", SliderField: "SliderField", local: { haptics: "Feedback", hapticsDescription: "Tactile response", hapticsIntensity: "Intensity" }, hapticsEnabled: enabled, hapticsIntensity: intensity, configureNavigationHaptics: value => changes.push(value), saveHapticSettings: value => saves.push(value) };
   const panel = vm.runInNewContext(code + "\npanel", context);
   const nodes = [];
   function walk(node) { if (Array.isArray(node)) return node.forEach(walk); if (!node || typeof node !== "object") return; nodes.push(node); walk(node.props?.children); }
   walk(panel);
   return { nodes, changes, saves };
 }
-test("production controller tab contains only feedback and no native calibration or SDL controls", () => {
+test("production controller tab mounts translation with feedback and no native calibration or SDL controls", () => {
   const f = fixture();
-  assert.deepEqual(f.nodes.filter(n => !["PanelSection", "PanelSectionRow"].includes(n.type)).map(n => n.type), ["ToggleField"]);
+  assert.deepEqual(f.nodes.filter(n => !["PanelSection", "PanelSectionRow"].includes(n.type)).map(n => n.type), ["TranslationControllerToggle", "ToggleField"]);
   assert.doesNotMatch(expression, /ControllerSettings|SDL|DropdownItem|DialogButton|Test e calibrazione/);
 });
 test("enabling feedback updates runtime and persistent preferences", () => {

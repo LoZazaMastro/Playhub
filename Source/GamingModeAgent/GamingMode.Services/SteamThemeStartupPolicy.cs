@@ -33,6 +33,7 @@ internal sealed record SteamThemeReceipt(int BrowserId, string DocumentId, strin
         catch (Exception error) when (error is InvalidOperationException or KeyNotFoundException or FormatException or OverflowException) { return null; }
     }
     internal bool Applied => State == "applied" && Proof is "style-resolved" or "frame-confirmed";
+    internal bool StartupMovieFrame => State == "playing" && Proof == "startup-movie-frame";
 }
 
 internal sealed class SteamThemeStartupPolicy
@@ -41,10 +42,11 @@ internal sealed class SteamThemeStartupPolicy
     private readonly int _minimumMs;
     private readonly int _timeoutMs;
     private bool _seenMain;
+    private readonly bool _configuredBoot;
     internal long DeadlineTick => _started + _timeoutMs;
     internal SteamThemeStartupResult Result { get; private set; } = SteamThemeStartupResult.Waiting;
-    internal SteamThemeStartupPolicy(long started, int minimumMs, int timeoutMs)
-    { _started = started; _minimumMs = Math.Clamp(minimumMs, 0, 120000); _timeoutMs = Math.Clamp(timeoutMs, 1000, 120000); }
+    internal SteamThemeStartupPolicy(long started, int minimumMs, int timeoutMs, bool configuredBoot = false)
+    { _started = started; _minimumMs = Math.Clamp(minimumMs, 0, 120000); _timeoutMs = Math.Clamp(timeoutMs, 1000, 120000); _configuredBoot = configuredBoot; }
 
     internal SteamThemeStartupResult Observe(long now, bool originalForeground, bool verifiedSteamForeground,
         bool exactMainForeground, bool steamAlive, bool contextCurrent, bool fullscreen, SteamThemeReceipt? receipt)
@@ -52,12 +54,15 @@ internal sealed class SteamThemeStartupPolicy
         if (Result != SteamThemeStartupResult.Waiting) return Result;
         if (!steamAlive) return Result = SteamThemeStartupResult.SteamExited;
         if (!contextCurrent) return Result = SteamThemeStartupResult.ContextReplaced;
+        // A cold configured launch may temporarily lose foreground to controller
+        // or shell startup windows. Its explicit intent still has to remain valid.
+        if (_configuredBoot && !verifiedSteamForeground) return Result = SteamThemeStartupResult.UserLeft;
         if (exactMainForeground) _seenMain = true;
-        else if ((_seenMain && !exactMainForeground) || (!originalForeground && !verifiedSteamForeground))
+        else if (!_configuredBoot && ((_seenMain && !exactMainForeground) || (!originalForeground && !verifiedSteamForeground)))
             return Result = SteamThemeStartupResult.UserLeft;
         long elapsed = now - _started;
         if (elapsed >= _timeoutMs) return Result = SteamThemeStartupResult.TimedOut;
-        if (_seenMain && exactMainForeground && fullscreen && receipt?.Applied == true && elapsed >= _minimumMs)
+        if (_seenMain && exactMainForeground && fullscreen && (receipt?.Applied == true || receipt?.StartupMovieFrame == true) && elapsed >= _minimumMs)
             return Result = SteamThemeStartupResult.Ready;
         return Result;
     }

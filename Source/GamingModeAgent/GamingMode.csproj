@@ -22,6 +22,8 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../Playhub.XboxSession/SteamXboxProfileWindow.cs" Link="SteamXboxProfileWindow.cs" />
+    <Compile Include="../Playhub.XboxSession/IRetainedSteamGameTarget.cs" Link="IRetainedSteamGameTarget.cs" />
     <Compile Include="../Playhub.XboxSession/SteamMirrorWireProtocol.cs" Link="SteamMirrorWireProtocol.cs" />
     <Compile Include="../Playhub.XboxSession/SteamNativeOverlayInputWire.cs" Link="SteamNativeOverlayInputWire.cs" />
     <Compile Include="../Playhub.XboxSession/SteamNativeOverlayInputPresentationBridge.cs" Link="SteamNativeOverlayInputPresentationBridge.cs" />
@@ -47,6 +49,8 @@
   </Target>
   <ItemGroup><Compile Include="../Shared/EpicLaunchWindows.cs" Link="EpicLaunchWindows.cs" /></ItemGroup>
   <ItemGroup><Compile Include="../Shared/EpicLaunchCatalog.cs" Link="EpicLaunchCatalog.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/EpicProtocolLaunchRequest.cs" Link="EpicProtocolLaunchRequest.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Playhub/Services/PlayhubUpdateService.cs" Link="PlayhubUpdateService.cs" /><Compile Include="../Playhub/Services/AppPaths.cs" Link="PlayhubAppPaths.cs" /></ItemGroup>
   <ItemGroup><Compile Include="../Shared/EpicLaunchPayload.cs" Link="EpicLaunchPayload.cs" /></ItemGroup>
   <!-- Private first-content cover is independent of HUD/menu/input and OFF without exact pins. -->
   <ItemGroup Condition="'$(PlayhubCurtainDisplaySha256)' != '' and '$(PlayhubCurtainCallbackSha256)' != ''">
@@ -62,4 +66,21 @@
     <ItemGroup><Compile Include="$(IntermediateOutputPath)CurtainDisplayPins.g.cs" /></ItemGroup>
   </Target>
   <ItemGroup><Compile Remove="GamingMode.Services/OwnedWin32GameFocus.cs" /></ItemGroup>
+  <!-- Separate private bootstrap; default builds keep original shell lifetime. -->
+  <PropertyGroup Condition="'$(XboxShellBootstrapTrial)' == 'true' and '$(ShellFreeOverlayTrial)' == 'true'">
+    <DefineConstants>$(DefineConstants);PLAYHUB_XBOX_SHELL_BOOTSTRAP</DefineConstants>
+  </PropertyGroup>
+  <!-- Explicit private trial: no behavior changes without a pinned complete native group. -->
+  <PropertyGroup Condition="'$(ShellFreeOverlayTrial)' == 'true'">
+    <DefineConstants>$(DefineConstants);PLAYHUB_SHELL_FREE_OVERLAY_TRIAL</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(ShellFreeOverlayTrial)' == 'true' and '$(ShellFreeOverlayManifestSha256)' != ''">
+    <ShellFreeOverlayAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>PlayhubShellFreeTrialManifestSha256</_Parameter1><_Parameter2>$(ShellFreeOverlayManifestSha256)</_Parameter2>
+    </ShellFreeOverlayAttribute>
+  </ItemGroup>
+  <Target Name="GenerateShellFreeOverlayPins" BeforeTargets="CoreCompile" Condition="'@(ShellFreeOverlayAttribute)' != ''">
+    <WriteCodeFragment Language="C#" AssemblyAttributes="@(ShellFreeOverlayAttribute)" OutputFile="$(IntermediateOutputPath)ShellFreeOverlayPins.g.cs" />
+    <ItemGroup><Compile Include="$(IntermediateOutputPath)ShellFreeOverlayPins.g.cs" /></ItemGroup>
+  </Target>
 </Project>

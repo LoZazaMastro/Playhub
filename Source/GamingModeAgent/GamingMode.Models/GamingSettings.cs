@@ -72,6 +72,9 @@ public sealed class GamingSettings
 	// necessari al riconoscimento nativo dello Steam Controller.
 	public bool Sdl3NativeControllerEnabled { get; set; }
 
+	public bool SteamControllerTranslationEnabled { get; set; } = true;
+	public string SteamControllerTranslationRevision { get; set; } = "";
+
 	public GamingSplashSettings Splash { get; set; } = new GamingSplashSettings();
 
 	public bool ManageAudio { get; set; }

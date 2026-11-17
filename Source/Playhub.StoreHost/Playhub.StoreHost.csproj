@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors><AllowUnsafeBlocks>true</AllowUnsafeBlocks><Version>2.7.0</Version><IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion><PublishSingleFile>false</PublishSingleFile><DebugType>none</DebugType><RestorePackagesWithLockFile>true</RestorePackagesWithLockFile><RestoreLockedMode>true</RestoreLockedMode><RuntimeIdentifiers>win-x64</RuntimeIdentifiers><DebugSymbols>false</DebugSymbols></PropertyGroup>
+  <ItemGroup><Compile Include="../Shared/StoreLibraryModels.cs" Link="StoreLibraryModels.cs" /><Compile Include="../Shared/StoreSteamSyncModels.cs" Link="StoreSteamSyncModels.cs" /><Compile Include="../Shared/StoreLibrarySteamClient.cs" Link="StoreLibrarySteamClient.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/StorePrivateLaunchModels.cs" Link="StorePrivateLaunchModels.cs" /></ItemGroup>
+  <ItemGroup><Content Include="Runtime/**/*" CopyToPublishDirectory="PreserveNewest" Link="%(RecursiveDir)%(Filename)%(Extension)" /></ItemGroup>
+  <Target Name="WriteStoreRuntimePreManifest" AfterTargets="Publish">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)WriteStoreRuntimeManifest.ps1&quot; -BundleDirectory &quot;$(PublishDir).&quot;" />
+  </Target>
+  <ItemGroup><PackageReference Include="SharpCompress" Version="[0.50.9]" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/StoreXboxCatalogModels.cs" Link="StoreXboxCatalogModels.cs" /><Compile Include="../Shared/StoreLibraryXboxClient.cs" Link="StoreLibraryXboxClient.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/StoreXboxAccountModels.cs" Link="StoreXboxAccountModels.cs" /><Compile Include="../Shared/StoreLibraryXboxAccountClient.cs" Link="StoreLibraryXboxAccountClient.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/StoreInstalledGameModels.cs" Link="StoreInstalledGameModels.cs" /><Compile Include="../Shared/StoreLibraryInstalledClient.cs" Link="StoreLibraryInstalledClient.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/StoreLibraryUiClient.cs" Link="StoreLibraryUiClient.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/StoreGdkLaunchDefinition.cs" Link="StoreGdkLaunchDefinition.cs" /></ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/EpicLaunchCatalog.cs" Link="EpicLaunchCatalog.cs" />
+    <Compile Include="../Playhub/Services/EpicManifestPaths.cs" Link="EpicManifestPaths.cs" />
+  </ItemGroup>
+</Project>

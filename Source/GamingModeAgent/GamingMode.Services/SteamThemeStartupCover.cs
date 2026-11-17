@@ -14,7 +14,9 @@ internal sealed class SteamThemeStartupCover : IDisposable
     private readonly FileLogger _logger;
     private readonly string? _steamRoot;
     private readonly Identity? _origin;
-    private readonly Identity? _desktopShell;
+    private Identity? _desktopShell;
+    private readonly bool _allowColdBootDesktop;
+    private Func<bool>? _configuredBootGuard;
     private readonly SteamThemeForegroundTransition _foregroundTransition;
     private readonly nint _originHandle;
     private readonly object _sync = new();
@@ -31,16 +33,18 @@ internal sealed class SteamThemeStartupCover : IDisposable
     internal bool CanProceed => _splash.Running && IsAllowedForeground();
     internal bool MayLaunch => Volatile.Read(ref _foregroundLeft) == 0 && IsAllowedForeground();
     internal long DeadlineTick => _policy.DeadlineTick;
+    internal void SetConfiguredBootGuard(Func<bool> allowed) { lock (_sync) _configuredBootGuard = allowed; }
 
     internal SteamThemeStartupCover(SplashScreenService splash, FileLogger logger, string? steamPath,
-        int minimumMs, int timeoutMs, bool settlingDeliveredExit = false)
+        int minimumMs, int timeoutMs, bool settlingDeliveredExit = false, bool coldBoot = false)
     {
         _splash = splash; _logger = logger; _steamRoot = SteamInstallationPath.FindRoot(steamPath);
         using (var current = Process.GetCurrentProcess()) _sessionId = current.SessionId;
         _originHandle = GetForegroundWindow(); _origin = Capture(_originHandle);
-        _foregroundTransition = new(settlingDeliveredExit, LastInputTick());
-        _desktopShell = settlingDeliveredExit ? CaptureDesktopShell() : null;
-        _policy = new(Environment.TickCount64, minimumMs, timeoutMs);
+        _foregroundTransition = new(settlingDeliveredExit, LastInputTick(), coldBoot);
+        _allowColdBootDesktop = coldBoot;
+        _desktopShell = settlingDeliveredExit || coldBoot ? CaptureDesktopShell() : null;
+        _policy = new(Environment.TickCount64, minimumMs, timeoutMs, configuredBoot: coldBoot);
         BindClient();
         var existing = FindMain();
         _monitor = MonitorFromWindow(existing?.Window ?? _originHandle, 2);
@@ -87,8 +91,8 @@ internal sealed class SteamThemeStartupCover : IDisposable
                         clientCurrent, !_contextChanged, fullscreen, receipt);
                 if (result != SteamThemeStartupResult.Waiting)
                 {
-                    _logger.Info($"Steam themed startup curtain completed: {result}; CSS proof: {receipt?.Proof ?? "none"}.");
-                    if (result == SteamThemeStartupResult.Ready) await _splash.HideAsync(fade: true, fadeMs: 180).ConfigureAwait(false);
+                    _logger.Info($"Steam themed startup curtain completed: {result}; surface proof: {receipt?.Proof ?? "none"}.");
+                    if (result == SteamThemeStartupResult.Ready) await _splash.HideAsync(fade: true, fadeMs: 300).ConfigureAwait(false);
                     else _splash.CancelImmediately();
                     return result;
                 }
@@ -108,6 +112,10 @@ internal sealed class SteamThemeStartupCover : IDisposable
         lock (_sync)
         {
             if (_cancel.IsCancellationRequested || _contextChanged || Volatile.Read(ref _foregroundLeft) != 0 || Volatile.Read(ref _disposed) != 0) return false;
+            // A configured cold boot owns its passive cover until readiness, timeout, or an explicit desktop escape.
+            // Input activity and automatic foreground changes are not cancellation requests.
+            if (_allowColdBootDesktop) return !Environment.HasShutdownStarted && GetSystemMetrics(8192) == 0
+                && _configuredBootGuard?.Invoke() != false;
             if (_display.Right > _display.Left)
             {
                 var monitor = new MonitorInfo { Size = (uint)Marshal.SizeOf<MonitorInfo>() };
@@ -146,12 +154,16 @@ internal sealed class SteamThemeStartupCover : IDisposable
     private bool IsNeutralDesktopForeground(nint foreground, Identity? identity)
     {
         if (foreground == 0) return true;
+        // Cold login can publish the real desktop after this curtain was created.
+        // Bind its first verified Explorer identity once; replacement cancels the scope.
+        if (_allowColdBootDesktop && _desktopShell is null) _desktopShell = CaptureDesktopShell();
         if (_desktopShell is null || identity is null || identity.Pid != _desktopShell.Pid
             || identity.Birth != _desktopShell.Birth || Capture(GetShellWindow()) != _desktopShell) return false;
         var name = new StringBuilder(128);
         if (GetClassName(foreground, name, name.Capacity) == 0) return false;
         // File Explorer windows and arbitrary windows owned by Explorer are not the desktop.
-        return name.ToString() is "Progman" or "WorkerW" or "Shell_TrayWnd";
+        return name.ToString() is "Progman" or "WorkerW"
+            || (!_allowColdBootDesktop && name.ToString() == "Shell_TrayWnd");
     }
     private static uint? LastInputTick()
     {
@@ -278,6 +290,7 @@ internal sealed class SteamThemeStartupCover : IDisposable
     }
     [StructLayout(LayoutKind.Sequential)] private struct LastInputInfo { internal uint Size, Tick; }
     [DllImport("user32.dll")] private static extern bool GetLastInputInfo(ref LastInputInfo value);
+    [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);
     [DllImport("user32.dll")] private static extern nint GetShellWindow();
     [StructLayout(LayoutKind.Sequential)] private readonly record struct NativeRect(int Left, int Top, int Right, int Bottom);
     [StructLayout(LayoutKind.Sequential)] private struct MonitorInfo { internal uint Size; internal NativeRect Monitor, Work; internal uint Flags; }

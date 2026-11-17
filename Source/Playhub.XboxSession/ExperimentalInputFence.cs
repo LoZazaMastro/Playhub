@@ -13,7 +13,7 @@ internal static class ExperimentalInputFence
  // Generated only after the deterministic native build; a path/RPC cannot
  // select another library, export or arbitrary remote data.
  internal static string DllPath=>Path.Combine(AppContext.BaseDirectory,"PlayhubInputFence.dll");
- internal const string DllSha="C2EDEFEC2BAE213A1C9CAEC6837E6E9FEF66ECC9248AC8680A6A3882B312DBF4";
+ internal const string DllSha="56B3CAA72A789E00DA92DFE04C4B1B4E116188E54909803A3ACDCF49194F260C";
  internal static string PermitPath=>Path.Combine(Path.GetTempPath(),"Playhub-Input-Fence-Root-OptIn.txt");
  internal static bool Permit(string text,ulong gameId,long gameBirth,DateTimeOffset now)
  {

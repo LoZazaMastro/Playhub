@@ -13,4 +13,7 @@
     <Compile Include="..\GamingModeAgent\GamingMode.Services\XboxShellBroker.cs" Link="XboxShellBroker.cs" />
     <Compile Include="..\Shared\SessionFixtureLogs.cs" Link="SessionFixtureLogs.cs" />
   </ItemGroup>
+
+  <ItemGroup><Compile Include="../Shared/EpicLaunchCatalog.cs" Link="EpicLaunchCatalog.cs" /><Compile Include="../Shared/EpicProtocolLaunchRequest.cs" Link="EpicProtocolLaunchRequest.cs" /><Compile Include="../Shared/EpicLaunchWindows.cs" Link="EpicLaunchWindows.cs" /><Compile Include="../Shared/EpicLaunchPayload.cs" Link="EpicLaunchPayload.cs" /><Compile Include="../Shared/StoreLibraryModels.cs" Link="StoreLibraryModels.cs" /><Compile Include="../Shared/StoreLibraryLaunchRequest.cs" Link="StoreLibraryLaunchRequest.cs" /><Compile Include="../Shared/StorePrivateLaunchModels.cs" Link="StorePrivateLaunchModels.cs" /><Compile Include="../Shared/StorePrivateLaunchClient.cs" Link="StorePrivateLaunchClient.cs" /><Compile Include="../Shared/StoreLibraryUiClient.cs" Link="StoreLibraryUiClient.cs" /><Compile Include="../Playhub.StoreHost/StoreLibraryService.cs" Link="StoreLibraryService.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/StoreGdkLaunchDefinition.cs" Link="StoreGdkLaunchDefinition.cs" /></ItemGroup>
 </Project>

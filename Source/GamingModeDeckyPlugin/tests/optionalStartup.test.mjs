@@ -23,11 +23,17 @@ function fixture(failing, runtime = {}) {
   const install = name => () => {
     calls.push(name);
     if (failing === name) throw new Error(`Simulated unavailable Steam hook: ${name}`);
-    return () => disposed.push(name);
+    return () => {
+      disposed.push(name);
+      if (runtime.failCleanup === name) throw new Error(`Simulated cleanup failure: ${name}`);
+    };
   };
   const noop = () => {};
   const modules = {
     './decky': {definePlugin: value => {factory=value;return value;},DFL:{},SP_REACT:{createElement:(type,props,...children)=>({type,props,children})}, routerHook:{addRoute:noop,removeRoute:noop}},
+    './storeLibraryRuntime':{installStoreLibraryRuntime:install('store library')},
+    './StoreDigitalPortal':{installStoreDigitalPortal:install('digital stores portal')},
+    './storeLibrarySteam':{installStoreLibrarySteamUi:locale=>{assert.equal(typeof locale,'function');return install('store game actions')();}},
     './circlesScreensaver':{installCirclesScreensaver:install('screensaver')},
     './onboardingIntegration':{installPlayhubOnboarding:install('onboarding')},
     './deckyHost':{initDeckyHost:install('decky host')},
@@ -39,9 +45,11 @@ function fixture(failing, runtime = {}) {
     './DashboardPage':{preloadDashboardWindows:()=>Promise.resolve(),clearDashboardChrome:noop},
     './pluginStoreData':{preloadPluginStoreCatalog:()=>Promise.resolve()},
     './navigationHaptics':{installNavigationHaptics:install('haptics'),getNavigationHapticsRevision:()=>0,configureNavigationHaptics:noop},
+    './virtualControllerName':{installVirtualControllerName:install('virtual controller name')},
     './qam':{initPlayhubQam:install('qam')},
     './powerMenuPatch':{installPowerMenuPatch:install('power menu')},
     './deckyIpcRecovery':{installDeckyIpcRecovery:install('ipc recovery')},
+    './playhubUpdateNotice':{installPlayhubUpdateNotice:install('update notice')},
     './steamNavigationReturn':steamNavigationReturn,
     './steamFocusEvents':steamFocusEvents,
     './steamModeCommands':steamModeCommands,
@@ -58,7 +66,8 @@ function fixture(failing, runtime = {}) {
   vm.runInNewContext(compiled,{exports:{},require:name=>modules[name]??{}, window,document:{documentElement:{lang:'en'}},navigator:{language:'en'},console:{warn:(...items)=>warnings.push(items),log:noop,debug:noop},Promise,Set,performance,Date:{now:runtime.now??Date.now}});
   return {factory,calls,disposed,warnings,tick:()=>tick()};
 }
-for (const name of ['ipc recovery','screensaver','onboarding','decky host','quick settings','qam focus','performance monitor','haptics','power menu']) {
+const integrations = ['store library','digital stores portal','store game actions','update notice','ipc recovery','screensaver','onboarding','decky host','quick settings','qam focus','performance monitor','home news','haptics','virtual controller name','qam','power menu'];
+for (const name of ['store library','digital stores portal','store game actions','update notice','ipc recovery','screensaver','onboarding','decky host','quick settings','qam focus','performance monitor','haptics','virtual controller name','power menu']) {
   test(`Unavailable ${name} hook does not prevent the real plugin and QAM from loading`, async () => {
     const f = fixture(name);
     const plugin = f.factory();
@@ -69,12 +78,26 @@ for (const name of ['ipc recovery','screensaver','onboarding','decky host','quic
     plugin.onDismount();
     assert.ok(f.disposed.includes('qam'));
     assert.ok(!f.disposed.includes(name));
+    assert.deepEqual([...f.calls].sort(),[...integrations].sort(),'every independent integration was attempted');
+    assert.deepEqual([...f.disposed].sort(),integrations.filter(item=>item!==name).sort(),'every successful registration is released once');
   });
 }
 test('Successful startup keeps all integrations and releases every hook',async()=>{
   const f=fixture();const plugin=f.factory();await Promise.resolve();plugin.onDismount();
-  assert.equal(f.warnings.length,0);assert.equal(f.calls.length,11);assert.equal(f.disposed.length,11);
+  assert.equal(f.warnings.length,0);
+  assert.deepEqual([...f.calls].sort(),[...integrations].sort());
+  assert.deepEqual([...f.disposed].sort(),[...integrations].sort());
+  assert.ok(f.calls.includes('update notice') && f.disposed.includes('update notice'));
 });
+
+for(const name of ['store library','digital stores portal','store game actions']) {
+ test(`Failing ${name} cleanup cannot prevent the remaining real plugin cleanup`,async()=>{
+  const f=fixture(undefined,{failCleanup:name});const plugin=f.factory();await Promise.resolve();plugin.onDismount();
+  assert.deepEqual([...f.disposed].sort(),[...integrations].sort(),'each real registration is attempted exactly once');
+  assert.equal(f.disposed.at(-1),'qam');
+  assert.equal(f.warnings.length,1);assert.match(f.warnings[0][0],/Cleanup failed/);
+ });
+}
 
 test('the production watcher acknowledges desktop only after actual Steam mode and desired-window readback',async()=>{
  const calls=[];let mode=4;

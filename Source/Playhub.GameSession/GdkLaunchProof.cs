@@ -65,12 +65,10 @@ internal static class GdkLaunchProof
             if (!string.Equals(Path.GetFileName(helperName), "GameLaunchHelper.exe", StringComparison.OrdinalIgnoreCase)) continue;
             var helper = Inside(package.Directory, helperName);
             var config = ReadXml(configPath);
-            var configured = config.Root?.Elements().Where(element => element.Name.LocalName == "ExecutableList")
-                .SelectMany(element => element.Elements()).Where(element => element.Name.LocalName == "Executable" && (string?)element.Attribute("Id") == parts[1]).ToArray() ?? [];
+            int applicationCount = applications?.Elements().Count(element => element.Name.LocalName == "Application") ?? 0;
+            string? configured = Playhub.Shared.StoreGdkLaunchDefinition.Executable(config, parts[1], applicationCount);
             var expected = Inside(package.Directory, expectedExecutable);
-            var targets = configured.Select(element => (string?)element.Attribute("Name") ?? "")
-                .Where(name => string.Equals(Inside(package.Directory, name), expected, StringComparison.OrdinalIgnoreCase)).ToArray();
-            if (targets.Length != 1 || !File.Exists(helper) || !File.Exists(expected))
+            if (configured is null || !string.Equals(Inside(package.Directory, configured), expected, StringComparison.OrdinalIgnoreCase) || !File.Exists(helper) || !File.Exists(expected))
                 throw new InvalidOperationException("The Xbox game executable does not match its registered launch configuration.");
             matches.Add(new GdkLaunchPlan(package.FullName, Path.GetFullPath(package.Directory), helper, expected));
         }

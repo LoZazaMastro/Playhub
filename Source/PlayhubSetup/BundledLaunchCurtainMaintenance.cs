@@ -8,7 +8,7 @@ using Playhub.Services;
 namespace PlayhubSetup;
 
 internal sealed record BundledMaintenancePlan(string Status, DeckyPluginInfo? Plugin = null,
-    string ZipSha256 = "", int ChangedFiles = 0);
+    string ZipSha256 = "", int ChangedFiles = 0, string BundledVersion = "");
 internal sealed record BundledMaintenanceResult(string Status, string Version = "", string ZipSha256 = "",
     int ChangedFiles = 0, bool Reloaded = false);
 
@@ -50,7 +50,7 @@ internal static class BundledLaunchCurtainMaintenance
             if (doc.RootElement.TryGetProperty("DeckyPluginsPath", out var value) && value.ValueKind == JsonValueKind.String
                 && !string.IsNullOrWhiteSpace(value.GetString())) plugins = value.GetString()!;
         }
-        string zip = Path.Combine(installDirectory, "Plugins", "Launch Curtain", "Launch-Curtain_Installer-2.5.8.zip");
+        string zip = Path.Combine(installDirectory, "Plugins", "Launch Curtain", "Launch-Curtain_Installer-2.5.9.zip");
         var result = await RunAsync(zip, plugins,
             (plugin, path, allowed) => new DeckyPluginService().InstallOrUpdateAsync(plugin, path, bundledOnly: true, canInstall: allowed),
             Playhub.Integrations.SteamPluginBridge.EvaluateAsync,
@@ -72,7 +72,7 @@ internal static class BundledLaunchCurtainMaintenance
             {
                 string pending = Path.Combine(plugins, FolderName, ReloadMarker);
                 if (File.Exists(pending) && await File.ReadAllTextAsync(pending) == plan.ZipSha256)
-                    return await CompleteReloadAsync(pending, "2.5.8", plan.ZipSha256, 0, evaluate, processSafety);
+                    return await CompleteReloadAsync(pending, plan.BundledVersion, plan.ZipSha256, 0, evaluate, processSafety);
             }
             return new(plan.Status, ZipSha256: plan.ZipSha256);
         }
@@ -196,10 +196,10 @@ internal static class BundledLaunchCurtainMaintenance
             }
             using var zipped = File.OpenRead(zip);
             string digest = Convert.ToHexString(SHA256.HashData(zipped));
-            if (changed == 0) return new("current", ZipSha256: digest);
+            if (changed == 0) return new("current", ZipSha256: digest, BundledVersion: version);
             return new("update", new DeckyPluginInfo { Name = "Launch Curtain", FolderName = FolderName,
                 IsInstalled = true, InstalledFolder = destination, InstalledVersion = installed, Version = version,
-                InstallerZip = zip, RepositoryName = "Launch-Curtain", CatalogSource = "bundled-local" }, digest, changed);
+                InstallerZip = zip, RepositoryName = "Launch-Curtain", CatalogSource = "bundled-local" }, digest, changed, version);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException
             or JsonException or InvalidOperationException or KeyNotFoundException or ArgumentException)

@@ -83,7 +83,15 @@ test("invalid synthetic frames fail closed; no support inferred from USB identit
 
 test("production panel does not expose the synthetic profile editor", () => {
   const source = fs.readFileSync(new URL("../src/index.tsx", import.meta.url), "utf8");
-  assert.doesNotMatch(source, /ControllerProfileEditor|controllerProfiles|previewControllerProfile|localStorage/);
+  assert.doesNotMatch(source, /ControllerProfileEditor|controllerProfiles|previewControllerProfile/);
+  // Update-notice version persistence is unrelated to controller profiles.
+  // Check the actual controller JSX boundary instead of banning all storage.
+  const ast = ts.createSourceFile("index.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let controller;
+  const visit = node => { if (ts.isJsxAttribute(node) && node.name.getText(ast) === "controller") controller = node; ts.forEachChild(node, visit); };
+  visit(ast); assert.ok(controller?.initializer, "the production controller surface must exist");
+  assert.doesNotMatch(controller.initializer.getText(ast), /localStorage|ControllerProfileEditor|previewControllerProfile/);
+  assert.match(source, /localStorage\.getItem\("playhub\.update-notice\.version"\)/);
   assert.match(source, /controller=\{<PanelSection>/);
   assert.doesNotMatch(source, /<ControllerSettings\b/);
 });

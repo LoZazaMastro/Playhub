@@ -1,0 +1,15 @@
+Digital Stores partner logos
+
+store-ea.png: EA app icon from Electronic Arts' official installed Windows
+launcher EADesktop.exe (EA Desktop/EA Desktop).
+store-ubisoft.png: Ubisoft Connect icon from Ubisoft's official installed
+Windows launcher UbisoftConnect.exe (Ubisoft Game Launcher).
+store-battlenet.png: Battle.net icon from Blizzard Entertainment's official
+installed Windows launcher Battle.net.exe.
+
+Extracted 2026-11-16 using Windows Icon.ExtractAssociatedIcon, original 72x72
+resource artwork. No logo was generated or redrawn. These logos identify the
+installation provider returned by Microsoft's product metadata. EA, Ubisoft
+Connect and Battle.net names and artwork belong to their respective owners;
+they are not covered by Playhub's original-code MIT license and do not imply
+endorsement or affiliation.

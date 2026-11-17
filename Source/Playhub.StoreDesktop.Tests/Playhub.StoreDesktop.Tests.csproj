@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors></PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="UiReview/**/*.cs" />
+    <Compile Include="../Shared/StoreLibraryModels.cs" Link="StoreLibraryModels.cs" />
+    <Compile Include="../Shared/StoreSteamSyncModels.cs" Link="StoreSteamSyncModels.cs" />
+    <Compile Include="../Playhub/StoreLibrary/StoreMigrationController.cs" Link="StoreMigrationController.cs" />
+    <Compile Include="../Playhub/StoreLibrary/StoreMigrationAnnouncements.cs" Link="StoreMigrationAnnouncements.cs" />
+    <Compile Include="../Playhub/StoreLibrary/StoreDesktopCopy.cs" Link="StoreDesktopCopy.cs" />
+    <Compile Include="../Playhub/Services/LocalizationService.cs" Link="LocalizationService.cs" />
+  </ItemGroup>
+</Project>

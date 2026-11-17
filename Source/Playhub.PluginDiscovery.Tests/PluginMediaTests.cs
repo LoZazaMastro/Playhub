@@ -6,14 +6,16 @@ using System.Text.Json;
 using Playhub.Models;
 using Playhub.Services;
 
-await MediaTests.RunAsync();
+await MediaTests.RunAsync(args.Contains("--preview-only"));
 
 internal static class MediaTests
 {
     private static readonly byte[] Png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg==");
 
-    public static async Task RunAsync()
+    public static async Task RunAsync(bool previewOnly = false)
     {
+        if (!previewOnly)
+        {
         await Run("status, HTML, signatures, and descriptions", InvalidMediaAsync);
         await Run("nested paths, branch slashes, spaces, and references", RelativePathsAsync);
         await Run("strict GitHub conversion and remote URL handling", GithubUrlsAsync);
@@ -30,11 +32,12 @@ internal static class MediaTests
         await Run("request concurrency is bounded across repositories", CrossRepositoryBoundsAsync);
         await Run("README cache capacity is bounded", CacheCapacityAsync);
         await Run("catalog loading stays offline and built-in API is unchanged", LazyLoadingAsync);
+        }
         await Run("card covers precede lazy screenshot fallback", PreviewSelectionAsync);
         await Run("card fallback reuses validated detail screenshots", PreviewDetailsAsync);
         await Run("social preview is validated and decoder failures are skipped", PreviewValidationAsync);
         await Run("card fallback requests are deduplicated and expire", PreviewCacheAsync);
-        Console.WriteLine("PASS all 20 media regression groups");
+        Console.WriteLine(previewOnly ? "PASS all 4 card-preview regression groups" : "PASS all 20 media regression groups");
     }
 
     private static async Task Run(string name, Func<Task> test)
@@ -454,8 +457,8 @@ internal static class MediaTests
         var fresh = Plugin(plugin.RepositorySlug);
         fresh.Media.Clear();
         fresh.CoverImage = plugin.CoverImage;
-        Check(await service.FindPluginPreviewAsync(fresh, rejected) == cover,
-            "Recreated card objects must reuse the shared README cache");
+        Check(await service.FindPluginPreviewAsync(fresh, rejected) == "https://opengraph.githubassets.com/1/" + plugin.RepositorySlug,
+            "A missing card uses its GitHub repository preview immediately without waiting for README discovery");
         Check(handler.Requests.Count == requests, "Recycled cards must not refetch README or media");
     }
 
@@ -499,14 +502,15 @@ internal static class MediaTests
         var rejected = new HashSet<string>(StringComparer.Ordinal);
         var results = await Task.WhenAll(Enumerable.Range(0, 20)
             .Select(_ => service.FindPluginPreviewAsync(plugin, rejected)));
-        Check(results.All(result => result is null) && handler.Requests.Count == 3,
-            "Concurrent missing cards share negative cover, README and social caches");
+        Check(results.All(result => result == social) && handler.Requests.Count == 1,
+            "Missing covers share one negative cover probe and immediately hand GitHub preview to the decoder");
+        rejected.Add(social);
+        Check(await service.FindPluginPreviewAsync(plugin, rejected) is null && handler.Requests.Count <= 2,
+            "A decoder-rejected preview does not cause a request loop");
         handler.Image(social, Png);
-        Check(await service.FindPluginPreviewAsync(plugin, rejected) is null && handler.Requests.Count == 3,
-            "Negative caching prevents failed-card network flooding");
         now = now.AddMinutes(6);
-        Check(await service.FindPluginPreviewAsync(plugin, rejected) == social && handler.Requests.Count == 6,
-            "Expired failures recover after media becomes available");
+        Check(await service.FindPluginPreviewAsync(plugin, new HashSet<string>()) == social,
+            "A fresh card can recover its official preview after a transient failure");
     }
 
     private static void Check(bool value, string message)

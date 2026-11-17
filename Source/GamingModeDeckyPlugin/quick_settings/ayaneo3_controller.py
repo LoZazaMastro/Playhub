@@ -4,7 +4,6 @@ Wire facts: Rayekkk/Ayaneo3Companion@bed273c (BSD-3-Clause, notices supplied).
 No gamepad reports, rumble test, button map, mode switch, reset, eject or save.
 """
 from dataclasses import dataclass, replace
-import colorsys
 import hashlib
 import importlib.util
 import json
@@ -60,6 +59,12 @@ def matches(current,expected):
 
 
 def _hue(data,degrees):
+    # Windows Decky's reduced Python distribution may omit this optional module.
+    # Keep the standard conversion, but fail the hardware request before a write.
+    try:
+        import colorsys
+    except ImportError as error:
+        raise ValueError('dependency_unavailable') from error
     h,s,v=colorsys.rgb_to_hsv(*(x/255 for x in data))
     return bytes(round(x*255) for x in colorsys.hsv_to_rgb((h+degrees/360)%1,s,v))
 

@@ -18,7 +18,10 @@ function visit(node) {
   ts.forEachChild(node, visit);
 }
 visit(ast); assert.ok(callback);
-const callbackCode = ts.transpileModule(`exports.callback=${callback}`, {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const ownershipNames=new Set(["readReturnNavigation","returnNavigation","observeReturnNavigation","acceptReturnNavigation"]);
+const ownership=[];function ownershipVisit(n){if(ts.isVariableStatement(n)&&n.declarationList.declarations.some(d=>ownershipNames.has(d.name.getText(ast))))ownership.push(n.getText(ast));ts.forEachChild(n,ownershipVisit);}ownershipVisit(ast);
+assert.equal(ownership.length,4);
+const callbackCode = ts.transpileModule(ownership.join("\n")+`\nreturnNavigation={version:1,view:readReturnNavigation(),yielded:true};\nexports.callback=${callback}`, {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
 const app=2979426017;
 const presentation={protocol:1,state:"preparing",actualScope:0,sessionId:"a".repeat(64),gamePid:43364,
   gameBirth:"134389380406335517",gameId:((BigInt(app)<<32n)|0x02000000n).toString()};
@@ -45,7 +48,7 @@ function fixture(admit=true) {
     keyFocusReset:{async reset(){return false;}},
     restoreSteamNavigationFocus:()=>f.focusedNavigation!==false,launchPatch:{},overlayScope:{get(){},clear(){}},
     currentSteamGame:()=>f.running,layout:{begin(){throw Error("no layout mutation");}},navigateReturnedSteamGame(){},
-    focusReturnedSteamGameAction:()=>f.play!==false,hasVisibleSteamNavigationFocus:()=>f.visible,
+    focusReturnedSteamGameAction:()=>f.play!==false,hasVisibleSteamNavigationFocus:()=>f.visible&&f.focusedNavigation!==false,
     configuratorReturn:lane,logToAgent:()=>{},focusDashboardSurface(){}};
   vm.runInNewContext(callbackCode,globals);
   f.run=()=>globals.exports.callback(app,false,recovery);
@@ -79,7 +82,6 @@ for (const [name,change] of Object.entries({
   "unknown modal collection":f=>{f.main.m_ModalManager.modals=undefined;},
   "menu still open":f=>{f.main.MenuStore.GetOpenSideMenu=()=>2;},
   "configurator route":f=>{f.main.m_locationPathname="/app/769/controllerconfigurator/main";},
-  "no actual Play":f=>{f.play=false;},
   "hidden navigation node":f=>{f.visible=false;},
   "Play no longer highlighted":f=>{f.highlighted=false;},
   "real document blur":f=>{f.focused=false;},
@@ -201,4 +203,8 @@ test("managed process-death tuple is derived from retained Source and serialized
   assert.match(native,/ForegroundProof\(uint AppId, bool UsedCompanion, uint GamePid = 0, long GameBirth = 0\)/);
   assert.match(native,/new\(session\.VerifiedAppId,[\s\S]{0,150}session\.Source\.GamePid, session\.Source\.GameBirth\)/);
   assert.match(host,/gamePid = proof\?\.GamePid \?\? 0, gameBirth = \(proof\?\.GameBirth \?\? 0\)\.ToString\(System\.Globalization\.CultureInfo\.InvariantCulture\)/);
+});
+
+test("owned cleanup accepts real navigation on another control without forcing a Play action",async()=>{
+ const f=fixture();f.play=false;assert.equal(await f.run(),true);assert.deepEqual(f.calls,[false]);
 });

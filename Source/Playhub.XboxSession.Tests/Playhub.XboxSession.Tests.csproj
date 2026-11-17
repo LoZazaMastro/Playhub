@@ -8,6 +8,7 @@
     <Compile Include="..\Playhub.XboxSession\**\*.cs" Exclude="..\Playhub.XboxSession\bin\**;..\Playhub.XboxSession\obj\**" Link="XboxSession\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="..\Playhub.GameSession\XboxSessionClient.cs" Link="XboxSessionClient.cs" />
     <Compile Include="..\Shared\SessionFixtureLogs.cs" Link="SessionFixtureLogs.cs" />
+    <Compile Include="../Shared/StoreGdkLaunchDefinition.cs" Link="StoreGdkLaunchDefinition.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="../Shared/EpicLaunchCatalog.cs" Link="EpicLaunchCatalog.cs" />
@@ -15,4 +16,6 @@
     <Compile Include="../Shared/EpicLaunchPayload.cs" Link="EpicLaunchPayload.cs" />
   </ItemGroup>
   <ItemGroup><Content Include="..\Playhub.XboxSession\Native\InputFencePrototype\PlayhubInputFence.dll" Link="PlayhubInputFence.dll" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+
+  <ItemGroup><Compile Include="../Playhub.GameSession/UwpStoreCompanionBinding.cs" Link="UwpStoreCompanionBinding.cs" /><Compile Include="../Shared/StoreLibraryModels.cs" Link="StoreLibraryModels.cs" /><Compile Include="../Shared/StorePrivateLaunchModels.cs" Link="StorePrivateLaunchModels.cs" /><Compile Include="../Playhub.StoreHost/StoreLibraryService.cs" Link="StoreLibraryService.cs" /></ItemGroup>
 </Project>

@@ -1,5 +1,10 @@
-﻿import { readOwnedGameApp, resolveOwnedGameApp } from "./steamOwnedLaunchDispatcher";
+import { readOwnedGameApp, resolveOwnedGameApp } from "./steamOwnedLaunchDispatcher";
 import { installCirclesScreensaver } from "./circlesScreensaver";
+import { installStoreLibraryRuntime } from "./storeLibraryRuntime";
+import { installStoreDigitalPortal } from "./StoreDigitalPortal";
+import { installStoreLibrarySteamUi } from "./storeLibrarySteam";
+import { StoreDownloadsQam } from "./storeDownloadMenu";
+import { TranslationControllerToggle } from "./TranslationControllerToggle";
 import { pollStatus } from "./statusPoll";
 import { agentAvailability } from "./agentAvailability";
 import { optionalAgentCopy } from "./optionalAgentLocale";
@@ -10,6 +15,7 @@ import { definePlugin, routerHook, toaster, DFL, SP_REACT as React } from "./dec
 import { acknowledgeSteamModeCommand, captureDashboardSourceFocus, confirmBigPictureForeground, consumeOpenRequest, logToAgent, readEnvironment, readSettings, writeSettings, API_BASE, requestDashboardSteamFocus, restoreDashboardSourceFocus } from "./api";
 import { createSteamKeyFocusReset, createSteamNavigationRecovery, createSteamNavigationWakeup, createSteamOverlayReturnScope, focusReturnedSteamGameAction, hasVisibleSteamNavigationFocus, isConfirmedSteamIdle, isSteamNavigationReturnApp, navigateReturnedSteamGame, recoverSteamNavigation, releaseExitedSteamOverlay, type SteamOverlayScope, type SteamReturnOverlayWindow } from "./steamNavigationReturn";
 import { activeSteamController, createSteamReturnControllerLayout } from "./steamReturnControllerLayout";
+import { installVirtualControllerName } from "./virtualControllerName";
 import { observeSteamOverlayFocus } from "./steamFocusEvents";
 import { installSteamModeCommands } from "./steamModeCommands";
 import { matchesOverlayApp } from "./dashboardOverlay";
@@ -36,6 +42,7 @@ import { installDeckyIpcRecovery, type IpcFailure } from "./deckyIpcRecovery";
 import { installControlledQamFocus } from "./controlledQamIntegration";
 import { createSteamConfiguratorReturn, type SteamConfiguratorReturn } from "./steamConfiguratorReturn";
 import { installLivePerformance } from "./quickSettings/livePerformanceRuntime";
+import { installPlayhubUpdateNotice, updateNoticeBody, type UpdateNotice } from "./playhubUpdateNotice";
 
 const { useState, useEffect, useMemo } = React;
 let hapticSettingsWrite = Promise.resolve();
@@ -102,7 +109,7 @@ const strings: Record<string, Strings> = {
     agentReturned: "Agent returned",
     dashboard: "Playhub Dashboard",
     openDashboard: "Open Dashboard",
-    dashboardShortcut: "Open it with CTRL + ALT + P",
+    dashboardShortcut: "Also open it with Ctrl + Alt + P",
     dashboardSteamInput: "In Steam Input, assign this shortcut to Guide + any button for instant controller access.",
     haptics: "Controller feedback",
     hapticsDescription: "Adds tactile feedback while navigating Steam.",
@@ -122,7 +129,7 @@ const strings: Record<string, Strings> = {
     agentReturned: "Agent ha risposto",
     dashboard: "Playhub Dashboard",
     openDashboard: "Apri Dashboard",
-    dashboardShortcut: "Aprila con CTRL + ALT + P",
+    dashboardShortcut: "Aprila anche con Ctrl + Alt + P",
     dashboardSteamInput: "In Steam Input, assegna questa scorciatoia a Guida + un pulsante per aprirla subito dal controller.",
     haptics: "Feedback del controller",
     hapticsDescription: "Aggiunge una risposta tattile mentre navighi in Steam.",
@@ -142,7 +149,7 @@ const strings: Record<string, Strings> = {
     agentReturned: "El agente devolvió",
     dashboard: "Playhub Dashboard",
     openDashboard: "Abrir Dashboard",
-    dashboardShortcut: "Ábrelo con CTRL + ALT + P",
+    dashboardShortcut: "Ábrelo también con Ctrl + Alt + P",
     dashboardSteamInput: "En Steam Input, asigna este atajo a Guía + un botón para abrirlo al instante con el mando.",
     haptics: "Respuesta del mando", hapticsDescription: "Añade respuesta táctil al navegar por Steam.", hapticsIntensity: "Intensidad",
     restartGaming: "Reiniciar en modo Gaming", restartDesktop: "Reiniciar en modo Escritorio",
@@ -160,7 +167,7 @@ const strings: Record<string, Strings> = {
     agentReturned: "Agent a renvoyé",
     dashboard: "Playhub Dashboard",
     openDashboard: "Ouvrir le Dashboard",
-    dashboardShortcut: "Ouvrez-le avec CTRL + ALT + P",
+    dashboardShortcut: "Ouvrez-le aussi avec Ctrl + Alt + P",
     dashboardSteamInput: "Dans Steam Input, associez ce raccourci à Guide + un bouton pour l'ouvrir instantanément avec la manette.",
     haptics: "Retour de la manette", hapticsDescription: "Ajoute un retour tactile lors de la navigation dans Steam.", hapticsIntensity: "Intensité",
     restartGaming: "Redémarrer en mode Gaming", restartDesktop: "Redémarrer en mode Bureau",
@@ -178,7 +185,7 @@ const strings: Record<string, Strings> = {
     agentReturned: "Agent meldete",
     dashboard: "Playhub Dashboard",
     openDashboard: "Dashboard öffnen",
-    dashboardShortcut: "Mit CTRL + ALT + P öffnen",
+    dashboardShortcut: "Auch mit Ctrl + Alt + P öffnen",
     dashboardSteamInput: "Weise diese Tastenkombination in Steam Input Guide + einer Taste zu, um das Dashboard direkt per Controller zu öffnen.",
     haptics: "Controller-Feedback", hapticsDescription: "Fügt beim Navigieren in Steam taktiles Feedback hinzu.", hapticsIntensity: "Intensität",
     restartGaming: "Im Gaming-Modus neu starten", restartDesktop: "Im Desktop-Modus neu starten",
@@ -196,7 +203,7 @@ const strings: Record<string, Strings> = {
     agentReturned: "Agente devolveu",
     dashboard: "Playhub Dashboard",
     openDashboard: "Abrir Dashboard",
-    dashboardShortcut: "Abra com CTRL + ALT + P",
+    dashboardShortcut: "Abra também com Ctrl + Alt + P",
     dashboardSteamInput: "No Steam Input, atribua este atalho a Guia + um botão para abrir imediatamente pelo comando.",
     haptics: "Resposta do controle", hapticsDescription: "Adiciona resposta tátil ao navegar pelo Steam.", hapticsIntensity: "Intensidade",
     restartGaming: "Reiniciar no modo Gaming", restartDesktop: "Reiniciar no modo Desktop",
@@ -208,7 +215,7 @@ const strings: Record<string, Strings> = {
     defaultStartup: "Типовий запуск", desktopMode: "Режим робочого столу", gamingMode: "Ігровий режим",
     notConnected: "Агент не підключено", agentReturned: "Агент повернув",
     dashboard: "Панель Playhub", openDashboard: "Відкрити панель",
-    dashboardShortcut: "Відкрийте за допомогою CTRL + ALT + P",
+    dashboardShortcut: "Також відкривайте за допомогою Ctrl + Alt + P",
     dashboardSteamInput: "У Steam Input призначте це сполучення на Guide + будь-яку кнопку для миттєвого доступу з контролера.",
     haptics: "Відгук контролера", hapticsDescription: "Додає тактильний відгук під час навігації Steam.", hapticsIntensity: "Інтенсивність",
     restartGaming: "Перезапустити в ігровому режимі", restartDesktop: "Перезапустити в режимі робочого столу",
@@ -220,7 +227,7 @@ const strings: Record<string, Strings> = {
     defaultStartup: "默认启动模式", desktopMode: "桌面模式", gamingMode: "游戏模式",
     notConnected: "代理未连接", agentReturned: "代理返回",
     dashboard: "Playhub 控制面板", openDashboard: "打开控制面板",
-    dashboardShortcut: "按 CTRL + ALT + P 打开",
+    dashboardShortcut: "也可按 Ctrl + Alt + P 打开",
     dashboardSteamInput: "在 Steam Input 中，将此快捷键绑定到 Guide + 任意按钮，即可通过控制器快速打开。",
     haptics: "手柄反馈", hapticsDescription: "在 Steam 中导航时提供触觉反馈。", hapticsIntensity: "反馈强度",
     restartGaming: "重启到游戏模式", restartDesktop: "重启到桌面模式",
@@ -232,7 +239,7 @@ const strings: Record<string, Strings> = {
     defaultStartup: "既定の起動", desktopMode: "デスクトップモード", gamingMode: "ゲーミングモード",
     notConnected: "エージェントに接続されていません", agentReturned: "エージェントの応答",
     dashboard: "Playhub ダッシュボード", openDashboard: "ダッシュボードを開く",
-    dashboardShortcut: "CTRL + ALT + P で開きます",
+    dashboardShortcut: "Ctrl + Alt + P でも開けます",
     dashboardSteamInput: "Steam Input でこのショートカットを Guide + 任意のボタンに割り当てると、コントローラーからすぐに開けます。",
     haptics: "コントローラーのフィードバック", hapticsDescription: "Steam の操作に触覚フィードバックを加えます。", hapticsIntensity: "フィードバックの強さ",
     restartGaming: "ゲーミングモードで再起動", restartDesktop: "デスクトップモードで再起動",
@@ -244,7 +251,7 @@ const strings: Record<string, Strings> = {
     defaultStartup: "기본 시작", desktopMode: "데스크톱 모드", gamingMode: "게이밍 모드",
     notConnected: "에이전트가 연결되지 않음", agentReturned: "에이전트 응답",
     dashboard: "Playhub 대시보드", openDashboard: "대시보드 열기",
-    dashboardShortcut: "CTRL + ALT + P로 열기",
+    dashboardShortcut: "Ctrl + Alt + P로도 열 수 있습니다",
     dashboardSteamInput: "Steam Input에서 이 단축키를 Guide + 원하는 버튼에 지정하면 컨트롤러로 즉시 열 수 있습니다.",
     haptics: "컨트롤러 피드백", hapticsDescription: "Steam을 탐색할 때 촉각 피드백을 추가합니다.", hapticsIntensity: "피드백 강도",
     restartGaming: "게이밍 모드로 다시 시작", restartDesktop: "데스크톱 모드로 다시 시작",
@@ -256,7 +263,7 @@ const strings: Record<string, Strings> = {
     defaultStartup: "डिफ़ॉल्ट स्टार्टअप", desktopMode: "डेस्कटॉप मोड", gamingMode: "गेमिंग मोड",
     notConnected: "एजेंट कनेक्ट नहीं है", agentReturned: "एजेंट ने लौटाया",
     dashboard: "Playhub डैशबोर्ड", openDashboard: "डैशबोर्ड खोलें",
-    dashboardShortcut: "CTRL + ALT + P से खोलें",
+    dashboardShortcut: "Ctrl + Alt + P से भी खोलें",
     dashboardSteamInput: "कंट्रोलर से तुरंत खोलने के लिए Steam Input में इस शॉर्टकट को Guide + किसी बटन से जोड़ें।",
     haptics: "कंट्रोलर फ़ीडबैक", hapticsDescription: "Steam में नेविगेट करते समय स्पर्श प्रतिक्रिया जोड़ता है।", hapticsIntensity: "फ़ीडबैक की तीव्रता",
     restartGaming: "गेमिंग मोड में रीस्टार्ट करें", restartDesktop: "डेस्कटॉप मोड में रीस्टार्ट करें",
@@ -268,7 +275,7 @@ const strings: Record<string, Strings> = {
     defaultStartup: "Запуск по умолчанию", desktopMode: "Режим рабочего стола", gamingMode: "Игровой режим",
     notConnected: "Агент не подключен", agentReturned: "Агент вернул",
     dashboard: "Панель Playhub", openDashboard: "Открыть панель",
-    dashboardShortcut: "Откройте с помощью CTRL + ALT + P",
+    dashboardShortcut: "Также открывайте с помощью Ctrl + Alt + P",
     dashboardSteamInput: "В Steam Input назначьте это сочетание на Guide + любую кнопку для мгновенного доступа с контроллера.",
     haptics: "Отклик контроллера", hapticsDescription: "Добавляет тактильный отклик при навигации в Steam.", hapticsIntensity: "Интенсивность",
     restartGaming: "Перезапустить в игровом режиме", restartDesktop: "Перезапустить в режиме рабочего стола",
@@ -596,9 +603,47 @@ function startOpenRequestWatcher(configuratorReturn: SteamConfiguratorReturn): (
     : undefined;
   const keyFocusReset = createSteamKeyFocusReset((callback, delay) => window.setTimeout(callback, delay),
     timer => window.clearTimeout(timer));
+  const readReturnNavigation = () => {
+    const main = bigPictureMainWindow();
+    const browser = main?.m_BrowserWindow ?? main?.BrowserWindow;
+    const document = browser?.document;
+    if (!main || !document || browser.closed === true) return;
+    const tree = steamNavigationController()?.GetActiveNavTree?.();
+    const node = tree?.GetLastFocusedNode?.()?.Element ?? document.activeElement;
+    return { main, browser, document, route: main.m_locationPathname, node,
+      blocked: main.MenuStore?.GetOpenSideMenu?.() !== 0 || Boolean(main.m_ModalManager?.modals?.length),
+      focused: document.hasFocus?.() === true && document.body?.classList?.contains("WindowFocus") === true
+        && hasVisibleSteamNavigationFocus(document, tree) };
+  };
+  let returnNavigation: { version: number; view: ReturnType<typeof readReturnNavigation>; yielded: boolean } | undefined;
+  const observeReturnNavigation = (held = returnNavigation) => {
+    const view = readReturnNavigation();
+    if (held && (held !== returnNavigation || !view || !held.view || view.main !== held.view.main
+        || view.browser !== held.view.browser || view.document !== held.view.document
+        || view.route !== held.view.route || view.node !== held.view.node || view.blocked)) held.yielded = true;
+    return view;
+  };
+  const acceptReturnNavigation = (held: typeof returnNavigation, route: unknown) => {
+    const view = readReturnNavigation();
+    if (!held || held !== returnNavigation || !view || !held.view || view.main !== held.view.main
+        || view.browser !== held.view.browser || view.document !== held.view.document
+        || view.route !== route || view.blocked) { if (held) held.yielded = true; return; }
+    held.view = view;
+    // Once Steam has real visible navigation, retries own cleanup only.
+    if (view.focused) held.yielded = true;
+  };
   const focusRecovery = createSteamNavigationRecovery(
-    confirmBigPictureForeground,
+    version => {
+      if (returnNavigation?.version !== version || !returnNavigation?.view) {
+        const view = readReturnNavigation();
+        returnNavigation = { version, view, yielded: !view || view.blocked
+          || view.focused && view.route !== "/apprunning" };
+      } else observeReturnNavigation();
+      return confirmBigPictureForeground(version);
+    },
     async (appId, usedCompanion, recovery) => {
+      const navigation = returnNavigation;
+      observeReturnNavigation(navigation);
       const target = bigPictureMainWindow();
       const targetWindow = target?.m_BrowserWindow ?? target?.BrowserWindow;
       const targetDocument = targetWindow?.document;
@@ -606,7 +651,9 @@ function startOpenRequestWatcher(configuratorReturn: SteamConfiguratorReturn): (
         const runningStore = (window as any).SteamUIStore ?? (DFL as any).Router;
         const currentWindow = target?.m_BrowserWindow ?? target?.BrowserWindow;
         const context = target?.GetFocusNavContext?.() ?? target?.m_FocusNavContext;
-        return alive && recovery.isCurrent() && appId > 0 && target && bigPictureMainWindow() === target
+        observeReturnNavigation(navigation);
+        return navigation != null && navigation === returnNavigation && !navigation.yielded
+          && alive && recovery.isCurrent() && appId > 0 && target && bigPictureMainWindow() === target
           && targetWindow && targetWindow.closed !== true && currentWindow === targetWindow
           && targetWindow.document === targetDocument && targetDocument
           && isConfirmedSteamIdle(runningStore?.MainRunningAppID, runningStore?.IsAnyAppRunning?.())
@@ -624,7 +671,19 @@ function startOpenRequestWatcher(configuratorReturn: SteamConfiguratorReturn): (
         });
       }
       if (!alive || !recovery.isCurrent() || !await recovery.confirmForeground()) return false;
-      const focused = restoreSteamNavigationFocus("chiusura gioco", launchPatch ? appId : 0, overlayScope.get(appId), true);
+      const view = observeReturnNavigation(navigation);
+      if (!navigation || navigation !== returnNavigation || !view || !navigation.view
+          || navigation.view.main !== target || navigation.view.browser !== targetWindow || navigation.view.document !== targetDocument
+          || view.main !== target || view.browser !== targetWindow || view.document !== targetDocument) return false;
+      if (!navigation.yielded && view.route === "/apprunning" && view.document.hasFocus?.() === true && !view.blocked) {
+        navigateReturnedSteamGame(view.main, appId);
+        acceptReturnNavigation(navigation, `/library/app/${appId}`);
+      }
+      observeReturnNavigation(navigation);
+      const route = target.m_locationPathname;
+      const focused = navigation.yielded ? readReturnNavigation()?.focused === true
+        : restoreSteamNavigationFocus("chiusura gioco", launchPatch ? appId : 0, overlayScope.get(appId), true);
+      if (!navigation.yielded) acceptReturnNavigation(navigation, route);
       if (focused) overlayScope.clear();
       if (launchPatch && appId > 0) {
         const main = bigPictureMainWindow();
@@ -635,25 +694,16 @@ function startOpenRequestWatcher(configuratorReturn: SteamConfiguratorReturn): (
         if (currentSteamGame() === appId && (usedCompanion || main?.m_locationPathname === "/apprunning"))
           layout?.begin(appId, currentSteamGame());
         if (document?.hasFocus?.() === true && main?.MenuStore?.GetOpenSideMenu?.() === 0 && !main?.m_ModalManager?.modals?.length) {
-          // The running-game page is a placeholder. Windows has confirmed
-          // exit, so replace it with the game page while Steam retires the shortcut.
-          if (main.m_locationPathname === "/apprunning") navigateReturnedSteamGame(main, appId);
-          // A still-retiring shortcut renders Resume/Stop and can replace the
-          // focused button later. Wait for Steam to retire it before selecting
-          // the actual Play action and completing this recovery.
+          // A retiring shortcut may outlive real Main navigation. Wait only
+          // for owned cleanup; never pin the user's route or selected control.
           const runningStore = (window as any).SteamUIStore ?? (DFL as any).Router;
           if (!isConfirmedSteamIdle(runningStore?.MainRunningAppID, runningStore?.IsAnyAppRunning?.())) return false;
-          if (main.m_locationPathname !== `/library/app/${appId}`) {
-            navigateReturnedSteamGame(main, appId);
-            return false;
-          }
-          const classes = (DFL as any).findModule?.((value: any) =>
-            value?.AppActionButton && value?.ActionButtonAndStatusPanel && value?.AppDetailSectionList);
-          const playFocused = focusReturnedSteamGameAction(document, main.m_locationPathname, appId, undefined, classes);
+          const returnedRoute = main.m_locationPathname;
+          if (typeof returnedRoute !== "string" || returnedRoute.includes("/controllerconfigurator")) return false;
           const tree = steamNavigationController()?.GetActiveNavTree?.();
           const button = document.activeElement;
           const highlighted = button?.matches?.(".gpfocus") === true || Boolean(button?.querySelector?.(".gpfocus"));
-          if (!focused || !playFocused || !document.hasFocus() || !document.body?.classList?.contains("WindowFocus")
+          if (!focused || !document.hasFocus() || !document.body?.classList?.contains("WindowFocus")
               || !highlighted || !hasVisibleSteamNavigationFocus(document, tree)) return false;
           const input = () => (window as any).SteamClient?.Input;
           const canReleaseConfigurator = () => {
@@ -668,7 +718,7 @@ function startOpenRequestWatcher(configuratorReturn: SteamConfiguratorReturn): (
             return alive && recovery.isCurrent() && currentMain === main && currentWindow === returnedWindow && currentWindow?.document === document
               && currentWindow?.closed !== true && store?.IsAnyAppRunning?.() === false
               && isConfirmedSteamIdle(store?.MainRunningAppID, false)
-              && currentMain?.m_locationPathname === `/library/app/${appId}`
+              && currentMain?.m_locationPathname === returnedRoute
               && context != null && active === context && context.RootWindow === currentWindow
               && context.ActiveWindow === currentWindow && context.BIsActive?.() === true
               && context.BIsGamepadInputSuppressed?.() === false
@@ -680,7 +730,7 @@ function startOpenRequestWatcher(configuratorReturn: SteamConfiguratorReturn): (
           if (await configuratorReturn.release(appId, recovery, canReleaseConfigurator, input))
             logToAgent("Steam native configurator focus released after owned mirror game exit");
           if (!alive || !recovery.isCurrent() || configuratorReturn.pending(appId)) return false;
-          logToAgent("Steam Play action focused after game exit");
+          logToAgent("Steam navigation focus settled after game exit");
           return true;
         }
         return false;
@@ -907,7 +957,7 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
 
   const gameAppId = steamAppId((window as any).SteamUIStore?.MainRunningAppID ?? (DFL as any).Router?.MainRunningAppID);
   return (
-    <ControlCenter locale={locale} origin={origin} homeTitle={local.controlCentre} gameAppId={gameAppId} gamingMode={status?.currentMode === "Gaming"}
+    <><ControlCenter locale={locale} origin={origin} homeTitle={local.controlCentre} gameAppId={gameAppId} gamingMode={status?.currentMode === "Gaming"} downloads={<StoreDownloadsQam locale={locale} />}
       frameTiming={origin === "qam" && status && gameAppId !== 0 ? <GameFrameTiming key={gameAppId} appId={gameAppId} locale={locale} /> : null} session={<>
       {!status && <PanelSection><PanelSectionRow>
         <div role="status" style={{ margin: "8px 0 16px", padding: "16px", borderRadius: 10,
@@ -939,9 +989,7 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
             .ph-dashboard-flow { width:22px; height:15px; flex:0 0 auto; animation:phShortcutTravel 1.6s ease-in-out infinite; }
             .ph-dashboard-flow path { fill:rgba(255,255,255,.82); }
             .ph-dashboard-pad { width:48px; height:29px; flex:0 0 auto; animation:phShortcutPulse 1.6s ease-in-out infinite; }
-            .ph-dashboard-pad .pad-shell, .ph-dashboard-pad .pad-detail { fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
-            .ph-dashboard-pad .pad-guide { fill:#fff; stroke:#fff; stroke-width:1; filter:drop-shadow(0 0 3px rgba(255,255,255,.7)); }
-            .ph-dashboard-pad .pad-button { fill:#fff; opacity:.92; }
+            .ph-dashboard-pad .pad-shell, .ph-dashboard-pad .pad-detail { fill:none; stroke:rgba(255,255,255,.88); stroke-width:1.5px; vector-effect:non-scaling-stroke; stroke-linecap:round; stroke-linejoin:round; }
             .ph-dashboard-shortcut-title { margin-top:3px; text-align:center; font-size:14px; line-height:1.3; font-weight:650; }
             .ph-dashboard-shortcut-copy { width:calc(100% - 42px); margin:6px auto 0; max-width:278px; text-align:center; color:rgba(255,255,255,.58); font-size:12px; line-height:1.4; }
           `}</style>
@@ -955,14 +1003,10 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
               <svg className="ph-dashboard-flow" viewBox="0 0 28 18" focusable="false">
                 <path d="M1 7.25h18.4l-4.2-4.2L17.25 1 25 8.75l-7.75 7.75-2.05-2.05 4.2-4.2H1z" />
               </svg>
-              <svg className="ph-dashboard-pad" viewBox="0 0 64 38" focusable="false">
-                <path className="pad-shell" d="M12 7.5h40c3.5 0 5.8 2.1 6.5 5.4l2.1 10.7c.8 4.1-1.8 7-5.8 7H9.2c-4 0-6.6-2.9-5.8-7l2.1-10.7c.7-3.3 3-5.4 6.5-5.4Z" />
-                <path className="pad-detail" d="M17 14v10M12 19h10" />
-                <circle className="pad-guide" cx="32" cy="19" r="3" />
-                <circle className="pad-button" cx="47" cy="14.7" r="1.7" />
-                <circle className="pad-button" cx="51.3" cy="19" r="1.7" />
-                <circle className="pad-button" cx="47" cy="23.3" r="1.7" />
-                <circle className="pad-button" cx="42.7" cy="19" r="1.7" />
+              <svg className="ph-dashboard-pad" viewBox="0 3 24 18" focusable="false">
+                {/* Lucide Gamepad2, ISC; see quick_settings/THIRD-PARTY-NOTICES.md. */}
+                <path className="pad-shell" d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" />
+                <path className="pad-detail" d="M6 11h4M8 9v4M15 12h.01M18 10h.01" />
               </svg>
             </div>
             <div className="ph-dashboard-shortcut-title">{local.dashboardShortcut}</div>
@@ -1013,6 +1057,7 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
         </PanelSectionRow>
       </PanelSection>
     } controller={<PanelSection>
+        <TranslationControllerToggle locale={locale} />
         <PanelSectionRow>
           <ToggleField
             bottomSeparator="none"
@@ -1044,7 +1089,7 @@ function Content({ origin = "decky" }: { origin?: "qam" | "decky" }) {
             />
           </PanelSectionRow>
         )}
-      </PanelSection>} settings={<PlayhubQamToggle locale={locale} />} />
+      </PanelSection>} settings={<PlayhubQamToggle locale={locale} />} /></>
   );
 }
 
@@ -1061,6 +1106,27 @@ function installOptionalHook(name: string, install: () => () => void): () => voi
 }
 
 export default definePlugin(() => {
+  const stopStoreLibrary = installOptionalHook("Store library", installStoreLibraryRuntime);
+  const stopStoreDigitalPortal = installOptionalHook("Digital stores portal", () => installStoreDigitalPortal(() => currentLocale));
+  const stopStoreLibraryUi = installOptionalHook("Store game actions", () => installStoreLibrarySteamUi(() => currentLocale));
+  const stopUpdateNotice = installOptionalHook("Update notice", () => installPlayhubUpdateNotice({
+    main: () => {
+      const steam = (window as any).SteamUIStore;
+      if (steam?.IsAnyAppRunning?.() !== false) return undefined;
+      const store = steam?.WindowStore ?? (DFL as any).Router?.WindowStore;
+      const main = store?.GamepadUIMainWindowInstance;
+      const browser = main?.BrowserWindow ?? main?.m_BrowserWindow;
+      try { return main?.IsMainGamepadUIWindow?.() === true && main?.IsGamepadUIOverlayWindow?.() !== true
+        && browser?.closed !== true && browser?.document?.hidden === false ? main : undefined; }
+      catch { return undefined; }
+    },
+    check: () => controlCall<[], UpdateNotice>("get_playhub_update_notice"),
+    read: () => window.localStorage.getItem("playhub.update-notice.version"),
+    write: version => window.localStorage.setItem("playhub.update-notice.version", version),
+    notify: version => { toaster.toast({ title: "Playhub", body: updateNoticeBody(currentLocale, version) }); },
+    schedule: (callback, delay) => window.setTimeout(callback, delay),
+    cancel: timer => window.clearTimeout(timer as number),
+  }));
   const stopDeckyIpcRecovery = installOptionalHook("Decky IPC recovery", () => installDeckyIpcRecovery({
     scan: () => controlCall<[], IpcFailure[]>("get_decky_ipc_failures"),
     claim: failure => controlCall<[string, string, string], { ok: boolean; name?: string }>("claim_decky_ipc_recovery", failure.folder, failure.session, failure.log),
@@ -1092,6 +1158,7 @@ export default definePlugin(() => {
   void preloadPluginStoreCatalog().catch(() => {});
   const stopOpenRequestWatcher = startOpenRequestWatcher(configuratorReturn);
   const uninstallNavigationHaptics = installOptionalHook("Navigation haptics", installNavigationHaptics);
+  const uninstallVirtualControllerName = installOptionalHook("Virtual controller name", installVirtualControllerName);
   const uninstallPlayhubQam = initPlayhubQam({ content: <Content origin="qam" />, icon: <PlayhubIcon />, title: <div style={{ paddingInline: 16, boxSizing: "border-box" }}>{playhubTitle}</div> });
   const uninstallPowerMenuPatch = installOptionalHook("Power menu", () => installPowerMenuPatch(
     () => ({ gaming: t().switchGaming, desktop: t().switchDesktop }),
@@ -1124,11 +1191,13 @@ export default definePlugin(() => {
     icon: <PlayhubIcon />,
     onDismount() {
       const cleanups = [
+        stopStoreDigitalPortal, stopStoreLibraryUi, stopStoreLibrary,
+        stopUpdateNotice,
         stopDeckyIpcRecovery,
         uninstallCircles, disposeDisplayConfirmation, uninstallOnboarding,
         uninstallDeckyHost, uninstallQuickSettings, uninstallControlledQamFocus, uninstallLivePerformance, uninstallHomeNews,
         clearDashboardChrome,
-        stopOpenRequestWatcher, uninstallNavigationHaptics,
+        stopOpenRequestWatcher, uninstallNavigationHaptics, uninstallVirtualControllerName,
         uninstallPowerMenuPatch, uninstallPlayhubQam,
       ];
       for (const cleanup of cleanups) {

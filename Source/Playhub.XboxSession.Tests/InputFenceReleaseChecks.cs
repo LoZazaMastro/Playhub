@@ -11,7 +11,7 @@ internal static class InputFenceReleaseChecks
   SteamMirrorInputPresentation m=M();var sink=new Sink();
   bool Source(SteamMirrorInputPresentation _) {++sourceCalls;return source&&sourceCalls!=denySourceAt;}
   FenceProducer New()=>new(id,sink,()=>alive,()=>now,()=>m,sourceCurrent:Source);
-  void Close()=>m=m with{State=0,PreparedCurrent=false,ShownCurrent=false,DestinationShown=false,DwmAttached=false,CleanupComplete=true,ForegroundScope=SteamMirrorForegroundScope.None,ReadAt=now};
+  void Close()=>m=m with{State=0,PreparedCurrent=false,ShownCurrent=false,DestinationShown=false,CompositionAttached=false,CleanupComplete=true,ForegroundScope=SteamMirrorForegroundScope.None,ReadAt=now};
   uint Phase()=>BinaryPrimitives.ReadUInt32LittleEndian(sink.Last.AsSpan(108));
   uint Kind()=>BinaryPrimitives.ReadUInt16LittleEndian(sink.Last.AsSpan(6));
   var p=New();Check(p.Update()==1);Close();Check(p.Update()==2&&Kind()==1);

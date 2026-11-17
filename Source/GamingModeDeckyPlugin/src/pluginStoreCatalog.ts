@@ -36,13 +36,38 @@ export interface CatalogDocument {
 }
 
 export function pluginCategory(plugin: CatalogPlugin): string {
-  if (plugin.catalogSource !== "playhub") return plugin.category;
+  if (plugin.catalogSource !== "playhub") return pluginTopicCategory(plugin.name, plugin.category);
   const name = normalizePluginIdentity(plugin.name);
-  if (["Playhub Artworks", "Launch Curtain", "Now Playing", "ThemeDeck", "TrailerHero", "Playhub Surround"].some((value) => normalizePluginIdentity(value) === name)) return "Personalizzazione e media";
+  if (["Now Playing", "Playhub Surround"].some(value => normalizePluginIdentity(value) === name)) return "Audio";
+  if (["Playhub Artworks", "Launch Curtain", "ThemeDeck", "TrailerHero"].some((value) => normalizePluginIdentity(value) === name)) return "Personalizzazione e media";
   if (name === normalizePluginIdentity("Playhub Metadata")) return "Libreria e giochi";
   if (name === normalizePluginIdentity("News")) return "Social e community";
   if (name === normalizePluginIdentity("Proton VPN")) return "Sistema e hardware";
-  return plugin.category === "Playhub" ? "Strumenti e utilità" : plugin.category;
+  return plugin.category === "Playhub" ? "Strumenti e utilità" : pluginTopicCategory(plugin.name, plugin.category);
+}
+
+/** Discovery topics describe a purpose, rather than a single plugin's feature. */
+export function pluginTopicCategory(name: string, category: string): string {
+  if (/achievement/i.test(name) || name.toLowerCase() === "sam") return "Achievement";
+  if (["museck", "museek", "music control", "virtual surround sound", "volume boost", "game theme music", "volume mixer", "audio loader", "decky music", "audioforge", "decksoundpad", "audio switcher", "gamethememusic-ng", "youtube music", "apple music", "spotify connect", "youtube music player", "speaker boost", "bootvolume", "cec volume osd", "deck muse", "nothing ear control", "decky sound toasts", "audiobookshelf", "finally screenshot sound"].includes(name.toLowerCase())) return "Audio";
+  const topic = category.split("/")[0].trim().toLowerCase();
+  if (["audio", "musica"].includes(topic)) return "Audio";
+  if (topic === "accessibilità") return "Accessibilità";
+  if (["controller", "bluetooth"].includes(topic)) return "Controller";
+  if (["grafica", "gpu"].includes(topic)) return "Grafica";
+  if (["rete", "rete e strumenti"].includes(topic)) return "Rete e strumenti";
+  if (["achievement"].includes(topic)) return "Achievement";
+  if (["libreria", "home", "launcher", "prezzi", "modding", "cheat engine", "trainer"].includes(topic)) return "Libreria e giochi";
+  if (["personalizzazione", "temi", "video", "registrazione", "screenshot", "streaming"].includes(topic)) return "Personalizzazione e media";
+  if (topic === "messaggistica") return "Social e community";
+  if (["hardware", "sistema", "storage", "rgb", "display", "usb"].includes(topic)) return "Sistema e hardware";
+  if (["gestione plugin", "ui"].includes(topic)) return "Strumenti e utilità";
+  return category;
+}
+
+export function discoveryCategories(plugins: readonly CatalogPlugin[]): string[] {
+  return ["Playhub", ...Array.from(new Set(plugins.map(pluginCategory))).filter(category => !["Playhub", "Novità"].includes(category)).sort((a,b)=>a.localeCompare(b))]
+    .filter(category => plugins.filter(plugin => pluginInCategory(plugin, category)).length >= 3);
 }
 
 export function pluginInCategory(plugin: CatalogPlugin, category: string): boolean {
@@ -394,7 +419,6 @@ const FEATURED_DECKY_REPOSITORIES = [
   "DeckThemes/SDH-CssLoader",
   "EMERALD0874/SDH-AudioLoader",
   "bentemple/decky-download-all",
-  "jessebofill/DeckWebBrowser",
 ] as const;
 
 function featuredIdentityKeys(plugin: CatalogPlugin): string[] {
@@ -408,6 +432,12 @@ function featuredIdentityKeys(plugin: CatalogPlugin): string[] {
 function isCssLoader(plugin: CatalogPlugin): boolean {
   return [plugin.name, plugin.installFolder, plugin.repository, ...plugin.aliases]
     .some((value) => normalizePluginIdentity(value).includes("cssloader"));
+}
+
+function excludedFromFeatured(plugin: CatalogPlugin): boolean {
+  return plugin.repository.toLowerCase() === "jessebofill/deckwebbrowser" ||
+    (plugin.catalogSource === "decky-store" && plugin.catalogPluginId === 59) ||
+    plugin.keywords.some((keyword) => keyword.toLowerCase() === "exclude-featured");
 }
 
 export function featuredPlugins(plugins: CatalogPlugin[], limit = 6): CatalogPlugin[] {
@@ -424,7 +454,7 @@ export function featuredPlugins(plugins: CatalogPlugin[], limit = 6): CatalogPlu
   const selected: CatalogPlugin[] = [];
   const used = new Set<string>();
   const push = (plugin: CatalogPlugin | undefined): boolean => {
-    if (!plugin || selected.length >= requestedLimit) return false;
+    if (!plugin || excludedFromFeatured(plugin) || selected.length >= requestedLimit) return false;
     const keys = featuredIdentityKeys(plugin);
     if (keys.some((key) => used.has(key))) return false;
     keys.forEach((key) => used.add(key));

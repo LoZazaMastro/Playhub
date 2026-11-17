@@ -145,7 +145,8 @@ class CpuPackagingTests(unittest.TestCase):
             bundle.write_text("fixture bundle")
             # The fallback validates all runtime helpers before the CPU package.
             for relative in (
-                "LICENSE-Shortcuts", "main.py", "decky_ipc_health.py", "THIRD-PARTY-NOTICES.md",
+                "LICENSE-Shortcuts", "main.py", "decky_ipc_health.py", "store_library.py", "THIRD-PARTY-NOTICES.md",
+                "rgb/LICENSE-ClawConfigurator.txt",
                 "screensaver/index.html", "screensaver/main.js", "quick_settings/main.py",
                 "quick_settings/history_editorial.json", "quick_settings/history_images.json",
                 "quick_settings/history_days.json", "quick_settings/history_imported.json",

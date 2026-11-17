@@ -53,9 +53,17 @@ internal sealed class WindowsEpicProtocolRuntime : IEpicProtocolRuntime, IEpicPr
     {
         if (!string.Equals(uri, launch.LaunchUri, StringComparison.Ordinal))
             throw new ArgumentException("The Epic URI differs from the installed launch metadata.", nameof(uri));
-        // Broker the normal handler through the existing desktop Explorer so a
-        // newly started launcher and its helpers do not become Steam children.
-        ExplorerProtocolDispatch.Epic(uri);
+        // Preserve Explorer's existing registered-handler dispatch on Desktop.
+        // The login agent supplies that boundary when the shell is absent.
+        DispatchSelected(() => Api.GetShellWindow() != 0,
+            () => ExplorerProtocolDispatch.Epic(uri),
+            () => EpicProtocolBrokerClient.Dispatch(launch));
+    }
+    internal static void DispatchSelected(Func<bool> shellPresent, Action explorerDispatch, Action agentDispatch)
+    {
+        // Select once. A failed or uncertain dispatch must never launch twice.
+        if (shellPresent()) explorerDispatch();
+        else agentDispatch();
     }
     public void Delay(int milliseconds) => Thread.Sleep(milliseconds);
     public void Log(string message) => UwpSessionLog.Write(message);
@@ -166,6 +174,7 @@ internal sealed class WindowsEpicProtocolRuntime : IEpicProtocolRuntime, IEpicPr
     }
     private static class Api
     {
+        [DllImport("user32.dll")] internal static extern nint GetShellWindow();
         [StructLayout(LayoutKind.Sequential)] internal struct Rect { internal int Left, Top, Right, Bottom; }
         internal delegate bool EnumProc(nint window, nint parameter);
         [DllImport("kernel32.dll", SetLastError = true)] internal static extern SafeFileHandle OpenProcess(uint access, bool inherit, uint pid);

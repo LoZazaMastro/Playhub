@@ -79,7 +79,7 @@ class CacheTests(unittest.TestCase):
    script.write_text("$ErrorActionPreference='Stop';Add-Type -TypeDefinition (Get-Content (Join-Path $PSScriptRoot 'native.cs') -Raw);[Fixture]::Run()")
    result=subprocess.run([str(Path(os.environ["SystemRoot"])/"System32"/"WindowsPowerShell"/"v1.0"/"powershell.exe"),"-NoProfile","-NonInteractive","-File",str(script)],capture_output=True,text=True,timeout=12)
    self.assertEqual(result.returncode,0,result.stdout+result.stderr)
-   self.assertIn("Native fixtures: 10",result.stdout)
+   self.assertIn("Native fixtures: 11",result.stdout)
 
  def test_custom_current_limit_can_be_retained_when_toggling_but_not_forged(self):
   custom={**STATE,"Limit":3072,"LimitDefault":False}

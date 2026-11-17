@@ -19,13 +19,13 @@ internal static class CurtainCoverProtocol
   if(body.Length is <2 or >4096)return null;
   try{
    using var doc=JsonDocument.Parse(body,new(){MaxDepth=3});var root=doc.RootElement;
-   if(root.ValueKind!=JsonValueKind.Object||!Text(root,"action",out var action)||action is not("begin" or "renew" or "close"))return null;
-   var allowed=action=="begin"?BeginFields:action=="renew"?RenewFields:OtherFields;var seen=new HashSet<string>(StringComparer.Ordinal);
+   if(root.ValueKind!=JsonValueKind.Object||!Text(root,"action",out var action)||action is not("begin" or "renew" or "finish" or "close" or "released"))return null;
+   var allowed=action=="begin"?BeginFields:action is "renew" or "finish"?RenewFields:OtherFields;var seen=new HashSet<string>(StringComparer.Ordinal);
    foreach(var p in root.EnumerateObject())if(!allowed.Contains(p.Name)||!seen.Add(p.Name))return null;
    if(!seen.SetEquals(allowed)||!UInt(root,"protocol",out var protocol)||protocol!=1||!Text(root,"requestId",out var request)||!Hex(request)||!Decimal(root,"requestEpoch",out var epoch))return null;
    if(action!="begin"){
     if(!Text(root,"lease",out var lease)||!Hex(lease))return null;
-    if(action=="close")return new(action,0,request,epoch,lease);
+    if(action is "close" or "released")return new(action,0,request,epoch,lease);
     return Decimal(root,"sourceObservedAt",out var renewedAt)?new(action,0,request,epoch,lease,SourceObservedAt:renewedAt):null;
    }
    if(!UInt(root,"appId",out var app)||!UInt(root,"publisherPid",out var publisherPid)||!Decimal(root,"publisherBirth",out var publisherBirth)

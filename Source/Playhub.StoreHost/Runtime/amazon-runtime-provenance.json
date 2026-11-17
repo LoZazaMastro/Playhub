@@ -1,0 +1,235 @@
+{
+  "nile": {
+    "version": "1.2.0",
+    "commit": "1ed408ab51709e294034be7b1662288da840ff7f",
+    "sha256": "6531790C59F78CEA4A8743BF0582D5AFDA7FB887F5C143391D7339AD0F42AB88",
+    "url": "https://github.com/imLinguin/nile/releases/download/v1.2.0/nile_windows_x86_64.exe",
+    "unmodified": true,
+    "executed": false
+  },
+  "references": [
+    {
+      "name": "requests",
+      "referenceVersion": "2.32.4",
+      "url": "https://files.pythonhosted.org/packages/e1/0a/929373653770d8a0d7ea76c37de6e41f11eb07559b103b1c02cafb3f7cf8/requests-2.32.4.tar.gz",
+      "sha256": "27D0316682C8A29834D3264820024B62A36942083D52CAF2F14C0591336D3422",
+      "source": "CorrespondingSource\\Amazon\\requests-2.32.4.tar.gz",
+      "notices": [
+        "requests-2.32.4__requests-2.32.4_LICENSE",
+        "requests-2.32.4__requests-2.32.4_NOTICE"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "urllib3",
+      "referenceVersion": "2.2.3",
+      "url": "https://files.pythonhosted.org/packages/ed/63/22ba4ebfe7430b76388e7cd448d5478814d3032121827c12a2cc287e2260/urllib3-2.2.3.tar.gz",
+      "sha256": "E7D814A81DAD81E6CAF2EC9FDEDB284ECC9C73076B62654547CC64CCDCAE26E9",
+      "source": "CorrespondingSource\\Amazon\\urllib3-2.2.3.tar.gz",
+      "notices": [
+        "urllib3-2.2.3__urllib3-2.2.3_LICENSE.txt"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "idna",
+      "referenceVersion": "3.11",
+      "url": "https://files.pythonhosted.org/packages/6f/6d/0703ccc57f3a7233505399edb88de3cbd678da106337b9fcde432b65ed60/idna-3.11.tar.gz",
+      "sha256": "795DAFCC9C04ED0C1FB032C2AA73654D8E8C5023A7DF64A53F39190ADA629902",
+      "source": "CorrespondingSource\\Amazon\\idna-3.11.tar.gz",
+      "notices": [
+        "idna-3.11__idna-3.11_LICENSE.md"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "charset-normalizer",
+      "referenceVersion": "3.4.4",
+      "url": "https://files.pythonhosted.org/packages/13/69/33ddede1939fdd074bce5434295f38fae7136463422fe4fd3e0e89b98062/charset_normalizer-3.4.4.tar.gz",
+      "sha256": "94537985111C35F28720E43603B8E7B43A6ECFB2CE1D3058BBE955B73404E21A",
+      "source": "CorrespondingSource\\Amazon\\charset_normalizer-3.4.4.tar.gz",
+      "notices": [
+        "charset-normalizer-3.4.4__charset_normalizer-3.4.4_LICENSE",
+        "charset-normalizer-3.4.4__charset_normalizer-3.4.4_data_NOTICE.md"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "certifi",
+      "referenceVersion": "2026.1.4",
+      "url": "https://files.pythonhosted.org/packages/e0/2d/a891ca51311197f6ad14a7ef42e2399f36cf2f9bd44752b3dc4eab60fdc5/certifi-2026.1.4.tar.gz",
+      "sha256": "AC726DD470482006E014AD384921ED6438C457018F4B3D204AEA4281258B2120",
+      "source": "CorrespondingSource\\Amazon\\certifi-2026.1.4.tar.gz",
+      "notices": [
+        "certifi-2026.1.4__certifi-2026.1.4_LICENSE"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "protobuf",
+      "referenceVersion": "5.29.6",
+      "url": "https://files.pythonhosted.org/packages/7e/57/394a763c103e0edf87f0938dafcd918d53b4c011dfc5c8ae80f3b0452dbb/protobuf-5.29.6.tar.gz",
+      "sha256": "DA9EE6A5424B6B30FD5E45C5EA663AEF540CA95F9AD99D1E887E819CDF9B8723",
+      "source": "CorrespondingSource\\Amazon\\protobuf-5.29.6.tar.gz",
+      "notices": [
+        "protobuf-5.29.6__protobuf-5.29.6_LICENSE"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "json5",
+      "referenceVersion": "0.13.0",
+      "url": "https://files.pythonhosted.org/packages/77/e8/a3f261a66e4663f22700bc8a17c08cb83e91fbf086726e7a228398968981/json5-0.13.0.tar.gz",
+      "sha256": "B1EDF8D487721C0BF64D83C28E91280781F6E21F4A797D3261C7C828D4C165BF",
+      "source": "CorrespondingSource\\Amazon\\json5-0.13.0.tar.gz",
+      "notices": [
+        "json5-0.13.0__json5-0.13.0_LICENSE"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "platformdirs",
+      "referenceVersion": "4.3.6",
+      "url": "https://files.pythonhosted.org/packages/13/fc/128cc9cb8f03208bdbf93d3aa862e16d376844a14f9a0ce5cf4507372de4/platformdirs-4.3.6.tar.gz",
+      "sha256": "357FB2ACBC885B0419AFD3CE3ED34564C13C9B95C89360CD9563F73AA5E2B907",
+      "source": "CorrespondingSource\\Amazon\\platformdirs-4.3.6.tar.gz",
+      "notices": [
+        "platformdirs-4.3.6__platformdirs-4.3.6_LICENSE"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "zstandard",
+      "referenceVersion": "0.23.0",
+      "url": "https://files.pythonhosted.org/packages/ed/f6/2ac0287b442160a89d726b17a9184a4c615bb5237db763791a7fd16d9df1/zstandard-0.23.0.tar.gz",
+      "sha256": "B2D8C62D08E7255F68F7A740BAE85B3C9B8E5466BAA9CBF7F57F1CDE0AC6BC09",
+      "source": "CorrespondingSource\\Amazon\\zstandard-0.23.0.tar.gz",
+      "notices": [
+        "zstandard-0.23.0__zstandard-0.23.0_LICENSE",
+        "zstandard-0.23.0__zstandard-0.23.0_zstd_COPYING",
+        "zstandard-0.23.0__zstandard-0.23.0_zstd_LICENSE"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "pycryptodome",
+      "referenceVersion": "3.23.0",
+      "url": "https://files.pythonhosted.org/packages/8e/a6/8452177684d5e906854776276ddd34eca30d1b1e15aa1ee9cefc289a33f5/pycryptodome-3.23.0.tar.gz",
+      "sha256": "447700A657182D60338BAB09FDB27518F8856AECD80AE4C6BDDDB67FF5DA44EF",
+      "source": "CorrespondingSource\\Amazon\\pycryptodome-3.23.0.tar.gz",
+      "notices": [
+        "pycryptodome-3.23.0__pycryptodome-3.23.0_Doc_LEGAL_COPYRIGHT.pycrypto",
+        "pycryptodome-3.23.0__pycryptodome-3.23.0_Doc_LEGAL_copy_LICENSE.libtom",
+        "pycryptodome-3.23.0__pycryptodome-3.23.0_Doc_LEGAL_copy_LICENSE.orig",
+        "pycryptodome-3.23.0__pycryptodome-3.23.0_Doc_LEGAL_copy_LICENSE.python-2.2",
+        "pycryptodome-3.23.0__pycryptodome-3.23.0_Doc_src_license.rst",
+        "pycryptodome-3.23.0__pycryptodome-3.23.0_LICENSE.rst"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "pythonnet",
+      "referenceVersion": "3.0.5",
+      "url": "https://files.pythonhosted.org/packages/9a/d6/1afd75edd932306ae9bd2c2d961d603dc2b52fcec51b04afea464f1f6646/pythonnet-3.0.5.tar.gz",
+      "sha256": "48E43CA463941B3608B32B4E236DB92D8D40DB4C58A75ACE902985F76DAC21CF",
+      "source": "CorrespondingSource\\Amazon\\pythonnet-3.0.5.tar.gz",
+      "notices": [
+        "pythonnet-3.0.5__pythonnet-3.0.5_LICENSE"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "bottle",
+      "referenceVersion": "0.13.4",
+      "url": "https://files.pythonhosted.org/packages/7a/71/cca6167c06d00c81375fd668719df245864076d284f7cb46a694cbeb5454/bottle-0.13.4.tar.gz",
+      "sha256": "787E78327E12B227938DE02248333D788CFE45987EDCA735F8F88E03472C3F47",
+      "source": "CorrespondingSource\\Amazon\\bottle-0.13.4.tar.gz",
+      "notices": [
+        "bottle-0.13.4__bottle-0.13.4_LICENSE"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "setuptools",
+      "referenceVersion": "56.0.0",
+      "url": "https://files.pythonhosted.org/packages/f6/e9/19af16328705915233299f6f1f02db95899fb00c75ac9da4757aa1e5d1de/setuptools-56.0.0.tar.gz",
+      "sha256": "08A1C0F99455307C48690F00D5C2AC2C1CCFAB04DF00454FEF854EC145B81302",
+      "source": "CorrespondingSource\\Amazon\\setuptools-56.0.0.tar.gz",
+      "notices": [
+        "setuptools-56.0.0__setuptools-56.0.0_LICENSE"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "pyinstaller",
+      "referenceVersion": "6.16.0",
+      "url": "https://files.pythonhosted.org/packages/94/94/1f62e95e4a28b64cfbb5b922ef3046f968b47170d37a1e1a029f56ac9cb4/pyinstaller-6.16.0.tar.gz",
+      "sha256": "53559FE1E041A234F2B4DCC3288EA8BDD57F7CAD8A6644E422C27BB407F3EDEF",
+      "source": "CorrespondingSource\\Amazon\\pyinstaller-6.16.0.tar.gz",
+      "notices": [
+        "pyinstaller-6.16.0__pyinstaller-6.16.0_bootloader_waflib_LICENSE",
+        "pyinstaller-6.16.0__pyinstaller-6.16.0_bootloader_zlib_LICENSE",
+        "pyinstaller-6.16.0__pyinstaller-6.16.0_doc_license.rst",
+        "pyinstaller-6.16.0__pyinstaller-6.16.0_scripts_update-copyright",
+        "pyinstaller-6.16.0__pyinstaller-6.16.0_COPYING.txt"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "pywebview",
+      "referenceVersion": "6.0",
+      "url": "https://files.pythonhosted.org/packages/a8/2a/0279e9da655481cef5dd0cdb1f9b8bfbe8fdf81d0062731f8e1e6668898d/pywebview-6.0.tar.gz",
+      "sha256": "05C339ACE3EE1C11391AA9AE8C4645C67239E769C91228F63196D8D120A9FEB8",
+      "source": "CorrespondingSource\\Amazon\\pywebview-6.0.tar.gz",
+      "notices": [
+        "pywebview-6.0__pywebview-6.0_LICENSE",
+        "pywebview-6.0__pywebview-6.0_webview_lib_Microsoft.Web.WebView2.LICENSE.md"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "cffi",
+      "referenceVersion": "1.17.1",
+      "url": "https://files.pythonhosted.org/packages/fc/97/c783634659c2920c3fc70419e3af40972dbaf758daa229a7d6ea6135c90d/cffi-1.17.1.tar.gz",
+      "sha256": "1C39C6016C32BC48DD54561950EBD6836E1670F2AE46128F67CF49E789C52824",
+      "source": "CorrespondingSource\\Amazon\\cffi-1.17.1.tar.gz",
+      "notices": [
+        "cffi-1.17.1__cffi-1.17.1_LICENSE"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "clr-loader",
+      "referenceVersion": "0.2.8",
+      "url": "https://files.pythonhosted.org/packages/e8/88/9e0a80d59b28d394aad5d736bd47e5aa5883cf1d3674b313ba93e2a353e4/clr_loader-0.2.8.tar.gz",
+      "sha256": "B4CD3A2EE5F0489885EF07FFD87EB38B2CEE24CA65DCACEA97B34E7B59913814",
+      "source": "CorrespondingSource\\Amazon\\clr_loader-0.2.8.tar.gz",
+      "notices": [
+        "clr-loader-0.2.8__clr_loader-0.2.8_LICENSE"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    },
+    {
+      "name": "typing-extensions",
+      "referenceVersion": "4.13.2",
+      "url": "https://files.pythonhosted.org/packages/f6/37/23083fcd6e35492953e8d2aaaa68b860eb422b34627b13f2ce3eb6106061/typing_extensions-4.13.2.tar.gz",
+      "sha256": "E6C81219BD689F51865D9E372991C540BDA33A0379D5573CDDB9A3A23F7CAAEF",
+      "source": "CorrespondingSource\\Amazon\\typing_extensions-4.13.2.tar.gz",
+      "notices": [
+        "typing-extensions-4.13.2__typing_extensions-4.13.2_LICENSE"
+      ],
+      "versionEvidence": "embedded version strings/PE for most modules; build-only/optional dependencies reference versions not asserted as byte-exact embedded versions"
+    }
+  ],
+  "embeddedRuntime": {
+    "python": "3.8.10",
+    "openssl": "1.1.1k",
+    "pythonnet": "3.0.5",
+    "WebView2SDK": "1.0.2957.106"
+  },
+  "limits": [
+    "Optional/build package reference versions are not all proven embedded version identities.",
+    "No real Nile login/download/cancellation test.",
+    "Stock runtime uses legacy CPython/OpenSSL; require explicit release review."
+  ]
+}

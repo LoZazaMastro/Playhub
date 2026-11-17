@@ -489,7 +489,9 @@ public static class DashboardApi
 		string DefaultMode,
 		bool NavigationHapticsEnabled,
 		int NavigationHapticsIntensity,
-		bool Sdl3NativeControllerEnabled);
+		bool Sdl3NativeControllerEnabled,
+		bool SteamControllerTranslationEnabled);
+	private static readonly object DashboardSettingsWriteGate = new();
 
 	public static DashboardSettings ReadSettings(JsonStore store)
 	{
@@ -500,7 +502,8 @@ public static class DashboardApi
 			config.DefaultMode.ToString(),
 			config.Gaming.NavigationHapticsEnabled,
 			Math.Clamp(config.Gaming.NavigationHapticsIntensity, 5, 100),
-			config.Gaming.Sdl3NativeControllerEnabled);
+			config.Gaming.Sdl3NativeControllerEnabled,
+			config.Gaming.SteamControllerTranslationEnabled);
 	}
 
 	// I campi assenti non vengono toccati: il plugin manda solo quello che
@@ -511,16 +514,25 @@ public static class DashboardApi
 		string? hotkey,
 		bool? navigationHapticsEnabled = null,
 		int? navigationHapticsIntensity = null,
-		bool? sdl3NativeControllerEnabled = null)
+		bool? sdl3NativeControllerEnabled = null,
+		bool? steamControllerTranslationEnabled = null)
 	{
-		ModeConfig config = store.LoadConfig();
-		if (keyboardEnabled.HasValue) config.Gaming.DashboardKeyboardShortcutEnabled = keyboardEnabled.Value;
-		if (!string.IsNullOrWhiteSpace(hotkey)) config.Gaming.DashboardHotkey = hotkey.Trim();
-		if (navigationHapticsEnabled.HasValue) config.Gaming.NavigationHapticsEnabled = navigationHapticsEnabled.Value;
-		if (navigationHapticsIntensity.HasValue) config.Gaming.NavigationHapticsIntensity = Math.Clamp(navigationHapticsIntensity.Value, 5, 100);
-		if (sdl3NativeControllerEnabled.HasValue) config.Gaming.Sdl3NativeControllerEnabled = sdl3NativeControllerEnabled.Value;
-		store.SaveConfig(config);
-		return ReadSettings(store);
+		lock (DashboardSettingsWriteGate)
+		{
+			ModeConfig config = store.LoadConfig();
+			if (keyboardEnabled.HasValue) config.Gaming.DashboardKeyboardShortcutEnabled = keyboardEnabled.Value;
+			if (!string.IsNullOrWhiteSpace(hotkey)) config.Gaming.DashboardHotkey = hotkey.Trim();
+			if (navigationHapticsEnabled.HasValue) config.Gaming.NavigationHapticsEnabled = navigationHapticsEnabled.Value;
+			if (navigationHapticsIntensity.HasValue) config.Gaming.NavigationHapticsIntensity = Math.Clamp(navigationHapticsIntensity.Value, 5, 100);
+			if (sdl3NativeControllerEnabled.HasValue) config.Gaming.Sdl3NativeControllerEnabled = sdl3NativeControllerEnabled.Value;
+			if (steamControllerTranslationEnabled.HasValue && config.Gaming.SteamControllerTranslationEnabled != steamControllerTranslationEnabled.Value)
+			{
+				config.Gaming.SteamControllerTranslationEnabled = steamControllerTranslationEnabled.Value;
+				config.Gaming.SteamControllerTranslationRevision = Guid.NewGuid().ToString("N");
+			}
+			store.SaveConfig(config);
+			return ReadSettings(store);
+		}
 	}
 
 	// ---------- CONTATORI DI SISTEMA ----------

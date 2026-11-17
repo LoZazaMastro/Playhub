@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors></PropertyGroup>
+  <ItemGroup><Compile Include="../Shared/StoreXboxCatalogModels.cs" Link="StoreXboxCatalogModels.cs"/><Compile Include="../Playhub/StoreLibrary/XboxGamePassController.cs" Link="XboxGamePassController.cs"/><Compile Include="../Shared/StoreLibraryModels.cs" Link="StoreLibraryModels.cs"/><Compile Include="../Playhub/Services/StoreLibraryArtworkCache.cs" Link="StoreLibraryArtworkCache.cs"/><Content Include="../Playhub/Assets/Localization/*.json" Link="Assets/Localization/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/></ItemGroup>
+</Project>

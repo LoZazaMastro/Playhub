@@ -44,15 +44,17 @@ class Policy {
   bool changed=lastOutputKnown[index]&&lastOutput[index].packet==value.packet&&std::memcmp(&lastOutput[index].pad,&value.pad,sizeof(Pad))!=0;
   if(changed)++value.packet;lastOutput[index]=value;lastOutputKnown[index]=true;return changed;
  }
+ // Kind3 identifies the authenticated ORIGINAL NativeVisible source. It is not
+ // an own-mirror Shown/destination receipt; only the private producer can issue it.
  bool Valid(const Frame& f,std::uint64_t now)const {
   return f.magic==0x46494850&&f.version==1&&f.size==128&&f.sequence&&!(f.sequence&1)
    &&f.session==identity.session&&f.gameBirth==identity.gameBirth&&f.producerBirth==identity.producerBirth
    &&f.gamePid==identity.gamePid&&f.producerPid==identity.producerPid&&f.windowsSession==identity.windowsSession
-   &&f.kind<=2&&f.generation&&f.gameId==identity.gameId&&static_cast<std::uint32_t>(f.gameId)==0x02000000
+   &&f.kind<=3&&f.generation&&f.gameId==identity.gameId&&static_cast<std::uint32_t>(f.gameId)==0x02000000
    &&f.gameId>>32>=0x80000000&&f.phase<=5&&f.phase!=3
-   &&((f.phase==0||f.phase==4)&&f.kind==0||f.phase!=0&&f.phase!=4&&f.kind!=0&&f.sourceCookie&&f.destinationCookie)
+   &&((f.phase==0||f.phase==4)&&f.kind==0||f.phase!=0&&f.phase!=4&&f.kind!=0&&f.sourceCookie&&(f.kind==3?f.destinationCookie==0:f.destinationCookie!=0))
    &&f.readAt<=now&&now-f.readAt<=250&&f.expiresAt>now&&f.expiresAt>=f.readAt
-   &&f.expiresAt-f.readAt<=1500;
+   &&f.expiresAt-f.readAt<=1500&&(f.kind!=3||f.expiresAt-f.readAt<=250);
  }
  Decision Capture(Frame& f,std::uint32_t index,bool guideKnown=false,bool guideHeld=false) {
   if(!current()||!read(f)){ClearHeld();return Decision::Pass;}

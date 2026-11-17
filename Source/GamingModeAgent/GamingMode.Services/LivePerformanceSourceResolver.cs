@@ -118,6 +118,10 @@ internal sealed class LivePerformanceSourceResolver
             (_game, _steam, _wrapper, Target, _appId, _aumid, _window, _associated,_owned,_ownedIdentity) =
             (game, steam, wrapper, target, appId, aumid, window, associated,owned,owned?.Identity);
 
+        public bool RetainedIdentityCurrent {
+            get { lock (_gate) return _aumid is null || _window == 0 ? Current : Alive() && AssociationCurrent() && Alive(); }
+        }
+
         public bool Current {
             get {
                 lock (_gate) {

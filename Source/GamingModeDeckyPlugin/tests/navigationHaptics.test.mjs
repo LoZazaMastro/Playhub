@@ -67,6 +67,7 @@ function fixture({ native = false, observer = true } = {}) {
     advance: value => { now += value; },
     input: (...values) => registrations[0](...values),
     keyboard: (type = "keydown", target = keys, code = "ArrowDown") => target.get(type)?.({ type, code, isTrusted: true }),
+    blur: () => keys.get("blur")?.({ target: window, currentTarget: window }),
     focus(label, x) {
       active = {
         closest: () => null, querySelector: () => null, getAttribute: name => name === "aria-label" ? label : null,
@@ -142,10 +143,38 @@ test("switching to keyboard cancels delayed haptics and only new physical input 
   assert.ok(f.pulses.length > count);
   f.flush();
   const afterController = f.pulses.length;
+  f.input(7, 4, false);
   f.advance(300);
   f.letter("D");
   assert.equal(f.pulses.length, afterController);
   f.cleanup();
+});
+
+test("holding a direction keeps feedback on every actual focus step beyond the first button event", () => {
+  const f = fixture();
+  f.focus("Initial row", 0);
+  f.input(7, 5, true); f.flush();
+  for (let index = 1; index <= 12; index++) {
+    f.advance(110);
+    const before = f.pulses.length;
+    f.focus(`Held row ${index}`, index * 60); f.flush();
+    assert.ok(f.pulses.length > before, `missing held-navigation feedback at step ${index}`);
+  }
+  f.input(7, 5, false); f.advance(300);
+  const released = f.pulses.length;
+  f.focus("Programmatic focus after release", 900); f.flush();
+  assert.equal(f.pulses.length, released);
+  f.cleanup();
+});
+
+test("keyboard or leaving Steam clears a held direction instead of leaking feedback", () => {
+  for (const interrupt of [f => f.keyboard(), f => f.blur()]) {
+    const f = fixture(); f.focus("Initial row", 0); f.input(7, 5, true); f.flush();
+    f.advance(1000); interrupt(f);
+    const stopped = f.pulses.length;
+    for (let index = 1; index < 6; index++) { f.advance(110); f.focus(`Other source ${index}`, index * 60); f.flush(); }
+    assert.equal(f.pulses.length, stopped); f.cleanup();
+  }
 });
 
 test("held keyboard input stays silent beyond collision timeout, including Steam popup callbacks", () => {

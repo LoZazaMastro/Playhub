@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net8.0-windows7.0": {
+      "SharpCompress": {
+        "type": "Direct",
+        "requested": "[0.50.9, 0.50.9]",
+        "resolved": "0.50.9",
+        "contentHash": "Jm32AbptP318P+G4Bew0c72X7R1MXqImenXD9kfkygysZJCTfXfp01CLKuFhGvJGIxSw/dutEAaAlwNOZ8MBlw=="
+      }
+    },
+    "net8.0-windows7.0/win-x64": {}
+  }
+}

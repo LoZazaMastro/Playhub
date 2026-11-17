@@ -66,7 +66,7 @@ public partial class App : Application
         _launchStarted = true;
         if (await TryHandleCommandLineLaunch(args.Arguments))
         {
-            Environment.Exit(0);
+            Environment.Exit(Environment.ExitCode);
             return;
         }
 
@@ -78,8 +78,13 @@ public partial class App : Application
 #endif
         try
         {
-            if (!await _singleInstance.RegisterAsync(instanceKey, (_, _) =>
-                dispatcher.TryEnqueue(ActivateMainWindow), Diag.Step))
+            if (!await _singleInstance.RegisterAsync(instanceKey, (_, activation) =>
+                dispatcher.TryEnqueue(async () =>
+                {
+                    ActivateMainWindow();
+                    if (activation.Data is Windows.ApplicationModel.Activation.ILaunchActivatedEventArgs launch)
+                        await HandleStoreLibraryActivationAsync(launch.Arguments);
+                }), Diag.Step))
             {
                 Exit();
                 return;
@@ -105,6 +110,7 @@ public partial class App : Application
             };
             _window.Activate();
             Diag.Step("Main-window startup complete");
+            await HandleStoreLibraryActivationAsync(args.Arguments);
         }
         catch (Exception error)
         {
@@ -137,6 +143,12 @@ public partial class App : Application
         var parsed = string.IsNullOrWhiteSpace(arguments)
             ? Environment.GetCommandLineArgs().Skip(1).ToList()
             : CommandLine.Parse(arguments);
+        if (parsed.Count > 0 && parsed[0] == "--store-sign-in")
+        {
+            Environment.ExitCode = Playhub.StoreLibrary.StoreSignInLaunchRequest.TryParse(parsed, out var store)
+                ? await Playhub.StoreLibrary.StoreSignInCommand.RunAsync(store) : 2;
+            return true;
+        }
         if (parsed.Count > 0 && string.Equals(parsed[0], "diagnostics-report", StringComparison.OrdinalIgnoreCase))
         {
             if (parsed.Count == 2 && Guid.TryParseExact(parsed[1], "N", out var requestId))

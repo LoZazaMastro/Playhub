@@ -33,6 +33,7 @@ $members = @(
     (Get-ProductionMember $main 'private IEnumerable<DeckyPluginInfo> FilterPluginAllBySource(')
     (Get-ProductionMember $main 'private IEnumerable<DeckyPluginInfo> SortPluginAll(')
     (Get-ProductionMember $main 'private static DateTime PluginCatalogDate(')
+    (Get-ProductionMember $discovery 'private static string PluginTopicCategory(')
     (Get-ProductionMember $discovery 'private sealed class PluginDiscoveryCategoryState')
     (Get-ProductionMember $discovery 'private static List<DeckyPluginInfo> OrderPluginDiscoveryCategory(')
     (Get-ProductionMember $discovery 'private static DateTimeOffset? PluginKeywordDate(')
