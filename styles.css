@@ -372,3 +372,15 @@ p { max-width: 64ch; }
 .plugin-band[aria-labelledby="digital-stores-title"] { --plugin-color: #FFCC00; --plugin-light-share: 28%; --plugin-dark-share: 18%; }
 .plugin-band[aria-labelledby="steam-controller-title"] { --plugin-color: #00C7FF; --plugin-light-share: 24%; --plugin-dark-share: 16%; }
 #steam-controller-2 img[src$="steam-controller-2.png"] { background: #000; }
+
+/* The controller illustration shares the same black surface in either theme. */
+#steam-controller-2 {
+  --text: #ffffff;
+  --secondary: #ffffff;
+  --border: #ffffff40;
+  --focus: #ffffff;
+  background: #000000;
+  color: #ffffff;
+}
+#steam-controller-2 .card-frames,
+#steam-controller-2 .media-frame img { background: #000000; }
