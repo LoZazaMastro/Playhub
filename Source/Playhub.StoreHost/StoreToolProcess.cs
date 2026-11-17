@@ -68,8 +68,10 @@ internal static class StoreToolProcess
             var progress = Regex.Match(line, @"Progress: ([0-9.]+)%");
             if (progress.Success && double.TryParse(progress.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var reportedPercent) && reportedPercent is >= 0 and <= 100) { percent = reportedPercent; changed = true; }
         }
-        var bytes = Regex.Match(line, @"Downloaded: ([0-9.]+) MiB");
-        if (bytes.Success && double.TryParse(bytes.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var downloadedMiB) && downloadedMiB >= 0 && downloadedMiB < long.MaxValue / 1048576.0) { downloaded = (long)(downloadedMiB * 1048576); changed = true; }
+        var announcedSize = Regex.Match(line, @"\bDownload size:\s+([0-9.]+) MiB(?!/s)");
+        if(announcedSize.Success&&double.TryParse(announcedSize.Groups[1].Value,NumberStyles.Float,CultureInfo.InvariantCulture,out var totalMiB)&&double.IsFinite(totalMiB)&&totalMiB>0&&totalMiB<long.MaxValue/1048576.0){total=(long)(totalMiB*1048576);changed=true;}
+        var bytes = Regex.Match(line, @"\bDownloaded:\s+([0-9.]+) MiB(?!/s)");
+        if (bytes.Success && double.TryParse(bytes.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var downloadedMiB) && double.IsFinite(downloadedMiB) && downloadedMiB >= 0 && downloadedMiB < long.MaxValue / 1048576.0) { downloaded = Math.Max(downloaded,(long)(downloadedMiB * 1048576)); changed = true; }
         var rate = Regex.Match(line, @"Download\s*- ([0-9.]+) MiB/s");
         if (rate.Success && double.TryParse(rate.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)) { speed = value * 1024 * 1024; changed = true; }
         return changed;

@@ -28,6 +28,9 @@ public sealed partial class StoreQueueEngine : IStoreLibraryService, IStoreDownl
     private CancellationTokenSource? startup;
     private Task? startupTask;
     private Guid? active;
+    private long progressAttemptBase;
+    private long? progressAttemptTotal;
+    private double progressAttemptPercent;
     private bool drainUnconfirmed;
     private string? stopReason;
     private StoreSteamActivity? steam;
@@ -422,12 +425,12 @@ public sealed partial class StoreQueueEngine : IStoreLibraryService, IStoreDownl
             if (drainUnconfirmed && (active == j.JobId || command.Action == StoreJobAction.DownloadNow)) return Result(false, "worker_drain_unconfirmed");
             if (command.Action == StoreJobAction.Cancel && Provider(j.Key.Store).Capabilities.CanCancel && !Terminal(j.State))
             {
-                if (active == j.JobId) { stopReason = "user_cancel"; Set(index, StoreJobState.Canceling); RequestStopLocked(); }
+                if (active == j.JobId) { stopReason = "user_cancel"; Set(index, StoreJobState.Canceling, "user_cancel"); RequestStopLocked(); }
                 else Set(index, StoreJobState.Canceled);
             }
             else if (command.Action == StoreJobAction.Pause && Provider(j.Key.Store).Capabilities.CanPause && !Terminal(j.State) && j.State is not StoreJobState.PausedByUser)
             {
-                if (active == j.JobId) { stopReason = "user_pause"; Set(index, StoreJobState.Pausing); RequestStopLocked(); }
+                if (active == j.JobId) { stopReason = "user_pause"; Set(index, StoreJobState.Pausing, "user_pause"); RequestStopLocked(); }
                 else Set(index, StoreJobState.PausedByUser);
             }
             else if (command.Action == StoreJobAction.Resume && CanResumeJob(j) && j.State is StoreJobState.PausedByUser or StoreJobState.PausedBySteam or StoreJobState.Interrupted)
@@ -502,10 +505,14 @@ public sealed partial class StoreQueueEngine : IStoreLibraryService, IStoreDownl
     private Task DispatchLocked()
     {
         if (active != null || partialCleanupSlots.Count != 0 || !SteamIdle() || disposed || quiescing) return Task.CompletedTask;
-        var index = jobs.FindIndex(j => j.State == StoreJobState.Queued && !windowsManagedReceipts.ContainsKey(j.JobId) && !InstalledOperationBusy(j.Key.Store) && Connected(j.Key.Store, j.AccountRevision)); if (index < 0) return Task.CompletedTask;
+        var index = jobs.FindIndex(j => j.State == StoreJobState.Queued && !windowsManagedReceipts.ContainsKey(j.JobId) && !PartialCleanupRequested(j.JobId) && !InstalledOperationBusy(j.Key.Store) && Connected(j.Key.Store, j.AccountRevision)
+            && jobAccountIdentities.TryGetValue(j.JobId,out var identity) && accountIdentities.GetValueOrDefault(j.Key.Store)==identity); if (index < 0) return Task.CompletedTask;
         var j = jobs[index];
         if (!files.CanClaim(j.InstallPath, j.JobId)) { Set(index, StoreJobState.Failed, error: "destination_ownership_lost"); Changed(); return DispatchLocked(); }
-        active = j.JobId; stopReason = null; Set(index, StoreJobState.Starting); Changed();
+        active = j.JobId; stopReason = null;
+        progressAttemptBase=j.Key.Store is StoreKind.Epic or StoreKind.Gog?j.DownloadedBytes:0;
+        progressAttemptTotal=j.TotalBytes;progressAttemptPercent=progressAttemptBase>0?j.ProgressPercent??0:0;
+        Set(index, StoreJobState.Starting); Changed();
         startup = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token);
         startupTask = StartTransferAsync(j, startup.Token);
         return Task.CompletedTask;
@@ -564,7 +571,16 @@ public sealed partial class StoreQueueEngine : IStoreLibraryService, IStoreDownl
         {
             var i = jobs.FindIndex(j => j.JobId == id); if (active != id || i < 0 || stopReason != null) return;
             if (p.DownloadedBytes < 0 || p.TotalBytes is < 0 || p.BytesPerSecond is { } speed && (!double.IsFinite(speed) || speed < 0) || p.ProgressPercent is { } percent && (!double.IsFinite(percent) || percent is < 0 or > 100)) return;
-            var j = jobs[i]; jobs[i] = j with { DownloadedBytes = p.DownloadedBytes, TotalBytes = p.TotalBytes, BytesPerSecond = p.BytesPerSecond, ProgressPercent = p.ProgressPercent, UpdatedAt = now() };
+            var j = jobs[i];
+            // Legendary/GOG report bytes and percent for this worker's remaining
+            // tasks, starting at zero after resume. Add the saved baseline once;
+            // keep the original full size instead of replacing it with remaining size.
+            var downloaded=p.DownloadedBytes>long.MaxValue-progressAttemptBase?long.MaxValue:progressAttemptBase+p.DownloadedBytes;
+            long? total=progressAttemptBase>0?progressAttemptTotal??(p.TotalBytes is {} remaining&&remaining<=long.MaxValue-progressAttemptBase?progressAttemptBase+remaining:(long?)null):p.TotalBytes??j.TotalBytes;
+            if(total is >0)downloaded=Math.Min(downloaded,total.Value);
+            var reported=p.ProgressPercent is {} value?progressAttemptPercent+(100-progressAttemptPercent)*value/100:(double?)null;
+            jobs[i] = j with { DownloadedBytes = Math.Max(j.DownloadedBytes,downloaded), TotalBytes = total, BytesPerSecond = p.BytesPerSecond,
+                ProgressPercent = reported is {} nextPercent?Math.Max(j.ProgressPercent??0,nextPercent):j.ProgressPercent, UpdatedAt = now() };
             var state = p.Phase == "verifying" ? StoreJobState.Verifying : p.Phase == "installing" ? StoreJobState.Installing : StoreJobState.Downloading;
             if (j.State != state) { Set(i, state); Changed(); }
             else
@@ -651,7 +667,17 @@ public sealed partial class StoreQueueEngine : IStoreLibraryService, IStoreDownl
         foreach (var id in data.JobAccountIdentities) jobAccountIdentities[id.Key] = id.Value;
         foreach (var j in data.Jobs)
         {
-            var restored=Terminal(j.State)||j.State==StoreJobState.PausedByUser?j:j with{State=StoreJobState.Interrupted,CanPause=false,CanResume=true,ReasonCode="host_restarted",Revision=j.Revision+1};
+            // A restarted host must retain automatic queue intent. Dispatch still
+            // waits for a fresh authenticated Steam-idle observation and the same
+            // connected account; user pauses/cancels and genuine failures stay put.
+            var userPaused=j.State==StoreJobState.PausedByUser || j.State==StoreJobState.Pausing && j.ReasonCode is null or "user_pause" || j.State==StoreJobState.Interrupted && j.ReasonCode=="user_pause";
+            var resume=j.State is StoreJobState.Queued or StoreJobState.BlockedSteam or StoreJobState.PausedBySteam or StoreJobState.Starting or StoreJobState.Downloading or StoreJobState.Installing or StoreJobState.Verifying
+                || j.State==StoreJobState.Pausing && j.ReasonCode is "steam_priority" or "queue_preempt"
+                || j.State==StoreJobState.Interrupted && j.ErrorCode is null && j.ReasonCode is "maintenance" or "host_shutdown" or "host_restarted" or "steam_priority" or "queue_preempt";
+            var restored=Terminal(j.State)||j.State==StoreJobState.PausedByUser?j:userPaused
+                ?j with{State=StoreJobState.PausedByUser,CanPause=false,CanResume=true,ReasonCode="user_pause",Revision=j.Revision+1}
+                :resume?j with{State=StoreJobState.BlockedSteam,CanPause=false,CanResume=true,ReasonCode="host_restarted",Revision=j.Revision+1}
+                :j with{State=StoreJobState.Interrupted,CanPause=false,CanResume=true,ReasonCode=j.ReasonCode??"host_restarted",Revision=j.Revision+1};
             jobs.Add(restored.State==StoreJobState.Completed?restored with{ProgressPercent=100}:restored);
         }
         foreach (var id in data.ClearedCompletedJobs ?? [])
