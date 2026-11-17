@@ -4848,6 +4848,37 @@ function readDigitalGridMetrics(grid) {
 
 const { TextField: TextField$2, ModalRoot: ModalRoot$1, showModal: showModal$3, GamepadButton: GamepadButton$3 } = _global_DFL;
 const logos = { epic, gog, xbox, amazon };
+function storeDigitalFilterStorageKey() {
+    let account;
+    try {
+        account = _global_DFL.findModuleChild((mod) => { if (!mod || typeof mod !== "object")
+            return; for (const key of Object.keys(mod))
+            try {
+                const value = mod[key];
+                if (value?.logged_in === true && typeof value.steamid === "string" && /^7656119\d{10}$/.test(value.steamid))
+                    return value.steamid;
+            }
+            catch { } });
+    }
+    catch { }
+    return "playhub.digital-stores.filters.v1" + (account ? ":" + account : "");
+}
+function readStoreDigitalFilters(key) {
+    const defaults = { store: "all", installed: "all", sort: "title" };
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw || raw.length > 1024)
+            return defaults;
+        const saved = JSON.parse(raw);
+        if (saved?.version !== 1)
+            return defaults;
+        const value = saved.filters;
+        if (value && ["all", "gamepass", ...STORE_KINDS].includes(value.store) && ["all", "installed", "notInstalled"].includes(value.installed) && ["title", "installed"].includes(value.sort))
+            return { store: value.store, installed: value.installed, sort: value.sort };
+    }
+    catch { }
+    return defaults;
+}
 function filterStoreDigitalGames(games, query, filters) { const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean); return games.filter(game => (filters.store === "all" || filters.store === "gamepass" ? filters.store === "all" || game.librarySource === "gamepass" : game.key.store === filters.store) && (filters.installed === "all" || game.isInstalled === (filters.installed === "installed")) && terms.every(term => game.title.toLocaleLowerCase().includes(term))).sort((a, b) => (filters.sort === "installed" ? Number(b.isInstalled) - Number(a.isInstalled) : 0) || a.title.localeCompare(b.title) || storeGameId(a.key).localeCompare(storeGameId(b.key))); }
 function StoreDigitalStoreIcon() { return SP_JSX.jsxs("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", "aria-hidden": "true", children: [SP_JSX.jsx("path", { d: "M4 10v10h16V10M3 4h18l1 6a3 3 0 0 1-5 2 3 3 0 0 1-5 0 3 3 0 0 1-5 0 3 3 0 0 1-5-2l1-6Z" }), SP_JSX.jsx("path", { d: "M9 20v-6h6v6M7 4v6m5-6v6m5-6v6" })] }); }
 function DigitalCover({ game, c = storeDigitalCopy(), priority = false }) { const sources = digitalCoverSources(game), signature = sources.join("\0"), latest = _global_SP_REACT.useRef(signature); latest.current = signature; const [index, setIndex] = _global_SP_REACT.useState(0), [loaded, setLoaded] = _global_SP_REACT.useState(false); _global_SP_REACT.useEffect(() => { setIndex(0); setLoaded(false); }, [signature]); const url = sources[index], advance = () => { if (latest.current !== signature)
@@ -4937,13 +4968,18 @@ function StoreDigitalDetail({ controller, c, game, onBack, onDownloads, onAccoun
     return SP_JSX.jsxs(DigitalFocusable, { className: "ph-sd-detail", "flow-children": "column", noFocusRing: true, children: [SP_JSX.jsxs(DigitalButton, { ref: back.ref, navRef: back.navRef, className: "ph-sd-button ph-sd-back", onClick: onBack, children: [SP_JSX.jsx(FaArrowLeft, {}), " ", c.back] }), !game ? SP_JSX.jsxs("div", { className: "ph-sd-empty", children: [SP_JSX.jsx("h2", { children: view.reading || view.refreshing.length ? c.installIntentLoading : c.gameMissing }), SP_JSX.jsxs(DigitalFocusable, { className: "ph-sd-actions", "flow-children": "row", noFocusRing: true, style: { justifyContent: "center" }, children: [SP_JSX.jsx(DigitalButton, { className: "ph-sd-button", onClick: () => void controller.refreshAll(), children: c.refresh }), SP_JSX.jsx(DigitalButton, { className: "ph-sd-button", onClick: onAccounts, children: c.accounts })] })] }) : SP_JSX.jsx(SP_JSX.Fragment, { children: SP_JSX.jsxs("div", { className: "ph-sd-detail-head", children: [SP_JSX.jsx(DigitalCover, { game: game, c: c }), SP_JSX.jsxs(DigitalFocusable, { className: "ph-sd-detail-copy", "flow-children": "column", noFocusRing: true, children: [SP_JSX.jsx(StoreDigitalGameStoreBadge, { game: game }), SP_JSX.jsx("h2", { children: game.title }), SP_JSX.jsx("div", { children: game.isInstalled ? c.installed : active ? c.active : c.notInstalled }), game.installPath && SP_JSX.jsx("div", { className: "ph-sd-path", children: game.installPath }), SP_JSX.jsx(DigitalFocusable, { className: "ph-sd-actions", "flow-children": "row", noFocusRing: true, children: active ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DigitalButton, { className: "ph-sd-button ph-sd-primary", onClick: onDownloads, children: c.downloads }), SP_JSX.jsx(DigitalButton, { className: "ph-sd-button ph-sd-danger", disabled: preparing || view.busy, onClick: () => void uninstall(), children: preparing ? c.loading : c.uninstall })] }) : !game.isInstalled ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DigitalButton, { className: "ph-sd-button ph-sd-primary", disabled: game.librarySource === "gamepass" ? !controller.canInstallGamePass(game.key) : !controller.canInstall(game.key), onClick: () => void install(), children: [SP_JSX.jsx(FaDownload, {}), " ", c.install] }), retainedSteamImport && SP_JSX.jsx(DigitalButton, { className: "ph-sd-button ph-sd-danger", disabled: preparing || view.busy, onClick: () => void uninstall(), children: preparing ? c.loading : c.uninstall })] }) : SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DigitalButton, { className: "ph-sd-button ph-sd-danger", disabled: preparing || view.busy, onClick: () => void uninstall(), children: preparing ? c.loading : c.uninstall }), steamLink === "absent" && SP_JSX.jsx(DigitalButton, { className: "ph-sd-button", disabled: addingSteam || view.busy || view.unknown, onClick: () => void addSteam(), children: addingSteam ? c.addingToSteam : c.addToSteam }), (statusError || status && !status.canUninstall) && SP_JSX.jsx(DigitalButton, { className: "ph-sd-button", disabled: checking, onClick: () => void check(), children: c.statusRetry })] }) }), steamError && SP_JSX.jsx("div", { className: "ph-sd-muted", role: "alert", children: c.errorCommand }), game.key.store === "xbox" && !game.isInstalled && game.librarySource === "gamepass" && !controller.state().gamePass?.canRequestInstall && SP_JSX.jsx("div", { className: "ph-sd-muted", children: c.gamePassNotReady }), game.capabilities.installKind === "unavailable" && !game.isInstalled && SP_JSX.jsx("div", { className: "ph-sd-muted", children: c.unavailable })] })] }) })] });
 }
 function StoreDigitalPage({ controller, locale }) {
+    const [filterStorageKey] = _global_SP_REACT.useState(storeDigitalFilterStorageKey);
     const filterTarget = useDigitalTarget();
     const downloads = _global_SP_REACT.useSyncExternalStore(subscribeStoreDigitalSelection, readStoreDigitalDownloads);
-    const c = storeDigitalCopy(locale), view = _global_SP_REACT.useSyncExternalStore(controller.subscribe, controller.state), selection = _global_SP_REACT.useSyncExternalStore(subscribeStoreDigitalSelection, readStoreDigitalSelection), [tab, setTab] = _global_SP_REACT.useState("library"), [selected, setSelected] = _global_SP_REACT.useState(null), [query, setQuery] = _global_SP_REACT.useState(""), [filters, setFilters] = _global_SP_REACT.useState({ store: "all", installed: "all", sort: "title" }), [limit, setLimit] = _global_SP_REACT.useState(48), [windowStart, setWindowStart] = _global_SP_REACT.useState(0), [gridMetrics, setGridMetrics] = _global_SP_REACT.useState(null);
+    const c = storeDigitalCopy(locale), view = _global_SP_REACT.useSyncExternalStore(controller.subscribe, controller.state), selection = _global_SP_REACT.useSyncExternalStore(subscribeStoreDigitalSelection, readStoreDigitalSelection), [tab, setTab] = _global_SP_REACT.useState("library"), [selected, setSelected] = _global_SP_REACT.useState(null), [query, setQuery] = _global_SP_REACT.useState(""), [filters, setFilters] = _global_SP_REACT.useState(() => readStoreDigitalFilters(filterStorageKey)), [limit, setLimit] = _global_SP_REACT.useState(48), [windowStart, setWindowStart] = _global_SP_REACT.useState(0), [gridMetrics, setGridMetrics] = _global_SP_REACT.useState(null);
     const pendingDirection = _global_SP_REACT.useRef(null), scrollDriven = _global_SP_REACT.useRef(false);
     const grid = _global_SP_REACT.useRef(null), windowFilters = _global_SP_REACT.useRef(null), focusKey = _global_SP_REACT.useRef(null), anchor = _global_SP_REACT.useRef(null);
     const root = _global_SP_REACT.useRef(null), scroll = _global_SP_REACT.useRef(null), tabs = _global_SP_REACT.useRef(new Map()), cards = _global_SP_REACT.useRef(new Map()), origin = _global_SP_REACT.useRef(null), restore = _global_SP_REACT.useRef(false), firstTab = _global_SP_REACT.useRef(true), shoulderFocus = _global_SP_REACT.useRef(false), libraryResume = _global_SP_REACT.useRef(null), shoulderEvents = _global_SP_REACT.useRef(new WeakSet());
     _global_SP_REACT.useEffect(() => controller.start(), [controller]);
+    _global_SP_REACT.useEffect(() => { try {
+        localStorage.setItem(filterStorageKey, JSON.stringify({ version: 1, filters }));
+    }
+    catch { } }, [filterStorageKey, filters]);
     _global_SP_REACT.useEffect(() => { if (selection) {
         consumeStoreDigitalSelection(selection);
         origin.current = null;
@@ -5148,9 +5184,10 @@ class StoreDigitalController {
         } const catalog = this.view.gamePass, account = this.account("xbox"); return this.command(async () => { const requestId = this.uuid(), reply = await this.api.request("xbox-gamepass-install", { productId: key.id, expectedRevision: catalog.revision, expectedAccountRevision: account.revision, requestId, volumeName }); if (!reply?.accepted || reply.productId !== key.id || reply.requestId !== requestId || reply.state !== "official-install-requested")
             return { accepted: false, errorCode: reply.errorCode ?? "gamepass_install_failed", snapshot: await this.api.request("snapshot") }; return { accepted: true, snapshot: await this.api.request("snapshot") }; }, 180000); };
         this.canInstall = (key) => { const game = this.game(key), account = this.account(key.store); return !this.view.unknown && !this.view.busy && !!game && !game.isInstalled && game.capabilities.installKind !== "unavailable" && account?.state === "connected" && account.revision === game.accountRevision && !this.view.snapshot?.jobs.some(job => sameStoreKey(job.key, key) && storeJobActive(job)); };
-        this.read = () => { if (!this.alive)
+        this.read = (background = false) => { if (!this.alive)
             return Promise.resolve(); if (this.flight)
-            return this.flight; const epoch = this.epoch; this.update({ reading: true }); const operation = (async () => { try {
+            return this.flight; const epoch = this.epoch, showReading = !background || !this.view.snapshot; if (showReading)
+            this.update({ reading: true }); const operation = (async () => { try {
             const snapshot = await this.bounded(this.api.request("snapshot"), 20000);
             if (!this.alive || epoch !== this.epoch)
                 return;
@@ -5165,13 +5202,13 @@ class StoreDigitalController {
                 this.update({ unknown: true, error: "read", errorJobId: null });
         }
         finally {
-            if (this.alive)
+            if (this.alive && showReading)
                 this.update({ reading: false });
         } })(); this.flight = operation.finally(() => { if (this.flight === held)
             this.flight = undefined; }); const held = this.flight; return held; };
         this.start = () => { if (!this.alive)
             return () => { }; void this.read(); if (!this.polling)
-            this.polling = setInterval(() => void this.read(), 2500); return () => { if (this.polling)
+            this.polling = setInterval(() => void this.read(true), 2500); return () => { if (this.polling)
             clearInterval(this.polling); this.polling = undefined; }; };
         this.refresh = (store) => {
             const account = this.account(store);
