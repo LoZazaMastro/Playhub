@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="UiReview/**/*.cs" />
+    <Compile Include="../Shared/StoreLibraryModels.cs" Link="StoreLibraryModels.cs" />
+    <Compile Include="../Playhub/StoreLibrary/StoreLibraryController.cs" Link="StoreLibraryController.cs" />
+    <Compile Include="../Playhub/StoreLibrary/StoreAuthorizationCallback.cs" Link="StoreAuthorizationCallback.cs" />
+    <Compile Include="../Playhub/Importing/ImportPostCommitDelivery.cs" Link="ImportPostCommitDelivery.cs" />
+    <Compile Include="../Playhub/StoreLibrary/StoreLibraryPresentation.cs" Link="StoreLibraryPresentation.cs" />
+    <Compile Include="../Playhub/Services/LocalizationService.cs" Link="LocalizationService.cs" />
+    <Content Include="../Playhub/Assets/Localization/*.json" Link="Assets/Localization/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -6,6 +6,13 @@ static class Program
  static async Task Main()
  {
   int count=0;void Check(bool value){if(!value)throw new Exception("content "+(count+1));++count;}
+  Check(GameSurfaceGeometry.ClientCoversMonitor("RenderSysClass",[0,0,3840,2160],[0,0,3840,2160]));
+  Check(GameSurfaceGeometry.ClientCoversMonitor("SDL_app",[-2560,0,0,1440],[-2560,0,0,1440]));
+  Check(!GameSurfaceGeometry.ClientCoversMonitor("RenderSysClass",[0,32,3840,2160],[0,0,3840,2160]));
+  Check(!GameSurfaceGeometry.ClientCoversMonitor("RenderSysClass",[100,100,2020,1180],[0,0,3840,2160]));
+  foreach(var splash in new[]{"BootSplashClass","GAMINGSERVICESUI_HOSTING_WINDOW_CLASS","HwndWrapper[GamingServicesTcui;;123]",""})
+   Check(!GameSurfaceGeometry.ClientCoversMonitor(splash,[0,0,3840,2160],[0,0,3840,2160]));
+  Check(!GameSurfaceGeometry.ClientCoversMonitor("SDL_app",[0,0,0,0],[0,0,0,0]));
   using var saved=JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"observed-frame-facts.json")));
   var good=saved.RootElement.GetProperty("queries")[0].Clone();
   var target=new ContentTarget(7341982,40576,134390248656109619,69808,@"C:\XboxGames\DOOM64\Content\DOOM64_x64.exe","SDL_app");
@@ -45,9 +52,12 @@ static class Program
    cover.read=()=>{if(++getters==4)now=frame+2000001;};
    var reason=await FirstContentProducer.RunAsync(cover,client,default,_=>{cover.live=false;return Task.CompletedTask;});
    Check(getters>=4&&reason==CoverRetireReason.SourceLost&&cover.retired!=CoverRetireReason.FirstObservedContent&&f.disposed);now=frame+300000;}
+  int opaqueFrames=await OpaqueFrameChecks.Run(good,frame);
+  int staleRetry=await StaleFrameRetryChecks.Run(good,frame);
+  int captureDiagnostics=await CaptureDiagnosticsChecks.Run(good,frame);
   int lifecycle=await ControllerChecks.Run(good,frame);
   int channel=PublisherChannelChecks.Run();
-  Console.WriteLine($"{count} frame/client + {lifecycle} protocol/ABI/controller/HTTP + {channel} kernel-table parser checks PASS; fake private transport/native/source, no observer or native calls");
+  Console.WriteLine($"{count} frame/client + {captureDiagnostics} capture diagnostics + {staleRetry} stale-frame retries + {opaqueFrames} opaque-frame checks + {lifecycle} protocol/ABI/controller/HTTP + {channel} kernel-table parser checks PASS; fake private transport/native/source, no observer or native calls");
  }
  sealed class Fake(JsonElement good):IContentTransport
  {

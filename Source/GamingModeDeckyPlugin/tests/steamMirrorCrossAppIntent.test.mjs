@@ -8,7 +8,7 @@ const base={protocol:1,state:'prepared',sessionId:'a'.repeat(64),generation:'1',
 function fixture(api,{pending=false,keepOldReadable=false}={}){
  let running=A,clock=1000,resolve,calls=[],states=new Map();const ps=app=>app===A?31704:31706;
  const browsers=new Map([A,B].map(app=>[app,{appID:app&0xffffff,gameID:full(app),unPID:ps(app),nBrowserID:0}]));
- const windows=new Map([A,B].map(app=>{let side=0;return[app,{IsGamepadUIOverlayWindow:()=>true,params:{browserInfo:{m_gameID:full(app),m_unPID:ps(app),m_nBrowserID:0}},MenuStore:{GetOpenSideMenu:()=>side,GetQuickAccessTab:()=>0,OpenMainMenu(){side=1;calls.push(['main',app])},OpenQuickAccessMenu(){side=2;calls.push(['quick',app])}},BrowserWindow:{document:{body:{}}}}]}));
+ const windows=new Map([A,B].map(app=>{let side=0;return[app,{IsGamepadUIOverlayWindow:()=>true,params:{browserInfo:{m_gameID:full(app),m_unPID:ps(app),m_nBrowserID:0}},MenuStore:{GetOpenSideMenu:()=>side,CloseSideMenus(){side=0;},GetQuickAccessTab:()=>0,OpenMainMenu(){side=1;calls.push(['main',app])},OpenQuickAccessMenu(){side=2;calls.push(['quick',app])}},BrowserWindow:{document:{body:{}}}}]}));
  const reply=app=>({ok:true,gameId:full(app),overlayPid:ps(app),companionPid:27156,mirror:{...states.get(app)}});
  const route=api.createSteamMirrorOverlay({runningApp:()=>running,
   prepare:async app=>{calls.push(['prepare',app]);if(pending&&app===A)return new Promise(r=>resolve=r);states.set(app,{...base,gameId:full(app),sessionId:(app===A?'a':'b').repeat(64)});return reply(app)},

@@ -133,6 +133,7 @@ export interface DashboardSettings {
   navigationHapticsEnabled: boolean;
   navigationHapticsIntensity: number;
   sdl3NativeControllerEnabled: boolean;
+  steamControllerTranslationEnabled?: boolean;
 }
 
 export interface ProcessEntry {

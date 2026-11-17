@@ -24,7 +24,8 @@ function fixture(options = {}) {
       ownerBirth: '134389265873507919', gamePid: options.reusePids ? 48584 : 8052, gameBirth: '134389265877510461' },
   ];
   const menu = { GetOpenSideMenu: () => side, GetQuickAccessTab: () => 0,
-    OpenMainMenu() { side = 1; }, OpenQuickAccessMenu() { side = 2; } };
+    OpenMainMenu() { side = 1; }, OpenQuickAccessMenu() { side = 2; }, CloseSideMenus() { side = 0; } };
+  if (options.withoutMenuClose) delete menu.CloseSideMenus;
   const target = { IsGamepadUIOverlayWindow: () => true, MenuStore: menu, BrowserWindow: { document: { body: {} } },
     get params() { return { browserInfo: { m_gameID: gameId, m_unPID: identities[session].overlayPid, m_nBrowserID: 0 } }; } };
   const reply = () => ({ ok: true, gameId, companionPid: identities[session].ownerPid,
@@ -139,4 +140,12 @@ test('a normal same-session close uses its retained read and does not perform di
   await f.route.guide('main'); assert.equal(f.route.active, false);
   assert.equal(f.calls.slice(start).some(x => x[0] === 'read' && x[2] === 0), false);
   assert.equal(f.calls.some(x => x[0] === 'set0'), true);
+});
+
+test('missing original menu close API does not optimistically retire an unclosed menu', async () => {
+  const f = fixture({ withoutMenuClose: true }); await f.route.guide('main');
+  await f.route.guide('main');
+  assert.equal(f.route.active, true);
+  assert.equal(f.calls.some(x => x[0] === 'set0'), true);
+  assert.equal(f.events.includes('mirror-owned-menu-close-unconfirmed'), true);
 });

@@ -26,15 +26,17 @@ public static class ShaderTransaction {
   var desired=new ShaderState { Enabled=enabled,Limit=useDefault?before.DefaultLimit:limit,DefaultLimit=before.DefaultLimit,
    EnableDefault=before.EnableDefault && enabled==before.Enabled,LimitDefault=useDefault };
   if(desired.Same(before)) return new ShaderResult { available=true,status="applied",state=before };
+  bool writeRejected=false;
   try {
-   if(!driver.Write(before,desired)) return new ShaderResult { available=true,status="changed",state=driver.Read() };
+   if(!driver.Write(before,desired)) { writeRejected=true;return new ShaderResult { available=true,status="changed",state=driver.Read() }; }
    var after=driver.Read();
    if(after.Same(desired)) return new ShaderResult { available=true,status="applied",state=after };
    return new ShaderResult { available=true,status="changed",state=after };
   } catch {
    // A failed save may already have committed. Restore only our complete
    // value, and let Write repeat its fresh comparison before saving again.
-   try { var current=driver.Read(); if(current.Same(before)) return new ShaderResult { available=true,status="failed",state=current };
+   try { var current=driver.Read(); if(writeRejected) return new ShaderResult { available=true,status="changed",state=current };
+    if(current.Same(before)) return new ShaderResult { available=true,status="failed",state=current };
     if(current.Same(desired) && driver.Write(desired,before)) {
      var restored=driver.Read(); return new ShaderResult { available=true,status=restored.Same(before)?"restored":"changed",state=restored };
     }

@@ -1,7 +1,7 @@
 import { SP_REACT as React } from './decky';
 const { cloneElement, createElement, forwardRef, isValidElement, memo } = React;
 
-type Transform = (tree: any) => any;
+type Transform = (tree: any, sourceProps?: any) => any;
 type Step = (node: any) => boolean;
 
 /** Wrap rendered OUTPUT, without modifying Steam's elements, props or shared types.
@@ -13,9 +13,9 @@ export const createOutputPatch = (steps: Step[], transform: Transform, onError: 
   const caches = steps.map(() => new WeakMap<object, any>());
   let active = true;
   const report = (error: unknown) => { try { onError(error); } catch { /* Diagnostics are optional. */ } };
-  const finish = (tree: any): any => {
+  const finish = (tree: any, sourceProps: any): any => {
     if (!active) return tree;
-    try { return transform(tree); } catch (error) { report(error); return tree; }
+    try { return transform(tree, sourceProps); } catch (error) { report(error); return tree; }
   };
   const copyStatics = (source: any, target: any) => {
     for (const key of ['defaultProps', 'propTypes', 'contextType', 'contextTypes']) {
@@ -30,22 +30,22 @@ export const createOutputPatch = (steps: Step[], transform: Transform, onError: 
     if (!original || (typeof original !== 'function' && typeof original !== 'object')) return original;
     const cache = caches[stage];
     if (cache.has(original)) return cache.get(original);
-    const output = (tree: any) => active ? (stage + 1 < steps.length ? walk(tree, stage + 1) : finish(tree)) : tree;
+    const output = (tree: any, sourceProps: any) => active ? (stage + 1 < steps.length ? walk(tree, stage + 1) : finish(tree, sourceProps)) : tree;
     let wrapped: any;
     if (typeof original === 'function') {
       if (original.prototype?.isReactComponent || typeof original.prototype?.render === 'function') {
         wrapped = class extends original {
-          render() { return output(super.render()); }
+          render() { return output(super.render(), this.props); }
         };
       } else {
-        wrapped = function (this: any, ...args: any[]) { return output(original.apply(this, args)); };
+        wrapped = function (this: any, ...args: any[]) { return output(original.apply(this, args), args[0]); };
       }
       copyStatics(original, wrapped);
     } else if (original.$$typeof === Symbol.for('react.memo')) {
       const inner = typeFor(original.type, stage);
       wrapped = inner === original.type ? original : memo(inner, original.compare);
     } else if (original.$$typeof === Symbol.for('react.forward_ref') && typeof original.render === 'function') {
-      wrapped = forwardRef((props, ref) => output(original.render(props, ref)));
+      wrapped = forwardRef((props, ref) => output(original.render(props, ref), props));
     } else {
       return original;
     }

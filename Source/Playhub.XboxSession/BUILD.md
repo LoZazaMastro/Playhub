@@ -1,7 +1,8 @@
 # Build Playhub Xbox Session
 
-The installer includes the complete corresponding source in `XboxSession/source`.
-This directory is self-contained: it has no project references, external source links or third-party NuGet dependencies.
+The installer includes the companion source in `XboxSession/source` and its linked original client/model files in the
+adjacent `XboxSession/Shared`, `XboxSession/Playhub.GameSession` and `XboxSession/Playhub.StoreHost` directories.
+Keep these directories together when building. The project has no third-party NuGet dependencies.
 Use the Microsoft .NET 8 SDK on Windows with the .NET 8 Windows x64 runtime packs.
 
 ```

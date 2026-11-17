@@ -98,7 +98,7 @@ const css = `
 .ph-control-section-title strong{font-weight:600;overflow-wrap:anywhere}
 .ph-control-section-title>span{display:flex;gap:9px;align-items:center;text-align:left;min-width:0}
 .ph-control-section-title svg{width:17px;height:17px;flex:none}
-.ph-control-section-body{padding:6px 0 12px}
+.ph-control-section-body{min-height:0;padding:4px 0 8px}
 .ph-control-settings{padding:12px 16px 20px}
 .ph-tab-editor-title{font-size:18px;line-height:1.3;margin:16px 0 8px;font-weight:700}
 .ph-control-settings p{font-size:12px;line-height:1.45;opacity:.7;margin:8px 0 18px}
@@ -120,8 +120,8 @@ const css = `
 .ph-controls .qsCardBody{gap:12px;padding:8px 0!important}
 `;
 
-export function ControlCenter({ locale, origin, session, store, controller, settings, homeTitle, gameAppId = 0, frameTiming, gamingMode = false }: {
-  locale: string; origin: "qam" | "decky"; session: React.ReactNode; store: React.ReactNode; controller: React.ReactNode; settings: React.ReactNode; homeTitle?: string; gameAppId?: number; frameTiming?: React.ReactNode; gamingMode?: boolean;
+export function ControlCenter({ locale, origin, session, store, controller, settings, downloads, homeTitle, gameAppId = 0, frameTiming, gamingMode = false }: {
+  locale: string; origin: "qam" | "decky"; session: React.ReactNode; store: React.ReactNode; controller: React.ReactNode; settings: React.ReactNode; downloads?: React.ReactNode; homeTitle?: string; gameAppId?: number; frameTiming?: React.ReactNode; gamingMode?: boolean;
 }) {
   const state = React.useSyncExternalStore(subscribe, () => prefs);
   const onboardingRoot = React.useRef<HTMLDivElement>(null);
@@ -295,7 +295,7 @@ export function ControlCenter({ locale, origin, session, store, controller, sett
           <QuickSettingsContent page={active === "decky" ? "home" : active} locale={locale} expanded={expanded} onToggle={toggleSection} gameAppId={gameAppId} gamingMode={gamingMode} />
           {active === "graphics" && frameTiming && <ControlSection id="measurement" title={quickSettingsGroups(locale).measurement} icon={<TbGauge />} locale={locale}
             collapsed={!expanded.includes("measurement")} onToggle={toggleSection}>{frameTiming}</ControlSection>}
-        </>}</div></ScrollPanel>}
+        </>}{downloads}</div></ScrollPanel>}
     </>}
     </div>
     {origin === "qam" && !state.hidden.includes("decky") && <DeckyHost active={hostActive} />}

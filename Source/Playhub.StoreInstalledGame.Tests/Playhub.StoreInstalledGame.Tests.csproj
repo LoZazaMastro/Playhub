@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/StoreLibraryModels.cs" Link="StoreLibraryModels.cs" />
+    <Compile Include="../Shared/StoreInstalledGameModels.cs" Link="StoreInstalledGameModels.cs" />
+    <Compile Include="../Playhub/StoreLibrary/StoreLibraryPresentation.cs" Link="StoreLibraryPresentation.cs" />
+    <Compile Include="../Playhub/StoreLibrary/StoreLibraryController.cs" Link="StoreLibraryController.cs" />
+    <Compile Include="../Playhub/StoreLibrary/StoreInstalledGameController.cs" Link="StoreInstalledGameController.cs" />
+    <Compile Include="../Playhub/StoreLibrary/StoreGameSessionLauncher.cs" Link="StoreGameSessionLauncher.cs" />
+  </ItemGroup>
+</Project>
+

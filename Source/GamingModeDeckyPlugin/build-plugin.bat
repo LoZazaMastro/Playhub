@@ -68,11 +68,17 @@ copy /y "package.json"  "%ASSETS%\package.json"  >> "%LOG%" 2>&1
 copy /y "LICENSE-Shortcuts" "%ASSETS%\LICENSE-Shortcuts" >> "%LOG%" 2>&1
 copy /y "main.py" "%ASSETS%\main.py" >> "%LOG%" 2>&1
 copy /y "decky_ipc_health.py" "%ASSETS%\decky_ipc_health.py" >> "%LOG%" 2>&1
+copy /y "store_library.py" "%ASSETS%\store_library.py" >> "%LOG%" 2>&1
+copy /y "store_sign_in.py" "%ASSETS%\store_sign_in.py" >> "%LOG%" 2>&1
+if errorlevel 1 exit /b 1
 if not exist "%ASSETS%\screensaver" mkdir "%ASSETS%\screensaver"
 copy /y "screensaver\index.html" "%ASSETS%\screensaver\index.html" >> "%LOG%" 2>&1
 copy /y "screensaver\main.js" "%ASSETS%\screensaver\main.js" >> "%LOG%" 2>&1
 if errorlevel 1 exit /b 1
 copy /y "THIRD-PARTY-NOTICES.md" "%ASSETS%\THIRD-PARTY-NOTICES.md" >> "%LOG%" 2>&1
+if not exist "%ASSETS%\third-party\steam-menu" mkdir "%ASSETS%\third-party\steam-menu"
+copy /y "third-party\steam-menu\LICENSE" "%ASSETS%\third-party\steam-menu\LICENSE" >> "%LOG%" 2>&1
+if errorlevel 1 exit /b 1
 rem ---------- helper payload allowlist ----------
 rem Keep runtime helpers, AMD redistribution sources and all license notices.
 rem Never copy arbitrary binaries, drivers or Python bytecode from helper trees.
@@ -80,7 +86,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ErrorActionPreference='Stop';" ^
   "$root=[IO.Path]::GetFullPath('%ASSETS%'); $prefix=$root.TrimEnd('\')+'\';" ^
   "if (Test-Path -LiteralPath $root) { $existing=@(Get-Item -LiteralPath $root)+@(Get-ChildItem -LiteralPath $root -Recurse -Force); if ($existing | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }) { throw 'Linked payload path refused' } };" ^
-  "$required=@('quick_settings\history_images.json','quick_settings\history_editorial.json','quick_settings\history_days.json','quick_settings\history_imported.json','quick_settings\main.py','quick_settings\__init__.py','quick_settings\bin\QuickSettingsAgent.exe','quick_settings\helper\setup_perf.ps1','quick_settings\helper\apply_perf.ps1','quick_settings\amd\adlx_helper.exe','quick_settings\amd\ADLXCSharpBind.dll','quick_settings\amd\build_amd.bat','quick_settings\LICENSE','quick_settings\NOTICE','quick_settings\LEGAL.md','quick_settings\THIRD-PARTY-NOTICES.md','quick_settings\amd\LICENSES.txt');" ^
+  "$retired=Join-Path $root 'quick_settings\bin\libryzenadj.dll'; if (Test-Path -LiteralPath $retired) { $sha=[Security.Cryptography.SHA256]::Create(); $stream=[IO.File]::OpenRead($retired); try { $retiredHash=[BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-','') } finally { $stream.Dispose(); $sha.Dispose() }; if ($retiredHash -cne 'AE4793015B38CFE9B7544EDF05B7374B961887203EAB8BB87779A8DEFDF62349') { throw 'Unexpected retired RyzenAdj payload; no file removed' }; Remove-Item -LiteralPath $retired -Force };" ^
+  "$required=@('rgb\LICENSE-ClawConfigurator.txt','quick_settings\history_images.json','quick_settings\history_editorial.json','quick_settings\history_days.json','quick_settings\history_imported.json','quick_settings\main.py','quick_settings\__init__.py','quick_settings\bin\QuickSettingsAgent.exe','quick_settings\helper\setup_perf.ps1','quick_settings\helper\apply_perf.ps1','quick_settings\amd\adlx_helper.exe','quick_settings\amd\ADLXCSharpBind.dll','quick_settings\amd\build_amd.bat','quick_settings\LICENSE','quick_settings\NOTICE','quick_settings\LEGAL.md','quick_settings\THIRD-PARTY-NOTICES.md','quick_settings\amd\LICENSES.txt');" ^
   "foreach ($path in $required) { if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw ('Missing helper: '+$path) } };" ^
   "$files=@(Get-ChildItem -Path 'quick_settings\*.py','quick_settings\licenses\*.txt' -File); $files+=@(Get-ChildItem -LiteralPath 'quick_settings\amd' -Recurse -File | Where-Object { $_.Extension -eq '.cs' -and $_.FullName -notmatch '[\\/]__pycache__[\\/]' }); $files+=@($required | ForEach-Object { Get-Item -LiteralPath $_ });" ^
   "foreach ($file in ($files | Sort-Object FullName -Unique)) { $relative=$file.FullName.Substring((Get-Location).Path.Length+1); $target=[IO.Path]::GetFullPath((Join-Path $root $relative)); if (-not $target.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)) { throw 'Unsafe helper target' }; [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target)); Copy-Item -LiteralPath $file.FullName -Destination $target -Force };" ^
@@ -121,13 +128,14 @@ if errorlevel 1 exit /b 1
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ErrorActionPreference='Stop';" ^
+  "if (Test-Path -LiteralPath '%ASSETS%\quick_settings\bin\libryzenadj.dll') { throw 'Retired RyzenAdj payload must not be bundled' };" ^
   "$b=Get-Item '%ASSETS%\dist\index.js';" ^
   "$name=(Get-Content -Raw -LiteralPath 'plugin.json' | ConvertFrom-Json).name;" ^
   "$head=Get-Content -LiteralPath $b.FullName -TotalCount 1; if ($head -notmatch [regex]::Escape($name)) { exit 1 };" ^
   "$bytecode=Get-ChildItem -LiteralPath '%ASSETS%' -Recurse -File | Where-Object { $_.Extension -in @('.pyc','.pyo') }; if ($bytecode) { exit 1 };" ^
-  "$helpers=Get-ChildItem -Path 'screensaver\index.html','screensaver\main.js','LICENSE-Shortcuts','main.py','decky_ipc_health.py','THIRD-PARTY-NOTICES.md','quick_settings\history_images.json','quick_settings\history_editorial.json','quick_settings\history_days.json','quick_settings\history_imported.json','quick_settings\*.py','quick_settings\LICENSE','quick_settings\NOTICE','quick_settings\LEGAL.md','quick_settings\THIRD-PARTY-NOTICES.md','quick_settings\licenses\*.txt','quick_settings\helper\*.ps1','quick_settings\bin\QuickSettingsAgent.exe','quick_settings\amd\adlx_helper.exe','quick_settings\amd\ADLXCSharpBind.dll','quick_settings\amd\LICENSES.txt','quick_settings\amd\build_amd.bat' -File -ErrorAction Stop;" ^
+  "$helpers=Get-ChildItem -Path 'screensaver\index.html','screensaver\main.js','LICENSE-Shortcuts','main.py','decky_ipc_health.py','store_library.py','THIRD-PARTY-NOTICES.md','rgb\LICENSE-ClawConfigurator.txt','quick_settings\history_images.json','quick_settings\history_editorial.json','quick_settings\history_days.json','quick_settings\history_imported.json','quick_settings\*.py','quick_settings\LICENSE','quick_settings\NOTICE','quick_settings\LEGAL.md','quick_settings\THIRD-PARTY-NOTICES.md','quick_settings\licenses\*.txt','quick_settings\helper\*.ps1','quick_settings\bin\QuickSettingsAgent.exe','quick_settings\amd\adlx_helper.exe','quick_settings\amd\ADLXCSharpBind.dll','quick_settings\amd\LICENSES.txt','quick_settings\amd\build_amd.bat' -File -ErrorAction Stop;" ^
   "foreach ($file in $helpers) { $relative=$file.FullName.Substring((Get-Location).Path.Length+1); $target=Join-Path '%ASSETS%' $relative; if (-not (Test-Path -LiteralPath $target -PathType Leaf)) { exit 1 }; if ((Get-FileHash -LiteralPath $file.FullName).Hash -cne (Get-FileHash -LiteralPath $target).Hash) { exit 1 } };" ^
-  "$s=Get-ChildItem -Path 'src','assets','screensaver','quick_settings','main.py','decky_ipc_health.py','rollup.config.js','tsconfig.json' -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -notin @('.pyc','.pyo') -and $_.FullName -notmatch '[\\/]__pycache__[\\/]' };" ^
+  "$s=Get-ChildItem -Path 'src','assets','screensaver','quick_settings','main.py','decky_ipc_health.py','store_library.py','rollup.config.js','tsconfig.json' -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -notin @('.pyc','.pyo') -and $_.FullName -notmatch '[\\/]__pycache__[\\/]' };" ^
   "$newest=($s | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1);" ^
   "if ($newest -and $newest.LastWriteTimeUtc -gt $b.LastWriteTimeUtc) { exit 1 } else { exit 0 }" >> "%LOG%" 2>&1
 if errorlevel 1 (

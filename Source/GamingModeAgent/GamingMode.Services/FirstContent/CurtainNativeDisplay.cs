@@ -17,6 +17,7 @@ internal interface ICurtainNativeDisplay:IDisposable
  ulong ActiveGeneration{get;}
  CurtainNativeDisplay.WireSnapshot? Snapshot();
  bool Publish(CurtainVisualAuthority source,long expiresAt);
+ bool Finish();
  void Close();
 }
 internal sealed class CurtainNativeDisplay:ICurtainNativeDisplay
@@ -40,6 +41,8 @@ internal sealed class CurtainNativeDisplay:ICurtainNativeDisplay
  {
   internal uint Size,Version,Phase,CleanupComplete,Stage,Error;internal int Result;internal uint Flags;
   internal ulong Generation,Destination,ObservedAt;
+  internal readonly bool NormalFadeComplete=>Size==56&&Version==1&&Phase==0&&CleanupComplete==1
+    &&Destination==0&&Generation>0&&(Flags&64u)!=0;
  }
  [UnmanagedFunctionPointer(CallingConvention.Winapi,CharSet=CharSet.Unicode)]delegate int Configure(string callback,string root);
  [UnmanagedFunctionPointer(CallingConvention.Winapi)]delegate int Queue(uint action,in WirePulse pulse,uint bytes);
@@ -48,6 +51,9 @@ internal sealed class CurtainNativeDisplay:ICurtainNativeDisplay
  readonly uint pid,session;readonly ulong birth;readonly string ownerHash;
  static readonly List<CurtainNativeDisplay> PinnedWorkers=[];
  WirePulse? active;CurtainVisualAuthority? authority;ulong generation,sequence;bool disposed;
+ CurtainVisualAuthority? preparation;long preparationDeadline;int preparationAttempts;bool finishStarted;
+ const int MaximumPreparationAttempts=2;
+ static bool CaptureFailed(uint stage)=>stage==217;
  public ulong ActiveGeneration=>active?.Generation??0;
  static bool Hex(string value,int size)=>value.Length==size&&value.All(c=>c is >= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F');
  static FileStream Pin(string path,string expected,long limit=20971520)
@@ -95,11 +101,35 @@ internal sealed class CurtainNativeDisplay:ICurtainNativeDisplay
  {
   if(disposed)return false;long now=Environment.TickCount64;
   if(authority is not null&&!Same(authority,source)){Close();return false;}
-  uint action=2;if(active is null){if(Snapshot() is not {Phase:0,CleanupComplete:1})return false;action=1;++generation;}
+  uint action=2;bool first=false;
+  if(active is null){
+   // A late heartbeat cannot resurrect this same closed/finished request.
+   if(preparation is not null&&Same(preparation,source))return false;
+   if(Snapshot() is not {Phase:0,CleanupComplete:1})return false;action=1;first=true;
+  }else if(Snapshot() is {Phase:0,CleanupComplete:1} failed&&failed.Generation==active.Value.Generation&&CaptureFailed(failed.Stage)){
+   // Begin is queued asynchronously. A rejected, fully cleaned native Begin
+   // consumed its generation; only a new generation may retry. The first
+   // publisher deadline is never extended by subsequent fresh render renewals.
+   if(finishStarted||preparationAttempts>=MaximumPreparationAttempts||now>=preparationDeadline){Close();return false;}
+   action=1;
+  }
+  if(action==1)++generation;
   var pulse=Encode(source,generation,++sequence,pid,birth,session,ownerHash,now,expiresAt);
-  if(queue(action,in pulse,18736)!=1){Close();return false;}active=pulse;authority=source;return true;
+  if(queue(action,in pulse,18736)!=1){
+   // A retired normal fade refuses late Renew. Let the controller read its
+   // exact completion receipt BEFORE its own terminal Close clears the flag.
+   if(action!=2||!finishStarted)Close();return false;
+  }
+  if(first){preparation=source;preparationDeadline=expiresAt;preparationAttempts=0;finishStarted=false;}
+  if(action==1)++preparationAttempts;
+  active=pulse;authority=source;return true;
  }
  internal static bool Same(CurtainVisualAuthority a,CurtainVisualAuthority b)=>a with{GameRect=b.GameRect,SteamRect=b.SteamRect}==b&&a.GameRect.SequenceEqual(b.GameRect)&&a.SteamRect.SequenceEqual(b.SteamRect);
+ public bool Finish(){
+  if(disposed||active is null||authority is null)return false;long now=Environment.TickCount64;finishStarted=true;
+  var pulse=Encode(authority,active.Value.Generation,++sequence,pid,birth,session,ownerHash,now,now+1000);
+  if(queue(4,in pulse,18736)!=1){Close();return false;}active=pulse;return true;
+ }
  public void Close(){if(active is {} last){queue(3,in last,18736);active=null;authority=null;}}
  public void Dispose(){if(disposed)return;Close();disposed=true;GC.KeepAlive(nativePin);GC.KeepAlive(callbackPin);GC.KeepAlive(ownerPin);}
  [DllImport("kernel32.dll",EntryPoint="GetModuleFileNameW",CharSet=CharSet.Unicode)]static extern uint GetModuleFileName(nint module,StringBuilder output,int count);

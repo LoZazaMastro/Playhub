@@ -70,7 +70,7 @@ function harness() {
       setTimeout(fn, ms) { const id = ++nextTimer; timers.set(id, { fn, at: now + ms }); return id; },
       clearTimeout(id) { timers.delete(id); },
     },
-    local: { notConnected: 'offline', audioDevicesUnavailable: 'mic offline' },
+    local: { notConnected: 'offline', audioDevicesUnavailable: 'mic offline', audioChangeFailed: 'mic change failed' },
     notify: message => notices.push(message),
     audioConfirmed: { current: { input_volume: 17, default_input_id: 'mic-a' } },
     audioQueue: { current: Promise.resolve() },
@@ -119,7 +119,7 @@ for (const [handler, delay] of [['onVolume', 35], ['onBrightness', 35], ['onMicV
     assert.equal(h.calls.length, 2); assert.deepEqual(h.notices, []);
     assert.equal(h.calls[1].value, handler === 'onBrightness' ? 70 : 30);
     h.calls[1].resolve({ ok: false }); await flush();
-    assert.deepEqual(h.notices, [handler === 'onMicVolume' ? 'mic offline' : 'offline']);
+    assert.deepEqual(h.notices, [handler === 'onMicVolume' ? 'mic change failed' : 'offline']);
     h.unmount();
   });
 }
@@ -160,7 +160,7 @@ for (const result of [{ ok: false, input_volume: 50 }, { ok: true, input_volume:
   test(`microphone rejects unconfirmed readback ${JSON.stringify(result)}`, async () => {
     const h = harness(), ui = h.render(); ui.onMicVolume(50); await h.advance(180);
     h.calls[0].resolve(result); await flush();
-    assert.deepEqual(h.notices, ['mic offline']);
+    assert.deepEqual(h.notices, ['mic change failed']);
     assert.equal(h.draft.Audio.input_volume, 17, 'Failed write restores authoritative readback');
     h.unmount();
   });
@@ -195,5 +195,5 @@ test('microphone offline failure restores last confirmed value without claiming 
   h.context.getAudioDevices = async () => { throw new Error('offline'); };
   ui.onMicVolume(50); await h.advance(180); h.calls[0].reject(new Error('offline')); await flush();
   assert.equal(h.draft.Audio.input_volume, 17);
-  assert.deepEqual(h.notices, ['mic offline']); h.unmount();
+  assert.deepEqual(h.notices, ['mic change failed']); h.unmount();
 });

@@ -19,7 +19,6 @@ public sealed partial class MainWindow
     private Image? CreatePluginPreviewImage(DeckyPluginInfo plugin, int width, bool showStoreMark = true)
     {
         var path = PluginImagePath(plugin);
-        if (path is null && plugin.IsPlayhubPlugin) return null;
         var image = new Image
         {
             Stretch = Stretch.UniformToFill,

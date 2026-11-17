@@ -58,3 +58,28 @@ not publish Shown or reset the old held-button mask/deadline. Without Guide, new
 buttons/axes still pass. A Guide hold already seen during Shown is not a new
 edge after Closed; actual release is required. All frame/source/FG/freshness
 checks and the finite cleanup budget remain unchanged.
+
+## NativeVisible original-surface input role (kind3)
+
+The private producer can publish kind3 for the authenticated original Valve
+surface. This is not an own-mirror Shown/destination receipt: sourceCookie is
+the exact NativeVisible source cookie and destinationCookie is always zero.
+Only phases1,2 and5 are accepted. The original surface's positive physical
+proof, neutral acknowledgement and Steam menu-layout acknowledgement must
+precede phase1; exact source-hidden plus neutral acknowledgement precedes the
+release-only phases. The producer is responsible for that proof chain.
+
+The128-byte frame, retained transport/process identity and existing policy
+remain unchanged. Kind3 has a stricter expiry-minus-read cap of250ms; old
+kinds retain their original1500ms cap. All reads remain fresh within250ms.
+The digital release latch remains bounded to the same original5seconds; new
+buttons and axes pass. Unknown/replaced source or failed currentness passes
+input through. No physical-controller/game-consumption guarantee follows
+from the inert regression tests. The Root opt-in remains mandatory.
+
+Compile the inert production regression separately, without loading the DLL:
+
+```bat
+cl /nologo /MT /std:c++20 /W4 /WX /EHsc NativeVisibleFenceTests.cpp /Fe:NativeVisibleFenceTests.exe
+NativeVisibleFenceTests.exe
+```

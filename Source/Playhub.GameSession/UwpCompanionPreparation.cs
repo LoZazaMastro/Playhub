@@ -16,13 +16,13 @@ internal sealed class UwpCompanionPreparation : IDisposable
     private readonly string _aumid, _expected;
     private readonly Action<string> _log;
     private bool _sent, _disposed;
-    private sealed record Plan(uint WrapperPid, long WrapperBirth, ulong GameId, string Aumid, string Executable);
+    private sealed record Plan(uint WrapperPid, long WrapperBirth, ulong GameId, string Aumid, string Executable, UwpStoreCompanionBinding? StoreLaunch = null);
     internal sealed record Ready(string Kind, string Aumid, string PackageFullName, string Executable);
 
     private UwpCompanionPreparation(Process sidecar, FileStream native, string aumid, string expected, Action<string> log) =>
         (_sidecar, _native, _aumid, _expected, _log) = (sidecar, native, aumid, expected, log);
 
-    internal static UwpCompanionPreparation? TryStart(string aumid, string executable, Action<string> log)
+    internal static UwpCompanionPreparation? TryStart(string aumid, string executable, Action<string> log, UwpStoreCompanionBinding? storeLaunch = null)
     {
         var attributes = typeof(UwpCompanionPreparation).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().ToArray();
         if (!attributes.Any(item => item.Key == "PlayhubUwpSteamCompanion" && item.Value == "true")
@@ -38,6 +38,8 @@ internal sealed class UwpCompanionPreparation : IDisposable
             return PrepareOptional(() =>
             {
                 ValidateApplication(aumid, executable);
+                if (storeLaunch is not null && !storeLaunch.MatchesApplication(aumid, executable, DateTimeOffset.UtcNow))
+                    throw new InvalidDataException("The Xbox companion differs from the broker launch plan.");
                 string? digest = attributes.SingleOrDefault(item => item.Key == "PlayhubSteamCompanionSha256")?.Value;
                 pinned = new FileStream(library, FileMode.Open, FileAccess.Read, FileShare.Read);
                 VerifyDigest(pinned, digest);
@@ -47,9 +49,9 @@ internal sealed class UwpCompanionPreparation : IDisposable
                     UseShellExecute = false, WorkingDirectory = AppContext.BaseDirectory, CreateNoWindow = true,
                     RedirectStandardInput = true, RedirectStandardOutput = true, StandardInputEncoding = new UTF8Encoding(false)
                 }) ?? throw new InvalidOperationException("The UWP companion did not start.");
-                child.StandardInput.WriteLine(JsonSerializer.Serialize(new Plan((uint)wrapper.Id, wrapper.StartTime.ToFileTimeUtc(), gameId, aumid, executable)));
+                child.StandardInput.WriteLine(JsonSerializer.Serialize(new Plan((uint)wrapper.Id, wrapper.StartTime.ToFileTimeUtc(), gameId, aumid, executable, storeLaunch)));
                 child.StandardInput.Flush();
-                var ready = ReadReady(child.StandardOutput.BaseStream).WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+                var ready = ReadReady(child.StandardOutput.BaseStream).WaitAsync(TimeSpan.FromSeconds(storeLaunch is null ? 5 : 10)).GetAwaiter().GetResult();
                 if (ready is null || ready.Kind != "playhub-uwp-companion-ready" || ready.Aumid != aumid
                     || string.IsNullOrEmpty(ready.PackageFullName) || !Path.IsPathFullyQualified(ready.Executable)
                     || !Path.GetFileName(ready.Executable).Equals(Path.GetFileName(executable), StringComparison.OrdinalIgnoreCase)

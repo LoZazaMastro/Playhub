@@ -124,6 +124,7 @@ internal static class SessionTests
         }
         UnrealDisplayTests.Run(folder);
         UwpCompanionPreparationTests.Run();
+        StoreXboxCompanionTests.Run(folder);
         UwpTests.Run(folder);
         GdkProofTests.Run(folder);
         Console.WriteLine("All checks passed. Native Windows process handoff exercised.");

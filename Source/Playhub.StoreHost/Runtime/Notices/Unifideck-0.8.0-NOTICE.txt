@@ -1,0 +1,18 @@
+Unifideck 0.8.0 achievement integration
+=====================================
+Copyright (c) mubaraknumann and the Unifideck contributors.
+Project: https://github.com/mubaraknumann/unifideck
+Reference: Release-0.8.0, tree 8c05481efcb47fbefdabd1ffc7aa58c2466f64f5
+License: GNU General Public License version 3; full text accompanies this notice.
+
+StoreCliAchievements.cs and StoreAchievementNormalization.cs adapt the Epic
+GraphQL operations, GOG Galaxy game-token/achievement flow, and normalization
+from stores/epic/achievements.py, stores/gog/achievements.py and galaxy_api.py.
+Windows adaptation and cache integration: Copyright (c) 2026 LoZazaMastro.
+These adapted files retain GPL-3.0-or-later headers. Original MIT files retain
+their own notices. The combined distribution includes these GPL components.
+
+The Windows transport validates certificates, refuses redirects, bounds all
+responses and pagination, and keeps account tokens in the native store broker.
+The Linux reference's permissive TLS fallback and shell token arguments are
+not used. This notice does not relicense third-party store services or assets.

@@ -457,7 +457,6 @@ public sealed partial class PluginCatalogService
             });
         }
 
-        AppendLocalDiscordBundle(plugins, pluginRoot, deckyPluginsPath, claimedInstalledFolders);
         // One installed-folder pass hydrates both bundled and newly published definitions.
         AppendUncataloguedInstalledPlugins(plugins, deckyPluginsPath, claimedInstalledFolders);
 #if !PLAYHUB_UI_REVIEW
@@ -699,8 +698,14 @@ public sealed partial class PluginCatalogService
         var image = await FirstImageAsync(new[] { plugin.CoverImage, plugin.Image }
             .Concat(plugin.Media.Where(media => media.Kind == "image").Select(media => media.Url)))
             .ConfigureAwait(false);
-        if (image is not null || plugin.IsPlayhubPlugin || !IsValidRepositorySlug(plugin.RepositorySlug))
+        if (image is not null || !IsValidRepositorySlug(plugin.RepositorySlug))
             return image;
+
+        // GitHub's repository preview is the default, including repositories
+        // without screenshots. Let the image decoder load the generated preview
+        // directly instead of waiting for optional README screenshot discovery.
+        var githubPreview = $"https://opengraph.githubassets.com/1/{plugin.RepositorySlug}";
+        if (!rejected.Contains(githubPreview)) return githubPreview;
 
         // Only a missing/failed card asks for README media; reuse detail validation and single-flight caches.
         var readme = await _readmes.GetAsync(plugin.RepositorySlug).ConfigureAwait(false);

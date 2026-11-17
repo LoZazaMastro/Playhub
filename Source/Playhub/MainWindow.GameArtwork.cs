@@ -135,6 +135,10 @@ public sealed partial class MainWindow
         string artworkSearchTitle=game.ReadTitleQueryAsync is not null ? await game.ReadTitleQueryAsync("steamgriddb",session.Token)
             : await GameTitleQuery.ReadAsync(new ApplicationIntegrationDataStore(Path.Combine(AppPaths.LocalDataRoot,"integrations")),game.StableIdentity,"artwork",game.Title,session.Token);
         string? pendingPerfect=null;int generation=0;
+        string? preferredProvider=null;
+        string credential=_settings.SteamGridDbApiKey;
+        using var searches=new ImportArtworkSearchSession<ImportArtworkResult>();
+        session.Register(searches.Dispose);
         Grid Tiles(out Action arrange)
         {
             var grid=new Grid { ColumnSpacing=12,RowSpacing=12,HorizontalAlignment=HorizontalAlignment.Stretch };
@@ -195,7 +199,7 @@ public sealed partial class MainWindow
         }
         void Render()
         {
-            generation++;panel.Children.Clear();
+            generation++;searches.Invalidate();panel.Children.Clear();status.Visibility=Visibility.Collapsed;
             if(active=="summary")
             {
                 var summary=Tiles(out var arrangeSummary);
@@ -235,11 +239,11 @@ public sealed partial class MainWindow
             var search=new Grid { ColumnSpacing=12,RowSpacing=12 };search.ColumnDefinitions.Add(new());search.ColumnDefinitions.Add(new(){Width=new GridLength(240)});
             search.RowDefinitions.Add(new(){Height=GridLength.Auto});search.RowDefinitions.Add(new(){Height=GridLength.Auto});
             var title=new TextBox { Header=new TextBlock { Text=T("Titolo da cercare"),TextWrapping=TextWrapping.Wrap },Text=artworkSearchTitle,MinWidth=0 };
-            title.TextChanged+=(_,_)=>artworkSearchTitle=title.Text;
+            
             var provider=new ComboBox { Header=new TextBlock { Text=T("Fonte"),TextWrapping=TextWrapping.Wrap },HorizontalAlignment=HorizontalAlignment.Stretch,MinWidth=0 };
             foreach(string name in new[]{"SteamGridDB","Steam","PlayStation","Nintendo","Xbox","IGDB","AlphaCoders","iiDB","IGN"})
                 if(name=="Steam"||ApplicationArtworkPreferences.Supports(name.ToLowerInvariant(),type))provider.Items.Add(name);
-            string requested=game.DefaultArtworkProvider?.Invoke(type)??"SteamGridDB";
+            string requested=preferredProvider??game.DefaultArtworkProvider?.Invoke(type)??"SteamGridDB";
             provider.SelectedItem=provider.Items.OfType<string>().FirstOrDefault(name=>name.Equals(requested,StringComparison.OrdinalIgnoreCase))??"SteamGridDB";
             search.Children.Add(title);Grid.SetColumn(provider,1);search.Children.Add(provider);panel.Children.Add(search);
             if (string.IsNullOrWhiteSpace(_settings.SteamGridDbApiKey))
@@ -257,19 +261,32 @@ public sealed partial class MainWindow
                 search.ColumnDefinitions[1].Width=narrow?new GridLength(0):new GridLength(240);
                 Grid.SetColumn(provider,narrow?0:1);Grid.SetRow(provider,narrow?1:0);
             };
-            var find=Action(T("Cerca alternative"));panel.Children.Add(find);
             var results=Tiles(out var arrangeResults);panel.Children.Add(results);
-            find.Click+=async(_,_)=>
+            int searchGeneration=0;
+            void InvalidateSearch()
             {
+                searchGeneration++;searches.Invalidate();results.Children.Clear();results.RowDefinitions.Clear();
+                status.Visibility=Visibility.Collapsed;
+            }
+            async Task SearchAsync(bool refresh=false)
+            {
+                int request=++searchGeneration;
                 if (Equals(provider.SelectedItem, "SteamGridDB") && string.IsNullOrWhiteSpace(_settings.SteamGridDbApiKey))
                 {
+                    searches.Invalidate();results.Children.Clear();
                     status.Text = T("SteamGridDb.ConnectionHelp"); status.Visibility = Visibility.Visible; return;
                 }
-                find.IsEnabled=false;results.Children.Clear();results.RowDefinitions.Clear();status.Text=T("Ricerca in corso…");status.Visibility=Visibility.Visible;
+                if(credential!=_settings.SteamGridDbApiKey){credential=_settings.SteamGridDbApiKey;searches.Invalidate(clearCache:true);}
+                string selectedProvider=provider.SelectedItem?.ToString()??"SteamGridDB";
+                string query=title.Text.Trim();
+                results.Children.Clear();results.RowDefinitions.Clear();
+                if(query.Length==0){searches.Invalidate();status.Visibility=Visibility.Collapsed;return;}
+                status.Text=T("Ricerca in corso…");status.Visibility=Visibility.Visible;
                 try
                 {
-                    var candidates=await game.SearchStoreArtworkAsync(provider.SelectedItem?.ToString()??"SteamGridDB",title.Text.Trim(),type,session.Token);
-                    if(session.IsClosed||generation!=revision)return;
+                    var key=ImportArtworkSearchKey.Create(selectedProvider,query,type,global::Playhub.Services.CoverFormat.IsSquare(_settings.CoverFormat));
+                    var candidates=await searches.SearchAsync(key,token=>game.SearchStoreArtworkAsync(selectedProvider,query,type,token),session.Token,refresh);
+                    if(session.IsClosed||generation!=revision||request!=searchGeneration)return;
                     var selectedFrames=new List<Border>();
                     foreach(var candidate in candidates)
                     {
@@ -280,11 +297,12 @@ public sealed partial class MainWindow
                         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(choose,T("Artwork - {0}").Replace("{0}",game.Title));
                         choose.Click+=async(_,_)=>
                         {
+                            if(session.IsClosed||generation!=revision||request!=searchGeneration)return;
                             choose.IsEnabled=false;
                             try { await saves.ChangeAsync(async()=>
                             {
                                 await ChooseAsync(type,candidate,false);
-                                if(session.IsClosed||generation!=revision)return;
+                                if(session.IsClosed||generation!=revision||request!=searchGeneration)return;
                                 currentPicture.Children.Clear();currentPicture.Children.Add(Picture(type,current.GetValueOrDefault(type),currentHeight));remove.IsEnabled=game.RemoveArtworkAsync is not null&&current.ContainsKey(type);
                                 foreach(var frame in selectedFrames)frame.BorderBrush=new SolidColorBrush(ReferenceEquals(frame,thumbnail)?Microsoft.UI.Colors.Gold:Microsoft.UI.Colors.Transparent);
                             }); }
@@ -297,19 +315,23 @@ public sealed partial class MainWindow
                     arrangeResults();
                     status.Text=candidates.Count==0?T("Nessun risultato trovato."):"";status.Visibility=candidates.Count==0?Visibility.Visible:Visibility.Collapsed;
                 }
-                catch(OperationCanceledException){}catch {if(!session.IsClosed){status.Text=T("Ricerca non disponibile. Riprova.");status.Visibility=Visibility.Visible;}}
-                finally {if(!session.IsClosed)find.IsEnabled=true;}
-            };
+                catch(OperationCanceledException){}catch {if(!session.IsClosed&&generation==revision&&request==searchGeneration){status.Text=T("Ricerca non disponibile. Riprova.");status.Visibility=Visibility.Visible;}}
+            }
+            title.TextChanged+=(_,_)=>{artworkSearchTitle=title.Text;InvalidateSearch();};
+            title.KeyDown+=async(_,args)=>{if(args.Key==Windows.System.VirtualKey.Enter){args.Handled=true;await SearchAsync(refresh:true);}};
+            provider.SelectionChanged+=async(_,_)=>{preferredProvider=provider.SelectedItem?.ToString();await SearchAsync();};
+            _=SearchAsync();
         }
         var titlePicker=GameTitleIdentityPicker.Attach(refetchTitle,game,"steamgriddb",T,session.Token,async selected=>
         {
             if(selected.Provider=="steamgriddb")artworkSearchTitle=selected.Title;
+            searches.Invalidate(clearCache:true);
             await RefreshAsync();
         },async()=>{await saves.FlushAsync();if(saves.HasFailure)throw new IOException("Pending artwork was not saved.");},
         () => BuildSteamGridDbConnectionCard(), () => !string.IsNullOrWhiteSpace(_settings.SteamGridDbApiKey));
         session.Register(titlePicker.Dispose);
         tabs.SelectionChanged+=(_,_)=>{active=tabs.SelectedItem?.Tag?.ToString()??"cover";Render();};tabs.SelectedItem=tabs.Items.First(t=>Equals(t.Tag,initialType));
-        dialog.Closing+=async(_,args)=>{var deferral=args.GetDeferral();tabs.IsEnabled=false;scroll.IsEnabled=false;try{await saves.FlushAsync();}finally{deferral.Complete();}};
+        dialog.Closing+=async(_,args)=>{var deferral=args.GetDeferral();generation++;searches.Invalidate();tabs.IsEnabled=false;scroll.IsEnabled=false;try{await saves.FlushAsync();}finally{deferral.Complete();}};
         dialog.Closed+=(_,_)=>session.Dispose();
         ConfigureDialogEntrance(dialog);await dialog.ShowAsync();
         if(pendingPerfect is not null) { await ShowPerfectGameArtworkAsync(game,pendingPerfect);await ShowGameArtworkCoreAsync(game,pendingPerfect); }

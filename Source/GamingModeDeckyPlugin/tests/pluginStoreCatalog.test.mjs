@@ -14,21 +14,35 @@ const compiled = ts.transpileModule(source, {
 const exports = {};
 vm.runInNewContext(compiled, { exports, URL, Set, Map, Date, Number, JSON, Intl });
 
-test("published Discord stays featured across catalog order without becoming Steamcord", () => {
+test("republished Discord appears once in discovery, updates and featured rotation", () => {
   const raw = readFileSync(join(here, "..", "..", "..", "catalog", "plugins.json"), "utf8");
+  const manifest = JSON.parse(raw);
+  const published = manifest.plugins.filter((plugin) => plugin.repository === "LoZazaMastro/Playhub-Discord");
+  assert.equal(published.length, 1);
+  assert.equal(published[0].active, true);
   const parsed = exports.parseCatalog(raw);
-  const discord = parsed.plugins.find((plugin) => plugin.repository === "LoZazaMastro/Playhub-Discord");
-  assert.equal(discord?.name, "Discord");
-  assert.equal(discord?.installFolder, "Discord");
-  assert.equal(discord?.keywords.includes("featured"), true);
-  assert.equal(discord?.aliases.some((alias) => /steamcord/i.test(alias)), false);
-  assert.equal(exports.resolveInstallArtifact(discord)?.name, "Discord_Installer-1.0.1.zip");
+  const discord = parsed.plugins.filter((plugin) => plugin.repository === "LoZazaMastro/Playhub-Discord");
+  assert.equal(discord.length, 1);
+  assert.equal(discord[0].installFolder, "Discord");
+  assert.ok(exports.resolveInstallArtifact(discord[0]));
+  assert.equal(exports.pluginHasUpdate(discord[0], [{ name: "Discord", version: "0.0.0" }]), true);
   for (const plugins of [parsed.plugins, [...parsed.plugins].reverse()]) {
     const selection = exports.featuredPlugins(plugins, 10);
-    assert.equal(selection.some((plugin) => plugin === discord), true);
+    assert.equal(selection.filter((plugin) => plugin.repository === "LoZazaMastro/Playhub-Discord").length, 1);
     assert.ok(selection.filter((plugin) => plugin.catalogSource === "playhub").length >= 2);
     assert.equal(new Set(selection.map((plugin) => plugin.repository.toLowerCase())).size, selection.length);
   }
+});
+
+test("Web Browser stays searchable while every featured fallback excludes it", () => {
+  const catalog = exports.parseCatalog(readFileSync(join(here, "..", "..", "..", "catalog", "plugins.json"), "utf8"));
+  const browser = catalog.plugins.find(plugin => plugin.repository === "jessebofill/DeckWebBrowser");
+  assert.ok(browser, "Removing a featured slide must preserve the catalog entry");
+  for (const pool of [[browser], [{ ...browser, keywords: ["featured"] }], catalog.plugins, [...catalog.plugins].reverse()]) {
+    assert.equal(exports.featuredPlugins(pool, 1000).some(plugin => plugin.repository.toLowerCase() === "jessebofill/deckwebbrowser"), false);
+  }
+  const excluded = { ...browser, repository: "example/plugin", catalogPluginId: 99999, keywords: ["FEATURED", "EXCLUDE-FEATURED"] };
+  assert.equal(exports.featuredPlugins([excluded], 6).length, 0);
 });
 
 test("canonical catalog parses without duplicating content and hides the integrated Playhub plugin", () => {
@@ -48,8 +62,8 @@ test("canonical catalog parses without duplicating content and hides the integra
     "deckthemes/sdh-cssloader",
     "emerald0874/sdh-audioloader",
     "bentemple/decky-download-all",
-    "jessebofill/deckwebbrowser",
   ]) assert.equal(featuredRepositories.includes(repository), true, `missing featured plugin ${repository}`);
+  assert.equal(featuredRepositories.includes("jessebofill/deckwebbrowser"), false);
   assert.equal(featured.filter((plugin) => plugin.name === "CSS Loader").length, 1);
   assert.equal(featured.find((plugin) => plugin.name === "CSS Loader").catalogSource, "decky-store");
 
@@ -138,10 +152,10 @@ test("featured selection is deterministic, mixes Playhub with the requested Deck
   assert.deepEqual(repositories, [
     "playhub/newest",
     "Tormak9970/TabMaster",
+    "playhub/older",
     "DeckThemes/SDH-CssLoader",
     "EMERALD0874/SDH-AudioLoader",
     "bentemple/decky-download-all",
-    "jessebofill/DeckWebBrowser",
   ]);
   assert.deepEqual(Array.from(second, (plugin) => plugin.repository), repositories);
   assert.equal(first.filter((plugin) => plugin.name === "CSS Loader").length, 1);
@@ -257,3 +271,22 @@ test("only the resolved installable release carries its version and notes", () =
   assert.equal(artifact.release.publishedAt, "2026-09-07T00:00:00Z");
 });
 
+
+
+test("Discovery merges narrow topics, hides groups below three, and preserves the complete searchable catalog", () => {
+  const catalog = exports.parseCatalog(readFileSync(join(here, "../../..", "catalog/plugins.json"), "utf8"));
+  const categories = Array.from(exports.discoveryCategories(catalog.plugins));
+  assert.ok(categories.length <= 12, "Discovery must remain a compact selection");
+  assert.ok(!categories.some(category => category.includes("/")));
+  assert.ok(!categories.includes("Accessibilità"), "two accessibility plugins remain searchable without a separate Discovery category");
+  for (const category of categories) assert.ok(catalog.plugins.filter(plugin => exports.pluginInCategory(plugin, category)).length >= 3, category);
+  for (const name of ["Audio Output Switcher", "Deck Mic Toggle", "Audio Loader", "Music Control", "Museck", "Audiobookshelf", "Playhub Surround"]) {
+    const plugin = catalog.plugins.find(row => row.name === name);assert.ok(plugin, name);assert.equal(exports.pluginCategory(plugin), "Audio", name);
+  }
+  for (const name of ["SAM", "RetroAchievements", "Achievement Companion", "SDAchievement"]) {
+    assert.equal(exports.pluginCategory(catalog.plugins.find(row => row.name === name)), "Achievement", name);
+  }
+  assert.ok(catalog.plugins.some(row => row.name === "SpeechToDeck"));
+  assert.ok(catalog.plugins.some(row => row.name === "Deckamine"));
+  console.log(JSON.stringify({discoveryCategories:categories.map(category => ({category,count:catalog.plugins.filter(plugin=>exports.pluginInCategory(plugin, category)).length})),total:catalog.plugins.length}));
+});

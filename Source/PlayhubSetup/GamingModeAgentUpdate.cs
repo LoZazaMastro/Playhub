@@ -23,9 +23,9 @@ internal interface IGamingModeInstallerProcess : IDisposable
 internal static class GamingModeAgentUpdate
 {
     internal static void Ensure(string package, string installed, string script,
-        Func<IGamingModeInstallerProcess?> start, int timeoutMilliseconds = 180_000)
+        Func<IGamingModeInstallerProcess?> start, int timeoutMilliseconds = 180_000, bool restartRequired = false)
     {
-        if (GamingModeInstallationPolicy.HasSameAgentPayload(package, installed)) return;
+        if (!restartRequired && GamingModeInstallationPolicy.HasSameAgentPayload(package, installed)) return;
         if (!File.Exists(package) || !File.Exists(script))
             throw new GamingModeAgentUpdateException(GamingModeUpdateFailure.MissingPayload);
         try

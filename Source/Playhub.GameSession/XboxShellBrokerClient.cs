@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Net.Http;
 using System.Text.Json;
 
@@ -5,6 +6,64 @@ namespace Playhub.GameSession;
 
 internal static class XboxShellBrokerClient
 {
+    private sealed record BootstrapOwner(uint AppId,uint WrapperPid,long WrapperBirth,string Ticket);
+    private static BootstrapOwner? bootstrap;
+    internal static string EnsureRoute(uint appId,uint wrapperPid,long wrapperBirth)=>
+        appId>=0x80000000&&wrapperPid>0&&wrapperBirth>0
+            ? $"/xbox/shell/ensure?bootstrapAppId={appId}&wrapperPid={wrapperPid}&wrapperBirth={wrapperBirth}"
+            : "/xbox/shell/ensure";
+    private static (uint AppId,uint Pid,long Birth) CurrentBootstrapCaller()
+    {
+        uint appId=ShortcutAppId(Environment.GetEnvironmentVariable("SteamGameId"));
+        if(appId==0)return default;
+        using var wrapper=System.Diagnostics.Process.GetCurrentProcess();
+        return(appId,(uint)wrapper.Id,wrapper.StartTime.ToFileTimeUtc());
+    }
+
+    // Private build opt-in only. Unknown authorization fails this launch;
+    // it must not silently restart Explorer against the configured preference.
+    internal static bool PrepareDirectActivation()
+    {
+        bool optedIn = System.Reflection.Assembly.GetExecutingAssembly()
+            .GetCustomAttributes<System.Reflection.AssemblyMetadataAttribute>()
+            .Any(a => a.Key == "PlayhubExplorerFreeUwpActivation" && a.Value == "true");
+        if (!optedIn) return false;
+        var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GamingMode");
+        using var client = new HttpClient(new HttpClientHandler { UseProxy = false }) { Timeout = TimeSpan.FromSeconds(3) };
+        return PrepareDirectActivation(directory, client, true);
+    }
+
+    internal static bool PrepareDirectActivation(string directory, HttpClient client, bool optedIn)
+    {
+        if (!optedIn) return false;
+        try
+        {
+            var token = File.ReadAllText(Path.Combine(directory, "xbox-shell-token")).Trim();
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{Port(directory)}/xbox/activation/readiness");
+            request.Headers.Add("X-Playhub-Shell-Token", token);
+            using var response = client.Send(request);
+            response.EnsureSuccessStatusCode();
+            using var result = JsonDocument.Parse(response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
+            var value = result.RootElement;
+            if (value.ValueKind != JsonValueKind.Object || value.EnumerateObject().Count() != 3
+                || !value.TryGetProperty("protocol", out var protocol) || !protocol.TryGetInt32(out int version) || version != 1
+                || !value.TryGetProperty("ok", out var ok) || ok.ValueKind != JsonValueKind.True
+                || !value.TryGetProperty("route", out var route) || route.ValueKind != JsonValueKind.String)
+                throw new InvalidOperationException("Xbox activation readiness was not authenticated.");
+            return route.GetString() switch
+            {
+                "direct-aam" => true,
+                "shell-required" => false,
+                _ => throw new InvalidOperationException("Xbox activation readiness route is unknown.")
+            };
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Xbox activation readiness is unavailable; Explorer was not started and the game was not activated.", ex);
+        }
+    }
+
+
     internal static void Ensure()
     {
         var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GamingMode");
@@ -17,13 +76,19 @@ internal static class XboxShellBrokerClient
         try
         {
             var token = File.ReadAllText(Path.Combine(directory, "xbox-shell-token")).Trim();
-            using var request = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{Port(directory)}/xbox/shell/ensure");
+            var caller=CurrentBootstrapCaller();
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{Port(directory)}"+EnsureRoute(caller.AppId,caller.Pid,caller.Birth));
             request.Headers.Add("X-Playhub-Shell-Token", token);
             using var response = client.Send(request);
             response.EnsureSuccessStatusCode();
             using var result = JsonDocument.Parse(response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
             if (!result.RootElement.TryGetProperty("ok", out var ok) || !ok.GetBoolean())
                 throw new InvalidOperationException("GamingMode could not prepare the Windows desktop shell.");
+            bootstrap=null;
+            if(caller.AppId!=0&&result.RootElement.TryGetProperty("bootstrapProtocol",out var protocol)&&protocol.TryGetInt32(out int version)&&version==1
+                &&result.RootElement.TryGetProperty("bootstrapTicket",out var ticket)&&ticket.ValueKind==JsonValueKind.String
+                &&ticket.GetString() is {Length:32} value&&Guid.TryParseExact(value,"N",out _))
+                bootstrap=new(caller.AppId,caller.Pid,caller.Birth,value);
         }
         catch (Exception ex)
         {
@@ -43,20 +108,28 @@ internal static class XboxShellBrokerClient
             var token = (await File.ReadAllTextAsync(Path.Combine(directory, "xbox-shell-token"), stop)).Trim();
             int port = Port(directory);
             long started = Environment.TickCount64;
+            var caller=CurrentBootstrapCaller();
+            string bootstrapTicket=bootstrap is {} held&&held.AppId==appId&&caller.AppId==appId&&held.WrapperPid==caller.Pid&&held.WrapperBirth==caller.Birth
+                ? "&bootstrapTicket="+held.Ticket:"";
             // A launch curtain or a slow title may delay the first eligible
             // game window. Back off after the initial focus handoff.
             while (Environment.TickCount64 - started < 45000)
             {
                 using var request = new HttpRequestMessage(HttpMethod.Post,
-                    $"http://127.0.0.1:{port}/session/steam/arm-return?appId={appId}&gamePid={gamePid}");
+                    $"http://127.0.0.1:{port}/session/steam/arm-return?appId={appId}&gamePid={gamePid}"+bootstrapTicket);
                 request.Headers.Add("X-Playhub-Shell-Token", token);
                 try
                 {
                     using var response = await client.SendAsync(request, stop);
                     if (!response.IsSuccessStatusCode) return;
                     using var result = JsonDocument.Parse(await response.Content.ReadAsStringAsync(stop));
-                    if (result.RootElement.ValueKind != JsonValueKind.Object ||
-                        !result.RootElement.TryGetProperty("ok", out var ok) || ok.ValueKind != JsonValueKind.False) return;
+                    if(result.RootElement.ValueKind!=JsonValueKind.Object||!result.RootElement.TryGetProperty("ok",out var ok))return;
+                    if(ok.ValueKind!=JsonValueKind.False){
+                        // A true return-arm result is not the shell-retirement
+                        // receipt. Only the same existing bounded loop waits.
+                        if(ok.ValueKind!=JsonValueKind.True||bootstrapTicket.Length==0
+                            ||!result.RootElement.TryGetProperty("bootstrapPending",out var pending)||pending.ValueKind!=JsonValueKind.True)return;
+                    }
                 }
                 catch (OperationCanceledException) when (!stop.IsCancellationRequested) { }
                 catch (HttpRequestException) when (!stop.IsCancellationRequested) { }

@@ -7,12 +7,14 @@ using System.Text;
 using System.Text.Json;
 using Playhub.GameSession;
 using WSGM.PackagedLaunch;
+using Playhub.StoreLibrary;
 
-internal sealed record UwpCompanionPlan(uint WrapperPid, long WrapperBirth, ulong GameId, string Aumid, string Executable)
+internal sealed record UwpCompanionPlan(uint WrapperPid, long WrapperBirth, ulong GameId, string Aumid, string Executable, UwpStoreCompanionBinding? StoreLaunch = null)
 {
     internal bool Matches(uint wrapper, long birth, ulong gameId) => WrapperPid == wrapper && WrapperBirth == birth
         && wrapper > 0 && birth > 0 && GameId == gameId && (uint)GameId == 0x02000000 && (GameId >> 32) >= 0x80000000
-        && UwpCompanionProtocol.IsApplication(Aumid, Executable);
+        && UwpCompanionProtocol.IsApplication(Aumid, Executable)
+        && (StoreLaunch is null || StoreLaunch.MatchesApplication(Aumid, Executable, DateTimeOffset.UtcNow));
 }
 internal sealed record UwpCompanionTarget(uint GamePid, long GameBirth, long ActivationFileTime)
 {
@@ -56,10 +58,15 @@ internal static class UwpCompanionProtocol
         throw new InvalidDataException("The private UWP companion message exceeds its size limit.");
     }
 
-    internal static bool ParentArgumentsMatch(string[] arguments, string wrapperImage, UwpCompanionPlan plan) =>
-        arguments.Length >= 4 && arguments[0].Equals(wrapperImage, StringComparison.OrdinalIgnoreCase)
-        && arguments[1] == "--uwp" && arguments[2] == plan.Aumid
-        && arguments[3].Equals(plan.Executable, StringComparison.OrdinalIgnoreCase);
+    internal static bool ParentArgumentsMatch(string[] arguments, string wrapperImage, UwpCompanionPlan plan)
+    {
+        if (arguments.Length < 4 || !arguments[0].Equals(wrapperImage, StringComparison.OrdinalIgnoreCase)) return false;
+        if (plan.StoreLaunch is { } store)
+            return arguments.Length == 4 && arguments[1] == "--store-library" && arguments[2] == "xbox"
+                && arguments[3] == store.ProductId && store.MatchesApplication(plan.Aumid, plan.Executable, DateTimeOffset.UtcNow);
+        return arguments[1] == "--uwp" && arguments[2] == plan.Aumid
+            && arguments[3].Equals(plan.Executable, StringComparison.OrdinalIgnoreCase);
+    }
 }
 
 internal static class UwpSteamCompanion
@@ -92,6 +99,7 @@ internal static class UwpSteamCompanion
                 throw new InvalidOperationException("The registered application's trust mode is not supported by this companion.");
             var package = AppContainerProof.Resolve(command, new RegisteredPackageCatalog(physicalPaths: true), verifyImage: false);
             using var manifest = RegisteredUwpManifestProof.Verify(command, package);
+            VerifyStoreLaunch(plan, parent, package.Executable);
             using var native = SteamCompanionTrial.OpenVerifiedLibrary();
             using var steam = TrustedSteamFiles.Open();
             if (!AppContainerTrial.WaitForSteamTracking(steam, parent, gameId))
@@ -107,6 +115,7 @@ internal static class UwpSteamCompanion
             if (parent.HasExited || !steam.UnchangedRoot() || !plan.Matches((uint)parent.Id, parent.StartTime.ToFileTimeUtc(), gameId)
                 || !UwpCompanionProtocol.ParentArgumentsMatch(ReadArguments(parent), parent.MainModule!.FileName!, plan))
                 throw new InvalidOperationException("The UWP wrapper changed before activation completed.");
+            VerifyStoreLaunch(plan, parent, package.Executable);
             using var target = Inspect(handoff, command, package, (uint)self.SessionId, plan.WrapperBirth);
             if (target is null || !AppContainerTrial.WaitForSteamTracking(steam, parent, gameId))
                 throw new InvalidOperationException("The UWP companion target did not match the exact newly activated registered application.");
@@ -132,6 +141,7 @@ internal static class UwpSteamCompanion
         // This route observes the same original COM activation. It never starts
         // GameLaunchHelper or a protected game executable itself.
         using var prepared = RegisteredDesktopPreparation.Prepare(command, catalog);
+        VerifyStoreLaunch(plan, parent, prepared.Executable);
         using var native = SteamCompanionTrial.OpenVerifiedLibrary();
         using var steam = TrustedSteamFiles.Open();
         if (!AppContainerTrial.WaitForSteamTracking(steam, parent, gameId))
@@ -145,6 +155,7 @@ internal static class UwpSteamCompanion
         if (parent.HasExited || !steam.UnchangedRoot() || !plan.Matches((uint)parent.Id, parent.StartTime.ToFileTimeUtc(), gameId)
             || !UwpCompanionProtocol.ParentArgumentsMatch(ReadArguments(parent), parent.MainModule!.FileName!, plan))
             throw new InvalidOperationException("The registered desktop wrapper changed before activation completed.");
+        VerifyStoreLaunch(plan, parent, prepared.Executable);
         using var target = RegisteredDesktopTarget.Inspect(handoff, command, prepared, (uint)self.SessionId, plan.WrapperBirth);
         if (target is null || !AppContainerTrial.WaitForSteamTracking(steam, parent, gameId))
             throw new InvalidOperationException("The registered desktop target differs from the exact newly activated game.");
@@ -153,6 +164,24 @@ internal static class UwpSteamCompanion
         return SteamCompanionTrial.RunSurface(target.ProcessHandle, parent, steam, gameId, target.Pid, target.Creation,
             onConfiguredLayout: () => SteamControllerLayoutTrial.TryStart(steam, gameId, target, parent,
                 () => SteamCompanionTrial.GameHasForeground, () => SteamCompanionTrial.OverlayIsOpen));
+    }
+
+    private static void VerifyStoreLaunch(UwpCompanionPlan plan, Process parent, string registeredExecutable)
+    {
+        if (plan.StoreLaunch is not { } binding) return; // Existing imported --uwp route stays unchanged.
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(6));
+        var service = StoreLibraryService.CreateDefault();
+        // This is the authenticated local broker's launch-descriptor operation:
+        // it rechecks the exact key/account mapping and current OS registration,
+        // not a cached UI snapshot. It never requests another game activation.
+        var descriptor = service.GetVerifiedLaunchDescriptorAsync(new StoreGameKey(StoreKind.Xbox, binding.ProductId), timeout.Token)
+            .GetAwaiter().GetResult();
+        // Resolve the broker's already matched absolute image through an actual
+        // read-only directory handle, as the package proof does. This preserves
+        // exact identity when Windows registers an XboxGames directory junction.
+        var physicalImage = Path.Combine(RegisteredPackageCatalog.PhysicalDirectory(Path.GetDirectoryName(binding.GameExecutable)!), Path.GetFileName(binding.GameExecutable));
+        if (!binding.MatchesBroker(descriptor, parent.MainModule!.FileName!, registeredExecutable, DateTimeOffset.UtcNow, physicalImage))
+            throw new InvalidDataException("The Xbox companion differs from the broker's current registered launch identity.");
     }
 
     internal static RetainedAppContainerTarget? Inspect(UwpCompanionTarget handoff, XboxCommand command,

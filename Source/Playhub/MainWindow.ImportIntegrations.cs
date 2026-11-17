@@ -8,17 +8,17 @@ namespace Playhub;
 
 public sealed partial class MainWindow
 {
-    private async Task DeliverPreparedImportedArtworkAsync(IEnumerable<UwpGameEntry> exportedGames, CancellationToken ct = default)
+    private async Task<int> DeliverPreparedImportedArtworkAsync(IEnumerable<UwpGameEntry> exportedGames, CancellationToken ct = default)
     {
         string pluginsRoot = string.IsNullOrWhiteSpace(_settings.DeckyPluginsPath) ? AppPaths.DefaultDeckyPluginsPath : _settings.DeckyPluginsPath;
-        foreach (var game in exportedGames)
+        return await Playhub.Importing.ImportPostCommitDelivery.RunAsync(exportedGames, async game =>
         {
             ct.ThrowIfCancellationRequested();
             var token = ct;
             string identity = ImportedIntegrationIdentity.Pc(game.Aumid, game.LocalExecutablePath, game.SourceLaunchArguments);
             var store = new ApplicationIntegrationDataStore(Path.Combine(AppPaths.LocalDataRoot, "integrations"));
             var actualId = _uwpXbox.TryGetSteamShortcutAppId(game);
-            if (actualId is not > 0) continue;
+            if (actualId is not > 0) return;
             var artworkState=await store.ReadCategoryAsync(identity,"artwork",token);
             if(artworkState["logoHiddenRequested"]?.GetValue<bool>()==true)
             {
@@ -34,12 +34,24 @@ public sealed partial class MainWindow
                 await new PerfectArtworkState(store,ArtworkSteamRunning,SteamPluginBridge.EvaluateAsync,pluginsRoot).SetHiddenAsync(identity,actualId.Value,_uwpXbox.TryGetSteamGridDirectories(game),true,token);
 
             }
-        }
+        }, error => Diag.Crash("Imported artwork pending after shortcut commit", error), ct);
     }
     private async Task ShowImportedGameArtworkAsync(UwpGameEntry game)
     {
-        var context=CreateImportedGameContext(game);try{await ShowGameArtworkAsync(context);}finally{context.DisposeResources?.Invoke();}
+        var context=CreateImportedGameContext(game);
+        try
+        {
+            await ShowGameArtworkAsync(context);
+            var saved=await context.ReadArtworkAsync(CancellationToken.None);
+            if(IsImportedGameCurrent(game))
+                foreach(string type in ImportedArtworkSelection.Types)ImportedArtworkSelection.Set(game,type,saved.GetValueOrDefault(type));
+        }
+        finally{context.DisposeResources?.Invoke();}
     }
+    private bool IsImportedGameCurrent(UwpGameEntry game) =>
+        _uwpGames.Any(item=>ReferenceEquals(item,game))||_executableGames.Any(item=>ReferenceEquals(item,game))||
+        _epicGames.Any(item=>ReferenceEquals(item,game))||_gogGames.Any(item=>ReferenceEquals(item,game));
+
     private GameInfoContext CreateImportedGameContext(UwpGameEntry game)
     {
         var appId = _uwpXbox.TryGetSteamShortcutAppId(game) ?? 0;
@@ -70,9 +82,9 @@ public sealed partial class MainWindow
                     return results.OfType<JsonObject>().Select(result => new ImportArtworkResult(result["url"]!.GetValue<string>(), result["thumb"]?.GetValue<string>() ?? result["url"]!.GetValue<string>(), result["width"]?.GetValue<int>() ?? 0, result["height"]?.GetValue<int>() ?? 0)).ToArray();
                 }
                 var selectedTitle=await GameTitleQuery.ReadIdentityAsync(store,identity,"artwork",token);
-                var searchGame = new UwpGameEntry { Name = title, Aumid = game.Aumid, SteamAppId = game.SteamAppId,
+                var searchGame = new UwpGameEntry { Name = title, Aumid = game.Aumid, SteamAppId = ImportArtworkSearchKey.MatchingSteamAppId(title,game.Name,game.SteamAppId),
                     SteamGridDbGameId=selectedTitle is not null && string.Equals(selectedTitle.Title,title,StringComparison.OrdinalIgnoreCase) && int.TryParse(selectedTitle.Id,out var matchedId)?matchedId:0 };
-                var options = provider == "SteamGridDB" ? await _uwpXbox.GetSteamGridDbArtworkAsync(searchGame, type, _settings.SteamGridDbApiKey) : await _uwpXbox.GetOfficialSteamArtworkAsync(searchGame, type);
+                var options = provider == "SteamGridDB" ? await _uwpXbox.GetSteamGridDbArtworkAsync(searchGame, type, _settings.SteamGridDbApiKey, token) : await _uwpXbox.GetOfficialSteamArtworkAsync(searchGame, type, token);
                 token.ThrowIfCancellationRequested();
                 var candidates=options.Select(option => new ImportArtworkResult(option.Url, option.PreviewUrl, option.Width, option.Height,option.Provider,option.AuthorName,option.AuthorSteamId)).ToArray();
                 foreach(var candidate in candidates)selectedArtworkSources[(type,candidate.Url)]=candidate;
@@ -86,7 +98,7 @@ public sealed partial class MainWindow
                     var bytes = await providers.DownloadAsync(provider,source,token);
                     source = await new ApplicationImageCache(Path.Combine(AppPaths.LocalDataRoot,"integrations")).SaveAsync(identity,type,bytes,token);
                 }
-                bool delivered = await _uwpXbox.DownloadAndApplySteamGridDbArtworkAsync(game, type, new(source, option.Preview, option.Width, option.Height));
+                bool delivered = await _uwpXbox.DownloadAndApplySteamGridDbArtworkAsync(game, type, new(source, option.Preview, option.Width, option.Height), token);
                 string chosenPath = type switch { "cover" => game.SteamGridDbCoverPath,"banner" => game.SteamGridDbBannerPath,"hero" => game.SteamGridDbHeroPath,"logo" => game.SteamGridDbLogoPath,"icon" => game.SteamGridDbIconPath,_ => throw new ArgumentException("Unknown artwork type.") };
                 if (!File.Exists(chosenPath)) throw new IOException("Selected artwork was not saved.");
                 selectedArtworkSources.TryGetValue((type,option.Url),out var trustedSource);

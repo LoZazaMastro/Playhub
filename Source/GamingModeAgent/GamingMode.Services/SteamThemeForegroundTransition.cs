@@ -1,8 +1,8 @@
 namespace GamingMode.Services;
 
-// A delivered desktop exit can briefly leave no foreground window, or expose
-// the Windows desktop, before the following explicit Big Picture request.
-internal sealed class SteamThemeForegroundTransition(bool settlingDeliveredExit, uint? requestInputTick)
+// Cold login or a delivered desktop exit can briefly expose the real Windows
+// desktop before Big Picture. Only unchanged input admits that startup transition.
+internal sealed class SteamThemeForegroundTransition(bool settlingDeliveredExit, uint? requestInputTick, bool coldBoot = false)
 {
     private bool _seenMain, _cancelled;
     internal string? CancellationReason { get; private set; }
@@ -11,7 +11,7 @@ internal sealed class SteamThemeForegroundTransition(bool settlingDeliveredExit,
     {
         if (_cancelled) return false;
         if (exactMainForeground) _seenMain = true;
-        bool neutralTransition = settlingDeliveredExit && neutralDesktopForeground;
+        bool neutralTransition = (settlingDeliveredExit || coldBoot) && neutralDesktopForeground;
         bool allowed = exactMainForeground || (!_seenMain && (neutralTransition
             ? requestInputTick.HasValue && currentInputTick == requestInputTick
             : originalForeground || verifiedSteamForeground));
@@ -20,7 +20,7 @@ internal sealed class SteamThemeForegroundTransition(bool settlingDeliveredExit,
             _cancelled = true;
             CancellationReason = _seenMain ? "left-confirmed-main"
                 : !neutralDesktopForeground ? "foreign-foreground"
-                : !settlingDeliveredExit ? "neutral-without-pending-exit"
+                : !settlingDeliveredExit && !coldBoot ? "neutral-without-pending-exit"
                 : !requestInputTick.HasValue || !currentInputTick.HasValue ? "input-proof-unavailable"
                 : "new-desktop-input";
         }

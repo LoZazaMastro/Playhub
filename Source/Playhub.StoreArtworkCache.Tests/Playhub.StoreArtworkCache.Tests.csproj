@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Playhub/Services/StoreLibraryArtworkCache.cs" Link="Production/StoreLibraryArtworkCache.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/ApplicationImageCache.cs" Link="Production/ApplicationImageCache.cs" />
+    <Compile Include="../ApplicationIntegrations/ApplicationIntegrationDataStore.cs" Link="Production/ApplicationIntegrationDataStore.cs" />
+    <Compile Include="../Shared/StoreLibraryModels.cs" Link="Production/StoreLibraryModels.cs" />
+    <Compile Include="../Shared/StoreXboxCatalogModels.cs" Link="Production/StoreXboxCatalogModels.cs" />
+  </ItemGroup>
+</Project>

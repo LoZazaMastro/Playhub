@@ -1,7 +1,7 @@
 // Stable persisted IDs: audio is Video (third); performance is Audio (fourth).
 export const CONTROL_TABS = ["home", "store", "audio", "performance", "graphics", "controller", "decky"] as const;
 export type ControlTab = typeof CONTROL_TABS[number];
-export const CONTROL_SECTION_IDS = ["topbar-date", "device", "device/details", "news", "daily-history", "measurement", "display", "mixer", "devices", "power", "game", "shaders", "radeon", "lossless", "agent"] as const;
+export const CONTROL_SECTION_IDS = ["topbar-date", "device", "device/details", "news", "daily-history", "measurement", "display", "mixer", "devices", "power", "game", "shaders", "nvidia", "radeon", "lossless", "agent"] as const;
 export function normalizeExpandedSections(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   const expanded = new Set(value.slice(0, 64).filter(id => typeof id === "string"));

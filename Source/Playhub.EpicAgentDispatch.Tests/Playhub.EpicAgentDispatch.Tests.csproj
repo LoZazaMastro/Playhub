@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors><NoWarn>CA1416</NoWarn></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/EpicProtocolLaunchRequest.cs;../Shared/EpicLaunchCatalog.cs" Link="%(Filename)%(Extension)" />
+    <Compile Include="../Playhub.GameSession/EpicProtocolBrokerClient.cs;../Playhub.GameSession/ExplorerProtocolDispatch.cs" Link="%(Filename)%(Extension)" />
+    <Compile Include="../GamingModeAgent/GamingMode.Services/EpicProtocolLaunchBroker.cs;../GamingModeAgent/GamingMode.Services/XboxShellBroker.cs" Link="%(Filename)%(Extension)" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>

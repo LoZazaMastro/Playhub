@@ -794,6 +794,7 @@ export function installNavigationHaptics(): () => void {
   let lastButtonAt = -Infinity;
   let lastKeyboardAt = -Infinity;
   let controllerInput: { index: number; at: number } | undefined;
+  const heldNavigation = new Map<number, Set<number>>();
   let lastFocusAction: HapticAction | null = null;
   let lastFocusActionAt = 0;
   const identities = new WeakMap<HTMLElement, number>();
@@ -816,6 +817,7 @@ export function installNavigationHaptics(): () => void {
       stopActiveHaptics();
     }
     controllerInput = undefined;
+    heldNavigation.clear();
   };
   const onKeyboard = (event: Event) => {
     if (!event.isTrusted) return;
@@ -830,18 +832,22 @@ export function installNavigationHaptics(): () => void {
   const onBlur = (event: Event) => {
     // Capturing blur also sees ordinary focus changes between controls.
     // Only leaving the window loses the corresponding keyboard key-up events.
-    if (event.target === event.currentTarget) heldKeys.clear();
+    if (event.target === event.currentTarget) {
+      heldKeys.clear();
+      interruptControllerFeedback();
+    }
   };
 
-  const controllerForFocus = (now: number) => controllerInput && now - controllerInput.at <= CONTROLLER_FOCUS_WINDOW_MS
+  const controllerForFocus = (now: number) => controllerInput &&
+    (now - controllerInput.at <= CONTROLLER_FOCUS_WINDOW_MS || !!heldNavigation.get(controllerInput.index)?.size)
     && controllerFor(controllerInput.index) ? controllerInput.index : undefined;
 
   const playFocusAction = (action: HapticAction) => {
     const now = performance.now();
     const index = controllerForFocus(now);
     if (index === undefined) return;
-    if (now - lastButtonAt < 180) return;
-    if (lastFocusAction === action && now - lastFocusActionAt < 140) return;
+    if (now - lastButtonAt < 60) return;
+    if (lastFocusAction === action && now - lastFocusActionAt < 35) return;
     lastFocusAction = action;
     lastFocusActionAt = now;
     playNavigationHaptic(action, index);
@@ -893,7 +899,11 @@ export function installNavigationHaptics(): () => void {
   };
   bindLetterObservers();
   const inspectFocus = () => {
-    if (!config.enabled || !steamIsForeground()) return;
+    if (!config.enabled || !steamIsForeground()) {
+      controllerInput = undefined;
+      heldNavigation.clear();
+      return;
+    }
     const element = focusedControl();
     if (!element) return;
     let identity = identities.get(element);
@@ -1004,10 +1014,23 @@ export function installNavigationHaptics(): () => void {
         const button = message?.eButton ?? message?.nButton ?? message?.button ?? args[1];
         const pressed = message?.bPressed ?? message?.bDown ?? message?.pressed ?? args[2];
         const now = performance.now();
+        if (pressed === false && Number.isInteger(index) && Number.isInteger(button)) {
+          const held = heldNavigation.get(index);
+          held?.delete(button);
+          if (!held?.size) heldNavigation.delete(index);
+          return;
+        }
         if (!config.enabled || pressed !== true || !Number.isInteger(button) || !controllerFor(index)
           || heldKeys.size > 0 || now - lastKeyboardAt <= KEYBOARD_COLLISION_WINDOW_MS || !steamIsForeground()) return;
         controllerInput = { index, at: now };
         const action = actionForButton(button);
+        // Steam repeats focus movement while a direction remains physically
+        // held; it does not have to repeat the original button-down message.
+        if (action && ["moveUp", "moveDown", "moveLeft", "moveRight", "tabPrevious", "tabNext"].includes(action) ||
+            [5, 7, 12, 13, 22, 23].includes(button)) {
+          const held = heldNavigation.get(index) ?? new Set<number>();
+          held.add(button); heldNavigation.set(index, held);
+        }
         if (action) {
           lastButtonAt = now;
           playNavigationHaptic(action, index);
@@ -1017,6 +1040,7 @@ export function installNavigationHaptics(): () => void {
   } catch {}
 
   return () => {
+    heldNavigation.clear();
     stopActiveHaptics();
     window.clearInterval(observerTimer);
     if (focusFrame !== undefined) window.cancelAnimationFrame(focusFrame);

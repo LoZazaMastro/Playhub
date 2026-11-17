@@ -14,6 +14,8 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
     private readonly SessionAttestation _attestation = new();
     private SteamRawInputRelayTrial(string library, string bus) { _library = library; _bus = bus; }
     private SteamInputSessionOutput? _sessionOutput;
+    private ReaderOutcome? _stoppedReader;
+    internal void RememberStoppedReader(ReaderOutcome outcome) => _stoppedReader=outcome.CanResume?outcome:null;
     internal bool NeutralHeld => _sessionOutput?.NeutralHeld==true;
     internal bool NoSessionOutput => _sessionOutput is null;
     // A completed, detached reader is never revived. A new admission must
@@ -28,6 +30,7 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
     internal void ConfirmSourceDisconnected() { _attestation.ConfirmSourceDisconnected(); EndOutput(); }
     private bool EndOutput()
     {
+        _stoppedReader=null;
         var held=_sessionOutput;if(held is null)return true;
         held.Dispose();if(!held.CleanupConfirmed)return false;
         _sessionOutput=null;return true;
@@ -78,8 +81,13 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
     internal readonly record struct ReaderOutcome(bool Attested, bool SourceRemoved, bool CleanupConfirmed,
         RelayExit? EndReason = null, bool NeutralHeld = false, bool ReaderReleased = false,
         bool ExplicitScopeEnded = false, int ReaderPid = 0, long ReaderBirth = 0, long Epoch = 0, bool ReaderStopped = false, bool ParentScopeRevoked = false,
-        bool TerminalScopeLost = false)
+        bool TerminalScopeLost = false, bool StartDeferred = false)
     {
+        // This records only an authenticated opening veto BEFORE Process.Start.
+        // It is not a reader, released report, pause/resume or input grant.
+        internal bool DeferredBeforeStart=>StartDeferred&&!Attested&&!SourceRemoved&&!CleanupConfirmed
+            &&EndReason is null&&!NeutralHeld&&!ReaderReleased&&!ExplicitScopeEnded
+            &&ReaderPid==0&&ReaderBirth==0&&Epoch==0&&!ReaderStopped&&!ParentScopeRevoked&&!TerminalScopeLost;
         internal bool CanResume => Attested && !CleanupConfirmed && NeutralHeld && ReaderReleased && ReaderStopped && (ExplicitScopeEnded || ParentScopeRevoked)
             && !SourceRemoved && ReaderPid > 0 && ReaderBirth > 0 && Epoch > 0
             && EndReason is RelayExit.FocusLost or RelayExit.OverlayOpened;
@@ -99,7 +107,8 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
 
     internal ReaderOutcome Run(Process child, TrustedSteamFiles steam, string inventory, SessionBinding binding,
         long focusEpoch, Func<bool> ownsInput, CancellationToken cancellation, Func<bool>? sessionCurrent = null, Func<RelayExit?>? readPause = null,
-        SteamTrackedWrapperChain.ReaderProof? wrapperReader = null,Func<RelayExit?>? readCapturedPause = null)
+        SteamTrackedWrapperChain.ReaderProof? wrapperReader = null,Func<RelayExit?>? readCapturedPause = null,
+        Func<Playhub.Shared.SteamMirrorNativeVisibleDto?>? readNativeVisible = null,Func<bool>? nativeBootstrapScope = null)
     {
         bool tracked = false, layout = false, layoutSeen = false, complete = false, shadow = false, combined = false, sourceRemoved = false;
         var authorization = ReaderAuthorization.None;
@@ -123,6 +132,17 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
         bool SessionCurrent() => !cancellation.IsCancellationRequested && (sessionCurrent?.Invoke() ?? ownsInput())
             && (wrapperReader is null || wrapperReader.Current(binding));
         bool Current() => SessionCurrent() && ownsInput() && !child.HasExited;
+        if(_sessionOutput is {} previousOutput&&!previousOutput.MatchesSession(binding))
+        {
+            var prior=previousOutput.ReleasedReader;
+            if(_stoppedReader is not {} stopped||prior is not {} original
+                ||!_attestation.CanRebindWindow(original.Session,binding,stopped,focusEpoch)
+                ||!previousOutput.RebindWindow(stopped,binding,focusEpoch,Current)
+                ||!_attestation.RebindWindow(original.Session,binding,stopped,focusEpoch))
+            {PackagedLaunchLog.Info("Steam input window handoff refused: previous stopped reader or exact game session unavailable.");EndOutput();return default;}
+            _stoppedReader=null;
+            PackagedLaunchLog.Info($"Steam input window handoff verified: old-reader={stopped.ReaderPid}; old-epoch={stopped.Epoch}; new-epoch={focusEpoch}; same-neutral-PDO=True.");
+        }
         bool CanForward() => Current() && !complete && authorization != ReaderAuthorization.None
             && layout && releasedFrames.Ready && latest is { } report
             && Environment.TickCount64 - report.Tick is >= 0 and <= InputMaxAgeMs && Current();
@@ -193,6 +213,11 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
                 or System.ComponentModel.Win32Exception) { }
         }
 
+        Playhub.Shared.SteamMirrorNativeVisibleDto? bootstrapVisible=null;
+        bool NativeNeutralScope()=>nativeBootstrapScope is not null&&!complete&&!child.HasExited
+            &&SessionCurrent()&&nativeBootstrapScope()&&SessionCurrent();
+        Playhub.Shared.SteamMirrorNativeVisibleDto? ReadBootstrapVisible()=>
+            ReadNativeVisibleBootstrap(readNativeVisible,binding,NativeNeutralScope);
         SteamNativeOverlayInputPresentationBridge.Command? bootstrapPrepare=null;
         SteamNativeOverlayInputPresentationBridge.Command? ReadBootstrapPrepare()
         {
@@ -207,10 +232,13 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
             // A transient missing file remains neutral; it never means Connected
             // and the issuer must still prove its physical source before769.
             if(inventoryNow.Shadow||inventoryNow.Source is {} other&&other!=source)return false;
-            return bootstrapPrepare is {} expected&&!complete&&!child.HasExited&&authorization!=ReaderAuthorization.None
+            return (bootstrapPrepare is not null||bootstrapVisible is not null)&&!complete&&!child.HasExited&&authorization!=ReaderAuthorization.None
                 &&layout&&releasedFrames.Ready&&!inventorySuspended&&!shadow&&!sourceRemoved
-                &&latest is {} frame&&Environment.TickCount64-frame.Tick is >=0 and <=InputMaxAgeMs
-                &&PendingNativePrepare(expected,binding,Current);
+                &&latest is {} frame&&(bootstrapVisible is null||frame.Report.Released)
+                &&Environment.TickCount64-frame.Tick is >=0 and <=InputMaxAgeMs
+                &&(bootstrapPrepare is {} expected?PendingNativePrepare(expected,binding,Current)
+                    :bootstrapVisible is {} original&&ReadBootstrapVisible()is {} actual
+                        &&SteamNativeVisibleInputCycle.SameIdentity(original,actual));
         }
         RelayExit? ReadSubmitPause()
         {
@@ -231,7 +259,7 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
         RelayObservation Observe()=>ObserveCore(false);
         RelayObservation ObserveCore(bool allowNeutralBootstrap)
         {
-            if(allowNeutralBootstrap)bootstrapPrepare=null;
+            if(allowNeutralBootstrap){bootstrapPrepare=null;bootstrapVisible=null;}
             // Keep retained session identity distinct from foreground. A known
             // focus pause is not EOF; a missing/malformed terminal remains STOP.
             PollPackets();
@@ -241,7 +269,8 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
             // receipt. Actual pause reads remain unchanged for terminal diagnosis.
             var scopeEnd=ObserveParentScope(ownsInput,readPause,
                 ()=>!complete&&!child.HasExited&&SessionCurrent(),ref parentPause,ref parentPauseCaptured,readCapturedPause:readCapturedPause);
-            if(scopeEnd==RelayExit.OverlayOpened&&(!allowNeutralBootstrap||(bootstrapPrepare=ReadBootstrapPrepare())is null))
+            if(scopeEnd==RelayExit.OverlayOpened&&(!allowNeutralBootstrap
+                ||(bootstrapPrepare=ReadBootstrapPrepare())is null&&(bootstrapVisible=ReadBootstrapVisible())is null))
                 return new(true,true,true,false,false,source,null);
             if(scopeEnd==RelayExit.FocusLost)return new(true,false,false,false,false,source,null);
             if (child.HasExited) return new(true, true, false, false, false, source, null);
@@ -268,16 +297,19 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
                 report=ReleasedReport(observed,now,releasedFrames.Ready);
             }
             Track(now);
-            if (authorization == ReaderAuthorization.None && layout && fresh && !complete && ownsInput())
+            bool neutralVisible=bootstrapVisible is not null&&releasedFrames.Ready&&report is {Released:true}
+                &&status==InventoryStatus.Current&&NativeNeutralScope();
+            if (authorization == ReaderAuthorization.None && layout && fresh && !complete && (ownsInput()||neutralVisible))
             {
-                authorization = _attestation.Authorize(binding, focusEpoch, tracked, nativeFresh: true, sessionCurrent: Current(), wrapperReader);
+                authorization = _attestation.Authorize(binding, focusEpoch, tracked, nativeFresh: true,
+                    sessionCurrent: neutralVisible?NativeNeutralScope():Current(), wrapperReader);
                 if (authorization == ReaderAuthorization.SteamTrackedWrapperChain)
                     PackagedLaunchLog.Info($"Steam input reader authorization: proof={authorization}; reader={childId}; birth={childStarted.ToFileTimeUtc()}; epoch={focusEpoch}; tracked-in-log={tracked}.");
             }
             var finalScope=ObserveParentScope(ownsInput,readPause,
                 ()=>!complete&&!child.HasExited&&SessionCurrent(),ref parentPause,ref parentPauseCaptured,readFirst:false,readCapturedPause:readCapturedPause);
             return new RelayObservation(true, finalScope!=RelayExit.FocusLost, finalScope==RelayExit.OverlayOpened,
-                authorization != ReaderAuthorization.None && layout && !complete,
+                authorization != ReaderAuthorization.None && layout && !complete&&(bootstrapVisible is null||BootstrapCurrent()),
                 shadow || state.Shadow, status == InventoryStatus.Revoked ? null : source, report);
         }
 
@@ -288,7 +320,7 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
             // An early native refusal can be written before the tracking poll
             // runs, or before this worker observes that the process exited.
             PollPackets();
-            if (complete || !Current()) break;
+            if (complete || !Current()&&ReadBootstrapVisible()is null) break;
             var ready = ObserveCore(true);
             if (ready.SyntheticVisibleToSteam || ready.Source != source) break;
             if (ready.CanObserveOutput && releasedFrames.Ready && ready.Source == source && ready.Report is not null)
@@ -303,7 +335,7 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
                         childStarted.ToFileTimeUtc(), focusEpoch);
                     var readerLease = sessionOutput.Borrow(readerBinding, CanForward, ReadSubmitPause);
                     if (readerLease is null) return default;
-                    bool neutralBootstrap=ready.OverlayOwnsInput&&ready.ExactSession&&ready.ExactGameForeground&&bootstrapPrepare is not null;
+                    bool neutralBootstrap=ready.OverlayOwnsInput&&ready.ExactSession&&ready.ExactGameForeground&&(bootstrapPrepare is not null||bootstrapVisible is not null);
                     var result = neutralBootstrap ? HoldNeutralForPause(readerLease,BootstrapCurrent)
                         : SteamInputRelay.Run(Observe, () => new CountedOutput(readerLease, () => forwarded++),
                             () => Environment.TickCount64, delay => cancellation.WaitHandle.WaitOne(delay),cancellation);
@@ -366,6 +398,25 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
             + $"controls-received={sequence}; steam-shadow={shadow}; layout-seen={layoutSeen}; "
             + $"tracked-log={trackedInLog}; reader-proof={authorization}; native-exit={exit}; scope-current={ownsInput()}.");
         return default;
+    }
+
+    // The caller supplies a canonical native-session reader, not browser UI.
+    // Two real physical reads plus the independent retained frame/source guard
+    // attest only neutral preparation; this never grants CanForward.
+    internal static Playhub.Shared.SteamMirrorNativeVisibleDto? ReadNativeVisibleBootstrap(
+        Func<Playhub.Shared.SteamMirrorNativeVisibleDto?>? read,SessionBinding binding,Func<bool> current)
+    {
+        if(read is null||!binding.Valid||!current())return null;
+        var first=read();long now=Environment.TickCount64;
+        bool Bound(Playhub.Shared.SteamMirrorNativeVisibleDto? n,long at)=>
+            Playhub.Shared.SteamMirrorWireProtocol.PositiveNativeVisible(n,at)&&n is not null
+            &&n.OwnerPid==(uint)binding.CompanionPid&&n.OwnerBirth==binding.CompanionBirth.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            &&n.GamePid==binding.GamePid&&n.GameBirth==binding.GameBirth.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            &&n.GameId==binding.GameId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if(!Bound(first,now)||!current())return null;
+        var last=read();now=Environment.TickCount64;
+        if(first is null||last is null||!Bound(last,now)||!SteamNativeVisibleInputCycle.SameIdentity(first,last)||!current())return null;
+        return Bound(last,Environment.TickCount64)?last:null;
     }
 
     internal static bool PendingNativePrepare(SteamNativeOverlayInputPresentationBridge.Command expected,
@@ -443,6 +494,8 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
         // process and exact game process, and is rechecked before every action.
         internal bool SameRetainedSession(SessionBinding other) => ReferenceEquals(SteamSession, other.SteamSession)
             && this with { Source = other.Source } == other;
+        internal bool SameGameLifetime(SessionBinding other) => ReferenceEquals(SteamSession,other.SteamSession)
+            && this with { Window=other.Window,WindowThread=other.WindowThread,WindowOwner=other.WindowOwner } == other;
     }
 
     internal enum ReaderAuthorization { None, SteamLog, RetainedSession, SteamTrackedWrapperChain }
@@ -458,6 +511,16 @@ internal sealed class SteamRawInputRelayTrial : IDisposable
         private (SessionBinding Binding, long Epoch, bool RequiresWrapperChain)? _proof;
         private (SessionBinding Binding, long Epoch)? _steamProof;
         private bool _reconnecting;
+        internal bool CanRebindWindow(SessionBinding old,SessionBinding next,ReaderOutcome stopped,long epoch) => stopped.CanResume
+            &&old.Valid&&next.Valid&&old.SameGameLifetime(next)&&epoch>stopped.Epoch
+            &&_proof is {RequiresWrapperChain:false} held&&held.Binding==old&&held.Epoch==stopped.Epoch;
+        internal bool RebindWindow(SessionBinding old,SessionBinding next,ReaderOutcome stopped,long epoch)
+        {
+            if(!CanRebindWindow(old,next,stopped,epoch))return false;
+            _proof=(next,stopped.Epoch,false);
+            if(_steamProof is {} tracked&&tracked.Binding==old)_steamProof=(next,tracked.Epoch);
+            return true;
+        }
         internal void Revoke() => _proof = null;
         // Keep only immutable parent/game/Steam tracking. Every native reader
         // and controller report must be newly attested after the connection

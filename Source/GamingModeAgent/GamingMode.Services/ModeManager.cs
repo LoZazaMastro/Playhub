@@ -29,6 +29,25 @@ public sealed class ModeManager
 	private readonly SemaphoreSlim _modeSwitch = new(1, 1);
 	private readonly object _applyMode = new();
 	private readonly SteamModeCommandState _steamModeCommands = new();
+	private long _explicitDesktopRevision;
+	private Func<bool>? _configuredBootGuard;
+	internal bool ConfiguredBootMayProceed => _configuredBootGuard?.Invoke() ?? !SafeModeGuard.ShouldForceDesktop(_paths);
+    // Private bootstrap retirement is synchronous and cannot queue behind a
+    // successful Desktop transition. Never modifies the configured preference.
+    internal bool WithShellBootstrapGaming(Func<bool> action)
+    {
+#if PLAYHUB_XBOX_SHELL_BOOTSTRAP
+        if(!Monitor.TryEnter(_applyMode))return false;
+        try{
+            var config=_store.LoadConfig();
+            if(_store.LoadState().CurrentMode!=ModeKind.Gaming||IsSystemShuttingDown()
+                ||!ShellFreeOverlayTrialPolicy.MayRunWithoutExplorer(config.Gaming))return false;
+            return action();
+        }finally{Monitor.Exit(_applyMode);}
+#else
+        return false;
+#endif
+    }
 	public event Action? ModeTransitionStarted;
 	public event Action<bool>? ModeTransitionCompleted;
 	public SteamModeCommand? ReadSteamModeCommand() => _steamModeCommands.Read();
@@ -50,6 +69,7 @@ public sealed class ModeManager
 	public async Task ApplyBootModeAsync(bool isShellHost)
 	{
 		_logger.Info(isShellHost ? "Applying boot mode from Gaming Mode shell." : "Applying boot mode from startup agent.");
+		long desktopRevision = Interlocked.Read(ref _explicitDesktopRevision);
 		ModeConfig config = _store.LoadConfig();
 		ModeKind? requestedNextBootMode = config.NextBootMode;
 		ModeKind mode = requestedNextBootMode ?? config.DefaultMode;
@@ -67,10 +87,35 @@ public sealed class ModeManager
 			config.NextBootMode = null;
 			_store.SaveConfig(config);
 		}
-		await ApplyModeAsync(mode, $"Applied {mode} at login", interactive: false, restoreStartupApps: false);
+		Func<bool> bootGuard = () => mode == ModeKind.Gaming &&
+			Interlocked.Read(ref _explicitDesktopRevision) == desktopRevision && !SafeModeGuard.ShouldForceDesktop(_paths);
+		_configuredBootGuard = bootGuard;
+		var previousGuard = StartupForegroundGuard;
+		StartupForegroundGuard = bootGuard;
+		try
+		{
+		// Process and service readiness may take several seconds during Windows sign-in.
+		// Keep that wait off the caller while the independent splash dispatcher paints.
+		ApiResult applied = await Task.Run(() => ApplyModeAsync(mode, $"Applied {mode} at login",
+			interactive: false, restoreStartupApps: false));
+		if (!applied.Ok)
+		{
+			if (mode == ModeKind.Gaming && !bootGuard())
+			{
+				ApiResult desktop = await Task.Run(() => ApplyModeAsync(ModeKind.Desktop,
+					"Desktop requested during startup", interactive: false, restoreStartupApps: false));
+				if (!desktop.Ok) throw new InvalidOperationException("Desktop recovery failed: " + desktop.Message);
+			}
+			throw new InvalidOperationException("Boot mode could not be applied: " + applied.Message);
+		}
 		ModeKind modeKind = ((!requestedNextBootMode.HasValue) ? mode : config.DefaultMode);
 		_shellTools.SetShellForMode(modeKind);
 		_logger.Info($"Future sign-in shell set to {modeKind}.");
+		}
+		finally
+		{
+			if (ReferenceEquals(StartupForegroundGuard, bootGuard)) StartupForegroundGuard = previousGuard;
+		}
 	}
 
 	// RIACCENSIONE DEI SERVIZI QUANDO L'AGENTE RIPARTE.
@@ -89,7 +134,7 @@ public sealed class ModeManager
 		try
 		{
 			ModeConfig config = _store.LoadConfig();
-			if (!_processTools.StartExplorer(background: true))
+			if (!ShellFreeOverlayTrialPolicy.MayRunWithoutExplorer(config.Gaming) && !_processTools.StartExplorer(background: true))
 				throw new InvalidOperationException("The desktop shell required by Gaming Mode overlays is unavailable.");
 			_logger.Info($"Resuming Gaming Mode services after agent restart; borderless={config.Gaming.BorderlessFullscreenWindowsInGamingMode}.");
 			_volumeKeys.Start();
@@ -107,6 +152,7 @@ public sealed class ModeManager
 
 	public Task<ApiResult> ApplyModeAsync(ModeKind mode, string action, bool interactive = true, bool restoreStartupApps = true, bool updateShell = false)
 	{
+		if (mode == ModeKind.Desktop) Interlocked.Increment(ref _explicitDesktopRevision);
 		lock (_applyMode) return ApplyMode(mode, action, interactive, restoreStartupApps, updateShell);
 	}
 
@@ -240,13 +286,14 @@ public sealed class ModeManager
 
 	public async Task<ApiResult> SwitchToModeAsync(ModeKind mode, bool forceApply = false)
 	{
+		if (mode == ModeKind.Desktop) Interlocked.Increment(ref _explicitDesktopRevision);
 		if (!await _modeSwitch.WaitAsync(0))
 			return ApiResult.Failure("A mode switch is already in progress.", GetStatus());
 		try
 		{
 			// Una richiesta duplicata non deve riaprire l'animazione o rilanciare processi.
             var currentState = _store.LoadState();
-            if (!forceApply && currentState.CurrentMode == mode && currentState.LastAppliedAt.HasValue && string.IsNullOrEmpty(currentState.LastError) && ProcessTools.IsExplorerShellRunning())
+            if (!forceApply && currentState.CurrentMode == mode && currentState.LastAppliedAt.HasValue && string.IsNullOrEmpty(currentState.LastError) && (ProcessTools.IsExplorerShellRunning() || (mode == ModeKind.Gaming && ShellFreeOverlayTrialPolicy.MayRunWithoutExplorer(_store.LoadConfig().Gaming))))
                 return ApiResult.Success($"Already in {mode} Mode.", GetStatus());
             using SplashScreenService transition = new(_logger);
             SteamThemeStartupCover? themedStartup = null;
@@ -420,8 +467,10 @@ public sealed class ModeManager
 			}
 				// An Explorer folder window is not the desktop shell. Recovery must
 				// also work after a configuration change or a failed plugin startup.
-				if (recovery.ShouldRestore(ProcessTools.IsExplorerShellRunning, isGaming, IsSteamProcessRunning, IsSystemShuttingDown))
-					await ApplyModeAsync(ModeKind.Desktop, "Safety watchdog restored Desktop Mode", interactive: false, restoreStartupApps: false, updateShell: false);
+				Task? restore = recovery.TryRestoreCurrent(_applyMode, ProcessTools.IsExplorerShellRunning,
+					isGaming, IsSteamProcessRunning, IsSystemShuttingDown,
+					() => ApplyModeAsync(ModeKind.Desktop, "Safety watchdog restored Desktop Mode", interactive: false, restoreStartupApps: false, updateShell: false));
+				if (restore is not null) await restore;
 			}
 			catch (Exception error)
 			{
@@ -450,17 +499,27 @@ public sealed class ModeManager
 	{
 		// The exact Explorer shell is a runtime dependency of both Win32 and
 		// packaged-game overlay/HUD brokers. Keep it behind the fullscreen UI.
-		if (!_processTools.StartExplorer(background: true))
-			throw new InvalidOperationException("The desktop shell required by Gaming Mode overlays is unavailable.");
-		messages.Add("Desktop shell is available in the background for overlay compatibility.");
+        bool shellFree = ShellFreeOverlayTrialPolicy.MayRunWithoutExplorer(config.Gaming);
+        if (shellFree)
+        {
+            if (StartupForegroundGuard?.Invoke() == false) throw new OperationCanceledException("Gaming Mode opening was cancelled.");
+            if (!_processTools.StopExplorer()) throw new InvalidOperationException("Explorer could not remain stopped for the shell-free overlay trial.");
+            messages.Add("Explorer-free overlay trial is active.");
+        }
+        else
+        {
+            if (!_processTools.StartExplorer(background: true, canContinue: StartupForegroundGuard))
+                throw new InvalidOperationException("The desktop shell required by Gaming Mode overlays is unavailable.");
+            messages.Add("Desktop shell is available in the background for overlay compatibility.");
+        }
 		if (config.Gaming.EnsureSunshineCompatibilityInGamingMode)
 		{
 			_processTools.EnsureSunshineCompatibilityServices();
 		}
 		_volumeKeys.Start();
 		_windowFocus.Start(config.Gaming.BorderlessFullscreenWindowsInGamingMode);
-		if (config.Gaming.CloseExplorerInGamingMode)
-			messages.Add("The legacy shell-close request was not applied because overlays require the desktop shell.");
+		if (config.Gaming.CloseExplorerInGamingMode && !shellFree)
+			messages.Add("Windows shell stays in the background for overlay compatibility.");
 		if (config.Gaming.AutoHideMouseCursorInGamingMode)
 		{
 			_cursorAutoHide.Start(config.Gaming.AutoHideMouseCursorAfterMs);

@@ -45,7 +45,7 @@ internal static class SteamMirrorOwnedForegroundChecks
   var b=Wire();void U32(int p,uint v)=>BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(p),v);void U64(int p,ulong v)=>BinaryPrimitives.WriteUInt64LittleEndian(b.AsSpan(p),v);
   U32(8,m.State);U64(88,m.Generation);U64(104,(ulong)m.ExpiresAt);U64(112,(ulong)m.ObservedAt);U64(128,(ulong)m.DestinationWindow);U64(144,m.DestinationCookie);
   U32(176,(uint)m.ForegroundScope);U32(180,(uint)m.OwnedForegroundPhase);U64(184,(ulong)m.ReadAt);U32(192,m.PreparedCurrent?1u:0u);U32(196,m.ShownCurrent?1u:0u);
-  U32(200,m.PreparedCurrent?1u:0u);U32(204,m.DestinationShown?1u:0u);U32(208,m.DwmAttached?1u:0u);U32(212,m.CleanupComplete?1u:0u);return b;
+  U32(200,m.PreparedCurrent?1u:0u);U32(204,m.DestinationShown?1u:0u);U32(208,m.CompositionAttached?1u:0u);U32(212,m.CleanupComplete?1u:0u);return b;
  }
  internal static void Run(Action<bool,string> check)
  {
@@ -81,7 +81,7 @@ internal static class SteamMirrorOwnedForegroundChecks
   Check(SteamMirrorInputCycle.MatchAfterGetters(m,m with{ExpiresAt=2100},Now) is not null,"samegeneration current renewal joins");
   foreach(uint bad in new uint[]{3,0xffffffff}){var wire=Wire();BinaryPrimitives.WriteUInt32LittleEndian(wire.AsSpan(180),bad);Check(Parse(wire) is null,"invalid native foreground phase "+bad);}
   var noHandoff=Wire();BinaryPrimitives.WriteUInt32LittleEndian(noHandoff.AsSpan(180),0);Check(Parse(noHandoff) is null,"scope3 requires explicit handoff debt phase");
-  var terminal=m with{State=0,PreparedCurrent=false,ShownCurrent=false,DestinationShown=false,DwmAttached=false,CleanupComplete=true,DestinationWindow=0,DestinationCookie=0,ForegroundScope=SteamMirrorForegroundScope.None};
+  var terminal=m with{State=0,PreparedCurrent=false,ShownCurrent=false,DestinationShown=false,CompositionAttached=false,CleanupComplete=true,DestinationWindow=0,DestinationCookie=0,ForegroundScope=SteamMirrorForegroundScope.None};
   Check(Parse(RecordWire(terminal)) is {OwnedForegroundPhase:SteamMirrorOwnedForegroundPhase.AwaitingNativeClose},"closed visual cleanup preserves phase1");
   var terminalDto=SteamMirrorStatus.ToDto(terminal);Check(terminalDto.ActualScope==0&&terminalDto.OwnedForegroundPhase==1&&SteamMirrorWireProtocol.RevokeForegroundFlags(terminalDto).OwnedForegroundPhase==1,"DTO and foreground revocation cannot erase debt");
   var stop=new SteamMirrorOpeningStop(GameId,900,200);stop.Observe(m,Now);stop.Observe(terminal,Now);

@@ -229,6 +229,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
+Amazon Games identification icon
+--------------------------------
+Assets/ServiceLogos/Amazon.png is reproduced from PlayniteExtensions,
+source/Libraries/AmazonGamesLibrary/icon.png at commit
+886468f65724e6fd104f3a09847a17ba57cfb430, under the MIT license below.
+Amazon Games and its logo belong to Amazon; their use identifies the store.
+
 PlayniteExtensions GOG installed-record discovery
 ----------------------------------------------
 GOG installer key and manifest conventions informed this adapter.
@@ -254,3 +261,44 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+Digital store download providers
+-------------------------------
+Legendary 0.21.1 (GPL-3.0-or-later) and Heroic gogdl 1.4.0 (GPL-3.0)
+are redistributed as separate, unmodified Windows executables.
+Their licenses, dependency notices, pinned build inputs and corresponding
+source archives are provided in StoreLibrary/THIRD-PARTY-NOTICES.txt,
+StoreLibrary/Notices and StoreLibrary/CorrespondingSource.
+https://github.com/legendary-gl/legendary
+https://github.com/Heroic-Games-Launcher/heroic-gogdl
+
+Spatial audio control
+---------------------
+SoundVolumeCommandLine (SVCL) 1.28, Copyright (c) Nir Sofer.
+The complete, unmodified freeware package is distributed at no charge.
+Its original license and help are in Assets/SpatialAudio/Svcl/readme.txt
+and svcl.chm, also retained with the Gaming Mode helper payload.
+The vendor license prohibits bundling in a commercial product.
+https://www.nirsoft.net/utils/sound_volume_command_line.html
+
+
+Digital Stores achievements
+---------------------------
+Epic and GOG achievement providers adapt Unifideck Release-0.8.0,
+Copyright (c) mubaraknumann and the Unifideck contributors.
+https://github.com/mubaraknumann/unifideck/tree/Release-0.8.0
+The adapted provider files retain GPL-3.0-or-later headers. Full provenance
+and license text accompany the installed StoreLibrary/Notices files
+Unifideck-0.8.0-NOTICE.txt and GPL-3.0.txt.
+The Windows account-scoped cache and Steam native achievement publisher are
+original Playhub code, Copyright (c) 2026 LoZazaMastro, MIT.
+
+Digital Stores partner logos
+----------------------------
+EA app, Ubisoft Connect and Battle.net badges use the original icons from
+their official Windows launchers, extracted 2026-11-16. The names and logo
+artwork belong to Electronic Arts, Ubisoft and Blizzard Entertainment,
+respectively. They identify the installation provider and do not imply
+affiliation or endorsement. These assets retain their owners' rights and
+are not covered by Playhub's original-code MIT license.

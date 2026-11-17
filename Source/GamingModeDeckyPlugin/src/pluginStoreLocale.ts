@@ -140,6 +140,11 @@ export function getPluginStoreCopy(locale: StoreLocale): PluginStoreCopy {
 }
 
 const categoryRows: Record<string, TranslationRow> = {
+  Audio: ["Audio", "Audio", "Audio", "Audio", "Audio", "Áudio", "Аудіо", "音频", "オーディオ", "오디오", "ऑडियो", "Аудио"],
+  Achievement: ["Achievements", "Achievement", "Logros", "Succès", "Errungenschaften", "Conquistas", "Досягнення", "成就", "実績", "도전 과제", "उपलब्धियाँ", "Достижения"],
+  Controller: ["Controllers", "Controller", "Mandos", "Manettes", "Controller", "Controles", "Контролери", "控制器", "コントローラー", "컨트롤러", "कंट्रोलर", "Контроллеры"],
+  Grafica: ["Graphics", "Grafica", "Gráficos", "Graphismes", "Grafik", "Gráficos", "Графіка", "图形", "グラフィック", "그래픽", "ग्राफ़िक्स", "Графика"],
+  "Accessibilità": ["Accessibility", "Accessibilità", "Accesibilidad", "Accessibilité", "Barrierefreiheit", "Acessibilidade", "Спеціальні можливості", "无障碍", "アクセシビリティ", "접근성", "सुलभता", "Специальные возможности"],
   "Novità": rows.newCategory,
   Playhub: ["Playhub", "Playhub", "Playhub", "Playhub", "Playhub", "Playhub", "Playhub", "Playhub", "Playhub", "Playhub", "Playhub", "Playhub"],
   "Libreria e giochi": ["Library and games", "Libreria e giochi", "Biblioteca y juegos", "Bibliothèque et jeux", "Bibliothek und Spiele", "Biblioteca e jogos", "Бібліотека та ігри", "游戏库与游戏", "ライブラリとゲーム", "라이브러리 및 게임", "लाइब्रेरी और गेम", "Библиотека и игры"],

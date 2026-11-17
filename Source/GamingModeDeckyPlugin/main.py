@@ -75,6 +75,9 @@ _shader_spec.loader.exec_module(_shader_module)
 _shader_cache_spec = importlib.util.spec_from_file_location("playhub_shader_cache", os.path.join(os.path.dirname(__file__), "quick_settings", "shader_cache.py"))
 _shader_cache_module = importlib.util.module_from_spec(_shader_cache_spec)
 _shader_cache_spec.loader.exec_module(_shader_cache_module)
+_nvidia_settings_spec = importlib.util.spec_from_file_location("playhub_nvidia_settings", os.path.join(os.path.dirname(__file__), "quick_settings", "nvidia_settings.py"))
+_nvidia_settings_module = importlib.util.module_from_spec(_nvidia_settings_spec)
+_nvidia_settings_spec.loader.exec_module(_nvidia_settings_module)
 
 def _firmware_board(identity):
     return {"manufacturer": identity.get("board_manufacturer"), "product": identity.get("board_model")}
@@ -151,6 +154,41 @@ _TOPBAR_CLOCK_SELECTORS = ["#header ._1HhLUvHH6BZLIOyOE80TVh", "._1HhLUvHH6BZLIO
 
 
 class Plugin(QuickSettingsPlugin):
+    def _store_sign_in_launcher(self):
+        launcher = getattr(self, '_store_sign_in_helper', None)
+        if launcher is None:
+            module = getattr(self, '_store_library_module', None)
+            if module is None:
+                spec = importlib.util.spec_from_file_location('playhub_store_library', os.path.join(os.path.dirname(__file__), 'store_library.py'))
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                self._store_library_module = module
+            spec = importlib.util.spec_from_file_location('playhub_store_sign_in', os.path.join(os.path.dirname(__file__), 'store_sign_in.py'))
+            auth = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(auth)
+            launcher = auth.StoreSignInLauncher(module.installed_root)
+            self._store_sign_in_helper = launcher
+        return launcher
+
+    async def open_store_sign_in(self, store):
+        return await asyncio.to_thread(self._store_sign_in_launcher().open, store)
+
+    async def store_sign_in_state(self, store):
+        return await asyncio.to_thread(self._store_sign_in_launcher().status, store)
+
+    async def store_library_request(self, method, args):
+        # Lazy loading keeps an unavailable store runtime isolated from QAM startup.
+        module = getattr(self, "_store_library_module", None)
+        if module is None:
+            spec = importlib.util.spec_from_file_location("playhub_store_library", os.path.join(os.path.dirname(__file__), "store_library.py"))
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            self._store_library_module = module
+        return await module.request(method, args)
+
+    async def get_playhub_update_notice(self):
+        return await asyncio.to_thread(self._native_session_post, "/playhub/update", {}, timeout=35, maximum=2048)
+
     @staticmethod
     def _native_session_post(path, query, body=None, *, timeout=2.5, maximum=2048):
         try:
@@ -185,6 +223,15 @@ class Plugin(QuickSettingsPlugin):
     async def set_game_execution_profile(self, app_id, ac, battery):
         return await asyncio.to_thread(lambda: self._game_execution_state(self._execution_profiles.save(app_id, ac, battery)))
 
+    async def get_spatial_audio(self):
+        return await asyncio.to_thread(self._native_session_post, "/session/audio/spatial", None, {"action": "read"}) or {"ok": False}
+
+    async def set_spatial_audio(self, request):
+        if (not isinstance(request, dict) or set(request) != {"endpointId", "expectedFormat", "format"}
+                or any(type(request.get(key)) is not str or not 0 < len(request[key]) <= 1024 for key in request)):
+            return {"ok": False}
+        return await asyncio.to_thread(self._native_session_post, "/session/audio/spatial", None, {"action": "set", **request}) or {"ok": False}
+
     async def game_audio_volume(self, app_id, level=None, token=None):
         if not _execution_module.valid_app(app_id):
             return {"status": "Unavailable"}
@@ -214,9 +261,10 @@ class Plugin(QuickSettingsPlugin):
         return result or {"ok": False}
 
     async def game_runtime_changed(self, request):
-        app_id = _runtime._arg(request, "app_id", 0)
+        # Retire only this withdrawn feature's owned lease. Runtime notifications
+        # for the remaining controls continue; saved profiles/APIs stay intact.
         result, _ = await asyncio.gather(super().game_runtime_changed(request),
-            asyncio.to_thread(self._execution_profiles.observe, app_id))
+            asyncio.to_thread(self._execution_profiles.close))
         return result
 
     async def get_shader_preflight(self, app_id=0):
@@ -227,6 +275,17 @@ class Plugin(QuickSettingsPlugin):
 
     async def set_nvidia_shader_cache(self, request):
         return await asyncio.to_thread(self._shader_cache.set_nvidia, request)
+
+    async def get_nvidia_settings(self):
+        return await asyncio.to_thread(_nvidia_settings_module.invoke, _runtime._run_cmd, _runtime._powershell_path)
+
+    async def set_nvidia_setting(self, request):
+        if not isinstance(request, dict) or set(request) != {"token", "feature", "value"}:
+            return {"available": False, "ok": False, "global": True, "status": "invalid", "settings": []}
+        if request.get("feature") not in _nvidia_settings_module.FEATURES:
+            return {"available": False, "ok": False, "global": True, "status": "invalid", "settings": []}
+        return await asyncio.to_thread(_nvidia_settings_module.invoke, _runtime._run_cmd, _runtime._powershell_path,
+                                       request["token"], request["feature"], request["value"])
 
     def _arm_big_picture_return(self, app_id):
         if type(app_id) is not int or not 0 < app_id <= 0xffffffff:
@@ -408,7 +467,7 @@ class Plugin(QuickSettingsPlugin):
             return {"ok": False}
         result = await asyncio.to_thread(self._native_session_post, "/session/uwp/steam-overlay/mirror",
             {"appId": app_id, "overlayPid": overlay_pid})
-        if isinstance(result.get("mirror"), dict):
+        if isinstance(result.get("mirror"), dict) or (result.get("ok") is True and isinstance(result.get("nativeVisible"), dict)):
             return result
         # A current authenticated session may not have a mirror generation yet.
         # This proves session replacement only; it grants no presentation/input.
@@ -424,6 +483,33 @@ class Plugin(QuickSettingsPlugin):
         return {"ok": False}
 
     async def set_mirror_presentation(self, app_id, overlay_pid, action, expected_mirror):
+        if action == "close-native-visible":
+            if (not _execution_module.valid_app(app_id) or app_id < 0x80000000
+                    or type(overlay_pid) is not int or not 0 < overlay_pid <= 0xffffffff
+                    or type(expected_mirror) is not dict or type(expected_mirror.get("protocol")) is not int or expected_mirror["protocol"] != 1
+                    or type(expected_mirror.get("phase")) is not int or expected_mirror["phase"] != 1
+                    or expected_mirror.get("valveOpen") is not True or expected_mirror.get("ownCleanupComplete") is not True
+                    or expected_mirror.get("inputAuthority") is not False or expected_mirror.get("visualAuthority") is not False):
+                return {"ok": False}
+            text_fields = ("generation", "gameId", "expiresAt", "observedAt", "readAt", "sourceHwnd", "sourceCookie", "ownerBirth", "gameBirth",
+                "physicalObservedAt", "physicalExpiresAt", "guideEpoch", "receiptFrame", "sourceFrame")
+            for key in text_fields:
+                value = expected_mirror.get(key)
+                if (type(value) is not str or not value.isascii() or not value.isdecimal() or not 0 < len(value) <= 20
+                        or value != str(int(value)) or int(value) > 0xffffffffffffffff or int(value) == 0 and key != "receiptFrame"):
+                    return {"ok": False}
+            session = expected_mirror.get("sessionId")
+            if (type(session) is not str or len(session) != 64 or any(c not in "0123456789abcdef" for c in session)
+                    or expected_mirror["gameId"] != str((app_id << 32) | 0x02000000)):
+                return {"ok": False}
+            numeric_fields = ("ownerPid", "gamePid", "baselineSamples", "baselineMatched", "outputSamples", "outputMatched")
+            for key in numeric_fields:
+                if type(expected_mirror.get(key)) is not int or not 0 < expected_mirror[key] <= 0xffffffff:
+                    return {"ok": False}
+            fields = {key: expected_mirror[key] for key in text_fields + numeric_fields + ("sessionId", "protocol", "phase", "valveOpen", "ownCleanupComplete", "inputAuthority", "visualAuthority")}
+            result = await asyncio.to_thread(self._native_session_post, "/session/uwp/steam-overlay/mirror/control", None,
+                {"appId": app_id, "overlayPid": overlay_pid, "action": action, "expectedNativeVisible": fields})
+            return result if result.get("ok") is True else {"ok": False}
         if (not _execution_module.valid_app(app_id) or app_id < 0x80000000
                 or type(overlay_pid) is not int or not 0 < overlay_pid <= 0xffffffff
                 or action not in ("show", "close") or type(expected_mirror) is not dict):
@@ -1575,7 +1661,7 @@ $result | ConvertTo-Json -Compress
             active = next(x for x in order if x in eligible and x not in hidden)
         collapsed = [x for x in preferences.get("collapsed", []) if isinstance(x, str) and len(x) < 80][:64]
         section_ids = ("topbar-date", "device", "device/details", "news", "daily-history", "measurement",
-                       "display", "mixer", "devices", "power", "game", "shaders", "radeon", "lossless", "agent")
+                       "display", "mixer", "devices", "power", "game", "shaders", "nvidia", "radeon", "lossless", "agent")
         requested_sections = preferences.get("expandedSections", [])
         expanded_sections = set(x for x in requested_sections[:64] if isinstance(x, str)) if isinstance(requested_sections, list) else set()
         expanded_sections = [x for x in section_ids if x in expanded_sections]

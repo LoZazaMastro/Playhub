@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/StoreLibraryModels.cs" Link="StoreLibraryModels.cs" />
+    <Compile Include="../Shared/StorePrivateLaunchModels.cs" Link="StorePrivateLaunchModels.cs" />
+    <Compile Include="../Playhub.StoreHost/StoreProvider.cs" Link="StoreProvider.cs" />
+    <Compile Include="../Playhub.StoreHost/StoreStartupRefresh.cs" Link="StoreStartupRefresh.cs" />
+    <Compile Include="../Playhub.StoreHost/SteamDownloadAuthority.cs" Link="SteamDownloadAuthority.cs" />
+  </ItemGroup>
+</Project>

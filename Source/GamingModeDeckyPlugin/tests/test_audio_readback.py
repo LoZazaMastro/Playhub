@@ -4,6 +4,10 @@ import test_panel_backend as panel
 
 
 class AudioReadbackTests(unittest.TestCase):
+    def test_endpoint_volume_uses_windows_sdk_interface_identity(self):
+        # endpointvolume.h / IAudioEndpointVolume: ending in A, not D.
+        self.assertIn('5CDF2C82-841E-4546-9722-0CF74078229A', self.runtime._AUDIO_HELPER_SCRIPT)
+        self.assertNotIn('5CDF2C82-841E-4546-9722-0CF74078229D', self.runtime._AUDIO_HELPER_SCRIPT)
     def setUp(self):
         self.fixture = panel.PanelBackendTests()
         self.fixture.setUp()

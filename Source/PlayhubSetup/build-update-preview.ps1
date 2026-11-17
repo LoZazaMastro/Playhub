@@ -3,7 +3,8 @@
 param([switch]$KeepStage, [string]$ReuseStage, [switch]$Candidate, [string]$XboxOverlayPilotBridge,
     [string]$XboxSteamCompanion, [switch]$XboxSteamControllerLayoutTrial, [string]$XboxSteamInputReader,
     [string]$XboxSteamRelayClient, [string]$XboxSteamRelayLicense, [switch]$XboxCupheadWindowedPreference,
-    [switch]$XboxUwpSteamCompanionTrial, [string]$XboxSteamBandCallback, [string]$HudDisplayNative, [string]$CurtainDisplayNative, [string]$WindowContentObserver)
+    [switch]$XboxUwpSteamCompanionTrial, [string]$XboxSteamBandCallback, [string]$HudDisplayNative, [string]$CurtainDisplayNative, [string]$WindowContentObserver,
+    [switch]$ShellFreeOverlayTrial, [switch]$XboxShellBootstrapTrial)
 
 $ErrorActionPreference = 'Stop'
 $setupRoot = [IO.Path]::GetFullPath($PSScriptRoot)
@@ -23,6 +24,11 @@ $controllerProbe = 'false'
 $controllerLayout = 'false'
 $cupheadWindowedPreference = 'false'
 $uwpSteamCompanion = 'false'
+$shellFreeOverlayManifestHash = ''
+$shellFreeOverlayManifest = ''
+if ($XboxShellBootstrapTrial -and (!$Candidate -or !$ShellFreeOverlayTrial -or $ReuseStage)) {
+    throw 'Xbox shell bootstrap requires a fresh private standalone-overlay candidate.'
+}
 if ($XboxUwpSteamCompanionTrial) {
     if (!$Candidate -or !$XboxSteamCompanion -or $ReuseStage -or $XboxOverlayPilotBridge) {
         throw 'The registered UWP companion trial requires a fresh private Steam companion candidate.'
@@ -76,6 +82,25 @@ if ($CurtainDisplayNative -or $WindowContentObserver) {
         throw 'The first-content component filename or capture pin differs.'
     }
     $curtainDisplayHash = (Get-FileHash -LiteralPath $CurtainDisplayNative -Algorithm SHA256).Hash
+}
+if ($ShellFreeOverlayTrial) {
+    if (!$Candidate -or $ReuseStage -or !$XboxSteamCompanion -or !$HudDisplayNative -or !$CurtainDisplayNative) {
+        throw 'Standalone overlays require a fresh private candidate with all three native presenters.'
+    }
+    . (Join-Path $setupRoot 'Assert-StandalonePresentationCapability.ps1')
+    Assert-StandalonePresentationCapability -Path $XboxSteamCompanion -ExpectedSha256 $companionHash
+    Assert-StandalonePresentationCapability -Path $HudDisplayNative -ExpectedSha256 $hudDisplayHash
+    Assert-StandalonePresentationCapability -Path $CurtainDisplayNative -ExpectedSha256 $curtainDisplayHash
+    $shellFreeOverlayManifest = [ordered]@{
+        schema = 1; mode = 'ordinary-topmost'; band = 1
+        components = [ordered]@{
+            steam = [ordered]@{ file = 'PlayhubSteamCompanion.dll'; sha256 = $companionHash }
+            hud = [ordered]@{ file = 'PlayhubHudDisplayNative.dll'; sha256 = $hudDisplayHash }
+            curtain = [ordered]@{ file = 'PlayhubCurtainDisplayNative.dll'; sha256 = $curtainDisplayHash }
+        }
+    } | ConvertTo-Json -Depth 5 -Compress
+    $shellFreeOverlayManifestHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData(
+        [Text.Encoding]::UTF8.GetBytes($shellFreeOverlayManifest)))
 }
 if ($XboxSteamInputReader) {
     if (!$XboxSteamControllerLayoutTrial) { throw 'The Xbox input reader requires a private controller layout candidate.' }
@@ -167,6 +192,8 @@ function Get-XboxSessionSources([string]$directory) {
                 ($_.Extension -in '.cs', '.csproj', '.cpp', '.c', '.h', '.cmake' -or
                  ($_.Name -cin 'Build.cmd', 'PerMonitor.manifest', 'provenance.json' -and
                   $_.DirectoryName -ieq (Join-Path $directory 'Native\HudDisplay\WindowContent')) -or
+                ($_.Extension -eq '.manifest' -and
+                  $_.DirectoryName -ieq (Join-Path $directory 'Native\ShellFreeDisplay')) -or
                  ($_.Extension -eq '.py' -and $_.FullName -match '[\\/]Native[\\/]HudDisplay[\\/]tests[\\/][^\\/]+\.py$') -or
                  ($_.Name -ceq 'callback-source.sha256' -and $_.FullName -match '[\\/]Native[\\/]HudDisplay[\\/]tests[\\/]callback-source\.sha256$') -or
                  $_.Name -in 'LICENSE', 'NOTICE.md', 'BUILD.md', 'MIT-LICENSE', 'CMakeLists.txt', 'AUTHORS.txt', 'LICENSE.txt', 'README.md', 'INTEGRATION.md', 'PublicSteamContext.md')
@@ -241,12 +268,56 @@ function Get-ControllerDriverFiles {
     return $files.ToArray()
 }
 
+function Get-SpatialAudioFiles {
+    $root = [IO.Path]::GetFullPath((Join-Path $setupRoot '..\Playhub\Assets\SpatialAudio\Svcl'))
+    $expected = @{
+        'svcl.exe' = '0C4738296D253495BC995DA7B5938E27B306C8F204DC9F7D4D5D455F1D8D3E38'
+        'svcl.chm' = '2B5FB3A94D19C223779F782A62127B791D1241C977D3C902DB6E6D0F4AA4ED89'
+        'readme.txt' = 'E81816966040C7F2353007FF38C76E3B88999BBB82C21B9D8AEE57237EC3B626'
+    }
+    $files = @(Get-ChildItem -LiteralPath $root -File)
+    if ($files.Count -ne $expected.Count) { throw 'The complete unmodified spatial audio package is required.' }
+    foreach ($name in $expected.Keys) {
+        $file = Get-Item -LiteralPath (Join-Path $root $name)
+        if ((Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash -cne $expected[$name]) {
+            throw "The spatial audio dependency differs from its pinned package: $name"
+        }
+        $file
+    }
+}
+
+function Get-PrivateArtworkFiles {
+    if (!$Candidate) { return @() }
+    $root = [IO.Path]::GetFullPath((Join-Path $setupRoot '..\Playhub\Plugins\Artwork'))
+    $zipName = 'Playhub-Artworks-1.1.12_Installer.zip'
+    $zipHash = '51E9FC6C5BDED5840A4335B141F124AA69E20ECA1D3612C543BBA946802184F7'
+    $markerHash = '0698C538B3CA3C8015E800AA62594E8CBD0B53E729B1AF2F58C454241AB4F364'
+    $installers = @(Get-ChildItem -LiteralPath $root -File -Filter '*.zip')
+    if ($installers.Count -ne 1 -or $installers[0].Name -cne $zipName -or $installers[0].Length -ne 545530) {
+        throw 'The private Artwork candidate requires exactly the reviewed 1.1.12 archive.'
+    }
+    $zip = $installers[0]
+    $marker = Get-Item -LiteralPath (Join-Path $root 'release-info.json')
+    foreach ($file in @($zip, $marker)) { Assert-PackagingDirectory $file.FullName $root }
+    if ((Get-FileHash -LiteralPath $zip.FullName -Algorithm SHA256).Hash -cne $zipHash -or
+        $marker.Length -ne 180 -or (Get-FileHash -LiteralPath $marker.FullName -Algorithm SHA256).Hash -cne $markerHash) {
+        throw 'The private Artwork archive or release metadata differs from the reviewed hotfix.'
+    }
+    $info = [IO.File]::ReadAllText($marker.FullName) | ConvertFrom-Json
+    if ($info.version -cne '1.1.12' -or $info.repository -cne 'LoZazaMastro/Playhub-Artworks' -or
+        ([string]$info.sha256).ToUpperInvariant() -cne $zipHash -or $info.bundled -ne $true) {
+        throw 'The private Artwork version provenance is inconsistent.'
+    }
+    return @($zip, $marker)
+}
+
 function Get-ReleaseSourceManifest {
     $sourceRoot = [IO.Path]::GetFullPath((Join-Path $setupRoot '..'))
-    $files = foreach ($folder in @('GamingModeAgent', 'Playhub.GameSession', 'Playhub.XboxSession', 'Playhub.DeckyHost', 'Playhub', 'Shared', 'ApplicationIntegrations', 'PerfectArtwork')) {
+    $files = foreach ($folder in @('GamingModeAgent', 'Playhub.GameSession', 'Playhub.XboxSession', 'Playhub.DeckyHost', 'Playhub.StoreHost', 'Playhub', 'Shared', 'ApplicationIntegrations', 'PerfectArtwork')) {
         Get-ChildItem -LiteralPath (Join-Path $sourceRoot $folder) -Recurse -File |
-            Where-Object { $_.Extension -in '.cs', '.csproj', '.ps1' -and $_.FullName -notmatch '[\\/](bin|obj|dist_publish|Assets|Plugins)[\\/]' }
+            Where-Object { $_.Extension -in '.cs', '.csproj', '.ps1', '.xaml' -and $_.FullName -notmatch '[\\/](bin|obj|dist_publish|Assets|Plugins)[\\/]' }
     }
+    $files += Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'Playhub.StoreHost/Runtime') -Recurse -File
     $files += Get-XboxSessionSources (Join-Path $sourceRoot 'Playhub.XboxSession')
     $files += Get-Item -LiteralPath (Join-Path $sourceRoot 'Playhub\Assets\GamingMode\desktop-safety.ps1')
     $files += Get-Item -LiteralPath (Join-Path $sourceRoot '..\catalog\plugins.json'), (Join-Path $sourceRoot 'Playhub\THIRD-PARTY-NOTICES.txt')
@@ -257,7 +328,12 @@ function Get-ReleaseSourceManifest {
     $files += Get-ChildItem -LiteralPath $setupRoot -File | Where-Object { $_.Extension -in '.cs', '.csproj', '.xaml', '.manifest', '.ps1' }
     $files += Get-ChildItem -LiteralPath (Join-Path $setupRoot 'Assets') -Recurse -File
     $files += Get-ControllerDriverFiles
+    $files += Get-SpatialAudioFiles
+    $files += Get-PrivateArtworkFiles
     $files += Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'Playhub\Assets\Localization') -File -Filter '*.json'
+    $files += Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'Playhub\Assets\PluginImages') -File |
+        Where-Object { $_.Extension -in '.jpg', '.png', '.txt' }
+    $files += Get-Item -LiteralPath (Join-Path $sourceRoot 'GamingModeDeckyPlugin\quick_settings\THIRD-PARTY-NOTICES.md')
     foreach ($asset in $tutorialAssets) {
         $files += Get-Item -LiteralPath (Join-Path $sourceRoot ("Playhub/" + $asset))
     }
@@ -270,9 +346,9 @@ function Get-ReleaseSourceManifest {
     $files += Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'Playhub\Plugins\Gaming Mode\gaming-mode-win-x64\PresentMon') -File
     $files += Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'GamingModeAgent\Native\PresentMon') -Recurse -File
     $files += Get-OfficialDeckyFiles
-    foreach ($pluginName in @('Artwork', 'Metadata', 'ThemeDeck', 'Launch Curtain', 'Playhub Notifications', 'Now Playing', 'TrailerHero', 'Weather', 'Discord', 'CSS Loader')) {
+    foreach ($pluginName in @('Artwork', 'Metadata', 'ThemeDeck', 'Launch Curtain', 'Playhub Notifications', 'Now Playing', 'TrailerHero', 'Weather', 'CSS Loader')) {
         $bundleRoot = Join-Path $sourceRoot ('Playhub\Plugins\' + $pluginName)
-        if ($pluginName -in @('Metadata', 'Launch Curtain', 'Weather', 'Discord', 'CSS Loader')) {
+        if ($pluginName -in @('Artwork', 'Metadata', 'Launch Curtain', 'Weather', 'CSS Loader')) {
             $installers = @(Get-ChildItem -LiteralPath $bundleRoot -File -Filter '*.zip')
             if ($installers.Count -ne 1) { throw "Expected one current bundled installer for $pluginName." }
             $files += Get-ChildItem -LiteralPath $bundleRoot -Recurse -File
@@ -282,10 +358,11 @@ function Get-ReleaseSourceManifest {
     $files += Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'GamingModeDeckyPlugin\src') -Recurse -File |
         Where-Object { $_.Extension -in '.ts', '.tsx' }
     $files += Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'GamingModeDeckyPlugin\quick_settings') -File -Filter '*.py'
-    $files += Get-Item -LiteralPath (Join-Path $sourceRoot 'GamingModeDeckyPlugin\main.py'), (Join-Path $sourceRoot 'GamingModeDeckyPlugin\decky_ipc_health.py'), (Join-Path $sourceRoot 'GamingModeDeckyPlugin\package.json'), (Join-Path $sourceRoot 'GamingModeDeckyPlugin\rollup.config.js')
+    $files += Get-Item -LiteralPath (Join-Path $sourceRoot 'GamingModeDeckyPlugin\main.py'), (Join-Path $sourceRoot 'GamingModeDeckyPlugin\decky_ipc_health.py'), (Join-Path $sourceRoot 'GamingModeDeckyPlugin\store_library.py'), (Join-Path $sourceRoot 'GamingModeDeckyPlugin\store_sign_in.py'), (Join-Path $sourceRoot 'GamingModeDeckyPlugin\package.json'), (Join-Path $sourceRoot 'GamingModeDeckyPlugin\rollup.config.js')
     foreach ($config in @('plugin.json', 'build-plugin.bat', 'tsconfig.json')) {
         $files += Get-Item -LiteralPath (Join-Path $sourceRoot ('GamingModeDeckyPlugin\' + $config))
     }
+    $files += Get-Item -LiteralPath (Join-Path $sourceRoot 'GamingModeDeckyPlugin\third-party\steam-menu\LICENSE'), (Join-Path $sourceRoot 'GamingModeDeckyPlugin\THIRD-PARTY-NOTICES.md')
     $manifest = [ordered]@{}
     foreach ($file in ($files | Sort-Object FullName -Unique)) {
         $relative = [IO.Path]::GetRelativePath($sourceRoot, $file.FullName).Replace('\', '/')
@@ -381,6 +458,7 @@ function Assert-HudDisplayMetadata([string]$assemblyPath) {
     try {
         $reader = [Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($pe)
         $found = @{}
+        $standalonePins = @{}
         foreach ($handle in $reader.GetAssemblyDefinition().GetCustomAttributes()) {
             $attribute = $reader.GetCustomAttribute($handle)
             if ($attribute.Constructor.Kind -ne [Reflection.Metadata.HandleKind]::MemberReference) { continue }
@@ -393,6 +471,10 @@ function Assert-HudDisplayMetadata([string]$assemblyPath) {
             if ($blob.ReadUInt16() -ne 1) { throw 'Invalid agent assembly metadata.' }
             $key = $blob.ReadSerializedString()
             $value = $blob.ReadSerializedString()
+            if ($key -ceq 'PlayhubShellFreeTrialManifestSha256') {
+                if ($standalonePins.ContainsKey($key)) { throw 'Duplicate standalone presenter metadata.' }
+                $standalonePins[$key] = $value
+            }
             if ($key -in 'PlayhubHudDisplaySha256', 'PlayhubHudDisplayCallbackSha256') {
                 if ($found.ContainsKey($key)) { throw "Duplicate HUD display metadata: $key" }
                 $found[$key] = $value
@@ -404,6 +486,11 @@ function Assert-HudDisplayMetadata([string]$assemblyPath) {
                 throw 'The agent must pin both exact packaged HUD display components.'
             }
         } elseif ($found.Count) { throw 'HUD display pins must be absent from an ordinary build.' }
+        if ($ShellFreeOverlayTrial) {
+            if ($standalonePins['PlayhubShellFreeTrialManifestSha256'] -cne $shellFreeOverlayManifestHash) {
+                throw 'The standalone presenter group is not pinned in the agent.'
+            }
+        } elseif ($standalonePins.Count) { throw 'Standalone presenter metadata must be absent from an ordinary build.' }
     } finally { $pe.Dispose(); $stream.Dispose() }
 }
 
@@ -483,6 +570,17 @@ try {
     $publish = Join-Path $stage 'normal'
     & dotnet publish $appProject -c Release -r win-x64 --self-contained true -p:Platform=x64 -p:WindowsAppSDKSelfContained=true -p:PlayhubUiReview=false -p:PlayhubUpdatePreview=false "-p:PlayhubAppContainerBridgeSha256=$bridgeHash" "-p:PlayhubSteamCompanionSha256=$companionHash" "-p:PlayhubSteamBandCallbackSha256=$bandCallbackHash" "-p:PlayhubUwpSteamCompanion=$uwpSteamCompanion" "-p:PlayhubSteamControllerProbe=$controllerProbe" "-p:PlayhubSteamControllerLayoutTrial=$controllerLayout" "-p:PlayhubSteamInputReaderSha256=$inputReaderHash" "-p:PlayhubSteamInputRelayDriverSha256=$relayDriverHash" "-p:PlayhubCupheadWindowedPreference=$cupheadWindowedPreference" -o $publish
     if ($LASTEXITCODE) { throw 'App normal build failed.' }
+    $storeBundle = Join-Path $publish 'StoreLibrary'
+    $storeManifestScript = Join-Path $setupRoot '../Playhub.StoreHost/WriteStoreRuntimeManifest.ps1'
+    $storeDecky = @(
+        (Join-Path $publish 'Assets/DeckyRuntime/Official-3.3.1/PluginLoader.exe'),
+        (Join-Path $publish 'Assets/DeckyRuntime/Official-3.3.1/PluginLoader_noconsole.exe')
+    ) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf }
+    if ($storeDecky.Count -lt 1) { throw 'A verified official Decky client is required for store downloads.' }
+    & $storeManifestScript -BundleDirectory $storeBundle -AppDirectory $publish -DeckyBinaryPaths $storeDecky
+    $storeRuntime = Get-Content -LiteralPath (Join-Path $storeBundle 'store-runtime.json') -Raw | ConvertFrom-Json
+    if ($storeRuntime.protocol -ne 1 -or $storeRuntime.finalized -ne $true) { throw 'Store runtime client pins are incomplete.' }
+
     foreach ($helper in 'Playhub.GameSession', 'Playhub.XboxSession') {
         Assert-UwpCompanionMetadata (Join-Path $setupRoot ("../$helper/bin/Release/net8.0-windows/win-x64/$helper.dll"))
     }
@@ -524,13 +622,22 @@ try {
         }
     }
     Assert-ReleaseFlags (Join-Path $publish 'Playhub.dll')
-    & dotnet publish (Join-Path $setupRoot '..\GamingModeAgent\GamingMode.csproj') -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true "-p:PlayhubCurtainDisplaySha256=$curtainDisplayHash" "-p:PlayhubCurtainCallbackSha256=$(if ($CurtainDisplayNative) { $bandCallbackHash } else { '' })" "-p:PlayhubHudDisplaySha256=$hudDisplayHash" "-p:PlayhubHudDisplayCallbackSha256=$(if ($HudDisplayNative) { $bandCallbackHash } else { '' })" -o $agentDir
+    & dotnet publish (Join-Path $setupRoot '..\GamingModeAgent\GamingMode.csproj') -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true "-p:PlayhubCurtainDisplaySha256=$curtainDisplayHash" "-p:PlayhubCurtainCallbackSha256=$(if ($CurtainDisplayNative) { $bandCallbackHash } else { '' })" "-p:PlayhubHudDisplaySha256=$hudDisplayHash" "-p:PlayhubHudDisplayCallbackSha256=$(if ($HudDisplayNative) { $bandCallbackHash } else { '' })" "-p:ShellFreeOverlayTrial=$($ShellFreeOverlayTrial.IsPresent.ToString().ToLowerInvariant())" "-p:XboxShellBootstrapTrial=$($XboxShellBootstrapTrial.IsPresent.ToString().ToLowerInvariant())" "-p:ShellFreeOverlayManifestSha256=$shellFreeOverlayManifestHash" -o $agentDir
     if ($LASTEXITCODE) { throw 'Gaming Mode agent build failed.' }
     Assert-HudDisplayMetadata (Join-Path $setupRoot '..\GamingModeAgent\bin\Release\net8.0-windows10.0.19041.0\win-x64\GamingMode.dll')
     Assert-CurtainDisplayMetadata (Join-Path $setupRoot '..\GamingModeAgent\bin\Release\net8.0-windows10.0.19041.0\win-x64\GamingMode.dll')
     $agentPayload = Join-Path $publish 'Plugins\Gaming Mode\gaming-mode-win-x64'
     New-Item -ItemType Directory -Path $agentPayload -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $agentDir 'GamingMode.exe') -Destination $agentPayload -Force
+    $spatialPayload = Join-Path $agentPayload 'assets\SpatialAudio\Svcl'
+    New-Item -ItemType Directory -Path $spatialPayload -Force | Out-Null
+    foreach ($file in (Get-SpatialAudioFiles)) {
+        $destination = Join-Path $spatialPayload $file.Name
+        Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
+        if ((Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash -cne (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash) {
+            throw 'The copied spatial audio package differs from the verified source.'
+        }
+    }
     if ($HudDisplayNative) {
         if ((Get-FileHash -LiteralPath $HudDisplayNative -Algorithm SHA256).Hash -cne $hudDisplayHash -or
             (Get-FileHash -LiteralPath $XboxSteamBandCallback -Algorithm SHA256).Hash -cne $bandCallbackHash) {
@@ -554,6 +661,17 @@ try {
             if ((Get-FileHash -LiteralPath (Join-Path $agentPayload $name) -Algorithm SHA256).Hash -cne $item[1]) { throw 'The copied first-content component differs.' }
         }
         Copy-Item -LiteralPath (Join-Path $setupRoot '../Playhub.XboxSession/Native/HudDisplay/WindowContent/LICENSE') -Destination (Join-Path $agentPayload 'WindowContent-LICENSE.txt') -Force
+    }
+    if ($ShellFreeOverlayTrial) {
+        foreach ($manifestRoot in @($publish, $agentPayload)) {
+            $manifestDirectory = Join-Path $manifestRoot 'Assets\OverlayPresentation'
+            New-Item -ItemType Directory -Path $manifestDirectory -Force | Out-Null
+            $manifestFile = Join-Path $manifestDirectory 'standalone-trial.json'
+            [IO.File]::WriteAllText($manifestFile, $shellFreeOverlayManifest, [Text.UTF8Encoding]::new($false))
+            if ((Get-FileHash -LiteralPath $manifestFile -Algorithm SHA256).Hash -cne $shellFreeOverlayManifestHash) {
+                throw 'Standalone presenter manifest differs from the compiled agent pin.'
+            }
+        }
     }
     if ((Get-ReleaseSourceManifest) -cne $sourceManifest) { throw 'Native sources changed while building; freeze and rebuild.' }
     [IO.File]::WriteAllText($sourceManifestPath, $sourceManifest)
@@ -580,7 +698,13 @@ try {
         foreach ($required in @('Playhub.exe', 'Playhub.dll', 'Assets/Brand/cube.png', 'Assets/Brand/playhub-wordmark-white.png', 'Assets/Welcome/Mascots/final-onboarding.png')) {
             if ($null -eq $archive.GetEntry($required)) { throw "Missing payload entry: $required" }
         }
-        $runtimeEntries = @('Plugins/Gaming Mode/gaming-mode-win-x64/GamingMode.exe', 'Assets/GamingModeDeckyPlugin/gaming-mode/main.py', 'Playhub.GameSession.exe', 'Playhub.XboxSession.exe', 'XboxSession/source/LICENSE', 'XboxSession/source/NOTICE.md', 'XboxSession/source/BUILD.md', 'XboxSession/source/Playhub.XboxSession.csproj', 'XboxSession/source/Runtime/MIT-LICENSE')
+        $runtimeEntries = @('StoreLibrary/store-runtime.json', 'StoreLibrary/Playhub.StoreHost.exe', 'StoreLibrary/legendary_windows_x64.exe', 'StoreLibrary/gogdl_windows_x86_64.exe', 'StoreLibrary/THIRD-PARTY-NOTICES.txt', 'StoreLibrary/source-provenance.json', 'Assets/GamingModeDeckyPlugin/gaming-mode/store_library.py', 'Plugins/Gaming Mode/gaming-mode-win-x64/GamingMode.exe', 'Assets/GamingModeDeckyPlugin/gaming-mode/main.py', 'Playhub.GameSession.exe', 'Playhub.XboxSession.exe', 'XboxSession/source/LICENSE', 'XboxSession/source/NOTICE.md', 'XboxSession/source/BUILD.md', 'XboxSession/source/Playhub.XboxSession.csproj', 'XboxSession/source/Runtime/MIT-LICENSE')
+        if ($ShellFreeOverlayTrial) {
+            $runtimeEntries += 'Assets/OverlayPresentation/standalone-trial.json',
+                'Plugins/Gaming Mode/gaming-mode-win-x64/assets/OverlayPresentation/standalone-trial.json'
+        } elseif (@($archive.Entries | Where-Object { $_.FullName.EndsWith('/standalone-trial.json', [StringComparison]::OrdinalIgnoreCase) }).Count) {
+            throw 'A standalone presenter manifest must not enter an ordinary setup.'
+        }
         if ($XboxOverlayPilotBridge) { $runtimeEntries += 'WsgmUwpBridge.dll' }
         elseif ($archive.GetEntry('WsgmUwpBridge.dll')) { throw 'The Xbox overlay pilot is limited to fresh private candidates.' }
         if ($XboxSteamCompanion) { $runtimeEntries += 'PlayhubSteamCompanion.dll' }
@@ -617,6 +741,8 @@ try {
         if (@($archive.Entries | Where-Object { $_.FullName -match '^(Emulation/|Assets/Emulation/|Assets/Emulators/|RecompCore\.|Quiver-|Vendor/(QUIVER|SHARPCOMPRESS))' }).Count) {
             throw 'Removed feature payload found in the release.'
         }
+        $runtimeEntries += 'Assets/GamingModeDeckyPlugin/gaming-mode/store_sign_in.py'
+        $runtimeEntries += 'Assets/GamingModeDeckyPlugin/gaming-mode/third-party/steam-menu/LICENSE'
         foreach ($required in $runtimeEntries) {
             if ($null -eq $archive.GetEntry($required)) { throw "Missing runtime payload entry: $required" }
         }
@@ -647,6 +773,9 @@ try {
             'Assets/DeckyRuntime/Playhub-DeckyHost.exe' = Join-Path $setupRoot '..\Playhub.DeckyHost\bin\Release\net8.0-windows\win-x64\publish\Playhub-DeckyHost.exe'
             'Assets/GamingModeDeckyPlugin/gaming-mode/dist/index.js' = Join-Path $setupRoot '..\GamingModeDeckyPlugin\dist\index.js'
             'Assets/GamingModeDeckyPlugin/gaming-mode/main.py' = Join-Path $setupRoot '..\GamingModeDeckyPlugin\main.py'
+            'Assets/GamingModeDeckyPlugin/gaming-mode/store_library.py' = Join-Path $setupRoot '..\GamingModeDeckyPlugin\store_library.py'
+            'Assets/GamingModeDeckyPlugin/gaming-mode/store_sign_in.py' = Join-Path $setupRoot '..\GamingModeDeckyPlugin\store_sign_in.py'
+            'Assets/GamingModeDeckyPlugin/gaming-mode/third-party/steam-menu/LICENSE' = Join-Path $setupRoot '..\GamingModeDeckyPlugin\third-party\steam-menu\LICENSE'
             'Assets/GamingModeDeckyPlugin/gaming-mode/decky_ipc_health.py' = Join-Path $setupRoot '..\GamingModeDeckyPlugin\decky_ipc_health.py'
             'Assets/GamingModeDeckyPlugin/gaming-mode/plugin.json' = Join-Path $setupRoot '..\GamingModeDeckyPlugin\plugin.json'
             'Assets/GamingModeDeckyPlugin/gaming-mode/package.json' = Join-Path $setupRoot '..\GamingModeDeckyPlugin\package.json'
@@ -659,6 +788,10 @@ try {
             'Plugins/Gaming Mode/gaming-mode-win-x64/uninstall.ps1' = Join-Path $setupRoot '..\Playhub\Plugins\Gaming Mode\gaming-mode-win-x64\uninstall.ps1'
         }
         foreach ($asset in $officialDeckyAssets.Keys) { $dataAssets[$asset] = $officialDeckyAssets[$asset] }
+        foreach ($file in (Get-SpatialAudioFiles)) {
+            $dataAssets["Assets/SpatialAudio/Svcl/$($file.Name)"] = $file.FullName
+            $dataAssets["Plugins/Gaming Mode/gaming-mode-win-x64/assets/SpatialAudio/Svcl/$($file.Name)"] = $file.FullName
+        }
         if ($HudDisplayNative) {
             $dataAssets['Plugins/Gaming Mode/gaming-mode-win-x64/PlayhubHudDisplayNative.dll'] = $HudDisplayNative
             $dataAssets['Plugins/Gaming Mode/gaming-mode-win-x64/PlayhubExactBand.dll'] = $XboxSteamBandCallback
@@ -691,11 +824,14 @@ try {
             $xboxSourceEntries += $entryName
         }
         $xboxSharedSourceEntries = @()
-        foreach ($name in @('EpicLaunchWindows.cs', 'EpicLaunchCatalog.cs', 'EpicLaunchPayload.cs')) {
+        foreach ($name in @('EpicLaunchWindows.cs', 'EpicLaunchCatalog.cs', 'EpicLaunchPayload.cs', 'EpicProtocolLaunchRequest.cs', 'StoreGdkLaunchDefinition.cs', 'StoreLibraryModels.cs', 'StorePrivateLaunchModels.cs')) {
             $entryName = 'XboxSession/Shared/' + $name
             $dataAssets[$entryName] = Join-Path $setupRoot ('..\Shared\' + $name)
             $xboxSharedSourceEntries += $entryName
         }
+        # Preserve the linked source layout used by the companion project.
+        $dataAssets['XboxSession/Playhub.GameSession/UwpStoreCompanionBinding.cs'] = Join-Path $setupRoot '..\Playhub.GameSession\UwpStoreCompanionBinding.cs'
+        $dataAssets['XboxSession/Playhub.StoreHost/StoreLibraryService.cs'] = Join-Path $setupRoot '..\Playhub.StoreHost\StoreLibraryService.cs'
         foreach ($entry in $archive.Entries) {
             if ($entry.FullName.StartsWith('XboxSession/source/') -and !$entry.FullName.EndsWith('/') -and $entry.FullName -notin $xboxSourceEntries) {
                 throw "Unexpected Xbox corresponding source payload: $($entry.FullName)"
@@ -704,12 +840,28 @@ try {
                 throw "Unexpected Xbox shared corresponding source payload: $($entry.FullName)"
             }
         }
+        if (@($archive.Entries | Where-Object { $_.FullName.StartsWith('Plugins/Discord/', [StringComparison]::OrdinalIgnoreCase) }).Count) {
+            throw 'Retired Discord content must not be bundled.'
+        }
+        foreach ($storeFile in (Get-ChildItem -LiteralPath (Join-Path $publish 'StoreLibrary') -Recurse -File)) {
+            $relativeStoreFile = [IO.Path]::GetRelativePath($publish, $storeFile.FullName).Replace('\', '/')
+            $dataAssets[$relativeStoreFile] = $storeFile.FullName
+        }
+        foreach ($file in (Get-ChildItem -LiteralPath (Join-Path $setupRoot '..\Playhub\Assets\PluginImages') -File | Where-Object { $_.Extension -in '.jpg', '.png', '.txt' })) {
+            $dataAssets["Assets/PluginImages/$($file.Name)"] = $file.FullName
+        }
+        $dataAssets['Assets/GamingModeDeckyPlugin/gaming-mode/quick_settings/THIRD-PARTY-NOTICES.md'] = Join-Path $setupRoot '..\GamingModeDeckyPlugin\quick_settings\THIRD-PARTY-NOTICES.md'
         foreach ($language in @('it', 'en', 'es', 'fr', 'de', 'pt', 'uk', 'zh', 'ja', 'ko', 'hi', 'ru')) {
             $dataAssets["Assets/Localization/$language.json"] = Join-Path $setupRoot "..\Playhub\Assets\Localization\$language.json"
         }
-        foreach ($pluginName in @('Artwork', 'Metadata', 'ThemeDeck', 'Launch Curtain', 'Playhub Notifications', 'Now Playing', 'TrailerHero', 'Weather', 'Discord', 'CSS Loader')) {
+        foreach ($pluginName in @('Artwork', 'Metadata', 'ThemeDeck', 'Launch Curtain', 'Playhub Notifications', 'Now Playing', 'TrailerHero', 'Weather', 'CSS Loader')) {
             $pluginSource = Join-Path $setupRoot "..\Playhub\Plugins\$pluginName"
-            if ($pluginName -in @('Metadata', 'Launch Curtain', 'Weather', 'Discord', 'CSS Loader')) {
+            if ($Candidate -and $pluginName -eq 'Artwork') {
+                foreach ($bundledFile in (Get-PrivateArtworkFiles)) {
+                    $dataAssets["Plugins/Artwork/$($bundledFile.Name)"] = $bundledFile.FullName
+                }
+            }
+            elseif ($pluginName -in @('Metadata', 'Launch Curtain', 'Weather', 'CSS Loader')) {
                 $installers = @(Get-ChildItem -LiteralPath $pluginSource -File -Filter '*.zip')
                 if ($installers.Count -ne 1) { throw "Expected one current bundled installer for $pluginName." }
                 foreach ($bundledFile in (Get-ChildItem -LiteralPath $pluginSource -Recurse -File)) {
@@ -722,7 +874,10 @@ try {
             if (!(Test-Path -LiteralPath $marker)) { throw "Missing bundled version provenance for $pluginName." }
             $dataAssets["Plugins/$pluginName/release-info.json"] = $marker
         }
-        if (@($archive.Entries | Where-Object { $_.FullName -match '^Plugins/(?!Metadata/|Launch Curtain/|Weather/|Discord/|CSS Loader/).*\.zip$' }).Count) {
+        if (@($archive.Entries | Where-Object {
+            $_.FullName -match '^Plugins/(?!Metadata/|Launch Curtain/|Weather/|CSS Loader/).*\.zip$' -and
+            !($Candidate -and $_.FullName -ceq 'Plugins/Artwork/Playhub-Artworks-1.1.12_Installer.zip')
+        }).Count) {
             throw 'Remotely available plugin installer archives must not be bundled.'
         }
         foreach ($file in (Get-ControllerDriverFiles)) {

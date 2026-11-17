@@ -1,0 +1,83 @@
+<UserControl
+    x:Class="Playhub.StoreLibrary.StoreLibraryPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    HorizontalContentAlignment="Stretch" Tag="noloc">
+    <StackPanel Spacing="20" HorizontalAlignment="Stretch">
+        <Grid ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled">
+                <SelectorBar x:Name="LibraryTabs" SelectionChanged="TabsChanged" VerticalAlignment="Center">
+                    <SelectorBarItem x:Name="AccountsTab" IsSelected="True" />
+                    <SelectorBarItem x:Name="GamesTab" />
+                    <SelectorBarItem x:Name="DownloadsTab" />
+                    <SelectorBarItem x:Name="GamePassTab" />
+                </SelectorBar>
+            </ScrollViewer>
+            <Button x:Name="RefreshButton" Grid.Column="1" Click="RefreshClicked"
+                    Style="{StaticResource PlayhubSecondaryButtonStyle}" VerticalAlignment="Center" />
+        </Grid>
+        <InfoBar x:Name="Status" IsOpen="False" IsClosable="False" Severity="Informational" />
+        <StackPanel x:Name="AccountsPanel" Spacing="16">
+            <TextBlock x:Name="AccountsHeading" FontSize="22" FontWeight="SemiBold" />
+            <TextBlock x:Name="AccountsDescription" Style="{StaticResource PlayhubBodyTextStyle}" />
+            <Grid x:Name="Accounts" ColumnSpacing="14" RowSpacing="14" SizeChanged="AccountsSizeChanged" />
+        </StackPanel>
+        <StackPanel x:Name="GamesPanel" Spacing="16" Visibility="Collapsed">
+            <TextBlock x:Name="LibraryHeading" FontSize="22" FontWeight="SemiBold" />
+            <TextBlock x:Name="LibraryDescription" Style="{StaticResource PlayhubBodyTextStyle}" />
+            <Grid ColumnSpacing="14" RowSpacing="12" x:Name="FilterRow" SizeChanged="FiltersSizeChanged">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <AutoSuggestBox x:Name="Search" TextChanged="SearchChanged" QueryIcon="Find"
+                                MinWidth="0" HorizontalAlignment="Stretch" />
+                <Grid x:Name="Filters" Grid.Column="1" ColumnSpacing="10" Width="310">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <ComboBox x:Name="StoreFilter" MinWidth="0" HorizontalAlignment="Stretch" SelectionChanged="FilterChanged" />
+                    <ComboBox x:Name="InstallFilter" Grid.Column="1" MinWidth="0" HorizontalAlignment="Stretch" SelectionChanged="FilterChanged" />
+                </Grid>
+            </Grid>
+            <Grid ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="LibrarySummary" Style="{StaticResource PlayhubBodyTextStyle}"
+                           VerticalAlignment="Center" />
+                <ContentControl x:Name="DensityHost" Grid.Column="1" />
+            </Grid>
+            <StackPanel x:Name="GameCards" HorizontalAlignment="Stretch" />
+            <StackPanel x:Name="LibraryEmpty" Spacing="8" Padding="28,32" HorizontalAlignment="Center">
+                <FontIcon Glyph="&#xE8F1;" FontSize="32" Opacity="0.55" />
+                <TextBlock x:Name="EmptyLibraryTitle" FontSize="18" FontWeight="SemiBold" TextAlignment="Center" />
+                <TextBlock x:Name="EmptyLibraryBody" Style="{StaticResource PlayhubBodyTextStyle}"
+                           TextAlignment="Center" MaxWidth="440" />
+            </StackPanel>
+        </StackPanel>
+        <ContentControl x:Name="GamePassPanel" Visibility="Collapsed" HorizontalContentAlignment="Stretch" />
+        <StackPanel x:Name="DownloadsPanel" Spacing="14" Visibility="Collapsed">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBlock x:Name="DownloadsHeading" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Button x:Name="ClearCompletedButton" Grid.Column="1" Click="ClearCompletedClicked" Style="{StaticResource PlayhubSecondaryButtonStyle}" />
+            </Grid>
+            <TextBlock x:Name="DownloadsDescription" Style="{StaticResource PlayhubBodyTextStyle}" />
+            <Grid x:Name="DownloadRows" RowSpacing="12" />
+            <StackPanel x:Name="DownloadsEmpty" Spacing="8" Padding="28,32" HorizontalAlignment="Center">
+                <FontIcon Glyph="&#xE896;" FontSize="32" Opacity="0.55" />
+                <TextBlock x:Name="EmptyDownloadsTitle" FontSize="18" FontWeight="SemiBold" TextAlignment="Center" />
+                <TextBlock x:Name="EmptyDownloadsBody" Style="{StaticResource PlayhubBodyTextStyle}"
+                           TextAlignment="Center" MaxWidth="440" />
+            </StackPanel>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

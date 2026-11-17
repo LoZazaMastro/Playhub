@@ -14,7 +14,7 @@
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>2.6.0</Version>
+    <Version>3.0.0</Version>
     <DebugType>none</DebugType>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);dist_publish\**</DefaultItemExcludes>
@@ -44,6 +44,17 @@
     <Compile Include="../ApplicationIntegrations/Native/GameTitleRefetchFactory.cs" Link="Importing/GameTitleRefetchFactory.cs" />
     <Compile Include="../ApplicationIntegrations/Native/ApplicationImageCache.cs" Link="Importing/ApplicationImageCache.cs" />
     <Compile Include="../ApplicationIntegrations/*.cs" Link="Integrations/%(Filename)%(Extension)" />
+    <Compile Include="../Shared/StoreLibraryModels.cs" Link="StoreLibrary/StoreLibraryModels.cs" />
+    <Compile Include="../Shared/StoreXboxCatalogModels.cs" Link="StoreLibrary/StoreXboxCatalogModels.cs" />
+    <Compile Include="../Shared/StoreLibraryXboxClient.cs" Link="StoreLibrary/StoreLibraryXboxClient.cs" />
+    <Compile Include="../Shared/StoreInstalledGameModels.cs" Link="StoreLibrary/StoreInstalledGameModels.cs" />
+    <Compile Include="../Shared/StoreLibraryInstalledClient.cs" Link="StoreLibrary/StoreLibraryInstalledClient.cs" />
+    <Compile Include="../Shared/StoreXboxAccountModels.cs" Link="StoreLibrary/StoreXboxAccountModels.cs" />
+    <Compile Include="../Shared/StoreLibraryXboxAccountClient.cs" Link="StoreLibrary/StoreLibraryXboxAccountClient.cs" />
+    <Compile Include="../Shared/StoreLibrarySteamClient.cs" Link="StoreLibrary/StoreLibrarySteamClient.cs" />
+    <Compile Include="../Shared/StoreSteamSyncModels.cs" Link="StoreLibrary/StoreSteamSyncModels.cs" />
+    <Compile Include="../Shared/StoreLibraryLaunchRequest.cs" Link="StoreLibrary/StoreLibraryLaunchRequest.cs" />
+    <Compile Include="../Playhub.StoreHost/StoreLibraryService.cs" Link="StoreLibrary/StoreLibraryService.cs" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250205002" />
   </ItemGroup>
 
@@ -51,7 +62,7 @@
     <Compile Include="..\Shared\ShellIdentity.cs" Link="Services\ShellIdentity.cs" />
 <Compile Remove="MainWindow.PawnIo.cs;Services/PawnIoService.cs;Services/PawnIoInstallService.cs" />
     <Compile Remove="Assets\GamingModeDeckyPlugin\**\*.cs" />
-    <Content Include="Assets\**\*.*" Exclude="Assets\GamingModeDeckyPlugin\**\cpu_power\**;Assets\**\__pycache__\**;Assets\**\*.pyc">
+    <Content Include="Assets\**\*.*" Exclude="Assets\GamingModeDeckyPlugin\**\quick_settings\bin\libryzenadj.dll;Assets\GamingModeDeckyPlugin\**\cpu_power\**;Assets\**\__pycache__\**;Assets\**\*.pyc">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Remove="Assets\GamingModeDeckyPlugin\**\history_imported.json.before-*" />
@@ -68,17 +79,18 @@
     <Content Include="UWPHook\**\*.*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Plugins\**\*.*" Exclude="Plugins\DeckyLoader Installer\**\*.*;Plugins\**\*.zip">
+    <Content Include="Plugins\**\*.*" Exclude="Plugins\DeckyLoader Installer\**\*.*;Plugins\**\*.zip;Plugins\Discord\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <!-- Keep unpublished fixes until their matching release archives are public. -->
-    <Content Include="Plugins\Metadata\*Installer*.zip;Plugins\Launch Curtain\*Installer*.zip;Plugins\Weather\*Installer*.zip;Plugins\Discord\*Installer*.zip;Plugins\CSS Loader\*.zip">
+    <Content Include="Plugins\Artwork\*Installer*.zip;Plugins\Metadata\*Installer*.zip;Plugins\Launch Curtain\*Installer*.zip;Plugins\Weather\*Installer*.zip;Plugins\CSS Loader\*.zip">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
-    <Content Update="Plugins\Weather\**\*;Plugins\Discord\**\*;Plugins\CSS Loader\**\*">
+    <Content Update="Plugins\Weather\**\*;Plugins\CSS Loader\**\*">
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
+    <Content Remove="Plugins\Discord\**\*" />
     <Content Include="THIRD-PARTY-NOTICES.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -86,8 +98,14 @@
   <ItemGroup>
     <Compile Include="..\Playhub.GameSession\UwpShortcutArguments.cs" Link="Services\UwpShortcutArguments.cs" />
     <Compile Include="..\Playhub.GameSession\EpicShortcutArguments.cs" Link="Services\EpicShortcutArguments.cs" />
-    <Content Include="..\Shared\EpicLaunchWindows.cs;..\Shared\EpicLaunchCatalog.cs;..\Shared\EpicLaunchPayload.cs"
+    <Content Include="..\Shared\EpicLaunchWindows.cs;..\Shared\EpicLaunchCatalog.cs;..\Shared\EpicLaunchPayload.cs;..\Shared\EpicProtocolLaunchRequest.cs;..\Shared\StoreGdkLaunchDefinition.cs;..\Shared\StoreLibraryModels.cs;..\Shared\StorePrivateLaunchModels.cs"
              Link="XboxSession\Shared\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\Playhub.GameSession\UwpStoreCompanionBinding.cs"
+             Link="XboxSession\Playhub.GameSession\UwpStoreCompanionBinding.cs"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\Playhub.StoreHost\StoreLibraryService.cs"
+             Link="XboxSession\Playhub.StoreHost\StoreLibraryService.cs"
              CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\Playhub.XboxSession\**\PublicSteamContext.md"
              Link="XboxSession\source\%(RecursiveDir)%(Filename)%(Extension)"
@@ -98,6 +116,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
+    <Content Include="..\Playhub.XboxSession\Native\ShellFreeDisplay\*.manifest"
+             Link="XboxSession\source\Native\ShellFreeDisplay\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\Playhub.XboxSession\Native\HudDisplay\WindowContent\Build.cmd;..\Playhub.XboxSession\Native\HudDisplay\WindowContent\PerMonitor.manifest;..\Playhub.XboxSession\Native\HudDisplay\WindowContent\provenance.json"
              Link="XboxSession\source\Native\HudDisplay\WindowContent\%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
@@ -109,7 +130,7 @@
              CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <Target Name="BuildGameSession" BeforeTargets="PrepareForBuild">
-    <MSBuild Projects="..\Playhub.GameSession\Playhub.GameSession.csproj" Targets="Restore;Publish"
+    <MSBuild Projects="..\Playhub.GameSession\Playhub.GameSession.csproj" Targets="Restore;Rebuild;Publish"
              RemoveProperties="PublishDir;PublishUrl"
              Properties="Configuration=$(Configuration);Platform=AnyCPU;RuntimeIdentifier=win-x64;SelfContained=true" />
     <ItemGroup>
@@ -128,7 +149,7 @@
     </ItemGroup>
   </Target>
   <Target Name="BuildXboxSession" BeforeTargets="PrepareForBuild">
-    <MSBuild Projects="..\Playhub.XboxSession\Playhub.XboxSession.csproj" Targets="Restore;Publish"
+    <MSBuild Projects="..\Playhub.XboxSession\Playhub.XboxSession.csproj" Targets="Restore;Rebuild;Publish"
              RemoveProperties="PublishDir;PublishUrl"
              Properties="Configuration=$(Configuration);Platform=AnyCPU;RuntimeIdentifier=win-x64;SelfContained=true" />
     <ItemGroup>
@@ -137,4 +158,22 @@
       <Content Include="..\Playhub.XboxSession\bin\$(Configuration)\net8.0-windows\win-x64\publish\XboxSession\licenses\InputFence-MinHook.txt" Link="XboxSession\licenses\InputFence-MinHook.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
   </Target>
+  <Target Name="BuildStoreLibraryHost" BeforeTargets="PrepareForBuild">
+    <MSBuild Projects="..\Playhub.StoreHost\Playhub.StoreHost.csproj" Targets="Restore;Rebuild;Publish"
+             RemoveProperties="PublishDir;PublishUrl"
+             Properties="Configuration=$(Configuration);Platform=AnyCPU;RuntimeIdentifier=win-x64;SelfContained=true;DebugType=None" />
+    <Error Condition="!Exists('..\Playhub.StoreHost\bin\$(Configuration)\net8.0-windows\win-x64\publish\Playhub.StoreHost.exe')" Text="Store library host was not published." />
+    <Error Condition="!Exists('..\Playhub.StoreHost\bin\$(Configuration)\net8.0-windows\win-x64\publish\store-runtime.json')" Text="Store library runtime manifest was not produced." />
+    <ItemGroup>
+      <_StoreLibraryRuntimeFile Include="..\Playhub.StoreHost\bin\$(Configuration)\net8.0-windows\win-x64\publish\**\*" />
+      <!-- These private runtime files are addressed by filesystem path, not ms-appx. -->
+      <None Include="@(_StoreLibraryRuntimeFile)">
+        <Link>StoreLibrary\%(_StoreLibraryRuntimeFile.RecursiveDir)%(_StoreLibraryRuntimeFile.Filename)%(_StoreLibraryRuntimeFile.Extension)</Link>
+        <TargetPath>StoreLibrary\%(_StoreLibraryRuntimeFile.RecursiveDir)%(_StoreLibraryRuntimeFile.Filename)%(_StoreLibraryRuntimeFile.Extension)</TargetPath>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </None>
+    </ItemGroup>
+  </Target>
+  <ItemGroup><Compile Include="../Shared/StoreSignInLaunchRequest.cs" Link="StoreLibrary/StoreSignInLaunchRequest.cs" /></ItemGroup>
 </Project>

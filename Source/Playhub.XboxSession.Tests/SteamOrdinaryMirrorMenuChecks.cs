@@ -42,7 +42,7 @@ internal static class SteamOrdinaryMirrorMenuChecks
             if(Steps==1)Frame=Frame! with{State=3,ShownCurrent=true,DestinationShown=true};
             if(Steps==3)Close();
         }
-        internal void Close()=>Frame=Frame! with{State=0,PreparedCurrent=false,ShownCurrent=false,DestinationShown=false,DwmAttached=false,CleanupComplete=true,ForegroundScope=SteamMirrorForegroundScope.None};
+        internal void Close()=>Frame=Frame! with{State=0,PreparedCurrent=false,ShownCurrent=false,DestinationShown=false,CompositionAttached=false,CleanupComplete=true,ForegroundScope=SteamMirrorForegroundScope.None};
         internal SteamOrdinaryMirrorMenuCycle.Result? Run(SteamOrdinaryMirrorMenuCycle? cycle=null)
             =>(cycle??new(Game,Pid,Birth)).Run(ReadCurrent??Read,()=>Frame,NoOverride,()=>Alive,()=>Now,Wait,Cancel.Token,new(this,CurrentReceipt));
     }

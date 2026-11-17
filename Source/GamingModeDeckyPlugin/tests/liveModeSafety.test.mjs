@@ -34,9 +34,21 @@ test("both login entry points cover Gaming startup before launching helpers", ()
 test("applying Gaming Mode does not rewrite any saved preference", () => {
   const gaming = section(manager, "private void ApplyGamingMode", "private void ApplyDesktopMode");
   assert.doesNotMatch(gaming, /SaveConfig|config\.\w+(?:\.\w+)*\s*=(?!=)/);
-  // The live shell is required by game overlays and stays behind Big Picture.
-  assert.match(gaming, /if \(!_processTools.StartExplorer\(background: true\)\)[\s\S]*throw new InvalidOperationException/);
-  assert.doesNotMatch(gaming, /StopExplorer\(/);
+  // Ordinary mode still requires Explorer. Only the explicitly capability-
+  // pinned trial may close it; neither branch may rewrite user preferences.
+  assert.match(gaming, /bool shellFree = ShellFreeOverlayTrialPolicy\.MayRunWithoutExplorer\(config\.Gaming\)/);
+  const trial = section(gaming, "if (shellFree)", "else");
+  const ordinary = section(gaming, "else", "if (config.Gaming.EnsureSunshineCompatibilityInGamingMode)");
+  assert.match(trial, /StartupForegroundGuard\?\.Invoke\(\) == false/);
+  assert.match(trial, /if \(!_processTools\.StopExplorer\(\)\) throw new InvalidOperationException/);
+  assert.match(ordinary, /if \(!_processTools\.StartExplorer\(background: true, canContinue: StartupForegroundGuard\)\)[\s\S]*throw new InvalidOperationException/);
+  assert.doesNotMatch(ordinary, /StopExplorer\(/);
+  const policy = read("ShellFreeOverlayTrialPolicy");
+  assert.match(policy, /gaming\.CloseExplorerInGamingMode && gaming\.AllowExplorerCloseInGamingMode && Enabled/);
+  assert.match(policy, /#else\s+return false;\s+#endif/);
+  assert.match(policy, /components\.EnumerateObject\(\)\.Count\(\) != 3/);
+  const resume = section(manager, "public void ResumeGamingServices()", "public Task<ApiResult> ApplyModeAsync");
+  assert.doesNotMatch(resume, /StopExplorer\(/, "restarting the agent must never kill a running shell");
 });
 test("Explorer closure is session scoped, bounded, verified and does not alter the shell registry", () => {
   const stop = section(processes, "public bool StopExplorer()", "private static ServiceQueryState");
@@ -48,10 +60,15 @@ test("Explorer closure is session scoped, bounded, verified and does not alter t
   assert.doesNotMatch(stop, /Registry|SetShell|shutdown|BeginLogoff/);
 });
 test("Explorer startup verifies the desktop shell rather than a folder process", () => {
-  const start = section(processes, "public bool StartExplorer(bool background = false)", "public int RunUserStartupApps");
-  assert.match(start, /IsExplorerShellRunning\(\)/);
+  const start = section(processes, "public bool StartExplorer(", "public int RunUserStartupApps");
+  assert.match(start, /ExplorerShellReadiness\.Ensure\(IsExplorerShellRunning,/);
   assert.doesNotMatch(start, /GetState\("explorer"\)/);
-  assert.match(start, /attempt < 40/);
+  const readiness = read("ExplorerShellReadiness");
+  assert.match(readiness, /int timeoutMs = 12000/);
+  assert.match(readiness, /polls <= 120/);
+  assert.match(readiness, /elapsed >= timeoutMs/);
+  assert.match(readiness, /elapsed < 0/);
+  assert.match(start, /canContinue\?\.Invoke\(\) != false/);
   assert.match(processes, /nint shell = GetShellWindow\(\)/);
 });
 test("desktop exit and a later open share an acknowledged command generation", () => {

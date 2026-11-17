@@ -76,6 +76,7 @@ public sealed class GamingWindowFocusService : IDisposable
 	private volatile bool _applyBorderlessFullscreen = true;
 
 	private volatile bool _launchCurtainPriorityActive;
+	private Func<bool>? _modernCurtainPriority;
 
 	private readonly BigPictureGameReturn _postGameReturn;
 	private readonly string? _configuredSteamPath;
@@ -92,7 +93,10 @@ public sealed class GamingWindowFocusService : IDisposable
 	/// True mentre a schermo c'e' una schermata di avvio di Launch Curtain.
 	/// Chi porta avanti finestre deve rispettarla e non intromettersi.
 	/// </summary>
-	public bool IsLaunchCurtainOnScreen => _launchCurtainPriorityActive;
+	public bool IsLaunchCurtainOnScreen => _launchCurtainPriorityActive || ModernCurtainHasPriority();
+	internal void SetModernCurtainPriority(Func<bool>? current)
+		=> Volatile.Write(ref _modernCurtainPriority, current);
+	private bool ModernCurtainHasPriority() => Volatile.Read(ref _modernCurtainPriority)?.Invoke() == true;
 
 	public int SteamFocusRecoveryVersion => _postGameReturn.Version;
 	internal BigPictureGameReturn.ForegroundProof? ConfirmedBigPictureReturn(int version) => _postGameReturn.ConfirmedForeground(version);
@@ -267,7 +271,7 @@ public sealed class GamingWindowFocusService : IDisposable
 				list.Add(launchCurtainWindow);
 			}
 		}
-		bool flag = list.Count > 0;
+		bool flag = list.Count > 0 || ModernCurtainHasPriority();
 		if (flag)
 		{
 			foreach (LaunchCurtainWindow item2 in list.Where((LaunchCurtainWindow window) => !window.IsPrimaryOverlay))
@@ -486,6 +490,10 @@ public sealed class GamingWindowFocusService : IDisposable
 
 	private void ApplyToWindow(nint window)
 	{
+		// A modern cover has an admitted native lease rather than a PowerShell
+		// window. Resizing the game under that cover invalidates its retained
+		// surface and can fight the game's own fullscreen transition.
+		if (ModernCurtainHasPriority()) return;
 		if (!_gameWindows.ContainsKey(window) || !IsCandidateWindow(window, out uint processId, out string processName))
 		{
 			return;
@@ -514,7 +522,7 @@ public sealed class GamingWindowFocusService : IDisposable
 			SetWindowPos(window, HwndTop, rcMonitor.Left, rcMonitor.Top, rcMonitor.Right - rcMonitor.Left, rcMonitor.Bottom - rcMonitor.Top, 628u);
 			_appliedWindows[window] = appliedWindowState;
 			_logger.Info($"Applied borderless fullscreen to {processName} ({processId}).");
-		});
+		}, hasVisualPriority: ModernCurtainHasPriority);
 	}
 
 	private static bool IsCandidateWindow(nint window, out uint processId, out string processName)

@@ -139,6 +139,7 @@ export function installControlledQamFocus(onMirrorAdmitted?: (app: number, mirro
     browserInfo: () => steam.Overlay.GetOverlayBrowserInfo(),
     windows: () => windowStore()?.OverlayWindows,
     navigation: () => (window as any).SteamUIStore?.NavigationManager ?? ui.Router?.NavigationManager,
+    closeNativeVisible: (app, overlayPid, expected) => call<[number, number, string, unknown], { ok: boolean }>("set_mirror_presentation", app, overlayPid, "close-native-visible", expected),
     setOverlayState: (gameId, state) => Promise.resolve(steam.Overlay.SetOverlayState(gameId, state)),
     delay: ms => new Promise(resolve => window.setTimeout(resolve, ms)),
     now: () => Date.now(),

@@ -15,6 +15,7 @@ import {
   normalizePluginIdentity,
   pluginHasUpdate,
   pluginCategory,
+  discoveryCategories,
   pluginInCategory,
   resolveInstallArtifact,
 } from "./pluginStoreCatalog";
@@ -101,9 +102,10 @@ export const STORE_STYLE = `
   .ph-store-section-link h2 { margin:0; font-size:24px; line-height:1.2; }
   .ph-store-section-link.gpfocus, .ph-store-section-link:hover { color:#fff; background:rgba(255,255,255,.12); box-shadow:inset 0 0 0 2px rgba(255,255,255,.75); }
   .ph-store-list { display:grid; grid-template-columns:minmax(0,1fr); gap:9px; min-width:0; }
-  .ph-store-row { position:relative; display:grid; grid-template-columns:190px minmax(0,1fr) auto; min-height:112px; min-width:0; overflow:hidden; border-radius:6px; background:rgba(255,255,255,.08); box-shadow:inset 0 0 0 1px rgba(255,255,255,.065); transition:background-color 130ms ease, box-shadow 130ms ease; }
+  .ph-store-row { position:relative; display:grid; grid-template-columns:190px minmax(0,1fr) auto; height:112px; min-height:112px; max-height:112px; grid-template-rows:minmax(0,1fr); box-sizing:border-box; min-width:0; overflow:hidden; border-radius:6px; background:rgba(255,255,255,.08); box-shadow:inset 0 0 0 1px rgba(255,255,255,.065); transition:background-color 130ms ease, box-shadow 130ms ease; }
   .ph-store-row.ph-store-row-openable.gpfocus, .ph-store-row.ph-store-row-openable:hover { background:rgba(255,255,255,.15); box-shadow:inset 0 0 0 3px rgba(255,255,255,.88); }
-  .ph-store-row-media { position:relative; min-width:0; overflow:hidden; background:rgba(0,0,0,.28); }
+  .ph-store-row-media { position:relative; min-width:0; min-height:0; overflow:hidden; background:rgba(0,0,0,.28); }
+  .ph-store-row-media .ph-store-image { position:absolute; inset:0; }
   .ph-store-image { display:block; width:100%; height:100%; object-fit:cover; object-position:center; }
   .ph-store-image-placeholder { min-height:100%; background:rgba(255,255,255,.035); }
   .ph-store-row-copy { display:flex; flex-direction:column; justify-content:center; min-width:0; padding:13px 16px; }
@@ -186,7 +188,7 @@ export const STORE_STYLE = `
     .ph-store-sort-label { max-width:170px; font-size:13px; }
     .ph-store-filter { gap:6px; }
     .ph-store-filter button { min-height:39px; padding:6px 9px !important; font-size:12px !important; }
-    .ph-store-row { grid-template-columns:130px minmax(0,1fr) auto; min-height:98px; }
+    .ph-store-row { grid-template-columns:130px minmax(0,1fr) auto; height:98px; min-height:98px; max-height:98px; }
     .ph-store-row-copy { padding:10px 11px; }
     .ph-store-row-title { font-size:16px; }
     .ph-store-row-description { font-size:12px; }
@@ -432,16 +434,17 @@ function PluginImage({ plugin, className = "ph-store-image", fallbackSources, on
     [plugin.repository, plugin.coverUrl, plugin.catalogStatus, fallbackSources]);
   const [index, setIndex] = useState(0);
   useEffect(() => setIndex(0), [plugin.repository, plugin.coverUrl]);
-  if (!sources[index]) return <div className={className + " ph-store-image-placeholder"} aria-hidden="true" />;
+  if (!sources.length) return <div className={className + " ph-store-image-placeholder"} aria-hidden="true" />;
+  const activeIndex = Math.min(index, sources.length - 1);
   return (
     <img
       className={className}
-      src={sources[index]}
+      src={sources[activeIndex]}
       alt=""
       loading="lazy"
       decoding="async"
-      onLoad={() => onImageLoaded?.(sources[index])}
-      onError={() => setIndex((value: number) => value + 1)}
+      onLoad={() => onImageLoaded?.(sources[activeIndex])}
+      onError={() => setIndex((value: number) => value === activeIndex ? Math.min(value + 1, sources.length - 1) : value)}
     />
   );
 }
@@ -996,12 +999,7 @@ function DiscoverTab(shared: SharedStoreProps) {
 
   const featured = featuredPlugins(shared.plugins, 10);
   const featuredRepositories = new Set(featured.map((plugin) => plugin.repository.toLocaleLowerCase("en-US")));
-  const categories = [
-    "Playhub",
-    ...Array.from(new Set(shared.plugins.map(pluginCategory)))
-      .filter((category) => category !== "Playhub" && category !== "Novità")
-      .sort((left, right) => left.localeCompare(right)),
-  ];
+  const categories = discoveryCategories(shared.plugins);
   return (
     <Focusable
       className="ph-store-tab-body ph-store-flow"
@@ -1024,7 +1022,7 @@ function DiscoverTab(shared: SharedStoreProps) {
           items = items.filter((plugin) => !featuredRepositories.has(plugin.repository.toLocaleLowerCase("en-US")));
         }
         items = items.slice(0, 4);
-        if (!items.length) return null;
+        if (items.length < 3) return null;
         return (
           <section className="ph-store-section" key={category}>
             <CategoryLink

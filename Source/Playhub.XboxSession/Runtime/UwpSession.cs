@@ -18,6 +18,7 @@ internal interface IUwpRuntime
 {
     long Now { get; }
     bool ShellReady { get; }
+    bool PrepareDirectActivation() => false;
     void StartShell();
     void Delay(int milliseconds);
     IUwpProcess Activate(string aumid, string arguments);
@@ -33,22 +34,27 @@ internal static class UwpLifetime
         if (separator <= 0 || separator == aumid.Length - 1 || string.IsNullOrWhiteSpace(executable))
             throw new ArgumentException("Invalid Xbox application identity.");
         var family = aumid[..separator];
-        var ready = runtime.ShellReady;
-        if (!ready) runtime.StartShell();
-        var shellDeadline = runtime.Now + 15000;
-        long? readySince = null;
-        while (true)
+        bool directActivation = runtime.PrepareDirectActivation();
+        if (!directActivation)
         {
-            if (runtime.ShellReady)
+            var ready = runtime.ShellReady;
+            if (!ready) runtime.StartShell();
+            var shellDeadline = runtime.Now + 15000;
+            long? readySince = null;
+            while (true)
             {
-                readySince ??= runtime.Now;
-                if (runtime.Now - readySince.Value >= 700) break;
+                if (runtime.ShellReady)
+                {
+                    readySince ??= runtime.Now;
+                    if (runtime.Now - readySince.Value >= 700) break;
+                }
+                else readySince = null;
+                if (runtime.Now >= shellDeadline) throw new TimeoutException("Windows desktop shell did not become ready for the Xbox game.");
+                runtime.Delay(100);
             }
-            else readySince = null;
-            if (runtime.Now >= shellDeadline) throw new TimeoutException("Windows desktop shell did not become ready for the Xbox game.");
-            runtime.Delay(100);
+            runtime.Log($"shell-ready restored={!ready}; activating {aumid}");
         }
-        runtime.Log($"shell-ready restored={!ready}; activating {aumid}");
+        else runtime.Log($"shell-free direct AAM activation authorized; activating {aumid}");
         using var activated = runtime.Activate(aumid, arguments);
         runtime.Log($"activated pid={activated.Id} executable={activated.Executable}");
         if (string.Equals(Path.GetFileName(activated.Executable), Path.GetFileName(executable), StringComparison.OrdinalIgnoreCase))
@@ -84,6 +90,7 @@ internal static class UwpLifetime
 
 internal sealed class WindowsUwpRuntime : IUwpRuntime
 {
+    private bool _directActivation;
     public long Now => Environment.TickCount64;
     public bool ShellReady
     {
@@ -102,6 +109,8 @@ internal sealed class WindowsUwpRuntime : IUwpRuntime
         }
     }
 
+    public bool PrepareDirectActivation() => _directActivation = XboxShellBrokerClient.PrepareDirectActivation();
+
     public void StartShell()
     {
         XboxShellBrokerClient.Ensure();
@@ -112,10 +121,12 @@ internal sealed class WindowsUwpRuntime : IUwpRuntime
 
     public IUwpProcess Activate(string aumid, string arguments)
     {
-        var manager = (IApplicationActivationManager)(object)new ApplicationActivationManager();
+        var manager = CreateActivationManager();
         try
         {
-            Marshal.ThrowExceptionForHR(manager.ActivateApplication(aumid, arguments, 0, out var pid));
+            int activationResult = manager.ActivateApplication(aumid, arguments, 0, out var pid);
+            if (_directActivation) Log($"direct AAM surrogate activation hr=0x{activationResult:X8}");
+            Marshal.ThrowExceptionForHR(activationResult);
             return WindowsUwpProcess.TryOpen(pid) ?? throw new InvalidOperationException("Xbox game exited before its process could be tracked.");
         }
         finally { Marshal.FinalReleaseComObject(manager); }
@@ -157,6 +168,30 @@ internal sealed class WindowsUwpRuntime : IUwpRuntime
     [DllImport("user32.dll")] private static extern IntPtr GetShellWindow();
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
     [DllImport("user32.dll")] private static extern IntPtr SendMessageTimeout(IntPtr window, uint message, IntPtr wParam, IntPtr lParam, uint flags, uint timeout, out IntPtr result);
+
+    private IApplicationActivationManager CreateActivationManager()
+    {
+        if (!_directActivation)
+            return (IApplicationActivationManager)(object)new ApplicationActivationManager();
+        // The private shell-free route hosts Windows' existing activator in
+        // its documented local COM surrogate. It does not start Explorer.
+        var clsid = typeof(ApplicationActivationManager).GUID;
+        var iid = typeof(IApplicationActivationManager).GUID;
+        int created = CoCreateInstance(ref clsid, IntPtr.Zero, 4, ref iid, out var manager);
+        Log($"direct AAM surrogate creation hr=0x{created:X8}");
+        Marshal.ThrowExceptionForHR(created);
+        int foreground = CoAllowSetForegroundWindow(manager, IntPtr.Zero);
+        Log($"direct AAM foreground transfer hr=0x{foreground:X8}");
+        // Foreground transfer is best-effort, as documented by Microsoft;
+        // activation and its HRESULT remain independently observable.
+        return manager;
+    }
+
+    [DllImport("ole32.dll", PreserveSig = true)]
+    private static extern int CoCreateInstance(ref Guid clsid, IntPtr outer, uint context,
+        ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out IApplicationActivationManager manager);
+    [DllImport("ole32.dll", PreserveSig = true)]
+    private static extern int CoAllowSetForegroundWindow([MarshalAs(UnmanagedType.IUnknown)] object server, IntPtr reserved);
 
     [ComImport, Guid("45BA127D-10A8-46EA-8AB7-56EA9078943C")]
     private sealed class ApplicationActivationManager { }

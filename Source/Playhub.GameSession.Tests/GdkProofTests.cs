@@ -33,6 +33,15 @@ internal static class GdkProofTests
         Expect(() => GdkLaunchProof.Resolve(Aumid, "Game.exe", catalog), "Missing declared game executable is refused before bootstrap");
         Write(directory, "Windows.FullTrustApplication", "GameLaunchHelper.exe", "Game.exe");
 
+        File.WriteAllText(Path.Combine(directory, "MicrosoftGame.Config"), "<Game><ExecutableList><Executable Name=\"Game.exe\" TargetDeviceFamily=\"PC\" IsDevOnly=\"false\"/><Executable Name=\"Debug.exe\" TargetDeviceFamily=\"PC\" IsDevOnly=\"true\"/></ExecutableList></Game>");
+        Check(GdkLaunchProof.Resolve(Aumid, "Game.exe", catalog).Game == Path.Combine(directory, "Game.exe"),
+            "GDK optional Id binds one registered app to its unique retail PC executable");
+        File.WriteAllText(Path.Combine(directory, "MicrosoftGame.Config"), "<Game><ExecutableList><Executable Name=\"Game.exe\" TargetDeviceFamily=\"PC\"/><Executable Name=\"Other.exe\" TargetDeviceFamily=\"PC\"/></ExecutableList></Game>");
+        Expect(() => GdkLaunchProof.Resolve(Aumid, "Game.exe", catalog), "Multiple implicit retail executables are refused before bootstrap");
+        File.WriteAllText(Path.Combine(directory, "MicrosoftGame.Config"), "<Game><ExecutableList><Executable Id=\"Game\" Name=\"Game.exe\" TargetDeviceFamily=\"PC\" IsDevOnly=\"true\"/></ExecutableList></Game>");
+        Expect(() => GdkLaunchProof.Resolve(Aumid, "Game.exe", catalog), "Developer-only GDK entry cannot bootstrap a retail store game");
+        Write(directory, "Windows.FullTrustApplication", "GameLaunchHelper.exe", "Game.exe");
+
         var output = Path.Combine(directory, "raw-arguments.json");
         var values = new[] { "a b", "", "trailing\\", "a\"b" };
         var raw = string.Join(" ", new[] { "child", "10", output }.Concat(values).Select(GameLifetime.Quote));

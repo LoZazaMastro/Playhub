@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
 using Playhub.GameSession;
+using Playhub.StoreLibrary;
 
 internal static class UwpCompanionChecks
 {
@@ -23,6 +24,44 @@ internal static class UwpCompanionChecks
             && !UwpCompanionProtocol.ParentArgumentsMatch([wrapper, "--uwp", "Other!App", plan.Executable], wrapper, plan)
             && !UwpCompanionProtocol.ParentArgumentsMatch(args, @"C:\Other\Playhub.GameSession.exe", plan),
             "A Win32 launch, another AUMID or another wrapper image cannot authorize a registered UWP companion");
+        var now = DateTimeOffset.UtcNow;
+        var privateLaunch = new StorePrivateLaunchPlan(Guid.NewGuid(), new(StoreKind.Xbox,"9NBLGGH1ZB7X"),
+            @"C:\XboxPackage\Binaries\CosmoRun.exe", @"C:\XboxPackage", [], new Dictionary<string,string>(), now.AddSeconds(30), "Fixture.Cosmo_abcdef!App");
+        var binding = UwpStoreCompanionBinding.Create(privateLaunch, now);
+        var storePlan = new UwpCompanionPlan(100,200,id,binding.Aumid,binding.ManifestExecutable,binding);
+        string[] actualStoreArgs = [wrapper,"--store-library","xbox","9NBLGGH1ZB7X"];
+        check(UwpCompanionProtocol.ParentArgumentsMatch(actualStoreArgs,wrapper,storePlan) && storePlan.Matches(100,200,id),
+            "Managed Cosmo Run real wrapper argv is authorized only with its exact private broker binding");
+        foreach (string[] foreign in new[] { new[] {wrapper,"--store-library","xbox","9NBLGGH1ZB7Y"}, new[] {wrapper,"--store-library","gog",binding.ProductId},
+            new[] {wrapper,"--store-library","xbox",binding.ProductId,"--extra"}, new[] {wrapper,"--uwp",binding.Aumid,binding.ManifestExecutable},
+            new[] {@"C:\Other\Playhub.GameSession.exe","--store-library","xbox",binding.ProductId} })
+            check(!UwpCompanionProtocol.ParentArgumentsMatch(foreign,wrapper,storePlan), "Another key/store/image/route or additional argv cannot reuse the managed binding");
+        check(!UwpCompanionProtocol.ParentArgumentsMatch(actualStoreArgs,wrapper,storePlan with {StoreLaunch=null})
+            && !UwpCompanionProtocol.ParentArgumentsMatch(actualStoreArgs,wrapper,storePlan with {Aumid="Other!App"})
+            && !UwpCompanionProtocol.ParentArgumentsMatch(actualStoreArgs,wrapper,storePlan with {Executable="Other.exe"}),
+            "Bare generic store argv or changed AUMID/manifest cannot authorize a companion");
+        check(!storePlan.Matches(101,200,id)&&!storePlan.Matches(100,201,id)&&!storePlan.Matches(100,200,id+(1UL<<32)),
+            "Store binding retains the exact parent PID, creation time and Steam shortcut proof");
+        var descriptor = new StoreLaunchDescriptor(privateLaunch.Key,1,20,true,true,wrapper,Path.GetDirectoryName(wrapper),
+            ["--store-library","xbox",binding.ProductId],GameExecutablePath:binding.GameExecutable);
+        check(binding.MatchesBroker(descriptor,wrapper,binding.GameExecutable,now),
+            "Independent current broker launch descriptor confirms exact product, wrapper tuple and registered absolute image");
+        foreach (var foreign in new[] { descriptor with {Key=new(StoreKind.Xbox,"9NBLGGH1ZB7Y")},descriptor with {Key=new(StoreKind.Gog,binding.ProductId)},
+            descriptor with {IsInstalled=false},descriptor with {IsLaunchable=false},descriptor with {ErrorCode="account_changed"},
+            descriptor with {ExecutablePath=@"C:\Other\Playhub.GameSession.exe"},descriptor with {WorkingDirectory=@"C:\Other"},
+            descriptor with {Arguments=["--store-library","xbox","9NBLGGH1ZB7Y"]},descriptor with {Arguments=["--store-library","xbox",binding.ProductId,"extra"]},
+            descriptor with {GameExecutablePath=@"C:\Other\CosmoRun.exe"},descriptor with {GameExecutablePath=null} })
+            check(!binding.MatchesBroker(foreign,wrapper,binding.GameExecutable,now),"Changed current broker key/account/tuple/image refuses the managed companion");
+        check(!binding.MatchesBroker(descriptor,wrapper,@"C:\Other\CosmoRun.exe",now)
+            && !(binding with {ExpiresAt=now}).MatchesBroker(descriptor,wrapper,binding.GameExecutable,now)
+            && !(binding with {LaunchId=Guid.Empty}).MatchesBroker(descriptor,wrapper,binding.GameExecutable,now),
+            "Registration mismatch, expired private receipt and empty launch ID cannot authorize a companion");
+        check(binding.MatchesBroker(descriptor,wrapper,@"D:\PhysicalPackage\Binaries\CosmoRun.exe",now,@"D:\PhysicalPackage\Binaries\CosmoRun.exe")
+            && !binding.MatchesBroker(descriptor,wrapper,@"D:\OtherPackage\Binaries\CosmoRun.exe",now,@"D:\PhysicalPackage\Binaries\CosmoRun.exe"),
+            "A handle-resolved registered directory junction preserves the exact broker image, never another same-name package executable");
+        var storeWire=JsonSerializer.Serialize(storePlan)+"\n";
+        check(UwpCompanionProtocol.ReadLine<UwpCompanionPlan>(new MemoryStream(Encoding.UTF8.GetBytes(storeWire)),true,false).GetAwaiter().GetResult()==storePlan,
+            "Private two-phase transport preserves the store binding without public command-line payload");
         var target = new UwpCompanionTarget(300, 400, 350);
         check(target.Matches(300, 400, 200, 500), "UWP target is a newly activated exact process");
         check(!target.Matches(301, 400, 200, 500) && !target.Matches(300, 401, 200, 500)

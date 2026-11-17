@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms><TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <Target Name="ExtractProductionArtworkMethods" BeforeTargets="BeforeCompile">
+    <Exec Command="python -B &quot;$(MSBuildProjectDirectory)\GenerateActualMethods.py&quot;" />
+  </Target>
+  <ItemGroup>
+    <Compile Include="Program.cs;ActualMethods.Generated.cs" />
+    <Compile Include="../Playhub/Services/ImportArtworkDownload.cs;../Playhub/Services/ImportedArtworkSelection.cs;../Playhub/Services/CoverFormat.cs;../Playhub/Models/UwpGameEntry.cs" />
+    <Compile Include="../ApplicationIntegrations/Native/ApplicationImageCache.cs;../ApplicationIntegrations/ApplicationIntegrationDataStore.cs" />
+  </ItemGroup>
+</Project>

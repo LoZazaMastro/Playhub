@@ -196,10 +196,13 @@ test("plugin init/mount/unload and ControlCenter anchors/replay are wired withou
   const dismount = index.match(/onDismount\(\)\s*\{[\s\S]*?\n    \}/);
   assert.ok(dismount, "index.tsx must declare onDismount");
   const calls = [];
-  const names = ["stopDeckyIpcRecovery", "uninstallCircles", "disposeDisplayConfirmation", "uninstallOnboarding", "uninstallDeckyHost", "uninstallQuickSettings", "uninstallControlledQamFocus", "uninstallLivePerformance", "uninstallHomeNews", "clearDashboardChrome", "stopOpenRequestWatcher", "uninstallNavigationHaptics", "uninstallPowerMenuPatch", "uninstallPlayhubQam"];
+  const names = ["stopStoreDigitalPortal", "stopStoreLibraryUi", "stopStoreLibrary", "stopUpdateNotice", "stopDeckyIpcRecovery", "uninstallCircles", "disposeDisplayConfirmation", "uninstallOnboarding", "uninstallDeckyHost", "uninstallQuickSettings", "uninstallControlledQamFocus", "uninstallLivePerformance", "uninstallHomeNews", "clearDashboardChrome", "stopOpenRequestWatcher", "uninstallNavigationHaptics", "uninstallVirtualControllerName", "uninstallPowerMenuPatch", "uninstallPlayhubQam"];
   const scope = Object.fromEntries(names.map(name => [name, () => { calls.push(name); if (name === "uninstallCircles") throw Error("fixture teardown failure"); }]));
   vm.runInNewContext(`({${dismount[0]}}).onDismount()`, { ...scope, steamFocusRecovery: { uninstall() {} }, routerHook: { removeRoute() {} }, DASHBOARD_ROUTE: "/dashboard", PLUGIN_STORE_ROUTE: "/store", console: { warn() {} } });
   assert.equal(calls.filter(name => name === "uninstallOnboarding").length, 1);
+  assert.equal(calls.filter(name => name === "stopUpdateNotice").length, 1);
+  assert.deepEqual(calls.slice(0, 3), ["stopStoreDigitalPortal", "stopStoreLibraryUi", "stopStoreLibrary"], "the current store UI and runtime are both released");
+  assert.ok(names.every(name => calls.filter(value => value === name).length === 1), "all real cleanup registrations must run once despite one throwing");
   assert.equal(calls.at(-1), "uninstallPlayhubQam", "one teardown failure must not prevent later cleanup");
   assert.match(controls, /data-playhub-onboarding-controls/); assert.doesNotMatch(controls, /resumePlayhubOnboarding/);
   assert.match(controls, /replayPlayhubOnboarding\(\)/);

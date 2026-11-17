@@ -135,7 +135,7 @@ public static class AgentHost
 			int maxSplashVisibleMs = Math.Clamp(modeConfig.Gaming.Splash.MaxVisibleMs, 5000, 120000);
 			using SplashScreenService splashScreen = new SplashScreenService(logger);
 			using SteamThemeStartupCover? themedStartup = showSplash
-				? new(splashScreen, logger, modeConfig.Gaming.SteamPath, minSplashVisibleMs, maxSplashVisibleMs) : null;
+				? new(splashScreen, logger, modeConfig.Gaming.SteamPath, minSplashVisibleMs, maxSplashVisibleMs, coldBoot: true) : null;
 			// Paint the login curtain before constructing any input, audio or dashboard service.
 			if (showSplash)
 			{
@@ -184,8 +184,8 @@ public static class AgentHost
 					try
 					{
 						processTools.CleanupDeckyOrphanedForks();
-						manager.StartupForegroundGuard = showSplash && modeConfig.Gaming.Splash.Enabled && themedStartup is not null
-							? () => themedStartup.MayLaunch : null;
+						// The saved boot destination is independent of transient startup windows or controller input.
+						themedStartup?.SetConfiguredBootGuard(() => manager.ConfiguredBootMayProceed);
 						await manager.ApplyBootModeAsync(flag);
 						waitForSteamFullscreen = true;
 					}
@@ -245,7 +245,15 @@ public static class AgentHost
 						UseShellExecute = false, CreateNoWindow = true, WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
 					}) ?? throw new InvalidOperationException("Unable to start the Windows desktop shell.");
 					logger.Info("Xbox shell preparation requested by the game-session helper.");
-				});
+                }, activationRoute: () =>
+                {
+                    var gaming = store.LoadConfig().Gaming;
+                    bool requested = store.LoadState().CurrentMode == ModeKind.Gaming
+                        && gaming.CloseExplorerInGamingMode && gaming.AllowExplorerCloseInGamingMode;
+                    if (!requested) return XboxShellBroker.ActivationRoute.ShellRequired;
+                    return ShellFreeOverlayTrialPolicy.MayRunWithoutExplorer(gaming)
+                        ? XboxShellBroker.ActivationRoute.DirectAam : XboxShellBroker.ActivationRoute.Unavailable;
+                });
 				app.Use(async delegate(HttpContext context, Func<Task> next)
 				{
 					context.Response.Headers["Access-Control-Allow-Origin"] = "*";
@@ -261,26 +269,67 @@ public static class AgentHost
 					}
 				});
 				app.MapGet("/health", (Func<IResult>)(() => Results.Text("ok")));
+				XboxShellBootstrap? xboxBootstrap=null;
 				app.MapPost("/xbox/shell/ensure", (Func<HttpContext, IResult>)((HttpContext context) =>
 				{
-					return xboxShell.RequestShell(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString())
-						? Results.Json(new { ok = true }) : Results.StatusCode(401);
+                    string token=context.Request.Headers["X-Playhub-Shell-Token"].ToString();
+                    if(!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress,token))return Results.StatusCode(401);
+                    var query=context.Request.Query;
+                    if(manager.WithShellBootstrapGaming(()=>true)&&uint.TryParse(query["bootstrapAppId"],out uint bootstrapApp)&&bootstrapApp>=0x80000000
+                        &&uint.TryParse(query["wrapperPid"],out uint wrapperPid)&&wrapperPid>0
+                        &&long.TryParse(query["wrapperBirth"],out long wrapperBirth)&&wrapperBirth>0){
+                        try{
+                            var caller=WindowsXboxShellBootstrap.Caller(bootstrapApp,wrapperPid,wrapperBirth);
+                            if(caller is not null&&xboxBootstrap?.Begin(caller) is {} receipt)
+                                return Results.Json(new{ok=true,bootstrapProtocol=1,bootstrapTicket=receipt.Ticket});
+                            xboxBootstrap?.Invalidate();
+                        }catch(Exception error)when(error is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception){
+                            xboxBootstrap?.Invalidate();logger.Info("Xbox bootstrap ownership unavailable; preserving shell-required activation.");
+                        }
+                    }else xboxBootstrap?.Invalidate();
+                    return xboxShell.RequestShell(context.Connection.RemoteIpAddress,token)
+                        ? Results.Json(new { ok = true }) : Results.StatusCode(401);
 				}));
+				app.MapPost("/xbox/activation/readiness", (Func<HttpContext, IResult>)((HttpContext context) =>
+                {
+                    var direct = xboxShell.DirectActivationAuthorized(context.Connection.RemoteIpAddress,
+                        context.Request.Headers["X-Playhub-Shell-Token"].ToString());
+                    if (!direct.HasValue) return Results.StatusCode(401);
+                    if (direct.Value == XboxShellBroker.ActivationRoute.Unavailable) return Results.StatusCode(409);
+                    return Results.Json(new { protocol = 1, ok = true,
+                        route = direct.Value == XboxShellBroker.ActivationRoute.DirectAam ? "direct-aam" : "shell-required" });
+                }));
+				EpicProtocolLaunchBroker.Map(app, xboxShell);
+				PlayhubUpdateNotice.Map(app, xboxShell);
 				var gameBarGuide = new GameBarGuideService(WindowsXboxGameBar.ToggleVerified, () => Environment.TickCount64);
 				var frameCollector = new PresentMonFrameCollector(Path.Combine(AppContext.BaseDirectory, "PresentMon", "PresentMon.exe"));
 				await using var livePerformance = new LivePerformanceController(new LivePerformanceSettingsStore(),
 					new LivePerformanceRuntime(windowFocus, Path.Combine(AppContext.BaseDirectory, "PresentMon", "PresentMon.exe")));
 				using var livePerformanceLifetime = new LivePerformanceLifetime(livePerformance, app.Lifetime.ApplicationStopping);
+				using var xboxProfileForeground = new XboxProfileForegroundService(logger.Info);
 				manager.ModeTransitionStarted += livePerformance.Invalidate;
 				LivePerformanceEndpoints.Map(app, xboxShell, livePerformance);
 				await using var launchCurtainCover = new LaunchCurtainCoverController(windowFocus, app.Lifetime.ApplicationStopping);
+				windowFocus.SetModernCurtainPriority(() => launchCurtainCover.HasVisualPriority);
 				manager.ModeTransitionStarted += launchCurtainCover.Invalidate;
 				using var launchCurtainShutdown = app.Lifetime.ApplicationStopping.Register(launchCurtainCover.Invalidate);
 				LaunchCurtainCoverEndpoints.Map(app, xboxShell, launchCurtainCover,
 					context => LaunchCurtainPublisherChannel.Read(context, modeConfig.Gaming.DeckyPath, processTools.GetDeckyFallbackPaths()));
+                var bootstrapResolver=new LivePerformanceSourceResolver(windowFocus);
+                using var bootstrapLifetime=new XboxShellBootstrap(WindowsXboxShellBootstrap.CallerCurrent,WindowsXboxShellBootstrap.NoExplorer,
+                    WindowsXboxShellBootstrap.Start,manager.WithShellBootstrapGaming,
+                    (caller,pid,cancel)=>WindowsXboxShellBootstrap.ResolveAsync(caller,pid,bootstrapResolver,cancel),
+                    (target,action)=>launchCurtainCover.WithBootstrapReleased(target.Caller.AppId,target.GamePid,target.GameBirth,action),
+                    reason=>logger.Info("Xbox shell "+reason+"."),
+                    cleanupAfterExit:(target,action)=>launchCurtainCover.WithBootstrapCleanupAfterGameExit(
+                        target.Caller.AppId,target.GamePid,target.GameBirth,()=>target.GameExited,action));
+                xboxBootstrap=bootstrapLifetime;
+                manager.ModeTransitionStarted+=bootstrapLifetime.Invalidate;
+                using var bootstrapShutdown=app.Lifetime.ApplicationStopping.Register(bootstrapLifetime.Invalidate);
 				using var ownedLaunchShutdown = app.Lifetime.ApplicationStopping.Register(Win32SteamSessionAssociation.DisposeOwned);
 				OwnedWin32RouteEndpoints.Map(app, xboxShell, logger.Info);
 				NativeGameOverlayEndpoints.Map(app, xboxShell, logger.Info);
+                SpatialAudioService.Map(app, xboxShell, Path.Combine(AppContext.BaseDirectory, "Assets", "SpatialAudio", "Svcl"));
 				int gamingSessionEnabled = store.LoadState().CurrentMode == ModeKind.Gaming ? 1 : 0;
 				bool GamingSessionEnabled() => Volatile.Read(ref gamingSessionEnabled) != 0 && !app.Lifetime.ApplicationStopping.IsCancellationRequested;
 				using var gameQos = new GameExecutionQosController(GamingSessionEnabled);
@@ -302,43 +351,32 @@ public static class AgentHost
 				};
 				using var shutdownSessionOptions = app.Lifetime.ApplicationStopping.Register(StopSessionOptions);
 
-				object gameAudioGate = new();
-				app.MapPost("/session/steam/game-audio", (Func<HttpContext, IResult>)(context =>
-				{
-					if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString()))
-						return Results.StatusCode(401);
-					var query = context.Request.Query;
-					if (!uint.TryParse(query["appId"], out uint appId) || appId == 0) return Results.StatusCode(400);
-					bool write = query.ContainsKey("level");
-					string token = query["token"].ToString();
-					int level = 0;
-					if (write && (!int.TryParse(query["level"], out level) || level is < 0 or > 100 ||
-						token.Length != 64 || !token.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f'))) return Results.StatusCode(400);
-					if (!write && query.ContainsKey("token")) return Results.StatusCode(400);
-
-					lock (gameAudioGate)
-					{
-						if (app.Lifetime.ApplicationStopping.IsCancellationRequested || !windowFocus.TryGetQamSource(out nint window, out uint gamePid))
-							return Results.Json(new { status = "Unavailable" });
-
-						try
-						{
-							using var process = System.Diagnostics.Process.GetProcessById((int)gamePid);
-							long birth = process.StartTime.ToFileTimeUtc();
-							bool StillCurrent() => !context.RequestAborted.IsCancellationRequested && !app.Lifetime.ApplicationStopping.IsCancellationRequested &&
-								!process.HasExited &&
-								windowFocus.TryGetQamSource(out nint current, out uint currentPid) && current == window && currentPid == gamePid &&
-								(OverlaySteamArtworkResolver.IsTrackedAppProcess(process.Id, appId) || UwpSteamSessionAssociation.Find(gamePid, appId) is not null);
-
-							if (!StillCurrent()) return Results.Json(new { status = "Unavailable" });
-							var target = new GameAudioTarget(process.Id, birth);
-							return Results.Json(write ? GameAudioVolumeService.Set(target, level, token, StillCurrent)
-								: GameAudioVolumeService.Read(target, StillCurrent));
-						}
-						catch (Exception error) when (error is InvalidOperationException or ArgumentException or System.ComponentModel.Win32Exception)
-						{ return Results.Json(new { status = "Unavailable" }); }
-					}
-				}));
+                object gameAudioGate = new();
+                var gameAudioTargets = new GameAudioTargetResolver(windowFocus, app.Lifetime.ApplicationStopping);
+                app.MapPost("/session/steam/game-audio", (Func<HttpContext, Task<IResult>>)(async context =>
+                {
+                    if (!xboxShell.IsAuthorized(context.Connection.RemoteIpAddress, context.Request.Headers["X-Playhub-Shell-Token"].ToString()))
+                        return Results.StatusCode(401);
+                    var query = context.Request.Query;
+                    if (!uint.TryParse(query["appId"], out uint appId) || appId == 0) return Results.StatusCode(400);
+                    bool write = query.ContainsKey("level");
+                    string token = query["token"].ToString();
+                    int level = 0;
+                    if (write && (!int.TryParse(query["level"], out level) || level is < 0 or > 100 ||
+                        token.Length != 64 || !token.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f'))) return Results.StatusCode(400);
+                    if (!write && query.ContainsKey("token")) return Results.StatusCode(400);
+                    var resolved = await gameAudioTargets.ResolveAsync(appId, context.RequestAborted).ConfigureAwait(false);
+                    using var lease = resolved.Lease;
+                    if (lease is null) return Results.Json(new { status = resolved.Status });
+                    lock (gameAudioGate)
+                    {
+                        bool StillCurrent() => !context.RequestAborted.IsCancellationRequested
+                            && !app.Lifetime.ApplicationStopping.IsCancellationRequested && lease.Current;
+                        if (!StillCurrent()) return Results.Json(new { status = "Unavailable" });
+                        return Results.Json(write ? GameAudioVolumeService.Set(lease.Target, level, token, StillCurrent)
+                            : GameAudioVolumeService.Read(lease.Target, StillCurrent));
+                    }
+                }));
 
 				app.MapPost("/session/steam/game-qos", (Func<HttpContext, Task<IResult>>)(async context =>
 				{
@@ -448,7 +486,14 @@ public static class AgentHost
 					uint gamePid = 0;
 					if (context.Request.Query.TryGetValue("gamePid", out var requestedPid)
 						&& (!uint.TryParse(requestedPid, out gamePid) || gamePid == 0)) return Results.StatusCode(400);
-					return Results.Json(new { ok = await windowFocus.ArmBigPictureReturnAsync(appId, gamePid, context.RequestAborted) });
+                    string bootstrapTicket=context.Request.Query["bootstrapTicket"].ToString();
+                    if(bootstrapTicket.Length>0&&(bootstrapTicket.Length!=32||!Guid.TryParseExact(bootstrapTicket,"N",out _)))return Results.StatusCode(400);
+                    bool armed=await windowFocus.ArmBigPictureReturnAsync(appId,gamePid,context.RequestAborted);
+                    if(armed&&bootstrapTicket.Length>0&&xboxBootstrap is {} bootstrap){
+                        var result=await bootstrap.CompleteAsync(bootstrapTicket,appId,gamePid,context.RequestAborted);
+                        return Results.Json(new{ok=true,bootstrapPending=result==XboxShellBootstrap.Completion.Pending});
+                    }
+                    return Results.Json(new { ok=armed });
 				}));
 				app.MapPost("/session/uwp/steam-overlay", (Func<HttpContext, Task<IResult>>)(async context =>
 				{
@@ -516,8 +561,8 @@ public static class AgentHost
                             || !body.TryGetProperty("appId", out var appValue) || !appValue.TryGetUInt32(out uint appId) || appId < 0x80000000
                             || !body.TryGetProperty("overlayPid", out var pid) || !pid.TryGetUInt32(out uint overlayPid) || overlayPid == 0
                             || !body.TryGetProperty("action", out var action) || action.ValueKind != JsonValueKind.String
-                            || action.GetString() is not ("show" or "close")
-                            || !body.TryGetProperty("expectedMirror", out var expected) || expected.ValueKind != JsonValueKind.Object)
+                            || action.GetString() is not ("show" or "close" or "close-native-visible")
+                            || !body.TryGetProperty(action.GetString()=="close-native-visible"?"expectedNativeVisible":"expectedMirror", out var expected) || expected.ValueKind != JsonValueKind.Object)
                             return Results.StatusCode(400);
                         return Results.Json(await XboxCompanionOverlaySession.SetMirrorPresentationAsync(appId, overlayPid,
                             action.GetString()!, expected, context.RequestAborted, logger.Info));
@@ -555,7 +600,7 @@ public static class AgentHost
 					uint.TryParse(context.Request.Query["appId"], out uint appId);
 					var identities = UwpSteamSessionAssociation.FindForApp(appId);
 					var handles = identities.Count == 0 ? Array.Empty<nint>() : OverlayWindowTools.EnumerateTopLevelHandles();
-					return Results.Json(new { appId, sessions = identities.Select(identity => new {
+					return Results.Json(new { appId, pending = UwpSteamSessionAssociation.FindPendingForApp(appId), sessions = identities.Select(identity => new {
 						identity.GamePid, identity.GameBirth, identity.WrapperPid, identity.WrapperBirth,
 						identity.PackageFamily, identity.Aumid, identity.Executable,
 						windows = handles.Where(h => OverlayWindowTools.IsVisibleGameSurface(h) && MatchesXboxGameWindow(h, identity))
@@ -881,6 +926,7 @@ public static class AgentHost
 					string haptics = Field(fields, "navigationHapticsEnabled");
 					string hapticsIntensity = Field(fields, "navigationHapticsIntensity");
 					string sdl3 = Field(fields, "sdl3NativeControllerEnabled");
+					string translation = Field(fields, "steamControllerTranslationEnabled");
 					if (!string.IsNullOrWhiteSpace(keyboard) || !string.IsNullOrWhiteSpace(hotkey))
 					{
 						logger.Info($"Playhub Dashboard shortcut settings: enabled='{keyboard}' hotkey='{hotkey}'.");
@@ -891,7 +937,8 @@ public static class AgentHost
 						hotkey,
 						bool.TryParse(haptics, out bool hapticsValue) ? hapticsValue : null,
 						int.TryParse(hapticsIntensity, out int intensityValue) ? intensityValue : null,
-						bool.TryParse(sdl3, out bool sdl3Value) ? sdl3Value : null);
+						bool.TryParse(sdl3, out bool sdl3Value) ? sdl3Value : null,
+						bool.TryParse(translation, out bool translationValue) ? translationValue : null);
 					// RegisterHotKey lega la combinazione al thread una volta
 					// sola: senza questa riga la nuova resta scritta nella
 					// configurazione e muta fino al riavvio dell'agente.

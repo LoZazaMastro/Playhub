@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "family": "Inter",
+  "style": "normal",
+  "weightRange": [
+    100,
+    900
+  ],
+  "license": "SIL Open Font License 1.1",
+  "copyright": "Copyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter)",
+  "upstreamRepository": "https://github.com/rsms/inter",
+  "upstreamCommit": "e3a3d4c57d5ecc01453a575621882a384c1995a3",
+  "files": [
+    {
+      "path": "assets/fonts/InterVariable.woff2",
+      "sourceUrl": "https://raw.githubusercontent.com/rsms/inter/e3a3d4c57d5ecc01453a575621882a384c1995a3/docs/font-files/InterVariable.woff2",
+      "bytes": 352240,
+      "sha256": "693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3"
+    },
+    {
+      "path": "assets/fonts/OFL.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/rsms/inter/e3a3d4c57d5ecc01453a575621882a384c1995a3/LICENSE.txt",
+      "bytes": 4380,
+      "sha256": "262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a"
+    }
+  ],
+  "modifiedFont": false,
+  "bundledLocally": true,
+  "runtimeNetworkRequired": false,
+  "fetchedUtc": "2026-11-15T15:01:54.463642+00:00"
+}

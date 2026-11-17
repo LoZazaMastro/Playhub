@@ -1,0 +1,28 @@
+Playhub Store Library uses separate, unmodified Windows tools:
+
+Legendary 0.21.1, Rodney / Legendary contributors, GPL-3.0-or-later.
+Source commit: 42f6bdeadde3a9526dc8eb713763476999ac217b
+https://github.com/legendary-gl/legendary/releases/tag/0.21.1
+
+Heroic gogdl 1.4.0, imLinguin / Heroic contributors, GPL-3.0.
+Source commit: 6c6ef53fd4965d8d9b943c73d9400fe55eadc6ba
+https://github.com/Heroic-Games-Launcher/heroic-gogdl/releases/tag/v1.4.0
+Its xdelta submodule source at 0525275fe4b553a10f38e455d30c60dc6ed9b45d
+is included separately (Apache-2.0).
+
+Exact upstream source archives, build workflows and dependency lockfiles are
+provided in CorrespondingSource. Additional locked dependency source distributions
+and their license notices are included. CPython PSF terms and third-party notices,
+PyInstaller GPL terms with its distribution exception, requests/dependency notices,
+PyCryptodome and optional webview dependency notices are in Notices.
+
+The stock binaries bundle their own Python runtime; no Python, Heroic, Epic Games
+Launcher or GOG Galaxy installation is required for these download providers.
+Dependency versions in source-provenance.json describe the locked build inputs;
+the exact embedded stock-binary dependency SBOM has not been reconstructed.
+
+Playhub's Windows queue, IPC, supervisor and UI are original MIT-licensed code.
+Unifideck (mubaraknumann/unifideck, GPL-3.0-or-later) is the source of the
+Epic and GOG achievement-provider adaptations. Their source provenance,
+Windows changes and full license are retained in Notices/Unifideck-0.8.0-NOTICE.txt
+and Notices/GPL-3.0.txt. No Winhanced source or artwork is incorporated here.

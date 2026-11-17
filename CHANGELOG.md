@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.0.0
+
+- Digital Stores brings account sign-in to Playhub and game installation, downloads and removal to Steam Big Picture. Installed games join the Steam library with their original titles.
+- Store accounts load without disabled sign-in placeholders. Each account can connect or disconnect independently, with consistent button alignment.
+- Xbox installations offer a choice of drive. Game Pass cards identify games that require EA app, Ubisoft Connect or Battle.net through the catalog's launcher information.
+- Xbox downloads join a persistent queue alongside games from other stores. Queued Xbox installations retain their selected drive across restarts.
+- Library refreshes preserve games that are downloading. Completed Xbox installations missing from the library are recovered automatically from verified local packages.
+- Newly installed Digital Stores games appear in Steam's recent games. Download controls and progress are available in the Quick Access Menu.
+- Xbox, Epic and GOG achievements appear in Steam's Your stuff through Digital Stores, with saved progress and background refresh. Playhub Metadata continues to handle its other achievement sources.
+- Achievements load during import and refresh for the game just closed when returning to Steam. Download progress no longer invalidates another game's history actions.
+- Improved download cancellation and recovery of damaged or externally installed games for removal. Digital Stores filters support navigation in all four directions.
+- Game installation shows a language selector only when the provider offers multiple choices, with clearer localized language names.
+- Improved Xbox game tracking, controller handoff through the Xbox profile dialog and launch coverage. Includes Launch Curtain 2.5.15 and Playhub Metadata 1.8.13.
+
 ## 2.6.0
 
 Playhub 2.6.0 brings more of your PC within reach of the controller, with new monitoring tools, device-aware settings and more reliable game launching.

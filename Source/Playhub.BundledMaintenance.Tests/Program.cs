@@ -15,6 +15,15 @@ int count=0;void Check(bool value,string msg){if(!value)throw new Exception(msg)
 }
 void Populate((string Zip,string Plugins,string Dest) f){Directory.CreateDirectory(f.Plugins);ZipFile.ExtractToDirectory(f.Zip,f.Plugins,true);}
 try{
+ // Exercise the actual setup wrapper against its bundled2.5.9 archive in TEMP.
+ // Current exact bytes mean no install/reload/process enumeration can be reached.
+ var packaged=New("2.5.9");Populate(packaged);string setupRoot=Path.Combine(root,"setup-root"),packagedPath=Path.Combine(setupRoot,"Plugins","Launch Curtain","Launch-Curtain_Installer-2.5.9.zip");Directory.CreateDirectory(Path.GetDirectoryName(packagedPath)!);File.Copy(packaged.Zip,packagedPath);
+ AppPaths.TestPluginsPath=packaged.Plugins;AppPaths.TestSettingsPath=Path.Combine(root,"absent-settings.json");AppPaths.TestLocalDataRoot=Path.Combine(root,"setup-data");
+ await BundledLaunchCurtainMaintenance.MaintainInstalledAsync(setupRoot);
+ using(var result=System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(AppPaths.TestLocalDataRoot,"bundled-lc-maintenance.json"))))Check(result.RootElement.GetProperty("Status").GetString()=="current","actual setup resolves bundled2.5.9 archive instead of retired2.5.8 path");
+ foreach(string version in new[]{"2.5.9","2.8.3"}){var pendingFixture=New(version);Populate(pendingFixture);string hash=Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(pendingFixture.Zip)));File.WriteAllText(Path.Combine(pendingFixture.Dest,BundledLaunchCurtainMaintenance.ReloadMarker),hash);
+ var pendingResult=await BundledLaunchCurtainMaintenance.RunAsync(pendingFixture.Zip,pendingFixture.Plugins,(_,_,_)=>throw new Exception("current payload must never reinstall"),(_,_)=>Task.FromResult<JsonNode?>(JsonValue.Create("reloaded")),()=>BundledProcessSafety.Clear);
+ Check(pendingResult.Reloaded&&pendingResult.Version==version,"pending reload reports actual packaged version "+version);}
 
  var windows=New(separator:"\\");Populate(windows);
  Check(BundledLaunchCurtainMaintenance.Inspect(windows.Zip,windows.Plugins).Status=="current","normal Windows ZIP backslashes compare exact current payload");
@@ -106,5 +115,5 @@ try{
  Check(canceled&&finalGuards==1&&!Directory.Exists(Path.Combine(denied,"launch-curtain"))&&!deniedInfo.IsInstalled,"actual service final veto precedes all Stop/Delete/Copy/install metadata effects");
  Console.WriteLine($"{count} actual maintenance/service/process-veto checks PASS; TEMP data and fake reload only");
 }finally{Directory.Delete(root,true);}
-namespace Playhub.Services{internal static class AppPaths{internal static string TestDownloads="";public static string DownloadsRoot=>TestDownloads;public static string DefaultDeckyPluginsPath=>throw new Exception("production wrapper forbidden in test");public static string SettingsFile=>throw new Exception("production wrapper forbidden in test");public static string LocalDataRoot=>throw new Exception("production wrapper forbidden in test");}}
+namespace Playhub.Services{internal static class AppPaths{internal static string TestDownloads="";public static string DownloadsRoot=>TestDownloads;internal static string? TestPluginsPath,TestSettingsPath,TestLocalDataRoot;public static string DefaultDeckyPluginsPath=>TestPluginsPath??throw new Exception("production wrapper forbidden in test");public static string SettingsFile=>TestSettingsPath??throw new Exception("production wrapper forbidden in test");public static string LocalDataRoot=>TestLocalDataRoot??throw new Exception("production wrapper forbidden in test");}}
 namespace Playhub.Integrations{internal static class SteamPluginBridge{internal static Task<JsonNode?> EvaluateAsync(string e,CancellationToken c)=>throw new Exception("live evaluator forbidden");}}

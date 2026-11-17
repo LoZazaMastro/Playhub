@@ -9,3 +9,4 @@
     <Content Include="Harness.cs.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
+

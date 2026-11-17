@@ -87,7 +87,9 @@ Playhub installs for the current Windows user. Windows 11 x64 is recommended; on
 
 Playhub uses open-source components including UWPHook, VDFParser, and SharpSteam. Full licenses and attributions are collected in [Source/Playhub/THIRD-PARTY-NOTICES.txt](Source/Playhub/THIRD-PARTY-NOTICES.txt).
 
-Playhub is released under the [MIT](LICENSE) license.
+Digital Stores' Epic and GOG achievement providers adapt work from **[Unifideck](https://github.com/mubaraknumann/unifideck/tree/Release-0.8.0)** by **mubaraknumann and the Unifideck contributors**. The Windows provider adaptations retain their GPL-3.0-or-later notices; their provenance and complete license are included in [the store runtime notices](Source/Playhub.StoreHost/Runtime/Notices/Unifideck-0.8.0-NOTICE.txt). The Steam page integration and account-scoped cache are original Playhub code.
+
+Playhub's original code is released under the [MIT](LICENSE) license. Bundled components retain their individual licenses, including the GPL components identified in the notices.
 
 ## Media, image sources, and trademarks
 

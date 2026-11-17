@@ -10,6 +10,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Xml;
+using System.Xml.Linq;
 using Microsoft.Win32;
 using Playhub.Shared;
 
@@ -32,7 +34,14 @@ internal static class UwpSteamSessionAssociation
     private static IReadOnlyList<Tracked> _tracked = Array.Empty<Tracked>();
     private static readonly Regex Added = new(@"AppID (?<id>\d+) adding PID (?<pid>\d+) as a tracked process (?<args>.*)$", RegexOptions.CultureInvariant);
     private static readonly Regex Removed = new(@"no longer tracking PID (?<pid>\d+)", RegexOptions.CultureInvariant);
-    private static readonly Regex Command = new("^\\\"?\\\"(?<image>[^\\\"]+)\\\" --uwp \\\"(?<aumid>[^\\\"]+)\\\" \\\"(?<exe>[^\\\"]+)\\\"", RegexOptions.CultureInvariant);
+    private const int MaxCommandLength = 32768;
+    private static readonly Regex Command = new(@"^""?""(?<image>[^""]+)"" --uwp ""(?<aumid>[^""]+)"" ""(?<exe>[^""]+)""",
+        RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(50));
+    // Steam also surrounds the entire raw command with one quote, leaving the
+    // executable unquoted inside it. Do not confuse that display form with the
+    // separately quoted executable above (paths can contain spaces).
+    private static readonly Regex WholeCommand = new(@"^""(?<image>[A-Za-z]:\\[^""]+\.exe) --uwp ""(?<aumid>[^""]+)"" ""(?<exe>[^""]+)""(?: .*)?""$",
+        RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(50));
     internal static InstalledImages? ReadInstalledImages()
     {
         try
@@ -76,7 +85,10 @@ internal static class UwpSteamSessionAssociation
             Match added = Added.Match(line);
             if (!added.Success || !uint.TryParse(added.Groups["pid"].Value, out uint pid)) continue;
             active.Remove(pid);
-            Match command = Command.Match(added.Groups["args"].Value);
+            string arguments = added.Groups["args"].Value.TrimEnd('\r');
+            if (arguments.Length > MaxCommandLength || arguments.Any(char.IsControl)) continue;
+            Match command = Command.Match(arguments);
+            if (!command.Success) command = WholeCommand.Match(arguments);
             if (!command.Success || !ulong.TryParse(added.Groups["id"].Value, out ulong id) || line.Length < 21
                 || !DateTime.TryParseExact(line.Substring(1,19), "yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture,
                     System.Globalization.DateTimeStyles.None, out DateTime started)) continue;
@@ -107,50 +119,71 @@ internal static class UwpSteamSessionAssociation
 
     private static UwpSessionIdentity? Find(uint pid, uint appId, InstalledImages images)
     {
+        if (!ReadProcess(pid, out long gameBirth, out string gameImage, out string package) || package.Length == 0) return null;
+        Tracked[] tracked;
+        Verified? cached;
         lock (Sync)
         {
-            if (!ReadProcess(pid, out long gameBirth, out string gameImage, out string package) || package.Length == 0) return null;
-            IReadOnlyList<Tracked> tracked = ReadTracked();
-            if (Cache.TryGetValue(pid, out var cached))
+            tracked = ReadTracked().ToArray();
+            Cache.TryGetValue(pid, out cached);
+        }
+        if (cached is not null)
+        {
+            if (tracked.Contains(cached.Session) && ReadProcess(cached.Session.Pid, out long wrapperBirth, out string wrapperImage, out _)
+                && Matches(cached.Session, cached.Identity, cached.Session.Pid, pid, appId, wrapperBirth, gameBirth, wrapperImage, package, gameImage, images))
             {
-                if (tracked.Contains(cached.Session) && ReadProcess(cached.Session.Pid, out long wrapperBirth, out string wrapperImage, out _)
-                    && Matches(cached.Session, cached.Identity, cached.Session.Pid, pid, appId, wrapperBirth, gameBirth, wrapperImage, package, gameImage, images))
-                    return cached.Identity;
-                Cache.Remove(pid);
+                lock (Sync)
+                    if (Cache.TryGetValue(pid, out var current) && ReferenceEquals(current, cached) && ReadTracked().Contains(cached.Session))
+                        return cached.Identity;
             }
-            foreach (var session in tracked)
+            lock (Sync)
+                if (Cache.TryGetValue(pid, out var current) && ReferenceEquals(current, cached)) Cache.Remove(pid);
+        }
+        foreach (var session in tracked)
+        {
+            if ((appId != 0 && AppId(session.GameId) != appId) || !session.Image.Equals(images.Wrapper, StringComparison.OrdinalIgnoreCase)
+                || !session.Aumid.StartsWith(package + "!", StringComparison.OrdinalIgnoreCase)
+                || !Path.GetFileName(gameImage).Equals(Path.GetFileName(session.Executable), StringComparison.OrdinalIgnoreCase)
+                || !ReadProcess(session.Pid, out long wrapperBirth, out string wrapperImage, out _)
+                || !wrapperImage.Equals(images.Wrapper, StringComparison.OrdinalIgnoreCase)) continue;
+            try
             {
-                if ((appId != 0 && AppId(session.GameId) != appId) || !session.Image.Equals(images.Wrapper, StringComparison.OrdinalIgnoreCase)
-                    || !session.Aumid.StartsWith(package + "!", StringComparison.OrdinalIgnoreCase)
-                    || !Path.GetFileName(gameImage).Equals(Path.GetFileName(session.Executable), StringComparison.OrdinalIgnoreCase)
-                    || !ReadProcess(session.Pid, out long wrapperBirth, out string wrapperImage, out _)
-                    || !wrapperImage.Equals(images.Wrapper, StringComparison.OrdinalIgnoreCase)) continue;
-                try
+                // IPC can take its full bounded timeout. It must not hold the
+                // shared tracked/cache lock used by independent launch queries.
+                using var stop = new CancellationTokenSource(200);
+                using var pipe = new NamedPipeClientStream(".", UwpSessionIdentity.PipeName(session.Pid, wrapperBirth), PipeDirection.In,
+                    PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+                pipe.ConnectAsync(stop.Token).GetAwaiter().GetResult();
+                if (!GetNamedPipeServerProcessId(pipe.SafePipeHandle.DangerousGetHandle(), out uint serverPid) || serverPid != session.Pid) continue;
+                byte[] bytes = new byte[4096]; int length = 0;
+                while (length < bytes.Length)
                 {
-                    using var stop = new CancellationTokenSource(200);
-                    using var pipe = new NamedPipeClientStream(".", UwpSessionIdentity.PipeName(session.Pid, wrapperBirth), PipeDirection.In,
-                        PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
-                    pipe.ConnectAsync(stop.Token).GetAwaiter().GetResult();
-                    if (!GetNamedPipeServerProcessId(pipe.SafePipeHandle.DangerousGetHandle(), out uint serverPid) || serverPid != session.Pid) continue;
-                    byte[] bytes = new byte[4096]; int length = 0;
-                    while (length < bytes.Length)
-                    {
-                        int read = pipe.ReadAsync(bytes.AsMemory(length), stop.Token).AsTask().GetAwaiter().GetResult();
-                        if (read == 0) break;
-                        length += read;
-                        if (Array.IndexOf(bytes, (byte)'\n', 0, length) >= 0) break;
-                    }
-                    if (length == bytes.Length) continue;
-                    var identity = JsonSerializer.Deserialize<UwpSessionIdentity>(Encoding.UTF8.GetString(bytes, 0, length));
-                    if (identity is null || !Matches(session, identity, serverPid, pid, appId, wrapperBirth, gameBirth, wrapperImage, package, gameImage, images)) continue;
+                    int read = pipe.ReadAsync(bytes.AsMemory(length), stop.Token).AsTask().GetAwaiter().GetResult();
+                    if (read == 0) break;
+                    length += read;
+                    if (Array.IndexOf(bytes, (byte)'\n', 0, length) >= 0) break;
+                }
+                if (length == bytes.Length) continue;
+                var identity = JsonSerializer.Deserialize<UwpSessionIdentity>(Encoding.UTF8.GetString(bytes, 0, length));
+                if (identity is null || !Matches(session, identity, serverPid, pid, appId, wrapperBirth, gameBirth, wrapperImage, package, gameImage, images)) continue;
+                // The IPC reply cannot inherit a removed wrapper or recycled
+                // game PID while this query was outside the coordination lock.
+                if (!ReadProcess(pid, out long latestGameBirth, out string latestGameImage, out string latestPackage)
+                    || !ReadProcess(session.Pid, out long latestWrapperBirth, out string latestWrapperImage, out _)
+                    || !Matches(session, identity, serverPid, pid, appId, latestWrapperBirth, latestGameBirth,
+                        latestWrapperImage, latestPackage, latestGameImage, images)) continue;
+                lock (Sync)
+                {
+                    if (!ReadTracked().Contains(session)) continue;
+                    if (Cache.TryGetValue(pid, out var current) && !ReferenceEquals(current, cached) && current.Identity != identity) continue;
                     if (Cache.Count > 64) Cache.Clear();
                     Cache[pid] = new(identity, session);
                     return identity;
                 }
-                catch (Exception error) when (error is IOException or OperationCanceledException or JsonException or UnauthorizedAccessException) { }
             }
-            return null;
+            catch (Exception error) when (error is IOException or OperationCanceledException or JsonException or UnauthorizedAccessException) { }
         }
+        return null;
     }
     internal static IReadOnlyList<UwpSessionIdentity> FindForApp(uint appId) =>
         appId != 0 && ReadInstalledImages() is { } images ? FindForApp(appId, images) : Array.Empty<UwpSessionIdentity>();
@@ -180,6 +213,111 @@ internal static class UwpSteamSessionAssociation
         }
         return found;
     }
+
+    internal sealed record PendingLaunch(uint AppId, uint WrapperPid, long WrapperBirth, string Aumid, string Executable,
+        string WrapperImage, long StartedAtUnixMs, long ExpiresAtUnixMs, bool GameReadyClaimed = false, bool InputAuthorityClaimed = false);
+    internal sealed record PendingWrapper(long Birth, string Image, uint Session);
+    internal static IReadOnlyList<PendingLaunch> FindPendingForApp(uint appId)
+    {
+        if (appId == 0 || ReadInstalledImages() is not { } images) return [];
+        using var own = Process.GetCurrentProcess();
+        lock (Sync) return FindPending(appId, images, ReadTracked, ReadPendingWrapper, PendingRegistration,
+            () => DateTime.UtcNow, (uint)own.SessionId);
+    }
+    // Pure policy seam: all production provenance reads are supplied above.
+    internal static IReadOnlyList<PendingLaunch> FindPending(uint appId, InstalledImages images,
+        Func<IReadOnlyList<Tracked>> tracked, Func<uint, PendingWrapper?> read,
+        Func<Tracked, bool> registered, Func<DateTime> clock, uint sessionId)
+    {
+        DateTime utcNow = clock();
+        if (appId == 0 || utcNow.Kind != DateTimeKind.Utc) return [];
+        var found = new List<PendingLaunch>();
+        foreach (var item in tracked().Where(s => AppId(s.GameId) == appId).Take(4).ToArray())
+        {
+            try
+            {
+                var before = read(item.Pid);
+                if (before is null || before.Birth <= 0 || before.Session != sessionId
+                    || !item.Image.Equals(images.Wrapper, StringComparison.OrdinalIgnoreCase)
+                    || !before.Image.Equals(images.Wrapper, StringComparison.OrdinalIgnoreCase)) continue;
+                DateTime started = DateTime.FromFileTimeUtc(before.Birth), expires = started.AddSeconds(15);
+                if (utcNow < started || utcNow >= expires
+                    || Math.Abs((started.ToLocalTime() - item.Started).TotalSeconds) > 2
+                    || !registered(item)) continue;
+                // Registry/manifest I/O cannot preserve a removed/recycled wrapper.
+                if (read(item.Pid) != before || !tracked().Contains(item)) continue;
+                DateTime completed = clock();
+                if (completed.Kind != DateTimeKind.Utc || completed < utcNow || completed < started || completed >= expires) continue;
+                found.Add(new(appId, item.Pid, before.Birth, item.Aumid, item.Executable, before.Image,
+                    new DateTimeOffset(started).ToUnixTimeMilliseconds(), new DateTimeOffset(expires).ToUnixTimeMilliseconds()));
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or SecurityException
+                or ArgumentException or InvalidOperationException or InvalidDataException or XmlException) { }
+        }
+        return found;
+    }
+    private static PendingWrapper? ReadPendingWrapper(uint pid)
+    {
+        return ReadProcess(pid, out long birth, out string image, out _)
+            && ProcessIdToSessionId(pid, out uint session) ? new(birth, image, session) : null;
+    }
+    private static bool PendingRegistration(Tracked item)
+    {
+        var parts = item.Aumid.Split('!');
+        if (parts.Length != 2 || parts.Any(string.IsNullOrWhiteSpace) || item.Aumid.Length > 512
+            || string.IsNullOrWhiteSpace(item.Executable) || Path.IsPathRooted(item.Executable)
+            || item.Executable.Split('\\', '/').Any(p => p is ".." or "." or "")
+            || !item.Executable.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) return false;
+        uint count = 0, characters = 0;
+        if (GetPackagesByPackageFamily(parts[0], ref count, 0, ref characters, 0) != 122
+            || count is 0 or > 128 || characters is 0 or > 1048576) return false;
+        nint pointers = Marshal.AllocHGlobal(checked((int)count * IntPtr.Size)), buffer = Marshal.AllocHGlobal(checked((int)characters * 2));
+        try
+        {
+            if (GetPackagesByPackageFamily(parts[0], ref count, pointers, ref characters, buffer) != 0) return false;
+            int matches = 0;
+            for (int index = 0; index < count; ++index)
+            {
+                string? fullName = Marshal.PtrToStringUni(Marshal.ReadIntPtr(pointers, checked(index * IntPtr.Size)));
+                if (string.IsNullOrEmpty(fullName)) continue;
+                uint size = 0;
+                if (GetPackagePathByFullName(fullName, ref size, null) != 122 || size is 0 or > 32768) continue;
+                var path = new StringBuilder((int)size);
+                if (GetPackagePathByFullName(fullName, ref size, path) != 0) continue;
+                string directory = Path.GetFullPath(path.ToString());
+                var xml = ReadPendingXml(Path.Combine(directory, "AppxManifest.xml"));
+                var applications = xml.Root?.Elements().SingleOrDefault(e => e.Name.LocalName == "Applications");
+                var app = applications?.Elements().SingleOrDefault(e => e.Name.LocalName == "Application"
+                    && string.Equals((string?)e.Attribute("Id"), parts[1], StringComparison.OrdinalIgnoreCase));
+                string executable = (string?)app?.Attribute("Executable") ?? "";
+                bool same = executable.Equals(item.Executable, StringComparison.OrdinalIgnoreCase);
+                if (!same && Path.GetFileName(executable).Equals("GameLaunchHelper.exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    var config = ReadPendingXml(Path.Combine(directory, "MicrosoftGame.Config"));
+                    same = config.Root?.Elements().Where(e => e.Name.LocalName == "ExecutableList").SelectMany(e => e.Elements())
+                        .Count(e => e.Name.LocalName == "Executable"
+                            && string.Equals((string?)e.Attribute("Id"), parts[1], StringComparison.OrdinalIgnoreCase)
+                            && string.Equals((string?)e.Attribute("Name"), item.Executable, StringComparison.OrdinalIgnoreCase)) == 1;
+                }
+                string game = Path.GetFullPath(Path.Combine(directory, item.Executable));
+                if (same && game.StartsWith(directory.TrimEnd('\\') + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                    && File.Exists(game)) ++matches;
+            }
+            return matches == 1;
+        }
+        finally { Marshal.FreeHGlobal(buffer); Marshal.FreeHGlobal(pointers); }
+    }
+    private static XDocument ReadPendingXml(string path)
+    {
+        using var file = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        if (file.Length is <= 0 or > 1048576) throw new InvalidDataException("Bounded registered application metadata required.");
+        using var reader = XmlReader.Create(file, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit,
+            XmlResolver = null, MaxCharactersInDocument = 1048576, CloseInput = false });
+        return XDocument.Load(reader);
+    }
+    [DllImport("kernel32.dll")] private static extern bool ProcessIdToSessionId(uint pid, out uint session);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern int GetPackagesByPackageFamily(string family, ref uint count, nint names, ref uint characters, nint buffer);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern int GetPackagePathByFullName(string fullName, ref uint length, StringBuilder? path);
 
     // A Windows frame identifies the app, so the frame alone cannot distinguish two live copies.
     internal static bool IsOnlyRunningInstance(UwpSessionIdentity identity)

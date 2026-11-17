@@ -58,6 +58,7 @@ import {
   setSteamOverlayActive,
 } from "./backend";
 import { installLosslessGameIntegration } from "./losslessProfiles";
+import { losslessCaptureLabel } from "./losslessCaptureLocale";
 import { Strings, t } from "./translations";
 import { ControlSection } from "../ControlSection";
 import type { ControlTab } from "../controlCenterState";
@@ -65,6 +66,8 @@ import { controlLocale } from "../controlCenterLocale";
 import { createSettledWriter } from "../panelIntegration/settledWriter";
 import { PerformanceSettings } from "./PerformanceSettings";
 import { ShaderCompatibility } from "./ShaderCompatibility";
+import { NvidiaControls } from "./NvidiaControls";
+import { nvidiaLocale } from "./nvidiaLocale";
 import { PowerProfile } from "./PowerProfile";
 import { ProcessorBoost } from "./ProcessorBoost";
 import { HandheldPowerMode } from "./HandheldPowerMode";
@@ -74,11 +77,10 @@ import { AsusPerformanceActions } from "./AsusPerformanceActions";
 import { AsusFanStatus } from "./AsusFanStatus";
 import { OneXFanControls } from "./OneXFanControls";
 import { LenovoPowerLimits } from "./LenovoPowerLimits";
-import { GameExecutionProfile } from "./GameExecutionProfile";
 import { SteamDownloadPower, stopSteamDownloadPower } from "./SteamDownloadPower";
-import { GameAudioVolume } from "./GameAudioVolume";
 import { PanelBrightness, softwareBrightnessLabel } from "./PanelBrightness";
 import { quickSettingsGroups } from "./groups";
+import { SpatialAudioControls } from "./SpatialAudioControls";
 
 const REFRESH_INTERVAL = 15000;
 const SLIDER_DEBOUNCE = 260;
@@ -421,7 +423,28 @@ export function QuickSettingsContent({ page, expanded = [], onToggle, locale, ga
 
   const [agentRunning, setAgentRunning] = useState(false);
   const [lossless, setLossless] = useState<LosslessStatus | null>(null);
+  const [losslessPending, setLosslessPending] = useState(false);
+  const [losslessUnknown, setLosslessUnknown] = useState(false);
+  const [losslessReading, setLosslessReading] = useState(false);
+  const losslessEpoch = useRef(0);
+  const losslessWrites = useRef(0);
+  const losslessDraft = useRef(false);
+  const losslessQueue = useRef<Promise<void>>(Promise.resolve());
+  const losslessMounted = useRef(true);
+  const losslessReadFlight = useRef<object | undefined>(undefined);
+  const losslessReadAgain = useRef(false);
+  const losslessConfirmed = useRef<LosslessStatus | null>(null);
+  const losslessUncertain = useRef(false);
+  const losslessControlToken = useRef<string | undefined>(undefined);
+  const losslessResolveToken = useRef<string | undefined>(undefined);
+  const losslessQueueGeneration = useRef(0);
+  useEffect(() => {
+    losslessMounted.current = true;
+    return () => { losslessMounted.current = false; ++losslessEpoch.current; ++losslessQueueGeneration.current; };
+  }, []);
   const [amd, setAmdState] = useState<AmdStatus | null>(null);
+  const [amdReadbackUnknown, setAmdReadbackUnknown] = useState(false);
+  const [amdPending, setAmdPending] = useState(false);
   const [diagnosticsBusy, setDiagnosticsBusy] = useState(false);
   const diagnosticsInFlight = useRef(false);
 
@@ -429,59 +452,67 @@ export function QuickSettingsContent({ page, expanded = [], onToggle, locale, ga
   const amdWriteSlots = useRef<Record<string, AmdWriteSlot>>({});
   const amdPendingValues = useRef<Record<string, AmdWriteValue>>({});
   const amdMounted = useRef(true);
+  const amdConfirmed = useRef<AmdStatus | null>(null);
+  const amdUnknown = useRef(false);
+  const amdEpoch = useRef(0);
+  const amdReadFlight = useRef<object | undefined>(undefined);
 
-  const applyPendingAmdValues = (status: AmdStatus): AmdStatus => {
-    let next = status;
-    for (const [feature, value] of Object.entries(amdPendingValues.current)) {
-      next = patchAmdValue(next, feature, value);
-    }
-    return next;
-  };
-
-  const acceptAmdStatus = (status: AmdStatus) => {
-    if (!amdMounted.current) return;
-    setAmdState(applyPendingAmdValues(status));
+  const acceptAmdStatus = (status: AmdStatus, expectedEpoch: number) => {
+    if (!amdMounted.current || expectedEpoch !== amdEpoch.current || status?.ok !== true
+        || status.available !== true || status.gpu !== true) return false;
+    amdConfirmed.current = status;
+    amdPendingValues.current = {};
+    amdUnknown.current = false;
+    setAmdReadbackUnknown(false); setAmdPending(false);
+    setAmdState(status);
+    return true;
   };
 
   const amdWritesBusy = () => Object.values(amdWriteSlots.current).some(
     (slot) => slot.inFlight || slot.timer !== undefined,
   );
 
+  const invalidateAmd = () => {
+    if (!amdMounted.current) return;
+    ++amdEpoch.current; amdUnknown.current = true;
+    amdPendingValues.current = {};
+    for (const slot of Object.values(amdWriteSlots.current)) {
+      window.clearTimeout(slot.timer); slot.timer = undefined; ++slot.sequence;
+    }
+    setAmdReadbackUnknown(true); setAmdPending(false);
+    setAmdState(amdConfirmed.current);
+  };
+
   const flushAmdWrite = (feature: string) => {
     const slot = amdWriteSlots.current[feature];
-    if (!slot || slot.inFlight) return;
-    window.clearTimeout(slot.timer);
-    slot.timer = undefined;
-    const sentSequence = slot.sequence;
-    const sentValue = slot.desired;
+    if (!slot || slot.inFlight || amdUnknown.current || !amdMounted.current) return;
+    window.clearTimeout(slot.timer); slot.timer = undefined;
+    const sentSequence = slot.sequence, sentValue = slot.desired;
     slot.inFlight = true;
-
     void setAmd(feature, sentValue)
       .then((result: any) => {
         if (!amdMounted.current || slot.sequence !== sentSequence) return;
-        delete amdPendingValues.current[feature];
-        if (result?.gpu) {
-          acceptAmdStatus(result);
-        } else {
-          void getAmdStatus().then(acceptAmdStatus).catch(() => {});
-        }
-        if (result?.ok === false) notify(local.amdDriverRejected);
+        // Drafts remain pending until one fresh read after all writes settles.
+        if (result?.ok === false) { invalidateAmd(); notify(local.amdDriverRejected); }
       })
       .catch(() => {
         if (!amdMounted.current || slot.sequence !== sentSequence) return;
-        delete amdPendingValues.current[feature];
-        void getAmdStatus().then(acceptAmdStatus).catch(() => {});
-        notify(local.amdDriverRejected);
+        invalidateAmd(); notify(local.amdDriverRejected);
       })
       .finally(() => {
         slot.inFlight = false;
-        if (!amdMounted.current || slot.sequence === sentSequence) return;
-        const remaining = Math.max(0, AMD_SLIDER_SETTLE - (Date.now() - slot.lastInputAt));
-        slot.timer = window.setTimeout(() => flushAmdWrite(feature), remaining);
+        if (!amdMounted.current) return;
+        if (!amdUnknown.current && slot.sequence !== sentSequence) {
+          const remaining = Math.max(0, AMD_SLIDER_SETTLE - (Date.now() - slot.lastInputAt));
+          slot.timer = window.setTimeout(() => flushAmdWrite(feature), remaining);
+        }
+        if (!amdWritesBusy()) void loadAmd();
       });
   };
 
   const queueAmdWrite = (feature: string, value: AmdWriteValue, delay: number) => {
+    if (!amdMounted.current || amdUnknown.current || !amdConfirmed.current) return;
+    ++amdEpoch.current; setAmdPending(true);
     const slot = amdWriteSlots.current[feature] ?? {
       desired: value,
       sequence: 0,
@@ -505,7 +536,7 @@ export function QuickSettingsContent({ page, expanded = [], onToggle, locale, ga
   useEffect(() => {
     amdMounted.current = true;
     return () => {
-      amdMounted.current = false;
+      amdMounted.current = false; ++amdEpoch.current;
       for (const slot of Object.values(amdWriteSlots.current)) {
         window.clearTimeout(slot.timer);
       }
@@ -574,17 +605,76 @@ export function QuickSettingsContent({ page, expanded = [], onToggle, locale, ga
       if (r?.ok) setDisplay(r);
     } catch { /* ignore */ }
   };
+  const validLosslessToken = (value: unknown): value is string => typeof value === "string" && /^[0-9a-f]{32}$/.test(value);
+  const boundedLossless = <T,>(operation: Promise<T>): Promise<T> => new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error("lossless_rpc_timeout")), 16_000);
+    operation.then(value => { window.clearTimeout(timer); resolve(value); }, error => { window.clearTimeout(timer); reject(error); });
+  });
+  const invalidateLossless = (token?: string) => {
+    if (!losslessMounted.current) return;
+    ++losslessEpoch.current; ++losslessQueueGeneration.current;
+    losslessUncertain.current = true;
+    losslessResolveToken.current = token ?? losslessResolveToken.current ?? losslessControlToken.current;
+    losslessWrites.current = 0; losslessDraft.current = false;
+    losslessQueue.current = Promise.resolve();
+    setLosslessPending(false); setLosslessUnknown(true);
+    setLossless(losslessConfirmed.current ? { ...losslessConfirmed.current, capture_state: "unknown" } : null);
+  };
+  const acceptLosslessStatus = (status: LosslessStatus, epoch: number) => {
+    if (!losslessMounted.current || epoch !== losslessEpoch.current || status?.ok !== true
+      || status.control_busy !== false || !validLosslessToken(status.control_token)
+      || !["active", "suspended", "pending", "failed", "inactive"].includes(status.capture_state ?? "")
+      || typeof status.capture_active !== "boolean" || typeof status.scaling_requested !== "boolean"
+      || !Number.isSafeInteger(status.current_game?.app_id) || status.current_game!.app_id! < 0) return false;
+    losslessConfirmed.current = status; losslessControlToken.current = status.control_token;
+    losslessResolveToken.current = undefined; losslessUncertain.current = false;
+    setLosslessUnknown(false); setLossless(status);
+    return true;
+  };
   const loadLossless = async () => {
+    if (!losslessMounted.current || losslessWrites.current || losslessDraft.current) return;
+    if (losslessReadFlight.current) { losslessReadAgain.current = true; return; }
+    const operation = {}, epoch = losslessEpoch.current;
+    losslessReadFlight.current = operation;
+    setLosslessReading(true);
     try {
-      const r = await getLosslessStatus();
-      if (r) setLossless(r);
-    } catch { /* ignore */ }
+      const r = await boundedLossless(getLosslessStatus(losslessResolveToken.current));
+      if (losslessMounted.current && epoch === losslessEpoch.current && !losslessWrites.current && !losslessDraft.current
+          && !acceptLosslessStatus(r, epoch)) invalidateLossless();
+    } catch {
+      if (losslessMounted.current && epoch === losslessEpoch.current) invalidateLossless();
+    }
+    finally {
+      if (losslessReadFlight.current === operation) losslessReadFlight.current = undefined;
+      if (losslessMounted.current) setLosslessReading(false);
+      const again = losslessReadAgain.current;
+      losslessReadAgain.current = false;
+      if (losslessMounted.current && !losslessWrites.current && !losslessDraft.current
+          && (again || (!losslessUncertain.current && epoch !== losslessEpoch.current))) void loadLossless();
+    }
   };
   const loadAmd = async () => {
+    if (!amdMounted.current || amdReadFlight.current || amdWritesBusy()) return;
+    const operation = {}, expectedEpoch = amdEpoch.current;
+    amdReadFlight.current = operation;
+    let expired = false;
+    const deadline = window.setTimeout(() => {
+      if (amdMounted.current && amdEpoch.current === expectedEpoch && amdReadFlight.current === operation) {
+        expired = true; amdReadFlight.current = undefined; invalidateAmd();
+      }
+    }, 16_000);
     try {
       const r = await getAmdStatus();
-      if (r) acceptAmdStatus(r);
-    } catch { /* ignore */ }
+      if (!expired && amdMounted.current && expectedEpoch === amdEpoch.current && !amdWritesBusy()
+          && !acceptAmdStatus(r, expectedEpoch)) invalidateAmd();
+    } catch {
+      if (!expired && amdMounted.current && expectedEpoch === amdEpoch.current) invalidateAmd();
+    } finally {
+      window.clearTimeout(deadline);
+      if (amdReadFlight.current === operation) amdReadFlight.current = undefined;
+      if (!expired && amdMounted.current && expectedEpoch !== amdEpoch.current && !amdWritesBusy()
+          && Object.keys(amdPendingValues.current).length > 0) void loadAmd();
+    }
   };
   const refreshAgentRunning = async () => {
     try {
@@ -598,6 +688,8 @@ export function QuickSettingsContent({ page, expanded = [], onToggle, locale, ga
     let timer: number | undefined;
     (async () => {
       const initialAudioGeneration = audioGeneration.current;
+      const initialAmdEpoch = amdEpoch.current;
+      const initialLosslessEpoch = losslessEpoch.current;
       void loadAgentStatus();
       void loadAudio();
       let c: Capabilities | null = null;
@@ -611,8 +703,9 @@ export function QuickSettingsContent({ page, expanded = [], onToggle, locale, ga
         if (initial.display?.ok) setDisplay(initial.display);
 
 
-        if (initial.lossless) setLossless(initial.lossless);
-        if (initial.amd) acceptAmdStatus(initial.amd);
+        if (initial.lossless && initialLosslessEpoch === losslessEpoch.current && !losslessWrites.current && !losslessDraft.current
+          && !acceptLosslessStatus(initial.lossless, initialLosslessEpoch)) void loadLossless();
+        if (initial.amd) acceptAmdStatus(initial.amd, initialAmdEpoch);
       } catch { setLoadFailed(true); }
       if (cancelled) return;
       timer = window.setInterval(() => {
@@ -666,7 +759,7 @@ export function QuickSettingsContent({ page, expanded = [], onToggle, locale, ga
     const input_volume = readback ?? audioConfirmed.current.input_volume;
     audioConfirmed.current = { ...audioConfirmed.current, input_volume };
     setAudio((current) => ({ ...current, input_volume }));
-    notify(local.audioDevicesUnavailable);
+    notify(local.audioChangeFailed);
   }, (input_volume) => {
     micVolumePending.current = false;
     audioConfirmed.current = { ...audioConfirmed.current, input_volume };
@@ -859,31 +952,62 @@ export function QuickSettingsContent({ page, expanded = [], onToggle, locale, ga
   const onStopAgent = () => void stopAgentNow().then((r: any) => setAgentRunning(Boolean(r?.running))).catch(() => {});
 
   // Lossless Scaling
+  const queueLosslessChange = (write: (token: string, app: number) => ReturnType<typeof setLosslessScaling>) => {
+    if (!losslessMounted.current || losslessUncertain.current || !validLosslessToken(losslessControlToken.current)
+      || !losslessConfirmed.current) return;
+    const generation = losslessQueueGeneration.current;
+    ++losslessEpoch.current;
+    ++losslessWrites.current;
+    setLosslessPending(true);
+    const operation = losslessQueue.current.then(async () => {
+      if (!losslessMounted.current || generation !== losslessQueueGeneration.current) return;
+      const token = losslessControlToken.current;
+      const app = losslessConfirmed.current?.current_game?.app_id;
+      if (!validLosslessToken(token) || !Number.isSafeInteger(app) || app! < 0) { invalidateLossless(); return; }
+      try {
+        const result = await boundedLossless(write(token, app!));
+        if (!losslessMounted.current || generation !== losslessQueueGeneration.current) return;
+        if (result?.ok !== true || !validLosslessToken(result.control_token)) {
+          invalidateLossless(token); notify(result?.message || local.notConnected); return;
+        }
+        losslessControlToken.current = result.control_token;
+      } catch {
+        if (losslessMounted.current && generation === losslessQueueGeneration.current) {
+          invalidateLossless(token); notify(local.notConnected);
+        }
+      }
+    });
+    losslessQueue.current = operation.finally(() => {
+      if (generation !== losslessQueueGeneration.current) return;
+      --losslessWrites.current;
+      if (losslessMounted.current && !losslessWrites.current) {
+        invalidateLossless(losslessControlToken.current);
+        void loadLossless();
+      }
+    });
+  };
   const onScalingToggle = (enabled: boolean) => {
+    if (losslessUncertain.current) return;
     if (enabled && !lossless?.can_scale) {
       notify(local.losslessGameOnlyHint);
       return;
     }
-    setLossless((c) => (c ? { ...c, scaling_active: enabled } : c));
-    void setLosslessScaling(enabled).then((r: any) => {
-      if (r) {
-        setLossless((c) => (c ? {
-          ...c,
-          running: Boolean(r.running),
-          scaling_active: Boolean(r.active),
-          runtime: r.runtime ?? c.runtime,
-        } : c));
-      }
-      if (r && r.ok === false && r.message) notify(r.message);
-    }).catch(() => {}).finally(() => window.setTimeout(() => void loadLossless(), 250));
+    queueLosslessChange((token, app) => setLosslessScaling(enabled, token, app));
   };
   const onFrameGen = (value: string) => {
+    if (losslessUncertain.current) return;
     setLossless((c) => (c ? { ...c, frame_gen: value } : c));
-    void setLosslessSetting("frame_gen", value).then((r: any) => { if (r && r.ok === false && r.message) notify(r.message); }).finally(() => window.setTimeout(() => void loadLossless(), 1500));
+    queueLosslessChange((token, app) => setLosslessSetting("frame_gen", value, token, app));
   };
-  const commitMultiplier = useDebounced<number>((v) => void setLosslessSetting("multiplier", v).finally(() => window.setTimeout(() => void loadLossless(), 1500)));
+  const commitMultiplier = useDebounced<number>((v) => {
+    losslessDraft.current = false;
+    queueLosslessChange((token, app) => setLosslessSetting("multiplier", v, token, app));
+  });
   const onMultiplier = (value: number) => {
+    if (losslessUncertain.current) return;
     const n = Math.max(2, Math.min(4, Math.round(value)));
+    ++losslessEpoch.current;
+    losslessDraft.current = true;
     setLossless((c) => (c ? { ...c, multiplier: n } : c));
     commitMultiplier(n);
   };
@@ -951,7 +1075,7 @@ export function QuickSettingsContent({ page, expanded = [], onToggle, locale, ga
         <style>{`
           .qsRedesign,.qsRedesign *{box-sizing:border-box;min-width:0;letter-spacing:0}
           .qsRedesign{width:100%;padding:0 16px 18px;overflow-x:hidden;color:inherit}
-          .qsCardBody{display:flex;flex-direction:column;gap:12px;width:100%;padding:8px 0}
+          .qsCardBody{display:flex;flex-direction:column;gap:8px;width:100%;padding:0}
           .qsCardBody>div{width:100%;max-width:100%;min-width:0}
           .qsCardBody [class*="PanelSectionRow"]{padding-left:0!important;padding-right:0!important;margin:0!important}
           .qsRedesign .qsDropdownFullWidth>div,.qsRedesign .qsDropdownFullWidth>div>div{width:100%;max-width:100%;min-width:0}
@@ -979,20 +1103,16 @@ export function QuickSettingsContent({ page, expanded = [], onToggle, locale, ga
           <AsusPerformanceActions locale={locale} />
           <ProcessorBoost locale={locale} />
         </>, ["graphics", "power"])}
-        {gamingMode && gameAppId !== 0 && section(<FaPlay />, groups.game, <>
-          <GameExecutionProfile key={gameAppId} appId={gameAppId} locale={locale} />
-        </>, ["graphics", "game"])}
-        {section(<FaMicrochip />, groups.shaders, <>
-          <ShaderCompatibility key={gameAppId} appId={gameAppId} locale={locale} />
-        </>, ["graphics", "shaders"])}
+        {page === "graphics" && <ShaderCompatibility key={gameAppId} appId={gameAppId} locale={locale}
+          renderSection={body => section(<FaMicrochip />, groups.shaders, body, ["graphics", "shaders"])} />}
 
         {section(<FaVolumeUp />, groups.mixer, <>
           <QuickSlider label={local.volume} value={volume.level} min={0} max={100} suffix="%" disabled={!volume.available} onChange={onVolume} />
-          {gameAppId !== 0 && <GameAudioVolume key={gameAppId} appId={gameAppId} locale={locale} />}
           <QuickSlider label={local.microphoneVolume} value={clampPercent(audio.input_volume)} min={0} max={100} suffix="%" disabled={!audio.ok} onChange={onMicVolume} />
         </>, ["performance", "mixer"])}
         {section(<FaVolumeUp />, groups.devices, <>
           <QuickDropdown fullWidth label={local.audioOutput} options={outputOptions} value={audio.default_output_id || ""} disabled={!audio.ok || audio.outputs.length === 0} onChange={onOutput} />
+          <SpatialAudioControls locale={locale} endpointId={audio.default_output_id || ""} />
           <QuickDropdown fullWidth label={local.microphoneInput} options={inputOptions} value={audio.default_input_id || ""} disabled={!audio.ok || audio.inputs.length === 0} onChange={onInput} />
         </>, ["performance", "devices"])}
 
@@ -1001,42 +1121,50 @@ export function QuickSettingsContent({ page, expanded = [], onToggle, locale, ga
           <QuickSlider label={softwareBrightnessLabel(locale)} value={dimmerToBrightness(dimmer.level)} min={0} max={100} suffix="%" onChange={onBrightness} />
           {caps?.display && resolutionOptions.length > 0 && <QuickDropdown fullWidth key={`res-${currentResolution}`} label={local.resolution} options={resolutionOptions} value={currentResolution} onChange={onResolution} />}
           {caps?.display && refreshOptions.length > 0 && <QuickDropdown fullWidth key={`hz-${currentRefresh}`} label={local.refreshRate} options={refreshOptions} value={currentRefresh} onChange={onRefresh} />}
-          <ToggleField bottomSeparator="none" label={local.hdr} checked={Boolean(hdr.enabled)} onChange={onHdr} />
+          <ToggleField bottomSeparator="none" label={local.hdr} checked={Boolean(hdr.enabled)} disabled={hdr.available !== true || hdr.supported !== true} onChange={onHdr} />
           <PerformanceSettings locale={locale} appId={gameAppId} />
           {gamingMode && gameAppId === 0 && <SteamDownloadPower locale={locale} />}
         </>)}
 
+        {page === "graphics" && <NvidiaControls locale={locale} collapsed={!expanded.includes("nvidia")} onToggle={onToggle} />}
+
         {caps?.amd_radeon && amd?.available && section(<FaMicrochip />, local.amd, <>
-          <div className="qsMeta">{local.amdGlobalHint}</div>
-          {amd.rsr?.supported && <ToggleField bottomSeparator="none" label={local.amdRsr} description={local.amdRsrHint} checked={Boolean(amd.rsr.enabled)} onChange={(v: boolean) => onAmdToggle("rsr", v)} />}
-          {amd.rsr?.supported && amd.rsr.enabled && <QuickSlider label={local.amdRsrSharpness} value={amd.rsr.sharpness ?? 0} min={amd.rsr.smin ?? 0} max={amd.rsr.smax ?? 100} onChange={(v: number) => queueAmdWrite("rsr_sharpness", v, AMD_SLIDER_SETTLE)} />}
-          {amd.afmf?.supported && <ToggleField bottomSeparator="none" label={local.amdAfmf} description={local.amdAfmfHint} checked={Boolean(amd.afmf.enabled)} onChange={(v: boolean) => onAmdToggle("afmf", v)} />}
-          {amd.antilag?.supported && <ToggleField bottomSeparator="none" label={local.amdAntilag} description={local.amdAntilagHint} checked={Boolean(amd.antilag.enabled)} onChange={(v: boolean) => onAmdToggle("antilag", v)} />}
-          {amd.boost?.supported && <ToggleField bottomSeparator="none" label={local.amdBoost} description={local.amdBoostHint} checked={Boolean(amd.boost.enabled)} onChange={(v: boolean) => onAmdToggle("boost", v)} />}
-          {amd.boost?.supported && amd.boost.enabled && <QuickSlider label={local.amdBoostResolution} value={amd.boost.resolution ?? 50} min={amd.boost.rmin ?? 50} max={amd.boost.rmax ?? 100} suffix="%" onChange={(v: number) => queueAmdWrite("boost_resolution", v, AMD_SLIDER_SETTLE)} />}
-          {amd.enhanced_sync?.supported && <ToggleField bottomSeparator="none" label={local.amdEnhancedSync} description={local.amdEnhancedSyncHint} checked={Boolean(amd.enhanced_sync.enabled)} onChange={(v: boolean) => onAmdToggle("enhanced_sync", v)} />}
-          {amd.chill?.supported && <ToggleField bottomSeparator="none" label={local.amdChill} description={local.amdChillHint} checked={Boolean(amd.chill.enabled)} onChange={(v: boolean) => onAmdToggle("chill", v)} />}
-          {amd.chill?.supported && amd.chill.enabled && <QuickSlider label={local.amdChillMin} value={amd.chill.min ?? 0} min={amd.chill.fmin ?? 0} max={amd.chill.fmax ?? 240} onChange={(v: number) => queueAmdWrite("chill_min", v, AMD_SLIDER_SETTLE)} />}
-          {amd.chill?.supported && amd.chill.enabled && <QuickSlider label={local.amdChillMax} value={amd.chill.max ?? 0} min={amd.chill.fmin ?? 0} max={amd.chill.fmax ?? 240} onChange={(v: number) => queueAmdWrite("chill_max", v, AMD_SLIDER_SETTLE)} />}
-          {amd.sharpening?.supported && <ToggleField bottomSeparator="none" label={local.amdSharpening} description={local.amdSharpeningHint} checked={Boolean(amd.sharpening.enabled)} onChange={(v: boolean) => onAmdToggle("sharpening", v)} />}
-          {amd.sharpening?.supported && amd.sharpening.enabled && <QuickSlider label={local.amdSharpeningValue} value={amd.sharpening.value ?? 0} min={amd.sharpening.smin ?? 0} max={amd.sharpening.smax ?? 100} step={amd.sharpening.step ?? 10} onChange={(v: number) => queueAmdWrite("sharpening_value", v, AMD_SLIDER_SETTLE)} />}
+          {amdPending && <div className="qsMeta" role="status">{controlLocale(locale).loading}</div>}
+          {amdReadbackUnknown && <div className="qsMeta" role="status">{nvidiaLocale(locale).failed}
+            <DialogButton onClick={() => void loadAmd()}>{controlLocale(locale).retry}</DialogButton>
+          </div>}
+          {amd.rsr?.supported && <ToggleField disabled={amdReadbackUnknown} bottomSeparator="none" label={local.amdRsr} description={local.amdRsrHint} checked={Boolean(amd.rsr.enabled)} onChange={(v: boolean) => onAmdToggle("rsr", v)} />}
+          {amd.rsr?.supported && amd.rsr.enabled && <QuickSlider disabled={amdReadbackUnknown} label={local.amdRsrSharpness} value={amd.rsr.sharpness ?? 0} min={amd.rsr.smin ?? 0} max={amd.rsr.smax ?? 100} onChange={(v: number) => queueAmdWrite("rsr_sharpness", v, AMD_SLIDER_SETTLE)} />}
+          {amd.afmf?.supported && <ToggleField disabled={amdReadbackUnknown} bottomSeparator="none" label={local.amdAfmf} description={local.amdAfmfHint} checked={Boolean(amd.afmf.enabled)} onChange={(v: boolean) => onAmdToggle("afmf", v)} />}
+          {amd.antilag?.supported && <ToggleField disabled={amdReadbackUnknown} bottomSeparator="none" label={local.amdAntilag} description={local.amdAntilagHint} checked={Boolean(amd.antilag.enabled)} onChange={(v: boolean) => onAmdToggle("antilag", v)} />}
+          {amd.boost?.supported && <ToggleField disabled={amdReadbackUnknown} bottomSeparator="none" label={local.amdBoost} description={local.amdBoostHint} checked={Boolean(amd.boost.enabled)} onChange={(v: boolean) => onAmdToggle("boost", v)} />}
+          {amd.boost?.supported && amd.boost.enabled && <QuickSlider disabled={amdReadbackUnknown} label={local.amdBoostResolution} value={amd.boost.resolution ?? 50} min={amd.boost.rmin ?? 50} max={amd.boost.rmax ?? 100} suffix="%" onChange={(v: number) => queueAmdWrite("boost_resolution", v, AMD_SLIDER_SETTLE)} />}
+          {amd.enhanced_sync?.supported && <ToggleField disabled={amdReadbackUnknown} bottomSeparator="none" label={local.amdEnhancedSync} description={local.amdEnhancedSyncHint} checked={Boolean(amd.enhanced_sync.enabled)} onChange={(v: boolean) => onAmdToggle("enhanced_sync", v)} />}
+          {amd.chill?.supported && <ToggleField disabled={amdReadbackUnknown} bottomSeparator="none" label={local.amdChill} description={local.amdChillHint} checked={Boolean(amd.chill.enabled)} onChange={(v: boolean) => onAmdToggle("chill", v)} />}
+          {amd.chill?.supported && amd.chill.enabled && <QuickSlider disabled={amdReadbackUnknown} label={local.amdChillMin} value={amd.chill.min ?? 0} min={amd.chill.fmin ?? 0} max={amd.chill.fmax ?? 240} onChange={(v: number) => queueAmdWrite("chill_min", v, AMD_SLIDER_SETTLE)} />}
+          {amd.chill?.supported && amd.chill.enabled && <QuickSlider disabled={amdReadbackUnknown} label={local.amdChillMax} value={amd.chill.max ?? 0} min={amd.chill.fmin ?? 0} max={amd.chill.fmax ?? 240} onChange={(v: number) => queueAmdWrite("chill_max", v, AMD_SLIDER_SETTLE)} />}
+          {amd.sharpening?.supported && <ToggleField disabled={amdReadbackUnknown} bottomSeparator="none" label={local.amdSharpening} description={local.amdSharpeningHint} checked={Boolean(amd.sharpening.enabled)} onChange={(v: boolean) => onAmdToggle("sharpening", v)} />}
+          {amd.sharpening?.supported && amd.sharpening.enabled && <QuickSlider disabled={amdReadbackUnknown} label={local.amdSharpeningValue} value={amd.sharpening.value ?? 0} min={amd.sharpening.smin ?? 0} max={amd.sharpening.smax ?? 100} step={amd.sharpening.step ?? 10} onChange={(v: number) => queueAmdWrite("sharpening_value", v, AMD_SLIDER_SETTLE)} />}
           {amd.display_color?.available && <div className="qsMeta">{local.amdDisplayColor}</div>}
-          {amd.display_color?.brightness?.supported && <QuickSlider label={local.amdDisplayBrightness} value={amd.display_color.brightness.value ?? 0} min={amd.display_color.brightness.min ?? -100} max={amd.display_color.brightness.max ?? 100} onChange={(v: number) => queueAmdWrite("display_brightness", v, AMD_SLIDER_SETTLE)} />}
-          {amd.display_color?.contrast?.supported && <QuickSlider label={local.amdDisplayContrast} value={amd.display_color.contrast.value ?? 100} min={amd.display_color.contrast.min ?? 0} max={amd.display_color.contrast.max ?? 200} onChange={(v: number) => queueAmdWrite("display_contrast", v, AMD_SLIDER_SETTLE)} />}
-          {amd.display_color?.saturation?.supported && <QuickSlider label={local.amdDisplaySaturation} value={amd.display_color.saturation.value ?? 100} min={amd.display_color.saturation.min ?? 0} max={amd.display_color.saturation.max ?? 200} onChange={(v: number) => queueAmdWrite("display_saturation", v, AMD_SLIDER_SETTLE)} />}
-          {amd.display_color?.temperature?.supported && <QuickSlider label={local.amdDisplayTemperature} value={amd.display_color.temperature.value ?? 6500} min={amd.display_color.temperature.min ?? 4000} max={amd.display_color.temperature.max ?? 10000} step={100} suffix=" K" onChange={(v: number) => queueAmdWrite("display_temperature", v, AMD_SLIDER_SETTLE)} />}
+          {amd.display_color?.brightness?.supported && <QuickSlider disabled={amdReadbackUnknown} label={local.amdDisplayBrightness} value={amd.display_color.brightness.value ?? 0} min={amd.display_color.brightness.min ?? -100} max={amd.display_color.brightness.max ?? 100} onChange={(v: number) => queueAmdWrite("display_brightness", v, AMD_SLIDER_SETTLE)} />}
+          {amd.display_color?.contrast?.supported && <QuickSlider disabled={amdReadbackUnknown} label={local.amdDisplayContrast} value={amd.display_color.contrast.value ?? 100} min={amd.display_color.contrast.min ?? 0} max={amd.display_color.contrast.max ?? 200} onChange={(v: number) => queueAmdWrite("display_contrast", v, AMD_SLIDER_SETTLE)} />}
+          {amd.display_color?.saturation?.supported && <QuickSlider disabled={amdReadbackUnknown} label={local.amdDisplaySaturation} value={amd.display_color.saturation.value ?? 100} min={amd.display_color.saturation.min ?? 0} max={amd.display_color.saturation.max ?? 200} onChange={(v: number) => queueAmdWrite("display_saturation", v, AMD_SLIDER_SETTLE)} />}
+          {amd.display_color?.temperature?.supported && <QuickSlider disabled={amdReadbackUnknown} label={local.amdDisplayTemperature} value={amd.display_color.temperature.value ?? 6500} min={amd.display_color.temperature.min ?? 4000} max={amd.display_color.temperature.max ?? 10000} step={100} suffix=" K" onChange={(v: number) => queueAmdWrite("display_temperature", v, AMD_SLIDER_SETTLE)} />}
         </>)}
 
         {caps?.lossless && section(<FaPlay />, local.lossless, <>
           <ToggleField
             bottomSeparator="none"
             label={local.losslessScaling}
-            disabled={!lossless?.installed || !lossless?.can_scale}
-            checked={Boolean(lossless?.scaling_active)}
+            disabled={losslessUnknown || losslessPending || !lossless?.installed || (!lossless?.can_scale && !(lossless?.scaling_requested ?? lossless?.scaling_active))}
+            checked={Boolean(lossless?.scaling_requested ?? lossless?.scaling_active)}
             onChange={onScalingToggle}
           />
-          <QuickDropdown key={`fg-${lossless?.frame_gen ?? "Off"}`} label={local.losslessFrameGen} options={frameGenOptions} value={lossless?.frame_gen ?? "Off"} onChange={onFrameGen} />
-          <QuickSlider label={local.losslessMultiplier} value={Math.max(2, Math.min(4, lossless?.multiplier ?? 2))} min={2} max={4} suffix="x" onChange={onMultiplier} />
+          {(losslessUnknown || lossless?.capture_state) && <div className="qsStatus" role="status">{losslessCaptureLabel(locale, losslessUnknown ? "unknown" : lossless?.capture_state)}
+            {losslessUnknown && <DialogButton disabled={losslessReading} onClick={() => void loadLossless()}>{losslessReading ? controlLocale(locale).loading : controlLocale(locale).retry}</DialogButton>}
+          </div>}
+          <QuickDropdown disabled={losslessUnknown || losslessPending || !lossless?.installed} key={`fg-${lossless?.frame_gen ?? "Off"}`} label={local.losslessFrameGen} options={frameGenOptions} value={lossless?.frame_gen ?? "Off"} onChange={onFrameGen} />
+          <QuickSlider disabled={losslessUnknown || losslessPending || !lossless?.installed} label={local.losslessMultiplier} value={Math.max(2, Math.min(4, lossless?.multiplier ?? 2))} min={2} max={4} suffix="x" onChange={onMultiplier} />
           <div className="qsMeta">
             {lossless?.can_scale ? local.losslessManagedHint : local.losslessGameOnlyHint}
           </div>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Playhub.StoreHost/*.cs" Exclude="../Playhub.StoreHost/Program.cs"/>
+    <Compile Include="../Shared/Store*.cs"/>
+    <Compile Include="../Shared/EpicLaunchCatalog.cs"/>
+    <Compile Include="../Playhub/Services/EpicManifestPaths.cs"/>
+    <Compile Include="../Playhub.GameSession/EpicShortcutArguments.cs"/>
+    <Compile Include="../Playhub.GameSession/StoreOfficialEpicLaunch.cs"/>
+    <PackageReference Include="SharpCompress" Version="0.50.9"/>
+  </ItemGroup>
+</Project>

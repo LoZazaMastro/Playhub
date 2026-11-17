@@ -8,6 +8,13 @@ internal static class XboxChecks
     private static int Main(string[] args)
     {
         using var logs = SessionFixtureLogs.Start();
+        if(args.SequenceEqual(new[]{"--translation-preference-checks"}))
+        {
+            int checks=0;
+            SteamControllerTranslationChecks.Run((ok,name)=>{if(!ok)throw new Exception(name);checks++;});
+            Console.WriteLine($"PASS {checks} translation preference checks; no controller, driver, window or layout process.");
+            return 0;
+        }
         if(args.SequenceEqual(new[]{"--input-fence-release-checks"}))
         {
             int checks=0;
@@ -57,10 +64,13 @@ internal static class XboxChecks
         AppContainerBrokerChecks.Run(Check);
         SteamControllerWin32RelayChecks.Run(Check);
         SteamInputRelayChecks.Run(Check);
+        SteamReaderWindowHandoffChecks.Run(Check);
+        SteamXboxProfileChecks.Run(Check);
         SteamInventoryLifetimeChecks.Run(Check);
         SteamTrackedWrapperChainChecks.Run(Check);
         SteamMirrorOpeningChecks.Run(Check);
         SteamReaderNeutralBootstrapChecks.Run(Check);
+        SteamNativeVisibleReaderBootstrapChecks.Run(Check);
         SteamMirrorOwnedForegroundChecks.Run(Check);
         SteamOrdinaryMirrorMenuChecks.Run(Check);
         SteamNativeOverlayInputChecks.Run(Check);

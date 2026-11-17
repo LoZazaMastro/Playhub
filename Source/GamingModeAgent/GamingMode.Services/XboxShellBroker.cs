@@ -11,14 +11,17 @@ public sealed class XboxShellBroker
     private readonly object _gate = new();
     private readonly Func<bool> _shellPresent;
     private readonly Action _startShell;
+    public enum ActivationRoute { ShellRequired, DirectAam, Unavailable }
     private readonly Func<long> _clock;
+    private readonly Func<ActivationRoute> _activationRoute;
     private long? _lastStart;
 
-    public XboxShellBroker(string directory, Func<bool> shellPresent, Action startShell, Func<long>? clock = null)
+    public XboxShellBroker(string directory, Func<bool> shellPresent, Action startShell, Func<long>? clock = null, Func<ActivationRoute>? activationRoute = null)
     {
         _shellPresent = shellPresent;
         _startShell = startShell;
         _clock = clock ?? (() => Environment.TickCount64);
+        _activationRoute = activationRoute ?? (() => ActivationRoute.ShellRequired);
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
         _token = Encoding.ASCII.GetBytes(token);
         Directory.CreateDirectory(directory);
@@ -28,6 +31,14 @@ public sealed class XboxShellBroker
     public bool IsAuthorized(IPAddress? remoteAddress, string suppliedToken) =>
         remoteAddress is not null && IPAddress.IsLoopback(remoteAddress) &&
         CryptographicOperations.FixedTimeEquals(_token, Encoding.ASCII.GetBytes(suppliedToken));
+
+    // Read-only authorization: never starts Explorer or claims shell readiness.
+    public ActivationRoute? DirectActivationAuthorized(IPAddress? remoteAddress, string suppliedToken)
+    {
+        if (!IsAuthorized(remoteAddress, suppliedToken)) return null;
+        var route = _activationRoute();
+        return route is ActivationRoute.ShellRequired or ActivationRoute.DirectAam ? route : ActivationRoute.Unavailable;
+    }
 
     public bool RequestShell(IPAddress? remoteAddress, string suppliedToken)
     {

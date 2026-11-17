@@ -124,6 +124,7 @@ _AUDIO_CACHE_VALUE = None
 _AUDIO_CACHE_EXPIRES_AT = 0.0
 _LOSSLESS_PATH_CACHE = {"value": "", "checked_at": 0.0}
 _LS_CONTROL_LOCK = threading.RLock()
+_LS_CONTROL_TOKEN = os.urandom(16).hex()
 _LS_OWNED_UI = None
 _LS_CORE_EVENT = threading.Event()
 _LS_CORE = {
@@ -224,6 +225,7 @@ _AMD_PROFILE_RUNTIME = {
     "active_title": "",
     "baseline": {},
     "profile": {},
+    "global_overrides": {},
     "attempted_app_id": 0,
     "attempted_profile": {},
     "last_attempt_ok": None,
@@ -797,9 +799,9 @@ class Plugin:
     async def set_power_mode(self, request):
         return {"ok": False, "reason": "feature_removed"}
 
-    async def get_lossless_status(self):
+    async def get_lossless_status(self, request=None):
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(None, _get_lossless_status_sync)
+        result = await loop.run_in_executor(None, _get_lossless_status_sync, _arg(request, "resolve_token", None))
         current_game = copy.deepcopy(self._last_runtime)
         app_id = int(current_game.get("app_id", 0) or 0)
         result["current_game"] = current_game
@@ -816,8 +818,15 @@ class Plugin:
         title = str(self._last_runtime.get("title", "") or "")
         loop = asyncio.get_event_loop()
         started = time.perf_counter()
+        expected_app_id = _arg(request, "expected_app_id", None)
+        def command():
+            if (type(expected_app_id) is not int or expected_app_id != app_id
+                    or int(self._last_runtime.get("app_id", 0) or 0) != app_id):
+                return {"ok": False, "code": "lossless_context_changed", "message": "The game changed. Refresh Lossless Scaling status."}
+            return _set_lossless_scaling_sync(enabled, app_id, title)
         result = await loop.run_in_executor(
-            None, _set_lossless_scaling_sync, enabled, app_id, title
+            None, _run_lossless_control_sync, _arg(request, "expected_control_token", None),
+            command
         )
         runtime = result.get("runtime", {}) if isinstance(result, dict) else {}
         self._record_event(
@@ -860,7 +869,13 @@ class Plugin:
         key = str(_arg(request, "key", ""))
         value = _arg(request, "value", "")
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, _set_lossless_setting_sync, key, value)
+        expected_app_id = _arg(request, "expected_app_id", None)
+        def command():
+            if type(expected_app_id) is not int or int(self._last_runtime.get("app_id", 0) or 0) != expected_app_id:
+                return {"ok": False, "code": "lossless_context_changed", "message": "The game changed. Refresh Lossless Scaling status."}
+            return _set_lossless_setting_sync(key, value)
+        return await loop.run_in_executor(None, _run_lossless_control_sync,
+            _arg(request, "expected_control_token", None), command)
 
     async def get_lossless_profile(self, request):
         app_id = str(_arg(request, "app_id", "0") or "0")
@@ -1217,17 +1232,30 @@ class Plugin:
                         "feature": str(feature),
                         "requested_value": value,
                     }
-            if _AMD_PROFILE_RUNTIME.get("active"):
-                baseline = copy.deepcopy(_AMD_PROFILE_RUNTIME.get("baseline", {}))
-                baseline[str(feature)] = _normalize_amd_value(str(feature), value)
-                _AMD_PROFILE_RUNTIME["baseline"] = _normalize_amd_profile(baseline)
-                profile_value = _AMD_PROFILE_RUNTIME.get("profile", {}).get(str(feature))
-                if profile_value is not None:
-                    result = _set_amd_sync(feature, profile_value, generation)
-                    result["global_value_saved"] = baseline[str(feature)]
-                    result["profile_override_active"] = True
-                    return result
-            return _set_amd_sync(feature, value, generation)
+            result = _set_amd_sync(feature, value, generation)
+            if (isinstance(result, dict) and result.get("ok")
+                    and result.get("confirmed") and (
+                        _AMD_PROFILE_RUNTIME.get("active")
+                        or _AMD_PROFILE_RUNTIME.get("recovery_required"))):
+                # A QAM edit is an immediate global driver edit, including while
+                # a game profile is active. Keep that confirmed choice when the
+                # profile is polled again and when its original baseline returns.
+                changed = {str(feature): result.get("normalized_value", value)}
+                for operation in result.get("requested_operations", []):
+                    changed[str(operation.get("feature", ""))] = operation.get("value")
+                for key, effect in result.get("side_effects", {}).items():
+                    if isinstance(effect, dict) and effect.get("after") is not None:
+                        changed[key] = effect["after"]
+                changed = {
+                    key: _normalize_amd_value(key, observed)
+                    for key, observed in changed.items()
+                    if key in AMD_PROFILE_DEFAULTS and observed is not None
+                }
+                for field in ("baseline", "profile", "global_overrides"):
+                    merged = copy.deepcopy(_AMD_PROFILE_RUNTIME.get(field, {}))
+                    merged.update(changed)
+                    _AMD_PROFILE_RUNTIME[field] = merged
+            return result
 
     def _restore_amd_profile_sync(self, reason):
         with _AMD_PROFILE_LOCK:
@@ -1246,6 +1274,7 @@ class Plugin:
                 "active_app_id": app_id if not ok else 0,
                 "active_title": title if not ok else "",
                 "baseline": baseline if not ok else {},
+                "global_overrides": copy.deepcopy(_AMD_PROFILE_RUNTIME.get("global_overrides", {})) if not ok else {},
                 "profile": copy.deepcopy(_AMD_PROFILE_RUNTIME.get("profile", {})) if not ok else {},
                 "attempted_app_id": app_id if not ok else 0,
                 "attempted_profile": (
@@ -1277,6 +1306,11 @@ class Plugin:
                 return {"ok": False, "active": False, "recovery_required": True,
                         "message": "Previous AMD profile requires restoration before another apply."}
             normalized = _normalize_amd_profile(settings)
+            if (int(_AMD_PROFILE_RUNTIME.get("active_app_id", 0) or 0) == int(app_id)
+                    and _AMD_PROFILE_RUNTIME.get("active")):
+                normalized = _normalize_amd_profile({
+                    **normalized, **_AMD_PROFILE_RUNTIME.get("global_overrides", {}),
+                })
             if (
                 not force
                 and int(_AMD_PROFILE_RUNTIME.get("attempted_app_id", 0) or 0) == int(app_id)
@@ -2085,7 +2119,7 @@ namespace QuickSettingsAudio
         [PreserveSig] int GetState(out uint pdwState);
     }
 
-    [ComImport, Guid("5CDF2C82-841E-4546-9722-0CF74078229D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IAudioEndpointVolume
     {
         [PreserveSig] int RegisterControlChangeNotify(IntPtr pNotify);
@@ -3808,6 +3842,7 @@ def _cancel_lossless_autostart(reason="cancelled"):
             "cancelled": bool(previous_token),
             "reason": str(reason or "cancelled"),
         },
+        "settings": {},
     })
 
 
@@ -3885,6 +3920,11 @@ def _schedule_lossless_autostart(
     filters,
     record_event=None,
 ):
+    with _LS_CONTROL_LOCK:
+        return _schedule_lossless_autostart_locked(settings, app_id, title, filters, record_event)
+
+
+def _schedule_lossless_autostart_locked(settings, app_id, title, filters, record_event=None):
     app_id = int(app_id or 0)
     if (
         _LS_RUNTIME.get("active")
@@ -3920,6 +3960,7 @@ def _schedule_lossless_autostart(
         "worker_running": True,
         "started_at": _session_timestamp(),
         "last_result": {},
+        "settings": copy.deepcopy(normalized),
     })
     _LS_RUNTIME.update({
         "active": False,
@@ -3937,53 +3978,44 @@ def _schedule_lossless_autostart(
     })
 
     def worker():
-        readiness = _wait_for_lossless_autostart_target(
-            profile_filters,
-            token=token,
-            app_id=app_id,
-            timeout_seconds=_LOSSLESS_AUTOSTART_FOREGROUND_TIMEOUT_SECONDS,
-        )
-        if str(_LS_AUTOSTART_GATE.get("token", "")) != token:
-            return
-        if readiness.get("ok"):
-            result = _activate_lossless_managed_sync(
-                normalized,
-                app_id,
-                str(title or ""),
-                force_restart=False,
-                auto_scale=True,
-                filters=profile_filters,
+        try:
+            readiness = _wait_for_lossless_autostart_target(
+                profile_filters, token=token, app_id=app_id,
+                timeout_seconds=_LOSSLESS_AUTOSTART_FOREGROUND_TIMEOUT_SECONDS,
             )
-            if result.get("runtime", {}).get("activation_focus"):
-                result["runtime"]["activation_focus"]["readiness"] = readiness
-                _LS_RUNTIME["activation_focus"]["readiness"] = readiness
-        else:
-            result = {
-                "ok": bool(readiness.get("cancelled")),
-                "active": False,
-                "running": bool(_LS_CORE.get("initialized")),
-                "pending": not bool(readiness.get("cancelled")),
-                "cancelled": bool(readiness.get("cancelled")),
-                "message": (
-                    ""
-                    if readiness.get("cancelled")
-                    else "Waiting for the foreground game window timed out."
-                ),
-                "readiness": readiness,
-            }
-            if not readiness.get("cancelled"):
-                _LS_RUNTIME.update({
-                    "last_action": "native_core_foreground_wait_timeout",
-                    "last_error": "",
-                    "last_transition_at": _session_timestamp(),
-                })
-        if str(_LS_AUTOSTART_GATE.get("token", "")) != token:
-            return
-        compact_result = _compact_lossless_result(result)
-        _LS_AUTOSTART_GATE.update({
-            "worker_running": False,
-            "last_result": compact_result,
-        })
+        except Exception as error:
+            readiness = {"ok": False, "message": f"{type(error).__name__}: {error}"}
+        with _LS_CONTROL_LOCK:
+            # Cancellation, activation and the terminal receipt share the same
+            # boundary. An old wait cannot reactivate or fail a newer session.
+            if str(_LS_AUTOSTART_GATE.get("token", "")) != token:
+                return
+            try:
+                if readiness.get("ok"):
+                    result = _activate_lossless_managed_sync(
+                        copy.deepcopy(_LS_AUTOSTART_GATE.get("settings", normalized)),
+                        app_id, str(title or ""), force_restart=False,
+                        auto_scale=True, filters=profile_filters,
+                    )
+                    if result.get("runtime", {}).get("activation_focus"):
+                        result["runtime"]["activation_focus"]["readiness"] = readiness
+                        _LS_RUNTIME["activation_focus"]["readiness"] = readiness
+                else:
+                    message = "" if readiness.get("cancelled") else str(
+                        readiness.get("message") or "Waiting for the foreground game window timed out.")
+                    result = {"ok": bool(readiness.get("cancelled")), "active": False,
+                              "running": bool(_LS_CORE.get("initialized")), "pending": False,
+                              "cancelled": bool(readiness.get("cancelled")), "message": message,
+                              "readiness": readiness}
+                    if message:
+                        _LS_RUNTIME.update(last_action="native_core_foreground_wait_failed",
+                                           last_error=message, last_transition_at=_session_timestamp())
+            except Exception as error:
+                message = f"{type(error).__name__}: {error}"
+                result = {"ok": False, "active": bool(_LS_RUNTIME.get("active")), "message": message}
+                _LS_RUNTIME.update(last_error=message, last_transition_at=_session_timestamp())
+            compact_result = _compact_lossless_result(result)
+            _LS_AUTOSTART_GATE.update(worker_running=False, last_result=compact_result)
         if callable(record_event):
             try:
                 record_event(
@@ -4424,7 +4456,7 @@ def _lossless_core_status_callback(
                 daemon=True,
                 name="QuickSettingsLosslessOutputGuard",
             ).start()
-    elif int(status) in (1, 2):
+    elif int(status) in (1, 2) and _LS_CORE.get("capture_requested") is not False:
         _LS_RUNTIME["active"] = True
         _LS_RUNTIME["verified_capture"] = int(status) == 2
         _LS_RUNTIME["last_error"] = ""
@@ -4918,14 +4950,9 @@ def _resume_lossless_after_overlay_sync():
                 "message": "",
             }
         else:
-            result = _activate_lossless_managed_sync(
-                settings,
-                app_id,
-                title,
-                force_restart=False,
-                auto_scale=True,
-                filters=filters,
-            )
+            # Steam restores game focus after this RPC returns. Start the existing
+            # bounded foreground gate instead of capturing the still-open QAM.
+            result = _schedule_lossless_autostart(settings, app_id, title, filters)
             result["resumed"] = bool(result.get("ok") and result.get("active"))
         _LS_SESSION_CONTROL["last_resume_result"] = (
             _compact_lossless_result(result)
@@ -5006,7 +5033,8 @@ def _ls_read_text():
     if not path or not os.path.exists(path):
         return path, ""
     try:
-        return path, open(path, encoding="utf-8-sig", errors="ignore").read()
+        with open(path, encoding="utf-8-sig", errors="ignore") as stream:
+            return path, stream.read()
     except Exception:
         return path, ""
 
@@ -5403,7 +5431,42 @@ def _lossless_hotkey_vks():
     return vks or [0x11, 0x12, 0x53]
 
 
-def _get_lossless_status_sync():
+def _valid_lossless_control_token(value):
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{32}", value) is not None
+
+
+def _run_lossless_control_sync(expected_token, operation, *arguments):
+    global _LS_CONTROL_TOKEN
+    with _LS_CONTROL_LOCK:
+        if not _valid_lossless_control_token(expected_token) or expected_token != _LS_CONTROL_TOKEN:
+            return {"ok": False, "code": "lossless_control_stale",
+                    "message": "Refresh Lossless Scaling status before changing it.",
+                    "control_token": _LS_CONTROL_TOKEN, "control_busy": False}
+        # Consume before native work. An old request can never run after a
+        # successful read-only reconciliation, including after a lost RPC reply.
+        _LS_CONTROL_TOKEN = os.urandom(16).hex()
+        result = operation(*arguments)
+        return {**result, "control_token": _LS_CONTROL_TOKEN, "control_busy": False}
+
+
+def _get_lossless_status_sync(resolve_token=None):
+    global _LS_CONTROL_TOKEN
+    acquired = _LS_CONTROL_LOCK.acquire(blocking=False)
+    if not acquired:
+        return {"ok": False, "control_token": _LS_CONTROL_TOKEN, "control_busy": True}
+    try:
+        if acquired and _valid_lossless_control_token(resolve_token) and resolve_token == _LS_CONTROL_TOKEN:
+            # Revocation only: fence a delayed, not-yet-started request. Never
+            # change capture or wait for a native operation from this read path.
+            _LS_CONTROL_TOKEN = os.urandom(16).hex()
+        result = _read_lossless_status_sync()
+        return {**result, "control_token": _LS_CONTROL_TOKEN, "control_busy": not acquired}
+    finally:
+        if acquired:
+            _LS_CONTROL_LOCK.release()
+
+
+def _read_lossless_status_sync():
     if os.name != "nt":
         return {"ok": False, "available": False, "installed": False, "running": False, "message": "Windows only."}
     path = _find_lossless()
@@ -5431,6 +5494,20 @@ def _get_lossless_status_sync():
         "session_control": copy.deepcopy(_LS_SESSION_CONTROL),
     }
     data.update(_read_lossless_settings())
+    status = _LS_CORE.get("last_status", {})
+    capture_active = bool(core_initialized and _LS_RUNTIME.get("active")
+                          and status.get("status") == 2 and not status.get("error_code")
+                          and status.get("fullscreen_output_verified"))
+    resume_requested = bool(_LS_SESSION_CONTROL.get("resume_requested"))
+    pending = bool(_LS_AUTOSTART_GATE.get("worker_running") or resume_requested)
+    suspended = bool(_LS_SESSION_CONTROL.get("overlay_suspended") or (
+        core_initialized and _LS_RUNTIME.get("active") and status.get("status") == 1
+        and not status.get("error_code")))
+    data["capture_state"] = ("active" if capture_active else "failed" if _LS_RUNTIME.get("last_error")
+                             else "suspended" if suspended else "pending" if pending
+                             else "inactive")
+    data["capture_active"] = capture_active
+    data["scaling_requested"] = bool(_LS_RUNTIME.get("active") or pending or suspended)
     return data
 
 
@@ -5469,35 +5546,43 @@ def _deactivate_lossless_capture_sync(reason="disabled", preserve_runtime=False)
     with _LS_CONTROL_LOCK:
         errors = []
         stopped_status = {}
+        was_active = bool(_LS_RUNTIME.get("active")) or int(
+            _LS_CORE.get("last_status", {}).get("status", 0) or 0
+        ) in (1, 2)
+        stopped = not (_LS_CORE.get("initialized") and was_active)
+        _LS_CORE["capture_requested"] = False
         if _LS_CORE.get("initialized"):
             try:
-                if _LS_RUNTIME.get("active") or int(
-                    _LS_CORE.get("last_status", {}).get("status", 0) or 0
-                ) in (1, 2):
+                if was_active:
                     _LS_CORE_EVENT.clear()
+                    _LS_CORE["last_status"] = {}
                     with _lossless_dpi_scope():
                         _LS_CORE["dll"].Activate(ctypes.c_void_p(0))
-                    deadline = time.time() + 5.0
-                    while time.time() < deadline:
+                    deadline = time.monotonic() + 5.0
+                    while time.monotonic() < deadline:
                         if _LS_CORE_EVENT.wait(0.1):
                             stopped_status = copy.deepcopy(_LS_CORE.get("last_status", {}))
                             if int(stopped_status.get("status", -1)) == 0:
+                                stopped = True
                                 break
                             _LS_CORE_EVENT.clear()
+                    if not stopped:
+                        errors.append("Lossless Scaling did not confirm that capture stopped.")
             except Exception as error:
                 errors.append(f"core: {type(error).__name__}: {error}")
         runtime_update = {
-            "active": False,
+            "active": not stopped,
             "verified_capture": False,
             "core_status": stopped_status,
-            "watchdog_token": "",
             "last_action": (
                 f"suspend:{reason}" if preserve_runtime else f"stop:{reason}"
             ),
             "last_error": ", ".join(errors),
             "last_transition_at": _session_timestamp(),
         }
-        if not preserve_runtime:
+        if stopped:
+            runtime_update["watchdog_token"] = ""
+        if stopped and not preserve_runtime:
             runtime_update.update({
                 "active_app_id": 0,
                 "active_title": "",
@@ -5506,10 +5591,11 @@ def _deactivate_lossless_capture_sync(reason="disabled", preserve_runtime=False)
                 "active_settings": {},
             })
         _LS_RUNTIME.update(runtime_update)
-        _LS_SCALING_ACTIVE["on"] = False
+        _LS_SCALING_ACTIVE["on"] = not stopped
         return {
-            "ok": not errors,
-            "active": False,
+            "ok": stopped and not errors,
+            "active": not stopped,
+            "stop_confirmed": stopped,
             "running": bool(_LS_CORE.get("initialized")),
             "message": _LS_RUNTIME["last_error"],
             "core_status": stopped_status,
@@ -5527,12 +5613,13 @@ def _stop_lossless_managed_sync(reason="disabled", uninitialize=False):
             try:
                 with _lossless_dpi_scope():
                     _LS_CORE["dll"].UnInit()
-            except Exception as error:
-                errors.append(f"core unload: {type(error).__name__}: {error}")
-            finally:
+                deactivated["active"] = False
+                deactivated["stop_confirmed"] = True
                 _LS_CORE["initialized"] = False
                 _LS_CORE["last_status"] = {}
                 _LS_CORE["target_monitor"] = {}
+            except Exception as error:
+                errors.append(f"core unload: {type(error).__name__}: {error}")
 
         stop_error = _stop_owned_lossless_ui()
         if stop_error:
@@ -5541,23 +5628,23 @@ def _stop_lossless_managed_sync(reason="disabled", uninitialize=False):
         cleanup = {"ok": True, "removed": 0} if still_running else _remove_lossless_autoscale_profiles()
         if not cleanup.get("ok"):
             errors.append(str(cleanup.get("message", "profile cleanup failed")))
+        active = bool(deactivated.get("active"))
         _LS_RUNTIME.update({
-            "active": False,
-            "active_app_id": 0,
-            "active_title": "",
-            "managed_pid": 0,
-            "core_host_pid": 0,
+            "active": active,
             "verified_capture": False,
             "core_status": copy.deepcopy(deactivated.get("core_status", {})),
-            "watchdog_token": "",
             "last_action": f"stop:{reason}",
             "last_error": ", ".join(errors),
             "last_transition_at": _session_timestamp(),
         })
-        _LS_SCALING_ACTIVE["on"] = False
+        if not active:
+            _LS_RUNTIME.update({"active_app_id": 0, "active_title": "", "managed_pid": 0,
+                                "core_host_pid": 0, "watchdog_token": ""})
+        _LS_SCALING_ACTIVE["on"] = active
         return {
             "ok": bool(cleanup.get("ok")) and not errors,
-            "active": False,
+            "active": active,
+            "stop_confirmed": bool(deactivated.get("stop_confirmed")),
             "running": still_running,
             "message": _LS_RUNTIME["last_error"],
             "profile_cleanup": cleanup,
@@ -5599,7 +5686,9 @@ def _activate_lossless_managed_sync(
             }
 
         if _LS_RUNTIME.get("active"):
-            _deactivate_lossless_capture_sync("native_core_restart")
+            stopped = _deactivate_lossless_capture_sync("native_core_restart")
+            if not stopped.get("ok"):
+                return {**stopped, "runtime": copy.deepcopy(_LS_RUNTIME)}
 
         target = _lossless_core_target(filters)
         if not target:
@@ -5680,6 +5769,7 @@ def _activate_lossless_managed_sync(
 
         _LS_CORE_EVENT.clear()
         _LS_CORE["last_status"] = {}
+        _LS_CORE["capture_requested"] = True
         try:
             with _lossless_dpi_scope():
                 accepted = bool(
@@ -5801,6 +5891,11 @@ def _restart_lossless():
 
 
 def _set_lossless_setting_sync(key, value):
+    with _LS_CONTROL_LOCK:
+        return _set_lossless_setting_locked(key, value)
+
+
+def _set_lossless_setting_locked(key, value):
     if os.name != "nt":
         return {"ok": False, "message": "Windows only."}
     aliases = {"frame_gen": "frame_generation", "multiplier": "lsfg3_multiplier"}
@@ -5818,13 +5913,19 @@ def _set_lossless_setting_sync(key, value):
             "resume_settings": copy.deepcopy(written.get("settings", {})),
             "last_changed_at": _session_timestamp(),
         })
+        if (_LS_AUTOSTART_GATE.get("worker_running")
+                and _LS_AUTOSTART_GATE.get("app_id") == _LS_SESSION_CONTROL.get("resume_app_id")):
+            _LS_AUTOSTART_GATE["settings"] = copy.deepcopy(written.get("settings", {}))
         runtime = {
             "ok": True,
-            "active": True,
-            "suspended": True,
+            "active": bool(_LS_RUNTIME.get("active")),
+            "suspended": bool(_LS_SESSION_CONTROL.get("overlay_suspended")),
             "pending": True,
             "message": "",
         }
+    elif _LS_AUTOSTART_GATE.get("worker_running"):
+        _LS_AUTOSTART_GATE["settings"] = copy.deepcopy(written.get("settings", {}))
+        runtime = {"ok": True, "active": False, "pending": True, "message": ""}
     elif _LS_RUNTIME.get("active") and normalized_key != "draw_fps":
         runtime = _activate_lossless_managed_sync(
             written.get("settings", {}),
@@ -5844,6 +5945,11 @@ def _set_lossless_setting_sync(key, value):
 
 
 def _set_lossless_scaling_sync(enabled, app_id=0, title=""):
+    with _LS_CONTROL_LOCK:
+        return _set_lossless_scaling_locked(enabled, app_id, title)
+
+
+def _set_lossless_scaling_locked(enabled, app_id=0, title=""):
     if os.name != "nt":
         return {"ok": False, "active": False, "message": "Windows only."}
     if bool(enabled):
@@ -5882,14 +5988,7 @@ def _set_lossless_scaling_sync(enabled, app_id=0, title=""):
                 "runtime": copy.deepcopy(_LS_RUNTIME),
                 "session_control": copy.deepcopy(_LS_SESSION_CONTROL),
             }
-        return _activate_lossless_managed_sync(
-            settings,
-            target_app_id,
-            str(title or ""),
-            force_restart=not bool(_LS_RUNTIME.get("active")),
-            auto_scale=True,
-            filters=filters,
-        )
+        return _schedule_lossless_autostart(settings, target_app_id, str(title or ""), filters)
     target_app_id = int(
         app_id
         or _LS_RUNTIME.get("active_app_id", 0)
