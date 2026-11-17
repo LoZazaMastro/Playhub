@@ -4,106 +4,93 @@
 
 ### Your gaming PC, with the soul of a console.
 
-**Playhub** brings Windows to your living room: Gaming Mode, Decky plugins, your games together in Steam, and an interface designed for a controller.
+**Playhub brings Decky Loader and a dedicated Gaming Mode to Windows.**<br />
+Plugins, your games and everyday PC controls, together in Steam Big Picture.
 
 <p><a href="https://github.com/LoZazaMastro/Playhub/releases/latest"><img src="docs/images/readme-button-download.png" height="36" alt="Download Playhub" /></a>&nbsp;<a href="https://ko-fi.com/LoZazaMastro"><img src="docs/images/readme-button-support.png" height="36" alt="Support Playhub on Ko-fi" /></a></p>
 
-<p><a href="https://lozazamastro.github.io/Playhub/">Visit the Playhub website</a></p>
+[Website](https://lozazamastro.github.io/Playhub/) · [What's new in 3.0.0](CHANGELOG.md) · [Community](https://www.reddit.com/r/PlayhubGaming/)
 
 <p><a href="https://github.com/LoZazaMastro/Playhub/releases"><img src="https://img.shields.io/github/downloads/LoZazaMastro/Playhub/total?style=for-the-badge&label=Downloads&labelColor=000000&color=ffcf12" alt="Total Playhub downloads" /></a>&nbsp;&nbsp;<a href="https://github.com/LoZazaMastro/Playhub/stargazers"><img src="https://img.shields.io/github/stars/LoZazaMastro/Playhub?style=for-the-badge&label=Stars&labelColor=000000&color=ffffff" alt="GitHub stars" /></a></p>
-
-<br />
-
-<img src="docs/images/mascotte-couch.png" width="100%" alt="The Playhub mascots on the couch" />
 
 </div>
 
 ## Everything you need before you press Play
 
-Playhub brings everything you need for couch gaming into one app: Gaming Mode, Decky, your game library, and Big Picture customization.
+Start your PC in Big Picture, settle in with your controller and keep your games and settings within reach. Playhub handles Decky setup, brings your stores together and lets you make the experience your own, while keeping Windows and the games you already use.
 
-When you first launch Playhub, its mascots guide you through setup.
+<img src="docs/images/readme-card-decky.png" width="100%" alt="Decky Loader on Windows: guided installation, updates and repairs in Playhub" />
 
-<img src="docs/images/readme-card-decky.png" width="100%" alt="Decky Loader installation and setup" />
-<br />
-<img src="docs/images/readme-card-store.png" width="100%" alt="Playhub Plugin Store" />
-<br />
-<img src="docs/images/readme-card-gaming.png" width="100%" alt="Gaming Mode" />
-<br />
-<img src="docs/images/readme-card-import.png" width="100%" alt="Importing games into Steam" />
-<br />
-<img src="docs/images/readme-card-styler.png" width="100%" alt="Themes and tools for Steam Big Picture" />
-<br />
-<img src="docs/images/readme-card-settings.png" width="100%" alt="Playhub settings" />
+<img src="docs/images/readme-card-gaming.png" width="100%" alt="Gaming Mode: start in Steam Big Picture, keep the desktop out of the way and switch back when needed" />
 
-## Digital Stores, right inside Big Picture
+<img src="docs/images/readme-card-store.png" width="100%" alt="Plugin Store: discover, install and update plugins from the Decky Store, the Playhub suite and independent GitHub developers" />
 
-Install, manage and play games from **Epic Games, GOG, Xbox Store, PC Game Pass and Amazon Games** without leaving Steam Big Picture. Browse your libraries with a controller, choose an installation drive and supported language, and manage downloads from a shared queue.
+<img src="docs/images/readme-card-digital-stores.png" width="100%" alt="Digital Stores in the Playhub app: connect Epic Games, GOG, Xbox and Amazon Games accounts" />
 
-Connect your accounts once in the **Digital Stores** tab of the Playhub Windows app, then open **Steam menu > Digital Stores** in Big Picture. To browse PC Game Pass, press **Y** (Triangle on a PlayStation controller), select **Xbox Game Pass** in Filters, and close the filters panel.
+<img src="docs/images/readme-card-import.png" width="100%" alt="Import Games: bring existing games and applications into your Steam library" />
 
-Installed games join your Steam library automatically with artwork and appear in Home's recent games. **Xbox, Epic and GOG achievements** appear on Steam's native game pages, with unlock notifications and an update for the game you just closed when you return to Steam. Amazon Games does not have an achievement system.
+<img src="docs/images/readme-card-styler.png" width="100%" alt="Big Picture Styler: coordinated themes, layouts and assets for Steam Big Picture" />
 
-<img src="docs/images/digital-stores-library.jpg" width="100%" alt="Digital Stores brings Epic Games, GOG, Xbox and Amazon libraries together in Steam Big Picture" />
+<img src="docs/images/readme-card-settings.png" width="100%" alt="Playhub settings: app and plugin updates, guided repairs and support reports" />
+
+## Digital Stores, from your controller
+
+<img src="docs/images/readme-card-digital-stores-steam.png" width="100%" alt="Browse, install and manage Epic Games, GOG, Xbox Store, PC Game Pass and Amazon Games in Steam Big Picture, with a shared download queue, artwork and Xbox, Epic and GOG achievements" />
+
+Connect your accounts once in the Playhub app, then open **Steam menu > Digital Stores** in Big Picture. For the PC Game Pass catalog, press **Y** (Triangle on a PlayStation controller), choose **Xbox Game Pass** in Filters, and close the filters panel.
+
+<details>
+<summary><strong>See Digital Stores in action</strong></summary>
 
 | One menu, all your stores | A shared download queue |
 | :---: | :---: |
-| ![Digital Stores in the Steam menu](docs/images/digital-stores-menu.jpg) | ![Download progress and transfer speed](docs/images/digital-stores-downloads.jpg) |
-| **Achievements on native Steam pages** | **Installed games, at home in Steam** |
+| ![Digital Stores in the Steam menu](docs/images/digital-stores-menu.jpg) | ![Downloaded size, total size and transfer speed](docs/images/digital-stores-downloads.jpg) |
+| **Achievements on native Steam pages** | **Installed games on Steam Home** |
 | ![Xbox achievements in Steam](docs/images/digital-stores-achievements.jpg) | ![Recently installed games on Steam Home](docs/images/digital-stores-home.jpg) |
 
-Direct installation and download controls depend on the store and title. PC Game Pass titles requiring EA app, Ubisoft Connect or Battle.net are labelled with their launcher and do not yet support direct installation. Supported games installed through those launchers can be added through **Import Games**.
+</details>
 
-## Steam Controller 2, beyond your Steam library
+Direct installation, language choices and download controls depend on the store and title. PC Game Pass titles requiring EA app, Ubisoft Connect or Battle.net are labelled with their launcher and do not yet support direct installation. Add supported, externally installed titles through **Import Games**. Amazon Games does not have an achievement system.
 
-<img src="docs/images/steam-controller-2.png" width="440" alt="Steam Controller 2" />
+## Steam Controller 2, across your games
 
-Use your **Steam Controller 2** with Xbox Store, PC Game Pass, Epic, GOG, Amazon and other non-Steam games while Steam stays open. Playhub's **Translation Controller** makes it appear as an Xbox 360 controller, without an extra controller utility, dongle or Open Puck.
+<img src="docs/images/readme-card-controller.png" width="100%" alt="Use Steam Controller 2 in non-Steam games while Steam stays open, without setting up a separate controller utility. Enable Translation Controller in the Controller tab of the Playhub Quick Access plugin." />
 
-Turn it on or off under **Controller** in the Playhub Quick Access plugin. If a game already recognises the controller and you get double inputs, turn Translation Controller off.
+If a game already recognises your controller and you get double inputs, turn **Translation Controller** off in the Playhub plugin's **Controller** tab.
 
-<img src="docs/images/steam-controller-2-settings.jpg" width="100%" alt="Translation Controller in Playhub's Controller settings in the Quick Access Menu" />
-
-## Built for the living room
-
-- **Launch straight into Big Picture:** Gaming Mode handles transitions between your game, dashboard, and desktop.
-- **Decky, all in one place:** install, update, and repair Playhub plugins from a single interface.
-- **Unified library:** bring Xbox, Microsoft Store, Epic, GOG, and Amazon games, along with other apps, into Steam.
-- **A consistent look:** Playhub themes and a CSS Loader profile come ready to use, complete with the required assets.
-- **Game Bar when you need it:** the controller shortcut is disabled in Big Picture and re-enabled only for Xbox or Microsoft Store games that need it.
-- **Guided repairs:** a single check finds and fixes what isn't working.
-- **Easier support:** when needed, Playhub prepares a report that's ready to share.
-- **Built-in updates:** check for, download, and install app and plugin updates directly from the interface.
-- **A growing Plugin Store:** discover the 100 most recently published plugins and receive catalog updates from the public Playhub repository.
-- **Gaming history on demand:** On this day loads stories and images as you browse, keeping the installer lighter.
-
-## The Playhub family
+## The Playhub plugin family
 
 <img src="docs/images/readme-plugin-family.png" width="100%" alt="The Playhub plugin family" />
-<br />
-<a href="https://github.com/LoZazaMastro/Playhub-Metadata"><img src="docs/images/readme-plugin-metadata.png" width="100%" alt="Playhub Metadata" /></a>
 
-Playhub Metadata fills your game pages with descriptions, release details, translations and community content, with achievements from RetroAchievements and local RPCS3 trophies.
+Choose the plugins you want from the Plugin Store. Each card links to its project, where you can find more details and downloads.
 
-<br /><br />
-<a href="https://github.com/LoZazaMastro/ThemeDeck-Windows"><img src="docs/images/readme-plugin-themedeck.png" width="100%" alt="ThemeDeck" /></a>
-<br /><br />
-<a href="https://github.com/LoZazaMastro/Launch-Curtain"><img src="docs/images/readme-plugin-launch-curtain.png" width="100%" alt="Launch Curtain" /></a>
-<br /><br />
-<a href="https://github.com/LoZazaMastro/TrailerHero"><img src="docs/images/readme-plugin-trailerhero.png" width="100%" alt="TrailerHero" /></a>
-<br /><br />
-<a href="https://github.com/LoZazaMastro/Now-Playing"><img src="docs/images/readme-plugin-now-playing.png" width="100%" alt="Now Playing" /></a>
-<br /><br />
-<a href="https://github.com/LoZazaMastro/Quick-Settings"><img src="docs/images/readme-plugin-quick-settings.png" width="100%" alt="Quick Settings" /></a>
+<a href="https://github.com/LoZazaMastro/Playhub/tree/main/Source/GamingModeDeckyPlugin"><img src="docs/images/readme-plugin-playhub.png" width="100%" alt="Playhub: Control audio, microphone, spatial audio, display and supported NVIDIA settings from Quick Access. Manage downloads, switch games and apps in Dashboard, catch up on What’s New, browse On this day and set a screensaver." /></a>
 
-More available plugins:
+<a href="https://github.com/LoZazaMastro/Playhub-Artworks"><img src="docs/images/readme-plugin-artworks.png" width="100%" alt="Playhub Artworks: Choose covers, banners, backgrounds, logos and icons with your controller. Search multiple artwork sources, or create your own composition with Perfect Hero and Perfect Banner." /></a>
 
-- [Playhub Artworks](https://github.com/LoZazaMastro/Playhub-Artworks) — manage covers, banners, backgrounds, logos, and icons with your controller;
-- [Playhub Notifications](https://github.com/LoZazaMastro/Playhub-Notifications) — notifications and volume overlays that match your chosen theme;
-- [News](https://github.com/LoZazaMastro/News) — headlines in the QAM and a full-screen Newsstand;
-- [Weather](https://github.com/LoZazaMastro/Weather) — current weather and forecasts, also available in Steam's top bar;
-- [Playhub Surround](https://github.com/LoZazaMastro/Playhub-Surround) — guided controls for stereo, 5.1, and 7.1 sound systems;
-- [Proton VPN](https://github.com/LoZazaMastro/Proton-VPN) — control the Proton VPN client for Windows from the QAM.
+<a href="https://github.com/LoZazaMastro/Playhub-Metadata"><img src="docs/images/readme-plugin-metadata.png" width="100%" alt="Playhub Metadata: Fill your game pages with descriptions, release details and community content. Match games, translate descriptions and follow RetroAchievements progress or local RPCS3 trophies." /></a>
+
+<a href="https://github.com/LoZazaMastro/Playhub-Discord"><img src="docs/images/readme-plugin-discord.png" width="100%" alt="Discord: Keep Discord conversations and voice channels inside Big Picture. Browse servers and direct messages, join calls and reach microphone, deafen and leave controls from Quick Access." /></a>
+
+<a href="https://github.com/LoZazaMastro/ThemeDeck-Windows"><img src="docs/images/readme-plugin-themedeck.png" width="100%" alt="ThemeDeck: Hear a game&#x27;s theme when you open its library page. Choose music from YouTube or your own collection, set loops and volume, and add ambient music to Steam." /></a>
+
+<a href="https://github.com/LoZazaMastro/Launch-Curtain"><img src="docs/images/readme-plugin-launch-curtain.png" width="100%" alt="Launch Curtain: Give each game a full-screen opening with its own artwork, logo and sound. Preview the transition, adjust the timing and keep launcher windows out of the spotlight." /></a>
+
+<a href="https://github.com/LoZazaMastro/TrailerHero"><img src="docs/images/readme-plugin-trailerhero.png" width="100%" alt="TrailerHero: Bring game pages to life with trailers. Use Steam videos, choose a match from YouTube or add a local clip, then set the playback range and sound for each game." /></a>
+
+<a href="https://github.com/LoZazaMastro/Now-Playing"><img src="docs/images/readme-plugin-now-playing.png" width="100%" alt="Now Playing: Keep Spotify, YouTube Music and local music close while you play. Browse albums and playlists in the full-screen player, control playback and enjoy music visualizers." /></a>
+
+<a href="https://github.com/LoZazaMastro/Quick-Settings"><img src="docs/images/readme-plugin-quick-settings.png" width="100%" alt="Quick Settings: Adjust sound, display and performance from your controller. Configure supported AMD Radeon features and per-game Lossless Scaling profiles. Lossless Scaling is sold separately." /></a>
+
+<a href="https://github.com/LoZazaMastro/Playhub-Notifications"><img src="docs/images/readme-plugin-notifications.png" width="100%" alt="Playhub Notifications: Choose the look, sound and animation of Steam notifications. Preview your changes, decide which alerts appear and give Gaming Mode&#x27;s volume indicator the same style." /></a>
+
+<a href="https://github.com/LoZazaMastro/Playhub-Surround"><img src="docs/images/readme-plugin-surround.png" width="100%" alt="Playhub Surround: Check your stereo, 5.1 or 7.1 speakers without leaving Big Picture. Test a single channel or the whole setup, and choose the test sound and volume with your controller." /></a>
+
+<a href="https://github.com/LoZazaMastro/News"><img src="docs/images/readme-plugin-news.png" width="100%" alt="News: Read the publishers you follow in Quick Access or the full-screen Newsstand. Organize sources in tabs, add RSS and Atom feeds, and open supported articles in Reader Mode." /></a>
+
+<a href="https://github.com/LoZazaMastro/Weather"><img src="docs/images/readme-plugin-weather.png" width="100%" alt="Weather: See current conditions and hourly and daily forecasts in Quick Access. Choose your location and units, then keep the temperature and weather icon beside Steam&#x27;s clock." /></a>
+
+<a href="https://github.com/LoZazaMastro/Proton-VPN"><img src="docs/images/readme-plugin-proton-vpn.png" width="100%" alt="Proton VPN: Connect, disconnect and choose a VPN location from your controller. See your connection status in Quick Access. Requires the Proton VPN Windows app and a signed-in account." /></a>
 
 ## Download and installation
 
