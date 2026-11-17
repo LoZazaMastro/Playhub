@@ -388,6 +388,7 @@ export function installStoreLibraryRuntime() {
   const symbol = Symbol.for("playhub.store-library.runtime.v1");
   const root = host(); root[symbol]?.();
   let alive = true, busy = false, repairing=false, ownerId: string | undefined, sequence = 0;
+  let heartbeatBusy=false,heartbeatGeneration=0,heartbeatDeadline:ReturnType<typeof setTimeout>|undefined;
   const stopAchievements=installStoreAchievementsRuntime({rows:()=>owned,subscribe:subscribeStoreLibrary,request:storeRequest});
   const stopRecents=installStoreInstallRecents({rows:()=>owned,jobs:()=>jobs,subscribe:subscribeStoreLibrary,identity:ownedShortcutIdentity,observe:observeOwnedShortcut});
   let observation: { at: number; utc: string; active: boolean | null } | undefined;
@@ -427,6 +428,23 @@ export function installStoreLibraryRuntime() {
       observation = { at: performance.now(), utc: new Date().toISOString(), active: localSteamDownloadActivity(value) };
     });
   }
+  async function heartbeat(){
+    if(!current()||heartbeatBusy)return;
+    heartbeatBusy=true;const generation=++heartbeatGeneration,valid=()=>current()&&heartbeatGeneration===generation;
+    // Library reconciliation may wait on many native imports. Steam priority
+    // has its own bounded lease loop and never waits behind that work.
+    const deadline=setTimeout(()=>{if(valid()){++heartbeatGeneration;ownerId=undefined;heartbeatBusy=false;}},6000);heartbeatDeadline=deadline;
+    try{
+      observe();
+      if(!ownerId){const registered=await storeRequest<{ownerId:string}>("steam-register");if(!valid())return;ownerId=registered.ownerId;sequence=0;}
+      if(ownerId&&valid()){
+        const fresh=observation&&performance.now()-observation.at<15000?observation:undefined;
+        const reply=await storeRequest<{accepted:boolean}>("steam-activity",{ownerId,sequence:++sequence,observedAt:fresh?.utc??new Date().toISOString(),activeLocalDownload:fresh?.active??null});
+        if(valid()&&!reply.accepted)ownerId=undefined;
+      }
+    }catch{if(valid())ownerId=undefined;}
+    finally{clearTimeout(deadline);if(heartbeatDeadline===deadline)heartbeatDeadline=undefined;if(valid())heartbeatBusy=false;}
+  }
   async function tick() {
     if (!current() || busy || repairing) return;
     busy = true;
@@ -438,18 +456,6 @@ export function installStoreLibraryRuntime() {
       if (Array.isArray(currentJobs) && serializedJobs !== lastJobs) {
         lastJobs = serializedJobs; jobs = currentJobs;
         listeners.forEach(listener => { try { listener(); } catch {} });
-      }
-      observe();
-      if (!ownerId) {
-        const registered = await storeRequest<{ ownerId: string }>("steam-register");
-        if (!current()) return;
-        ownerId = registered.ownerId; sequence = 0;
-      }
-      if (ownerId && current()) {
-        const fresh = observation && performance.now() - observation.at < 15000 ? observation : undefined;
-        const reply = await storeRequest<{ accepted: boolean }>("steam-activity", { ownerId, sequence: ++sequence,
-          observedAt: fresh?.utc ?? new Date().toISOString(), activeLocalDownload: fresh?.active ?? null });
-        if (!reply.accepted) ownerId = undefined;
       }
       if(importApps!==steam()?.Apps||importStore!==appStore()||!imports){imports?.close();importApps=steam()?.Apps;importStore=appStore();imports=createNativeImportIndex(importApps,importStore);}
       imports.observe();
@@ -482,13 +488,13 @@ export function installStoreLibraryRuntime() {
         } catch { reconciled.set(collectionKey, { signature, retryAt: Date.now() + 30000 }); }
       }
       if(imports&&current())try{const collections=host().collectionStore,store=appStore(),apps=steam()?.Apps;await reportStoreSteamMigration(storeRequest,imports,collections,store,()=>current()&&host().collectionStore===collections&&appStore()===store&&steam()?.Apps===apps);}catch{/* A partial migration remains pending; never manufacture success. */}
-    } catch { ownerId = undefined; }
+    } catch { /* Library failures do not retire the independent Steam lease. */ }
     finally { busy = false; }
   }
   function stop() {
     if (!alive) return; alive = false;
     stopRecents();stopAchievements();
-    clearInterval(timer); registration?.unregister?.();
+    clearInterval(timer);clearInterval(heartbeatTimer);clearTimeout(heartbeatDeadline);++heartbeatGeneration;registration?.unregister?.();
     imports?.close();
     if(repairSteamLink===repair)repairSteamLink=undefined;
     if (root[symbol] === stop) {
@@ -499,6 +505,8 @@ export function installStoreLibraryRuntime() {
   }
   root[symbol] = stop;
   const timer = setInterval(() => void tick(), 2000);
+  const heartbeatTimer=setInterval(()=>void heartbeat(),2000);
+  void heartbeat();
   void tick();
   return stop;
 }

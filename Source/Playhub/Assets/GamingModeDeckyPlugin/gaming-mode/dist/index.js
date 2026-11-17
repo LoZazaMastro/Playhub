@@ -2405,6 +2405,7 @@ function installStoreLibraryRuntime() {
     const root = host$2();
     root[symbol]?.();
     let alive = true, busy = false, repairing = false, ownerId, sequence = 0;
+    let heartbeatBusy = false, heartbeatGeneration = 0, heartbeatDeadline;
     const stopAchievements = installStoreAchievementsRuntime({ rows: () => owned, subscribe: subscribeStoreLibrary, request: storeRequest });
     const stopRecents = installStoreInstallRecents({ rows: () => owned, jobs: () => jobs, subscribe: subscribeStoreLibrary, identity: ownedShortcutIdentity, observe: observeOwnedShortcut });
     let observation;
@@ -2469,6 +2470,47 @@ function installStoreLibraryRuntime() {
             observation = { at: performance.now(), utc: new Date().toISOString(), active: localSteamDownloadActivity(value) };
         });
     }
+    async function heartbeat() {
+        if (!current() || heartbeatBusy)
+            return;
+        heartbeatBusy = true;
+        const generation = ++heartbeatGeneration, valid = () => current() && heartbeatGeneration === generation;
+        // Library reconciliation may wait on many native imports. Steam priority
+        // has its own bounded lease loop and never waits behind that work.
+        const deadline = setTimeout(() => { if (valid()) {
+            ++heartbeatGeneration;
+            ownerId = undefined;
+            heartbeatBusy = false;
+        } }, 6000);
+        heartbeatDeadline = deadline;
+        try {
+            observe();
+            if (!ownerId) {
+                const registered = await storeRequest("steam-register");
+                if (!valid())
+                    return;
+                ownerId = registered.ownerId;
+                sequence = 0;
+            }
+            if (ownerId && valid()) {
+                const fresh = observation && performance.now() - observation.at < 15000 ? observation : undefined;
+                const reply = await storeRequest("steam-activity", { ownerId, sequence: ++sequence, observedAt: fresh?.utc ?? new Date().toISOString(), activeLocalDownload: fresh?.active ?? null });
+                if (valid() && !reply.accepted)
+                    ownerId = undefined;
+            }
+        }
+        catch {
+            if (valid())
+                ownerId = undefined;
+        }
+        finally {
+            clearTimeout(deadline);
+            if (heartbeatDeadline === deadline)
+                heartbeatDeadline = undefined;
+            if (valid())
+                heartbeatBusy = false;
+        }
+    }
     async function tick() {
         if (!current() || busy || repairing)
             return;
@@ -2486,21 +2528,6 @@ function installStoreLibraryRuntime() {
                     listener();
                 }
                 catch { } });
-            }
-            observe();
-            if (!ownerId) {
-                const registered = await storeRequest("steam-register");
-                if (!current())
-                    return;
-                ownerId = registered.ownerId;
-                sequence = 0;
-            }
-            if (ownerId && current()) {
-                const fresh = observation && performance.now() - observation.at < 15000 ? observation : undefined;
-                const reply = await storeRequest("steam-activity", { ownerId, sequence: ++sequence,
-                    observedAt: fresh?.utc ?? new Date().toISOString(), activeLocalDownload: fresh?.active ?? null });
-                if (!reply.accepted)
-                    ownerId = undefined;
             }
             if (importApps !== steam()?.Apps || importStore !== appStore() || !imports) {
                 imports?.close();
@@ -2568,9 +2595,7 @@ function installStoreLibraryRuntime() {
                 }
                 catch { /* A partial migration remains pending; never manufacture success. */ }
         }
-        catch {
-            ownerId = undefined;
-        }
+        catch { /* Library failures do not retire the independent Steam lease. */ }
         finally {
             busy = false;
         }
@@ -2582,6 +2607,9 @@ function installStoreLibraryRuntime() {
         stopRecents();
         stopAchievements();
         clearInterval(timer);
+        clearInterval(heartbeatTimer);
+        clearTimeout(heartbeatDeadline);
+        ++heartbeatGeneration;
         registration?.unregister?.();
         imports?.close();
         if (repairSteamLink === repair)
@@ -2600,6 +2628,8 @@ function installStoreLibraryRuntime() {
     }
     root[symbol] = stop;
     const timer = setInterval(() => void tick(), 2000);
+    const heartbeatTimer = setInterval(() => void heartbeat(), 2000);
+    void heartbeat();
     void tick();
     return stop;
 }
