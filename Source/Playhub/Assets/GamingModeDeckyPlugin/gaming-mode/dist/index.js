@@ -1055,7 +1055,80 @@ function installStoreAchievementsRuntime(deps) {
     const sessions = new Map(), closedGames = new Map(), closing = new Map();
     const published = new Map(), unpatch = [], patched = new WeakSet();
     const empty = { nTotal: 0, nAchieved: 0, vecAchievedHidden: [], vecHighlight: [], vecUnachieved: [] };
-    let imageStyle;
+    const imageStyles = new Map();
+    let imageCss = '';
+    function syncXboxAchievementImageStyles() {
+        if (!alive)
+            return;
+        const windows = [], documents = new Set();
+        const values = (value) => { try {
+            return value?.values ? Array.from(value.values()) : Array.isArray(value) ? value : value && typeof value === 'object' ? Object.values(value) : [];
+        }
+        catch {
+            return [];
+        } };
+        const add = (value) => { try {
+            if (value?.document && !value.closed && !windows.includes(value) && windows.length < 64) {
+                windows.push(value);
+                documents.add(value.document);
+            }
+        }
+        catch { } };
+        const addWindow = (value) => { for (const item of [value, value?.window, value?.m_Window, value?.m_popup, value?.popup, value?.m_BrowserWindow, value?.BrowserWindow])
+            add(item); try {
+            add(value?.GetWindow?.());
+        }
+        catch { } };
+        add(host);
+        try {
+            const sp = _global_DFL.findSP?.();
+            addWindow(sp);
+            addWindow(sp?.window);
+        }
+        catch { }
+        const stores = [host.Router?.WindowStore, host.SteamUIStore?.WindowStore, _global_DFL.Router?.WindowStore];
+        for (const store of stores)
+            for (const item of [store?.GamepadUIMainWindowInstance, ...values(store?.SteamUIWindows), ...values(store?.OverlayWindows)])
+                addWindow(item);
+        try {
+            for (const tree of values(_global_DFL.getGamepadNavigationTrees?.()))
+                add(tree?.Root?.Element?.ownerDocument?.defaultView);
+        }
+        catch { }
+        for (let i = 0; i < windows.length; i++) {
+            const win = windows[i];
+            try {
+                add(win.opener);
+                add(win.parent);
+                add(win.top);
+            }
+            catch { }
+            for (const popup of values(win.g_PopupManager?.m_mapPopups))
+                addWindow(popup);
+        }
+        for (const [doc, style] of imageStyles)
+            if (!documents.has(doc) || !imageCss) {
+                style.remove();
+                imageStyles.delete(doc);
+            }
+        if (!imageCss)
+            return;
+        for (const doc of documents)
+            try {
+                if (!doc.head)
+                    continue;
+                let style = imageStyles.get(doc);
+                if (!style || !style.isConnected) {
+                    style = doc.createElement('style');
+                    style.id = 'playhub-store-xbox-achievement-fit';
+                    doc.head.appendChild(style);
+                    imageStyles.set(doc, style);
+                }
+                if (style.textContent !== imageCss)
+                    style.textContent = imageCss;
+            }
+            catch { /* A Steam popup may close while being discovered. */ }
+    }
     function updateXboxAchievementImageStyle() {
         const urls = new Set();
         for (const [id, payload] of cached)
@@ -1068,15 +1141,10 @@ function installStoreAchievementsRuntime(deps) {
                     }
         const quote = (value) => `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/[\r\n\f]/g, '')}"`;
         const images = [...urls].map(url => `img[src=${quote(url)}]`), backgrounds = [...urls].map(url => `[style*=${quote(url)}][style*="background-image"]`);
-        if (!imageStyle && urls.size && host.document?.head) {
-            imageStyle = host.document.createElement('style');
-            imageStyle.id = 'playhub-store-xbox-achievement-fit';
-            host.document.head.appendChild(imageStyle);
-        }
         // Metadata's contain treatment, scoped to actual managed Xbox badge URLs.
         // Native Steam and other providers retain their own image presentation.
-        if (imageStyle)
-            imageStyle.textContent = (images.length ? `${images.join(',')}{object-fit:contain!important;object-position:center center!important;width:100%!important;height:100%!important;display:block!important;}` : '') + (backgrounds.length ? `${backgrounds.join(',')}{background-size:contain!important;background-position:center center!important;background-repeat:no-repeat!important;background-color:rgba(0,0,0,.18);}` : '');
+        imageCss = (images.length ? `${images.join(',')}{object-fit:contain!important;object-position:center center!important;width:100%!important;height:100%!important;display:block!important;}` : '') + (backgrounds.length ? `${backgrounds.join(',')}{background-size:contain!important;background-position:center center!important;background-repeat:no-repeat!important;background-color:rgba(0,0,0,.18);}` : '');
+        syncXboxAchievementImageStyles();
     }
     function rowFor(id) { const staged = imported.get(id), row = deps.rows().get(id); return staged && staged.current() && row === staged.baseline ? staged.row : row; }
     function scope(id) { const row = rowFor(id); return supported(row) ? `${row.key.store}:${row.key.id}:${row.game.accountRevision}:${language$2()}` : null; }
@@ -1391,7 +1459,7 @@ function installStoreAchievementsRuntime(deps) {
     const bridge = { protocol: 1, isManagedApp: (id) => scope(id) !== null, getSteamPayload: (id) => cached.get(id)?.steam ?? null, imported: prepareImported, close };
     host[runtimeKey] = bridge;
     const unsubscribe = deps.subscribe(changed), timer = setInterval(() => void tick(), 15000);
-    const sessionTimer = setInterval(observeRunning, 1000);
+    const sessionTimer = setInterval(() => { observeRunning(); syncXboxAchievementImageStyles(); }, 1000);
     subscribeNative();
     observeRunning();
     for (const route of ['/library/app/:appid', '/library/details/:appid', '/library/:collection/app/:appid'])
@@ -1418,7 +1486,8 @@ function installStoreAchievementsRuntime(deps) {
         return; const retained = new Set([...cached].filter(([id, value]) => scope(id) === value.scope).map(([id]) => id)); alive = false; clearInterval(timer); clearInterval(sessionTimer); unsubscribe(); for (const stop of unpatch.reverse())
         stop(); for (const id of [...published.keys()])
         if (!retained.has(id))
-            clear(id); imageStyle?.remove(); if (host[runtimeKey] === bridge)
+            clear(id); for (const style of imageStyles.values())
+        style.remove(); imageStyles.clear(); if (host[runtimeKey] === bridge)
         delete host[runtimeKey]; }
     return close;
 }

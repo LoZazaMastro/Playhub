@@ -68,15 +68,29 @@ export function installStoreAchievementsRuntime(deps:Dependencies){
  const sessions=new Map<number,string>(),closedGames=new Map<number,string>(),closing=new Map<number,Promise<void>>();
  const published=new Map<number,{client:any;steamid:string;scope:string;rows:ReturnType<typeof storeAchievementQueryData>}>(),unpatch:Array<()=>void>=[],patched=new WeakSet<object>();
  const empty={nTotal:0,nAchieved:0,vecAchievedHidden:[],vecHighlight:[],vecUnachieved:[]};
- let imageStyle:HTMLStyleElement|undefined;
+ const imageStyles=new Map<Document,HTMLStyleElement>();let imageCss='';
+ function syncXboxAchievementImageStyles(){
+  if(!alive)return;const windows:any[]=[],documents=new Set<Document>();
+  const values=(value:any):any[]=>{try{return value?.values?Array.from(value.values()):Array.isArray(value)?value:value&&typeof value==='object'?Object.values(value):[];}catch{return[];}};
+  const add=(value:any)=>{try{if(value?.document&&!value.closed&&!windows.includes(value)&&windows.length<64){windows.push(value);documents.add(value.document);}}catch{}};
+  const addWindow=(value:any)=>{for(const item of [value,value?.window,value?.m_Window,value?.m_popup,value?.popup,value?.m_BrowserWindow,value?.BrowserWindow])add(item);try{add(value?.GetWindow?.());}catch{}};
+  add(host);try{const sp=(DFL as any).findSP?.();addWindow(sp);addWindow(sp?.window);}catch{}
+  const stores=[host.Router?.WindowStore,host.SteamUIStore?.WindowStore,(DFL as any).Router?.WindowStore];
+  for(const store of stores)for(const item of [store?.GamepadUIMainWindowInstance,...values(store?.SteamUIWindows),...values(store?.OverlayWindows)])addWindow(item);
+  try{for(const tree of values((DFL as any).getGamepadNavigationTrees?.()))add(tree?.Root?.Element?.ownerDocument?.defaultView);}catch{}
+  for(let i=0;i<windows.length;i++){const win=windows[i];try{add(win.opener);add(win.parent);add(win.top);}catch{}for(const popup of values(win.g_PopupManager?.m_mapPopups))addWindow(popup);}
+  for(const[doc,style]of imageStyles)if(!documents.has(doc)||!imageCss){style.remove();imageStyles.delete(doc);}
+  if(!imageCss)return;
+  for(const doc of documents)try{if(!doc.head)continue;let style=imageStyles.get(doc);if(!style||!style.isConnected){style=doc.createElement('style');style.id='playhub-store-xbox-achievement-fit';doc.head.appendChild(style);imageStyles.set(doc,style);}if(style.textContent!==imageCss)style.textContent=imageCss;}catch{/* A Steam popup may close while being discovered. */}
+ }
  function updateXboxAchievementImageStyle(){
   const urls=new Set<string>();for(const[id,payload]of cached)if(rowFor(id)?.key.store==='xbox'&&current(id,payload))for(const row of payload.rows)for(const value of [row.imageUnlocked,row.imageLocked]){const url=icon(value);if(url)urls.add(url);}
   const quote=(value:string)=>`"${value.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/[\r\n\f]/g,'')}"`;
   const images=[...urls].map(url=>`img[src=${quote(url)}]`),backgrounds=[...urls].map(url=>`[style*=${quote(url)}][style*="background-image"]`);
-  if(!imageStyle&&urls.size&&host.document?.head){imageStyle=host.document.createElement('style');imageStyle!.id='playhub-store-xbox-achievement-fit';host.document.head.appendChild(imageStyle);}
   // Metadata's contain treatment, scoped to actual managed Xbox badge URLs.
   // Native Steam and other providers retain their own image presentation.
-  if(imageStyle)imageStyle.textContent=(images.length?`${images.join(',')}{object-fit:contain!important;object-position:center center!important;width:100%!important;height:100%!important;display:block!important;}`:'')+(backgrounds.length?`${backgrounds.join(',')}{background-size:contain!important;background-position:center center!important;background-repeat:no-repeat!important;background-color:rgba(0,0,0,.18);}`:'');
+  imageCss=(images.length?`${images.join(',')}{object-fit:contain!important;object-position:center center!important;width:100%!important;height:100%!important;display:block!important;}`:'')+(backgrounds.length?`${backgrounds.join(',')}{background-size:contain!important;background-position:center center!important;background-repeat:no-repeat!important;background-color:rgba(0,0,0,.18);}`:'');
+  syncXboxAchievementImageStyles();
  }
  function rowFor(id:number){const staged=imported.get(id),row=deps.rows().get(id);return staged&&staged.current()&&row===staged.baseline?staged.row:row;}
  function scope(id:number){const row=rowFor(id);return supported(row)?`${row!.key.store}:${row!.key.id}:${row!.game!.accountRevision}:${language()}`:null;}
@@ -210,7 +224,7 @@ export function installStoreAchievementsRuntime(deps:Dependencies){
  }
  const bridge={protocol:1,isManagedApp:(id:number)=>scope(id)!==null,getSteamPayload:(id:number)=>cached.get(id)?.steam??null,imported:prepareImported,close};host[runtimeKey]=bridge;
  const unsubscribe=deps.subscribe(changed),timer=setInterval(()=>void tick(),15000);
- const sessionTimer=setInterval(observeRunning,1000);subscribeNative();observeRunning();
+ const sessionTimer=setInterval(()=>{observeRunning();syncXboxAchievementImageStyles();},1000);subscribeNative();observeRunning();
  for(const route of ['/library/app/:appid','/library/details/:appid','/library/:collection/app/:appid'])try{
   const token=routerHook?.addPatch?.(route,(tree:any)=>{
    const props=(DFL as any).findInReactTree?.(tree,(value:any)=>typeof value?.renderFunc==='function');
@@ -219,6 +233,6 @@ export function installStoreAchievementsRuntime(deps:Dependencies){
   });if(token)unpatch.push(()=>routerHook.removePatch(route,token));
  }catch{/* Native loaders still trigger the same account-scoped cache path. */}
  installPatches();changed();
- function close(){if(!alive)return;const retained=new Set([...cached].filter(([id,value])=>scope(id)===value.scope).map(([id])=>id));alive=false;clearInterval(timer);clearInterval(sessionTimer);unsubscribe();for(const stop of unpatch.reverse())stop();for(const id of [...published.keys()])if(!retained.has(id))clear(id);imageStyle?.remove();if(host[runtimeKey]===bridge)delete host[runtimeKey];}
+ function close(){if(!alive)return;const retained=new Set([...cached].filter(([id,value])=>scope(id)===value.scope).map(([id])=>id));alive=false;clearInterval(timer);clearInterval(sessionTimer);unsubscribe();for(const stop of unpatch.reverse())stop();for(const id of [...published.keys()])if(!retained.has(id))clear(id);for(const style of imageStyles.values())style.remove();imageStyles.clear();if(host[runtimeKey]===bridge)delete host[runtimeKey];}
  return close;
 }

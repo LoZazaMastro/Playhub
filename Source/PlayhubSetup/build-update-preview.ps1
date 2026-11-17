@@ -289,12 +289,12 @@ function Get-SpatialAudioFiles {
 function Get-PrivateArtworkFiles {
     if (!$Candidate) { return @() }
     $root = [IO.Path]::GetFullPath((Join-Path $setupRoot '..\Playhub\Plugins\Artwork'))
-    $zipName = 'Playhub-Artworks-1.1.12_Installer.zip'
-    $zipHash = '51E9FC6C5BDED5840A4335B141F124AA69E20ECA1D3612C543BBA946802184F7'
-    $markerHash = '0698C538B3CA3C8015E800AA62594E8CBD0B53E729B1AF2F58C454241AB4F364'
+    $zipName = 'Playhub-Artworks-1.1.14_Installer.zip'
+    $zipHash = 'F321EECF70022F256D1EB1D505BFF8F165F6CFA59FE998A82C41896F7DF88CE0'
+    $markerHash = '11024C2151097E8651112473FBE88EC30439FC718C23F67BC058447A14CD2FBC'
     $installers = @(Get-ChildItem -LiteralPath $root -File -Filter '*.zip')
-    if ($installers.Count -ne 1 -or $installers[0].Name -cne $zipName -or $installers[0].Length -ne 545530) {
-        throw 'The private Artwork candidate requires exactly the reviewed 1.1.12 archive.'
+    if ($installers.Count -ne 1 -or $installers[0].Name -cne $zipName -or $installers[0].Length -ne 545976) {
+        throw 'The private Artwork candidate requires exactly the reviewed 1.1.14 archive.'
     }
     $zip = $installers[0]
     $marker = Get-Item -LiteralPath (Join-Path $root 'release-info.json')
@@ -304,7 +304,7 @@ function Get-PrivateArtworkFiles {
         throw 'The private Artwork archive or release metadata differs from the reviewed hotfix.'
     }
     $info = [IO.File]::ReadAllText($marker.FullName) | ConvertFrom-Json
-    if ($info.version -cne '1.1.12' -or $info.repository -cne 'LoZazaMastro/Playhub-Artworks' -or
+    if ($info.version -cne '1.1.14' -or $info.repository -cne 'LoZazaMastro/Playhub-Artworks' -or
         ([string]$info.sha256).ToUpperInvariant() -cne $zipHash -or $info.bundled -ne $true) {
         throw 'The private Artwork version provenance is inconsistent.'
     }
@@ -876,7 +876,7 @@ try {
         }
         if (@($archive.Entries | Where-Object {
             $_.FullName -match '^Plugins/(?!Metadata/|Launch Curtain/|Weather/|CSS Loader/).*\.zip$' -and
-            !($Candidate -and $_.FullName -ceq 'Plugins/Artwork/Playhub-Artworks-1.1.12_Installer.zip')
+            !($Candidate -and $_.FullName -ceq 'Plugins/Artwork/Playhub-Artworks-1.1.14_Installer.zip')
         }).Count) {
             throw 'Remotely available plugin installer archives must not be bundled.'
         }
