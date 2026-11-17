@@ -36,11 +36,39 @@ When you first launch Playhub, its mascots guide you through setup.
 <br />
 <img src="docs/images/readme-card-settings.png" width="100%" alt="Playhub settings" />
 
+## Digital Stores, right inside Big Picture
+
+Install, manage and play games from **Epic Games, GOG, Xbox Store, PC Game Pass and Amazon Games** without leaving Steam Big Picture. Browse your libraries with a controller, choose an installation drive and supported language, and manage downloads from a shared queue.
+
+Connect your accounts once in the **Digital Stores** tab of the Playhub Windows app, then open **Steam menu > Digital Stores** in Big Picture. To browse PC Game Pass, press **Y** (Triangle on a PlayStation controller), select **Xbox Game Pass** in Filters, and close the filters panel.
+
+Installed games join your Steam library automatically with artwork and appear in Home's recent games. **Xbox, Epic and GOG achievements** appear on Steam's native game pages, with unlock notifications and an update for the game you just closed when you return to Steam. Amazon Games does not have an achievement system.
+
+<img src="docs/images/digital-stores-library.jpg" width="100%" alt="Digital Stores brings Epic Games, GOG, Xbox and Amazon libraries together in Steam Big Picture" />
+
+| One menu, all your stores | A shared download queue |
+| :---: | :---: |
+| ![Digital Stores in the Steam menu](docs/images/digital-stores-menu.jpg) | ![Download progress and transfer speed](docs/images/digital-stores-downloads.jpg) |
+| **Achievements on native Steam pages** | **Installed games, at home in Steam** |
+| ![Xbox achievements in Steam](docs/images/digital-stores-achievements.jpg) | ![Recently installed games on Steam Home](docs/images/digital-stores-home.jpg) |
+
+Direct installation and download controls depend on the store and title. PC Game Pass titles requiring EA app, Ubisoft Connect or Battle.net are labelled with their launcher and do not yet support direct installation. Supported games installed through those launchers can be added through **Import Games**.
+
+## Steam Controller 2, beyond your Steam library
+
+<img src="docs/images/steam-controller-2.png" width="440" alt="Steam Controller 2" />
+
+Use your **Steam Controller 2** with Xbox Store, PC Game Pass, Epic, GOG, Amazon and other non-Steam games while Steam stays open. Playhub's **Translation Controller** makes it appear as an Xbox 360 controller, without an extra controller utility, dongle or Open Puck.
+
+Turn it on or off under **Controller** in the Playhub Quick Access plugin. If a game already recognises the controller and you get double inputs, turn Translation Controller off.
+
+<img src="docs/images/steam-controller-2-settings.jpg" width="100%" alt="Translation Controller in Playhub's Controller settings in the Quick Access Menu" />
+
 ## Built for the living room
 
 - **Launch straight into Big Picture:** Gaming Mode handles transitions between your game, dashboard, and desktop.
 - **Decky, all in one place:** install, update, and repair Playhub plugins from a single interface.
-- **Unified library:** bring Xbox, Microsoft Store, Epic, and GOG games, along with other apps, into Steam.
+- **Unified library:** bring Xbox, Microsoft Store, Epic, GOG, and Amazon games, along with other apps, into Steam.
 - **A consistent look:** Playhub themes and a CSS Loader profile come ready to use, complete with the required assets.
 - **Game Bar when you need it:** the controller shortcut is disabled in Big Picture and re-enabled only for Xbox or Microsoft Store games that need it.
 - **Guided repairs:** a single check finds and fixes what isn't working.
@@ -54,6 +82,9 @@ When you first launch Playhub, its mascots guide you through setup.
 <img src="docs/images/readme-plugin-family.png" width="100%" alt="The Playhub plugin family" />
 <br />
 <a href="https://github.com/LoZazaMastro/Playhub-Metadata"><img src="docs/images/readme-plugin-metadata.png" width="100%" alt="Playhub Metadata" /></a>
+
+Playhub Metadata fills your game pages with descriptions, release details, translations and community content, with achievements from RetroAchievements and local RPCS3 trophies.
+
 <br /><br />
 <a href="https://github.com/LoZazaMastro/ThemeDeck-Windows"><img src="docs/images/readme-plugin-themedeck.png" width="100%" alt="ThemeDeck" /></a>
 <br /><br />
