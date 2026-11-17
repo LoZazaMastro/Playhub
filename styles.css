@@ -367,3 +367,8 @@ p { max-width: 64ch; }
   .button, .theme-toggle, .header-actions .icon { transition: none; }
   .header-actions > :is(:hover, :focus-visible, :active), .header-actions > :is(:hover, :focus-visible) .icon { transform: none; }
 }
+
+/* Playhub 3.0.0 features share the site's responsive gallery and colour system. */
+.plugin-band[aria-labelledby="digital-stores-title"] { --plugin-color: #FFCC00; --plugin-light-share: 28%; --plugin-dark-share: 18%; }
+.plugin-band[aria-labelledby="steam-controller-title"] { --plugin-color: #00C7FF; --plugin-light-share: 24%; --plugin-dark-share: 16%; }
+#steam-controller-2 img[src$="steam-controller-2.png"] { background: #000; }

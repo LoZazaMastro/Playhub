@@ -4,16 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#ffcf23">
-  <meta name="description" content="Playhub brings Steam Big Picture, your PC games, and Decky plugins together on Windows.">
+  <meta name="description" content="Playhub brings Digital Stores, Steam Controller 2 support and Decky plugins to Steam Big Picture on Windows.">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Playhub for Windows">
-  <meta property="og:description" content="A Windows app for bringing your games, plugins and everyday controls into Steam Big Picture.">
+  <meta property="og:description" content="Install and play Epic, GOG, Xbox, PC Game Pass and Amazon games in Steam Big Picture, with Steam Controller 2 support.">
   <title>Playhub for Windows</title>
   <link rel="canonical" href="https://lozazamastro.github.io/Playhub">
   <link rel="icon" href="./assets/cube.webp" type="image/webp">
   <link rel="preload" href="./assets/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
   <script src="./gallery.js?v=9358e13a01fb"></script>
-  <link rel="stylesheet" href="./styles.css?v=0c6d0c6a2075">
+  <link rel="stylesheet" href="./styles.css?v=300-digital-stores">
 </head>
 <body>
   <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -79,7 +79,7 @@
             <div>
               <p class="eyebrow">Import Games</p>
               <h3>Bring the games<br>you already own.</h3>
-              <p>Add your games from Xbox, Microsoft Store, Epic and GOG to Steam, then choose artwork that makes them feel part of the collection.</p>
+              <p>Add your games from Xbox, Microsoft Store, Epic, GOG and Amazon to Steam, then choose artwork that makes them feel part of the collection.</p>
             </div>
             <img src="./assets/library.webp" alt="" width="248" height="440" loading="lazy" decoding="async">
           </article>
@@ -117,6 +117,42 @@
         </div>
         <span class="slideshow-status" role="status"></span>
       </section>
+    </section>
+
+
+    <section class="plugin-band" id="digital-stores" aria-labelledby="digital-stores-title">
+      <div class="wrap">
+        <article class="plugin-card">
+          <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Digital Stores screenshots"><div class="card-stage" data-slideshow-stage><div class="card-frames"><figure class="media-frame" data-slide="Library"><img src="./assets/screens/digital-stores-library.jpg" alt="Epic Games, GOG, Xbox and Amazon games together in the Digital Stores library" width="1920" height="1080" loading="lazy" decoding="async"></figure>
+<figure class="media-frame" data-slide="Downloads" hidden><img src="./assets/screens/digital-stores-downloads.jpg" alt="A Digital Stores download with downloaded size, total size and transfer speed" width="1920" height="1080" loading="lazy" decoding="async"></figure>
+<figure class="media-frame" data-slide="Achievements" hidden><img src="./assets/screens/digital-stores-achievements.jpg" alt="Xbox achievements integrated into Steam's native achievements page" width="1920" height="1080" loading="lazy" decoding="async"></figure>
+<figure class="media-frame" data-slide="Steam Home" hidden><img src="./assets/screens/digital-stores-home.jpg" alt="Installed Digital Stores games in Steam Home's recent games" width="1920" height="1080" loading="lazy" decoding="async"></figure>
+<figure class="media-frame" data-slide="Steam menu" hidden><img src="./assets/screens/digital-stores-menu.jpg" alt="Digital Stores accessible from the Steam menu" width="1920" height="1080" loading="lazy" decoding="async"></figure></div></div><span class="slideshow-status" role="status"></span></div>
+          <div class="plugin-copy">
+            <p class="eyebrow">New in Playhub 3.0.0</p>
+            <h2 id="digital-stores-title">More stores.<br>One place to play.</h2>
+            <p>Install, manage and play games from Epic Games, GOG, Xbox Store, PC Game Pass and Amazon Games, right inside Steam Big Picture. Choose your installation drive and supported language, then follow every download in one shared queue.</p>
+            <p>Your installed games join Steam automatically with artwork and appear in Home's recent games. Xbox, Epic and GOG achievements live on Steam's native game pages, with unlock notifications and a refresh for the game you just closed when you return to Steam.</p>
+            <p>Connect your accounts once in the Digital Stores tab of the Playhub Windows app. Then open Steam menu &gt; Digital Stores in Big Picture. For PC Game Pass, press Y (Triangle on PlayStation controllers) and select Xbox Game Pass in Filters.</p>
+            <p>Direct installation and download controls depend on the store and title. Game Pass titles requiring EA app, Ubisoft Connect or Battle.net are labelled with their launcher; direct installation is not yet supported. Add supported, externally installed games through Import Games. Amazon Games has no achievement system.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="plugin-band copy-first" id="steam-controller-2" aria-labelledby="steam-controller-title">
+      <div class="wrap">
+        <article class="plugin-card">
+          <div class="card-media card-slideshow" data-slideshow role="group" aria-roledescription="carousel" aria-label="Steam Controller 2 and Translation Controller"><div class="card-stage" data-slideshow-stage><div class="card-frames"><figure class="media-frame" data-slide="Steam Controller 2"><img src="./assets/screens/steam-controller-2.png" alt="Steam Controller 2" width="1920" height="1080" loading="lazy" decoding="async"></figure>
+<figure class="media-frame" data-slide="Translation Controller" hidden><img src="./assets/screens/steam-controller-2-settings.jpg" alt="Translation Controller toggle in Playhub's Controller tab" width="1920" height="1080" loading="lazy" decoding="async"></figure></div></div><span class="slideshow-status" role="status"></span></div>
+          <div class="plugin-copy">
+            <p class="eyebrow">Steam Controller 2 support</p>
+            <h2 id="steam-controller-title">Your controller.<br>More of your games.</h2>
+            <p>Take your Steam Controller 2 beyond your Steam library. Play Xbox Store, PC Game Pass, Epic, GOG, Amazon and other non-Steam games while Steam stays open, without an extra controller utility, dongle or Open Puck.</p>
+            <p>Playhub's Translation Controller makes it appear as an Xbox 360 controller. Switch it on or off under Controller in the Playhub Quick Access plugin. If your game already recognises the controller and you get double inputs, turn Translation Controller off.</p>
+          </div>
+        </article>
+      </div>
     </section>
 
     <section id="plugins" class="suite" aria-labelledby="suite-title">
@@ -209,7 +245,7 @@
             <div class="plugin-copy">
               <h2 id="metadata-title"><a href="https://github.com/LoZazaMastro/Playhub-Metadata">Playhub <span style="white-space:nowrap">Metadata <svg class="icon plugin-arrow" aria-hidden="true"><use href="#arrow-external"/></svg></span></a></h2>
               <p>Give the games you add to Steam a fuller library page. Playhub Metadata brings together descriptions and release details, so you can read about a game before you launch it.</p>
-              <p>Match the game automatically or choose the right result yourself, then translate its description into your preferred language. Supported games can also show community content, Steam Activity and achievements from RetroAchievements, Xbox through OpenXBL, or local RPCS3 trophies.</p>
+              <p>Match the game automatically or choose the right result yourself, then translate its description into your preferred language. Supported games can also show community content, Steam Activity and achievements from RetroAchievements or local RPCS3 trophies.</p>
             </div>
           </article>
         </div>
