@@ -60,11 +60,11 @@ public sealed partial class StoreQueueEngine
 
     string? DownloadRemovalKind(StoreDownloadJob job)
     {
-        if (disposed || quiescing || job.State is StoreJobState.Completed or StoreJobState.Canceled or StoreJobState.Canceling ||
+        if (disposed || quiescing || job.State is StoreJobState.Completed or StoreJobState.Canceling ||
             partialCleanupTasks.TryGetValue(job.JobId, out var cleanup) && !cleanup.IsCompleted) return null;
         if (WindowsRequestRemovable(job)) return "windowsRequest";
         if (LegacyRequestRemovable(job)) return "history";
-        if (!partialDownloads.TryGetValue(job.JobId, out var receipt) || receipt.CleanupFinished ||
+        if (!partialDownloads.TryGetValue(job.JobId, out var receipt) || receipt.CleanupFinished&&!StoreOwnedPartialFiles.CanReuse(receipt) ||
             CleanupContextError(job, receipt, requireDrain: active != job.JobId) != null ||
             active == job.JobId && drainUnconfirmed) return null;
         return !receipt.WorkerStarted || receipt.Manifest != null ? "cleanup" : null;
@@ -139,8 +139,8 @@ public sealed partial class StoreQueueEngine
             if (clearedCanceledJobs.Contains(job.JobId)) return Result(true, job: job.JobId);
             // Visibility is independent of file ownership and worker drainage.
             // Retain all internal leases and receipts while the row stays dismissed.
-            if (!request.DeletePartial || job.State is StoreJobState.Completed or StoreJobState.Canceled ||
-                !partialDownloads.TryGetValue(job.JobId, out var receipt) || receipt.CleanupFinished ||
+            if (!request.DeletePartial || job.State is StoreJobState.Completed ||
+                !partialDownloads.TryGetValue(job.JobId, out var receipt) || receipt.CleanupFinished&&!StoreOwnedPartialFiles.CanReuse(receipt) ||
                 partialCleanupTasks.TryGetValue(job.JobId, out var task) && !task.IsCompleted ||
                 CleanupContextError(job, receipt, requireDrain: active != job.JobId) != null ||
                 active == job.JobId && drainUnconfirmed ||

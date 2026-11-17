@@ -122,8 +122,8 @@ internal static class StoreOwnedPartialFiles
     {
         if (receipt.Version != 1 || receipt.JobId == Guid.Empty || receipt.WorkerStarted && !receipt.DrainConfirmed) throw Error("drain_unconfirmed");
         string root = new StoreInstallFileSystem().CanonicalDestination(receipt.InstallPath);
-        using var roots = StoreOwnedInstallFiles.PinRoot(root);
-        using var marker = Open(Path.Combine(root, Marker), delete: false);
+        using var roots = StoreOwnedInstallFiles.PinRoot(Path.GetDirectoryName(root)!);
+        using var marker = Open(Path.Combine(root, Marker), delete: true);
         CheckMarker(marker, receipt.JobId);
         if (Identity(root) != receipt.DirectoryIdentity) throw Error("ownership_lost");
         StoreOwnedInstallFiles.RefuseRunning(root);
@@ -139,6 +139,7 @@ internal static class StoreOwnedPartialFiles
         }
         using var directories = new StoreOwnedInstallFiles.DirectoryPins();
         var held = new List<FileStream>();
+        var ownedDirectories = new List<(string Path,string Identity)>();
         try
         {
             var queue = new Queue<string>(); queue.Enqueue(root); int visited = 0;
@@ -147,6 +148,7 @@ internal static class StoreOwnedPartialFiles
                 token.ThrowIfCancellationRequested();
                 if (++visited > 65536) throw Error("too_many_files");
                 directories.Add(directory);
+                ownedDirectories.Add((directory,Identity(directory)));
                 foreach (var path in Directory.EnumerateFileSystemEntries(directory))
                 {
                     token.ThrowIfCancellationRequested();
@@ -179,9 +181,37 @@ internal static class StoreOwnedPartialFiles
             }
         }
         finally { foreach (var stream in held) stream.Dispose(); }
-        // Leave the tiny ownership marker and directories: no save directory or
-        // user container is recursively deleted as a side effect of queue removal.
+        directories.Dispose();
+        // Delete only the exact verified directory objects, deepest first. A
+        // newly added/foreign file makes the non-recursive removal fail safely.
+        var emptyDirectories=new List<SafeFileHandle>();
+        try
+        {
+            foreach(var directory in ownedDirectories)
+            {
+                var handle=CreateFile(directory.Path,0x10080,3,IntPtr.Zero,3,0x02200000,IntPtr.Zero);
+                if(handle.IsInvalid){handle.Dispose();throw Error("file_busy");}
+                emptyDirectories.Add(handle);
+                if(!GetFileInformationByHandle(handle,out var info)||(info.Attributes&0x400)!=0||DirectoryIdentity(info)!=directory.Identity)throw Error("ownership_lost");
+            }
+            using var authority=commitGuard?.Invoke();
+            CheckMarker(marker,receipt.JobId);
+            for(var i=emptyDirectories.Count-1;i>0;i--){DeleteHandle(emptyDirectories[i]);emptyDirectories[i].Dispose();}
+            if(Directory.EnumerateFileSystemEntries(root).Any(path=>!StringComparer.OrdinalIgnoreCase.Equals(path,Path.Combine(root,Marker))))throw Error("foreign_file");
+            DeleteHandle(marker.SafeFileHandle);marker.Dispose();
+            try{DeleteHandle(emptyDirectories[0]);emptyDirectories[0].Dispose();}
+            catch
+            {
+                // Retain retry ownership if a foreign file raced the final
+                // empty-root check. The root handle still prevents replacement.
+                using var restored=new FileStream(Path.Combine(root,Marker),FileMode.CreateNew,FileAccess.Write,FileShare.None);
+                restored.Write(System.Text.Encoding.ASCII.GetBytes(receipt.JobId.ToString("D")));restored.Flush(true);throw;
+            }
+        }
+        finally{foreach(var directory in emptyDirectories)directory.Dispose();}
     }
+    static void DeleteHandle(SafeFileHandle handle){var disposition=new Disposition{Delete=true};if(!SetFileInformationByHandle(handle,4,ref disposition,1))throw Error("file_busy");}
+    static string DirectoryIdentity(FileInfo info)=>$"{info.Volume:X8}:{info.IndexHigh:X8}{info.IndexLow:X8}:{info.Created.dwHighDateTime:X8}{info.Created.dwLowDateTime:X8}";
     static void Verify(FileStream stream, StoreOwnedInstallFile file, CancellationToken token)
     {
         if (file.HashAlgorithm != "SHAKE128")
